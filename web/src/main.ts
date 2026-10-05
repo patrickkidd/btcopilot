@@ -1,6 +1,7 @@
 import "./telemetry";
 import "./theme.css";
 import * as api from "./api";
+import { Books } from "./books";
 import { Chat, type LiveBubble } from "./chat";
 import { Via } from "./picture";
 import { Lens } from "./lens";
@@ -211,6 +212,7 @@ const pbp = new Drawer(
     lens.rest();
   },
   (chip) => chipTap(chip),
+  new Books($("pbp").parentElement!, () => store.fetch(api.casePassages)),
 );
 
 /** A play-by-play message opened again, from its words or its cluster chip:

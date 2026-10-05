@@ -24,6 +24,11 @@
 .pbp > .cardx { top: 0; }
 .pbp .point { flex: none; padding: 0 16px; font: 400 13px/20px var(--sans); color: var(--ink); }
 .pbp .path .step:focus-visible, .pbp .stepbtn:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
+/* the Family view's book, after the path, as a case report card's book (R-0779) */
+.pbp .path .book { flex: none; width: 44px; height: 44px; margin-left: 4px; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.pbp .path .book:active { color: var(--data-press); }
+/* a tap on someone in the Family view puts the picture on their three generations (R-0779) */
+.pbp.whole .draw :is(.p, .pt) { cursor: pointer; pointer-events: bounding-box; }
 
 /* Q6: the picture shrinks so the caption fits; when even that does not fit, the whole drawer scrolls */
 .pbp .lv { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }

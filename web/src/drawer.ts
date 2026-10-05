@@ -1,7 +1,9 @@
 import "./drawer.css";
+import type { Books } from "./books";
+import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn, still } from "./dom";
-import { leastScale } from "./diagram";
+import { leastScale, type Layout } from "./diagram";
 import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { family, familyStart, when, Told } from "./snapshots";
@@ -122,9 +124,13 @@ const spanOf = (told: Told) => {
 /** The drawer's top: the path row, the close button, which goes where the
  * path's cluster step goes, then the coach's point. The whole family hangs off
  * the timeline itself, and its close goes back there. */
+/** The Family view's book: what the family diagram is for (R-0779). */
+export const FAMILY_BOOK = "family";
+const FAMILY_TITLE = "What the family diagram is for";
+
 export const head = (told: Told, cluster: string) =>
   told.whole
-    ? `<div class="path">${pathRow(["Timeline", "Family"])}</div>` + closeX(` data-step="0"`) + `<div class="when"></div>`
+    ? `<div class="path">${pathRow(["Timeline", "Family"])}${book(FAMILY_BOOK, FAMILY_TITLE)}</div>` + closeX(` data-step="0"`) + `<div class="when"></div>`
     : `<div class="path">${pathRow(["Timeline", cluster, "explain"])}</div>` +
       closeX(` data-step="${CLUSTER}"`) +
       pointLine(told);
@@ -234,6 +240,11 @@ export class Drawer {
   private height: number | null = null;
   private edge = 0;
   private scale = 1;
+  /** The tallest caption under the picture, measured once per telling. */
+  private caption = 0;
+  /** In the Family view, the person a tap put the picture on, until the next
+   * step; null while the step's own people are drawn (R-0779). */
+  private focus: string[] | null = null;
 
   constructor(
     readonly panel: HTMLElement,
@@ -243,6 +254,8 @@ export class Drawer {
     /** A tap on the question's chip, once the drawer has gone back to the
      * cluster, so the message box it goes into is in sight. */
     private readonly answer: (chip: Chip) => void,
+    /** The books of the screen the drawer is on; a screen with no Family view has none. */
+    private readonly books: Books | null = null,
   ) {
     panel.classList.add("pbp");
     panel.hidden = true;
@@ -255,11 +268,15 @@ export class Drawer {
     this.show(new Told(tl, told), statement, 0);
   }
 
-  /** Slide the drawer in on the whole family at the first date holding more
-   * than births; Back and Next step through its history (R-0742). */
+  /** Slide the drawer in on the family at the first date holding more than
+   * births, drawn as three generations around that date's people, or around
+   * the record's own person when no date holds more; Back and Next step
+   * through its history (R-0742, R-0775, R-0779). */
   openFamily(tl: Timeline): void {
     const c = family(tl);
-    this.show(new Told(tl, c, true), null, familyStart(tl, c));
+    const i = familyStart(tl, c);
+    this.focus = i < 0 ? [String(tl.people.find((p) => p.primary)!.id)] : null;
+    this.show(new Told(tl, c, true), null, Math.max(i, 0));
   }
 
   /** Whether the whole family is up. */
@@ -272,6 +289,7 @@ export class Drawer {
     this.statement = statement;
     this.i = i;
     this.height = null;
+    this.caption = 0;
     const cluster = told.tl.clusters.find((c) => c.id === told.told.cluster_id);
     this.panel.classList.toggle("whole", told.whole);
     this.panel.innerHTML =
@@ -316,13 +334,16 @@ export class Drawer {
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
     q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
     if (told.whole) q(".when").innerHTML = topLine(told, this.i);
-    const shot = told.shot(this.i);
+    // the Family view draws each step's own three generations (R-0779)
+    const view = told.whole ? told.around(this.i, this.focus) : told;
+    const shot = view.shot(told.whole ? view.length - 1 : this.i);
     const draw = q(".draw");
     // the new drawing is the same width, so the frame sets off from where it stood
     const was = draw.scrollLeft;
     draw.innerHTML = shot.svg;
     q(".scroll").innerHTML = below(told, this.i, this.statement);
-    this.fit();
+    if (told.whole) this.height = null;
+    this.fit(view.layout);
     draw.scrollLeft = was;
     const lit = [...draw.querySelectorAll<SVGElement>('.hl.now[data-mark^="hl:"]')].map((m) => m.dataset.mark!.slice(3));
     // a step with a move is framed on whoever makes it, whole, with as much of
@@ -330,25 +351,28 @@ export class Drawer {
     const who = shot.mover ?? shot.who;
     draw.dataset.who = who;
     const ids = shot.mover ? [shot.mover, ...shot.reach, ...lit] : lit.length ? lit : [shot.who];
-    // the whole family opens on the record's own person, at every width (R-0759)
-    if (told.whole && !glide) frameOn(draw, [told.cast.index], told.cast.index, false);
+    if (this.focus) frameOn(draw, this.focus, this.focus[0], false);
     else
       frameOn(draw, [...new Set(ids)], who, glide, shot.mover ? [...draw.querySelectorAll<SVGGraphicsElement>(`.fore [data-mark^="move:${CSS.escape(shot.mover)}>"]`)] : []);
   }
 
-  private fit(): void {
+  private fit(L: Layout): void {
     const told = this.told!;
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
     const draw = lv.querySelector<HTMLElement>(".draw")!;
-    const L = told.layout;
     if (this.height === null) {
       const sc = lv.querySelector<HTMLElement>(".scroll")!;
-      const keep = sc.innerHTML;
-      const captions = told.steps.map((_, j) => {
-        sc.innerHTML = below(told, j, this.statement);
-        return sc.offsetHeight;
-      });
-      sc.innerHTML = keep;
+      if (!this.caption) {
+        const keep = sc.innerHTML;
+        this.caption = Math.max(
+          ...told.steps.map((_, j) => {
+            sc.innerHTML = below(told, j, this.statement);
+            return sc.offsetHeight;
+          }),
+        );
+        sc.innerHTML = keep;
+      }
+      const captions = [this.caption];
       // the picture's box keeps its own padding and rule above the drawing
       const style = getComputedStyle(draw);
       const padding = parseFloat(style.paddingTop);
@@ -365,6 +389,14 @@ export class Drawer {
   }
 
   private tap(e: Event): void {
+    if (this.books?.tap(e.target as Element)) return;
+    // in the Family view a tap on someone puts the picture on their three
+    // generations, until the next step (R-0779)
+    const person = this.told?.whole ? (e.target as Element).closest<SVGGElement>(".draw :is(.p, .pt)[data-id]") : null;
+    if (person && !person.dataset.id!.startsWith("unknown-")) {
+      this.focus = [person.dataset.id!];
+      return this.render(false);
+    }
     const step = (e.target as Element).closest<HTMLElement>("[data-step]");
     if (step) return this.back(Number(step.dataset.step), this.told!.eventIds);
     const chip = (e.target as Element).closest<HTMLElement>("button.chip[data-kind]");
@@ -379,6 +411,7 @@ export class Drawer {
     if (act === Act.Next) this.i = Math.min(this.i + 1, n - 1);
     else if (act === Act.Back) this.i = Math.max(this.i - 1, 0);
     else if (act === Act.Jump) this.i = Number(b.dataset.i);
+    this.focus = null;
     this.render();
     // a keyboard tap keeps its place
     if ((e as MouseEvent).detail === 0)

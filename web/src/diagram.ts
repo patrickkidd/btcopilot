@@ -742,9 +742,11 @@ function order(cast: Cast, t: Ties, gen: Record<string, number>, loose: Record<s
 }
 
 /** Generations by the longest line of descent: a child a row below the lower
- * of its parents; a partner with no parents on their partner's row; someone
- * with no family tie on the row of the one they move with. A family with no
- * tie to the reader's is its own group, each group's top row the picture's. */
+ * of its parents; partners on one row, so a partner whose own family reaches
+ * back fewer generations stands on their partner's row with that family laid
+ * out up from there; someone with no family tie on the row of the one they
+ * move with. A family with no tie to the reader's is its own group, each
+ * group's top row the picture's. */
 function looseGens(cast: Cast, t: Ties): { gen: Record<string, number>; comps: string[][] } {
   const ids = Object.keys(cast.people);
   const { parents, kidsOf, other, tied } = t;
@@ -764,14 +766,24 @@ function looseGens(cast: Cast, t: Ties): { gen: Record<string, number>; comps: s
       if (parents[id]) gen[id] = Math.max(gen[id], ...parents[id].map((p) => gen[p] + 1));
     });
   const below = (p: string, q: string): boolean => (kidsOf[p] ?? []).some((k) => k === q || below(k, q));
+  const forebears = (id: string, out = new Set<string>()): Set<string> => {
+    (parents[id] ?? []).forEach((q) => out.has(q) || forebears(q, out.add(q)));
+    return out;
+  };
   down();
   for (let pass = 0; pass < ids.length; pass++) {
     let moved = false;
     cast.bonds.forEach((b) =>
       [b.a, b.b].forEach((p) => {
         const q = other(b, p);
-        if (parents[p] || gen[q] <= gen[p] || below(p, q)) return;
-        gen[p] = gen[q];
+        if (gen[q] <= gen[p] || below(p, q)) return;
+        // one who married in comes down to their partner's row, their forebears
+        // with them, unless the two share a forebear and the line decides
+        const up = forebears(p);
+        const theirs = forebears(q);
+        if (up.has(q) || [...up].some((a) => theirs.has(a))) return;
+        const by = gen[q] - gen[p];
+        [p, ...up].forEach((a) => (gen[a] += by));
         moved = true;
       }),
     );
@@ -888,17 +900,19 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   const { gen, rows } = plan;
   const half = (id: string) => d.half(P[id]);
   // ruled 2026-09-26: first names; a surname initial only for two people in one
-  // row who share a first name. A stand-in such as "Delphine's mother" is kept whole.
+  // row who share a first name. A stand-in such as "Catherine's mother's
+  // partner" is named by its last relation, "partner": the lines say whose (R-0766).
+  const standIn = (n: string) => /'s /.test(n);
   const shown: Record<string, string> = {};
   ids.forEach((id) => {
-    const n = P[id].name;
-    shown[id] = /'s /.test(n) ? n : n.split(" ")[0];
+    shown[id] = P[id].name.split(/'s /).pop()!.split(" ")[0];
   });
   P = { ...P };
   ids.forEach((id) => {
     const parts = P[id].name.split(" ");
     const twin =
       parts.length > 1 &&
+      !standIn(P[id].name) &&
       ids.some((o) => o !== id && gen[o] === gen[id] && shown[o] === shown[id]);
     P[id] = {
       ...P[id],
@@ -1231,7 +1245,16 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
       ...cast.kin.flatMap((k) => across(where, k)),
       ...(plan.loose ? descents(true) : []),
     ];
-    const lines = [...moves, ...descents(false)];
+    // a couple's line too: the drop from each partner and the bar between them
+    const couples = cast.bonds.flatMap((b): Segment[] => {
+      const yb = Math.max(y[b.a] + half(b.a), y[b.b] + half(b.b)) + d.DROP + (level[`${b.a}|${b.b}`] ?? 0) * 6;
+      return [
+        [[x[b.a], y[b.a] + half(b.a)], [x[b.a], yb]],
+        [[x[b.b], y[b.b] + half(b.b)], [x[b.b], yb]],
+        [[Math.min(x[b.a], x[b.b]), yb], [Math.max(x[b.a], x[b.b]), yb]],
+      ];
+    });
+    const lines = [...moves, ...descents(false), ...couples];
     const [x0, x1] = [Math.min(...ids.map((o) => x[o] - leftExt(o))), Math.max(...ids.map((o) => x[o] + rightExt(o)))];
     // names as the pass found them: one moved this pass is not yet clear of its row
     const was = { ...side };

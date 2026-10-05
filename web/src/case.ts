@@ -107,7 +107,7 @@ export const BOOK_ICON =
   `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">` +
   `<path d="M12 6.5C10 5 7.5 4.5 4 4.5v13c3.5 0 6 .5 8 2 2-1.5 4.5-2 8-2v-13c-3.5 0-6 .5-8 2zM12 6.5v13"/></svg>`;
 
-const book = (key: string, of: string) =>
+export const book = (key: string, of: string) =>
   `<button type="button" class="book" data-book="${key}" data-title="${esc(of)}" aria-label="the passages behind this">${BOOK_ICON}</button>`;
 
 export const familyIcon = (size: number) =>

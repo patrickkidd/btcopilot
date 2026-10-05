@@ -1,17 +1,17 @@
 import * as api from "./api";
 import "./casereport.css";
 import { PicEvent, REST, SelKind, reduce } from "./caption";
-import { cards, dashboard, familyIcon, passages, rail } from "./case";
+import { Books } from "./books";
+import { cards, dashboard, familyIcon, rail } from "./case";
 import { Card, caseView } from "./caseview";
 import { aimedEvents, chipOf } from "./chips";
 import { BACK } from "./tokens";
 import { CLUSTER, esc, flash, slideOver } from "./dom";
 import { Drawer, frameOn } from "./drawer";
 import { Lens } from "./lens";
-import { Sheet } from "./sheet";
 import { untold } from "./snapshots";
 import type { Opened, Part, View } from "./store";
-import { ChipKind, ChipTone, InteractionKind, ItemKind, type Chip, type Passages, type Timeline } from "./types";
+import { ChipKind, ChipTone, InteractionKind, ItemKind, type Chip, type Timeline } from "./types";
 import { Feature } from "./track";
 import { AWAY_PX, fold, type Fold } from "./viewport";
 
@@ -45,7 +45,7 @@ const q = (root: HTMLElement, id: string): HTMLElement => {
 export class CaseReport implements View {
   private readonly lens: Lens;
   private readonly drawer: Drawer;
-  private readonly sheet: Sheet;
+  private readonly books: Books;
   /** The chat's own fold of the timeline (R-0696): a strip while the cards are read, the full line at their top or on a chip's tap. */
   private readonly strip: Fold;
   /** Where the cards stood when a tap opened the line. */
@@ -57,8 +57,6 @@ export class CaseReport implements View {
   private opened: Opened | null = null;
   /** Drawn from the record the store last gave, or to be drawn when shown. */
   private stale = true;
-  /** The passages, asked for once when the screen opens, so a book opens at once. */
-  private passages: Promise<Passages | null> | null = null;
   /** The card a strip tap asked for, lit while the cards glide to it and while they rest at their foot. */
   private asked: Card | null = null;
   private gliding = false;
@@ -90,6 +88,7 @@ export class CaseReport implements View {
         list: null,
       },
     );
+    this.books = new Books(root, () => this.hooks.fetch(api.casePassages));
     this.drawer = new Drawer(
       q(root, "case-pbp"),
       (step, events) => {
@@ -99,8 +98,8 @@ export class CaseReport implements View {
         this.lens.rest();
       },
       (chip) => this.chip(chip),
+      this.books,
     );
-    this.sheet = new Sheet(root, "bk");
     // the about page slides back out at its full height before the line folds, as on the chat screen
     this.strip = fold(null, root, () => {}, () => {
       if (this.lens.picture.aboutOpen()) this.lens.climb(CLUSTER);
@@ -111,9 +110,6 @@ export class CaseReport implements View {
       if (root.classList.contains("folded")) this.openedAt = this.body.scrollTop;
     });
     root.addEventListener("click", (e) => this.tap(e));
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && this.sheet.up) this.sheet.lower();
-    });
     this.body.addEventListener(
       "scroll",
       () => {
@@ -131,7 +127,7 @@ export class CaseReport implements View {
 
   reset(): void {
     this.opened = null;
-    this.passages = null;
+    this.books.forget();
     this.stale = true;
     this.drawer.close();
     this.lens.picture.clear();
@@ -162,7 +158,7 @@ export class CaseReport implements View {
     if (!opened) return;
     this.stale = false;
     // asked for early so a book opens at once; a failure shows at the book's tap
-    this.ask().catch(() => {});
+    this.books.ask().catch(() => {});
     this.drawer.close();
     const wide = this.hooks.wide();
     q(this.root, "case-family").hidden = wide;
@@ -278,21 +274,6 @@ export class CaseReport implements View {
     within.querySelectorAll<HTMLElement>(".fam[data-who]").forEach((f) => frameOn(f, [f.dataset.who!], f.dataset.who!, false));
   }
 
-  /** The passages, read once; a failed read is asked again at the next tap. */
-  private ask(): Promise<Passages | null> {
-    this.passages ??= this.hooks.fetch(api.casePassages).catch((error) => {
-      this.passages = null;
-      throw error;
-    });
-    return this.passages;
-  }
-
-  private async book(button: HTMLElement): Promise<void> {
-    const all = await this.ask();
-    if (!all) return;
-    this.sheet.show(passages(all, button.dataset.book!, button.dataset.title!));
-  }
-
   private tap(e: Event): void {
     this.act(e.target as HTMLElement);
     // another cluster opened while a play-by-play is up closes it (Patrick, 2026-10-03)
@@ -304,9 +285,7 @@ export class CaseReport implements View {
 
   private act(el: HTMLElement): void {
     const hit = (sel: string) => el.closest<HTMLElement>(sel);
-    if (hit(".fs-sheet.bk .cardx, .fs-scrim.bk")) return this.sheet.lower();
-    const book = hit(".book[data-book]");
-    if (book) return void this.book(book);
+    if (this.books.tap(el)) return;
     const all = hit(".who.lall[data-target]");
     if (all) return this.chip({ kind: ChipKind.Event, target: all.dataset.target!, label: "Coach", tone: ChipTone.Data, bare: false });
     const jump = hit("[data-jump]");

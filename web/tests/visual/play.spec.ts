@@ -608,6 +608,57 @@ test.describe("a move between two people further apart than the phone is wide", 
   });
 });
 
+test.describe("the Family view's three generations", () => {
+  test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
+
+  test("draws each step's people with their parents, partners, brothers and sisters and children; a tap puts it on someone else's; Next goes back to the step's", async ({ page }) => {
+    // R-0779
+    const errors = watched(page);
+    let ids: Record<string, number> = {};
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      ids = joined(tl, [["Hugo", "Wanda"]], 2, "Ws1", "Hs1");
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    const drawn = () => drawer(page).locator(".draw svg .p").evaluateAll((gs) => gs.map((g) => (g as SVGGElement).dataset.id!).sort());
+    const of = (...names: string[]) => names.map((n) => String(ids[n])).sort();
+    // Ws1 moves toward Hs1: each with their parents and their brothers and sisters
+    const step = of("Ws1", "Hs1", "Walt", "Wren", "Wanda", "Ws0", "Hal", "Hope", "Hugo", "Hs0");
+    expect(await drawn()).toEqual(step);
+    // a tap on Hugo: his parents, brothers, wife and daughter
+    // tapped in the middle of his square, where his age is written
+    await page.waitForTimeout(2200);
+    const square = drawer(page).locator(`.draw svg .p[data-id="${ids.Hugo}"] .shape`);
+    await square.scrollIntoViewIfNeeded();
+    const hugo = (await square.boundingBox())!;
+    await page.mouse.click(hugo.x + hugo.width / 2, hugo.y + hugo.height / 2);
+    await expect.poll(drawn).toEqual(of("Hugo", "Hal", "Hope", "Hs0", "Hs1", "Wanda", "Cleo"));
+    await drawer(page).locator('[data-act="next"]').click();
+    await expect.poll(drawn).toEqual(step);
+    expect(errors).toEqual([]);
+  });
+
+  test("raises the passages on what the family diagram is for from its book", async ({ page }) => {
+    // R-0779, R-0691
+    await page.route(/\/app\/case-report-passages(\?.*)?$/, (route) =>
+      route.fulfill({ json: { family: [{ text: "it is usually not necessary for a therapist to put so much information on his or her diagram", by: "Kerr & Bowen, Family Evaluation, ch. 10" }] } }),
+    );
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    await drawer(page).locator(".path .book").click();
+    const sheet = page.locator("#chat-screen .fs-sheet.bk");
+    await expect(sheet).toHaveClass(/in/);
+    await expect(sheet.locator(".cf-t")).toHaveText("What the family diagram is for");
+    await expect(sheet.locator("blockquote")).toHaveText("it is usually not necessary for a therapist to put so much information on his or her diagram");
+    await page.keyboard.press("Escape");
+    await expect(sheet).not.toHaveClass(/in/);
+  });
+});
+
 /** The play record with a lifetime around its moves: births for its three
  * people and a fourth born after them, and a death, so the whole family has
  * births, a death and relationship shifts to step through. */
@@ -686,7 +737,6 @@ test.describe("the whole family stepped through dates", () => {
     await expect(drawer(page).locator(".wire .wlab")).toHaveText("February 2010");
     const picture = () => drawer(page).locator(".draw").innerHTML();
     const dot = drawer(page).locator('.draw .p[data-id="9100"]');
-    await expect(dot).not.toHaveClass(/\byet\b/);
     let was = await picture();
     const tap = async (act: string, said: string) => {
       const before = await top.innerText();
@@ -698,12 +748,12 @@ test.describe("the whole family stepped through dates", () => {
       was = now;
     };
     await tap("back", "Dot was born");
-    // the last move before Dot was born
+    // Dot, who is no one's daughter in this record, is drawn on her own date alone (R-0779)
+    await expect(dot).toHaveCount(1);
     await tap("back", "");
-    await expect(dot).toHaveClass(/\byet\b/);
-    expect(Number(await dot.evaluate((g) => getComputedStyle(g).opacity))).toBeCloseTo(0.3);
+    await expect(dot).toHaveCount(0);
     await tap("next", "Dot was born");
-    await expect(dot).not.toHaveClass(/\byet\b/);
+    await expect(dot).toHaveCount(1);
     expect(await sideways(page)).toBe(false);
     await page.goBack();
     await expect(drawer(page)).toBeHidden();
@@ -820,21 +870,21 @@ test.describe("the whole family wider than the phone", () => {
 test.describe("the whole family of a family many phones wide", () => {
   test.use({ storageState: stateFor("case-report-dense"), viewport: { width: 393, height: 852 } });
 
-  // R-0759, R-0744, R-0749, R-0766
-  test("opens with the record's own person in the frame, names at 13px or more and short, every word inside what the frame scrolls to", async ({ page }) => {
+  // R-0759, R-0744, R-0749, R-0766, R-0775, R-0779
+  test("opens on the first date holding more than births, its person in the frame, names at 13px or more and short, every word inside what the frame scrolls to", async ({ page }) => {
     const errors = watched(page);
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
-    // opened, not glided: the frame is already on the record's own person, Margaret-Anne
+    await expect(drawer(page).locator(".when")).toHaveText("Harold and Ruth married");
+    // opened, not glided: the frame is already on the step's person
     const at = await drawer(page).evaluate((p) => {
       const draw = p.querySelector<HTMLElement>(".draw")!;
-      const own = [...draw.querySelectorAll<SVGGElement>(".pt")].find((g) => g.querySelector(".lbn")?.textContent === "Margaret-Anne")!.dataset.id;
-      const shape = draw.querySelector(`.p[data-id="${own}"] .shape`)!.getBoundingClientRect();
+      const shape = draw.querySelector(`.p[data-id="${draw.dataset.who}"] .shape`)!.getBoundingClientRect();
       const f = draw.getBoundingClientRect();
-      return { wide: draw.scrollWidth > 4 * draw.clientWidth, inside: shape.left >= f.left && shape.right <= f.right };
+      return shape.left >= f.left && shape.right <= f.right;
     });
-    expect(at).toEqual({ wide: true, inside: true });
+    expect(at).toBe(true);
     // R-0766: everyone is named as briefly as the Pembertons are, so no name takes more width than the longest of the record's own people's
     const names = await drawer(page).locator(".draw .pt .lbn").allTextContents();
     expect(names.filter((n) => n.length > "Francis-Xavier".length)).toEqual([]);
@@ -952,15 +1002,18 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1440, height: 900 
   test.describe(`the whole family of a wide record at ${viewport.width} wide`, () => {
     test.use({ storageState: stateFor("case-report-dense"), viewport });
 
-    test("opens on the record's own person, whole in the frame, and no name touches another", async ({ page }, info) => {
-      // R-0759, R-0766
+    test("opens on the first date holding more than births, its person whole in the frame, and no name touches another", async ({ page }, info) => {
+      // R-0759, R-0766, R-0775, R-0779
       test.skip(info.project.name !== "phone", "the size is the describe's own");
       await settle(page);
       await page.locator("#cap-family").click();
       await expect(drawer(page)).toBeVisible();
       await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
-      const own = (await drawer(page).locator('.draw .pt:has(text:text-is("Margaret-Anne"))').getAttribute("data-id"))!;
-      expect(await cutInFrame(page, "#pbp .draw", [own])).toEqual({ fits: true, cut: {} });
+      await expect(drawer(page).locator(".when")).toHaveText("Harold and Ruth married");
+      // Harold and Ruth's ten children spread them further apart than the frame is wide
+      const who = (await drawer(page).locator(".draw").getAttribute("data-who"))!;
+      await expect(drawer(page).locator(`.draw .pt[data-id="${who}"]`)).toContainText("Harold");
+      expect((await cutInFrame(page, "#pbp .draw", [who])).cut).toEqual({});
       const touching = await drawer(page).evaluate((p) => {
         const boxes = [...p.querySelectorAll<SVGGElement>(".draw .pt")]
           .map((g) => ({ name: g.textContent!.slice(0, 16), b: g.getBoundingClientRect() }))
@@ -1067,14 +1120,24 @@ test.describe("stepped by hand on a phone", () => {
   });
 });
 
-/** A family many phones wide, stepped with Next as Patrick steps it. */
+/** A play-by-play many phones wide, stepped with Next as Patrick steps it. */
 test.describe("the frame's travel to a step's people", () => {
-  test.use({ storageState: stateFor("case-report-dense"), viewport: { width: 393, height: 852 } });
+  test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
 
   // R-0778
   test("sets off from where the frame stood, eases to exactly where it lands without passing it, taking longer the further it goes", async ({ page }) => {
+    // the moves go back and forth between the two ends of the family
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      const ids = joined(tl, [["Hugo", "Wanda"]], 6, "Ws5", "Hs5");
+      tl.events
+        .filter((e: { dateTime: string | null }) => e.dateTime)
+        .sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime))
+        .forEach((e: Record<string, unknown>, i: number) => Object.assign(e, i % 2 ? { person: ids.Hs5, relationshipTargets: [ids.Ws5] } : {}));
+      await route.fulfill({ json: tl });
+    });
     await settle(page);
-    await page.locator("#cap-family").click();
+    await stored(page).click();
     await expect(drawer(page)).toBeVisible();
     const trips: number[][][] = [];
     for (const act of ["next", "next", "back", "next"]) {

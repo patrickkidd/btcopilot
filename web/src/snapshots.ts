@@ -227,6 +227,39 @@ function marksOf(r: Family, e: TimelineEvent): Step["marks"] {
   ];
 }
 
+/** Everyone a mark is drawn on or between. */
+const peopleOf = (m: Step["marks"][number]): string[] => {
+  if (isArrow(m) || isKin(m)) return m.to ? [m.from, m.to] : [m.from];
+  if (isPair(m)) return [m.a, m.b];
+  if (m.k === Mark.Place) return [m.who, (m as Place).to, ...((m as Place).third ? [(m as Place).third!] : [])];
+  return [m.who];
+};
+
+/** Three generations around `seeds` (R-0779): each one's parents, partners,
+ * brothers and sisters, and children, seeds first. Where the seeds themselves
+ * span more generations, as a grandparent and a grandchild do, so does this. */
+export function circle(r: Family, seeds: string[]): string[] {
+  const bonds = r.tl.pair_bonds;
+  const of = (pb: PairBond) => [pb.person_a, pb.person_b].filter((p): p is number => p != null).map(key);
+  const out = new Set(seeds);
+  seeds.forEach((id) => {
+    const p = r.people.get(id);
+    if (!p) return;
+    const born = bonds.find((pb) => pb.id === p.parents);
+    if (born) {
+      of(born).forEach((q) => out.add(q));
+      r.tl.people.filter((o) => o.parents === born.id).forEach((o) => out.add(key(o.id)));
+    }
+    bonds
+      .filter((pb) => of(pb).includes(id))
+      .forEach((pb) => {
+        of(pb).forEach((q) => out.add(q));
+        r.tl.people.filter((o) => o.parents === pb.id).forEach((o) => out.add(key(o.id)));
+      });
+  });
+  return [...out];
+}
+
 const isArrow = (m: Step["marks"][number]): m is Arrow => m.k === Mark.Toward || m.k === Mark.Away;
 const isKin = (m: Step["marks"][number]): m is Kin => m.k === Mark.Move;
 const isPair = (m: Step["marks"][number]): m is Pair =>
@@ -245,18 +278,23 @@ export class Told {
   constructor(
     readonly tl: Timeline,
     readonly told: Case,
-    /** The whole family stepped through dates (R-0742): everyone in the record
-     * is drawn, and the years line spans every dated event in it. */
+    /** The whole family stepped through dates (R-0742): the years line spans
+     * every dated event in the record. */
     readonly whole = false,
+    /** Only these people are drawn, the first of them standing for the reader,
+     * and only the marks among them (R-0779). */
+    keep: string[] | null = null,
   ) {
     const r = new Family(tl);
+    const kept = keep && new Set(keep);
     this.steps = told.snapshots.map((s) => {
       const events = s.event_ids.map((id) => r.event(id));
       const first = events[0];
+      const marks = events.flatMap((e) => marksOf(r, e));
       return {
         t: when(first.dateTime!),
         date: whole ? spoken(first) : caption(first),
-        marks: events.flatMap((e) => marksOf(r, e)),
+        marks: kept ? marks.filter((m) => peopleOf(m).every((id) => kept.has(id))) : marks,
       };
     });
     // everyone the case's events name is drawn, the ones no snapshot shows too
@@ -267,7 +305,7 @@ export class Told {
       if (!cluster) throw new Error(`no cluster ${told.cluster_id} on the line`);
       this.eventIds = cluster.event_ids;
     }
-    this.cast = castOf(r, this.steps, this.eventIds.map((id) => r.event(id)), whole);
+    this.cast = castOf(r, this.steps, this.eventIds.map((id) => r.event(id)), whole, keep);
     this.cast.bonds.forEach((b) => this.start.set(`${b.a}|${b.b}`, b.st));
     this.layout = arrange(this.cast);
   }
@@ -289,6 +327,16 @@ export class Told {
     const e = this.tl.events.find((e) => e.id === id)!;
     const who = aboutOf(e);
     return who != null && key(who) in this.cast.people ? key(who) : this.cast.index;
+  }
+
+  /** The whole family's step `i` drawn as three generations around its own
+   * people, or around `focus` when given (R-0779): only that step and the ones
+   * before it, so its marks are new and the earlier ones carried. */
+  around(i: number, focus: string[] | null = null): Told {
+    const r = new Family(this.tl);
+    const seeds = focus ?? [...new Set(this.steps[i].marks.flatMap(peopleOf))];
+    const told = { ...this.told, snapshots: this.told.snapshots.slice(0, i + 1) };
+    return new Told(this.tl, told, true, circle(r, seeds.length ? seeds : [r.you]));
   }
 
   get length(): number {
@@ -403,22 +451,18 @@ function pairKey(cast: Cast, m: Pair): string {
 /** The cast: you, everyone the case's events name, both partners of any couple
  * whose line changes, and the parents needed to connect them, following descent
  * through as many generations as it takes. Nobody else. */
-export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyone = false): Cast {
-  const cast = new Set<string>(everyone ? r.people.keys() : [r.you]);
-  events.forEach((e) => r.named(e).forEach((id) => cast.add(id)));
-  steps.forEach((s) =>
-    s.marks.forEach((m) => {
-      if (isPair(m)) [m.a, m.b].forEach((id) => cast.add(id));
-      else if (isArrow(m) || isKin(m)) [m.from, m.to].forEach((id) => id && cast.add(id));
-      else cast.add(m.who);
-    }),
-  );
+export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyone = false, keep: string[] | null = null): Cast {
+  const cast = new Set<string>(keep ?? (everyone ? r.people.keys() : [r.you]));
+  if (!keep) {
+    events.forEach((e) => r.named(e).forEach((id) => cast.add(id)));
+    steps.forEach((s) => s.marks.forEach((m) => peopleOf(m).forEach((id) => cast.add(id))));
+  }
   const ofBond = new Map(r.tl.pair_bonds.map((pb) => [pb.id, pb]));
   const up = (id: string): string[] => {
     const pb = ofBond.get(r.people.get(id)?.parents ?? -1);
     return pb ? [pb.person_a, pb.person_b].filter((p): p is number => p != null).map(key) : [];
   };
-  for (let grew = !everyone; grew; ) {
+  for (let grew = !everyone && !keep; grew; ) {
     grew = false;
     const add = (id: string) => {
       if (!cast.has(id)) {
@@ -508,7 +552,8 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
     people,
     bonds,
     kids: drawnKids,
-    index: r.you,
+    // the reader, or when they are not drawn, the first of the people kept
+    index: keep && !cast.has(r.you) ? keep[0] : r.you,
     marked: [...marked],
     cross: [...crossed],
     words,
@@ -613,13 +658,12 @@ function happened(people: Map<number, Person>, e: TimelineEvent): string {
   return `${name(e.person)} ${named || /^.[A-Z]/.test(words) ? words : words[0].toLowerCase() + words.slice(1)}`;
 }
 
-/** Where the whole family opens: the first date holding more than births,
- * since the early births alone show little, or today when every date is only
- * births (R-0742, R-0775). */
+/** Where the family opens: the first date holding more than births, since
+ * the early births alone show little; -1 when every date is only births
+ * (R-0742, R-0775). */
 export const familyStart = (tl: Timeline, c: Case): number => {
   const kinds = new Map(tl.events.map((e) => [e.id, e.kind ?? ""]));
-  const i = c.snapshots.findIndex((s) => s.event_ids.some((id) => !BIRTHS.has(kinds.get(id)!)));
-  return i < 0 ? c.snapshots.length - 1 : i;
+  return c.snapshots.findIndex((s) => s.event_ids.some((id) => !BIRTHS.has(kinds.get(id)!)));
 };
 
 /** The whole family stepped through dates (R-0742): one step per date that

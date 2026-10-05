@@ -261,7 +261,7 @@ test.describe("the case report's taps", () => {
   test("a card's book raises its passages and puts them away", async ({ page }) => {
     await open(page);
     await page.locator('#case-body .level[data-card="main"] .book').click();
-    const sheet = page.locator(".fs-sheet.bk");
+    const sheet = page.locator("#case-screen .fs-sheet.bk");
     await expect(sheet).toHaveClass(/in/);
     await expect(sheet.locator("blockquote").first()).toBeVisible();
     await sheet.locator(".cardx").click();
@@ -274,7 +274,7 @@ test.describe("the case report's taps", () => {
     await page.waitForTimeout(3000);
     const tapped = Date.now();
     await page.locator('#case-body .level[data-card="brought"] .book').click();
-    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/, { timeout: 1000 });
+    await expect(page.locator("#case-screen .fs-sheet.bk")).toHaveClass(/in/, { timeout: 1000 });
     expect(Date.now() - tapped).toBeLessThan(1000);
   });
 
@@ -282,16 +282,16 @@ test.describe("the case report's taps", () => {
   test("a book whose passages could not be read asks again at its tap", async ({ page }) => {
     await open(page, 1);
     await page.locator('#case-body .level[data-card="main"] .book').click();
-    await expect(page.locator(".fs-sheet.bk blockquote").first()).toBeVisible();
+    await expect(page.locator("#case-screen .fs-sheet.bk blockquote").first()).toBeVisible();
   });
 
   // R-0691
   test("Escape puts the book's passages away", async ({ page }) => {
     await open(page);
     await page.locator('#case-body .level[data-card="main"] .book').click();
-    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/);
+    await expect(page.locator("#case-screen .fs-sheet.bk")).toHaveClass(/in/);
     await page.keyboard.press("Escape");
-    await expect(page.locator(".fs-sheet.bk")).not.toHaveClass(/in/);
+    await expect(page.locator("#case-screen .fs-sheet.bk")).not.toHaveClass(/in/);
   });
 
   // R-0709
