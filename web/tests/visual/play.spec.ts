@@ -543,7 +543,8 @@ test.describe("the whole family stepped through dates", () => {
     await expect(drawer(page).locator(".dots")).toHaveCount(0);
     await expect(drawer(page).locator('[data-act="next"]')).toBeDisabled();
     const top = drawer(page).locator(".when");
-    await expect(top).toHaveText("February 2010— Ben died");
+    await expect(top).toHaveText("Ben died");
+    await expect(drawer(page).locator(".wire .wlab")).toHaveText("February 2010");
     const picture = () => drawer(page).locator(".draw").innerHTML();
     const dot = drawer(page).locator('.draw .p[data-id="9100"]');
     await expect(dot).not.toHaveClass(/\byet\b/);
@@ -557,12 +558,12 @@ test.describe("the whole family stepped through dates", () => {
       expect(now).not.toBe(was);
       was = now;
     };
-    await tap("back", "September 2001— Dot was born");
+    await tap("back", "Dot was born");
     // the last move before Dot was born
     await tap("back", "");
     await expect(dot).toHaveClass(/\byet\b/);
     expect(Number(await dot.evaluate((g) => getComputedStyle(g).opacity))).toBeCloseTo(0.3);
-    await tap("next", "September 2001— Dot was born");
+    await tap("next", "Dot was born");
     await expect(dot).not.toHaveClass(/\byet\b/);
     expect(await sideways(page)).toBe(false);
     await page.goBack();
@@ -570,7 +571,43 @@ test.describe("the whole family stepped through dates", () => {
     await expect(page).toHaveURL(/\/app\/$/);
     expect(errors).toEqual([]);
   });
+  // R-0742
+  test("keeps its picture still while the words above it run to three lines, and its first date whole inside the frame", async ({ page }) => {
+    const errors = watched(page);
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      const [ada, ben] = tl.people;
+      const blank = { ...tl.events[0], relationshipTargets: [], relationshipTriangles: [], symptom: null, anxiety: null, functioning: null, spouse: null, child: null, codedInDiscussion: null, codedInStatement: null };
+      ada.birth = "1940-02-01";
+      tl.events.push({ ...blank, id: 9400, kind: "birth", label: "Born", dateTime: ada.birth, relationship: null, person: null, child: ada.id, title: null, description: null, person_name: ada.name, sentence: `${ada.name} was born` });
+      const long = "started calling every night after the move and kept on through the winter, the spring and the long summer that followed it";
+      tl.events.push({ ...blank, id: 9401, kind: "shift", label: "Toward", dateTime: "1941-03-01", relationship: "toward", relationshipTargets: [ben.id], person: ada.id, title: long, description: long, person_name: ada.name, sentence: long });
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    const top = drawer(page).locator(".when");
+    const at = async () => (await boxOf(drawer(page).locator(".draw")))!.y;
+    const still = await at();
+    const back = drawer(page).locator('[data-act="back"]');
+    while (await back.isEnabled()) {
+      const before = await top.innerText();
+      await back.click();
+      await expect(top).not.toHaveText(before);
+      expect(await at()).toBe(still);
+    }
+    await expect(drawer(page).locator(".wire .wlab")).toHaveText("February 1940");
+    const [label, wire] = [await boxOf(drawer(page).locator(".wire .wlab")), await boxOf(drawer(page).locator(".wire svg"))];
+    expect(label!.x).toBeGreaterThanOrEqual(wire!.x);
+    expect(label!.x + label!.width).toBeLessThanOrEqual(wire!.x + wire!.width);
+    await drawer(page).locator('[data-act="next"]').click();
+    await expect(top).toContainText("started calling every night");
+    expect(await at()).toBe(still);
+    expect(errors).toEqual([]);
+  });
 });
+
 
 test.describe("the whole family wider than the phone", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 390, height: 844 } });

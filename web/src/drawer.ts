@@ -61,8 +61,11 @@ export function yearsLine(tl: Timeline, told: Told, i: number): string {
     s +=
       `<rect class="whit" x="${f(a)}" y="0" width="${f(b - a)}" height="62" data-act="${Act.Jump}" data-i="${h.j}"/>`;
   });
-  const cx = Math.min(Math.max(X(told.steps[i].t), 40), 350);
-  s += `<text class="wlab" x="${f(cx)}" y="15" text-anchor="middle">${esc(told.steps[i].date)}</text>`;
+  // the date stays whole inside the frame: a mono character is about 0.6 of the 12px font wide
+  const date = told.steps[i].date;
+  const half = date.length * 3.6 + 4;
+  const cx = Math.min(Math.max(X(told.steps[i].t), half), 390 - half);
+  s += `<text class="wlab" x="${f(cx)}" y="15" text-anchor="middle">${esc(date)}</text>`;
   s += `<text class="wyr" x="${x0}" y="57">${Math.floor(t0)}</text>`;
   s += `<text class="wyr" x="${x1}" y="57" text-anchor="end">${Math.floor(t1)}</text>`;
   return s + "</svg>";
@@ -125,12 +128,11 @@ export const head = (told: Told, years: string) =>
       closeX(` data-step="${CLUSTER}"`) +
       pointLine(told);
 
-/** The whole family's top line: the step's date and what happened then, in
- * the events' own words. */
+/** The whole family's top line: what happened at the step, in the events' own
+ * words; its date is the label over the years line, said once. */
 export const topLine = (told: Told, i: number) => {
   const snap = told.told.snapshots[i];
-  const words = snap.fact ? `<span class="words">— ${withKind(snap.fact, saying(told, i))}</span>` : "";
-  return `<span class="date">${esc(told.steps[i].date)}</span>${words}`;
+  return snap.fact ? `<span class="words">${withKind(snap.fact, saying(told, i))}</span>` : "";
 };
 
 export const pictureHeight = (natural: number, room: number, captions: number[], floor: number) =>

@@ -110,9 +110,9 @@ it("steps the whole family with Back and Next only, says where in its top line, 
   expect(top).toMatch(/data-step="0"><span>Timeline<.*<span class="here">Family</);
   expect(top).toContain(closeX(' data-step="0"'));
   expect(top).not.toContain('class="point"');
-  expect(topLine(whole, 0)).toBe('<span class="date">June 1948</span><span class="words">— Errol and Odile <span class="kw">married</span></span>');
+  expect(topLine(whole, 0)).toBe('<span class="words">Errol and Odile <span class="kw">married</span></span>');
   const toward = whole.told.snapshots.findIndex((s) => s.event_ids.includes(131));
-  expect(topLine(whole, toward)).toBe('<span class="date">May 1998</span><span class="words">— Delphine started calling Corinne every night</span>');
+  expect(topLine(whole, toward)).toBe('<span class="words">Delphine started calling Corinne every night</span>');
 });
 
 // R-0742
@@ -125,4 +125,20 @@ it("spans the whole family's years line over every dated event, this step ringed
   expect([...line.matchAll(/class="wd dim"/g)]).toHaveLength(tl.events.length - whole.length);
   expect(line).toContain(">1948</text>");
   expect(line).toContain(">1999</text>");
+});
+
+// R-0742
+it("says each whole family step's date once, over the years line, whole inside its frame at either end", () => {
+  // the longest month's name at the line's very start
+  const feb = { ...tl, events: tl.events.map((e) => (e.id === 103 ? { ...e, dateTime: "1948-02-01" } : e)) };
+  const whole = new Told(feb, family(feb), true);
+  expect(whole.steps[0].date).toBe("February 1948");
+  [0, whole.length - 1].forEach((i) => {
+    const date = whole.steps[i].date;
+    expect(topLine(whole, i)).not.toContain(date);
+    const x = Number(yearsLine(feb, whole, i).match(/<text class="wlab" x="([\d.]+)"/)![1]);
+    // a 12px mono character is at most 7.2 wide
+    expect(x - (date.length * 7.2) / 2).toBeGreaterThanOrEqual(0);
+    expect(x + (date.length * 7.2) / 2).toBeLessThanOrEqual(390);
+  });
 });

@@ -41,7 +41,9 @@
 .pbp .dot::after { content: ""; width: 9px; max-width: 80%; aspect-ratio: 1; border-radius: 50%; border: 1.5px solid var(--data); box-sizing: border-box; }
 .pbp .dot.on::after { background: var(--data); }
 /* the whole family (R-0742): the top line says where the reader is, Back and Next sit at either end */
+/* three lines of words at phone width are kept for every step, so the picture never moves; more scroll */
 .pbp > .when { flex: none; padding: 0 16px 8px; }
+.pbp.whole > .when { box-sizing: content-box; height: 54px; line-height: 18px; overflow-y: auto; align-content: flex-start; }
 .pbp .when .words { color: var(--faint); font-weight: 400; }
 .pbp.whole .scroll .step { justify-content: space-between; }
 /* someone not yet born at the step, and a couple or child line before its date, keeps its place, faded (R-0756) */
