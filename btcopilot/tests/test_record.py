@@ -98,6 +98,42 @@ def test_undo_conflict_names_the_failing_delta(subscriber):
     assert diagram.get_diagram_data().people == [{"id": 1, "name": "Cy"}]
 
 
+def test_undo_changes_takes_back_only_the_rows_named_each_logged_and_a_conflict_writes_nothing(
+    subscriber,
+):
+    # R-0084
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+    named = [
+        record.apply(
+            diagram.id,
+            [{"item_kind": ItemKind.Person, "item_id": 1, "field": field, "after": after}],
+            author=Author.Coach,
+            turn_id="t1",
+        )
+        for field, after in (("name", "Bea"), ("age", 40), ("gender", "female"))
+    ]
+
+    record.undo_changes(diagram.id, [named[2].id, named[1].id], author=Author.Coach)
+    person = diagram.get_diagram_data().people[0]
+    assert (person["name"], person.get("age"), person.get("gender")) == ("Bea", None, None)
+    assert [c.turn_id for c in Change.query.filter(Change.turn_id.like("undo:%"))] == [
+        f"undo:t1#{named[2].id}",
+        f"undo:t1#{named[1].id}",
+    ]
+    assert record.undone(diagram.id) == {named[1].id, named[2].id}
+
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 1, "field": "name", "after": "Cy"}],
+        author=Author.User,
+        turn_id="t2",
+    )
+    rows = Change.query.count()
+    with pytest.raises(record.Conflict):
+        record.undo_changes(diagram.id, [named[0].id], author=Author.Coach)
+    assert (diagram.get_diagram_data().people[0]["name"], Change.query.count()) == ("Cy", rows)
+
+
 THREE = [
     {"id": i, "kind": "noted", "person": 1, "description": "Moved", "dateTime": f"200{i}-01-01"}
     for i in (1, 2, 3)

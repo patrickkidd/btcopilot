@@ -112,17 +112,20 @@ def order(statement: Statement) -> tuple[int, int]:
 def unread(discussion: Discussion, kind: Kind, done: list[int]) -> list[Statement]:
     """The session's statements the backfill has not gone through: all of
     them, or, once gone through, those after the last message the newest pass
-    read, as the change that marked it gone through links it."""
+    read, as the change that marked it gone through links it; a marking taken
+    back since does not count."""
     said = sorted(discussion.statements, key=order)
     if discussion.id not in done:
         return said
+    taken = record.undone(discussion.diagram_id)
     marked = next(
         (
             change
             for change in Change.query.filter_by(
                 diagram_id=discussion.diagram_id, turn_id=f"{kind.turn}:{discussion.id}"
             ).order_by(Change.id.desc())
-            if any(delta["field"] == kind.done for delta in change.deltas)
+            if change.id not in taken
+            and any(delta["field"] == kind.done for delta in change.deltas)
         ),
         None,
     )

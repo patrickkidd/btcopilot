@@ -60,9 +60,13 @@ def raised(data: DiagramData) -> list[dict]:
 def fresh(diagram: Diagram, data: DiagramData) -> set[str]:
     """The ids of the raised guesses and the questions on no card that came
     into the record after the newest card was set, from the change log; every
-    one of them before any card was."""
+    one of them before any card was. A change taken back, and the undo itself,
+    set no card."""
     added, last = {}, 0
+    taken = record.undone(diagram.id)
     for change in Change.query.filter_by(diagram_id=diagram.id).order_by(Change.id):
+        if change.id in taken or change.turn_id.startswith("undo:"):
+            continue
         for delta in change.deltas:
             if delta["item_kind"] != ItemKind.Question.value:
                 continue

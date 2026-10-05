@@ -1,15 +1,16 @@
-"""The family records themselves: who owns them, how much is in them, and the
-whole record written out as JSON."""
+"""The family records themselves: who owns them, how much is in them, the
+whole record written out as JSON, and change rows taken back."""
 
 import json
 
 import click
 
-from btcopilot import diagramjson
+from btcopilot import diagramjson, record
+from btcopilot.admin.guard import writes
 from btcopilot.admin.users import find as find_user
 from btcopilot.admin.output import rows_option
 from btcopilot.extensions import db
-from btcopilot.models import Diagram
+from btcopilot.models import Author, Change, Diagram
 
 
 def find(diagram_id: int) -> Diagram:
@@ -75,3 +76,43 @@ def diagram_export(diagram_id, out):
         click.echo(f"wrote {out}")
     else:
         click.echo(text)
+
+
+@click.argument("diagram_id", type=int)
+@click.argument("change_ids", type=int, nargs=-1, required=True)
+@click.option("--yes", is_flag=True, help="Take them back; without it, only the preview.")
+@rows_option
+def diagram_undo(diagram_id, change_ids, yes):
+    """Take these change rows of one record back off it, newest first, each
+    logged as its own undo naming the row; the questions and impressions they
+    added come off too. A value changed since stops it before anything is
+    written. Without --yes it prints what each row would take back and writes
+    nothing."""
+    diagram = find(diagram_id)
+    changes = Change.query.filter(Change.diagram_id == diagram.id, Change.id.in_(change_ids)).all()
+    if len(changes) != len(set(change_ids)):
+        raise click.ClickException(f"not every change of {change_ids} is on diagram {diagram.id}")
+    try:
+        taken = record.taking_back(diagramjson.loads(diagram.data), changes)
+        if yes:
+            record.undo_changes(diagram.id, list(change_ids), author=Author.Coach)
+    except record.Conflict as e:
+        raise click.ClickException(f"changed since it was written, nothing taken back: {e}")
+    return [
+        {
+            "change": change.id,
+            "turn": change.turn_id,
+            "undone": yes,
+            "taken_back": ", ".join(f"{d['item_kind']} {d['item_id']} {said(d)}" for d in deltas),
+        }
+        for change, deltas in taken
+    ]
+
+
+def said(delta: dict) -> str:
+    if delta["field"] is not None:
+        return f"{delta['field']} back to {delta['after']}"
+    return "taken off" if delta["after"] is None else "put back"
+
+
+diagrams.add_command(writes(click.command("undo")(diagram_undo)))

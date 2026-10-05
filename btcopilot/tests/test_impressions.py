@@ -10,6 +10,7 @@ import datetime
 import pytest
 
 from btcopilot import chips, questions, record, turnlog
+from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.interactions import recent
 from btcopilot.models import Author, Change, InteractionKind, Observation, ObservationKind, Statement
@@ -494,3 +495,47 @@ def test_a_session_that_grew_after_its_backfill_is_gone_through_again_only_from_
     before = version(family)
     again, model = backfill(flask_app, group="impressions")
     assert (again, model.systems, version(family)) == ([], [], before)
+
+
+def test_a_grown_sessions_backfill_taken_back_row_by_row_is_gone_through_again_from_where_it_left_off(
+    flask_app, web, family, past, monkeypatch
+):
+    # R-0006
+    backfill(flask_app, said(""), group="impressions")
+    coach(monkeypatch, Model(said("Where did she go?")))
+    say_in(web, csrf_token(web), past["session"], "My sister moved away.")
+    later = statements(web, past["session"])[-2]["id"]
+    start = db.session.query(db.func.max(Change.id)).scalar()
+    raising = calling(
+        (
+            ToolName.AddImpression,
+            {
+                "text": "Your sister leaving is still close for you.",
+                "state": "raised",
+                "evidence": [{"kind": "statement", "id": str(later)}],
+            },
+        )
+    )
+    backfill(flask_app, raising, said(""), group="impressions")
+    flawed = [str(c.id) for c in Change.query.filter(Change.id > start)]
+    cli = flask_app.test_cli_runner()
+
+    before = version(family)
+    preview = cli.invoke(admin, ["diagrams", "undo", str(family.id), *flawed, "--json"])
+    assert preview.exit_code == 0, preview.output
+    assert ("question i1 taken off" in preview.output, version(family)) == (True, before)
+
+    done = cli.invoke(admin, ["diagrams", "undo", str(family.id), *flawed, "--yes", "--json"])
+    assert done.exit_code == 0, done.output
+    db.session.expire_all()
+    data = family.get_diagram_data()
+    assert ([q for q in data.questions if q["kind"] == "impression"], data.impressions_backfilled) == (
+        [],
+        [past["session"]],
+    )
+
+    preview, _ = backfill(flask_app, args=(), group="impressions")
+    assert preview[0]["sessions_to_do"] == 1
+    _, model = backfill(flask_app, raising, said(""), group="impressions")
+    read, new = model.systems[0].split(questions.NEW)
+    assert ("My grandmother raised me." in read, "My sister moved away." in new) == (True, True)

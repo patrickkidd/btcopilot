@@ -129,6 +129,25 @@ def test_a_family_with_nothing_new_since_its_cards_is_skipped(flask_app, tmp_pat
     assert dry(flask_app, tmp_path) == []
 
 
+def test_cards_taken_back_row_by_row_leave_the_family_to_be_carded_again(
+    flask_app, tmp_path, family, guesses
+):
+    # R-0739
+    start = db.session.query(db.func.max(Change.id)).scalar()
+    apply(flask_app, dry(flask_app, tmp_path, calling(MAIN, ASK_OWN)))
+    rows = [str(c.id) for c in Change.query.filter(Change.id > start)]
+
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(family.id), *rows, "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+    db.session.expire_all()
+    assert cards(family) == {"i1": None, "i2": None}
+
+    again = dry(flask_app, tmp_path, calling(MAIN))
+    assert [(r["entry"], r["card_after"]) for r in again] == [("i1", "main_guess")]
+
+
 def test_a_guess_raised_after_the_cards_is_carded_and_the_cards_set_stay(
     flask_app, tmp_path, family, guesses
 ):

@@ -149,6 +149,18 @@ One record's counts.
 | `diagram_id` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin diagrams undo <diagram_id> <change_ids>`
+
+Take these change rows of one record back off it, newest first, each logged as its own undo naming the row; the questions and impressions they added come off too. A value changed since stops it before anything is written. Without --yes it prints what each row would take back and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `diagram_id` | required |
+| `change_ids` | required |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin imports`
 
 The one-time read of the old Pro database.
