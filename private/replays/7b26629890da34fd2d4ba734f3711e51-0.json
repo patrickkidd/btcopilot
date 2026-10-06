@@ -1,0 +1,37 @@
+{
+	"text": "ENC[AES256_GCM,data:3+YtsVRxt3Wa8nrNipNVWHqhAapWawDnrGb4izWsQI8SlGJaBWu7xelN75rJ3KVt/57IPx6LsykENh7pKBORoG4s8cjIaqsm1ItHrZtZ6/1enOEF4jie0+jbByRqPfybXk9/ATC6NmDxVtqL50T77UB7qSBfkCcq7cFvvvZsqesLVdUkJ4VnWgdcaHrjpdV+VgXsW1RzoLim1qu0wRVBWOBmGnUAFytaxwvJUCkrD94GXpPcKQfzIkQT1Y6STJO0puLtzp8gQ/EZvj1HeSFepbMzEk6HZxS+qHX1RjmgRzJu4uGIZCuroZBHUbV+l4uLSXBnXwFPNgkXNFb3sg6PVBCSi9WfBKpNXBSbkuNaxrHpBZ+zLRs7Qs3dB4nuY5EESdL8QuXW2BcjSR5nVUcfLiB0Cs3gpCWmwsRCNpkrZeFAx9orKgqxz54R+3w3kIn5bimlMUdBoG39x7xw7iqz+NwHEzoC3HgKMblTqgsA1oqA2t8ZiqxJ8n7t4yKXTNtY9P8wxXDxCijyTBGAXgtRY/hW8fKC18lo3bCkv/vs6jvLTw6s9kpI,iv:+nD9tqoPRPM3em1MMdL6g2GyaksCgz3inapd17XFaNc=,tag:/emqclUkyH8mymVSnvUodQ==,type:str]",
+	"calls": [],
+	"blocks": [
+		{
+			"type": "ENC[AES256_GCM,data:zbX2Jg==,iv:NDlbq0YgJ1RTDZbq48qp8Cao7JBlORh9dNN6CKgFgho=,tag:ecnT5UYPwZZMvDxhDBmQDQ==,type:str]",
+			"text": "ENC[AES256_GCM,data:tXzEWmkYi/8mE1DXkdUoOO9GR8viduqs5ztJ4nyiz6f2WhqLiKUEW8KlAIjNjnfjVXalA6KDQwPF2H4+MUpStl7lQBAoFDuaQOiHxST8UAhYm2mEUbWicX/eD7D7esShd7EQKQUw8C4Dc/DWwEI+R5wAe+ZKQAi4T/xntXHzNXrnWNE2FPrzvzI1KV06zLHNt9aWxKh/8sFvN7smHJxjtBYJWNYd3XZPRNDkGApn4uBsqfzwOVY5TMEsF0eqQy9cMP54xXwRE7IG5NrNfEclAy/n7pOCbLfz0dVHvBOZAWDgji+KfWb9V+b05ogOm9kKuuz8paa1tGzY99TLBWPckBzMzkXst7xepQa0AI/EfPnazx/igxwDXaFa/o2Ib83pE74WnTAsFso/B9PGd22E+7dgqPayrlE50o1aEqJuv0QxUa44f6ZQs3RGNCF/4jYz80G6RRPDp9dPv+H+r3rcZRnAX3SNVUyhG+SsO1RhaSnPq7YpTsHaES7dsCgp1ZdGgt2UlJDNCWWJmnN3mRyN7noJcWpi6kkAb9tBEB07oCYMppRfLxxF,iv:lmk85m7iBykaWuElX8MpAtjIvca8ARVzH4DvvdrJuPU=,tag:mwtMhfWljxc9mX9vBymWaA==,type:str]"
+		}
+	],
+	"served": {
+		"model": "ENC[AES256_GCM,data:yf7bmbL4Qk+hglBmROg0,iv:dxBxnIzNy7N6HuEQ+n+3BFQ2lbaO2UrdaA1ZG8+glvM=,tag:W/tDza7wWyX2xu/ct5QCUg==,type:str]",
+		"hops": [],
+		"sticky": "ENC[AES256_GCM,data:PVlcmBM=,iv:1qaVJUZ1XBLQMxZgg0ja0Q0N8Up8u/hQZhLROcG0yko=,tag:YtzSJbe4FfYBBEqx0PS5Aw==,type:bool]"
+	},
+	"source": "ENC[AES256_GCM,data:7MY2U52GY98a2GKk,iv:pWaoH7/cJRMIcxQmdMo9mFMo0YHvIf/tO69cxhLyIog=,tag:cfS5D3otVpCt6zbTT4PAaw==,type:str]",
+	"date": "ENC[AES256_GCM,data:wOh87Z0xJRl9aA==,iv:HxuH5agjVyF4ZjXWM5vThU/lswSK9T4oUJVRC+gxXFc=,tag:wu+QxF9DC+vXwpzQrcDzMw==,type:str]",
+	"sops": {
+		"age": [
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBBclRQWS9RT1hFV0pzMWtq\nd3dJODlRMFRUYzlYcUc4Z2kzQzFmOVpycG5NCkxrK05XR3ZyYnNYU1RtTGhxQlls\nK29adm9ITFlhM1U1WFM5b1FEbEY5VzgKLS0tIFd6SzNBOVg5OHBXa0RSOUtQQzd5\nUUQ1VU5vZURzSURTeXpyT2NrMjdJVnMKPyDws97swna4sYRwVKRnk/+U/bi+6JPa\n5b6MH+H6mjxjjMz22z75t00K57sHBqvl86Ym8pzuUEyJxNIIW2BDuA==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age13p5vtq39x8vs6w43kdwsnkark3e6h40unmny76hxcsdy4mhp6ydqmma3yl"
+			},
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB3YkgwcUJ0UHR4TUdka250\nRmNydW4xT0YvUXpUZFpONnNtODVmTzZLbGdRCkVGcU43RW03SDd5ckVSUVBhOCt3\nNGtxSXR4MEpFMjJvOXdYbHloZ2JBaWMKLS0tIG02UEZuOTh0aC9rOWorcU5haG5n\nNkx6WVBNcGxydFBKRFJlVVMyL1A5cjAKXP0YvbNsXWajWkN9MsmYjLP8aE8x/7EQ\ndBxa6W6WlANANgGDg1C/Rn3EjfNRuybjoFvQry3gyfhGA+5usZ++Sg==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age105g6wq3zc6xszu75ejeqryqjq69xrfm4hp8hktq89u3jpyafvq7sf23nqu"
+			},
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB1dkcvRmhqeUdvNGtlR3Z0\nY3UvRkJIbms5ek9kcmI3Wms2VHRsbWhZWUZZCnNMdGc1a0JSQ0lXUkdYaTVWdkZm\nTnB2S0Q2NEg2QmpQbWgvNlFwWVR4bEkKLS0tIFg3a0ZvTnZDbXVlVVdIazRqb1gr\nRHMvVUFsbjBKQ0pVZG1Fcy94S1NrQ0EKOojS+GxXRiFIxonm7jOV509Dynr0Xoth\ndb00obTcDtVcIfJqkv/lE4uTmSWZajhS13YWRjfNYsAC0aREjK+5FQ==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age1hq5rwp5pjfk939xchnv5cycl9vtfqhuf0crcfaycrra6xjur85kst3lxzy"
+			}
+		],
+		"lastmodified": "2026-10-06T04:29:50Z",
+		"mac": "ENC[AES256_GCM,data:BXMfRSY+gACltuVV7dKit5268S/E+iyFYYIXJKKQeqR8k6x8nQiDWnxr7QuAW7td1gkjxt5Tu/RZZiwaF6kHxHyMdB6wkbON5pikh3/1NTeydyICypIADdCU/XjaR8SuTHeqq6oq8xsk6BvixsgDDokgtTLjShBoVUFsJPAbH/8=,iv:Ffv0NSReGE4qLUphDQQjHSMusc471jd+XfzU0Bp+gyc=,tag:tHt7hPrN9uzyvpvXTmO45A==,type:str]",
+		"unencrypted_suffix": "_unencrypted",
+		"version": "3.13.3"
+	}
+}
