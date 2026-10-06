@@ -5,6 +5,7 @@ import {
   Mark,
   Sex,
   sexOf,
+  slashCount,
   Tie,
   Tone,
   type Arrow,
@@ -385,13 +386,17 @@ export class Told {
     const bonds = this.layout.bonds.map((b) => {
       const k = `${b.a}|${b.b}`;
       const hit = pairs.filter((m) => pairKey(this.cast, m) === k);
-      const fresh = hit.find((m) => m.k !== Mark.Couple);
+      const end = hit.find((m) => m.k !== Mark.Couple);
+      const st = end ? (end.k === Mark.Separated ? Tie.Separated : Tie.Divorced) : tie.get(k)!;
+      // a divorce after a separation adds one slash to the one already drawn;
+      // a divorce with no separation before it draws both on its own date (R-0794)
+      const n = slashCount(st);
+      const before = slashCount(tie.get(k)!);
       return {
         a: b.a,
         b: b.b,
-        st: fresh ? (fresh.k === Mark.Separated ? Tie.Separated : Tie.Divorced) : tie.get(k)!,
-        fresh: !!fresh,
-        was: tie.get(k),
+        st,
+        fresh: !end ? 0 : before < n ? n - before : n,
         hot: hit.some((m) => m.k === Mark.Couple),
         married: b.married,
       };

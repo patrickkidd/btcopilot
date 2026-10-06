@@ -145,7 +145,7 @@ const FAM_PAD = 4;
 export function picture(v: CaseView, still: Still, label: string): string {
   const L = still.layout;
   if (!L) return faint(`The family picture cannot be drawn: ${still.fault ?? "unknown"}.`);
-  const bonds = L.bonds.map((b) => ({ a: b.a, b: b.b, st: b.st, married: b.married, fresh: false, hot: false }));
+  const bonds = L.bonds.map((b) => ({ a: b.a, b: b.b, st: b.st, married: b.married, fresh: 0, hot: false }));
   const unknown = Object.keys(L.P).some((k) => k.startsWith("unknown-"));
   const svg = draw(L, { t: v.now, bonds, marks: [], died: new Set<string>(), moves: [], kin: [], label });
   // never drawn under the drawer's floor: a wider family pans in its frame (R-0759)

@@ -482,7 +482,7 @@ describe("the captions", () => {
 /** A picture with nothing marked on it. */
 const frame = (L: Layout) => ({
   t: 2000,
-  bonds: L.bonds.map((b) => ({ ...b, fresh: false, hot: false })),
+  bonds: L.bonds.map((b) => ({ ...b, fresh: 0, hot: false })),
   marks: [],
   died: new Set<string>(),
   moves: [],
@@ -578,7 +578,7 @@ describe("the drawing's marks", () => {
     const S = layout(family());
     const tie = draw(S, {
       t: 2000,
-      bonds: S.bonds.map((b) => ({ ...b, fresh: false, hot: false })),
+      bonds: S.bonds.map((b) => ({ ...b, fresh: 0, hot: false })),
       marks: [],
       died: new Set(),
       moves: [],
@@ -597,7 +597,7 @@ describe("the drawing's marks", () => {
     });
     const svg = draw(S, {
       t: 2000,
-      bonds: [{ a: "a", b: "b", st: Tie.Separated, married: true, fresh: true, hot: false }],
+      bonds: [{ a: "a", b: "b", st: Tie.Separated, married: true, fresh: 1, hot: false }],
       marks: [],
       died: new Set(),
       moves: [],
@@ -616,7 +616,7 @@ describe("the drawing's marks", () => {
     const S = layout(family());
     const svg = draw(S, {
       t: 2000,
-      bonds: [{ a: "a", b: "b", st: Tie.Divorced, married: true, fresh: false, hot: false }],
+      bonds: [{ a: "a", b: "b", st: Tie.Divorced, married: true, fresh: 0, hot: false }],
       marks: [],
       died: new Set(),
       moves: [],
@@ -1057,7 +1057,7 @@ describe("a couple where both partners' parents are in the record", () => {
       const [a, b] = L.bonds.map((x) => [x.a, x.b])[0];
       const svg = draw(L, {
         ...frame(L),
-        bonds: L.bonds.map((x, i) => ({ ...x, st: i ? x.st : Tie.Divorced, married: true, fresh: false, hot: false })),
+        bonds: L.bonds.map((x, i) => ({ ...x, st: i ? x.st : Tie.Divorced, married: true, fresh: 0, hot: false })),
         kin: [{ k: Mark.Move, kind: Move.Cutoff, from: a, to: b }],
       });
       const shape = Number(svg.match(/<rect class="shape" x="[-\d.]+" y="[-\d.]+" width="([\d.]+)"/)![1]);

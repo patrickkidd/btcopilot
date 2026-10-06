@@ -239,9 +239,8 @@ export interface DrawnBond {
   a: string;
   b: string;
   st: Tie;
-  fresh: boolean;
-  /** The couple's tie before this step, where a step is being told. */
-  was?: Tie;
+  /** How many of the couple's slashes are this step's own. */
+  fresh: number;
   hot: boolean;
   married: boolean;
 }
@@ -1625,7 +1624,7 @@ const STEP = 0.25;
 /** How far either side of x a run of n slashes reaches, for a person w wide. */
 const slashSpan = (n: number, w: number) => ((n - 1) * STEP * w) / 2;
 /** How many slashes a tie draws: one for a separation, two for a divorce. */
-const slashCount = (st?: Tie) => (st === Tie.Separated ? 1 : st === Tie.Divorced ? 2 : 0);
+export const slashCount = (st: Tie) => (st === Tie.Separated ? 1 : st === Tie.Divorced ? 2 : 0);
 
 /** One slash for a separation, two for a divorce, upright because custody is
  * not recorded, centred on x across the couple's line at y, for people w wide. */
@@ -1946,10 +1945,6 @@ export function draw(L: Layout, s: Frame): string {
     ), b.hot);
     const n = slashCount(b.st);
     if (!n) return;
-    // a divorce after a separation adds one slash to the one already drawn;
-    // a divorce with no separation before it draws both on its own date (R-0794)
-    const before = slashCount(b.was);
-    const fresh = !b.fresh ? 0 : before < n ? n - before : n;
     // the slashes sit in an open stretch of the line, never on a child's line,
     // nearest the middle of the widest one where they cross no name or word
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
@@ -1967,8 +1962,8 @@ export function draw(L: Layout, s: Frame): string {
       })
       .find(clear);
     // a slash from an earlier date fades like every other carried mark (R-0793, R-0794)
-    slashLines(n, at ?? (open[0][0] + open[0][1]) / 2, k.y, d.MARK, fresh, ` ${Tone.Was}`).forEach((l, i) =>
-      put(l, i >= n - fresh),
+    slashLines(n, at ?? (open[0][0] + open[0][1]) / 2, k.y, d.MARK, b.fresh, ` ${Tone.Was}`).forEach((l, i) =>
+      put(l, i >= n - b.fresh),
     );
   });
 

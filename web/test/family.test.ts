@@ -29,7 +29,7 @@ const cast = (): Cast => ({
 
 const frame = (L: Layout, t: number): Frame => ({
   t,
-  bonds: L.bonds.map((b) => ({ ...b, fresh: false, hot: false })),
+  bonds: L.bonds.map((b) => ({ ...b, fresh: 0, hot: false })),
   marks: [],
   died: new Set(),
   moves: [],
