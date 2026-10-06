@@ -1757,7 +1757,9 @@ function kin(L: Layout, m: Kin): string {
   const was = m.cls === Tone.Was;
   return (
     `<g class="mvk ${m.cls ?? Tone.Now}" data-mark="move:${esc(`${m.from}>${m.to ?? ""}:${m.kind}`)}">` +
-    (was ? marks.replace(/<animate(Transform)?\b[^>]*\/>/g, "") : marks) +
+    // carried, a wall keeps the line from its person to it, at the rest the
+    // loop ends on, so its strike never stands alone
+    (was ? marks.replace(/<animate(Transform)?\b[^>]*\/>/g, "").replace(/(<line class="mv-trace"[^>]*?)opacity="0"/g, '$1opacity=".55"') : marks) +
     `</g>`
   );
 }

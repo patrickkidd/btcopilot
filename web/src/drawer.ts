@@ -477,8 +477,7 @@ export class Drawer {
     const foot = this.panel.querySelector<HTMLElement>(".foot .step")?.getBoundingClientRect();
     // the lowest a marker may stand: over Back and Next when they float on the picture
     const floor = Math.min(box.bottom, foot && foot.top < box.bottom ? foot.top : Infinity);
-    const H = 26;
-    const placed = { left: [] as { el: HTMLElement; y: number }[], right: [] as { el: HTMLElement; y: number }[] };
+    const placed = { left: [] as { el: HTMLElement; y: number; h: number }[], right: [] as { el: HTMLElement; y: number; h: number }[] };
     this.involved.forEach((id) => {
       const shape = draw.querySelector(`.p[data-id="${CSS.escape(id)}"] .shape`)?.getBoundingClientRect();
       if (!shape) return;
@@ -493,15 +492,16 @@ export class Drawer {
       el.className = `edge ${side}${this.lit.has(id) ? " on" : ""}`;
       el.dataset.slide = id;
       const name = esc(this.frame!.layout.P[id].name);
-      el.innerHTML = side === "left" ? `\u2039 ${name}` : `${name} \u203a`;
+      el.innerHTML = `<span class="to">${side === "left" ? "\u2039" : "\u203a"}</span><span class="who">${name}</span>`;
       lv.appendChild(el);
-      placed[side].push({ el, y: cy + ((py - cy) * (ex - cx)) / (px - cx) - H / 2 });
+      const h = el.offsetHeight;
+      placed[side].push({ el, h, y: cy + ((py - cy) * (ex - cx)) / (px - cx) - h / 2 });
     });
     Object.entries(placed).forEach(([side, ms]) => {
       ms.sort((a, b) => a.y - b.y);
       // stacked down the edge, never on one another, then lifted clear of the foot
-      ms.forEach((m, k) => (m.y = Math.max(m.y, box.top, k ? ms[k - 1].y + H + 4 : -Infinity)));
-      for (let k = ms.length - 1; k >= 0; k--) ms[k].y = Math.min(ms[k].y, (k < ms.length - 1 ? ms[k + 1].y : floor) - (k < ms.length - 1 ? H + 4 : H));
+      ms.forEach((m, k) => (m.y = Math.max(m.y, box.top, k ? ms[k - 1].y + ms[k - 1].h + 4 : -Infinity)));
+      for (let k = ms.length - 1; k >= 0; k--) ms[k].y = Math.min(ms[k].y, (k < ms.length - 1 ? ms[k + 1].y - 4 : floor) - ms[k].h);
       ms.forEach((m) => {
         m.el.style.top = `${m.y - at.top + lv.scrollTop}px`;
         m.el.style[side as "left" | "right"] = "0";
@@ -554,7 +554,11 @@ export class Drawer {
     draw.style.height = `${this.height + this.edge}px`;
     const svg = draw.querySelector<SVGSVGElement>("svg")!;
     // a drawing as wide as its frame to within a pixel does not scroll
-    svg.style.width = L.vw * this.scale > lv.clientWidth + 1 ? `${Math.ceil(L.vw * this.scale)}px` : "";
+    const wide = L.vw * this.scale > lv.clientWidth + 1;
+    svg.style.width = wide ? `${Math.ceil(L.vw * this.scale)}px` : "";
+    // a Family view wider than the screen keeps a gutter at each side for the
+    // arrows to whoever a date involves off it, so they cover no one (R-0785)
+    lv.classList.toggle("gutters", told.whole && wide);
   }
 
   private tap(e: Event): void {

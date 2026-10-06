@@ -1022,10 +1022,19 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
           const s = document.querySelector(`#pbp .draw .p[data-id="${id}"] .shape`)!.getBoundingClientRect();
           const d = document.querySelector("#pbp .draw")!.getBoundingClientRect();
           const r = e.getBoundingClientRect();
-          return { id, text: e.textContent, on: e.classList.contains("on"), side: r.left <= d.left + 1 ? "left" : "right", where: s.left + s.width / 2 < d.left + d.width / 2 ? "left" : "right", off: s.left < d.left || s.right > d.right };
+          // in the gutter beside the drawing, covering no one
+          const over = [...document.querySelectorAll("#pbp .draw :is(.p .shape, .pt text)")].some((x) => {
+            // what the frame shows of it: the frame clips the rest
+            const q = x.getBoundingClientRect();
+            const [ql, qr] = [Math.max(q.left, d.left), Math.min(q.right, d.right)];
+            return ql < qr && ql < r.right && r.left < qr && q.top < r.bottom && r.top < q.bottom;
+          });
+          const beside = r.right <= d.left + 1 || r.left >= d.right - 1;
+          return { id, text: e.textContent, on: e.classList.contains("on"), clear: !over && beside, side: r.left <= d.left + 1 ? "left" : "right", where: s.left + s.width / 2 < d.left + d.width / 2 ? "left" : "right", off: s.left < d.left || s.right > d.right };
         }), null);
       for (const m of marks) {
         expect(m.off).toBe(true);
+        expect(m.clear).toBe(true);
         expect(m.side).toBe(m.where);
         expect(m.text).toContain(name[Number(m.id)]);
       }

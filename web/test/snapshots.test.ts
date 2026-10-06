@@ -1542,4 +1542,15 @@ describe("the whole family stepped through dates", () => {
     expect(markClass(cut, `move:${DELPHINE}>${CORINNE}:toward`)).toMatch(/\bwas\b/);
     expect(marks(cut).filter((m) => m.startsWith("hl:"))).toEqual([]);
   });
+
+  // R-0742, R-0552
+  it("carries a cutoff from an earlier date with the line from its person to the wall, so its strike never stands alone", () => {
+    const tl = record();
+    tl.events.push(event(305, "2020-01-01", "death", MARCUS));
+    const t = whole(tl);
+    const svg = t.shot(stepOf(t, 305)).svg;
+    expect(markClass(svg, `move:${THEO}>${DELPHINE}:cutoff`)).toMatch(/\bwas\b/);
+    const carried = svg.slice(svg.indexOf(`move:${THEO}&gt;${DELPHINE}:cutoff`));
+    expect(/<line class="mv-trace"[^>]*opacity="([^"]*)"/.exec(carried)![1]).not.toBe("0");
+  });
 });

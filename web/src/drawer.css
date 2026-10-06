@@ -63,9 +63,13 @@
 .pbp.whole .scroll .step { justify-content: space-between; }
 /* someone a date involves off the screen: an arrow at its edge, toward where they stand, with their name (R-0785) */
 .pbp.whole .lv { position: relative; }
-.pbp .edge { position: absolute; z-index: 2; height: 26px; min-height: 0; max-width: 40%; padding: 0 8px; border: 1px solid var(--line); border-radius: 13px; background: var(--panel); color: var(--move-text); font: 500 13px/24px var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-.pbp .edge.left { border-left: 0; border-radius: 0 13px 13px 0; }
-.pbp .edge.right { border-right: 0; border-radius: 13px 0 0 13px; }
+.pbp.whole .lv.gutters .draw { margin: 0 var(--gutter); }
+.pbp.whole .lv { --gutter: 24px; }
+/* the arrow above the name, written down the gutter */
+.pbp .edge { position: absolute; z-index: 2; box-sizing: border-box; width: var(--gutter); max-height: 60%; min-height: 0; padding: 4px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid var(--line); background: var(--panel); color: var(--move-text); font: 500 13px/1 var(--mono); overflow: hidden; cursor: pointer; }
+.pbp .edge .who { writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 0; }
+.pbp .edge.left { border-left: 0; border-radius: 0 12px 12px 0; }
+.pbp .edge.right { border-right: 0; border-radius: 12px 0 0 12px; }
 /* it glows while their shift plays, as the shift's own marks are lit */
 .pbp .edge.on { border-color: var(--move); animation: pbp-edge 1.6s ease-in-out infinite; }
 @keyframes pbp-edge { 50% { box-shadow: 0 0 10px 2px var(--move); } }
