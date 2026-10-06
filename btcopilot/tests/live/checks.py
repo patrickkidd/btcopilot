@@ -79,3 +79,20 @@ def explains(reply: str) -> bool:
 def asks_hope(reply: str) -> bool:
     """A question asks what the person is hoping to get from this (R-0782)."""
     return any(re.search(HOPE, q, re.I) for q in questions(reply))
+
+
+# Words of a todo that say nothing of what it is about.
+PLAIN = r"\b(i'll|i'm|i|will|going|to|my|the|a|an|and|of|when|they|them|it|out|find|go|get|some|about)\b"
+
+
+def picks_up_todo(reply: str, todo_words: str) -> bool:
+    """The reply's first question is about the person's todo: it and the
+    sentence leading into it carry at least two of the todo's own words, each
+    matched at the start of a word, and no other question comes before it
+    (R-0783)."""
+    led = re.search(r"([^.?!]*[.!]\s*)?[^.?!]*\?", reply)
+    if led is None:
+        return False
+    words = re.sub(PLAIN, " ", todo_words.lower()).split()
+    first = led.group(0).lower()
+    return sum(bool(re.search(rf"\b{re.escape(w[:4])}", first)) for w in set(words)) >= 2
