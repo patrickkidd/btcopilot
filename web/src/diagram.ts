@@ -133,6 +133,9 @@ export interface Cast {
   /** A step's words find room under or over their person and never widen the
    * frame: the Family view's one frame over every date (R-0784). */
   wordsUnder?: boolean;
+  /** The names the words around the picture may say beside it, so each
+   * name drawn has room for the initial a namesake there gives it (R-0548). */
+  others?: string[];
   moves: Arrow[];
   /** The steps' insides and outsides, each moving people from their places. */
   places: Place[];
@@ -252,6 +255,9 @@ export interface Frame {
   /** The places this step moves people to, for its own step only (R-0728);
    * the next step has them home at once (R-0764). */
   place?: Place | null;
+  /** What the people drawn are called on this step, when the words around
+   * the picture name a namesake of theirs (R-0548). */
+  names?: Record<string, string>;
 }
 
 /** The drawing is laid out in a box this wide; the page scales it to the phone. */
@@ -941,7 +947,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   const { parents, bondsOf } = t;
   const { gen, rows } = plan;
   const half = (id: string) => d.half(P[id]);
-  const names = called(Object.fromEntries(ids.map((id) => [id, P[id].name])));
+  const names = called(Object.fromEntries(ids.map((id) => [id, P[id].name])), cast.others);
   P = Object.fromEntries(ids.map((id) => [id, { ...P[id], name: names[id] }]));
   const x: Record<string, number> = {};
   const y: Record<string, number> = {};
@@ -1969,6 +1975,7 @@ export function draw(L: Layout, s: Frame): string {
       else g += crossOut(x, y, e, age != null, "xd");
     }
     const l = lines(p, s.t);
+    if (s.names?.[id]) l[0] = s.names[id];
     const sd = L.side[id];
     let lx: number;
     let anchor = "start";

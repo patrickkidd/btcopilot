@@ -3,10 +3,10 @@ import type { Books } from "./books";
 import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, fitPath, flash, pathRow, slideOver, stepBtn, still } from "./dom";
-import { called, leastScale, type Layout } from "./diagram";
+import { leastScale, type Layout } from "./diagram";
 import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
-import { BIRTHS, family, familyStart, when, Told } from "./snapshots";
+import { BIRTHS, family, familyStart, said, when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
@@ -141,10 +141,8 @@ export const head = (told: Told, cluster: string) =>
 
 /** The whole family's top line: what happened at the step, in the events' own
  * words; its date is the label over the years line, said once. */
-export const topLine = (told: Told, i: number) => {
-  const snap = told.told.snapshots[i];
-  return snap.fact ? `<span class="words">${withKind(snap.fact, saying(told, i))}</span>` : "";
-};
+export const topLine = (told: Told, i: number, fact = told.told.snapshots[i].fact) =>
+  fact ? `<span class="words">${withKind(fact, saying(told, i))}</span>` : "";
 
 export const pictureHeight = (natural: number, room: number, captions: number[], floor: number) =>
   Math.max(Math.min(natural, floor), Math.min(natural, room - Math.max(...captions)));
@@ -185,6 +183,8 @@ export function frameOn(
   marks: SVGGraphicsElement[] = [],
   /** Others the frame holds too, but only when everyone fits. */
   also: string[] = [],
+  /** Its edges fall between people, as the Family view's do (R-0785). */
+  apart = false,
 ): void {
   if (frame.scrollWidth <= frame.clientWidth) return;
   const svg = frame.querySelector<SVGSVGElement>("svg")!;
@@ -218,7 +218,30 @@ export function frameOn(
   const left = [want, ...names.flatMap(([p, q]) => [p, q - w])]
     .map((l) => clamp(l, from, to))
     .reduce((best, l) => (cuts(l) < cuts(best) || (cuts(l) === cuts(best) && Math.abs(l - want) < Math.abs(best - want)) ? l : best));
-  pan(frame, Math.round(left), glide && !still());
+  pan(frame, Math.round(apart ? between(frame, left, hi - lo <= w ? [lo, hi] : [wl, wh]) : left), glide && !still());
+}
+
+/** Where a frame wider than the screen rests nearest `left` with its edges
+ * between people: everyone and their name whole in sight or wholly out of
+ * it, never cut, so whoever is out of it can have an arrow (R-0785). */
+export function between(frame: HTMLElement, left: number, whole: [number, number] | null = null): number {
+  const svg = frame.querySelector<SVGSVGElement>("svg")!;
+  const w = frame.clientWidth;
+  const end = frame.scrollWidth - w;
+  const ids = [...svg.querySelectorAll<SVGGElement>(".p[data-id]")].map((g) => g.dataset.id!);
+  const all = (sel: string) => ids.map((id) => reach(frame, svg, svg.querySelectorAll<SVGGraphicsElement>(`${sel}[data-id="${CSS.escape(id)}"]`))).filter(([p, q]) => q > p);
+  const [shapes, spans] = [all(".p"), all(":is(.p, .pt)")];
+  const across = (s: [number, number][], l: number) => s.filter(([p, q]) => (p < l - 0.5 && l + 0.5 < q) || (p < l + w - 0.5 && l + w + 0.5 < q)).length;
+  // where people stand too close for any edge to fall between them, a name
+  // gives way before a person does
+  const cut = (l: number) => 10 * across(shapes, l) + across(spans, l);
+  // a gap between the edge and whoever stands beside it
+  const GAP = 4;
+  const at = [left, 0, end, ...spans.flatMap(([p, q]) => [p - GAP, q + GAP, p - GAP - w, q + GAP - w])].map((l) => Math.min(Math.max(l, 0), end));
+  // the person the frame was put on stays whole
+  const keep = whole ? at.filter((l) => whole[0] >= l - 0.5 && whole[1] <= l + w + 0.5) : [];
+  return (keep.length ? keep : at)
+    .reduce((best, l) => (cut(l) < cut(best) || (cut(l) === cut(best) && Math.abs(l - left) < Math.abs(best - left)) ? l : best));
 }
 
 /** How long the frame takes to travel to a step's people: about 1,200 px a
@@ -306,7 +329,8 @@ export class Drawer {
   }
 
   /** The four generations around `id` when they fit the drawer's width with
-   * names at their readable size, else the three (R-0784). */
+   * names at their readable size, else the three (R-0784); three always,
+   * the grandparents standing in for children no one has (R-0779). */
   private framed(id: string): Told {
     const told = this.told!;
     const four = told.centred(id, true);
@@ -318,7 +342,11 @@ export class Drawer {
     // the room under the years line and over the foot, both ways
     const tall = lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - 2 * padding;
     const L = four.layout;
-    return Math.min(lv.clientWidth / L.vw, tall / L.h) >= leastScale(L, padding) ? four : three;
+    // three generations wherever the height holds them: someone with no
+    // children has their grandparents above their parents instead, the frame
+    // scrolling sideways as any wide frame does (R-0779)
+    const wide = three.cast.kids.some((k) => k.of.includes(id)) ? lv.clientWidth / L.vw : Infinity;
+    return Math.min(wide, tall / L.h) >= leastScale(L, padding) ? four : three;
   }
 
   /** The frame put on the three generations around `id`, at the same date. */
@@ -405,9 +433,12 @@ export class Drawer {
     }
     const shot = view.shot(this.i);
     if (told.whole) {
-      q(".when").innerHTML = topLine(told, this.i);
-      this.also(told.outside(this.i, view));
-      q(".path").innerHTML = familyPath(view.layout.P[this.centre].name);
+      // the picture and the words around it call everyone by one rule (R-0548)
+      const away = told.outside(this.i, view);
+      this.names = view.calledAt(this.i, away);
+      q(".when").innerHTML = topLine(told, this.i, said(told.tl, told.told.snapshots[this.i].event_ids, this.names));
+      this.also(away);
+      q(".path").innerHTML = familyPath(this.names[this.centre]);
       fitPath(q(".path"));
     }
     const draw = q(".draw");
@@ -431,8 +462,7 @@ export class Drawer {
     this.moved = null;
     if (told.whole) draw.querySelectorAll(`[data-id="${CSS.escape(this.centre)}"]`).forEach((g) => g.classList.add("mid"));
     if (moved) {
-      // the person and their parents whole, their partners too when they fit
-      frameOn(draw, [moved.id, ...parents(moved.id)], moved.id, false, [], kin(moved.id).filter((id) => !id.startsWith("unknown-")));
+      this.around(draw, moved.id, [...kin(moved.id), ...parents(moved.id)].filter((id) => id !== moved.id && !id.startsWith("unknown-")));
       const now = draw.querySelector(`.p[data-id="${CSS.escape(moved.id)}"] .shape`)?.getBoundingClientRect();
       if (now && !Number.isNaN(moved.x) && !still())
         draw.querySelector("svg")!.animate(
@@ -450,6 +480,7 @@ export class Drawer {
         shot.mover ? [...draw.querySelectorAll<SVGGraphicsElement>(`.fore [data-mark^="move:${CSS.escape(shot.mover)}>"]`)] : [],
         // everyone the step involves, when they all fit
         shot.involved,
+        told.whole,
       );
     if (told.whole) {
       this.involved = shot.involved;
@@ -458,6 +489,24 @@ export class Drawer {
     }
   }
 
+  /** The frame put with `id` as near its middle as it allows, and of `near`,
+   * in order, everyone who still fits whole beside them (R-0783). */
+  private around(draw: HTMLElement, id: string, near: string[]): void {
+    if (draw.scrollWidth <= draw.clientWidth) return;
+    const svg = draw.querySelector<SVGSVGElement>("svg")!;
+    const w = draw.clientWidth;
+    const own = span(draw, svg, id);
+    let [lo, hi] = own;
+    near.forEach((o) => {
+      const [p, q] = span(draw, svg, o);
+      if (q > p && Math.max(hi, q) - Math.min(lo, p) <= w) [lo, hi] = [Math.min(lo, p), Math.max(hi, q)];
+    });
+    const left = Math.min(Math.max((own[0] + own[1]) / 2 - w / 2, hi - w), lo);
+    pan(draw, Math.round(between(draw, Math.min(Math.max(left, 0), draw.scrollWidth - w), own)), false);
+  }
+
+  /** What the Family view calls everyone on the date that is up. */
+  private names: Record<string, string> = {};
   /** Who the date in the Family view involves, and of them who its shifts light. */
   private involved: string[] = [];
   private lit = new Set<string>();
@@ -491,7 +540,7 @@ export class Drawer {
       el.type = "button";
       el.className = `edge ${side}${this.lit.has(id) ? " on" : ""}`;
       el.dataset.slide = id;
-      const name = esc(this.frame!.layout.P[id].name);
+      const name = esc(this.names[id]);
       el.innerHTML = `<span class="to">${side === "left" ? "\u2039" : "\u203a"}</span><span class="who">${name}</span>`;
       lv.appendChild(el);
       const h = el.offsetHeight;
@@ -513,10 +562,7 @@ export class Drawer {
    * the frame on them; a list longer than its line ends in how many more. */
   private also(away: string[]): void {
     const line = this.panel.querySelector<HTMLElement>(".also")!;
-    // named beside the drawing, so a namesake drawn in it gets an initial too (R-0548)
-    const full = (ids: string[]) => Object.fromEntries(ids.map((id) => [id, this.told!.cast.people[id].name]));
-    const names = called(full(away), Object.values(full(Object.keys(this.frame!.cast.people).filter((id) => !id.startsWith("unknown-")))));
-    const who = (id: string) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(names[id])}</button>`;
+    const who = (id: string) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(this.names[id])}</button>`;
     for (let n = away.length; n >= 0; n--) {
       const more = away.length - n;
       line.innerHTML = away.length ? `Also on this date: ${[...away.slice(0, n).map(who), ...(more ? [`+${more} more`] : [])].join(", ")}` : "";
@@ -573,7 +619,7 @@ export class Drawer {
     const slide = (e.target as Element).closest<HTMLElement>("[data-slide]");
     if (slide) {
       const draw = this.panel.querySelector<HTMLElement>(".draw")!;
-      return frameOn(draw, [slide.dataset.slide!], slide.dataset.slide!, true);
+      return frameOn(draw, [slide.dataset.slide!], slide.dataset.slide!, true, [], [], true);
     }
     const named = (e.target as Element).closest<HTMLElement>("[data-centre]");
     if (named) return this.recentre(named.dataset.centre!, null);

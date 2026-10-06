@@ -266,6 +266,10 @@ const isPair = (m: Step["marks"][number]): m is Pair =>
   m.k === Mark.Couple || m.k === Mark.Separated || m.k === Mark.Divorced;
 const isPlaced = (m: Step["marks"][number]): m is Placed => !isArrow(m) && !isPair(m) && !isKin(m);
 
+/** Who an event's words name: its person, partner, child and whom it reaches. */
+const voiced = (e: TimelineEvent): string[] =>
+  [e.person, e.spouse, e.child, ...e.relationshipTargets].filter((id): id is number => id != null).map(key);
+
 /** A person's first name and surname, as the record holds them. */
 const fullName = (p: Person) => (p.last_name ? `${p.name} ${p.last_name}` : p.name);
 
@@ -277,6 +281,8 @@ export class Told {
   /** The events the case is about: its cluster's, or the ones it was given. */
   readonly eventIds: number[];
   private readonly start = new Map<string, Tie>();
+  /** Drawn as a frame of the Family view: its names follow each date's words. */
+  private readonly framed: boolean;
 
   constructor(
     readonly tl: Timeline,
@@ -290,6 +296,7 @@ export class Told {
   ) {
     const r = new Family(tl);
     const kept = keep && new Set(keep);
+    this.framed = !!keep;
     this.steps = told.snapshots.map((s) => {
       const events = s.event_ids.map((id) => r.event(id));
       const first = events[0];
@@ -323,6 +330,16 @@ export class Told {
           .map(([who]) => who)
       : [];
     return [...new Set([...placed.filter((m) => m.k === Mark.Emphasis).map((m) => m.who), ...family])];
+  }
+
+  /** What everyone drawn, named in date `i`'s words or among `also` is called
+   * on that date: an initial for two of one first name among them, in the
+   * picture and the words alike (R-0548). */
+  calledAt(i: number, also: string[] = []): Record<string, string> {
+    const people = new Map(this.tl.people.map((p) => [key(p.id), p]));
+    const words = this.told.snapshots[i].event_ids.flatMap((id) => voiced(this.tl.events.find((e) => e.id === id)!));
+    const ids = [...new Set([...Object.keys(this.cast.people), ...words, ...also])].filter((id) => people.has(id));
+    return called(Object.fromEntries(ids.map((id) => [id, fullName(people.get(id)!)])));
   }
 
   /** Who an event is about, when they are drawn, else the record's own person. */
@@ -428,6 +445,7 @@ export class Told {
       kin,
       label: `${now.date}: ${snap.fact}`,
       place: placeOf(now),
+      names: this.framed ? this.calledAt(i) : undefined,
     });
     return {
       svg,
@@ -566,6 +584,7 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
     words,
     // the Family view's one frame keeps no width for a date's words (R-0784)
     wordsUnder: everyone && !!keep,
+    others: everyone && keep ? [...new Set(events.flatMap(voiced))].filter((id) => !cast.has(id) && r.people.has(id)).map((id) => fullName(r.people.get(id)!)) : [],
     moves,
     places,
     kin,
@@ -675,6 +694,12 @@ export const familyStart = (tl: Timeline, c: Case): number => {
   return i < 0 ? c.snapshots.length - 1 : i;
 };
 
+/** What a date's events say happened, each once, with everyone called as `names` has them. */
+export function said(tl: Timeline, ids: number[], names: Record<string, string>): string {
+  const people = new Map(tl.people.map((p) => [p.id, p]));
+  return [...new Set(ids.map((id) => happened(people, names, tl.events.find((e) => e.id === id)!)))].join("; ");
+}
+
 /** The whole family stepped through dates (R-0742): one step per date that
  * has a birth, an adoption, a couple's start or end, a death or a relationship
  * shift, in date order, each said once with who did it. */
@@ -691,8 +716,7 @@ export function family(tl: Timeline): Case {
       // an initial only for two people of one first name named on the one line (R-0548)
       const events = s.event_ids.map((id) => byId.get(id)!);
       const named = [...new Set(events.flatMap((e) => [e.person, e.spouse, e.child]).filter((id): id is number => id != null && people.has(id)))];
-      const names = called(Object.fromEntries(named.map((id) => [id, fullName(people.get(id)!)])));
-      return { ...s, fact: [...new Set(events.map((e) => happened(people, names, e)))].join("; ") };
+      return { ...s, fact: said(tl, s.event_ids, called(Object.fromEntries(named.map((id) => [id, fullName(people.get(id)!)])))) };
     }),
   };
 }
