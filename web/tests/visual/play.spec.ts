@@ -679,6 +679,24 @@ test.describe("the Family view's three generations", () => {
     expect(errors).toEqual([]);
   });
 
+  // R-0783, R-0775
+  test("opens on the first date that touches the reader's own frame, not on dates about people outside it", async ({ page }) => {
+    let ids: Record<string, number> = {};
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      ids = joined(tl, [["Hugo", "Wanda"]], 2, "Ws1", "Hs1");
+      // the early dates are her aunt's and uncle's; a later one her father's
+      const last = tl.events.filter((e: { dateTime: string | null }) => e.dateTime).sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime)).pop();
+      tl.events.push({ ...last, id: 9870, dateTime: "2031-05-01", person: ids.Hugo, person_name: "Hugo", relationship: "toward", relationshipTargets: [ids.Wanda], relationshipTriangles: [], title: "Called Wanda", description: "Called Wanda every night", sentence: "Hugo called Wanda every night" });
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(drawer(page).locator(".when")).toContainText("Hugo called Wanda every night");
+    await expect(drawer(page).locator(".also")).toHaveText("");
+  });
+
   // R-0783
   test("puts the frame on someone named outside it, at the same date", async ({ page }) => {
     const { ids, drawn, of } = await opened(page);
@@ -1190,7 +1208,9 @@ test.describe("the whole family of a family many phones wide", () => {
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
-    await expect(drawer(page).locator(".when")).toHaveText("Harold and Ruth married");
+    // her grandparents' wedding is not hers: it opens on a date among her own three generations
+    await expect(drawer(page).locator(".when")).not.toHaveText("Harold and Ruth married");
+    await expect(drawer(page).locator(".also")).toHaveText("");
     // opened, not glided: the frame is already on the step's person
     const at = await drawer(page).evaluate((p) => {
       const draw = p.querySelector<HTMLElement>(".draw")!;
@@ -1323,13 +1343,14 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1440, height: 900 
       await page.locator("#cap-family").click();
       await expect(drawer(page)).toBeVisible();
       await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
-      await expect(drawer(page).locator(".when")).toHaveText("Harold and Ruth married");
-      // her grandparents marry: named under the title on a phone, where her
-      // frame is three generations, and drawn in her four on a wide screen (R-0784)
-      if (viewport.width < 700) await expect(drawer(page).locator(".also")).toHaveText("Also on this date: Harold, Ruth");
+      // it opens on a date among her own generations: on a phone her
+      // grandparents' wedding is outside her frame, on a wide screen inside it (R-0784)
+      if (viewport.width < 700) await expect(drawer(page).locator(".when")).not.toHaveText("Harold and Ruth married");
       else await expect(drawer(page).locator('.draw .pt:has(text:text-is("Harold"))')).toHaveCount(1);
-      const own = (await drawer(page).locator('.draw .pt:has(text:text-is("Margaret-Anne"))').getAttribute("data-id"))!;
-      expect((await cutInFrame(page, "#pbp .draw", [own])).cut).toEqual({});
+      await expect(drawer(page).locator(".also")).toHaveText("");
+      // the frame is hers; the opening date's own person stands whole in it
+      const who = (await drawer(page).locator(".draw").getAttribute("data-who"))!;
+      expect((await cutInFrame(page, "#pbp .draw", [who])).cut).toEqual({});
       const touching = await drawer(page).evaluate((p) => {
         const boxes = [...p.querySelectorAll<SVGGElement>(".draw .pt")]
           .map((g) => ({ name: g.textContent!.slice(0, 16), b: g.getBoundingClientRect() }))

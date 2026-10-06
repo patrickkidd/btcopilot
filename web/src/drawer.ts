@@ -6,7 +6,7 @@ import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn, still } from 
 import { leastScale, type Layout } from "./diagram";
 import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
-import { family, familyStart, when, Told } from "./snapshots";
+import { BIRTHS, family, familyStart, when, Told } from "./snapshots";
 import type { Case, Chip, Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
@@ -272,6 +272,8 @@ export class Drawer {
   /** The frame was just put on a new person: it opens on them and their
    * parents and partners, sliding from where the tapped person stood. */
   private moved: { id: string; x: number; y: number } | null = null;
+  /** The Family view has just opened: it moves to the frame's own first date. */
+  private opening = false;
 
   constructor(
     readonly panel: HTMLElement,
@@ -304,6 +306,7 @@ export class Drawer {
     this.centre = whole.cast.index;
     this.frame = null;
     this.moved = null;
+    this.opening = true;
     this.show(whole, null, familyStart(tl, c));
   }
 
@@ -394,6 +397,16 @@ export class Drawer {
     // the Family view draws one frame over every date (R-0783)
     if (told.whole) this.frame ??= this.framed(this.centre);
     const view = told.whole ? this.frame! : told;
+    // it opens on the first date holding more than births among the frame's
+    // own people, not on a date that touches no one in it (R-0775, R-0783)
+    if (this.opening) {
+      this.opening = false;
+      const first = view.steps.findIndex((st, i) => st.marks.length && told.told.snapshots[i].event_ids.some((id) => !BIRTHS.has(told.tl.events.find((e) => e.id === id)?.kind ?? "")));
+      if (first >= 0 && first !== this.i) {
+        this.i = first;
+        q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
+      }
+    }
     const shot = view.shot(this.i);
     if (told.whole) {
       const away = told.outside(this.i, view).map((id) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(told.cast.people[id].name.split(" ")[0])}</button>`);

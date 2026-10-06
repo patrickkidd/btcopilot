@@ -1156,7 +1156,29 @@ describe("a family the row rules cannot place", () => {
   };
 
   // R-0545, R-0745, R-0752
-  it("draws three partners for one person with nothing beside, everyone once, no shapes overlapping, each child's line on their parents' bar", () => placed(families["three partners for one person with nothing beside"]));
+  it("draws three partners for one person in rows, in order beside him, each child under their parents' line", () => {
+    // R-0783, R-0545
+    const c = families["three partners for one person with nothing beside"];
+    const kids = cast(
+      { ...c.people, k1: sh("Kit", F, 1975), k2: sh("Kai", M, 1978), k3: sh("Kim", F, 1981) },
+      c.bonds,
+      [{ of: ["a", "b"], kids: ["k1"] }, { of: ["a", "c"], kids: ["k2"] }, { of: ["a", "e"], kids: ["k3"] }],
+      "a",
+    );
+    const L = layout(kids);
+    expect(L.loose).toBe(false);
+    const row = ["a", "b", "c", "e"].map((id) => L.x[id]);
+    expect(new Set(["a", "b", "c", "e"].map((id) => L.y[id])).size).toBe(1);
+    // the partners in order, all on one side of him
+    expect([...row.slice(1)].sort((p, q) => p - q)).toEqual(Math.sign(row[1] - row[0]) > 0 ? row.slice(1) : row.slice(1).reverse());
+    expect(row.slice(1).every((x) => Math.sign(x - row[0]) === Math.sign(row[1] - row[0]))).toBe(true);
+    // each child stands within its own parents' line
+    [["k1", "b"], ["k2", "c"], ["k3", "e"]].forEach(([k, p]) => {
+      const [lo, hi] = [Math.min(L.x.a, L.x[p]), Math.max(L.x.a, L.x[p])];
+      expect(L.x[k]).toBeGreaterThanOrEqual(lo - 1);
+      expect(L.x[k]).toBeLessThanOrEqual(hi + 1);
+    });
+  });
 
   // R-0545, R-0745, R-0752
   it("draws a couple across generations, everyone once, no shapes overlapping, each child's line on their parents' bar", () => placed(families["a couple across generations"]));

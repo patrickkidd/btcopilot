@@ -620,16 +620,17 @@ function order(cast: Cast, t: Ties, gen: Record<string, number>, loose: Record<s
       sides[s].push(q);
       queue.push([q, s]);
     };
-    bondsOf[anchor]
+    const partners = bondsOf[anchor]
       .map((b) => other(b, anchor))
       .filter((q) => !placed.has(q) && gen[q] === gen[anchor])
-      .filter((q) => !isJoin(anchor, q))
-      .forEach((q, i) => {
-        if (parents[q] && parents[anchor])
-          throw new Unplaceable("a couple where both partners’ parents are in the record");
-        if (split && i > 1) throw new Unplaceable("three or more partners for one person with no family beside them");
-        put(q, split && i === 1 ? -dir : dir);
-      });
+      .filter((q) => !isJoin(anchor, q));
+    // two partners stand one each side; three or more stand in order on one
+    // side, each couple's line under the ones before it (R-0783)
+    partners.forEach((q, i) => {
+      if (parents[q] && parents[anchor])
+        throw new Unplaceable("a couple where both partners’ parents are in the record");
+      put(q, split && partners.length === 2 && i === 1 ? -dir : dir);
+    });
     while (queue.length) {
       const [p, s] = queue.shift()!;
       bondsOf[p].forEach((b) => {
