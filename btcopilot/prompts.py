@@ -124,6 +124,12 @@ def onboarding(missing: list[str], person_id: int) -> str:
     return files().text("onboarding", missing=", ".join(missing), person_id=person_id)
 
 
+def back(days: int, todos: str) -> str:
+    """What the coach picks up first when the person comes back after a
+    sitting's gap: their own todos, oldest first (R-0783)."""
+    return files().text("back", days=days, todos=todos)
+
+
 def proactive(events: str, speaker: str) -> str:
     """The coach's first words when two of the family's events just came to
     sit close together in the record."""

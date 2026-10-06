@@ -497,6 +497,8 @@ class QuestionKind(enum.StrEnum):
     Fact = "fact"
     # The coach's inference, kept in the same list and by the same rules.
     Impression = "impression"
+    # Something the person said they will find out or do themselves (R-0783).
+    Todo = "todo"
 
 
 class QuestionState(enum.StrEnum):

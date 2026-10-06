@@ -1285,10 +1285,25 @@ IMPRESSION = Note(
     (QuestionOutcome.Revised, QuestionOutcome.LetGo),
     ("state", "outcome", "pushback"),
 )
+# Something the person said they will find out or do themselves: kept held in
+# their words, citing their message, asked when picked up, never on the page
+# or a card, and nothing the person writes on (R-0783).
+TODO = Note(
+    "todo",
+    QuestionState.Asked,
+    (),
+    QuestionOutcome.DeclinedByUser,
+    "",
+    (QuestionOutcome.Answered, QuestionOutcome.LetGo, QuestionOutcome.Unknown),
+    (),
+)
 
 
 def note(item: dict) -> Note:
-    return IMPRESSION if item.get("kind") == QuestionKind.Impression else QUESTION
+    kind = item.get("kind")
+    if kind == QuestionKind.Impression:
+        return IMPRESSION
+    return TODO if kind == QuestionKind.Todo else QUESTION
 
 
 def normal(text: str) -> str:
@@ -1357,9 +1372,9 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
             raise Invalid(
                 f"only the user turns {noun} {question_id} down or pushes back on it, "
                 "and does nothing else to it",
-                "Only you can dismiss a question."
-                if rules is QUESTION
-                else f"Only you can push back on an {noun}.",
+                f"Only you can push back on an {noun}."
+                if rules is IMPRESSION
+                else "Only you can dismiss a question.",
             )
         if outcome and outcome not in (*rules.theirs, *rules.ours):
             raise Invalid(
@@ -1389,6 +1404,8 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
         else:
             _linked(data, question, question_id)
             _names(question, question_id)
+        if rules is TODO and added:
+            _theirs(question, question_id, state)
         for other in questions:
             if (
                 str(other.get("id")) == question_id
@@ -1406,6 +1423,22 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
                     f"that {noun} is already {other['id']}, {other['state']}: {_again(rules)}",
                     f"That {noun} is already there.",
                 )
+
+
+def _theirs(todo: dict, todo_id: str, state: QuestionState):
+    """A todo is only ever something the person said: kept held when they say
+    it, resting on their message (R-0783)."""
+    if state is not QuestionState.Held:
+        raise Invalid(
+            f"todo {todo_id} is kept held when the person says it; mark it asked "
+            "with set_question when you pick it up",
+            "A todo is kept for later when it is said.",
+        )
+    if [one.get("kind") for one in todo.get("evidence") or []] != [EvidenceKind.Statement]:
+        raise Invalid(
+            f"todo {todo_id} rests on the one message where the person said it",
+            "A todo is only ever something the person said.",
+        )
 
 
 def _refiled(data: dict, question: dict, question_id: str, added: bool, written: set):
@@ -1442,7 +1475,7 @@ def _asked_again(mine: list[dict], question_id: str, rules, was, state) -> None:
 def _again(rules) -> str:
     """How the coach comes back to a waiting one instead of keeping it twice (R-0771)."""
     shown = rules.shown.value
-    if rules is QUESTION:
+    if rules is not IMPRESSION:
         return (
             f"to ask it now, mark it {shown} with set_question, whether it is held or "
             f"already {shown}, and ask it in your reply"
@@ -1466,6 +1499,11 @@ def _card(question: dict, question_id: str, rules, state, written: set, author: 
     if question.get(CARD) is None:
         return
     card = CaseReportCard(question[CARD])
+    if rules is TODO:
+        raise Invalid(
+            f"todo {question_id} goes on no case report card",
+            "A todo cannot go on the case report.",
+        )
     if rules is QUESTION and card not in QUESTION_CARDS:
         raise Invalid(
             f"question {question_id} cannot be on the {card.value} card: a question "

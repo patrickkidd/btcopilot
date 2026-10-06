@@ -53,8 +53,8 @@ CALLS_PER_SESSION = 3
 def asked(diagram_id: int, data: DiagramData) -> list[dict]:
     """Every question ever asked, every fact the person said unasked that is
     kept as a question already answered (R-0760), and every impression ever
-    raised, for the page. One the coach only keeps for later never leaves the
-    server."""
+    raised, for the page. One the coach only keeps for later, and the
+    person's own todos, never leave the server (R-0783)."""
     where = record.asked_in(diagram_id)
     return [
         {
@@ -70,7 +70,7 @@ def asked(diagram_id: int, data: DiagramData) -> list[dict]:
             "answer": q.get("answer") and _answer(data, q["answer"]),
         }
         for q in data.questions
-        if q["asked_at"] is not None
+        if q["asked_at"] is not None and record.note(q) is not record.TODO
     ]
 
 

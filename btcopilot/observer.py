@@ -141,7 +141,9 @@ def _unsaid(diagram_id: int, turn_id: str, data: DiagramData) -> list:
             {"question": q["id"], "overlap": round(overlap(q["text"], reply.text), 2)},
         )
         for q in data.questions
-        if q["id"] in asked and overlap(q["text"], reply.text) < QUESTION_OVERLAP
+        if q["id"] in asked
+        and record.note(q) is not record.TODO
+        and overlap(q["text"], reply.text) < QUESTION_OVERLAP
     ]
 
 

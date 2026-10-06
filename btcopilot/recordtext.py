@@ -152,7 +152,10 @@ def _status(question: dict) -> str:
 def note_line(question: dict) -> str:
     """One question or impression as the map and the reads give it."""
     status = _status(question)
-    if record.note(question) is record.IMPRESSION:
+    if record.note(question) is record.TODO:
+        said = question["evidence"][0]
+        line = f'{question["id"]} {status} todo "{question["text"]}" (said {said["day"]})'
+    elif record.note(question) is record.IMPRESSION:
         line = f'{question["id"]} {status} "{question["text"]}" on '
         line += ", ".join(f"{one['kind']} {one['id']}" for one in question["evidence"]) or "nothing"
     else:
@@ -187,7 +190,7 @@ def _notes(data: DiagramData, rules) -> list[str]:
     return [
         note_line(q)
         for q in sorted(data.questions, key=question_order)
-        if record.note(q) is rules and on_map(q)
+        if record.note(q) in rules and on_map(q)
     ]
 
 
@@ -295,9 +298,9 @@ def outline(data: DiagramData | None, version: int, speaker: int | None = None) 
         _section("CLUSTERS", [_span(c, dates) for c in _rows(data.clusters)]),
         _section(
             QUESTIONS,
-            _notes(data, record.QUESTION),
+            _notes(data, (record.QUESTION, record.TODO)),
         ),
-        _section(IMPRESSIONS, _notes(data, record.IMPRESSION)),
+        _section(IMPRESSIONS, _notes(data, (record.IMPRESSION,))),
         _section(EVENTS, [" ".join(_event_head(e)) for e in events]),
     ]
     return "\n\n".join(s for s in [*sections, version_line(version)] if s)
