@@ -199,9 +199,14 @@ word_hit as (select s.statement_id, o.phrase from said s join objection o
 
 def final(sql: str) -> str:
     """The panel's own select: from the last `select` outside every bracket,
-    so the shared tables it opens with are left out."""
-    depth, at = 0, 0
+    so the shared tables it opens with are left out. Brackets inside a quoted
+    literal do not count; an escaped quote ('') closes and reopens it."""
+    depth, at, quoted = 0, 0, False
     for i, ch in enumerate(sql):
+        if ch == "'":
+            quoted = not quoted
+        if quoted:
+            continue
         depth += {"(": 1, ")": -1}.get(ch, 0)
         if (
             depth == 0

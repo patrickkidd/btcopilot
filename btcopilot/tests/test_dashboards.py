@@ -252,6 +252,17 @@ def test_a_panel_by_prompt_version_holds_back_a_version_under_30_people(name, pa
     assert re.search(r">=\s*30\b", sql(panel))
 
 
+def test_a_bracket_inside_a_quoted_literal_does_not_hide_the_final_select():
+    # R-0800
+    words = (
+        "with t as (select prompt_version, text from statements"
+        " where text ~ '[.?!)]' and text <> 'it''s )' group by prompt_version, text)"
+        " select count(*) from t group by text"
+    )
+    assert grafanasql.final(words).startswith("select count(*)")
+    assert not grafanasql.by_version(words)
+
+
 def test_the_shared_tables_carry_the_app_objection_phrases():
     # R-0800, R-0517
     assert phrases(OBJECTION.search(grafanasql.FRAGMENTS)) == flow.OBJECTION
