@@ -78,7 +78,11 @@
 .pbp.whole .draw .mid .shape { stroke: var(--data); }
 .pbp.whole .draw .pt.mid text { fill: var(--data); font-weight: 500; }
 /* someone not yet born at the step, and a couple or child line before its date, keeps its place, faded (R-0756) */
-.pbp.whole .yet { opacity: 0.3; }
+.pbp { --faded: 0.3; }
+.pbp.whole .yet { opacity: var(--faded); }
+/* a mark carried from an earlier date is faded as much as well as grey; the
+   date's own marks keep full strength (R-0793) */
+.pbp .draw .was { opacity: var(--faded); }
 .pbp .cap { padding: 12px 16px 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 7px; }
 .pbp .when { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font: 500 13px var(--mono); }
 .pbp .when .date { color: var(--data); }

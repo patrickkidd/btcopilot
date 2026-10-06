@@ -129,6 +129,25 @@ describe("the layout", () => {
     expect(S.x["73"] - S.x["72"]).toBeLessThanOrEqual(3 * W + 1);
   });
 
+  // R-0789
+  it("stands a couple with one child as close beside a brother's wide family as alone", () => {
+    const couple = (wide: boolean): Cast => {
+      const p = (name: string, g: Sex, born: number) => shape(name, g, born);
+      const people: Cast["people"] = { a: p("Abe", Sex.Male, 1950), b: p("Bea", Sex.Female, 1952), c: { ...p("Cal", Sex.Male, 1980), you: true } };
+      const bonds = [{ a: "a", b: "b", st: Tie.Married, married: true }];
+      const kids = [{ of: ["a", "b"], kids: ["c"] }];
+      if (wide) {
+        Object.assign(people, { g: p("Gus", Sex.Male, 1920), h: p("Hil", Sex.Female, 1922), s: p("Sid", Sex.Male, 1948), t: p("Tess", Sex.Female, 1949) });
+        ["k1", "k2", "k3", "k4", "k5"].forEach((k, i) => (people[k] = p(`Kid${i}`, i % 2 ? Sex.Male : Sex.Female, 1970 + i)));
+        bonds.push({ a: "g", b: "h", st: Tie.Married, married: true }, { a: "s", b: "t", st: Tie.Married, married: true });
+        kids.push({ of: ["g", "h"], kids: ["s", "a"] }, { of: ["s", "t"], kids: ["k1", "k2", "k3", "k4", "k5"] });
+      }
+      return { ...base(people), bonds, kids, index: "c" };
+    };
+    const apart = (S: Layout) => Math.abs(S.x.b - S.x.a);
+    expect(apart(layout(couple(true)))).toBeLessThanOrEqual(apart(layout(couple(false))) + 1);
+  });
+
   // R-0545, R-0187
   it("puts the man of a couple on the left", () => {
     expect(at(MARCUS)).toBeLessThan(at(DELPHINE));

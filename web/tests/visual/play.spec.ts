@@ -567,15 +567,16 @@ const inSight = (page: Page, id: number | string) =>
     return (p.left >= d.left - 0.5 && p.right <= d.right + 0.5) || !!document.querySelector(`#pbp .edge[data-slide="${id}"]`);
   }, String(id));
 
-test.describe("a move between two people further apart than the phone is wide", () => {
-  test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
+test.describe("a move between two people further apart than the screen is wide", () => {
+  // since R-0790 a phone held upright fits the frame whole, so this is a phone turned sideways
+  test.use({ storageState: stateFor("play"), viewport: { width: 852, height: 393 } });
 
   // R-0759, R-0744, R-0785
   test("shows whoever moves on each step, whole in the frame or by an arrow at its edge, the picture never sliding", async ({ page }) => {
     let ids: Record<string, number> = {};
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
-      ids = joined(tl, [["Hugo", "Wanda"]], 6, "Hs0", "Hs5");
+      ids = joined(tl, [["Hugo", "Wanda"]], WIDE, "Hs0", "Hs15");
       // the first move's date also holds a divorce, told first, as "Louann and
       // Wally divorced; Wally estranged from family" is
       const first = tl.events
@@ -591,10 +592,10 @@ test.describe("a move between two people further apart than the phone is wide", 
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
-    // the frame walked up to Hugo, whose parents and six brothers and sisters it holds
+    // the frame walked up to Hugo, whose parents and brothers and sisters it holds
     await tapPerson(page, ids.Hugo);
     const draw = drawer(page).locator(".draw");
-    const [mover, target] = [String(ids.Hs0), String(ids.Hs5)];
+    const [mover, target] = [String(ids.Hs0), String(ids.Hs15)];
     const far = await draw.evaluate((d, [a, b]) => {
       const x = (id: string) => d.querySelector(`.p[data-id="${id}"] .shape`)!.getBoundingClientRect().left;
       return Math.abs(x(a) - x(b)) > d.clientWidth;
@@ -1089,6 +1090,19 @@ const moving = (long: boolean) => (tl: Record<string, any>, ids: Record<string, 
 const namesAt = (page: Page) =>
   drawer(page).locator(".draw svg .pt .lbn").evaluateAll((ts) => ts.map((t) => (t as SVGTextElement).getBoundingClientRect()).map((r) => [r.left, r.right]));
 
+/** How see-through the drawer's marks from earlier dates, its not yet born,
+ * and its date's own marks stand. */
+const faded = (page: Page) =>
+  page.evaluate(() => {
+    const op = (e: Element) => Number(getComputedStyle(e).opacity);
+    const draw = document.querySelector("#pbp .draw")!;
+    return {
+      was: [...draw.querySelectorAll(".was")].map(op),
+      yet: [...draw.querySelectorAll(".yet")].map(op),
+      now: [...draw.querySelectorAll(".fore > *")].filter((e) => !e.closest(".was, .yet")).map((e) => `${e.getAttribute("class")}:${op(e)}`),
+    };
+  });
+
 test.describe("the Family view as Patrick looked at it on his own record", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
 
@@ -1148,6 +1162,70 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
     const ids = await familyOf(page, 2);
     const drawn = await drawnIds(page);
     expect(drawn).toEqual(expect.arrayContaining([ids().Hal, ids().Hope, ids().Walt, ids().Wren, ids().Hugo, ids().Wanda, ids().Cleo].map(String)));
+  });
+
+  // R-0793
+  test("in the Family view, gives a grey mark from an earlier date the see-through look of the not yet born, this date's marks solid", async ({ page }) => {
+    await familyOf(page, 2, (tl, ids) => {
+      moving(false)(tl, ids);
+      // Cleo's grandmother Hope is drawn faded, born after every date
+      tl.people.find((p: Record<string, unknown>) => p.id === ids.Hope).birth = "2090-01-01";
+    });
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    for (let i = 0; i < 3; i++) await drawer(page).locator('[data-act="next"]').click();
+    // the date's own marks have popped in
+    await page.waitForTimeout(800);
+    const family = await faded(page);
+    expect(family.was.length).toBeGreaterThan(0);
+    expect(family.yet.length).toBeGreaterThan(0);
+    expect(new Set([...family.was, ...family.yet])).toEqual(new Set([family.yet[0]]));
+    expect(family.yet[0]).toBeLessThan(1);
+    expect(family.now.filter((o) => !o.endsWith(":1"))).toEqual([]);
+  });
+
+  // R-0793
+  test("in the play-by-play, gives the first step's move, carried to the second, the same see-through look, the second's own move solid", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await expect.poll(() => step(page)).toBe("1 of 4");
+    await drawer(page).locator('[data-act="next"]').click();
+    await page.waitForTimeout(800);
+    const play = await faded(page);
+    expect(play.was.length).toBeGreaterThan(0);
+    // the one value the Family view gives the not yet born
+    const yet = await drawer(page).evaluate((p) => Number(getComputedStyle(p).getPropertyValue("--faded")));
+    expect(yet).toBeLessThan(1);
+    expect(new Set(play.was)).toEqual(new Set([yet]));
+    expect(play.now.filter((o) => !o.endsWith(":1"))).toEqual([]);
+  });
+
+  // R-0786
+  test("holds the page's scale against Safari's own pinch, which ignores the viewport", async ({ page }) => {
+    await settle(page);
+    const held = await page.evaluate(() => {
+      const pinch = new Event("gesturestart", { cancelable: true, bubbles: true });
+      document.querySelector("#view")!.dispatchEvent(pinch);
+      return pinch.defaultPrevented;
+    });
+    expect(held).toBe(true);
+  });
+
+  // R-0788
+  test("outlines the play-by-play's names thinly in the page's colour too, with no box behind them", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await expect.poll(() => step(page)).toBe("1 of 4");
+    const names = await drawer(page).locator(".draw svg .pt").evaluateAll((gs) =>
+      gs.flatMap((g) =>
+        [...g.querySelectorAll<SVGTextElement>(".lbn")].map((t) => {
+          const s = getComputedStyle(t);
+          return { boxed: !!g.querySelector("rect"), under: s.paintOrder.startsWith("stroke"), page: s.stroke === getComputedStyle(document.querySelector("#pbp")!).backgroundColor, thin: parseFloat(s.strokeWidth) <= 3 };
+        }),
+      ),
+    );
+    expect(names.length).toBeGreaterThan(0);
+    for (const n of names) expect(n).toEqual({ boxed: false, under: true, page: true, thin: true });
   });
 
   // R-0788
