@@ -43,7 +43,9 @@
 .pbp .whit { fill: transparent; cursor: pointer; }
 /* re-ruled 2026-10-04: a family wider than the drawer keeps its least size and scrolls sideways in its own frame */
 .pbp .draw { padding: 4px 0 0; border-top: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
-.pbp .draw svg { display: block; width: 100%; height: 100%; }
+/* the drawing at its own scale, centred in the room its box takes (R-0797) */
+.pbp .draw { display: flex; }
+.pbp .draw svg { display: block; flex: none; margin: auto; }
 
 .pbp .scroll .step, .pbp > .foot .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
 .pbp > .foot { flex: none; border-top: 1px solid var(--line); padding-bottom: var(--safe-bottom); }
@@ -285,7 +287,8 @@
   .pbp.whole > .when .words { -webkit-line-clamp: 2; }
   .pbp.whole > .also { right: 16px; white-space: normal; text-align: right; }
   .pbp.whole .wire svg { height: 40px; }
-  .pbp.whole > .path { height: 32px; }
+  /* the path row is shorter here, and its book with it, so the book stays whole on the screen */
+  .pbp.whole > .path, .pbp.whole > .path .book { height: 32px; }
   /* Back and Next float at the bottom corners, in the same places every step */
   .pbp.whole > .foot { position: absolute; left: 0; right: 0; bottom: 0; border-top: 0; background: none; pointer-events: none; }
   .pbp.whole > .foot .step { background: none; }

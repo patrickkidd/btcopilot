@@ -1099,8 +1099,8 @@ const overrun = (page: Page) =>
     const lv = p.querySelector(".lv")!;
     const d = lv.querySelector(".draw")!;
     const svg = d.querySelector("svg")!;
-    const r = svg.getBoundingClientRect();
-    const k = Math.min(r.width / svg.viewBox.baseVal.width, r.height / svg.viewBox.baseVal.height);
+    // the drawing's own scale, not its box's: the box takes the room it is centred in (R-0797)
+    const k = svg.getScreenCTM()!.a;
     const name = svg.querySelector(".pt .lbn");
     return {
       down: lv.scrollHeight - lv.clientHeight,
@@ -1136,6 +1136,64 @@ for (const height of [852, 759])
       expect(seen.name).toBeLessThanOrEqual(13.01);
     });
   });
+
+/** How far the middle of the drawn frame stands from the middle of the room
+ * between the years line and Back and Next, across and down, and how much of
+ * the drawer's room is left under the words below Back and Next. */
+const offCentre = (page: Page) =>
+  drawer(page).evaluate((p) => {
+    const svg = p.querySelector<SVGSVGElement>(".draw svg")!;
+    const m = svg.getScreenCTM()!;
+    const v = svg.viewBox.baseVal;
+    const lv = p.querySelector(".lv")!.getBoundingClientRect();
+    const top = p.querySelector(".wire")!.getBoundingClientRect().bottom;
+    const step = p.querySelector(":is(.scroll, .foot) .step")!.getBoundingClientRect();
+    const under = p.querySelector(".scroll")!.getBoundingClientRect().bottom;
+    return {
+      across: m.e + m.a * (v.x + v.width / 2) - (lv.left + lv.right) / 2,
+      down: m.f + m.d * (v.y + v.height / 2) - (top + step.top) / 2,
+      left: lv.bottom - under,
+    };
+  });
+
+test.describe("the picture centred in the room it has", () => {
+  test.use({ storageState: stateFor("play") });
+
+  // R-0797
+  test("stands in the middle between the years line and Back and Next on every step of the play-by-play, the longest caption's room kept under them", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await expect(drawer(page).locator(".draw svg")).toBeVisible();
+    await page.waitForTimeout(500);
+    const left = [];
+    for (let i = 0; i < 4; i++) {
+      if (i) await drawer(page).locator('[data-act="next"]').click();
+      const seen = await offCentre(page);
+      expect(Math.abs(seen.across)).toBeLessThanOrEqual(4);
+      expect(Math.abs(seen.down)).toBeLessThanOrEqual(4);
+      left.push(seen.left);
+    }
+    // the room kept under Back and Next is the longest caption's, no more
+    expect(Math.min(...left)).toBeLessThanOrEqual(4);
+  });
+
+  // R-0797
+  test("stands in the middle between the years line and Back and Next on every date in the Family view, its book whole on a phone turned sideways", async ({ page }) => {
+    await familyOf(page, 2, moving(false));
+    for (let i = 0; i < 3; i++) {
+      const seen = await offCentre(page);
+      expect(Math.abs(seen.across)).toBeLessThanOrEqual(4);
+      expect(Math.abs(seen.down)).toBeLessThanOrEqual(4);
+      await drawer(page).locator('[data-act="next"]').click();
+    }
+    // a phone turned sideways keeps the book whole on the screen
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.waitForTimeout(500);
+    const book = (await drawer(page).locator(".path .book").boundingBox())!;
+    expect(book.y).toBeGreaterThanOrEqual(0);
+    expect(book.y + book.height).toBeLessThanOrEqual(390);
+  });
+});
 
 test.describe("a picture opened from the iPhone home screen", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });

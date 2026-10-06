@@ -664,13 +664,17 @@ export class Drawer {
       const style = getComputedStyle(draw);
       this.edge = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
       this.scale = this.fits(L);
-      this.height = L.h * this.scale;
+      // the picture's box takes all the room over the longest caption, the
+      // drawing centred in it both ways, once per frame (R-0797)
+      const room = lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - this.edge - this.caption;
+      this.height = Math.max(L.h * this.scale, room);
     }
     draw.style.height = `${this.height + this.edge}px`;
     const svg = draw.querySelector<SVGSVGElement>("svg")!;
     // a drawing as wide as its frame to within a pixel does not scroll
     const wide = L.vw * this.scale > lv.clientWidth + 1;
-    svg.style.width = wide ? `${Math.ceil(L.vw * this.scale)}px` : "";
+    svg.style.width = `${wide ? Math.ceil(L.vw * this.scale) : L.vw * this.scale}px`;
+    svg.style.height = `${L.h * this.scale}px`;
     // a Family view wider than the screen keeps a gutter at each side for the
     // arrows to whoever a date involves off it, so they cover no one (R-0785)
     lv.classList.toggle("gutters", told.whole && wide);
