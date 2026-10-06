@@ -13,7 +13,14 @@ from btcopilot import coverage, questions, record
 from btcopilot.coachturn import CoachTurn, todos
 from btcopilot.discussions import open_session
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change, ProactiveMessage, Purpose, Statement, Trigger
+from btcopilot.models import (
+    Author,
+    Change,
+    ProactiveMessage,
+    Purpose,
+    Statement,
+    Trigger,
+)
 from btcopilot.recordtext import note_line
 from btcopilot.tests.conftest import Model, said, version, wrote
 from btcopilot.tests.live.checks import picks_up_todo
@@ -51,7 +58,11 @@ def telling(diagram, user, text=f"I'll {ASK_MOM}.", day=None):
     """A toolbox answering the person's words, as a coach turn's is."""
     statement = says(open_session(user, diagram), text, day or ago(days=3))
     toolbox = Toolbox(
-        diagram.id, "t1", user_id=user.id, session_id=statement.discussion_id, said=statement
+        diagram.id,
+        "t1",
+        user_id=user.id,
+        session_id=statement.discussion_id,
+        said=statement,
     )
     return toolbox, statement
 
@@ -84,10 +95,17 @@ def test_the_back_block_comes_only_when_the_message_opens_a_new_sitting(session)
     assert f"{BACK} 2 day(s). Their own todos, oldest first: none." in turn(session)
 
 
-def test_a_message_the_coach_sent_unasked_is_not_the_family_speaking(session, test_user):
+def test_a_message_the_coach_sent_unasked_is_not_the_family_speaking(
+    session, test_user
+):
     # R-0783
     says(session, "We talked about my dad.", ago(days=3, hours=1))
-    sent = says(session, "Your move and your dad's illness came close.", ago(hours=1), coach=True)
+    sent = says(
+        session,
+        "Your move and your dad's illness came close.",
+        ago(hours=1),
+        coach=True,
+    )
     db.session.add(
         ProactiveMessage(
             user_id=test_user.id,
@@ -102,7 +120,9 @@ def test_a_message_the_coach_sent_unasked_is_not_the_family_speaking(session, te
     assert f"{BACK} 3 day(s)." in turn(session)
 
 
-def test_the_coach_keeps_a_todo_held_in_their_words_citing_their_message(family, test_user):
+def test_the_coach_keeps_a_todo_held_in_their_words_citing_their_message(
+    family, test_user
+):
     # R-0783
     toolbox, statement = telling(family, test_user)
     text, _ = keep(toolbox)
@@ -110,7 +130,9 @@ def test_the_coach_keeps_a_todo_held_in_their_words_citing_their_message(family,
     assert text == "Added todo q1."
     kept = stored(family)["q1"]
     assert (kept["kind"], kept["state"], kept["text"]) == ("todo", "held", ASK_MOM)
-    assert [(e["kind"], e["id"]) for e in kept["evidence"]] == [("statement", statement.id)]
+    assert [(e["kind"], e["id"]) for e in kept["evidence"]] == [
+        ("statement", statement.id)
+    ]
     assert note_line(kept) == f'q1 held todo "{ASK_MOM}"'
 
 
@@ -118,11 +140,19 @@ def test_the_coach_keeps_a_todo_held_in_their_words_citing_their_message(family,
     "args,plain",
     [
         ({"state": "asked"}, "A todo is kept for later when it is said."),
-        ({"fact": "alive"}, "It named what the question asks on something that cannot hold it."),
-        ({"case_report_card": "own_part", "state": "asked"}, "A todo cannot go on the case report."),
+        (
+            {"fact": "alive"},
+            "It named what the question asks on something that cannot hold it.",
+        ),
+        (
+            {"case_report_card": "own_part", "state": "asked"},
+            "A todo cannot go on the case report.",
+        ),
     ],
 )
-def test_a_todo_added_asked_with_a_fact_or_on_a_card_is_refused(family, test_user, args, plain):
+def test_a_todo_added_asked_with_a_fact_or_on_a_card_is_refused(
+    family, test_user, args, plain
+):
     # R-0783
     toolbox, _ = telling(family, test_user)
     with pytest.raises(ToolError) as refused:
@@ -143,10 +173,17 @@ def test_a_todo_moves_held_asked_resolved_and_each_step_is_undone(family, test_u
     keep(toolbox)
     before = stored(family)
     start = db.session.query(db.func.max(Change.id)).scalar()
-    toolbox.call(ToolName.SetQuestion, {"id": "q1", "version": version(family), "state": "asked"})
+    toolbox.call(
+        ToolName.SetQuestion, {"id": "q1", "version": version(family), "state": "asked"}
+    )
     toolbox.call(
         ToolName.SetQuestion,
-        {"id": "q1", "version": version(family), "state": "resolved", "outcome": "answered"},
+        {
+            "id": "q1",
+            "version": version(family),
+            "state": "resolved",
+            "outcome": "answered",
+        },
     )
 
     kept = stored(family)["q1"]
@@ -158,7 +195,12 @@ def test_a_todo_moves_held_asked_resolved_and_each_step_is_undone(family, test_u
     with pytest.raises(ToolError) as refused:
         toolbox.call(
             ToolName.SetQuestion,
-            {"id": "q1", "version": version(family), "state": "resolved", "outcome": "fact"},
+            {
+                "id": "q1",
+                "version": version(family),
+                "state": "resolved",
+                "outcome": "fact",
+            },
         )
     assert refused.value.plain == "That todo is already closed."
 
@@ -175,13 +217,24 @@ def test_only_open_todos_are_listed_oldest_first_and_none_reach_the_page_or_cove
 ):
     # R-0783
     toolbox, _ = telling(family, test_user)
-    for words in ("ask my mom when they moved", "dig out the old photos", "call my uncle Jory"):
+    for words in (
+        "ask my mom when they moved",
+        "dig out the old photos",
+        "call my uncle Jory",
+    ):
         keep(toolbox, words)
     toolbox.call(
         ToolName.SetQuestion,
-        {"id": "q2", "version": version(family), "state": "resolved", "outcome": "let_go"},
+        {
+            "id": "q2",
+            "version": version(family),
+            "state": "resolved",
+            "outcome": "let_go",
+        },
     )
-    toolbox.call(ToolName.SetQuestion, {"id": "q3", "version": version(family), "state": "asked"})
+    toolbox.call(
+        ToolName.SetQuestion, {"id": "q3", "version": version(family), "state": "asked"}
+    )
     db.session.expire_all()
     data = family.get_diagram_data()
 
@@ -189,7 +242,9 @@ def test_only_open_todos_are_listed_oldest_first_and_none_reach_the_page_or_cove
     assert "dig out the old photos" not in listed
     assert listed.index("q1 held todo") < listed.index("q3 asked todo")
     assert questions.asked(family.id, data) == []
-    assert coverage.block(data) == coverage.block(dataclasses.replace(data, questions=[]))
+    assert coverage.block(data) == coverage.block(
+        dataclasses.replace(data, questions=[])
+    )
 
 
 PICKED_UP = "Good to see you again. Did you get to ask your mom when they moved?"

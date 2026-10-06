@@ -397,7 +397,10 @@ def test_rows_split_by_model_and_prompt():
     assert (second["own_steps"], second["own_steps_stored"]) == (1, 1)
     assert first["feeling_questions"] == 0
     assert (first["subjective_after_feeling_q"], first["subjective_other"]) == (None, 0)
-    assert (second["subjective_after_feeling_q"], second["subjective_other"]) == (0, None)
+    assert (second["subjective_after_feeling_q"], second["subjective_other"]) == (
+        0,
+        None,
+    )
 
 
 def test_account_row():

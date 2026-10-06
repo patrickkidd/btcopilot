@@ -908,7 +908,10 @@ def hits(text: str, names=()):
                 told = [i for i, t in enumerate(tokens) if t.lower() in REPORTED]
                 if told and subject(tokens[: told[-1]], names) is False:
                     continue
-                if not (phrase.own or phrase.paired) and subject(tokens, names) is False:
+                if (
+                    not (phrase.own or phrase.paired)
+                    and subject(tokens, names) is False
+                ):
                     continue
                 past = not set(near) & set(PERFECT) and bool(
                     set(near + low[m.start() : m.end()].split()[:1]) & set(PAST)

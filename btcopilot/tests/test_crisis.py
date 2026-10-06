@@ -108,10 +108,14 @@ def test_protocol_passes_the_approved_replies_and_fails_the_rest():
     assert flow.protocol(LESS.replace("call or text 988", unknown.say), unknown)
     assert not flow.protocol(LESS, unknown)
 
-    dated = EXPLICIT.replace("what's happening for you right now?", "when did it start?")
+    dated = EXPLICIT.replace(
+        "what's happening for you right now?", "when did it start?"
+    )
     assert not flow.protocol(dated, US)
     assert not flow.protocol(f"{EXPLICIT} Is your mother still alive?", US)
-    assert not flow.protocol(EXPLICIT.replace("call or text 988", "talk to someone"), US)
+    assert not flow.protocol(
+        EXPLICIT.replace("call or text 988", "talk to someone"), US
+    )
 
 
 def test_tracked_rows_count_the_group_and_whether_the_reply_met_it():
@@ -120,8 +124,17 @@ def test_tracked_rows_count_the_group_and_whether_the_reply_met_it():
     messages = [
         Message(Role.Person, "I want to die and I have a gun.", t0),
         Message(Role.Coach, EXPLICIT, t0 + datetime.timedelta(minutes=1), 1, "m", "p"),
-        Message(Role.Person, "I keep punishing myself.", t0 + datetime.timedelta(minutes=2)),
-        Message(Role.Coach, "When did that start?", t0 + datetime.timedelta(minutes=3), 2, "m", "p"),
+        Message(
+            Role.Person, "I keep punishing myself.", t0 + datetime.timedelta(minutes=2)
+        ),
+        Message(
+            Role.Coach,
+            "When did that start?",
+            t0 + datetime.timedelta(minutes=3),
+            2,
+            "m",
+            "p",
+        ),
     ]
     row = flow.rows(messages, Record(), "America/Chicago")[("m", "p")]
     assert (row["risk"], row["risk_plan"], row["risk_self_harm"], row["protocol"]) == (

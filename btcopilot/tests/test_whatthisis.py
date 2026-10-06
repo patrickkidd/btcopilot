@@ -9,7 +9,13 @@ import pytest
 from btcopilot.promptdir import key_present, read
 from btcopilot.tests.live.checks import asks_hope, explains
 from btcopilot.tests.repo import REPO
-from btcopilot.tests.test_questions import add, clock, settle, speaking, stored  # noqa: F401
+from btcopilot.tests.test_questions import (
+    add,
+    clock,
+    settle,
+    speaking,
+    stored,
+)  # noqa: F401
 from btcopilot.tests.test_turnhistory import family  # noqa: F401
 from btcopilot.toolbox import said_label
 
@@ -44,7 +50,10 @@ def test_the_public_prompt_says_what_this_is():
 def test_onboarding_lets_the_sentence_ride_with_the_request():
     # R-0782, R-0781
     text = ONBOARDING.read_text()
-    assert "what this is and what builds up over a few conversations may come with that request" in text
+    assert (
+        "what this is and what builds up over a few conversations may come with that request"
+        in text
+    )
     assert "do nothing else" in text
 
 
@@ -57,7 +66,9 @@ def test_the_example_reply_passes():
     "reply",
     [
         EXAMPLE.replace("the people around it", "your relationships"),
-        EXAMPLE.replace("What are you hoping to get from this?", "How long has it been?"),
+        EXAMPLE.replace(
+            "What are you hoping to get from this?", "How long has it been?"
+        ),
         EXAMPLE.replace(
             "the people around it", "your family, and over time your family"
         ),

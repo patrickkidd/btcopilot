@@ -37,13 +37,20 @@ def test_the_private_flow_rules_keep_the_observations_pairing_two_dated_facts():
     core = " ".join(read(fragments / "flow_core.md").split())
     claude = " ".join(read(fragments / "flow_claude.md").split())
     assert "your dad left the same year the headaches started" in core
-    assert "your mom moved cross-country the same year your grandfather got sick" in claude
-    assert "your dad moved out the same year your mom started having the headaches" in claude
+    assert (
+        "your mom moved cross-country the same year your grandfather got sick" in claude
+    )
+    assert (
+        "your dad moved out the same year your mom started having the headaches"
+        in claude
+    )
 
 
 def test_a_sentence_placing_three_years_in_order_passes():
     # R-0784
-    assert places_in_time(f"That's a lot in a few years. {PLACED} How old were you?", YEARS)
+    assert places_in_time(
+        f"That's a lot in a few years. {PLACED} How old were you?", YEARS
+    )
     assert places_in_time(
         "Ada and Hugh married in 1988, Ivy was born in 1990, and the next year Hugh "
         "moved you all to Tacoma.",
@@ -71,7 +78,9 @@ def test_three_events_in_record_order_with_a_time_marker_place_in_time():
     # R-0784
     reply = "So by age six you'd been through the wedding, Ivy's arrival, and the move to Tacoma."
     assert places_in_time(reply, YEARS, born=1985, events=EVENTS)
-    assert not places_in_time(reply.replace("by age six", "already"), YEARS, born=1985, events=EVENTS)
+    assert not places_in_time(
+        reply.replace("by age six", "already"), YEARS, born=1985, events=EVENTS
+    )
     assert not places_in_time(
         "By age six you'd been through the move, the wedding and Ivy's arrival.",
         YEARS,
@@ -79,7 +88,10 @@ def test_three_events_in_record_order_with_a_time_marker_place_in_time():
         events=EVENTS,
     )
     assert not places_in_time(
-        "By age six the wedding and Ivy's arrival led to the move.", YEARS, born=1985, events=EVENTS
+        "By age six the wedding and Ivy's arrival led to the move.",
+        YEARS,
+        born=1985,
+        events=EVENTS,
     )
 
 
@@ -103,7 +115,9 @@ def test_a_cause_word_fails_the_sentence():
 
 def test_two_years_are_not_a_placing():
     # R-0784
-    assert not places_in_time("Your parents married in 1988 and your sister came in 1990.", YEARS)
+    assert not places_in_time(
+        "Your parents married in 1988 and your sister came in 1990.", YEARS
+    )
 
 
 def test_years_out_of_order_fail():

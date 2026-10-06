@@ -46,9 +46,6 @@ TURN = "catch-up:{}"
 SAID = 120
 STORIES = 8
 TODOS = 3
-TODOS = 3
-TODOS = 3
-TODOS = 3
 # What must still hold of a question for its move to be written.
 MATCHED = ("text", "state", "outcome", "fact", "item_kind", "item_id")
 FIELDS = ("text", "kind", "state", "outcome", "answer", "item_kind", "item_id", "fact")

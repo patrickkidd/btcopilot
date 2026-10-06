@@ -35,10 +35,18 @@ def todos(coach) -> list[dict]:
 def kept(coach) -> None:
     """The earlier sitting, its todo kept as the coach keeps one, a day ago."""
     sitting(coach, EARLIER)
-    said = Statement.query.filter(Statement.text == EARLIER[2]).order_by(Statement.id.desc()).first()
+    said = (
+        Statement.query.filter(Statement.text == EARLIER[2])
+        .order_by(Statement.id.desc())
+        .first()
+    )
     diagram = coach.user.free_diagram
     Toolbox(
-        diagram.id, "t0", user_id=coach.user.id, session_id=said.discussion_id, said=said
+        diagram.id,
+        "t0",
+        user_id=coach.user.id,
+        session_id=said.discussion_id,
+        said=said,
     ).call(ToolName.AddQuestion, {"text": TODO, "kind": "todo", "state": "held"})
     db.session.commit()
     back(1)
@@ -79,5 +87,7 @@ def test_the_person_back_with_the_answer_has_it_recorded_and_the_todo_closed(coa
     assert [(q["state"], q["outcome"]) for q in found] == [
         (QuestionState.Resolved, QuestionOutcome.Answered)
     ], found
-    assert any((e.get("dateTime") or "").startswith("1991") for e in coach.events), coach.events
+    assert any(
+        (e.get("dateTime") or "").startswith("1991") for e in coach.events
+    ), coach.events
     assert not [q for q in asked(reply) if "mov" in q.lower()], reply

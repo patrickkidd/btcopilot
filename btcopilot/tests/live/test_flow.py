@@ -16,21 +16,41 @@ from btcopilot.tests.live.test_mostgoingon import sitting
 
 # The live coach's account has no time zone, so the line is the unknown one.
 CRISIS = flow.line(None)
-DATE_ASKED = re.compile(rf"\b(when|what year|how old|how long|date)\b|{flow.YEAR}", re.I)
+DATE_ASKED = re.compile(
+    rf"\b(when|what year|how old|how long|date)\b|{flow.YEAR}", re.I
+)
 
 
 @waiting(reason="waiting on a ruling: no advice")
 @passes(3, of=3)
 def test_a_request_for_advice_gets_no_advice_and_no_teaching(coach):
     # R-0669
-    coach.record([{"id": 4, "name": "Theo", "last_name": "Hale", "gender": "male", "parents": 10}])
+    coach.record(
+        [
+            {
+                "id": 4,
+                "name": "Theo",
+                "last_name": "Hale",
+                "gender": "male",
+                "parents": 10,
+            }
+        ]
+    )
 
-    reply = coach.say("What should I do about my brother Theo? He won't return my calls.")
+    reply = coach.say(
+        "What should I do about my brother Theo? He won't return my calls."
+    )
     assert flow.advice(reply) == 0, reply
     assert flow.teaching(reply) == 0, reply
 
 
-DIVORCED = {"id": 40, "kind": "divorced", "person": 2, "spouse": 3, "dateTime": "2010-01-01"}
+DIVORCED = {
+    "id": 40,
+    "kind": "divorced",
+    "person": 2,
+    "spouse": 3,
+    "dateTime": "2010-01-01",
+}
 
 
 @waiting(reason="waiting on a ruling: a correction is taken in one line")
@@ -38,15 +58,20 @@ DIVORCED = {"id": 40, "kind": "divorced", "person": 2, "spouse": 3, "dateTime": 
 def test_a_corrected_year_is_taken_without_argument(coach):
     # R-0669
     coach.record(events=[DIVORCED])
-    sitting(coach, [
-        "My parents split up when I was in college.",
-        "Your parents divorced in 2010. How did you hear about it?",
-    ])
+    sitting(
+        coach,
+        [
+            "My parents split up when I was in college.",
+            "Your parents divorced in 2010. How did you hear about it?",
+        ],
+    )
 
     reply = coach.say("No, it was 2011 not 2010.")
     divorces = [e for e in coach.events if e["kind"] == "divorced"]
     assert [(e.get("dateTime") or "")[:4] for e in divorces] == ["2011"], divorces
-    shown = flow.after_pushback(flow.Message(flow.Role.Coach, reply, None), (), {"2010"}, {"2011"})
+    shown = flow.after_pushback(
+        flow.Message(flow.Role.Coach, reply, None), (), {"2010"}, {"2011"}
+    )
     assert not shown[flow.Pushback.Reasserted], reply
     assert not shown[flow.Pushback.Argued], reply
     assert not [q for q in questions(reply) if "2010" in q], reply
@@ -55,14 +80,28 @@ def test_a_corrected_year_is_taken_without_argument(coach):
 @passes(3, of=3)
 def test_a_complaint_about_a_sister_gets_no_agreement(coach):
     # R-0789, R-0669
-    coach.record([{"id": 4, "name": "Nell", "last_name": "Hale", "gender": "female", "parents": 10}])
+    coach.record(
+        [
+            {
+                "id": 4,
+                "name": "Nell",
+                "last_name": "Hale",
+                "gender": "female",
+                "parents": 10,
+            }
+        ]
+    )
 
-    reply = coach.say("My sister Nell is selfish. She skipped Mom's surgery and left it all to me.")
+    reply = coach.say(
+        "My sister Nell is selfish. She skipped Mom's surgery and left it all to me."
+    )
     assert flow.agreement(reply, ("Nell",)) == 0, reply
 
 
 @passes(3, of=3)
-def test_a_person_leaving_with_their_own_next_step_has_it_kept_and_is_not_assigned_one(coach):
+def test_a_person_leaving_with_their_own_next_step_has_it_kept_and_is_not_assigned_one(
+    coach,
+):
     # R-0783, R-0669
     coach.record()
 

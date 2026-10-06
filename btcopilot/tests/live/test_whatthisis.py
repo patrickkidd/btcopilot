@@ -46,15 +46,27 @@ def test_the_hope_question_is_closed_with_their_own_words(coach):
     # R-0782, R-0781
     coach.record()
     talk = Discussion.query.filter_by(diagram_id=coach.user.free_diagram_id).one()
-    for speaker, text in ((talk.chat_user_speaker, OPENING), (talk.chat_ai_speaker, REPLY)):
+    for speaker, text in (
+        (talk.chat_user_speaker, OPENING),
+        (talk.chat_ai_speaker, REPLY),
+    ):
         db.session.add(
-            Statement(discussion_id=talk.id, speaker=speaker, text=text, order=talk.next_order())
+            Statement(
+                discussion_id=talk.id,
+                speaker=speaker,
+                text=text,
+                order=talk.next_order(),
+            )
         )
         db.session.flush()
     db.session.commit()
-    toolbox = Toolbox(coach.user.free_diagram_id, "earlier", session_id=talk.id, author=Author.Coach)
+    toolbox = Toolbox(
+        coach.user.free_diagram_id, "earlier", session_id=talk.id, author=Author.Coach
+    )
     with freeze_time(TODAY):
-        toolbox.call(ToolName.AddQuestion, {"text": HOPE, "kind": "thought", "state": "asked"})
+        toolbox.call(
+            ToolName.AddQuestion, {"text": HOPE, "kind": "thought", "state": "asked"}
+        )
     db.session.commit()
 
     coach.say(WANT)
@@ -69,4 +81,6 @@ def test_the_hope_question_is_closed_with_their_own_words(coach):
         and q.get("outcome") == QuestionOutcome.Answered
         and (q.get("answer") or {}).get("id") == said.id
     ]
-    assert closed, [(said.id, q["state"], q.get("outcome"), q.get("answer")) for q in kept]
+    assert closed, [
+        (said.id, q["state"], q.get("outcome"), q.get("answer")) for q in kept
+    ]
