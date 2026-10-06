@@ -153,8 +153,7 @@ def note_line(question: dict) -> str:
     """One question or impression as the map and the reads give it."""
     status = _status(question)
     if record.note(question) is record.TODO:
-        said = question["evidence"][0]
-        line = f'{question["id"]} {status} todo "{question["text"]}" (said {said["day"]})'
+        line = f'{question["id"]} {status} todo "{question["text"]}"'
     elif record.note(question) is record.IMPRESSION:
         line = f'{question["id"]} {status} "{question["text"]}" on '
         line += ", ".join(f"{one['kind']} {one['id']}" for one in question["evidence"]) or "nothing"

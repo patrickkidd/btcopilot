@@ -111,9 +111,7 @@ def test_the_coach_keeps_a_todo_held_in_their_words_citing_their_message(family,
     kept = stored(family)["q1"]
     assert (kept["kind"], kept["state"], kept["text"]) == ("todo", "held", ASK_MOM)
     assert [(e["kind"], e["id"]) for e in kept["evidence"]] == [("statement", statement.id)]
-    assert note_line(kept) == (
-        f'q1 held todo "{ASK_MOM}" (said {statement.created_at.date().isoformat()})'
-    )
+    assert note_line(kept) == f'q1 held todo "{ASK_MOM}"'
 
 
 @pytest.mark.parametrize(

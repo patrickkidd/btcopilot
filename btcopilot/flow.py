@@ -309,6 +309,19 @@ MONTHS = (
     "november",
     "december",
 )
+FELT = (
+    "sad",
+    "angry",
+    "scared",
+    "hurt",
+    "upset",
+    "devastated",
+    "furious",
+    "anxious",
+    "afraid",
+)
+FELT_FORMS = ("i felt", "i feel", "it hurt")
+HAPPENED = ("moved", "died", "married", "left", "born", "started", "stopped")
 CRISIS_LINES: tuple[
     str, ...
 ] = ()  # Patrick's wording, per country; the app has none yet.
@@ -345,6 +358,9 @@ RULES_VERSION = version(
     QUESTION_WORDS,
     FILLERS,
     MONTHS,
+    FELT,
+    FELT_FORMS,
+    HAPPENED,
     CRISIS_LINES,
     SHORT,
     str(SITTING_GAP),
@@ -354,6 +370,11 @@ YEAR = r"\b(?:1[89]|20)\d\d\b"
 MONTH = rf"\b(?:{'|'.join(m.title() for m in MONTHS)})\b"
 DATED = re.compile(rf"\d|{MONTH}")
 LEAD = re.compile(rf"^\W*(?i:(?:{'|'.join(FILLERS)})\b[\s,]*)*(?:[A-Z][a-z]+,\s*)?")
+WHEN = re.compile(rf"{YEAR}|{MONTH}")
+FELT_AS = rf"(?:{'|'.join(FELT)})"
+SUBJECTIVE = re.compile(
+    rf"(?<![a-z'])(?:{'|'.join(FELT_FORMS)}|i was {FELT_AS}|made me (?:feel|{FELT_AS}))(?![a-z'])"
+)
 
 
 def fold(text: str) -> str:
@@ -446,6 +467,17 @@ def feeling_questions(reply: str, person_last: str) -> int:
     return sum(
         bool(own(s, FEELING, person_last)) for s in sentences(reply) if is_question(s)
     )
+
+
+def subjective(text: str, names=()) -> float | None:
+    """The share of the person's sentences in a first-person feeling form,
+    against those carrying a name, a year, a month or a what-happened verb;
+    None when the text has neither."""
+    felt = what = 0
+    for s in sentences(text):
+        felt += SUBJECTIVE.search(norm(s)) is not None
+        what += bool(WHEN.search(s) or named(s, names) or found(s, HAPPENED))
+    return felt / (felt + what) if felt + what else None
 
 
 # F2
@@ -736,13 +768,16 @@ def rows(messages: list[Message], record: Record) -> dict[tuple, dict]:
         ]
 
     years = [f.value for f in record.facts if f.kind is FactKind.Year]
-    seen, coach_before = [], ""
+    shares = {key: {True: [], False: []} for key in out}
+    seen, coach_before, asked_feeling = [], "", None
     for i, (key, m) in enumerate(keyed):
         row = out[key]
         if m.role is Role.Coach:
             last = seen[-1] if seen else ""
             row["coach_messages"] += 1
-            row["feeling_questions"] += feeling_questions(m.text, last)
+            found_feeling = feeling_questions(m.text, last)
+            row["feeling_questions"] += found_feeling
+            asked_feeling = found_feeling > 0
             row["why_questions"] += why_questions(m.text, last)
             row["advice"] += advice(m.text)
             row["teaching"] += teaching(m.text)
@@ -753,6 +788,11 @@ def rows(messages: list[Message], record: Record) -> dict[tuple, dict]:
             coach_before = m.text
             continue
         row["person_messages"] += 1
+        if asked_feeling is not None:
+            share = subjective(m.text, names(m.at))
+            if share is not None:
+                shares[key][asked_feeling].append(share)
+            asked_feeling = None
         row["short"] += len(words(m.text)) < SHORT
         found_dawning = dawning(m.text)
         row["dawning_exact"] += found_dawning[Dawning.Exact]
@@ -795,6 +835,13 @@ def rows(messages: list[Message], record: Record) -> dict[tuple, dict]:
 
     for key in out:
         out[key] |= talk_shape([m for k, m in keyed if k == key])
+        after = shares[key]
+        out[key]["subjective_after_feeling_q"] = (
+            statistics.mean(after[True]) if after[True] else None
+        )
+        out[key]["subjective_other"] = (
+            statistics.mean(after[False]) if after[False] else None
+        )
         out[key]["rules_version"] = RULES_VERSION
     return out
 

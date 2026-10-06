@@ -58,6 +58,32 @@ def test_feeling_questions():
     assert flow.feeling_questions("How did that sit with you?", "") == 1
 
 
+def test_subjective():
+    # R-0669
+    assert flow.subjective("I was devastated. It hurt for years.") == 1
+    assert flow.subjective("When Dad left in 2009 I felt lost.") == 1 / 2
+    assert flow.subjective("Tomas moved to Leeds. That was in March.", ["Tomas"]) == 0
+    assert flow.subjective("Nell called on Sunday.", ["Nell"]) == 0
+    assert flow.subjective("He was sad. I was sadder than anyone.") is None
+    assert flow.subjective("Okay.") is None
+
+
+def test_rows_subjectivity_after_a_feeling_question():
+    # R-0669
+    rows = flow.rows(
+        [
+            coach("What happened next?", 0),
+            person("Ruth left in 2011.", 1),
+            coach("How did you feel when Ruth left?", 2),
+            person("I was scared. Mostly it hurt.", 3),
+            person("She moved to Leeds.", 4),
+        ],
+        Record(facts=(Fact(FactKind.Name, "Ruth", at(0)),)),
+    )
+    row = rows[("opus", "p1")]
+    assert (row["subjective_after_feeling_q"], row["subjective_other"]) == (1, 0)
+
+
 def test_why_questions():
     # R-0669
     assert flow.why_questions("Why did your brother move to Leeds?", "He moved.") == 1
@@ -379,6 +405,8 @@ def test_rows_split_by_model_and_prompt():
     )
     assert (second["own_steps"], second["own_steps_stored"]) == (1, 1)
     assert first["feeling_questions"] == 0
+    assert (first["subjective_after_feeling_q"], first["subjective_other"]) == (None, 0)
+    assert (second["subjective_after_feeling_q"], second["subjective_other"]) == (0, None)
 
 
 def test_account_row():

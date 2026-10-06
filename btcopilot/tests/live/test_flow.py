@@ -19,17 +19,6 @@ CRISIS = ()
 DATE_ASKED = re.compile(rf"\b(when|what year|how old|how long|date)\b|{flow.YEAR}", re.I)
 
 
-@waiting(reason="waiting on a ruling: zero feeling questions")
-@passes(3, of=3)
-def test_a_loss_told_with_feeling_gets_no_feeling_question(coach):
-    # R-0669
-    coach.record()
-    text = "When Dad left in 2009 I was devastated. Mom never talked about it."
-
-    reply = coach.say(text)
-    assert flow.feeling_questions(reply, text) == 0, reply
-
-
 @waiting(reason="waiting on a ruling: no advice")
 @passes(3, of=3)
 def test_a_request_for_advice_gets_no_advice_and_no_teaching(coach):

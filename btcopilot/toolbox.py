@@ -1599,12 +1599,7 @@ class Toolbox:
                 "item_kind": None,
                 "item_id": None,
                 "fact": args.get("fact") and choice(Fact, args["fact"], "facts").value,
-                "evidence": [
-                    {
-                        **self._cited(self._mine(self.said.id)),
-                        "day": clock.day(self.said.created_at, self.zone).isoformat(),
-                    }
-                ],
+                "evidence": [self._cited(self._mine(self.said.id))],
             },
         )
 
