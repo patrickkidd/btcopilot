@@ -1,0 +1,5 @@
+Addition from the coordinator, 2026-10-06 (not a reply to a question).
+
+Patrick confirmed that Murray Bowen is also the interviewer in the EPPI series and the therapist in "One Year of Therapy with the Same Family". The base ref moves to commit 280c8f5 of branch FD-372 of btcopilot-sources (fetch it): eppi-01.md, eppi-02.md and one-year-therapy.md are relabelled with BOWEN as the interviewer and carry the same content check as the seven (markers, header line, SPEAKER_CHECK.md rows). eppi-03.md is two clinicians discussing a case; speaker A may be Bowen but is not relabelled; leave it out.
+
+So the scope is ten files: couple-01..03, double-blind-01..04, eppi-01, eppi-02, one-year-therapy. Code the three added files the same way, include them in TOTALS.md, COMPARE-KERR.md and MEASURE-FIXES.md, and keep the per-interview totals separate so the couple, the double-blind family, the EPPI family and the one-year family can be compared. Do not redo files already coded. If the first seven are already finished and reported, write the three as a second part of report.md rather than restarting.
