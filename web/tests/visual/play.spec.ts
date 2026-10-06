@@ -1184,6 +1184,34 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
     expect(family.now.filter((o) => !o.endsWith(":1"))).toEqual([]);
   });
 
+  // R-0794
+  test("in the Family view, fades a divorce's slashes from an earlier date as much as the not yet born, the couple line solid", async ({ page }) => {
+    await familyOf(page, 2, (tl, ids) => {
+      moving(false)(tl, ids);
+      const first = tl.events
+        .filter((e: { dateTime: string | null }) => e.dateTime)
+        .sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime))[0];
+      tl.events.unshift({
+        ...first, id: 9701, kind: "divorced", label: "Divorced", relationship: null, relationshipTargets: [], relationshipTriangles: [],
+        symptom: null, anxiety: null, functioning: null, title: null, description: null,
+        person: ids.Hal, spouse: ids.Hope, person_name: "Hal", sentence: "Hal and Hope divorced",
+      });
+    });
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    for (let i = 0; i < 3; i++) await drawer(page).locator('[data-act="next"]').click();
+    await page.waitForTimeout(800);
+    const seen = await drawer(page).evaluate((p) => ({
+      slashes: [...p.querySelectorAll(".draw .slash")].map((e) => Number(getComputedStyle(e).opacity)),
+      ties: [...p.querySelectorAll(".draw .tie")].filter((e) => !e.closest(".yet")).map((e) => Number(getComputedStyle(e).opacity)),
+      faded: Number(getComputedStyle(p).getPropertyValue("--faded")),
+    }));
+    expect(seen.slashes).toHaveLength(2);
+    expect(seen.faded).toBeLessThan(1);
+    expect(seen.slashes).toEqual([seen.faded, seen.faded]);
+    expect(new Set(seen.ties)).toEqual(new Set([1]));
+  });
+
   // R-0793
   test("in the play-by-play, gives the first step's move, carried to the second, the same see-through look, the second's own move solid", async ({ page }) => {
     await settle(page);

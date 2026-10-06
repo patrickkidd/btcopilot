@@ -321,6 +321,15 @@ describe("bonds", () => {
     expect(els(t.shot(2).svg, "line", "slash").filter((s) => s.class.includes("now"))).toHaveLength(1);
     expect(els(t.shot(3).svg, "line", "slash").filter((s) => s.class.includes("now"))).toHaveLength(0);
   });
+
+  // R-0794
+  it("marks a slash from an earlier date as carried, to fade like every other, and its own date's slash and the couple line not", () => {
+    const t = told(apart());
+    const tone = (i: number) => els(t.shot(i).svg, "line", "slash").map((s) => s.class.split(" ").filter((k) => k !== "slash" && k !== "pop").join(" "));
+    expect(tone(2)).toEqual(["was", "now"]);
+    expect(tone(3)).toEqual(["was", "was"]);
+    els(t.shot(3).svg, "path", "tie").forEach((p) => expect(p.class).not.toContain("was"));
+  });
 });
 
 describe("emphasis and carry", () => {
