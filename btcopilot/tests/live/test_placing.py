@@ -15,6 +15,7 @@ from btcopilot.tests.live.test_waiting import MOST, said
 from btcopilot.toolbox import ToolName, Toolbox
 
 YEARS = [1988, 1990, 1991]
+BORN = 1985
 SISTER = {"id": 4, "name": "Ivy", "last_name": "Hale", "gender": "female", "parents": 10}
 MARRIED = {"id": 40, "kind": "married", "person": 2, "spouse": 3, "dateTime": "1988-06-18", "dateCertainty": "certain"}
 SISTER_BORN = {"id": 41, "kind": "birth", "person": 2, "spouse": 3, "child": 4, "dateTime": "1990-02-03", "dateCertainty": "certain"}
@@ -56,7 +57,7 @@ def test_three_dated_facts_are_given_back_in_order_of_time_early(coach):
     # R-0784
     told(coach)
     reply = coach.say(NEXT)
-    assert places_in_time(reply, YEARS), reply
+    assert places_in_time(reply, YEARS, BORN), reply
 
 
 @passes(2, of=3)
@@ -65,4 +66,4 @@ def test_the_placing_is_not_said_again_on_the_next_turn(coach):
     told(coach)
     first = coach.say(NEXT)
     second = coach.say(AFTER)
-    assert not (places_in_time(first, YEARS) and places_in_time(second, YEARS)), second
+    assert not (places_in_time(first, YEARS, BORN) and places_in_time(second, YEARS, BORN)), second

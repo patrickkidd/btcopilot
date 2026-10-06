@@ -39,6 +39,28 @@ def test_a_sentence_placing_three_years_in_order_passes():
     )
 
 
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "When you were three they married, at five Ivy came, and a year later you were in Tacoma.",
+        "When I was twelve we moved, aged 14 I left school, and two years after that I left home.",
+        "Ivy came in 1990, the move was the next year, and at eight you started school.",
+    ],
+)
+def test_ages_and_steps_place_in_time_too(reply):
+    # R-0784
+    assert places_in_time(reply, YEARS, born=1985)
+
+
+def test_ages_out_of_order_fail():
+    # R-0784
+    assert not places_in_time(
+        "At six you moved to Tacoma, at three your parents married, and at five Ivy came.",
+        YEARS,
+        born=1985,
+    )
+
+
 def test_a_cause_word_fails_the_sentence():
     # R-0784
     assert not places_in_time(

@@ -22,7 +22,18 @@ ALIVE_OR_AGE = (
 WAITING = r"\b(drink\w*|drank|drunk|alcohol\w*|grow(ing)? up|grew up|childhood)\b"
 DRINKING = r"\b(drink\w*|drank|drunk|alcohol\w*)\b"
 MOST = "two or three times when the most was going on"
-YEAR = r"\b(1[89]\d\d|20\d\d)\b|\bthe (?:year (after|before)|(next|following) year)\b"
+NUMBERS = (
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen "
+    "fourteen fifteen sixteen seventeen eighteen nineteen twenty"
+).split()
+COUNT = r"(\d{1,2}|" + "|".join(NUMBERS) + ")"
+# A time marker: a four-digit year, an age, or a step from the marker before.
+MARKER = (
+    r"\b(?P<year>1[89]\d\d|20\d\d)\b"
+    rf"|\b(?:at|aged|at age|when (?:i|you|she|he|they) (?:was|were)) (?P<age>{COUNT})\b"
+    rf"|\b(?:(?P<steps>a|an|{COUNT}) years? (?P<way>later|after|before|earlier)"
+    r"|the (?:year (?P<next>after|before)|(?:next|following) year))\b"
+)
 
 
 def questions(reply: str) -> list[str]:
@@ -84,23 +95,30 @@ def asks_hope(reply: str) -> bool:
     return any(re.search(HOPE, q, re.I) for q in questions(reply))
 
 
-def places_in_time(reply: str, years: list[int]) -> bool:
-    """One sentence gives back three or more of the given years in order of
-    time, "the year after", "the next year" or "the year before" counting as
-    the year next to the one said before it, and names no cause (R-0784)."""
+def number(word: str) -> int:
+    word = word.lower()
+    return int(word) if word.isdigit() else 1 if word in ("a", "an") else NUMBERS.index(word)
+
+
+def places_in_time(reply: str, years: list[int], born: int | None = None) -> bool:
+    """One sentence gives back three or more distinct times in order: one of
+    the given years, an age ("at five", "when I was twelve", "aged 9"), counted
+    from `born`, or a step ("a year later", "the next year", "two years
+    after", "the year before") from the marker before it; and it names no
+    cause (R-0784)."""
     for sentence in re.split(r"(?<=[.?!])\s+", reply):
         said = []
-        for m in re.finditer(YEAR, sentence, re.I):
-            if m.group(1):
-                said.append(int(m.group(1)))
+        for m in re.finditer(MARKER, sentence, re.I):
+            if m["year"]:
+                if int(m["year"]) in years:
+                    said.append(int(m["year"]))
+            elif m["age"]:
+                said.append((born or 0) + number(m["age"]))
             elif said:
-                said.append(said[-1] + (-1 if (m.group(2) or "").lower() == "before" else 1))
-        placed = [y for y in said if y in years]
-        if (
-            len(set(placed)) >= 3
-            and placed == sorted(placed)
-            and not CAUSE.search(sentence)
-        ):
+                back = (m["way"] or m["next"] or "").lower() in ("before", "earlier")
+                step = number(m["steps"]) if m["steps"] else 1
+                said.append(said[-1] + (-step if back else step))
+        if len(set(said)) >= 3 and said == sorted(said) and not CAUSE.search(sentence):
             return True
     return False
 
