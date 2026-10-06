@@ -61,7 +61,7 @@ Panels that show the same people and messages: "People who chatted", "Messages f
 | 24 | The scout and the loop review | The scout was to read the corpus and propose up to ten ranked process changes. | Retired on 2026-09-23 [R-0420] without ever running once. | retired | None. | None |
 | 25 | Notes on votes in the chat | The optional note a person writes with a vote on shadow replies in the chat, stored with the vote in the model_picks table, source chat [R-0668]. | Nobody yet. The aim is an automated step that turns the notes into checks on replies, a rubric; it is not built and not designed. | open | None today. | None |
 | 26 | Acceptable and best marks on votes in the chat | The replies a person marks acceptable and the one marked best, on every vote in the chat, stored with the vote in the model_picks table, source chat [R-0668]. | Nobody yet. Nothing turns the marks into a change to the coach; it is not built and not designed. | open | None today. | None |
-| 27 | The measurement suite for the coach's replies | Not built. Checks on every stored reply, grouped by prompt version and model [R-0669]. | A session finds the checks and keeps improving them, and you review the direction. Parked on 2026-10-02 until you ask; files in the private corpus folder private/eval-suite/. | missing | None today. | None |
+| 27 | The conversational-flow numbers per model and prompt version | Fourteen fixed word rules over every real thread's messages and stored record (feeling and why questions, advice, teaching, use of the person's specifics, objections and what the coach did after, agreement about a relative, praise, two years set side by side with a cause, the person's own next step and whether a todo was stored, shrinking replies, the person's share of words), counted per thread, model, prompt version and rules version, and each account's return within 7 and 30 days; counts only, no text [R-0669]. `flask admin flow track` writes them to threads.jsonl and accounts.jsonl in ~/.claude/research/FD-conversation-flow/tracked/, outside every repository; claude-test accounts, scratch records and play-by-plays are left out. | A session runs the command after a prompt or model change and compares the new prompt version's rows with the old; you rule on targets. The wider eval suite stays parked (private corpus folder private/eval-suite/). | partial | Rows in threads.jsonl for the current prompt version. | Query 27 |
 
 ## Queries
 
@@ -388,4 +388,17 @@ select count(*) as cuts, count(ratified_at) as ratified, max(ratified_at)::date 
        (select count(*) from review_codings where created_at > now() - interval '30 days') as codings_30d,
        (select count(*) from quality_runs where kind::text = 'coding_f1') as coding_f1_points
 from review_cuts;
+```
+
+### 27. The conversational-flow numbers
+
+Run on a sandbox or a copy of the database, or over an export folder holding
+stmts.json and changes.json; on production only with `--production`. Keys already
+written (thread, model, prompt version, rules version) are kept unless `--again`.
+
+```bash
+uv run flask admin flow track --database
+uv run flask admin flow track --export ~/.claude/research/FD-conversation-flow/data2
+jq -s 'group_by(.prompt_version) | map({prompt_version: .[0].prompt_version, coach: (map(.coach_messages) | add), feeling: (map(.feeling_questions) | add)})' \
+  ~/.claude/research/FD-conversation-flow/tracked/threads.jsonl
 ```

@@ -9,6 +9,7 @@ from btcopilot.admin.catchup import catch_up
 from btcopilot.admin.coachmodels import coach_model
 from btcopilot.admin.database import database
 from btcopilot.admin.diagrams import diagrams
+from btcopilot.admin.flow import flow_group
 from btcopilot.admin.guard import run
 from btcopilot.admin.imports import imports
 from btcopilot.admin.licences import licences
@@ -40,6 +41,7 @@ for group in (
     notice_group,
     proactive_group,
     quality,
+    flow_group,
     questions_group,
     impressions_group,
     titles_group,
