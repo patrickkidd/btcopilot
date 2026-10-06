@@ -14,7 +14,15 @@ hash of the whole request: model, settings, system prompt, tools and messages. A
 replays the saved response when the hash matches and pays only for calls that changed, so a
 prompt or tool edit re-spends only on the calls it touches. A replayed call costs $0. The same
 request seen again in one case (the runs of a k of n case) is saved once per run. The prompt's
-date is fixed so a saved call matches from one day to the next. `LIVE_REPLAY` picks the mode:
+date is fixed so a saved call matches from one day to the next.
+
+`private/replays/` is a local cache on this machine: git-ignored, never committed (R-0799).
+A change to the prompt, a tool, the model or the effort changes every request's hash, so no
+saved reply is used again after one. Each reply's file time is refreshed whenever it is
+served, and at the start of every run any reply neither served nor written in the last 14 days
+is deleted (files git still tracks are left alone). What a run keeps is its result: the count
+per case, per prompt version and model, in the eval ledger and in
+`doc/PROMPT_ENGINEERING_LOG.md`. `LIVE_REPLAY` picks the mode:
 
 | Mode | What it does |
 |------|--------------|

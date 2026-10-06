@@ -109,6 +109,7 @@ def run(request):
         Path(os.environ.get("LIVE_STORE", STORE)).resolve(),
         requests=Path(os.environ["LIVE_REQUESTS"]) if mode() is Mode.Dump else None,
     )
+    replay.prune()
     if not replay.mode.offline:
         opened.open(require_testing_key())
     charged = opened.recorded

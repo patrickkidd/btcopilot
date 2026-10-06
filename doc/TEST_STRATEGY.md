@@ -18,6 +18,16 @@ at phone size only. Everything else asserts words, roles and geometry (visible w
 no box outside its parent, the 44px floor). The desktop project keeps its assertions
 but skips every screenshot and is not part of the gate; it runs by hand.
 
+## Saved replies of the live cases, 2026-10-06 (R-0799)
+
+The live cases' saved model replies in `private/replays/` are a local cache: git-ignored,
+never committed. A change to the prompt, a tool, the model or the effort stops every saved
+reply being used, since each is found by a hash of the whole request. A reply is kept only
+while it is reused: its file time is refreshed whenever it is served, and replies neither
+served nor written in the last 14 days are deleted at the start of each run. What is kept
+from a run is its result, the count per case per prompt version and model, in the eval
+ledger and `doc/PROMPT_ENGINEERING_LOG.md`.
+
 ## The headline: the test suites are not where the time goes
 
 The review back end runs 89 tests in 6.4 seconds; the front end unit suite runs 113 in

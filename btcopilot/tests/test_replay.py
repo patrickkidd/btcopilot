@@ -1,12 +1,15 @@
 import json
+import os
+import subprocess
+import time
 
 import pytest
 
 from btcopilot.coachmodel import CoachModel, ModelTurn, Spent, ToolCall, marked_ends
 from btcopilot.llmutil import Served
 from btcopilot.quality import Source
-from btcopilot.tests.live import answer, subscription
-from btcopilot.tests.live.replay import Miss, Mode, Replay
+from btcopilot.tests.live import answer, replay, subscription
+from btcopilot.tests.live.replay import KEEP, Miss, Mode, Replay
 
 MESSAGES = [{"role": "user", "content": "My brother moved away last spring."}]
 TOOLS = [{"name": "add_event", "input_schema": {"type": "object"}}]
@@ -169,3 +172,50 @@ def test_a_subscription_replay_sends_none_of_the_apps_cache_marks(tmp_path):
     lines = subscription.transcript(chat, "s1", tmp_path)
     assert "cache_control" not in json.dumps([line["message"] for line in lines])
     assert lines[1]["message"]["content"][1]["name"] == "mcp__coach__add_event"
+
+
+def aged(path):
+    old = time.time() - KEEP.total_seconds() - 60
+    os.utime(path, (old, old))
+
+
+def test_serving_a_reply_refreshes_its_time(tmp_path):
+    # R-0799
+    call(Replay(Mode.Replay, tmp_path, seal=False), Wire())
+    (saved,) = tmp_path.glob("*.json")
+    aged(saved)
+    call(Replay(Mode.Only, tmp_path, seal=False), Wire())
+    assert time.time() - saved.stat().st_mtime < 60
+
+
+def test_a_reply_unused_past_keep_is_deleted(tmp_path):
+    # R-0799
+    call(Replay(Mode.Replay, tmp_path, seal=False), Wire())
+    (saved,) = tmp_path.glob("*.json")
+    fresh = tmp_path / "fresh-0.json"
+    fresh.write_text("{}")
+    aged(saved)
+    Replay(Mode.Replay, tmp_path, seal=False).prune()
+    assert list(tmp_path.glob("*.json")) == [fresh]
+
+
+def test_a_tracked_reply_is_never_deleted(tmp_path, monkeypatch):
+    # R-0799
+    monkeypatch.setattr(replay, "REPO", tmp_path)
+    store = tmp_path / "replays"
+    store.mkdir()
+    tracked, loose = store / "tracked-0.json", store / "loose-0.json"
+    for path in (tracked, loose):
+        path.write_text("{}")
+        aged(path)
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "replays/tracked-0.json"], cwd=tmp_path, check=True)
+    Replay(Mode.Replay, store, seal=False).prune()
+    assert list(store.glob("*.json")) == [tracked]
+
+
+def test_pruning_an_empty_or_missing_store_works(tmp_path):
+    # R-0799
+    Replay(Mode.Replay, tmp_path / "missing", seal=False).prune()
+    Replay(Mode.Replay, tmp_path, seal=False).prune()
+    assert not (tmp_path / "missing").exists()
