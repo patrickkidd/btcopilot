@@ -558,11 +558,20 @@ test.describe("a family wider than the phone", () => {
   });
 });
 
+/** Whether the person is whole in the Family view's frame, or else shown by
+ * an arrow at its edge (R-0785). */
+const inSight = (page: Page, id: number | string) =>
+  page.evaluate((id) => {
+    const d = document.querySelector("#pbp .draw")!.getBoundingClientRect();
+    const p = document.querySelector(`#pbp .draw .p[data-id="${id}"] .shape`)!.getBoundingClientRect();
+    return (p.left >= d.left - 0.5 && p.right <= d.right + 0.5) || !!document.querySelector(`#pbp .edge[data-slide="${id}"]`);
+  }, String(id));
+
 test.describe("a move between two people further apart than the phone is wide", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
 
-  // R-0759, R-0744
-  test("settles each step with whoever moves whole in the frame and their mark reaching into it from them", async ({ page }) => {
+  // R-0759, R-0744, R-0785
+  test("shows whoever moves on each step, whole in the frame or by an arrow at its edge, the picture never sliding", async ({ page }) => {
     let ids: Record<string, number> = {};
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
@@ -611,20 +620,7 @@ test.describe("a move between two people further apart than the phone is wide", 
         moved++;
         const at = await drawer(page).locator(".when").innerText();
         divorced ||= at.includes("divorced");
-        expect((await cutInFrame(page, "#pbp .draw", [mover])).cut, `${at}: the one who moves`).toEqual({});
-        // the mark starts at the mover: all of a short one, and a good part of a long one, is in the frame,
-        // read once it has grown to its full length in its loop
-        const shown = await draw.evaluate((d, sel) => {
-          const svg = d.querySelector<SVGSVGElement>("svg")!;
-          svg.pauseAnimations();
-          svg.setCurrentTime(4.5);
-          const f = d.getBoundingClientRect();
-          return [...d.querySelectorAll(sel)].map((m) => {
-            const b = m.getBoundingClientRect();
-            return { in: Math.min(b.right, f.right) - Math.max(b.left, f.left), w: b.width };
-          });
-        }, mark);
-        expect(shown.every((s) => s.in >= Math.min(60, s.w - 1)), `${at}: the move ${JSON.stringify(shown)}`).toBe(true);
+        expect(await inSight(page, mover), `${at}: the one who moves`).toBe(true);
       }
       const next = drawer(page).locator('[data-act="next"]:not([disabled])');
       if (!(await next.count())) break;
@@ -787,7 +783,8 @@ test.describe("the Family view's three generations", () => {
   });
 
   // R-0783, R-0759
-  test("settles a date with everyone it involves in the frame when they all fit, the second mover too", async ({ page }) => {
+  // R-0785
+  test("shows everyone a date involves, the second mover too, in the frame or by an arrow at its edge", async ({ page }) => {
     let ids: Record<string, number> = {};
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
@@ -820,8 +817,7 @@ test.describe("the Family view's three generations", () => {
     // the frame's travel takes up to two seconds
     await page.waitForTimeout(2300);
     expect(await draw.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
-    const three = [ids.Hugo, ids.Wanda, ids.Ws1].map(String);
-    expect(await cutInFrame(page, "#pbp .draw", three)).toEqual({ fits: true, cut: {} });
+    for (const id of [ids.Hugo, ids.Wanda, ids.Ws1]) expect(await inSight(page, id)).toBe(true);
   });
 
   // R-0782
@@ -994,6 +990,61 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
       titles.push(await drawer(page).locator(".when").textContent());
     }
     expect(titles.some((t) => t!.includes("Hugo kept every promise"))).toBe(true);
+  });
+
+  // R-0785
+  test("never slides the picture on a step, showing who the date involves off the screen by an arrow at its edge that glows and slides the picture to them", async ({ page }) => {
+    const ids = await familyOf(page, 6, (tl, ids) => {
+      const dated = tl.events.filter((e: { dateTime: string | null }) => e.dateTime).sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime));
+      // Hugo's eldest sister and youngest brother move toward each other, then Hugo toward Wanda
+      dated.forEach((e: Record<string, unknown>, i: number) =>
+        Object.assign(e, i % 2
+          ? { person: ids.Hugo, relationship: "toward", relationshipTargets: [ids.Wanda], relationshipTriangles: [], functioning: null }
+          : { person: ids.Hs0, relationship: "toward", relationshipTargets: [ids.Hs5], relationshipTriangles: [], functioning: null }),
+      );
+    });
+    // Hugo's frame, his parents and six brothers and sisters, is wider than the phone
+    await tapPerson(page, ids().Hugo);
+    await page.waitForTimeout(600);
+    const draw = drawer(page).locator(".draw");
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    const at = await draw.evaluate((d) => d.scrollLeft);
+    const name = { [ids().Hs0]: "Hs0", [ids().Hs5]: "Hs5", [ids().Hugo]: "Hugo", [ids().Wanda]: "Wanda" };
+    let seen = 0;
+    for (let i = 0; i < 4; i++) {
+      await drawer(page).locator('[data-act="next"]').click();
+      await page.waitForTimeout(700);
+      expect(await draw.evaluate((d) => d.scrollLeft)).toBe(at);
+      const marks = await drawer(page).locator(".edge").evaluateAll((es, box) =>
+        es.map((e) => {
+          const id = (e as HTMLElement).dataset.slide!;
+          const s = document.querySelector(`#pbp .draw .p[data-id="${id}"] .shape`)!.getBoundingClientRect();
+          const d = document.querySelector("#pbp .draw")!.getBoundingClientRect();
+          const r = e.getBoundingClientRect();
+          return { id, text: e.textContent, on: e.classList.contains("on"), side: r.left <= d.left + 1 ? "left" : "right", where: s.left + s.width / 2 < d.left + d.width / 2 ? "left" : "right", off: s.left < d.left || s.right > d.right };
+        }), null);
+      for (const m of marks) {
+        expect(m.off).toBe(true);
+        expect(m.side).toBe(m.where);
+        expect(m.text).toContain(name[Number(m.id)]);
+      }
+      // the one who moves glows while the move plays
+      if (marks.some((m) => Number(m.id) === ids().Hs0)) expect(marks.find((m) => Number(m.id) === ids().Hs0)!.on).toBe(true);
+      seen += marks.length;
+    }
+    expect(seen).toBeGreaterThan(0);
+    const edge = drawer(page).locator(".edge").first();
+    if (!(await edge.count())) await drawer(page).locator('[data-act="back"]').click();
+    const id = (await drawer(page).locator(".edge").first().getAttribute("data-slide"))!;
+    await drawer(page).locator(".edge").first().click();
+    await page.waitForTimeout(2300);
+    const inView = await drawer(page).evaluate((p, id) => {
+      const s = p.querySelector(`.draw .p[data-id="${id}"] .shape`)!.getBoundingClientRect();
+      const d = p.querySelector(".draw")!.getBoundingClientRect();
+      return s.left >= d.left - 0.5 && s.right <= d.right + 0.5;
+    }, id);
+    expect(inView).toBe(true);
   });
 
   // R-0679
@@ -1260,8 +1311,8 @@ test.describe("the whole family wider than the phone", () => {
     expect(errors).toEqual([]);
   });
 
-  // R-0744, R-0742, R-0783
-  test("glides its frame to each step's person on Back and Next", async ({ page }) => {
+  // R-0742, R-0783, R-0785
+  test("shows each step's person on Back and Next, in the frame or by an arrow at its edge", async ({ page }) => {
     const errors = watched(page);
     let ids: Record<string, number> = {};
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
@@ -1284,15 +1335,9 @@ test.describe("the whole family wider than the phone", () => {
     await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
     // the frame walked up to Hugo, whose brothers and sisters these dates are about
     await tapPerson(page, ids.Hugo);
-    const inFrame = (id: number) =>
-      page.evaluate((id) => {
-        const d = document.querySelector(".pbp .draw")!.getBoundingClientRect();
-        const p = document.querySelector(`.pbp .draw .p[data-id="${id}"] .shape`)!.getBoundingClientRect();
-        return p.left >= d.left && p.right <= d.right;
-      }, id);
     const shown = async (name: string, what: string) => {
       await expect(drawer(page).locator(".when")).toContainText(`${name} ${what}`);
-      await expect.poll(() => inFrame(ids[name])).toBe(true);
+      await expect.poll(() => inSight(page, ids[name])).toBe(true);
     };
     const next = drawer(page).locator('[data-act="next"]');
     while (await next.isEnabled()) await next.click();

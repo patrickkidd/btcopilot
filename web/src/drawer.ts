@@ -185,14 +185,10 @@ export function frameOn(
   marks: SVGGraphicsElement[] = [],
   /** Others the frame holds too, but only when everyone fits. */
   also: string[] = [],
-  /** Stay where it stands while `ids` and their `marks` are all in sight. */
-  stay = false,
 ): void {
   if (frame.scrollWidth <= frame.clientWidth) return;
   const svg = frame.querySelector<SVGSVGElement>("svg")!;
   const w = frame.clientWidth;
-  const seen = ([p, q]: [number, number]) => p >= frame.scrollLeft - 0.5 && q <= frame.scrollLeft + w + 0.5;
-  if (stay && [...ids.map((id) => span(frame, svg, id)), ...marks.map((m) => reach(frame, svg, [m]))].every(seen)) return;
   const people = ids.map((id) => span(frame, svg, id));
   const base = [...people, ...marks.map((m) => reach(frame, svg, [m]))];
   const others = also.map((id) => span(frame, svg, id));
@@ -360,6 +356,7 @@ export class Drawer {
       `<div class="lv"><div class="wire"></div><div class="draw"></div><div class="scroll"></div></div>` +
       (told.whole ? `<div class="foot"></div>` : "");
     slideOver(this.panel, true);
+    if (told.whole) this.panel.querySelector(".draw")!.addEventListener("scroll", () => this.edges(), { passive: true });
     this.render(false);
     this.onMoved?.();
   }
@@ -446,8 +443,9 @@ export class Drawer {
           [{ transform: `translate(${moved.x - (now.left + now.width / 2)}px, ${moved.y - (now.top + now.height / 2)}px)` }, { transform: "none" }],
           { duration: 450, easing: "ease-in-out" },
         );
-    } else if (!told.whole || view.steps[this.i].marks.length)
-      // a date touching no one in the Family view's frame leaves it where it stands (R-0784)
+    } else if (!told.whole || !glide)
+      // stepping the Family view never slides its picture: who a date involves
+      // off the screen is shown at its edge instead (R-0785)
       frameOn(
         draw,
         [...new Set(ids)],
@@ -456,9 +454,62 @@ export class Drawer {
         shot.mover ? [...draw.querySelectorAll<SVGGraphicsElement>(`.fore [data-mark^="move:${CSS.escape(shot.mover)}>"]`)] : [],
         // everyone the step involves, when they all fit
         shot.involved,
-        // the Family view's one frame holds still while a date's people are in sight (R-0784)
-        told.whole && glide,
       );
+    if (told.whole) {
+      this.involved = shot.involved;
+      this.lit = new Set([...lit, ...(shot.mover ? [shot.mover] : [])]);
+      this.edges();
+    }
+  }
+
+  /** Who the date in the Family view involves, and of them who its shifts light. */
+  private involved: string[] = [];
+  private lit = new Set<string>();
+
+  /** An arrow at the screen's edge for each person the date involves who is
+   * off it, toward where they stand, with their name; it glows while their
+   * shift plays and a tap slides the picture to them. On one edge they stack,
+   * clear of Back and Next (R-0785). */
+  private edges(): void {
+    const lv = this.panel.querySelector<HTMLElement>(".lv")!;
+    const draw = lv.querySelector<HTMLElement>(".draw")!;
+    lv.querySelectorAll(".edge").forEach((e) => e.remove());
+    if (draw.scrollWidth <= draw.clientWidth + 1) return;
+    const box = draw.getBoundingClientRect();
+    const at = lv.getBoundingClientRect();
+    const [cx, cy] = [box.left + box.width / 2, box.top + box.height / 2];
+    const foot = this.panel.querySelector<HTMLElement>(".foot .step")?.getBoundingClientRect();
+    // the lowest a marker may stand: over Back and Next when they float on the picture
+    const floor = Math.min(box.bottom, foot && foot.top < box.bottom ? foot.top : Infinity);
+    const H = 26;
+    const placed = { left: [] as { el: HTMLElement; y: number }[], right: [] as { el: HTMLElement; y: number }[] };
+    this.involved.forEach((id) => {
+      const shape = draw.querySelector(`.p[data-id="${CSS.escape(id)}"] .shape`)?.getBoundingClientRect();
+      if (!shape) return;
+      const px = shape.left + shape.width / 2;
+      const py = shape.top + shape.height / 2;
+      // someone cut by the screen's edge is off it too
+      if (shape.left >= box.left - 0.5 && shape.right <= box.right + 0.5) return;
+      const side = px < cx ? "left" : "right";
+      const ex = side === "left" ? box.left : box.right;
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = `edge ${side}${this.lit.has(id) ? " on" : ""}`;
+      el.dataset.slide = id;
+      el.innerHTML = side === "left" ? `\u2039 ${esc(this.names[id])}` : `${esc(this.names[id])} \u203a`;
+      lv.appendChild(el);
+      placed[side].push({ el, y: cy + ((py - cy) * (ex - cx)) / (px - cx) - H / 2 });
+    });
+    Object.entries(placed).forEach(([side, ms]) => {
+      ms.sort((a, b) => a.y - b.y);
+      // stacked down the edge, never on one another, then lifted clear of the foot
+      ms.forEach((m, k) => (m.y = Math.max(m.y, box.top, k ? ms[k - 1].y + H + 4 : -Infinity)));
+      for (let k = ms.length - 1; k >= 0; k--) ms[k].y = Math.min(ms[k].y, (k < ms.length - 1 ? ms[k + 1].y : floor) - (k < ms.length - 1 ? H + 4 : H));
+      ms.forEach((m) => {
+        m.el.style.top = `${m.y - at.top + lv.scrollTop}px`;
+        m.el.style[side as "left" | "right"] = "0";
+      });
+    });
   }
 
   /** Who a date touches outside the Family view's frame, each a way to put
@@ -514,6 +565,11 @@ export class Drawer {
     if (person && !person.dataset.id!.startsWith("unknown-")) {
       const shape = this.panel.querySelector(`.draw .p[data-id="${CSS.escape(person.dataset.id!)}"] .shape`);
       return this.recentre(person.dataset.id!, shape);
+    }
+    const slide = (e.target as Element).closest<HTMLElement>("[data-slide]");
+    if (slide) {
+      const draw = this.panel.querySelector<HTMLElement>(".draw")!;
+      return frameOn(draw, [slide.dataset.slide!], slide.dataset.slide!, true);
     }
     const named = (e.target as Element).closest<HTMLElement>("[data-centre]");
     if (named) return this.recentre(named.dataset.centre!, null);
