@@ -1,5 +1,5 @@
 import { esc } from "./dom";
-import { CROSS, cross as healthCross, draw as moveMarks, FLANK, Move, Shift, SPIKES, spikes as anxious, WALL } from "./moves";
+import { CROSS, cross as healthCross, draw as moveMarks, FIELD, FLANK, Move, Shift, SPIKES, spikes as anxious, WALL } from "./moves";
 
 /** A small family diagram generated from a cast, to FAMILY_DIAGRAM_VISUAL_SPEC.md,
  * ported from the approved play-by-play reference (design/playbyplay-snapshots,
@@ -100,6 +100,10 @@ export interface Kin {
   to: string | null;
   cls?: Tone;
 }
+
+/** Whose field a move rings: the one it reaches, and the one who holds their ground too. */
+const fielded = (m: Kin): string[] =>
+  !m.to ? [] : m.kind === Move.Distance || m.kind === Move.Cutoff ? [m.to] : m.kind === Move.DefinedSelf ? [m.to, m.from] : [];
 
 export interface Placed {
   k: Mark;
@@ -1387,6 +1391,14 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   );
   cast.bonds.forEach((b) => fam(x[b.a], bar(L, b).y + 4));
   cast.moves.forEach((mv) => awayTip(L, mv).forEach(([ax, ay]) => grow(ax, ay)));
+  // a field's rings run their whole reach inside the picture (R-0776, R-0796)
+  cast.kin.forEach((m) =>
+    fielded(m).forEach((id) => {
+      // the ring's own line too
+      grow(x[id] - FIELD - 2, y[id]);
+      grow(x[id] + FIELD + 2, y[id]);
+    }),
+  );
   L.cut.forEach((c) => {
     const [a, q, b] = bend(where, c);
     fam((a[0] + 2 * q[0] + b[0]) / 4, (a[1] + 2 * q[1] + b[1]) / 4);
@@ -1409,12 +1421,12 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     // scaled down to fit the phone, the margin kept at its size on the screen;
     // re-ruled 2026-10-04: the shapes keep the drawer's floor and the picture scrolls sideways,
     // its margin still the same size on the screen, never growing with the width.
-    // A family wider than the phone is framed on what it draws, not centred on
-    // its people: a word reaching out on one side leaves no empty band on the other
-    const [x0, x1] = [Math.min(box.x0, said.x0), Math.max(box.x1, said.x1)];
+    // A family wider than the phone is centred on its people, as every picture
+    // is (R-0797): whatever reaches further out on one side is matched on the other
+    const fits = Math.max(reach, span / (1 - (2 * MX) / VIEW));
     const least = LEAST.label / NAME;
-    if (VIEW / Math.max(x1 - x0, (said.x1 - said.x0) / (1 - (2 * MX) / VIEW)) >= least) {
-      L.vw = Math.max(x1 - x0, (said.x1 - said.x0) / (1 - (2 * MX) / VIEW));
+    if (VIEW / fits >= least) {
+      L.vw = fits;
       MX *= L.vw / VIEW;
       MY *= L.vw / VIEW;
     } else {
@@ -1423,8 +1435,9 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     }
     // every name keeps the family's margin from the frame's side too
     const nb = ids.map((id) => nameBox(id, side[id]));
-    const lo = Math.min(box.x0, said.x0 - MX, ...nb.map((b) => b.x0 - MX));
-    L.vw = Math.max(box.x1, said.x1 + MX, ...nb.map((b) => b.x1 + MX)) - lo;
+    const half = Math.max(mid - Math.min(box.x0, said.x0 - MX, ...nb.map((b) => b.x0 - MX)), Math.max(box.x1, said.x1 + MX, ...nb.map((b) => b.x1 + MX)) - mid);
+    const lo = mid - half;
+    L.vw = 2 * half;
     L.px = d.W * Math.max(least, Math.min(1, VIEW / L.vw));
     dx = -lo;
   } else if (wide > VIEW)

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { arrange, bar, crosses, draw, Mark, Side, VIEW, W, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
+import { arrange, bar, crosses, draw, Mark, people, Side, VIEW, W, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
 import { FIELD, Move } from "../src/moves";
 import { among, family as wholeFamily, familyStart, gapText, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
@@ -723,6 +723,19 @@ describe("moves other than toward and away", () => {
     );
     expect(reaches.filter((r) => r.includes("mv-clear"))).toHaveLength(1);
     expect(reaches.filter((r) => !r.endsWith(` ${FIELD}`))).toEqual([]);
+  });
+
+  it.each(["distance", "cutoff", "defined-self"])("keeps the whole of a %s field's rings inside the picture, its people and their names in the middle of it", (kind) => {
+    // R-0796, R-0797
+    for (const to of [CORINNE, THEO]) {
+      const L = moved(kind, [to]).layout;
+      [to, ...(kind === "defined-self" ? [DELPHINE] : [])].forEach((id) => {
+        expect(L.x[id] - FIELD).toBeGreaterThanOrEqual(-0.5);
+        expect(L.x[id] + FIELD).toBeLessThanOrEqual(L.vw + 0.5);
+      });
+      const k = people(L);
+      expect(Math.abs((k.x0 + k.x1) / 2 - L.vw / 2)).toBeLessThanOrEqual(2);
+    }
   });
 
   // R-0555, R-0556, R-0557
