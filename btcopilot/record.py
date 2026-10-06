@@ -136,6 +136,13 @@ def apply(
         )
 
 
+def preview(diagram_id: int, deltas: list[dict], *, author: Author) -> None:
+    """Raise Invalid where `apply` would refuse these deltas; writes nothing."""
+    data = diagramjson.loads(db.session.get(Diagram, diagram_id).data)
+    applied = [d for delta in deltas for d in _apply(data, delta)]
+    _validate(data, compress(applied), author, False)
+
+
 def undo(
     diagram_id: int,
     turn_id: str,
@@ -812,11 +819,11 @@ def _moves(data: dict, deltas: list[dict]):
                 "where someone lived.",
             )
         for field in DATES:
-            day = _day(event.get(field))
-            if day and parse_date(day) is None:
+            value = event.get(field)
+            if value and not (isinstance(value, str) and parse_date(value)):
                 raise Invalid(
-                    f"event {event_id}'s {field} {event.get(field)!r} is not a "
-                    "date: give it as YYYY-MM-DD, the first of the month or the "
+                    f"event {event_id}'s {field} {value!r} is not a date: give "
+                    "it as YYYY-MM-DD text, the first of the month or the "
                     "year when only those are known",
                     "That date could not be read.",
                 )
