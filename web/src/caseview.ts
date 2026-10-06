@@ -1,6 +1,6 @@
 import { arrange, Sex, Tie, type Bond, type Brood, type Cast, type Layout, type Shape } from "./diagram";
 import { dateText } from "./spotlight";
-import { Family, tieBefore, when } from "./snapshots";
+import { aboutOf, Family, tieBefore, when } from "./snapshots";
 import {
   CaseReportCard,
   EventKind,
@@ -193,7 +193,7 @@ class Reader {
    * label; a self-describing event about someone else says whose it is. */
   fact(e: TimelineEvent): Fact | null {
     if (!e.dateTime) return null;
-    const about = e.child ?? e.person;
+    const about = aboutOf(e);
     const whose = SELF_DESCRIBING.has(e.kind ?? "") && about !== this.subject.id && e.person_name ? `${e.person_name} · ` : "";
     return { id: e.id, face: `${dateText(e.dateTime, e.dateCertainty)} · ${whose}${e.label}` };
   }
@@ -236,6 +236,7 @@ class Reader {
       words: {},
       moves: [],
       kin: [],
+      places: [],
       anxious: [],
       assoc: {},
       until: this.now,

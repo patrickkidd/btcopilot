@@ -7,6 +7,7 @@ compare-and-set on each value.
 """
 
 import contextlib
+import datetime
 import enum
 import logging
 import re
@@ -103,6 +104,7 @@ def apply(
     user_id: int | None = None,
     session_id: int | None = None,
     statement_id: int | None = None,
+    refile: bool = False,
 ) -> Change:
     """Set each delta's `after` on the record and log the command.
 
@@ -114,6 +116,9 @@ def apply(
     the app's own scene does, and logs `before` as the whole item so undo puts
     it back. A field set on an id the record does not hold makes the item, and
     is logged as one add holding the whole item, so undo takes it off.
+
+    `refile` is the questions catch-up's alone: it moves a question, closed or
+    not, to another item and adds copies of it, and does nothing else to one.
     """
     with _locked(diagram_id) as diagram:
         data = diagramjson.loads(diagram.data)
@@ -127,6 +132,7 @@ def apply(
             user_id,
             session_id,
             statement_id,
+            refile=refile,
         )
 
 
@@ -398,6 +404,10 @@ def _apply(data: dict, delta: dict) -> list[dict]:
 # replaces the one before it, except that up to three guesses are on what to
 # work on and on the coach's guess (R-0709, R-0732).
 CARD = "case_report_card"
+# The days the coach put a question to the person again after the first ask (R-0774).
+ASKED_AGAIN = "asked_again_on"
+# Asked again this many times and passed over, it is no longer waiting.
+PASSES = 2
 CARD_HOLDS = {CaseReportCard.WorkOn: 3, CaseReportCard.CoachGuess: 3}
 QUESTION_CARDS = (CaseReportCard.OwnPart, CaseReportCard.Choice)
 
@@ -558,7 +568,9 @@ def _removes(delta: dict) -> bool:
     return delta["field"] is None and delta["after"] is None
 
 
-def _validate(data: dict, deltas: list[dict], author: Author, undoing: bool):
+def _validate(
+    data: dict, deltas: list[dict], author: Author, undoing: bool, refile: bool = False
+):
     """Every cluster this write leaves behind holds at least MIN_CLUSTER_EVENTS
     events.
 
@@ -601,7 +613,7 @@ def _validate(data: dict, deltas: list[dict], author: Author, undoing: bool):
     _structure(data, deltas)
     # What a removal or an undo does to a question is the record's own doing.
     if not undoing and not any(_removes(delta) for delta in deltas):
-        _questions(data, deltas, author)
+        _questions(data, deltas, author, refile)
 
 
 COUPLE_KINDS = {kind.value for kind in EventKind if kind.isCouple()}
@@ -1224,6 +1236,10 @@ QUESTION_LINKS = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.C
 FACT_LINKS = (ItemKind.Person, ItemKind.PairBond)
 
 
+# The fields a re-filing writes on a question it moves.
+REFILED = ("item_kind", "item_id")
+
+
 @dataclass(frozen=True)
 class Note:
     """What differs between a question and an impression; everything else
@@ -1279,7 +1295,7 @@ def normal(text: str) -> str:
     return " ".join(text.lower().split())
 
 
-def _questions(data: dict, deltas: list[dict], author: Author):
+def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = False):
     """A question or an impression has words, moves only forward from held to
     shown to resolved, says how it ended exactly when it is resolved, is kept
     once in the same words and never in words the user turned down, and is
@@ -1308,6 +1324,9 @@ def _questions(data: dict, deltas: list[dict], author: Author):
         moved = [d for d in mine if d["field"] == "state"]
         added = any(d["field"] is None for d in mine)
         was = None if added else QuestionState(moved[0]["before"] if moved else state)
+        if refile:
+            _refiled(data, question, question_id, added, written)
+            continue
         if state not in rules.order:
             raise Invalid(
                 f"{noun} {question_id} cannot be {state.value}: it is held, "
@@ -1319,7 +1338,7 @@ def _questions(data: dict, deltas: list[dict], author: Author):
         if moved and not added and rules.order.index(state) <= rules.order.index(was):
             if was is rules.shown:
                 raise Invalid(
-                    f"{noun} {question_id} was already {was.value}",
+                    f"{noun} {question_id} was already {was.value}: {_again(rules)}",
                     f"That {noun} was already {was.value}.",
                 )
             raise Invalid(
@@ -1351,6 +1370,8 @@ def _questions(data: dict, deltas: list[dict], author: Author):
             )
         if question.get("pushback") is not None:
             Pushback(question["pushback"])
+        if ASKED_AGAIN in written:
+            _asked_again(mine, question_id, rules, was, state)
         _card(question, question_id, rules, state, written, author)
         if question.get("answer") is not None and (
             rules is IMPRESSION or outcome is not QuestionOutcome.Answered
@@ -1381,7 +1402,55 @@ def _questions(data: dict, deltas: list[dict], author: Author):
                     rules.barred_plain,
                 )
             if other["state"] != QuestionState.Resolved:
-                raise Invalid(f"that {noun} is already {other['id']}", f"That {noun} is already there.")
+                raise Invalid(
+                    f"that {noun} is already {other['id']}, {other['state']}: {_again(rules)}",
+                    f"That {noun} is already there.",
+                )
+
+
+def _refiled(data: dict, question: dict, question_id: str, added: bool, written: set):
+    """A question filed on the wrong kind of thing, re-filed by the questions
+    catch-up even when closed: moved to the right item, or copied whole onto
+    another, and nothing else (R-0773)."""
+    if not (added or written <= set(REFILED)):
+        raise Invalid(
+            f"a re-filing only moves question {question_id} to another item",
+            "A question can only be moved here.",
+        )
+    _linked(data, question, question_id)
+    _names(question, question_id)
+
+
+def _asked_again(mine: list[dict], question_id: str, rules, was, state) -> None:
+    """A question put to the person again adds one day to the days it was
+    asked again, while it stays asked and unanswered (R-0774)."""
+    delta = next(d for d in mine if d["field"] == ASKED_AGAIN)
+    before, after = delta.get("before") or [], delta["after"]
+    if rules is not QUESTION or was is not QuestionState.Asked or state is not QuestionState.Asked:
+        raise Invalid(
+            f"only a question already asked and still open is asked again, not {question_id}",
+            "Only an open question can be asked again.",
+        )
+    if not isinstance(after, list) or after[:-1] != before or len(after) != len(before) + 1:
+        raise Invalid(
+            f"{ASKED_AGAIN} of {question_id} only gains the one day it is asked again",
+            "A question is asked again one day at a time.",
+        )
+    datetime.date.fromisoformat(after[-1])
+
+
+def _again(rules) -> str:
+    """How the coach comes back to a waiting one instead of keeping it twice (R-0771)."""
+    shown = rules.shown.value
+    if rules is QUESTION:
+        return (
+            f"to ask it now, mark it {shown} with set_question, whether it is held or "
+            f"already {shown}, and ask it in your reply"
+        )
+    return (
+        f"to say it now, mark one held {shown} with set_{rules.noun}; "
+        f"one already {shown} is said again in your reply with no call"
+    )
 
 
 def _card(question: dict, question_id: str, rules, state, written: set, author: Author):
@@ -1517,9 +1586,18 @@ def _unsourced(data: dict, impression: dict, impression_id: str):
 
 
 def _commit(
-    diagram, data, deltas, author, turn_id, user_id, session_id, statement_id, undoing=False
+    diagram,
+    data,
+    deltas,
+    author,
+    turn_id,
+    user_id,
+    session_id,
+    statement_id,
+    undoing=False,
+    refile=False,
 ) -> Change:
-    _validate(data, deltas, author, undoing)
+    _validate(data, deltas, author, undoing, refile)
     version = db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)

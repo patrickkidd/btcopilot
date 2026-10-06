@@ -8,22 +8,29 @@ The turn returns the coach's words plus the typed events behind them, so the
 page can move the picture with the same reply it types out.
 """
 
-import datetime
 import hashlib
 import itertools
 import logging
 import uuid
 from typing import Callable
 
-import aiohttp
 import regex
-from google.genai.errors import APIError as GeminiError
 from opentelemetry import trace
 
 from btcopilot.extensions import ai_log, db
-from btcopilot import chips, clusters, coverage, profile, recordtext, turnlog, turnstore
+from btcopilot import (
+    chips,
+    clock,
+    clusters,
+    coverage,
+    profile,
+    recordtext,
+    turnlog,
+    turnstore,
+)
 from btcopilot.coachmodel import CoachModel, marked_ends
 from btcopilot.discussions import previous
+from btcopilot.llmutil import UNANSWERED
 from btcopilot.metered import Metered
 from btcopilot.models import (
     Change,
@@ -255,11 +262,16 @@ class CoachTurn:
         turn_id: str | None = None,
         resume: bool = False,
         scratch: bool = False,
+        zone: str | None = None,
     ):
         """A scratch turn runs on a copy: it charges no one's monthly cap and
         leaves the user's profile alone."""
         self.discussion = discussion
         self.statement = statement
+        # The person's IANA zone, sent by the page with the message: "today"
+        # is their day, not the server's. None, as on a resumed turn, is the
+        # zone kept on their row, and with none kept, UTC.
+        self.zone = zone
         # The route stores the user's words before the turn is handed to the
         # worker, so the turn is told which statement it is answering.
         self.statement_id = statement_id
@@ -321,6 +333,7 @@ class CoachTurn:
             user_id=self.discussion.user_id,
             session_id=self.discussion.id,
             said=answered,
+            zone=self.zone,
         )
 
         # The coaching text is the same every turn and the rest is not, so the
@@ -336,7 +349,7 @@ class CoachTurn:
             interactions=recordtext.interactions(
                 recent(self.diagram.id, RECENT_INTERACTIONS)
             ),
-            today=datetime.date.today().isoformat(),
+            today=clock.today(self.toolbox.zone).isoformat(),
             coverage=coverage.block(data, plateau(answered, self.diagram.id)),
         )
         last = last_notes(answered)
@@ -494,7 +507,7 @@ class CoachTurn:
             before = previous(self.discussion)
             if before:
                 before.update_title(summary)
-        except (GeminiError, aiohttp.ClientError, TimeoutError) as failed:
+        except UNANSWERED as failed:
             _log.warning(f"Turn {self.turn_id} left a sitting's title as it was: {failed}")
 
     def _regroup(self, events: list[dict]) -> list[str]:
@@ -505,8 +518,9 @@ class CoachTurn:
             delta["item_kind"] == ItemKind.Event.value for delta in self.toolbox.deltas
         ):
             return []
-        # A grouping that fails its checks twice keeps the groups already there
-        # rather than kill the turn [Oracle: R-0410, R-0371].
+        # Refused answers are handled inside the regrouping; what reaches here is
+        # the record refusing a grouping at the write, which keeps the groups
+        # already there rather than kill the turn [Oracle: R-0410, R-0371].
         try:
             regrouped = clusters.sync(
                 self.diagram.id,

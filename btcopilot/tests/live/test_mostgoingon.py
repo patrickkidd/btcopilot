@@ -10,6 +10,7 @@ import datetime
 from btcopilot.extensions import db
 from btcopilot.models import Discussion, Speaker, SpeakerType, Statement
 from btcopilot.schema import Fact
+from btcopilot.tests.live.checks import asks_most_first
 from btcopilot.tests.live.criterion import passes
 
 SISTER = {"id": 4, "name": "Nell", "last_name": "Hale", "gender": "female", "parents": 10}
@@ -75,6 +76,7 @@ def sitting(coach, lines: list[str]) -> None:
     expert = Speaker(discussion_id=talk.id, name="Coach", type=SpeakerType.Expert)
     db.session.add_all([person, expert])
     db.session.flush()
+    talk.chat_user_speaker_id, talk.chat_ai_speaker_id = person.id, expert.id
     db.session.add_all(
         Statement(
             discussion_id=talk.id,
@@ -116,4 +118,39 @@ def test_the_coach_asks_once_soon_after_the_person_says_what_brings_them(coach):
     back(3)
     opened(coach)
     coach.say(BACK)
+    assert len(asked(coach)) == 1
+
+
+PANIC = {"id": 35, "kind": "shift", "person": 1, "dateTime": "2024-03-01", "dateCertainty": "approximate", "symptom": "up", "title": "Panic attacks", "description": "Panic attacks at work began"}
+# What brings her and when it began were said weeks ago; the question was not
+# asked then.
+SAID = [
+    [
+        "I came because I've been having panic attacks at work.",
+        "When did they start?",
+        "About March of last year, right after my promotion.",
+        "What was happening at home around then?",
+    ],
+    [
+        "The attacks were bad again this week, twice in meetings.",
+        "Who did you tell?",
+        "Only my husband. I don't want my parents to worry.",
+        "How does he take it?",
+    ],
+]
+ELSEWHERE = "My mom's birthday is next week and I can't decide what to get her."
+
+
+@passes(3, of=3)
+def test_the_coach_asks_in_its_next_reply_once_the_record_holds_what_brings_them(coach):
+    # R-0762
+    coach.record(events=[PANIC])
+    for lines in SAID:
+        sitting(coach, lines)
+        back(10)
+    assert asked(coach) == []
+
+    opened(coach)
+    reply = coach.say(ELSEWHERE)
+    assert asks_most_first(reply), reply
     assert len(asked(coach)) == 1

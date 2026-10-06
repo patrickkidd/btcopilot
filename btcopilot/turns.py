@@ -57,8 +57,9 @@ class Idle(Exception):
     """A stop for a turn that is not running."""
 
 
-def start(discussion: Discussion, statement: str) -> dict:
-    """Store what the user said, reserve the turn, and hand it over."""
+def start(discussion: Discussion, statement: str, zone: str | None = None) -> dict:
+    """Store what the user said, reserve the turn, and hand it over, with the
+    person's time zone so the coach's day is theirs."""
     turn_id = uuid.uuid4().hex
     if not turnlog.start(discussion.id, turn_id):
         raise Busy(BUSY)
@@ -72,7 +73,7 @@ def start(discussion: Discussion, statement: str) -> dict:
     )
     db.session.add(said)
     db.session.commit()
-    enqueue(turn_id, discussion.id, said.id)
+    enqueue(turn_id, discussion.id, said.id, zone=zone)
     return {
         "turn_id": turn_id,
         "discussion_id": discussion.id,
@@ -110,10 +111,16 @@ def stop(discussion: Discussion, turn_id: str) -> dict:
 
 
 def enqueue(
-    turn_id: str, discussion_id: int, statement_id: int, resume: bool = False
+    turn_id: str,
+    discussion_id: int,
+    statement_id: int,
+    resume: bool = False,
+    zone: str | None = None,
 ) -> None:
     extensions.celery.send_task(
-        TASK, args=[turn_id, discussion_id, statement_id], kwargs={"resume": resume}
+        TASK,
+        args=[turn_id, discussion_id, statement_id],
+        kwargs={"resume": resume, "zone": zone},
     )
 
 
@@ -126,10 +133,15 @@ def written(turn_id: str, discussion_id: int, event: dict) -> None:
 
 
 def run(
-    turn_id: str, discussion_id: int, statement_id: int, resume: bool = False
+    turn_id: str,
+    discussion_id: int,
+    statement_id: int,
+    resume: bool = False,
+    zone: str | None = None,
 ) -> dict:
     """The task itself. It ends in one of two events, always: the reply, or a
-    sentence saying it did not finish."""
+    sentence saying it did not finish. A resumed turn carries no zone, so its
+    day is in the zone kept on the person's row."""
     _log.info(f"coach_turn {turn_id} discussion={discussion_id}")
     discussion = db.session.get(Discussion, discussion_id)
     said = db.session.get(Statement, statement_id)
@@ -148,6 +160,7 @@ def run(
         turn_id=turn_id,
         sink=lambda event: written(turn_id, discussion_id, event),
         resume=resume,
+        zone=zone,
     )
     try:
         reply = turn.run()

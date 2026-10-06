@@ -30,6 +30,9 @@ class ObservationKind(enum.StrEnum):
     ProactiveReturned = "proactive_returned"
     # The words for a message the coach writes first broke its shape.
     ProactiveRefused = "proactive_refused"
+    # A grouping answer the checks refused, and a turn whose two answers both were.
+    ClusterRefused = "cluster_refused"
+    ClusterFailed = "cluster_failed"
 
 
 class Observation(db.Model, ModelMixin):

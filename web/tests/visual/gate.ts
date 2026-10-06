@@ -183,3 +183,64 @@ export async function colours(page: Page, target: Locator): Promise<Record<"ligh
   await page.emulateMedia({ colorScheme: "light" });
   return { light: await read(), dark };
 }
+
+/** Every word a family drawing writes that reaches past the drawing's own box,
+ * so past what its frame can scroll to, said with where it ends (R-0759). */
+export const wordsOutside = (page: Page, drawings: string) =>
+  page.evaluate((sel) => {
+    const out: string[] = [];
+    document.querySelectorAll<SVGSVGElement>(sel).forEach((svg) => {
+      const s = svg.getBoundingClientRect();
+      svg.querySelectorAll("text").forEach((t) => {
+        const b = t.getBoundingClientRect();
+        if (b.width && (b.left < s.left - 0.5 || b.right > s.right + 0.5))
+          out.push(`"${t.textContent}" at ${Math.round(b.left - s.left)}..${Math.round(b.right - s.left)} of ${Math.round(s.width)}`);
+      });
+    });
+    return out;
+  }, drawings);
+
+/** The smallest a name is drawn on the screen, in px, over the drawings shown. */
+export const leastName = (page: Page, drawings: string) =>
+  page.evaluate(
+    (sel) =>
+      Math.min(
+        ...[...document.querySelectorAll<SVGSVGElement>(sel)]
+          .filter((svg) => svg.getBoundingClientRect().width > 0)
+          .flatMap((svg) =>
+            [...svg.querySelectorAll<SVGTextElement>(".pt text")].map(
+              (t) => parseFloat(getComputedStyle(t).fontSize) * svg.getScreenCTM()!.a,
+            ),
+          ),
+      ),
+    drawings,
+  );
+
+/** The people `ids` of the family drawing in the frame `frame` as the frame
+ * shows them now: whether their shapes and words together fit its width, and
+ * the words of each cut at its visible left or right edge (R-0759). */
+export const cutInFrame = (page: Page, frame: string, ids: string[]) =>
+  page.evaluate(
+    ([sel, who]) => {
+      const f = document.querySelector<HTMLElement>(sel)!;
+      const r = f.getBoundingClientRect();
+      const left = r.left + f.clientLeft;
+      const right = left + f.clientWidth;
+      let lo = Infinity;
+      let hi = -Infinity;
+      const cut: Record<string, string[]> = {};
+      who.forEach((id) => {
+        const q = CSS.escape(id);
+        const marks = [...f.querySelectorAll(`.p[data-id="${q}"] .shape, .pt[data-id="${q}"] text`)];
+        marks.forEach((m) => {
+          const b = m.getBoundingClientRect();
+          if (!b.width) return;
+          lo = Math.min(lo, b.left);
+          hi = Math.max(hi, b.right);
+          if (b.left < left - 0.5 || b.right > right + 0.5) (cut[id] ??= []).push(m.textContent || "shape");
+        });
+      });
+      return { fits: hi - lo <= f.clientWidth, cut };
+    },
+    [frame, ids] as const,
+  );

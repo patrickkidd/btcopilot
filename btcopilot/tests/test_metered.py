@@ -53,7 +53,7 @@ def test_a_refused_turn_is_written_down_with_what_it_spent(discussion):
 
 def test_an_unreadable_structured_answer_is_written_down(discussion, monkeypatch):
     # R-0628
-    def unreadable(prompt, response_format):
+    def unreadable(prompt, response_format, schema=None, limit=None):
         raise Unreadable("not JSON", Served("gemini-3.1-flash-lite"), SPENT)
 
     monkeypatch.setattr("btcopilot.metered.gemini_structured_sync", unreadable)

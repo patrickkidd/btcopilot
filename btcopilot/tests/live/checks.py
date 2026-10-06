@@ -1,0 +1,62 @@
+"""What the live cases look for in a coach reply, as plain functions so made-up
+replies prove each one rejects the wrong reply and accepts the allowed one."""
+
+import re
+
+KIDS = r"\b(children|child|kids?|sons?|daughters?|bab(y|ies)|adopt\w*|foster\w*|start(ing)? a family|family of (your|their) own)\b"
+# What the couple already said, or the person's own childhood: naming children
+# inside these is not asking whether they have, had or plan any.
+SAID_KIDS = (
+    r"\b(could not|couldn't|can't|cannot|can not|were never able to|weren't able to|"
+    r"not able to|unable to)\s+(\w+\s+){0,2}(have|had|start)\s+(any\s+)?"
+    r"(children|kids|a child|a baby|a family)"
+    r"|\b(as|when you were)\s+(kids|children|a child|little)\b|\bgrowing up\b"
+)
+FATHER = r"\b(dad|father|Hugh|he|him|his|parents|both)\b"
+ALIVE_OR_AGE = (
+    r"\bstill (living|alive|with us|around|here)\b|\balive\b|\bpassed( away)?\b|\bdied\b"
+    r"|\bdeath\b|\bhow old\b|\bage\b|\baged\b|\bborn\b|\bbirthday\b|\bbirth ?date\b"
+)
+WAITING = r"\b(drink\w*|drank|drunk|alcohol\w*|grow(ing)? up|grew up|childhood)\b"
+DRINKING = r"\b(drink\w*|drank|drunk|alcohol\w*)\b"
+MOST = "two or three times when the most was going on"
+
+
+def questions(reply: str) -> list[str]:
+    """Each question in the reply, cut at the sentence, colon or semicolon
+    before it."""
+    return [q.strip() for q in re.findall(r"[^.?!:;]*\?", reply)]
+
+
+def asks_children(reply: str) -> list[str]:
+    """The questions whether the couple have, had or plan children (R-0760)."""
+    return [q for q in questions(reply) if re.search(KIDS, re.sub(SAID_KIDS, "", q, flags=re.I), re.I)]
+
+
+def asks_father_alive_or_age(reply: str) -> list[str]:
+    """The questions whether the father is living, or his age or birth (R-0760)."""
+    return [q for q in questions(reply) if re.search(FATHER, q, re.I) and re.search(ALIVE_OR_AGE, q, re.I)]
+
+
+def asks_only_waiting(reply: str) -> bool:
+    """The reply asks the waiting question about the mother's father's
+    drinking, and no other (R-0771)."""
+    asked = questions(reply)
+    return bool(asked) and all(re.search(WAITING, q, re.I) for q in asked)
+
+
+def asks_passed_over(reply: str) -> list[str]:
+    """The questions about the mother's father's drinking, which the person
+    has passed over twice (R-0774)."""
+    return [q for q in questions(reply) if re.search(DRINKING, q, re.I)]
+
+
+def asks_most_first(reply: str) -> bool:
+    """The two or three times question comes before any other (R-0762)."""
+    asked = questions(reply)
+    return bool(asked) and MOST in asked[0]
+
+
+def title_retry(detail: dict) -> bool:
+    """A refused event the coach then wrote with a title in the same turn."""
+    return "needs a title" in (detail.get("refusal") or "") and bool(detail.get("retried"))

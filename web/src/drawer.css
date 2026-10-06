@@ -1,6 +1,7 @@
 /* The play-by-play drawer, from the approved reference page
-   (design/playbyplay-snapshots/own.html). A drill-down: it arrives from the
-   right over the timeline and the chat and goes back off the same way (R-0542).
+   (design/playbyplay-snapshots/own.html). A drill-down: it comes down from the
+   top over the timeline and the chat like a drawer and goes back up the same
+   way (R-0542, R-0768).
    The ruled health cross keeps its own rules from theme.css (.ss …). */
 /* The drawer covers the screen it is mounted in: the picture, the chat and the message box. */
 .screen:has(> .pbp) { position: relative; }
@@ -10,11 +11,17 @@
   z-index: 30;
   display: flex;
   flex-direction: column;
+  /* from the home screen the drawer starts under the phone's clock and camera, and
+     its foot clears the home bar, so the picture fits the space between (R-0796) */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  padding-top: var(--safe-top);
   background: var(--panel);
-  transform: translateX(100%);
+  transform: translateY(-100%);
   transition: transform 0.26s cubic-bezier(0.4, 0, 0.7, 0.5);
 }
-.pbp.in { transform: none; transition-timing-function: cubic-bezier(0.3, 1.25, 0.5, 1); }
+/* it lands where it rests, never past it and back (R-0768) */
+.pbp.in { transform: none; transition-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
 .pbp[hidden] { display: none; }
 
 /* the path row is as tall as the close button beside it, and keeps clear of it */
@@ -22,23 +29,69 @@
 .pbp > .cardx { top: 0; }
 .pbp .point { flex: none; padding: 0 16px; font: 400 13px/20px var(--sans); color: var(--ink); }
 .pbp .path .step:focus-visible, .pbp .stepbtn:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
+/* the Family view's book, after the path, as a case report card's book (R-0779) */
+.pbp .path :is(.book, .full) { flex: none; width: 44px; height: 44px; margin-left: 4px; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.pbp .path :is(.book, .full):active { color: var(--data-press); }
+/* a tap on someone in the Family view puts the picture on their three generations (R-0779) */
+.pbp.whole .draw :is(.p, .pt) { cursor: pointer; pointer-events: bounding-box; }
 
-/* Q6: the picture shrinks so the caption fits; when even that does not fit, the whole drawer scrolls */
+/* the picture scales whole to fit over the caption; under the least name size the drawer scrolls (R-0796) */
 .pbp .lv { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 .pbp .wire, .pbp .draw, .pbp .scroll { flex: none; }
 .pbp .wire svg { display: block; width: 100%; height: auto; }
 /* an event on the years line takes a tap to its step */
 .pbp .whit { fill: transparent; cursor: pointer; }
-.pbp .draw { padding: 4px 0 0; border-top: 1px solid var(--line); }
-.pbp .draw svg { display: block; width: 100%; height: 100%; }
+/* re-ruled 2026-10-04: a family wider than the drawer keeps its least size and scrolls sideways in its own frame */
+.pbp .draw { padding: 4px 0 0; border-top: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+/* the drawing at its own scale, centred in the room its box takes (R-0797) */
+.pbp .draw { display: flex; }
+.pbp .draw svg { display: block; flex: none; margin: auto; }
 
-.pbp .scroll .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
+.pbp .scroll .step, .pbp > .foot .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
+.pbp > .foot { flex: none; border-top: 1px solid var(--line); padding-bottom: var(--safe-bottom); }
+/* a play-by-play has no foot of its own: the drawer keeps clear of the home bar */
+.pbp:not(:has(> .foot)) { padding-bottom: var(--safe-bottom); }
+.pbp > .foot .step { justify-content: space-between; }
 .pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }
 /* the dots only say where the reader is; a play told in more snapshots than
    the row holds draws them smaller, never over Back or Next */
 .pbp .dot { flex: 0 1 22px; min-width: 0; width: 22px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .pbp .dot::after { content: ""; width: 9px; max-width: 80%; aspect-ratio: 1; border-radius: 50%; border: 1.5px solid var(--data); box-sizing: border-box; }
 .pbp .dot.on::after { background: var(--data); }
+/* the whole family (R-0742): the top line says where the reader is, Back and Next sit at either end */
+/* three lines of words at phone width are kept for every step, so the picture never moves; more scroll */
+.pbp > .when { flex: none; padding: 0 16px 8px; }
+/* three lines held still, so the picture never moves; a longer title ends in an ellipsis on its third */
+.pbp.whole > .when { box-sizing: content-box; height: 54px; line-height: 18px; align-content: flex-start; overflow: hidden; }
+.pbp.whole > .when .words { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.pbp .when .words { color: var(--faint); font-weight: 400; }
+/* who a date's events touch outside the frame: a tap puts the frame on them (R-0783) */
+/* one line, kept on every date, so the picture stands still; a list longer than it ends in how many more */
+.pbp > .also { flex: none; height: 18px; margin: 0; padding: 0 16px 6px; font: 400 13px/18px var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; }
+.pbp .also .also-who { font: inherit; color: var(--data); background: none; border: 0; padding: 0; min-height: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.pbp.whole .scroll .step { justify-content: space-between; }
+/* someone a date involves off the screen: an arrow at its edge, toward where they stand, with their name (R-0785) */
+.pbp.whole .lv { position: relative; }
+.pbp.whole .lv.gutters .draw { margin: 0 var(--gutter); }
+.pbp.whole .lv { --gutter: 24px; }
+/* the arrow above the name, written down the gutter */
+.pbp .edge { position: absolute; z-index: 2; box-sizing: border-box; width: var(--gutter); max-height: 60%; min-height: 0; padding: 4px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid var(--line); background: var(--panel); color: var(--move-text); font: 500 13px/1 var(--mono); overflow: hidden; cursor: pointer; }
+.pbp .edge .who { writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 0; }
+.pbp .edge.left { border-left: 0; border-radius: 0 12px 12px 0; }
+.pbp .edge.right { border-right: 0; border-radius: 12px 0 0 12px; }
+/* it glows while their shift plays, as the shift's own marks are lit */
+.pbp .edge.on { border-color: var(--move); animation: pbp-edge 1.6s ease-in-out infinite; }
+@keyframes pbp-edge { 50% { box-shadow: 0 0 10px 2px var(--move); } }
+@media (prefers-reduced-motion: reduce) { .pbp .edge.on { animation: none; box-shadow: 0 0 6px 1px var(--move); } }
+/* the person the Family view's frame is around, in the path's colour for where the reader is */
+.pbp.whole .draw .mid .shape { stroke: var(--data); }
+.pbp.whole .draw .pt.mid text { fill: var(--data); font-weight: 500; }
+/* someone not yet born at the step, and a couple or child line before its date, keeps its place, faded (R-0756) */
+.pbp { --faded: 0.3; }
+.pbp.whole .yet { opacity: var(--faded); }
+/* a mark carried from an earlier date is faded as much as well as grey; the
+   date's own marks keep full strength (R-0793) */
+.pbp .draw .was { opacity: var(--faded); }
 .pbp .cap { padding: 12px 16px 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 7px; }
 .pbp .when { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font: 500 13px var(--mono); }
 .pbp .when .date { color: var(--data); }
@@ -48,7 +101,58 @@
 .pbp p.ask { margin: 4px 0 0; font: 500 16px/1.42 var(--sans); color: var(--ask-text); }
 
 /* ---- the drawings ---- */
-.pbp svg text { font-family: var(--mono); }
+/* Every family drawing, in every view, takes its sizes from these rules alone:
+   the drawer, the case page's pictures, an event row's mark and a version on
+   the review. A view scales the whole drawing, never one part of it (R-0759). */
+.diagram text { font-family: var(--mono); }
+.diagram .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
+.diagram .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
+.diagram .age { font-size: 13px; fill: var(--faint); text-anchor: middle; }
+.diagram .age.ask { fill: var(--ask); }
+.diagram .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
+.diagram .tie.dash, .diagram .kin.dash { stroke-dasharray: 5 4; }
+.diagram .tie.now { stroke: var(--move); stroke-width: 2.2; }
+.diagram .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
+/* a parent link that closes a parentage cycle, and the note naming it (R-0751) */
+.diagram .cut { stroke: var(--remove); stroke-width: 2; fill: none; }
+.diagram .cutn { font-size: 13px; fill: var(--remove); }
+.diagram .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
+/* lit, a slash keeps its resting size and place: only its colour and its pop differ */
+.diagram .slash.now { stroke: var(--move); }
+.diagram .lbn { font-size: 13px; fill: var(--ink); }
+.diagram .lbd { font-size: 13px; fill: var(--faint); }
+/* names, ages and words sit over every mark, a field's rings too, on a halo
+   of the page's ground so they stay legible (Patrick, 2026-10-03) */
+/* a name over a field's rings or a line is outlined thinly in the page's colour,
+   so it reads whole and the lines it meets still read as joined up to its letters (R-0788) */
+.diagram .said text { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
+.diagram .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.diagram .xd.now { stroke: var(--move); stroke-width: 2.2; }
+/* someone the record is unsure of, on the review */
+.diagram .faint { stroke: var(--faint); }
+.diagram text.faint { fill: var(--faint); }
+/* Every line that moves is as wide as a field's rings, the width they are
+   drawn at on the moves board (R-0765): the rings, anxiety's spikes, a
+   functioning outline, the arrows and every move's lines. A wall, a strike and
+   the health cross are shapes, not lines. The cross's arrow is drawn inside
+   the cross's own scale, so it divides that out (--ck, diagram.ts). */
+.diagram { --mark-line: 2.4; }
+.diagram .fld, .diagram .spikes line, .diagram .mvk .mv-spike, .diagram .fn, .diagram .arr line,
+.diagram .mvk .mv-band, .diagram .mvk .mv-shared, .diagram .mvk .mv-clear, .diagram .mvk .mv-flank line,
+.diagram .mvk .mv-spark, .diagram .mvk .mv-burst, .diagram .mvk .mv-tension, .diagram .mvk .mv-trace,
+.diagram .mvk .mv-flow, .diagram .mvk .mv-arrow { stroke-width: var(--mark-line); }
+.diagram .mk .mv-dir { stroke-width: calc(var(--mark-line) / var(--ck)); }
+.diagram .fn { fill: none; stroke: var(--move); }
+.diagram .fn.down { stroke-dasharray: 5 6; }
+.diagram .fn.was { stroke: var(--faint); }
+.diagram .spikes line { stroke: var(--move); stroke-linecap: round; }
+.diagram .spikes.was line { stroke: var(--faint); }
+.diagram .evw { font-size: 13px; fill: var(--move-text); font-weight: 500; }
+.diagram .evw.was { fill: var(--faint); }
+.diagram .hl { fill: none; stroke: var(--move); stroke-width: 2.8; }
+.diagram .hl.was { stroke: var(--faint); }
+/* the wall stands a person tall here, not the ratified 68, so its ratified 6 scales with it */
+.diagram .mvk .mv-wall { stroke-width: 4; }
 .pbp .wl { stroke: var(--line); stroke-width: 1.5; }
 .pbp .wgap { stroke: var(--data); stroke-width: 3; opacity: 0.45; stroke-linecap: round; }
 .pbp .wd { fill: var(--data); }
@@ -58,56 +162,39 @@
 .pbp .wring { fill: none; stroke: var(--move); stroke-width: 1.4; opacity: 0.5; }
 .pbp .wlab { font-size: 12px; fill: var(--data); font-weight: 500; }
 .pbp .wyr { font-size: 12px; fill: var(--faint); }
-.pbp .shape, .kmark .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
-.pbp .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
-.pbp .age { font-size: 13px; fill: var(--faint); text-anchor: middle; }
-.pbp .tie, .kmark .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
-.pbp .tie.dash, .kmark .tie.dash { stroke-dasharray: 5 4; }
-.pbp .tie.now { stroke: var(--move); stroke-width: 2.2; }
-.pbp .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
-.pbp .slash, .kmark .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
-.pbp .slash.now { stroke: var(--move); stroke-width: 2.4; }
-.pbp .lbn { font-size: 13px; fill: var(--ink); }
-.pbp .lbd { font-size: 13px; fill: var(--faint); }
-/* names, ages and words sit over every mark, a field's rings too, on a halo
-   of the page's ground so they stay legible (Patrick, 2026-10-03) */
-.pbp .said text { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
-.pbp .xd, .kmark .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
-.pbp .xd.now { stroke: var(--move); stroke-width: 2.2; }
-.pbp .fn { fill: none; stroke: var(--move); stroke-width: 2.6; }
-.pbp .fn.down { stroke-dasharray: 5 6; }
-.pbp .fn.was { stroke: var(--faint); }
-.pbp .spikes line { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; }
-.pbp .spikes.was line { stroke: var(--faint); }
-.pbp .evw { font-size: 13px; fill: var(--move-text); font-weight: 500; }
-.pbp .evw.was { fill: var(--faint); }
-.pbp .hl { fill: none; stroke: var(--move); stroke-width: 2.8; }
-.pbp .hl.was { stroke: var(--faint); }
 /* Only the current step's marks move. Everything carried from an earlier date
    is drawn below the step's own layer, grey and still (Patrick, 2026-10-03). */
 .pbp .draw svg > :not(.fore), .pbp .draw svg > :not(.fore) * { animation: none !important; }
 .pbp .mk.was .tipfill { fill: var(--faint); }
 .pbp .mk.was .mv-dir { stroke: var(--faint); }
-/* the symptom arrow sets off the moment its step comes up, with no wait first */
-.pbp .mk .sym-arrow.worse { animation-name: pbp-symworse; }
-.pbp .mk .sym-arrow.better { animation-name: pbp-symbetter; }
-@keyframes pbp-symworse { 0% { transform: translateY(2.5px); } 6%, 40% { transform: translateY(-2px); } 46%, 100% { transform: translateY(2.5px); } }
-@keyframes pbp-symbetter { 0% { transform: translateY(-2.5px); } 6%, 40% { transform: translateY(2px); } 46%, 100% { transform: translateY(-2.5px); } }
+/* Every mark that moves loops, and each loop starts again from its first frame
+   at a jump, never easing back, so which way it goes is plain (R-0763). The
+   symptom arrow sets off the moment its step comes up, with no wait first. */
+.pbp .mk .sym-arrow.worse { animation: pbp-symworse 5s infinite; }
+.pbp .mk .sym-arrow.better { animation: pbp-symbetter 5s infinite; }
+@keyframes pbp-symworse { 0% { transform: translateY(2.5px); animation-timing-function: ease-in-out; } 10%, 100% { transform: translateY(-2px); } }
+@keyframes pbp-symbetter { 0% { transform: translateY(-2.5px); animation-timing-function: ease-in-out; } 10%, 100% { transform: translateY(2px); } }
+/* the flank arrow of over- and underfunctioning rises or sinks, then jumps back */
+.pbp .mvk .mv-flank.up { animation: pbp-flankup 3s infinite; }
+.pbp .mvk .mv-flank.down { animation: pbp-flankdown 3s infinite; }
+@keyframes pbp-flankup { 0% { transform: translateY(0); animation-timing-function: ease-in-out; } 50%, 100% { transform: translateY(-5px); } }
+@keyframes pbp-flankdown { 0% { transform: translateY(0); animation-timing-function: ease-in-out; } 50%, 100% { transform: translateY(5px); } }
 /* the moves board's way (Q1b): the flowing dashed arrow */
-.pbp .arr line { stroke: var(--move); stroke-width: 2.4; stroke-dasharray: 10 8; fill: none; animation: pbp-flow var(--speed-arrow) linear infinite; }
+.pbp .arr line { stroke: var(--move); stroke-dasharray: 10 8; fill: none; animation: pbp-flow var(--speed-arrow) linear infinite; }
 /* an away arrow is drawn from the mover outward, so its dashes run that way too */
 .pbp .arr polygon { fill: var(--move); }
 .pbp .arr { animation: pbp-fade var(--speed-pop) ease both; }
 .pbp .arr.was line { stroke: var(--faint); }
 .pbp .arr.was polygon { fill: var(--faint); }
-/* the wall stands a person tall here, not the ratified 68, so its ratified 6 scales with it */
-.pbp .mvk .mv-wall { stroke-width: 4; }
 /* A wall's loop runs in 5s, not the board's 10s, and starts the moment its
    step comes up: the wall's own 1.4s slide from the start, landing at 28%, and
    the rings' own pace kept (Patrick, 2026-10-03). The field keeps showing while
    it comes up: the open rings hold until the shadowed ones arrive, so the
    space the wall protects never goes blank. */
 .pbp .mvk .mv-wall { animation: pbp-wall 5s ease-in-out infinite; }
+/* the wall and the cutoff's strike slide in, so on their own step they are lines that move, as wide as
+   the rest of them; carried, they stand still and keep their widths (R-0765) */
+.pbp .mvk.now :is(.mv-wall, .mv-strike, .mv-func) { stroke-width: var(--mark-line); }
 .pbp .mvk .preA { animation: pbp-preA 5s infinite; }
 .pbp .mvk .postA { animation: pbp-postA 5s infinite; }
 @keyframes pbp-wall {
@@ -125,14 +212,12 @@
 /* a new mark is on screen the moment Next is tapped, at full strength within 200ms */
 .pbp .pop, .pbp .mvk.now .tipfill { transform-box: fill-box; transform-origin: center; animation: pbp-pop var(--speed-pop) cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 @keyframes pbp-pop { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-/* a slash has no other motion, so its pop comes round again, one pop each
-   ten pops' time (Patrick, 2026-10-03) */
-.pbp .slash.now { animation: pbp-repop calc(var(--speed-pop) * 10) cubic-bezier(0.2, 1.5, 0.4, 1) infinite both; }
+/* a slash and functioning up's outline have no other motion, so their pop
+   comes round again, one pop each ten pops' time (Patrick, 2026-10-03; R-0763) */
+.pbp .slash.now, .pbp .fn.up.now { animation: pbp-repop calc(var(--speed-pop) * 10) cubic-bezier(0.2, 1.5, 0.4, 1) infinite both; }
 @keyframes pbp-repop { 0% { transform: scale(0.2); opacity: 0; } 10%, 100% { transform: scale(1); opacity: 1; } }
 /* inside and outside: a family line stretched to someone moved for the step (R-0728) */
-.pbp .tie.stretch { stroke-dasharray: none; }
-/* the projecting parent's spikes are drawn heavier, to read against her lit outline (Patrick, 2026-10-03) */
-.pbp .mvk .spk.s-out .mv-spike { stroke-width: 2.8; }
+.diagram .tie.stretch { stroke-dasharray: none; }
 /* defined self: the other's loud storm runs a third as long as the board's
    7.68s before it dies down; its fall and the calm after keep the board's
    0.72s and 3.6s (Patrick, 2026-10-03). Loop 2.56 + 0.72 + 3.6 = 6.88s. */
@@ -148,10 +233,8 @@
   .pbp .ss * { animation: none !important; transition: none !important; }
 }
 
-/* ---- the case page's still family picture (.fam, case.ts): the drawer's drawing
-   rules above, one .fam copy each, so the still picture reads as the told ones do.
-   Appended for the case page (FD-367); the drawer's own rules are untouched. ---- */
-.fam svg text { font-family: var(--mono); }
+/* ---- the case page's still family picture (.fam, case.ts): its sizes are the
+   .diagram rules above; only the motion is its own. ---- */
 .fam .wl { stroke: var(--line); stroke-width: 1.5; }
 .fam .wgap { stroke: var(--data); stroke-width: 3; opacity: 0.45; stroke-linecap: round; }
 .fam .wd { fill: var(--data); }
@@ -161,33 +244,10 @@
 .fam .wring { fill: none; stroke: var(--move); stroke-width: 1.4; opacity: 0.5; }
 .fam .wlab { font-size: 12px; fill: var(--data); font-weight: 500; }
 .fam .wyr { font-size: 12px; fill: var(--faint); }
-.fam .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
-.fam .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
-.fam .age { font-size: 13px; fill: var(--faint); text-anchor: middle; }
-.fam .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
-.fam .tie.dash { stroke-dasharray: 5 4; }
-.fam .tie.now { stroke: var(--move); stroke-width: 2.2; }
-.fam .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
-.fam .slash { stroke: var(--faint); stroke-width: 1.8; stroke-linecap: round; }
-.fam .slash.now { stroke: var(--move); stroke-width: 2.4; }
-.fam .lbn { font-size: 13px; fill: var(--ink); }
-.fam .lbd { font-size: 13px; fill: var(--faint); }
-.fam .nh { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
-.fam .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
-.fam .xd.now { stroke: var(--move); stroke-width: 2.2; }
-.fam .fn { fill: none; stroke: var(--move); stroke-width: 2.6; }
-.fam .fn.down { stroke-dasharray: 5 6; }
-.fam .fn.was { stroke: var(--faint); }
-.fam .spikes line { stroke: var(--move); stroke-width: 1.8; stroke-linecap: round; }
-.fam .spikes.was line { stroke: var(--faint); }
-.fam .evw { font-size: 13px; fill: var(--move-text); font-weight: 500; }
-.fam .evw.was { fill: var(--faint); }
-.fam .hl { fill: none; stroke: var(--move); stroke-width: 2.8; }
-.fam .hl.was { stroke: var(--faint); }
 .fam .mk.was .tipfill { fill: var(--faint); }
 .fam .mk.was .mv-dir { stroke: var(--faint); }
 .fam .mk.was .sym-arrow { animation: none; }
-.fam .arr line { stroke: var(--move); stroke-width: 2.4; stroke-dasharray: 10 8; fill: none; animation: pbp-flow 1s linear infinite; }
+.fam .arr line { stroke: var(--move); stroke-dasharray: 10 8; fill: none; animation: pbp-flow 1s linear infinite; }
 .fam .arr.back line { animation-direction: reverse; }
 .fam .arr polygon { fill: var(--move); }
 .fam .arr { animation: pbp-fade 0.2s ease both; }
@@ -199,4 +259,40 @@
 .fam .pop { transform-box: fill-box; transform-origin: center; animation: pbp-pop 0.2s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 @media (prefers-reduced-motion: reduce) {
   .fam .pop, .fam .arr, .fam .arr line { animation: none; }
+}
+
+/* the full screen button between Back and Next: the browser's own full screen
+   where it gives one, else the Family view over the whole page (R-0792) */
+.pbp .foot .full { flex: none; width: 44px; height: 44px; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.pbp .foot .full:active { color: var(--data-press); }
+.pbp .foot .full .back, :is(.pbp.full, :fullscreen > .pbp) .foot .full .go { display: none; }
+:is(.pbp.full, :fullscreen > .pbp) .foot .full .back { display: inline; }
+.pbp.whole.full { position: fixed; inset: 0; z-index: 90; }
+
+/* on a phone turned sideways, an iPad or a desktop, the Family view takes the
+   whole screen, so its frame has all the width there is: on a phone, no header,
+   no timeline, no list beside it (R-0784, R-0791). drawer.ts's FILLS says it again. */
+@media (min-width: 700px), (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  .pbp.whole { position: fixed; inset: 0; z-index: 90; }
+  /* the years line keeps a phone's height, so the picture has the rest */
+  .pbp.whole .wire svg { width: auto; height: 78px; max-width: 100%; margin: 0 auto; }
+}
+/* a phone turned sideways is short: the title holds one line until it needs
+   more and the years line is shorter, so the picture keeps the height */
+@media (min-width: 700px) and (max-height: 500px), (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  /* the title and who else a date touches stand either side of the years line,
+     in the same places on every date, so the picture keeps the height */
+  .pbp.whole > :is(.when, .also) { position: absolute; top: 32px; width: calc(50% - 136px); height: 40px; box-sizing: border-box; padding: 2px 0 0; overflow: hidden; }
+  .pbp.whole > .when { left: 16px; display: block; line-height: 18px; }
+  .pbp.whole > .when .words { -webkit-line-clamp: 2; }
+  .pbp.whole > .also { right: 16px; white-space: normal; text-align: right; }
+  .pbp.whole .wire svg { height: 40px; }
+  /* the path row is shorter here, and its book with it, so the book stays whole on the screen */
+  .pbp.whole > .path, .pbp.whole > .path .book { height: 32px; }
+  /* Back and Next float at the bottom corners, in the same places every step */
+  .pbp.whole > .foot { position: absolute; left: 0; right: 0; bottom: 0; border-top: 0; background: none; pointer-events: none; }
+  .pbp.whole > .foot .step { background: none; }
+  .pbp.whole > .foot .stepbtn { pointer-events: auto; background: var(--panel); }
+  /* the full screen button stands beside the close button, off the picture */
+  .pbp.whole > .foot .full { position: fixed; top: 0; right: 48px; pointer-events: auto; }
 }

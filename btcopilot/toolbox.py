@@ -15,7 +15,7 @@ import re
 from sqlalchemy import or_
 
 import btcopilot
-from btcopilot import clusters, place, proactive, prompts, record, views
+from btcopilot import clock, clusters, coverage, place, proactive, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
     bond_line,
@@ -40,6 +40,7 @@ from btcopilot.schema import (
     EventKind,
     EvidenceKind,
     Fact,
+    FactState,
     ItemKind,
     NotedFact,
     PersonKind,
@@ -463,7 +464,8 @@ def schemas(coder: bool = False) -> list[dict]:
             "name": ToolName.AddQuestion.value,
             "description": (
                 "Keep a question in the record: asked when you ask it in this "
-                "reply, held when you keep it to ask later."
+                "reply, held when you keep it to ask later, resolved when the "
+                "person has just answered it unasked, so it is never asked."
             ),
             "input_schema": {
                 "type": "object",
@@ -479,7 +481,27 @@ def schemas(coder: bool = False) -> list[dict]:
                     },
                     "state": {
                         "type": "string",
-                        "enum": [QuestionState.Held.value, QuestionState.Asked.value],
+                        "enum": [
+                            QuestionState.Held.value,
+                            QuestionState.Asked.value,
+                            QuestionState.Resolved.value,
+                        ],
+                        "description": (
+                            "resolved only for a fact question that names its fact "
+                            "and its person or couple, with outcome."
+                        ),
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "enum": [QuestionOutcome.Answered.value, QuestionOutcome.Unknown.value],
+                        "description": (
+                            "With resolved: answered when the person said it, unknown "
+                            "when they said they do not know."
+                        ),
+                    },
+                    "answer": {
+                        "type": "integer",
+                        "description": means[prompts.ToolText.Answer],
                     },
                     "item_kind": {
                         "type": "string",
@@ -529,6 +551,13 @@ def schemas(coder: bool = False) -> list[dict]:
                         means[prompts.ToolText.CaseReportCard],
                         clear=True,
                     ),
+                    "raised_in": {
+                        "type": "integer",
+                        "description": (
+                            "Asking again a question the person passed over twice: their "
+                            "message that brought its topic back up."
+                        ),
+                    },
                 },
                 "required": ["id", "version"],
             },
@@ -822,7 +851,8 @@ def said_label(statement: Statement) -> str:
         if statement.speaker_id == statement.discussion.chat_user_speaker_id
         else "The coach"
     )
-    return f"{who} said, {statement.created_at.day} {statement.created_at:%b}"
+    day = clock.day(statement.created_at, statement.discussion.user.timezone)
+    return f"{who} said, {day.day} {day:%b}"
 
 
 def said_in(*where):
@@ -867,6 +897,22 @@ def said_with(found, terms: list[str]) -> list[Statement]:
         s
         for s in found.order_by(Statement.created_at.desc(), Statement.id.desc())
         if all(start.search(s.text) for start in starts)
+    ]
+
+
+def said_about(found, names: list[str] | None, words: tuple[str, ...]) -> list[Statement]:
+    """What in `found` carries one of the words and, when names are given, one
+    of the names too, each at the start of a word, newest first."""
+    groups = [words] if names is None else [words, names]
+    for group in groups:
+        found = found.filter(
+            or_(*(Statement.text.icontains(term, autoescape=True) for term in group))
+        )
+    starts = [_starts(group) for group in groups]
+    return [
+        s
+        for s in found.order_by(Statement.created_at.desc(), Statement.id.desc())
+        if all(any(start.search(s.text) for start in group) for group in starts)
     ]
 
 
@@ -938,6 +984,7 @@ class Toolbox:
         author: Author = Author.Coach,
         statement_id: int | None = None,
         said: Statement | None = None,
+        zone: str | None = None,
     ):
         self.diagram_id = diagram_id
         self.turn_id = turn_id
@@ -948,6 +995,11 @@ class Toolbox:
         # The words the turn answers: the chat search reads what was said
         # before them, on the family they were said about.
         self.said = said
+        # The person's IANA zone, for the day a question is asked on and the
+        # follow-up check: the one the page sent, else the one kept on their
+        # row; None is UTC.
+        kept = db.session.get(User, user_id).timezone if user_id is not None else None
+        self.zone = zone or kept
         self.deltas: list[dict] = []
         self.views: list[dict] = []
         # The record versions this turn's own writes made, undo included.
@@ -1062,7 +1114,7 @@ class Toolbox:
 
     def _follow_up(self, args: dict) -> tuple[str, None]:
         when = _day(args["when"])
-        if when <= datetime.date.today():
+        if when <= clock.today(self.zone):
             raise ToolError(
                 f"{when} is not after today; give a later day",
                 "It set a question to ask later for a day already here.",
@@ -1074,7 +1126,7 @@ class Toolbox:
             )
         # A shadow turn's record is thrown away, and so is what it would ask.
         if not self.diagram.scratch:
-            proactive.ask_later(self.user_id, self.diagram_id, when, question)
+            proactive.ask_later(self.user_id, self.diagram_id, when, question, self.zone)
         return f"You will ask on {when}.", None
 
     def _read_people(self, args: dict) -> tuple[str, None]:
@@ -1559,11 +1611,121 @@ class Toolbox:
                     f"a {noun} in those words was already added from message {said.id}",
                     f"That {noun} is already there.",
                 )
+        heard = None
+        if rules is record.QUESTION:
+            heard = self._fact_question(args, fields, state)
         if state is rules.shown:
             fields.update(self._asked(said))
         if args.get(record.CARD) is not None:
             fields[record.CARD] = choice(CaseReportCard, args[record.CARD], "cards").value
-        return self._write(ItemKind.Question, None, fields, said and said.id)
+        text, patch = self._write(ItemKind.Question, None, fields, said and said.id)
+        if heard:
+            where, lines = heard
+            text = (
+                f"{text}\n\nSaid before about {coverage.WORDS[Fact(fields['fact'])]} for "
+                f"{where}; read these before you ask, and when one answers it, close "
+                f"{patch['deltas'][0]['item_id']} with set_question as answered, citing "
+                "the message, instead of asking:\n" + "\n".join(lines)
+            )
+        return text, patch
+
+    def _fact_question(
+        self, args: dict, fields: dict, state: QuestionState
+    ) -> tuple[str, list[str]] | None:
+        """What the record and the chat already hold of the item a fact question
+        names, before it is kept (R-0760). An asked question on an item the
+        record answers is refused with the stored answer, and so is a second
+        open question on one item; one added closed keeps the person's own
+        words as its answer; and what the chat said of the item before comes
+        back with an asked one, as the item's label and the messages."""
+        kind, iid, fact = fields.get("item_kind"), fields.get("item_id"), fields.get("fact")
+        if state is QuestionState.Resolved and (
+            fields["kind"] != QuestionKind.Fact or fact is None or kind is None
+        ):
+            raise ToolError(
+                "A question added already closed is the person's own words kept as the "
+                "answer: a fact question naming its fact, with item_kind and item_id",
+                "It kept an answer without saying what it answers.",
+            )
+        data = self.data
+        if (
+            fact is None
+            or kind not in (ItemKind.Person.value, ItemKind.PairBond.value)
+            or not self._exists(data, ItemKind(kind), iid)
+        ):
+            return None
+        fact, kind, iid = Fact(fact), ItemKind(kind), int(iid)
+        if not coverage.fits(fact, kind):
+            right = next(k for k in (ItemKind.Person, ItemKind.PairBond) if coverage.fits(fact, k))
+            raise ToolError(
+                f"{coverage.WORDS[fact]} is asked of a {right.value}, not a {kind.value}: "
+                f"file it with item_kind {right.value}, once for each {right.value} it is about",
+                "It filed a question on the wrong kind of thing.",
+            )
+        where = coverage.label(data, kind, iid)
+        asked = coverage.asking(data, fact, kind, iid)
+        if asked is not None and state is not QuestionState.Held:
+            raise ToolError(
+                f"Question {asked['id']} already asks {coverage.WORDS[fact]} for {where} and "
+                "is open. To ask it now, ask that one: mark it asked with set_question, "
+                "whether it is held or already asked, and ask it in your reply. "
+                "When the person has answered it, close it with set_question as answered",
+                "It asked the same thing twice.",
+            )
+        if state is QuestionState.Resolved:
+            self._closed_at_birth(args, fields)
+            return None
+        if state is not QuestionState.Asked:
+            return None
+        if coverage.state_of(data, fact, kind, iid) is FactState.Known:
+            raise ToolError(
+                f"The record already answers {coverage.WORDS[fact]} for {where}: "
+                f"{coverage.evidence(data, fact, kind, iid)}. Do not ask it; use the answer",
+                "It was about to ask something the record already holds.",
+            )
+        if self.said is None:
+            return None
+        names = coverage.spoken_as(data, kind, iid)
+        if names == []:
+            return None
+        words = coverage.SEARCH_WORDS[fact]
+        hits = said_about(said_before(self.said), names, words)
+        if not hits:
+            return None
+        terms = [*words, *(names or ())]
+        return where, [_hit(s, terms) for s in hits[:SEARCH_SHOWN]]
+
+    def _closed_at_birth(self, args: dict, fields: dict) -> None:
+        """A fact question kept already answered, or said unknown, as soon as
+        the person says it: it carries their message as the answer and this
+        session and day, so it shows where closed questions show (R-0760)."""
+        if args.get("outcome") is None:
+            raise ToolError(
+                "Say how it ended: answered when the person said it, unknown when they "
+                "said they do not know",
+                "It did not say how the question ended.",
+            )
+        outcome = choice(QuestionOutcome, args["outcome"], "outcomes")
+        if outcome not in (QuestionOutcome.Answered, QuestionOutcome.Unknown):
+            raise ToolError(
+                f"A question added already closed ends as answered or unknown, not "
+                f"{outcome.value}",
+                "That is not how a question added closed ends.",
+            )
+        fields["outcome"] = outcome.value
+        if outcome is QuestionOutcome.Answered:
+            if args.get("answer") is not None:
+                answer = self._mine(args["answer"])
+            elif self.said is not None:
+                answer = self._mine(self.said.id)
+            else:
+                raise ToolError(
+                    "Say which of the person's messages answers it: no message is being "
+                    "answered now",
+                    "It kept an answer with no message behind it.",
+                )
+            fields["answer"] = self._cited(answer)
+        fields.update(self._asked(None))
 
     def _set_question(self, args: dict) -> tuple[str, dict]:
         return self._set_note(args, record.QUESTION)
@@ -1575,8 +1737,20 @@ class Toolbox:
         found = next((q for q in self.data.questions if q["id"] == str(args["id"])), None)
         if found is None or record.note(found) is not rules:
             raise ToolError(f"No {rules.noun} {args['id']} in the record", GONE)
-        fields = {}
-        if args.get("state") is not None:
+        again = (
+            rules is record.QUESTION
+            and args.get("state") == QuestionState.Asked
+            and found["state"] == QuestionState.Asked
+        )
+        if args.get("raised_in") is not None and not again:
+            raise ToolError(
+                "raised_in is only for asking again a question already asked",
+                "It named a message for nothing it asked again.",
+            )
+        fields, raised = {}, None
+        if again:
+            fields[record.ASKED_AGAIN], raised = self._asked_again(found, args)
+        elif args.get("state") is not None:
             state = choice(QuestionState, args["state"], "states")
             fields["state"] = state.value
             if state is rules.shown:
@@ -1594,7 +1768,32 @@ class Toolbox:
         if record.CARD in args:
             card = args[record.CARD]
             fields[record.CARD] = card and choice(CaseReportCard, card, "cards").value
-        return self._write(ItemKind.Question, args["id"], fields)
+        return self._write(ItemKind.Question, args["id"], fields, raised)
+
+    def _asked_again(self, found: dict, args: dict) -> tuple[list[str], int | None]:
+        """The days a question was put to the person again, with today's added.
+        Passed over twice, it is asked again only when the person brings its
+        topic back, and their message that did is logged on the change
+        (R-0774)."""
+        days = found.get(record.ASKED_AGAIN) or []
+        today = clock.day(datetime.datetime.utcnow(), self.zone).isoformat()
+        if len(days) < record.PASSES:
+            return [*days, today], None
+        if args.get("raised_in") is None:
+            raise ToolError(
+                f"Question {found['id']} was asked again on {', '.join(days)} and passed "
+                "over each time. It stays on the person's list and is asked again only if "
+                "the person brings its topic up; then give raised_in, their message that did",
+                "It was about to ask again a question the person has passed over twice.",
+            )
+        raised = self._mine(args["raised_in"])
+        if clock.day(raised.created_at, self.zone).isoformat() < days[-1]:
+            raise ToolError(
+                f"Message {raised.id} came before question {found['id']} was last asked; "
+                "name the person's message that brought its topic up since",
+                "That message came before the question was last asked.",
+            )
+        return [*days, today], raised.id
 
     def _evidence(self, one: dict) -> dict:
         """What an impression rests on. A message must be one of this family's
@@ -1647,11 +1846,11 @@ class Toolbox:
                 raise ValueError(f"turn {self.turn_id} has no session to ask a question in")
             return {
                 "session_id": self.session_id,
-                "asked_at": datetime.datetime.utcnow().date().isoformat(),
+                "asked_at": clock.day(datetime.datetime.utcnow(), self.zone).isoformat(),
             }
         return {
             "session_id": said.discussion_id,
-            "asked_at": said.created_at.date().isoformat(),
+            "asked_at": clock.day(said.created_at, self.zone).isoformat(),
         }
 
     def _said(self, statement_id: int) -> Statement:

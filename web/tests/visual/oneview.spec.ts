@@ -117,7 +117,7 @@ test.describe("the path row", () => {
     await expect(path(page)).toHaveText("Timeline");
     await expect(page.locator("#path button")).toHaveCount(0);
     await openCluster(page);
-    await expect(path(page)).toHaveText("Timeline › 1981–2003");
+    await expect(path(page)).toHaveText("Timeline › Leaving and losing · 1981–2003");
     await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing (3)");
     await step(page, 0).click();
     await expect(path(page)).toHaveText("Timeline");
@@ -160,7 +160,7 @@ test.describe("the path row", () => {
     await settle(page);
     await openCluster(page);
     await page.locator("#info").click();
-    await expect(path(page)).toHaveText("Timeline › 1981–2003 › about");
+    await expect(path(page)).toHaveText("Timeline › Leaving and losing · 1981–2003 › about");
     await step(page, 1).click();
     await expect(zones(page).first()).toBeVisible();
   });

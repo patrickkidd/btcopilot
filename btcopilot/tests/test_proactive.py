@@ -2,10 +2,11 @@ import datetime
 from unittest.mock import patch
 
 import pytest
+from freezegun import freeze_time
 import requests
 from pywebpush import WebPushException
 
-from btcopilot import proactive, tuning
+from btcopilot import clock, proactive, tuning
 from btcopilot.proactive import Reason
 from btcopilot.tests.conftest import csrf_token, wrote
 from btcopilot.extensions import db
@@ -79,6 +80,7 @@ def _record(user):
         DiagramData(people=people, events=_pattern(10, 1990, "symptom"))
     )
     user.set_prefs(**{PrefKey.Proactive.value: Proactive.Weekly})
+    user.timezone = "America/Anchorage"
     db.session.commit()
     return user
 
@@ -264,7 +266,7 @@ def test_the_coach_sets_a_question_for_later_and_it_goes_on_that_day(family, sen
     # R-0004
     family.set_prefs(**{PrefKey.Proactive.value: Proactive.Never})
     tools = Toolbox(family.free_diagram_id, "t1", user_id=family.id)
-    today = datetime.date.today()
+    today = clock.today(family.timezone)
     with pytest.raises(ToolError):
         tools.call(ToolName.FollowUp.value, {"when": str(today), "question": "And?"})
     tools.call(
@@ -277,6 +279,40 @@ def test_the_coach_sets_a_question_for_later_and_it_goes_on_that_day(family, sen
     assert _why(proactive.run(now=due - datetime.timedelta(hours=1))) == [Reason.Night]
     said = proactive.run(now=due + datetime.timedelta(hours=3))
     assert [s["text"] for s in said] == ["How did the talk with Ann go?"]
+
+
+def test_a_follow_up_for_the_day_after_saturday_waits_for_sunday_where_the_person_is(
+    family, sent
+):
+    # R-0760
+    """Saturday evening in Anchorage is already Sunday in UTC: the coach may
+    still set a question for Sunday, and it waits for Sunday morning there."""
+    family.set_prefs(**{PrefKey.Proactive.value: Proactive.Never})
+    saturday_evening = datetime.datetime(2026, 10, 4, 1, 30)
+    with freeze_time(saturday_evening):
+        Toolbox(family.free_diagram_id, "t1", user_id=family.id).call(
+            ToolName.FollowUp.value,
+            {"when": "2026-10-04", "question": "How did Sunday dinner go?"},
+        )
+    db.session.commit()
+    assert ProactiveMessage.query.one().due_at == datetime.datetime(2026, 10, 4, 17)
+
+    saturday_afternoon = datetime.datetime(2026, 10, 3, 23)
+    assert _why(proactive.run(now=saturday_afternoon)) == [Reason.Off]
+    assert _why(proactive.run(now=saturday_evening)) == [Reason.Off]
+    sunday_morning = datetime.datetime(2026, 10, 4, 18)
+    said = proactive.run(now=sunday_morning)
+    assert [s["text"] for s in said] == ["How did Sunday dinner go?"]
+
+
+def test_with_no_zone_kept_the_sending_hours_are_alaskas_as_before(family, sent):
+    # R-0760
+    family.timezone = None
+    db.session.commit()
+    three_am_in_anchorage = T0.replace(hour=11)
+    assert _why(proactive.run(now=three_am_in_anchorage)) == [Reason.Night]
+    noon_in_anchorage = T0
+    assert _why(proactive.run(now=noon_in_anchorage)) != [Reason.Night]
 
 
 def test_rarely_waits_a_month_after_the_last_unasked_message(family, sent):

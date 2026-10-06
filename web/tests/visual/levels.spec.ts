@@ -40,8 +40,9 @@ const fly = (page: Page, selector: string) =>
                     from: String(frames[0].transform),
                     to: String(frames.at(-1)!.transform),
                     ms: Number(a.effect!.getTiming().duration),
+                    // the card travels down onto the region, so it covers it across and in height
                     covers:
-                      Math.abs(box.top - region.top) < 1 &&
+                      Math.abs(box.left - region.left) < 1 &&
                       Math.abs(box.height - region.height) < 1 &&
                       Math.abs(box.width - region.width) < 1,
                     ground: getComputedStyle(lay).backgroundColor,
@@ -75,17 +76,23 @@ test("picking a cluster or a moment, and putting it down, slides nothing", async
   expect(await fly(page, '#path [data-step="0"]')).toEqual([]);
 });
 
-// R-0224, R-0542
-test("the about page slides in from the right", async ({ page }) => {
+// R-0224, R-0542, R-0768
+test("the about page comes down from the top like a drawer, from above its own foot", async ({ page }) => {
   await settle(page);
   await open(page);
   const [flight] = await fly(page, "#info");
-  expect(flight.from).toBe("translateX(100%)");
-  expect(flight.to).toBe("translateX(0px)");
+  const rise = Number(flight.from.match(/^translateY\((-?[\d.]+)px\)$/)?.[1]);
+  const foot = await page.evaluate(() => {
+    const lay = [...document.querySelectorAll(".pic .slide-lay")].at(-1)!;
+    const top = lay.getBoundingClientRect().top;
+    return Math.max(...[lay, ...lay.querySelectorAll(".card")].map((e) => e.getBoundingClientRect().bottom - top));
+  });
+  expect(rise).toBeLessThanOrEqual(-Math.floor(foot));
+  expect(flight.to).toBe("translateY(0px)");
 });
 
-// R-0224, R-0542
-test("going back slides the about page off to the right, the same way reversed", async ({
+// R-0224, R-0542, R-0768
+test("going back sends the about page back up, the same way reversed", async ({
   page,
 }) => {
   await settle(page);

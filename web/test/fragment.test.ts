@@ -2,17 +2,17 @@ import { describe, expect, it } from "vitest";
 import { fitName, render } from "../src/fragment";
 import { cases, plain } from "./fragmentcases";
 
-const shapes = (svg: string) => svg.match(/class="frag-shape"/g)?.length ?? 0;
-const lines = (svg: string) => svg.match(/class="frag-line"/g)?.length ?? 0;
-const dashed = (svg: string) => svg.match(/stroke-dasharray/g)?.length ?? 0;
-const asks = (svg: string) => svg.match(/class="frag-ask"/g)?.length ?? 0;
+const shapes = (svg: string) => svg.match(/class="(shape|you)[ "]/g)?.length ?? 0;
+const lines = (svg: string) => svg.match(/class="(tie|kin|slash|xd)[ "]/g)?.length ?? 0;
+const dashed = (svg: string) => svg.match(/class="(tie|kin)[^"]* dash/g)?.length ?? 0;
+const asks = (svg: string) => svg.match(/class="age ask"/g)?.length ?? 0;
 const names = (svg: string) =>
-  [...svg.matchAll(/class="frag-name"[^>]*>([^<]*)</g)].map((m) => m[1]);
-const paths = (svg: string) =>
-  [...svg.matchAll(/class="frag-line" d="([^"]*)"/g)].map((m) => m[1]);
+  [...svg.matchAll(/class="lbn[^"]*"[^>]*>([^<]*)</g)].map((m) => m[1].replace(/&#39;/g, "'"));
+const marks = (svg: string) =>
+  [...svg.matchAll(/<line class="slash" x1="([-\d.]+)" y1="[-\d.]+" x2="([-\d.]+)"/g)].map((m) => [m[1], m[2]]);
 const triangles = (svg: string) =>
-  [...svg.matchAll(/d="M ([-\d.]+) ([-\d.]+) L ([-\d.]+) ([-\d.]+) L ([-\d.]+) ([-\d.]+) Z"/g)].map(
-    (m) => m.slice(1).map(Number),
+  [...svg.matchAll(/d="M([-\d.]+) ([-\d.]+)L([-\d.]+) ([-\d.]+)H([-\d.]+)Z"/g)].map((m) =>
+    m.slice(1).map(Number),
   );
 
 const named = (key: string) => cases.find((c) => c.key === key)!.fragment;
@@ -40,7 +40,8 @@ describe("people", () => {
   // R-0324
   it("draws a square for a man, a circle for a woman", () => {
     const svg = render(plain());
-    expect(svg).toContain("a 0.5 0.5 0 1 0");
+    expect(svg).toContain("<rect class=\"shape\"");
+    expect(svg).toContain("<circle class=\"shape\"");
   });
 
   // R-0325
@@ -76,7 +77,7 @@ describe("people", () => {
 describe("the bond", () => {
   // R-0324
   it("is a squared U with right angles", () => {
-    expect(render(plain())).toMatch(/d="M [-\d.]+ [-\d.]+ V [-\d.]+ H [-\d.]+ V [-\d.]+"/);
+    expect(render(plain())).toMatch(/class="tie" d="M[-\d.]+ [-\d.]+V[-\d.]+H[-\d.]+V[-\d.]+"/);
   });
 
   // R-0325
@@ -87,14 +88,9 @@ describe("the bond", () => {
 
   // R-0325
   it("draws one straight mark for a separation and two for a divorce", () => {
-    const svg = render(named("2"));
-    const before = new Set(paths(render(plain())));
-    const marks = paths(svg).filter((d) => !before.has(d));
-    expect(marks).toHaveLength(2);
-    for (const d of marks) {
-      const [, x1, , x2] = d.match(/M ([-\d.]+) ([-\d.]+) L ([-\d.]+) ([-\d.]+)/)!;
-      expect(x1).toBe(x2);
-    }
+    const two = marks(render(named("2")));
+    expect(two).toHaveLength(2);
+    for (const [x1, x2] of two) expect(x1).toBe(x2);
   });
 
   // R-0325
@@ -104,7 +100,7 @@ describe("the bond", () => {
       e.kind === "birth" && e.person === 2 ? { ...e, dateTime: "1920-01-01" } : e,
     );
     const svg = render(olderWoman);
-    const squares = [...svg.matchAll(/d="M ([-\d.]+) -2.5 H/g)].map((m) => Number(m[1]));
+    const squares = [...svg.matchAll(/<rect class="shape" x="([-\d.]+)" y="-110.0"/g)].map((m) => Number(m[1]));
     expect(Math.min(...squares)).toBeLessThan(0);
   });
 

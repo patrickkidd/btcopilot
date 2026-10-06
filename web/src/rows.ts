@@ -1,4 +1,4 @@
-import { crossOut, Mark, outline, Sex, sexOf, slashes, tie } from "./diagram";
+import { crossOut, DROP, Mark, outline, Sex, sexOf, SLASH, slashes, tie, W } from "./diagram";
 import { esc } from "./dom";
 import { BIRTHS, bondOf, COUPLE_KINDS, ENDS } from "./snapshots";
 import { DateCertainty, EventKind, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
@@ -62,6 +62,12 @@ type Tree = Pick<Timeline, "people" | "pair_bonds">;
 const drawn = (kind: string) =>
   COUPLE_KINDS.has(kind) || kind in ENDS || BIRTHS.has(kind) || kind === EventKind.Death;
 
+const E = W / 2;
+/** The row's mark is the family diagram's own drawing scaled whole into the
+ * row (R-0759): a couple two widths apart, their line, and the slashes below it. */
+const COUPLE = W + DROP * W + SLASH.below * W;
+const ICON = 3 * W + 4;
+
 /** The event's kind as the family diagram draws it, at the size of a row
  * (R-0113): the couple's line with its slashes, or the person, crossed out at a
  * death. Empty for a kind the diagram has no mark for, so the words still line up. */
@@ -78,16 +84,19 @@ export function kindMark(event: TimelineEvent, tree: Tree): string {
     if (!bond) throw new Error(`event ${event.id} is about a couple the record does not hold`);
     let [a, b] = [shape(bond.person_a), shape(bond.person_b)];
     if (b.g === Sex.Male && a.g !== Sex.Male) [a, b] = [b, a];
+    const [xa, xb, y] = [ICON / 2 - W, ICON / 2 + W, (ICON - COUPLE) / 2 + E];
+    const under = y + E + DROP * W;
     out =
-      tie(6.5, 11, 21.5, 11, 20, bond.married) +
-      outline(a, 6.5, 7, 4, "shape") +
-      outline(b, 21.5, 7, 4, "shape") +
-      slashes(ENDS[kind] === Mark.Divorced ? 2 : ENDS[kind] ? 1 : 0, 14, 20, 30);
+      tie(xa, y + E, xb, y + E, under, bond.married) +
+      outline(a, xa, y, E, "shape") +
+      outline(b, xb, y, E, "shape") +
+      slashes(ENDS[kind] === Mark.Divorced ? 2 : ENDS[kind] ? 1 : 0, ICON / 2, under, W);
   } else if (drawn(kind)) {
     const who = shape(BIRTHS.has(kind) ? event.child : event.person);
-    out = outline(who, 14, 14, 7, "shape") + (kind === EventKind.Death ? crossOut(14, 14, 7, false, "xd") : "");
+    const c = ICON / 2;
+    out = outline(who, c, c, E, "shape") + (kind === EventKind.Death ? crossOut(c, c, E, false, "xd") : "");
   }
-  return `<svg class="kmark" viewBox="0 0 28 28" aria-hidden="true">${out}</svg>`;
+  return `<svg class="kmark diagram" viewBox="0 0 ${ICON} ${ICON}" aria-hidden="true">${out}</svg>`;
 }
 
 /** The words the server's label may say a kind with (KIND_FORMS in timeline.py):

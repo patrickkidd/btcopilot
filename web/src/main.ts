@@ -1,6 +1,7 @@
 import "./telemetry";
 import "./theme.css";
 import * as api from "./api";
+import { Books } from "./books";
 import { Chat, type LiveBubble } from "./chat";
 import { Via } from "./picture";
 import { Lens } from "./lens";
@@ -33,8 +34,8 @@ import { REST, SelKind } from "./caption";
 import { $, CLUSTER, el, flash, setTitle, slideOver, type Title } from "./dom";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
-import { Drawer } from "./drawer";
-import { among, untold } from "./snapshots";
+import { Drawer, SIDEWAYS } from "./drawer";
+import { among, family, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
@@ -157,6 +158,10 @@ const lens = new Lens(
         screen(Screen.Menu);
       },
     },
+    family: {
+      live: () => family(record()).snapshots.length > 0,
+      open: () => void navigate(address(Place.Family)),
+    },
     changed: sync,
     aiming: () => chat.unfold(),
   },
@@ -195,6 +200,9 @@ function chipLabel(chip: Chip): string {
  * again. A walk told before snapshots has none and keeps its chips. */
 const cases = new Map<number, Kept>();
 
+/** The Family view's book buttons, read again for each family opened. */
+const books = new Books($("pbp").parentElement!, () => store.fetch(api.casePassages));
+
 /** The play-by-play drawer (R-0542): a tap on its path goes back to that step
  * of the picture: the whole timeline, or the case's cluster opened, whether
  * or not it was open when the drawer came up. */
@@ -207,6 +215,7 @@ const pbp = new Drawer(
     lens.rest();
   },
   (chip) => chipTap(chip),
+  books,
 );
 
 /** A play-by-play message opened again, from its words or its cluster chip:
@@ -882,6 +891,7 @@ store.watch({
     chat.unfold();
     cases.clear();
     pbp.close();
+    books.forget();
     menu.fold();
     picture.clear();
     lens.state = REST;
@@ -1427,6 +1437,11 @@ track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 // With a real keyboard Return sends; a new line is Shift- or Alt-Return, and
 // on a touch screen Return, so a message can have paragraphs (R-0368). The
 // break is a plain newline so the draft keeps it.
+// Escape puts the cluster's about page away, as its cross does
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && picture.aboutOpen() && $("chat-screen").offsetParent) lens.climb(CLUSTER);
+});
+
 $("composer").addEventListener("keydown", (e) => {
   const key = e as KeyboardEvent;
   const act = returnKey(key, touch());
@@ -1570,6 +1585,7 @@ function current(): string {
   if (sessions.up) return address(Place.Sessions);
   const play = pbp.at();
   if (play !== null) return address(Place.Play, play);
+  if (pbp.family()) return address(Place.Family);
   const edited = menu.edited();
   if (edited !== null && (here === Screen.Menu || pinned()))
     return address(menu.showing() === Tab.People ? Place.Person : Place.EventEditor, edited);
@@ -1677,6 +1693,19 @@ async function toPlay(statement: number): Promise<boolean> {
   return false;
 }
 
+/** The whole family stepped through dates, opened on the record today
+ * (R-0742); false, at the chat, for a record with no dated step (R-0755). */
+function toFamily(): boolean {
+  uncover();
+  lens.putDown();
+  if (!family(record()).snapshots.length) {
+    toast("That place is not in the app");
+    return false;
+  }
+  pbp.openFamily(record());
+  return true;
+}
+
 /** How the app gets to each place from wherever it is. */
 const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   [Place.Chat]: () => {
@@ -1768,6 +1797,10 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   },
   [Place.PlayStep]: async ([id, step]) => {
     if (await toPlay(Number(id))) pbp.to(Number(step));
+  },
+  [Place.Family]: () => void toFamily(),
+  [Place.FamilyStep]: ([step]) => {
+    if (toFamily()) pbp.to(Number(step));
   },
   [Place.Coding]: async ([id]) => {
     uncover();
@@ -1896,6 +1929,16 @@ void store
   .then(arrive)
   .then(reveal)
   .then(() => landing(land));
+
+// Safari zooms on a pinch whatever the viewport says; the page's scale stays put (R-0786)
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+
+// A phone turned on its side over the chat shows the Family view alone,
+// filling the screen; turned back, it stays at the same date and person (R-0791)
+matchMedia(SIDEWAYS).addEventListener("change", (e) => {
+  const free = here === Screen.Chat && settings.top() === null && !sessions.up && !adding() && !pbp.panel.classList.contains("in");
+  if (e.matches && free && document.activeElement !== $("composer") && family(record()).snapshots.length > 0) void navigate(address(Place.Family));
+});
 
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.

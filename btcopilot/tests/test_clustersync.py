@@ -16,8 +16,15 @@ from btcopilot.clusters import (
     sync,
 )
 from btcopilot.coachturn import CoachTurn
-from btcopilot.llmutil import Parsed, Served, Spent
-from btcopilot.models import Author, Change, ModelCall, Purpose
+from btcopilot.llmutil import OutputTruncatedError, Parsed, Served, Spent
+from btcopilot.models import (
+    Author,
+    Change,
+    ModelCall,
+    Observation,
+    ObservationKind,
+    Purpose,
+)
 from btcopilot.prompts import get_agent_prompt
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.toolbox import ToolError, Toolbox, ToolName
@@ -105,6 +112,29 @@ def parsed(response: ClusterListResponse) -> Parsed:
 
 def clusters_of(diagram) -> dict:
     return {c["id"]: c for c in diagram.get_diagram_data().clusters}
+
+
+def noted(kind: ObservationKind) -> list[tuple]:
+    return [
+        (o.detail["attempt"], o.detail["check"], o.detail["groups"], o.detail["events"])
+        for o in Observation.query.filter_by(kind=kind).order_by(Observation.id)
+    ]
+
+
+def flashlite(*answers: ClusterListResponse):
+    """Stands in for the grouping model as it was seen on production: it fills
+    in every field the answer's schema offers, so offered an `id`, it writes
+    one for each group, made up when the record holds none."""
+    script = list(answers)
+
+    def answer(prompt, response_format, large=False, schema=None, limit=None):
+        said = script.pop(0)
+        fields = schema["properties"]["clusters"]["items"]["properties"]
+        for n, group in enumerate(said.clusters):
+            group.id = f"c_{n}" if "id" in fields else None
+        return parsed(said)
+
+    return patch("btcopilot.metered.gemini_structured_sync", side_effect=answer)
 
 
 def test_a_turn_that_adds_an_event_stores_the_grouping(discussion, family):
@@ -562,9 +592,9 @@ def test_the_coach_is_told_never_to_name_the_grouping_out_loud():
 
 
 def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_replies(
-    discussion, family, caplog
+    discussion, family
 ):
-    # R-0410, R-0371
+    # R-0410, R-0371, R-0517, R-0780
     with detects(("The hard spring", [10, 11, 12, 13, 14, 15])):
         CoachTurn(
             discussion,
@@ -617,7 +647,15 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
 
     assert reply["statement"] == "I put that down."
     assert clusters_of(family) == kept
-    assert "kept its clusters" in caplog.text
+    assert noted(ObservationKind.ClusterRefused) == [
+        (1, "unknown_group", 1, 7),
+        (2, "no_change_reason", 1, 3),
+    ]
+    failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
+    assert (failed.detail["check"], failed.detail["fallback"]) == (
+        "no_change_reason",
+        False,
+    )
 
 
 def test_regrouping_writes_a_ledger_row_for_the_person_and_their_family(family):
@@ -637,3 +675,120 @@ def test_regrouping_writes_a_ledger_row_for_the_person_and_their_family(family):
     assert [(r.user_id, r.diagram_id, r.turn_id, r.input_tokens) for r in rows] == [
         (family.user_id, family.id, "t1", 900)
     ]
+
+
+GROUPED = ClusterListResponse(
+    clusters=[
+        ModelCluster(eventIds=[10, 11, 12, 13, 14, 15], name="A hard year", reason="r")
+    ]
+)
+LEFT_OUT = ClusterListResponse(
+    clusters=[
+        ModelCluster(eventIds=[10, 11, 12], name="Part", reason="r", change="split")
+    ]
+)
+
+
+def test_a_refused_grouping_answer_is_written_down_with_its_check(family):
+    # R-0517, R-0780
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[parsed(LEFT_OUT), parsed(GROUPED)],
+    ):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    assert noted(ObservationKind.ClusterRefused) == [(1, "left_out", 1, 3)]
+    row = Observation.query.filter_by(kind=ObservationKind.ClusterRefused).one()
+    assert (row.turn_id, row.diagram_id) == ("t1", family.id)
+    assert "[13, 14, 15] were left out" in row.detail["detail"]
+    assert not Observation.query.filter_by(kind=ObservationKind.ClusterFailed).count()
+
+
+def test_an_accepted_grouping_answer_writes_no_observation(family):
+    # R-0517
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    assert Observation.query.count() == 0
+
+
+def test_twice_refused_with_no_groups_stores_the_rules_groups_under_their_years(
+    family,
+):
+    # R-0517, R-0780
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[parsed(LEFT_OUT), parsed(LEFT_OUT)],
+    ):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    stored = list(clusters_of(family).values())
+    assert [(c["title"], c["eventIds"]) for c in stored] == [
+        ("1994", [10, 11, 12, 13, 14, 15])
+    ]
+    failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
+    assert (failed.detail["check"], failed.detail["fallback"]) == ("left_out", True)
+    assert family.get_diagram_data().clusterCacheKey
+
+
+def test_a_model_that_fills_every_offered_field_still_groups_a_new_record(family):
+    # R-0517, R-0780
+    """On production the grouping model wrote a made-up id on every new group
+    and both answers were refused, so a record of 91 events had no clusters.
+    The answer's schema now offers no id when the record holds no groups."""
+    with flashlite(GROUPED, GROUPED):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert Observation.query.count() == 0
+
+
+def test_an_answer_cut_off_at_its_limit_is_refused_and_asked_again(family):
+    # R-0517, R-0780
+    """A grouping answer once repeated a sentence until it hit the limit. The
+    limit is set from the record's size, and a cut-off answer is refused and
+    asked again like any other."""
+    cut = OutputTruncatedError(
+        "truncated", Served("gemini-3.1-flash-lite"), Spent(input=900, output=4000)
+    )
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[cut, parsed(GROUPED)],
+    ) as asked:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    assert [c.kwargs["limit"] for c in asked.call_args_list] == [4096 + 24 * 6] * 2
+    assert noted(ObservationKind.ClusterRefused) == [(1, "cut_off", 0, 0)]
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert ModelCall.query.filter_by(purpose=Purpose.Cluster).count() == 2
+
+
+def test_a_grouping_call_that_fails_twice_never_fails_the_turn(discussion, family):
+    # R-0517, R-0780
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[TimeoutError(), TimeoutError()],
+    ):
+        reply = CoachTurn(
+            discussion,
+            "That winter she got sick too.",
+            purpose=Purpose.Coach,
+            model=Model(
+                called(
+                    ToolName.EditEvent,
+                    kind="shift",
+                    date="1994-07-01",
+                    title="Got sick",
+                    description="got sick",
+                    person=1,
+                    symptom="up",
+                    date_certainty="certain",
+                ),
+                said("I put that down."),
+            ),
+        ).run()
+    assert reply["statement"] == "I put that down."
+    assert noted(ObservationKind.ClusterRefused) == [
+        (1, "call_failed", 0, 0),
+        (2, "call_failed", 0, 0),
+    ]
+    failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
+    assert (failed.detail["check"], failed.detail["fallback"]) == ("call_failed", True)
+    assert [c["title"] for c in clusters_of(family).values()] == ["1994"]

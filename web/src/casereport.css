@@ -41,8 +41,8 @@
 .case .level { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .case .level > p, .case .sidein > p, .case .stage > p { margin: 0; font: 400 15px/1.45 var(--sans); color: var(--ink); }
 .case .famcard { align-self: flex-start; }
-.case .fam { margin: 0 -16px; padding: 4px 0 0; }
-.case .fam svg { display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto; }
+.case .fam { margin: 0 -16px; padding: 4px 0 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
+.case .fam svg { display: block; width: 100%; max-width: 460px; min-width: var(--least); height: auto; margin: 0 auto; }
 .case .side .fam, .case .sidein .fam { margin: 0; }
 .case .book { align-self: flex-end; flex: none; width: 44px; height: 44px; margin: -10px -12px -12px 0; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .case .book:active { color: var(--data-press); }
@@ -75,7 +75,8 @@
 
 /* the sheet of passages behind a card: the app's modal sheet with the passages as quotes */
 .fs-scrim.bk, .fs-sheet.bk { z-index: 70; }
-.fs-sheet.bk { max-height: 85%; max-width: 480px; margin: 0 auto; }
+/* never taller than the phone's own screen, so its list scrolls to its last passage */
+.fs-sheet.bk { max-height: min(85%, 85dvh); max-width: 480px; margin: 0 auto; }
 .fs-sheet.bk:focus-visible { outline: none; }
 .fs-sheet.bk .cf-t { padding-right: 44px; }
 .bk-sub { margin: 0 0 6px; font: 400 13px/1.4 var(--mono); color: var(--faint); }

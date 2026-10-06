@@ -1,7 +1,8 @@
 import { expect, it } from "vitest";
 import { closeX, pathRow } from "../src/dom";
-import { below, head, leastScale, pictureHeight, pointLine, yearsLine } from "../src/drawer";
-import { Told, untold } from "../src/snapshots";
+import { FIT, fitScale, leastScale, NAME } from "../src/diagram";
+import { below, head, PAN, pointLine, topLine, yearsLine } from "../src/drawer";
+import { family, Told, untold } from "../src/snapshots";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
 /** The play-by-play drawer's own words and controls, read off its markup. */
@@ -39,13 +40,13 @@ it("leads the path row back to the timeline and to the years", () => {
   expect(pathRow(["Timeline", "1980–82", "explain"])).toMatch(/data-step="0"><span>Timeline<.*data-step="1"><span>1980–82<.*<span class="here">explain</);
 });
 
-// R-0542, R-0540, R-0545
-it("opens with the path row, then the coach's point, and closes with the app's close button by the years step's route", () => {
-  const top = head(told, "1980–82");
+// R-0542, R-0540, R-0545, R-0767
+it("opens with the path row, then the coach's point, and closes with the app's close button by the cluster step's route", () => {
+  const top = head(told, "Leaving home · 1980–82");
   expect(top.indexOf('class="path"')).toBeGreaterThanOrEqual(0);
   expect(top.indexOf('class="path"')).toBeLessThan(top.indexOf('class="point"'));
   expect(top).toContain(closeX(' data-step="1"'));
-  expect(top).toMatch(/data-step="1"><span>1980–82</);
+  expect(top).toMatch(/data-step="1"><span>Leaving home · 1980–82</);
 });
 
 // R-0545
@@ -56,27 +57,27 @@ it("dims the years' other events and rings this snapshot's", () => {
   expect(line).toContain('class="wgap"');
 });
 
-// R-0561
-it("shrinks the picture to leave the caption room, down to a floor, then lets the drawer scroll", () => {
-  expect(pictureHeight(300, 500, [100], 250)).toBe(300);
-  expect(pictureHeight(300, 500, [240], 250)).toBe(260);
-  expect(pictureHeight(300, 500, [300], 250)).toBe(250);
-  expect(pictureHeight(300, 500, [450], 250)).toBe(250);
+// R-0796
+it("takes whichever of the two fits is tighter, across or down", () => {
+  const L = told.layout;
+  expect(fitScale(L, L.vw * 0.8, L.h)).toBeCloseTo(0.8);
+  expect(fitScale(L, L.vw * 0.9, L.h * 0.7)).toBeCloseTo(0.7);
 });
 
-// R-0561, R-0546
-it("sizes the picture once for the case, by its longest caption, so nothing moves between snapshots", () => {
-  expect(pictureHeight(300, 500, [100, 320, 150], 0)).toBe(pictureHeight(300, 500, [320], 0));
+// R-0796
+it("never grows a small picture past its own size, and never shrinks its names under the least size, past which it pans", () => {
+  const L = told.layout;
+  expect(fitScale(L, L.vw * 3, L.h * 3)).toBe(1);
+  expect(NAME * fitScale(L, 1, 1)).toBeCloseTo(FIT);
 });
 
-// R-0547, R-0558, R-0561
+// R-0744, R-0759
 it("stops shrinking where labels reach 13px, shapes 36px or the margin 20px", () => {
   const L = told.layout;
   const least = leastScale(L, 4);
   expect(13 * least).toBeGreaterThanOrEqual(13);
   expect(L.w * least).toBeGreaterThanOrEqual(36);
   expect(L.my * least + 4).toBeGreaterThanOrEqual(20);
-  expect(pictureHeight(300, 100, [90], 1000)).toBe(300);
 });
 
 // R-0570
@@ -96,4 +97,60 @@ it("draws a sparse record's person with no family tie beside the reader, and end
   expect(L.x[String(DELPHINE)]).toBeGreaterThan(L.x[String(CORINNE)]);
   expect(below(thin, 1, null)).toMatch(/<p class="ask">Who else was in the house that year\?/);
   expect(below(thin, 0, null)).not.toContain('class="ask"');
+});
+
+// R-0742
+it("steps the whole family with Back and Next only, says where in its top line, and closes back to the timeline", () => {
+  const whole = new Told(tl, family(tl), true);
+  const last = whole.length - 1;
+  expect(below(whole, last, null)).not.toContain('class="dot');
+  expect(below(whole, last, null)).toMatch(/data-act="next" disabled/);
+  expect(below(whole, 0, null)).toMatch(/data-act="back" disabled/);
+  expect(below(whole, last, null)).not.toContain('class="fact"');
+  const top = head(whole, "");
+  // the path names whose family the frame is on, written as each date is drawn
+  expect(top).toContain('<div class="path"></div>');
+  expect(top).toContain(closeX(' data-step="0"'));
+  expect(top).not.toContain('class="point"');
+  expect(topLine(whole, 0)).toBe('<span class="words">Errol and Odile <span class="kw">married</span></span>');
+  const toward = whole.told.snapshots.findIndex((s) => s.event_ids.includes(131));
+  expect(topLine(whole, toward)).toBe('<span class="words">Delphine started calling Corinne every night</span>');
+});
+
+// R-0742
+it("spans the whole family's years line over every dated event, this step ringed, earlier solid, later hollow", () => {
+  const whole = new Told(tl, family(tl), true);
+  const line = yearsLine(tl, whole, 3);
+  expect([...line.matchAll(/class="wnow"/g)]).toHaveLength(1);
+  expect([...line.matchAll(/class="wd"/g)]).toHaveLength(3);
+  expect([...line.matchAll(/class="wahead"/g)]).toHaveLength(whole.length - 4);
+  expect([...line.matchAll(/class="wd dim"/g)]).toHaveLength(tl.events.length - whole.length);
+  expect(line).toContain(">1948</text>");
+  expect(line).toContain(">1999</text>");
+});
+
+// R-0742
+it("says each whole family step's date once, over the years line, whole inside its frame at either end", () => {
+  // the longest month's name at the line's very start
+  const feb = { ...tl, events: tl.events.map((e) => (e.id === 103 ? { ...e, dateTime: "1948-02-01" } : e)) };
+  const whole = new Told(feb, family(feb), true);
+  expect(whole.steps[0].date).toBe("February 1948");
+  [0, whole.length - 1].forEach((i) => {
+    const date = whole.steps[i].date;
+    expect(topLine(whole, i)).not.toContain(date);
+    const x = Number(yearsLine(feb, whole, i).match(/<text class="wlab" x="([\d.]+)"/)![1]);
+    // a 12px mono character is at most 7.2 wide
+    expect(x - (date.length * 7.2) / 2).toBeGreaterThanOrEqual(0);
+    expect(x + (date.length * 7.2) / 2).toBeLessThanOrEqual(390);
+  });
+});
+
+// R-0778
+it("travels to a step's people at about 1,200 px a second, from half a second to two, setting off and landing gently and never passing where it lands", () => {
+  const at = Array.from({ length: 101 }, (_, i) => PAN.ease(i / 100));
+  expect([PAN.ms(60), PAN.ms(-600), PAN.ms(1200), PAN.ms(2369), PAN.ms(9000)]).toEqual([500, 500, 1000, expect.closeTo(1974, 0), 2000]);
+  expect([at[0], at[100]]).toEqual([0, 1]);
+  expect(at.every((v, i) => v >= 0 && v <= 1 && (i === 0 || v >= at[i - 1]))).toBe(true);
+  expect(at[5]).toBeLessThan(0.01);
+  expect(1 - at[95]).toBeLessThan(0.01);
 });

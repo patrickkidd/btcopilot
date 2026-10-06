@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { cutInFrame, leastName, wordsOutside } from "./gate";
 import { stateFor, type Key } from "./setup";
 
 /** The case report on the three case report fixtures at a phone's and a
@@ -260,7 +261,7 @@ test.describe("the case report's taps", () => {
   test("a card's book raises its passages and puts them away", async ({ page }) => {
     await open(page);
     await page.locator('#case-body .level[data-card="main"] .book').click();
-    const sheet = page.locator(".fs-sheet.bk");
+    const sheet = page.locator("#case-screen .fs-sheet.bk");
     await expect(sheet).toHaveClass(/in/);
     await expect(sheet.locator("blockquote").first()).toBeVisible();
     await sheet.locator(".cardx").click();
@@ -273,7 +274,7 @@ test.describe("the case report's taps", () => {
     await page.waitForTimeout(3000);
     const tapped = Date.now();
     await page.locator('#case-body .level[data-card="brought"] .book').click();
-    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/, { timeout: 1000 });
+    await expect(page.locator("#case-screen .fs-sheet.bk")).toHaveClass(/in/, { timeout: 1000 });
     expect(Date.now() - tapped).toBeLessThan(1000);
   });
 
@@ -281,16 +282,16 @@ test.describe("the case report's taps", () => {
   test("a book whose passages could not be read asks again at its tap", async ({ page }) => {
     await open(page, 1);
     await page.locator('#case-body .level[data-card="main"] .book').click();
-    await expect(page.locator(".fs-sheet.bk blockquote").first()).toBeVisible();
+    await expect(page.locator("#case-screen .fs-sheet.bk blockquote").first()).toBeVisible();
   });
 
   // R-0691
   test("Escape puts the book's passages away", async ({ page }) => {
     await open(page);
     await page.locator('#case-body .level[data-card="main"] .book').click();
-    await expect(page.locator(".fs-sheet.bk")).toHaveClass(/in/);
+    await expect(page.locator("#case-screen .fs-sheet.bk")).toHaveClass(/in/);
     await page.keyboard.press("Escape");
-    await expect(page.locator(".fs-sheet.bk")).not.toHaveClass(/in/);
+    await expect(page.locator("#case-screen .fs-sheet.bk")).not.toHaveClass(/in/);
   });
 
   // R-0709
@@ -314,5 +315,29 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-famout .fam svg").first()).toBeVisible();
     await page.locator("#case-famout-close").click();
     await expect(page.locator("#case-famout")).not.toHaveClass(/in/);
+  });
+});
+
+test.describe("the case report's family pictures of a family many phones wide", () => {
+  test.use({ storageState: stateFor("case-report-dense"), viewport: SIZES[0] });
+
+  // R-0759, R-0744
+  test("draw names at 13px or more and pan in their own frames, every word inside what the frame scrolls to", async ({ page }) => {
+    const errors = await open(page);
+    const pictures = "#case-body .fam svg";
+    expect(await leastName(page, pictures)).toBeGreaterThanOrEqual(13);
+    expect(await wordsOutside(page, pictures)).toEqual([]);
+    expect(await page.locator("#case-body .fam").evaluateAll((f) => f.some((d) => d.scrollWidth > d.clientWidth))).toBe(true);
+    await page.locator("#case-family").click();
+    await expect(page.locator("#case-famout")).toHaveClass(/in/);
+    const slid = "#case-famout .fam svg";
+    // R-0759: the record's own person and their words whole in the frame, as the Family drawer opens
+    const own = await page.locator("#case-famout .fam[data-who]").first().getAttribute("data-who");
+    expect(await page.locator(`#case-famout .fam .pt[data-id="${own}"]`).first().textContent()).toContain("Margaret-Anne");
+    expect(await cutInFrame(page, "#case-famout .fam[data-who]", [own!])).toEqual({ fits: true, cut: {} });
+    expect(await leastName(page, slid)).toBeGreaterThanOrEqual(13);
+    expect(await wordsOutside(page, slid)).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(errors).toEqual([]);
   });
 });

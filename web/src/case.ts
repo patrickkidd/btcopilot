@@ -1,5 +1,5 @@
 import { pill } from "./chips";
-import { draw } from "./diagram";
+import { draw, leastScale } from "./diagram";
 import { closeX, esc } from "./dom";
 import { Card, GUESS_CARDS, ORDER, type CaseView, type Fact, type Guess, type Still, type Who } from "./caseview";
 import { ChipKind, ChipTone, type Passages } from "./types";
@@ -107,7 +107,7 @@ export const BOOK_ICON =
   `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">` +
   `<path d="M12 6.5C10 5 7.5 4.5 4 4.5v13c3.5 0 6 .5 8 2 2-1.5 4.5-2 8-2v-13c-3.5 0-6 .5-8 2zM12 6.5v13"/></svg>`;
 
-const book = (key: string, of: string) =>
+export const book = (key: string, of: string) =>
   `<button type="button" class="book" data-book="${key}" data-title="${esc(of)}" aria-label="the passages behind this">${BOOK_ICON}</button>`;
 
 export const familyIcon = (size: number) =>
@@ -137,15 +137,22 @@ const guessBlock = (g: Guess, ask: string | null = null) =>
 
 const notEnough = (words = NOT_ENOUGH) => `<div class="gbub">${bubble(words)}</div>`;
 
+/** The top padding of a family's frame on the report, as casereport.css gives it. */
+const FAM_PAD = 4;
+
 /** A family standing still, drawn by the app's own drawing, or the layout's
  * own words for why it cannot be. */
 export function picture(v: CaseView, still: Still, label: string): string {
   const L = still.layout;
   if (!L) return faint(`The family picture cannot be drawn: ${still.fault ?? "unknown"}.`);
-  const bonds = L.bonds.map((b) => ({ a: b.a, b: b.b, st: b.st, married: b.married, fresh: false, hot: false }));
+  const bonds = L.bonds.map((b) => ({ a: b.a, b: b.b, st: b.st, married: b.married, fresh: 0, hot: false }));
   const unknown = Object.keys(L.P).some((k) => k.startsWith("unknown-"));
   const svg = draw(L, { t: v.now, bonds, marks: [], died: new Set<string>(), moves: [], kin: [], label });
-  return `<div class="fam">${svg}</div>${unknown ? faint(UNKNOWN_NOTE) : ""}`;
+  // never drawn under the drawer's floor: a wider family pans in its frame (R-0759)
+  const least = Math.ceil(L.vw * leastScale(L, FAM_PAD));
+  const you = Object.keys(L.P).find((k) => L.P[k].you);
+  const who = you ? ` data-who="${esc(you)}"` : "";
+  return `<div class="fam" style="--least:${least}px"${who}>${svg}</div>${unknown ? faint(UNKNOWN_NOTE) : ""}`;
 }
 
 /** One side of the family: the one fold on the report (R-0689), its words

@@ -111,7 +111,7 @@ test.describe("the picture with one cluster open", () => {
     await openCluster(page);
     // the path names the open cluster by its years and the row under the line
     // by its own name; the first step of the path is the way back up
-    await expect(page.locator("#path")).toHaveText("Timeline \u203a 1981\u20132003");
+    await expect(page.locator("#path")).toHaveText("Timeline \u203a Leaving and losing \u00b7 1981\u20132003");
     await expect(page.locator("#view .ss-name")).toHaveText("Leaving and losing (3)");
 
     await page.locator('#path [data-step="0"]').click();

@@ -477,7 +477,7 @@ test.describe("an untouched session", () => {
   // R-0351
   test("the row under it carries no hint", async ({ page }) => {
     await settle(page);
-    await expect(page.locator("#caption")).toHaveText("");
+    await expect(page.locator("#caption .cta")).toHaveText("");
   });
 });
 

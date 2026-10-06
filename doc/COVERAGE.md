@@ -69,6 +69,48 @@ When several questions name one item, the last one sets its state.
 A said unknown about parents or grandparents is one fact for a hypothesis about
 cutoff in the parents' generation, never a fact about the person.
 
+## What the coach was already told [Oracle: R-0760]
+
+The coach never asks for what the person already said. Four rules on the
+question tool hold it to that; the chat stays free text, so each steers the
+coach rather than the person.
+
+- **A fact the person states unasked is kept as a question already answered.**
+  "We can't have children", "my father is still alive", "my parents are still
+  married": the coach adds the fact question closed in one call, with outcome
+  answered (or unknown, when they said they do not know), the fact and the
+  person or couple it is about, and the person's own message as the answer.
+  The question carries the session and the day it was kept, so it shows where
+  closed questions show. "We can't have children" closes the couple's children
+  item as answered, with no number; it is never asked again. A question can only
+  be born closed as a fact question naming its fact and its item.
+- **Asking a known item is refused, with the answer.** An asked fact question on
+  an item the record already answers (a death event for alive, a dated birth for
+  the birth date, a closed question naming the item, and so on, by the table
+  above) is not kept; the refusal quotes the entry or the closed question that
+  answers it, for the coach to use. A thought question, a question kept for
+  later, and a question naming no item are untouched.
+- **The chat is searched before an asked question is kept.** When the record
+  does not answer the item, the tool itself searches what was said before, in
+  one query, for a fixed list of everyday words per item (children: children,
+  kids, son, daughter, pregnant, baby, IVF, adopt, "start a family"; alive:
+  alive, living, died, passed, death, funeral, "still married"; and so on, in
+  `coverage.SEARCH_WORDS`), in messages that name the person or what they are
+  called for what they are to the person (father, dad; mother, mom; and so on,
+  in `coverage.CALLED`). The person themself and their own couples are searched
+  by the item's words alone, since they say "I" and "we". The question is kept
+  and the hits come back with it, so the coach can close it as answered citing
+  the message instead of asking. No meaning-based search; a paraphrase the list
+  misses is reported from the live cases for Patrick to decide on.
+- **A second open question on one item is refused.** While a fact question on a
+  person or couple and item is asked and open, another on the same item is not
+  kept, in any words; the refusal names the open one, to close with the
+  person's answer first.
+
+A fact placed on the wrong kind of thing (how many children or when they met on
+a person, any other item on a couple) names no item of the checklist, so these
+rules leave it alone: it is kept as it always was.
+
 ## The metrics
 
 Each coach turn's done row keeps the counts before and after the turn: items

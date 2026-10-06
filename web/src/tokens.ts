@@ -26,6 +26,13 @@ export const IN_CHAT_MARK =
   `<path d="M5.6 12.6 4.6 16.2 8.6 12.6" fill="none" stroke="currentColor" ` +
   `stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 
+/** A couple and their child, the mark of the whole family (R-0742). */
+export const FAMILY_MARK =
+  `<svg width="15" height="15" viewBox="0 0 18 18" aria-hidden="true">` +
+  `<g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">` +
+  `<rect x="1.5" y="1.5" width="5.5" height="5.5"/><circle cx="13.75" cy="4.25" r="2.75"/>` +
+  `<path d="M4.25 7v3h9.5V7M9 10v3.5"/><circle cx="9" cy="15.2" r="1.8"/></g></svg>`;
+
 /** A chip with nothing to do is dimmed rather than missing. */
 /** The one back arrow every screen draws (R-0223). */
 export const BACK =

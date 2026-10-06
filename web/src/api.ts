@@ -190,11 +190,18 @@ export const timeline = (diagramId: number | null, signal?: AbortSignal) =>
 export const casePassages = (diagramId: number | null, signal?: AbortSignal) =>
   call<Passages>("GET", onDiagram("/case-report-passages", diagramId), undefined, undefined, signal);
 
+/** The browser's IANA time zone, sent with each message so the coach's
+ * "today" is the person's day, not the server's (R-0760). */
+export const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 /** One agent-loop turn. The send is short: it stores the words and hands the
  * turn to the coach, which answers on the turn's own stream. The server puts
  * them in the sitting they belong to. */
 export const say = (diagramId: number | null, statement: string) =>
-  call<Started>("POST", onDiagram("/chat", diagramId), { statement });
+  call<Started>("POST", onDiagram("/chat", diagramId), {
+    statement,
+    time_zone: timeZone(),
+  });
 
 /** Where one sitting starts, carried by its first words, and when the
  * sitting before it started; the family's first sitting has none before it. */

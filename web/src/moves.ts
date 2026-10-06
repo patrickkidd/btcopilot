@@ -286,20 +286,23 @@ function wall(frm: Frame, mover: Figure, struck: boolean): string {
   const arm = (mover.mark ?? 68) / 2;
   const shadow = uid("csh");
   // the wedge behind the wall widens as it runs back, so the rings wrap the
-  // wall's ends instead of stopping at a straight line
-  const back = -L;
+  // wall's ends instead of stopping at a straight line; it runs back past the
+  // last ring, and the clip holds every ring besides it
+  const reach = FIELD * tall(mover);
+  const back = Math.min(-L, L - reach - 1);
   const spread = arm + 0.419 * (wx - back);
+  const box = { x0: back, x1: L + reach + 1, y: Math.max(spread, reach) + 1 };
   const strike = struck
     ? `<line class="mv-strike postA" x1="${n1(wx - arm * (13 / 34))}" y1="${n1(arm * (22 / 34))}" ` +
       `x2="${n1(wx + arm * (13 / 34))}" y2="${n1(-arm * (22 / 34))}"/>`
     : "";
   return (
     `<defs><clipPath id="${shadow}"><path clip-rule="evenodd" ` +
-    `d="M${n1(back)} ${n1(-spread - 40)} H${n1(L * 2)} V${n1(spread + 40)} H${n1(back)} Z ` +
+    `d="M${n1(box.x0)} ${n1(-box.y)} H${n1(box.x1)} V${n1(box.y)} H${n1(box.x0)} Z ` +
     `M${n1(wx)} ${-arm} L${n1(wx)} ${arm} L${n1(back)} ${n1(spread)} L${n1(back)} ${n1(-spread)} Z"/>` +
     `</clipPath></defs>` +
-    rings(L, 0, "preA", "", 2.4, FIELD * tall(mover)) +
-    rings(L, 0, "postA", ` clip-path="url(#${shadow})"`, 2.4, FIELD * tall(mover)) +
+    rings(L, 0, "preA", "", 2.4, reach) +
+    rings(L, 0, "postA", ` clip-path="url(#${shadow})"`, 2.4, reach) +
     `<line class="mv-trace" x1="${n1(rad(mover) + 2)}" y1="0" x2="${n1(wx - 3)}" y2="0" ` +
     // where the people stay put the wall's loop is 5s and it lands at 28%
     `opacity="0">${mover.still ? animate("opacity", "0;0;.55;.55", "0;.28;.32;1", "5s") : animate("opacity", "0;0;.55;.55", "0;.4;.46;1", "8s")}</line>` +
@@ -557,8 +560,8 @@ export function zigzag(from: Figure, to: Figure, klass = "mv-tension"): string {
 /** The other party's storm, and the calm that only arrives a beat after the
  * actor has held still. */
 function storm(other: Figure): string {
-  const loud = Math.round(FIELD * tall(other));
-  const calm = Math.round(150 * tall(other));
+  // the calm runs as far as the storm: every field reaches one distance (R-0776)
+  const reach = Math.round(FIELD * tall(other));
   return (
     `<g class="stormlong">` +
     [0, 0.55]
@@ -566,7 +569,7 @@ function storm(other: Figure): string {
         (begin) =>
           `<circle class="fld" cx="${n1(other.x)}" cy="${n1(other.y)}" r="24" ` +
           `stroke-width="2.6" opacity="0">` +
-          `<animate attributeName="r" values="18;${loud}" dur="${s_(SPEED.ring)}" begin="${begin}s" repeatCount="indefinite"/>` +
+          `<animate attributeName="r" values="18;${reach}" dur="${s_(SPEED.ring)}" begin="${begin}s" repeatCount="indefinite"/>` +
           `<animate attributeName="opacity" values=".8;.5;0" keyTimes="0;.7;1" dur="${s_(SPEED.ring)}" ` +
           `begin="${begin}s" repeatCount="indefinite"/></circle>`,
       )
@@ -575,7 +578,7 @@ function storm(other: Figure): string {
     `<g class="stormcalm">` +
     `<circle class="fld" cx="${n1(other.x)}" cy="${n1(other.y)}" r="24" ` +
     `stroke-width="1.6" opacity="0">` +
-    `<animate attributeName="r" values="18;${calm}" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
+    `<animate attributeName="r" values="18;${reach}" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
     `<animate attributeName="opacity" values=".35;.2;0" keyTimes="0;.7;1" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
     `</circle></g>`
   );
@@ -734,14 +737,15 @@ function move(
             target: "btrem2",
             marks:
               storm(target) +
+              // the clearing reaches as far as every other field (R-0776)
               `<circle class="mv-clear" cx="${n1(actor.x)}" cy="${n1(actor.y)}" ` +
               `r="20" opacity="0">` +
               // on the board the one who holds still clears once they have; where
               // the people stay put the clearing keeps coming, from the start
               (actor.still
-                ? `<animate attributeName="r" values="18;120" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
+                ? `<animate attributeName="r" values="18;${Math.round(FIELD * tall(actor))}" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>` +
                   `<animate attributeName="opacity" values=".95;0" dur="${s_(SPEED.ring)}" repeatCount="indefinite"/>`
-                : `<animate attributeName="r" values="18;120" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>` +
+                : `<animate attributeName="r" values="18;${Math.round(FIELD * tall(actor))}" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>` +
                   `<animate attributeName="opacity" values=".95;0" dur="${s_(SPEED.ring)}" begin="3.2s;11.2s"/>`) +
               `</circle>`,
           }

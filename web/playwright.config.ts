@@ -11,6 +11,11 @@ import { defineConfig, devices } from "@playwright/test";
 /** The review walks live beside the goldens but run as their own projects. */
 const SANDBOX = "**/sandbox*.spec.ts";
 
+/** Chromium starts silent, so the play-by-play's read-aloud never plays on
+ * the machine running the tests; WebKit has no such switch. Unhinted fonts
+ * keep Linux letter widths unrounded, as a phone draws them. */
+const chrome = { ...devices["Desktop Chrome"], launchOptions: { args: ["--mute-audio", "--font-render-hinting=none"] } };
+
 export default defineConfig({
   testDir: "./tests/visual",
   globalSetup: "./tests/visual/setup.ts",
@@ -37,7 +42,7 @@ export default defineConfig({
     {
       name: "phone",
       testIgnore: SANDBOX,
-      use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
+      use: { ...chrome, viewport: { width: 390, height: 844 } },
     },
     // Not part of the gate (R-0416): no desktop goldens are kept, so its
     // screenshot calls are skipped and it runs only by hand.
@@ -45,7 +50,7 @@ export default defineConfig({
       name: "desktop",
       testIgnore: SANDBOX,
       ignoreSnapshots: true,
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+      use: { ...chrome, viewport: { width: 1280, height: 800 } },
     },
     // The review walks: journeys against a running review sandbox, in both
     // engines at phone size and in Chromium at desktop size. They skip unless
@@ -55,7 +60,7 @@ export default defineConfig({
       name: "sandbox-phone",
       testMatch: SANDBOX,
       use: {
-        ...devices["Desktop Chrome"],
+        ...chrome,
         viewport: { width: 393, height: 852 },
         ignoreHTTPSErrors: true,
       },
@@ -73,7 +78,7 @@ export default defineConfig({
       name: "sandbox-desktop",
       testMatch: SANDBOX,
       use: {
-        ...devices["Desktop Chrome"],
+        ...chrome,
         viewport: { width: 1280, height: 800 },
         ignoreHTTPSErrors: true,
       },

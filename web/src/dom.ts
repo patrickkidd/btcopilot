@@ -29,6 +29,23 @@ export const pathRow = (steps: string[], picked = false): string =>
     )
     .join(`<span class="sep" aria-hidden="true"> \u203a </span>`);
 
+/** A path row too long for its line gives way a whole word at a time, never
+ * cut inside one: the steps between become an ellipsis first, then the last
+ * step loses words from its end. */
+export function fitPath(row: HTMLElement): void {
+  row.classList.add("words");
+  const over = () => row.scrollWidth > row.clientWidth + 1;
+  row.querySelectorAll<HTMLElement>(".step:not(:first-child) > span").forEach((s) => {
+    if (over()) s.textContent = "\u2026";
+  });
+  const here = row.querySelector<HTMLElement>(".here");
+  const words = here?.textContent!.split(" ") ?? [];
+  while (here && over() && words.length > 1) {
+    words.pop();
+    here.textContent = `${words.join(" ")}\u2026`;
+  }
+}
+
 /** The path's step that goes back to the open cluster. */
 export const CLUSTER = 1;
 

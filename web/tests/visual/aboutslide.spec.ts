@@ -21,8 +21,8 @@ interface Seen {
   /** How much of the about page shows on screen, on its own or in a moving copy. */
   h: number;
   sliding: boolean;
-  /** Where the moving copy of the about card stands, while there is one. */
-  left: number | null;
+  /** How far down the moving copy of the about card stands, while there is one. */
+  top: number | null;
   folded: boolean;
 }
 
@@ -45,9 +45,9 @@ async function frames(page: Page, act: () => Promise<void>): Promise<Seen[]> {
       seen.push({
         h: Math.round(h),
         sliding: !!pic.querySelector(".slide-lay .card"),
-        left: (() => {
+        top: (() => {
           const copy = pic.querySelector(".slide-lay .card");
-          return copy ? Math.round(copy.getBoundingClientRect().left) : null;
+          return copy ? Math.round(copy.getBoundingClientRect().top) : null;
         })(),
         folded: pic.parentElement!.classList.contains("folded"),
       });
@@ -63,23 +63,33 @@ async function frames(page: Page, act: () => Promise<void>): Promise<Seen[]> {
 const shown = (seen: Seen[]) => seen.filter((s) => s.h > 0).map((s) => s.h);
 
 /** Where the moving copy stood, frame by frame, once each place. */
-const travel = (seen: Seen[]) => [...new Set(seen.flatMap((s) => (s.left === null ? [] : [s.left])))];
+const travel = (seen: Seen[]) => [...new Set(seen.flatMap((s) => (s.top === null ? [] : [s.top])))];
 
-// R-0680
-test("the about page slides in at its full height, with no jump once it lands", async ({ page }) => {
+// R-0680, R-0768
+test("the about page comes down from the top at its full height, with no jump once it lands", async ({ page }) => {
   await open(page);
   const seen = await frames(page, () => page.locator("#info").click());
   const h = shown(seen);
   expect(seen.some((s) => s.sliding)).toBe(true);
-  // it slides in from the right, over several frames, to where it rests
+  // it comes down from above, over several frames, to where it rests
   const went = travel(seen);
   expect(went.length).toBeGreaterThan(3);
-  expect(went[0]).toBeGreaterThan(went[went.length - 1]);
+  expect(went[0]).toBeLessThan(went[went.length - 1]);
   expect(h.length).toBeGreaterThan(0);
   expect(Math.max(...h) - h[0]).toBeLessThanOrEqual(2);
 });
 
-// R-0680
+// R-0680, R-0768
+test("Escape puts the about page away, as its cross does", async ({ page }) => {
+  await open(page);
+  await page.locator("#info").click();
+  await page.waitForTimeout(800);
+  await expect(page.locator("#chat-screen > .pic .view .card").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#chat-screen > .pic .view .card")).toHaveCount(0);
+});
+
+// R-0680, R-0768
 test("scrolling up the chat slides the about page out at its full height before the picture folds", async ({ page }) => {
   await open(page);
   await page.locator("#info").click();
@@ -92,11 +102,51 @@ test("scrolling up the chat slides the about page out at its full height before 
     await page.mouse.wheel(0, -400);
   });
   expect(seen.some((s) => s.sliding)).toBe(true);
-  // it slides back out to the right, over several frames
+  // it goes back up, over several frames
   const went = travel(seen);
   expect(went.length).toBeGreaterThan(3);
-  expect(went[went.length - 1]).toBeGreaterThan(went[0]);
+  expect(went[went.length - 1]).toBeLessThan(went[0]);
   expect(shown(seen).filter((h) => h < full - 2)).toEqual([]);
   expect(seen.filter((s) => s.h > 0 && s.folded)).toEqual([]);
-  expect(seen[seen.length - 1]).toEqual({ h: 0, sliding: false, left: null, folded: true });
+  expect(seen[seen.length - 1]).toEqual({ h: 0, sliding: false, top: null, folded: true });
+});
+
+test.describe("a record whose coach has spoken under the picture", () => {
+  test.use({ storageState: stateFor("everymark") });
+
+  // R-0768
+  test("no chat bubble shows through the about page while it comes down", async ({ page }) => {
+    await open(page);
+    await page.evaluate(() => {
+      const pic = document.querySelector<HTMLElement>("#chat-screen > .pic")!;
+      const seen = { covered: 0, through: [] as string[] };
+      (window as unknown as { SEEN: typeof seen }).SEEN = seen;
+      let n = 0;
+      const read = () => {
+        const lay = pic.querySelector<HTMLElement>(".slide-lay:has(.card)");
+        if (lay) {
+          const c = lay.querySelector(".card")!.getBoundingClientRect();
+          // the moving copy takes no taps; that is lifted for the reading, to find what is drawn on top
+          lay.inert = false;
+          lay.style.pointerEvents = "auto";
+          for (const bub of document.querySelectorAll<HTMLElement>("#chat .bub")) {
+            const b = bub.getBoundingClientRect();
+            const [x, y] = [b.left + b.width / 2, b.top + b.height / 2];
+            if (x < c.left || x > c.right || y < c.top || y > c.bottom || y > innerHeight) continue;
+            seen.covered++;
+            if (!pic.contains(document.elementFromPoint(x, y))) seen.through.push(bub.textContent!.slice(0, 30));
+          }
+          lay.inert = true;
+          lay.style.pointerEvents = "";
+        }
+        if (++n < 90) requestAnimationFrame(read);
+      };
+      requestAnimationFrame(read);
+    });
+    await page.locator("#info").click();
+    await page.waitForTimeout(1600);
+    const seen = await page.evaluate(() => (window as unknown as { SEEN: { covered: number; through: string[] } }).SEEN);
+    expect(seen.covered).toBeGreaterThan(0);
+    expect(seen.through).toEqual([]);
+  });
 });
