@@ -809,6 +809,19 @@ function looseGens(cast: Cast, t: Ties): { gen: Record<string, number>; comps: s
     const lo = Math.min(...c.map((id) => gen[id]));
     c.forEach((id) => (gen[id] -= lo));
   });
+  // a group with no tie to the reader's, such as two friends who are a couple,
+  // stands on the row of whoever in the family one of them is involved with,
+  // never on the grandparents' row by default (R-0781)
+  const home = comps.find((c) => c.includes(cast.index))!;
+  comps.forEach((c) => {
+    if (c === home) return;
+    const m = c.find((id) => cast.assoc[id] != null && home.includes(cast.assoc[id]));
+    if (m == null) return;
+    const by = gen[cast.assoc[m]] - gen[m];
+    c.forEach((id) => (gen[id] += by));
+  });
+  const lo = Math.min(...ids.map((id) => gen[id]));
+  ids.forEach((id) => (gen[id] -= lo));
   return { gen, comps };
 }
 

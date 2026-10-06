@@ -237,6 +237,48 @@ const peopleOf = (m: Step["marks"][number]): string[] => {
   return [m.who];
 };
 
+/** The people `seeds` and only those that join them into one family (R-0781):
+ * each joined to the rest by the fewest parent, partner and child links, and
+ * a child's other parent beside the one drawn, so the couple's line holds the
+ * child. Someone the family links do not reach stands alone, seeds first. */
+export function joined(r: Family, seeds: string[]): string[] {
+  const bonds = r.tl.pair_bonds;
+  const of = (pb: PairBond) => [pb.person_a, pb.person_b].filter((p): p is number => p != null).map(key);
+  const parents = (id: string) => {
+    const pb = bonds.find((b) => b.id === r.people.get(id)?.parents);
+    return pb ? of(pb) : [];
+  };
+  const near = (id: string) => [
+    ...parents(id),
+    ...bonds.filter((pb) => of(pb).includes(id)).flatMap((pb) => [...of(pb), ...r.tl.people.filter((o) => o.parents === pb.id).map((o) => key(o.id))]),
+  ];
+  const tree = new Set([seeds[0]]);
+  seeds.slice(1).forEach((s) => {
+    if (tree.has(s)) return;
+    const prev = new Map<string, string | null>([[s, null]]);
+    let hit: string | null = null;
+    for (const queue = [s]; queue.length && !hit; ) {
+      const u = queue.shift()!;
+      for (const v of near(u)) {
+        if (prev.has(v)) continue;
+        prev.set(v, u);
+        if (tree.has(v)) {
+          hit = v;
+          break;
+        }
+        queue.push(v);
+      }
+    }
+    if (!hit) tree.add(s);
+    for (let u: string | null = hit; u; u = prev.get(u)!) tree.add(u);
+  });
+  [...tree].forEach((id) => {
+    const ps = parents(id);
+    if (ps.some((p) => tree.has(p))) ps.forEach((p) => tree.add(p));
+  });
+  return [...seeds, ...[...tree].filter((id) => !seeds.includes(id))];
+}
+
 /** Three generations around `seeds` (R-0779): each one's parents, partners,
  * brothers and sisters, and children, seeds first; more only when the seeds
  * themselves span more, as a great-grandparent and a great-grandchild do. The
@@ -346,14 +388,15 @@ export class Told {
     return who != null && key(who) in this.cast.people ? key(who) : this.cast.index;
   }
 
-  /** The whole family's step `i` drawn as three generations around its own
-   * people, or around `focus` when given (R-0779): only that step and the ones
-   * before it, so its marks are new and the earlier ones carried. */
+  /** The whole family's step `i`: the people its events involve and those
+   * that join them (R-0781), or `focus`'s three generations when given
+   * (R-0779); only that step and the ones before it, so its marks are new and
+   * the earlier ones carried. */
   around(i: number, focus: string[] | null = null): Told {
     const r = new Family(this.tl);
-    const seeds = focus ?? [...new Set(this.steps[i].marks.flatMap(peopleOf))];
+    const seeds = [...new Set(this.steps[i].marks.flatMap(peopleOf))].filter((id) => r.people.has(id));
     const told = { ...this.told, snapshots: this.told.snapshots.slice(0, i + 1) };
-    return new Told(this.tl, told, true, circle(r, seeds.length ? seeds : [r.you]));
+    return new Told(this.tl, told, true, focus ? circle(r, focus) : joined(r, seeds.length ? seeds : [r.you]));
   }
 
   get length(): number {

@@ -612,7 +612,7 @@ test.describe("the Family view's three generations", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
 
   // R-0779
-  test("draws each step's people with their parents, partners, brothers and sisters and children; a tap puts it on someone else's; Next goes back to the step's", async ({ page }) => {
+  test("draws each step's people and only the family that joins them; a tap puts it on someone's three generations; Next goes back to the step's", async ({ page }) => {
     const errors = watched(page);
     let ids: Record<string, number> = {};
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
@@ -625,8 +625,10 @@ test.describe("the Family view's three generations", () => {
     await expect(drawer(page)).toBeVisible();
     const drawn = () => drawer(page).locator(".draw svg .p").evaluateAll((gs) => gs.map((g) => (g as SVGGElement).dataset.id!).sort());
     const of = (...names: string[]) => names.map((n) => String(ids[n])).sort();
-    // Ws1 moves toward Hs1: each with their parents and their brothers and sisters
-    const step = of("Ws1", "Hs1", "Walt", "Wren", "Wanda", "Ws0", "Hal", "Hope", "Hugo", "Hs0");
+    // Ws1 moves toward Hs1: the two of them and only the family that joins
+    // them, her parents, her sister Wanda and Wanda's husband Hugo, his parents;
+    // no other brother or sister (R-0781)
+    const step = of("Ws1", "Hs1", "Walt", "Wren", "Wanda", "Hal", "Hope", "Hugo");
     expect(await drawn()).toEqual(step);
     // a tap on Hugo: his parents, brothers, wife and daughter
     // tapped in the middle of his square, where his age is written
@@ -898,10 +900,21 @@ test.describe("the whole family wider than the phone", () => {
   // R-0744, R-0742
   test("scrolls inside its own frame, never the page", async ({ page }) => {
     const errors = watched(page);
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, joinedFamily([["Hugo", "Wanda"]], 6, "Hs5", "Hugo"));
+    let ids: Record<string, number> = {};
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      ids = joined(tl, [["Hugo", "Wanda"]], 6, "Hs5", "Hugo");
+      await route.fulfill({ json: tl });
+    });
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
+    // Hal's three generations: his seven children are wider than the phone
+    const hal = drawer(page).locator(`.draw svg .p[data-id="${ids.Hal}"] .shape`);
+    await hal.scrollIntoViewIfNeeded();
+    const at = (await hal.boundingBox())!;
+    await page.mouse.click(at.x + at.width / 2, at.y + at.height / 2);
+    await expect(drawer(page).locator(".path")).toContainText("Hal's family");
     const frame = drawer(page).locator(".draw");
     expect(await frame.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
     expect(await sideways(page)).toBe(false);
@@ -910,7 +923,7 @@ test.describe("the whole family wider than the phone", () => {
     expect(errors).toEqual([]);
   });
 
-  // R-0744, R-0742
+  // R-0744, R-0742, R-0781
   test("glides its frame to each step's person on Back and Next", async ({ page }) => {
     const errors = watched(page);
     let ids: Record<string, number> = {};
@@ -931,8 +944,6 @@ test.describe("the whole family wider than the phone", () => {
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
-    const frame = drawer(page).locator(".draw");
-    expect(await frame.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
     const inFrame = (id: number) =>
       page.evaluate((id) => {
         const d = document.querySelector(".pbp .draw")!.getBoundingClientRect();

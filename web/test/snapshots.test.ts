@@ -1200,6 +1200,16 @@ describe("a family the row rules cannot place", () => {
     });
   });
 
+  // R-0781, R-0545
+  it("stands a couple with no tie to the family on the row of the one of the family they are involved with, not the grandparents'", () => {
+    const c = { ...families["a couple not connected to the reader's family"], assoc: { x: "c", c: "x" } };
+    expect(() => layout(c)).toThrow(/cannot place/);
+    const L = arrange(c);
+    expect(L.loose).toBe(true);
+    expect([L.y.x, L.y.y]).toEqual([L.y.c, L.y.c]);
+    expect(L.y.c).toBeGreaterThan(Math.min(...Object.values(L.y)));
+  });
+
   // R-0779, R-0545
   it("stands one who married in on their partner's row, their parents a row above, however few generations their own family reaches back", () => {
     // his family four generations deep, hers two; his mother's parents are in
