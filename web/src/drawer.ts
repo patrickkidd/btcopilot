@@ -2,8 +2,8 @@ import "./drawer.css";
 import type { Books } from "./books";
 import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
-import { CLUSTER, closeX, esc, flash, pathRow, slideOver, stepBtn, still } from "./dom";
-import { leastScale, type Layout } from "./diagram";
+import { CLUSTER, closeX, esc, fitPath, flash, pathRow, slideOver, stepBtn, still } from "./dom";
+import { called, leastScale, type Layout } from "./diagram";
 import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { BIRTHS, family, familyStart, when, Told } from "./snapshots";
@@ -128,14 +128,13 @@ const spanOf = (told: Told) => {
 export const FAMILY_BOOK = "family";
 const FAMILY_TITLE = "What the family diagram is for";
 
-/** The Family view's path: whose family a tap put the picture on, after
- * "Family", which goes back to the step's own people (R-0779). */
-const familyPath = (whose: string | null) =>
-  pathRow(whose ? ["Timeline", "Family", `${whose}'s family`] : ["Timeline", "Family"]) + book(FAMILY_BOOK, FAMILY_TITLE);
+/** The Family view's path: whose family the picture is on, after "Family",
+ * which goes back to the record's own person (R-0779, R-0783). */
+const familyPath = (whose: string) => pathRow(["Timeline", "Family", `${whose}'s family`]) + book(FAMILY_BOOK, FAMILY_TITLE);
 
 export const head = (told: Told, cluster: string) =>
   told.whole
-    ? `<div class="path">${familyPath(null)}</div>` + closeX(` data-step="0"`) + `<div class="when"></div><p class="also"></p>`
+    ? `<div class="path"></div>` + closeX(` data-step="0"`) + `<div class="when"></div><p class="also"></p>`
     : `<div class="path">${pathRow(["Timeline", cluster, "explain"])}</div>` +
       closeX(` data-step="${CLUSTER}"`) +
       pointLine(told);
@@ -274,6 +273,9 @@ export class Drawer {
   private moved: { id: string; x: number; y: number } | null = null;
   /** The Family view has just opened: it moves to the frame's own first date. */
   private opening = false;
+  /** What the Family view calls each person of the record, in its path and
+   * under its title, by the drawing's rule (R-0548). */
+  private names: Record<string, string> = {};
 
   constructor(
     readonly panel: HTMLElement,
@@ -307,6 +309,7 @@ export class Drawer {
     this.frame = null;
     this.moved = null;
     this.opening = true;
+    this.names = called(Object.fromEntries(Object.entries(whole.cast.people).map(([id, p]) => [id, p.name])));
     this.show(whole, null, familyStart(tl, c));
   }
 
@@ -409,10 +412,10 @@ export class Drawer {
     }
     const shot = view.shot(this.i);
     if (told.whole) {
-      const away = told.outside(this.i, view).map((id) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(told.cast.people[id].name.split(" ")[0])}</button>`);
       q(".when").innerHTML = topLine(told, this.i);
-      q(".also").innerHTML = away.length ? `Also on this date: ${away.join(", ")}` : "";
-      q(".path").innerHTML = familyPath(this.centre === told.cast.index ? null : view.layout.P[this.centre].name);
+      this.also(told.outside(this.i, view));
+      q(".path").innerHTML = familyPath(this.names[this.centre]);
+      fitPath(q(".path"));
     }
     const draw = q(".draw");
     // the new drawing is the same width, so the frame sets off from where it stood
@@ -429,21 +432,22 @@ export class Drawer {
     const ids = [...(shot.mover ? [shot.mover, ...shot.reach, ...lit] : lit.length ? lit : [shot.who]), ...shot.couple];
     // a person the frame was just put on opens with their parents and
     // partners, sliding in from where they were tapped
-    const kin = (id: string) => [
-      ...view.cast.kids.filter((k) => k.kids.includes(id)).flatMap((k) => k.of),
-      ...view.cast.bonds.filter((b) => b.a === id || b.b === id).flatMap((b) => [b.a, b.b]),
-    ];
+    const parents = (id: string) => view.cast.kids.filter((k) => k.kids.includes(id)).flatMap((k) => k.of).filter((p) => !p.startsWith("unknown-"));
+    const kin = (id: string) => view.cast.bonds.filter((b) => b.a === id || b.b === id).flatMap((b) => [b.a, b.b]);
     const moved = this.moved;
     this.moved = null;
+    if (told.whole) draw.querySelectorAll(`[data-id="${CSS.escape(this.centre)}"]`).forEach((g) => g.classList.add("mid"));
     if (moved) {
-      frameOn(draw, [...new Set([moved.id, ...kin(moved.id)])].filter((id) => !id.startsWith("unknown-")), moved.id, false);
+      // the person and their parents whole, their partners too when they fit
+      frameOn(draw, [moved.id, ...parents(moved.id)], moved.id, false, [], kin(moved.id).filter((id) => !id.startsWith("unknown-")));
       const now = draw.querySelector(`.p[data-id="${CSS.escape(moved.id)}"] .shape`)?.getBoundingClientRect();
       if (now && !Number.isNaN(moved.x) && !still())
         draw.querySelector("svg")!.animate(
           [{ transform: `translate(${moved.x - (now.left + now.width / 2)}px, ${moved.y - (now.top + now.height / 2)}px)` }, { transform: "none" }],
           { duration: 450, easing: "ease-in-out" },
         );
-    } else
+    } else if (!told.whole || view.steps[this.i].marks.length)
+      // a date touching no one in the Family view's frame leaves it where it stands (R-0784)
       frameOn(
         draw,
         [...new Set(ids)],
@@ -455,6 +459,18 @@ export class Drawer {
         // the Family view's one frame holds still while a date's people are in sight (R-0784)
         told.whole && glide,
       );
+  }
+
+  /** Who a date touches outside the Family view's frame, each a way to put
+   * the frame on them; a list longer than its line ends in how many more. */
+  private also(away: string[]): void {
+    const line = this.panel.querySelector<HTMLElement>(".also")!;
+    const who = (id: string) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(this.names[id])}</button>`;
+    for (let n = away.length; n >= 0; n--) {
+      const more = away.length - n;
+      line.innerHTML = away.length ? `Also on this date: ${[...away.slice(0, n).map(who), ...(more ? [`+${more} more`] : [])].join(", ")}` : "";
+      if (line.scrollWidth <= line.clientWidth + 1) return;
+    }
   }
 
   private fit(L: Layout): void {

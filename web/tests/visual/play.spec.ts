@@ -661,7 +661,7 @@ test.describe("the Family view's three generations", () => {
   test("keeps one frame, the reader's three generations, in one place over every date, naming who a date touches outside it", async ({ page }) => {
     const errors = watched(page);
     const { ids, drawn, of } = await opened(page);
-    await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family");
+    await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family › Cleo's family");
     const frame = of("Cleo", "Hugo", "Wanda");
     expect(await drawn()).toEqual(frame);
     const place = () => drawer(page).locator(`.draw svg .p[data-id="${ids().Hugo}"] .shape`).evaluate((s) => [s.getAttribute("x"), s.getAttribute("y")].join(","));
@@ -726,14 +726,14 @@ test.describe("the Family view's three generations", () => {
     await expect.poll(drawn).toEqual(of("Wanda", "Walt", "Wren", "Ws0", "Ws1", "Hugo", "Cleo"));
     // down: her daughter, the reader, whose frame is the one the view opens on
     await tapPerson(page, ids().Cleo);
-    await expect(path).toHaveText("Timeline › Family");
+    await expect(path).toHaveText("Timeline › Family › Cleo's family");
     await expect.poll(drawn).toEqual(of("Cleo", "Hugo", "Wanda"));
     // and Family in the path goes back to the reader from anywhere
     await tapPerson(page, ids().Hugo);
     await tapPerson(page, ids().Hal);
     await expect(path).toHaveText("Timeline › Family › Hal's family");
     await drawer(page).locator('.path [data-step="1"]').click();
-    await expect(path).toHaveText("Timeline › Family");
+    await expect(path).toHaveText("Timeline › Family › Cleo's family");
     await expect.poll(drawn).toEqual(of("Cleo", "Hugo", "Wanda"));
     await expect(drawer(page)).toBeVisible();
   });
@@ -764,8 +764,8 @@ test.describe("the Family view's three generations", () => {
     expect(seen).toEqual({ fits: true, cut: {} });
   });
 
-  // R-0779, R-0742
-  test("writes a long step title whole, above the years line and never under it", async ({ page }) => {
+  // R-0779, R-0742, R-0784
+  test("keeps a long step title to its three lines above the years line, so the picture never moves", async ({ page }) => {
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       joined(tl, [["Hugo", "Wanda"]], 2, "Ws1", "Hs1");
@@ -779,10 +779,10 @@ test.describe("the Family view's three generations", () => {
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
     await expect(drawer(page).locator(".when")).toContainText("kept her distance");
-    const title = await drawer(page).locator(".when").evaluate((w) => ({ clipped: w.scrollHeight > w.clientHeight + 1, bottom: w.getBoundingClientRect().bottom, lines: Math.round(w.scrollHeight / 18) }));
+    const title = await drawer(page).locator(".when").evaluate((w) => ({ height: w.clientHeight, bottom: w.getBoundingClientRect().bottom }));
     const label = (await drawer(page).locator(".wire .wlab").boundingBox())!;
-    expect(title.lines).toBeGreaterThan(3);
-    expect(title.clipped).toBe(false);
+    // three lines of 18 and the padding under them
+    expect(title.height).toBe(3 * 18 + 8);
     expect(title.bottom).toBeLessThanOrEqual(label.y + 1);
   });
 
@@ -947,6 +947,117 @@ test.describe("the Family view's frame on a phone held upright", () => {
   });
 });
 
+/** Hugo's family moving among themselves, one date's move reaching his
+ * father, outside Cleo's frame, and one carrying a long title and words. */
+const moving = (long: boolean) => (tl: Record<string, any>, ids: Record<string, number>) => {
+  const dated = tl.events.filter((e: { dateTime: string | null }) => e.dateTime).sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime));
+  dated.forEach((e: Record<string, unknown>, i: number) =>
+    Object.assign(e, { person: ids.Hugo, relationship: "toward", relationshipTargets: [i === 1 ? ids.Hal : ids.Wanda], relationshipTriangles: [], functioning: null }),
+  );
+  if (long)
+    Object.assign(dated[2], {
+      functioning: "up",
+      title: "Kept every promise he had made his brothers and sisters",
+      description: "Hugo kept every promise he had made to his brothers and sisters that winter, and wrote each of them a long letter about the farm and the debts",
+    });
+};
+
+/** Where every name of the Family view's drawing stands on the screen. */
+const namesAt = (page: Page) =>
+  drawer(page).locator(".draw svg .pt .lbn").evaluateAll((ts) => ts.map((t) => (t as SVGTextElement).getBoundingClientRect()).map((r) => [r.left, r.right]));
+
+test.describe("the Family view as Patrick looked at it on his own record", () => {
+  test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
+
+  // R-0784
+  test("frames only what it draws, keeps the drawing at one height through a long title, and says whose family it is", async ({ page }) => {
+    const ids = await familyOf(page, 6, moving(true));
+    await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family › Cleo's family");
+    await tapPerson(page, ids().Hugo);
+    await page.waitForTimeout(600);
+    const svg = (await drawer(page).locator(".draw svg").boundingBox())!;
+    const names = await namesAt(page);
+    // no band of empty frame beside the family: the names reach to its margin on both sides
+    expect(Math.min(...names.map((n) => n[0])) - svg.x).toBeLessThan(40);
+    expect(svg.x + svg.width - Math.max(...names.map((n) => n[1]))).toBeLessThan(40);
+    // the person the frame is around is marked, and the path names them
+    expect(await drawer(page).locator(".draw svg .p.mid").getAttribute("data-id")).toBe(String(ids().Hugo));
+    await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family › Hugo's family");
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    const top = async () => Math.round((await drawer(page).locator(".draw svg").boundingBox())!.y);
+    const at = await top();
+    const titles = [];
+    for (let i = 0; i < 3; i++) {
+      await drawer(page).locator('[data-act="next"]').click();
+      expect(await top()).toBe(at);
+      titles.push(await drawer(page).locator(".when").textContent());
+    }
+    expect(titles.some((t) => t!.includes("Hugo kept every promise"))).toBe(true);
+  });
+
+  // R-0679
+  test("keeps every name whole on a band of the page over the rings and lines that reach it", async ({ page }) => {
+    await familyOf(page, 2, moving(true));
+    const bare = await drawer(page).locator(".draw svg .pt").evaluateAll((gs) =>
+      gs.flatMap((g) => {
+        const band = g.querySelector("rect.band") as SVGRectElement | null;
+        return [...g.querySelectorAll<SVGTextElement>(".lbn, .lbd")].flatMap((name) => {
+          if (!band) return [name.textContent];
+          const [n, b] = [name.getBBox(), band.getBBox()];
+          // the band stops short of the shape under a name above it, so a descent may touch its edge
+          return n.x < b.x || n.x + n.width > b.x + b.width || n.y < b.y || n.y + n.height > b.y + b.height + 1 ? [[name.textContent, n.x, n.y, n.width, n.height, b.x, b.y, b.width, b.height].map((v) => (typeof v === "number" ? Math.round(v * 10) / 10 : v)).join(" ")] : [];
+        });
+      }),
+    );
+    expect(bare).toEqual([]);
+  });
+
+  // R-0548, R-0783
+  test("tells two people of one first name apart under the title and in the path, a whole word at a time", async ({ page }) => {
+    await familyOf(page, 2, (tl, ids) => {
+      moving(false)(tl, ids);
+      // Hugo's father is Hugo too, and Hugo's name is long
+      tl.people.forEach((p: Record<string, unknown>) => {
+        if (p.id === ids.Hal) Object.assign(p, { name: "Hugo", last_name: "Vale" });
+        if (p.id === ids.Hugo) Object.assign(p, { name: "Hugo", last_name: "Bartholomew-Ashcombe" });
+      });
+    });
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    while (!(await drawer(page).locator(".also").textContent())) await drawer(page).locator('[data-act="next"]').click();
+    await expect(drawer(page).locator(".also")).toHaveText("Also on this date: Hugo V.");
+    await expect(drawer(page).locator(".when")).toContainText("Hugo B. ");
+    await drawer(page).locator('.also [data-centre]').click();
+    // "Timeline › Family › Hugo V.'s family" is cut only between words
+    const path = (await drawer(page).locator(".path").textContent())!;
+    expect(path).toMatch(/^Timeline › (Family|…) › Hugo V\.'s( family|…)$/);
+  });
+});
+
+test.describe("the Family view's frame on a phone turned sideways", () => {
+  test.use({ storageState: stateFor("play"), viewport: { width: 852, height: 393 } });
+
+  // R-0784
+  test("keeps the drawing in one place on dates with and without someone outside the frame, and whole on the screen", async ({ page }, info) => {
+    test.skip(info.project.name !== "phone", "the size is the describe's own");
+    await familyOf(page, 2, moving(false));
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    const where = async () => [Math.round((await drawer(page).locator(".draw svg").boundingBox())!.y), (await drawer(page).locator(".also").textContent())!];
+    const seen = [await where()];
+    for (let i = 0; i < 2; i++) {
+      await drawer(page).locator('[data-act="next"]').click();
+      seen.push(await where());
+    }
+    // one date names Hal, outside Cleo's frame, the others no one
+    expect(seen.map((s) => s[1])).toContain("Also on this date: Hal");
+    expect(seen.map((s) => s[1])).toContain("");
+    expect(new Set(seen.map((s) => s[0])).size).toBe(1);
+    expect(await drawer(page).locator(".lv").evaluate((lv) => lv.scrollHeight <= lv.clientHeight + 1)).toBe(true);
+  });
+});
+
 for (const [w, h, what] of [[852, 393, "a phone turned sideways"], [768, 1024, "an iPad held upright"], [1024, 768, "an iPad turned sideways"], [1440, 900, "a desktop"]] as const)
   test.describe(`the Family view on ${what}`, () => {
     test.use({ storageState: stateFor("play"), viewport: { width: w, height: h } });
@@ -1047,7 +1158,7 @@ test.describe("the whole family stepped through dates", () => {
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
     await expect(page).toHaveURL(/\/app\/family$/);
-    await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family");
+    await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family › Ada's family");
     await expect(drawer(page).locator(".dots")).toHaveCount(0);
     const next = drawer(page).locator('[data-act="next"]');
     while (await next.isEnabled()) await next.click();

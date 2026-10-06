@@ -315,6 +315,8 @@ button { font-family: inherit; }
   color: var(--data);
   cursor: pointer;
 }
+/* a path that gives way a whole word at a time (fitPath) is measured at its full width */
+.path.words :is(.step, .here) { flex-shrink: 0; }
 /* the steps between give way before the last, and the first never does */
 .path .step { flex-shrink: 1000; }
 .path .step:first-child { flex: none; }

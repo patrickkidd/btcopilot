@@ -130,6 +130,12 @@ export interface Cast {
   marked: string[];
   cross: string[];
   words: Record<string, number>;
+  /** A step's words find room under or over their person and never widen the
+   * frame: the Family view's one frame over every date (R-0784). */
+  wordsUnder?: boolean;
+  /** The names of everyone else the record holds, so a first name shared with
+   * someone outside the picture is told apart too (R-0548). */
+  others?: string[];
   moves: Arrow[];
   /** The steps' insides and outsides, each moving people from their places. */
   places: Place[];
@@ -334,6 +340,30 @@ export class Unplaceable extends Error {
   ) {
     super(`cannot place: ${rule}`);
   }
+}
+
+/** What each of `names` is called in a picture and in the words around it:
+ * ruled 2026-09-26, first names; a surname initial only for two people who
+ * share a first name, among `names` or the `others` the picture's record
+ * holds, as a father and his grandfather both called Robert (R-0548, as
+ * widened in the FD-371 review, 2026-10-05). A stand-in is named by the
+ * nearest named person and the relation, in the record's own words: "Jim
+ * O'Malley's partner" is "Jim's partner", "Catherine's mother's partner" stays
+ * whole (R-0766). */
+export function called(names: Record<string, string>, others: string[] = []): Record<string, string> {
+  const standIn = (n: string) => /'s /.test(n);
+  const first = (n: string) => {
+    const [whose, ...rest] = n.split(/'s /);
+    return standIn(n) ? `${whose.split(" ")[0]}'s ${rest.join("'s ")}` : n.split(" ")[0];
+  };
+  const pool = [...Object.values(names), ...others].map(first);
+  return Object.fromEntries(
+    Object.entries(names).map(([id, n]) => {
+      const parts = n.split(" ");
+      const twin = parts.length > 1 && !standIn(n) && pool.filter((o) => o === first(n)).length > 1;
+      return [id, twin ? `${first(n)} ${parts[parts.length - 1].charAt(0)}.` : first(n)];
+    }),
+  );
 }
 
 const f = (v: number) => v.toFixed(1);
@@ -913,30 +943,8 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   const { parents, bondsOf } = t;
   const { gen, rows } = plan;
   const half = (id: string) => d.half(P[id]);
-  // ruled 2026-09-26: first names; a surname initial only for two people in one
-  // picture who share a first name, in one row or not, as a father and his
-  // grandfather both called Robert (FD-371 review, 2026-10-05). A stand-in is named by the nearest named person
-  // and the relation, in the record's own words: "Jim O'Malley's partner" is
-  // "Jim's partner", "Catherine's mother's partner" stays whole (R-0766).
-  const standIn = (n: string) => /'s /.test(n);
-  const shown: Record<string, string> = {};
-  ids.forEach((id) => {
-    const n = P[id].name;
-    const [whose, ...rest] = n.split(/'s /);
-    shown[id] = standIn(n) ? `${whose.split(" ")[0]}'s ${rest.join("'s ")}` : n.split(" ")[0];
-  });
-  P = { ...P };
-  ids.forEach((id) => {
-    const parts = P[id].name.split(" ");
-    const twin =
-      parts.length > 1 &&
-      !standIn(P[id].name) &&
-      ids.some((o) => o !== id && shown[o] === shown[id]);
-    P[id] = {
-      ...P[id],
-      name: twin ? `${shown[id]} ${parts[parts.length - 1].charAt(0)}.` : shown[id],
-    };
-  });
+  const names = called(Object.fromEntries(ids.map((id) => [id, P[id].name])), cast.others);
+  P = Object.fromEntries(ids.map((id) => [id, { ...P[id], name: names[id] }]));
   const x: Record<string, number> = {};
   const y: Record<string, number> = {};
   const side: Record<string, Side> = {};
@@ -967,7 +975,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   const off = (id: string) => offset(d, ring[id]);
   const words = cast.words;
   // how far a person's longest event word reaches past the shape
-  const ww = (id: string) => (words[id] ? inset[id] + words[id] * NAME * CH : 0);
+  const ww = (id: string) => (words[id] && !cast.wordsUnder ? inset[id] + words[id] * NAME * CH : 0);
   // how far a person's marks reach past the shape: the cross and its arrow, or the word
   const zw = (id: string, reach: Reach) => Math.max(crossed.has(id) ? d.ZONE : 0, reach === Reach.All ? ww(id) : 0);
 
@@ -1383,25 +1391,31 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   // no room to widen: names may go above
   if (wide > VIEW && !tight && !under) return place(cast, { ...opts, names: Names.Above }, t, plan);
   L.wide = wide;
+  let dx = L.vw / 2 - mid;
   if (wide > VIEW && opts.fit) {
     // scaled down to fit the phone, the margin kept at its size on the screen;
     // re-ruled 2026-10-04: the shapes keep the drawer's floor and the picture scrolls sideways,
-    // its margin still the same size on the screen, never growing with the width
-    L.vw = Math.max(reach, span / (1 - (2 * MX) / VIEW));
+    // its margin still the same size on the screen, never growing with the width.
+    // A family wider than the phone is framed on what it draws, not centred on
+    // its people: a word reaching out on one side leaves no empty band on the other
+    const [x0, x1] = [Math.min(box.x0, said.x0), Math.max(box.x1, said.x1)];
     const least = LEAST.label / NAME;
-    if (VIEW / L.vw >= least) {
-      L.px = d.W * (VIEW / L.vw);
+    if (VIEW / Math.max(x1 - x0, (said.x1 - said.x0) / (1 - (2 * MX) / VIEW)) >= least) {
+      L.vw = Math.max(x1 - x0, (said.x1 - said.x0) / (1 - (2 * MX) / VIEW));
       MX *= L.vw / VIEW;
       MY *= L.vw / VIEW;
     } else {
-      L.px = d.W * least;
       MX /= least;
       MY /= least;
-      L.vw = Math.max(reach, span + 2 * MX);
     }
+    // every name keeps the family's margin from the frame's side too
+    const nb = ids.map((id) => nameBox(id, side[id]));
+    const lo = Math.min(box.x0, said.x0 - MX, ...nb.map((b) => b.x0 - MX));
+    L.vw = Math.max(box.x1, said.x1 + MX, ...nb.map((b) => b.x1 + MX)) - lo;
+    L.px = d.W * Math.max(least, Math.min(1, VIEW / L.vw));
+    dx = -lo;
   } else if (wide > VIEW)
     throw new Unplaceable(`the drawing is ${Math.round(wide)} wide, wider than the phone’s ${VIEW}`, true);
-  const dx = L.vw / 2 - mid;
   const dy = Math.max(MY - core.y0, 2 - box.y0);
   ids.forEach((id) => {
     x[id] += dx;
@@ -1978,6 +1992,9 @@ export function draw(L: Layout, s: Frame): string {
       anchor = sd === Side.Right ? "start" : "end";
       y0 = y - e + 9;
     }
+    // the name stands on a band of the page, whole over any ring or line that reaches it
+    const lw = textWidth(l);
+    t += `<rect class="band" x="${f(anchor === "start" ? lx - 3 : anchor === "end" ? lx - lw - 3 : lx - lw / 2 - 3)}" y="${f(y0 - 15)}" width="${f(lw + 6)}" height="${f(LEAD * (l.length - 1) + 18)}"/>`;
     l.forEach((line, i) => {
       if (line) t += nameText(lx, y0 + i * LEAD, line, anchor, !i);
     });

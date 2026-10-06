@@ -108,7 +108,8 @@ it("steps the whole family with Back and Next only, says where in its top line, 
   expect(below(whole, 0, null)).toMatch(/data-act="back" disabled/);
   expect(below(whole, last, null)).not.toContain('class="fact"');
   const top = head(whole, "");
-  expect(top).toMatch(/data-step="0"><span>Timeline<.*<span class="here">Family</);
+  // the path names whose family the frame is on, written as each date is drawn
+  expect(top).toContain('<div class="path"></div>');
   expect(top).toContain(closeX(' data-step="0"'));
   expect(top).not.toContain('class="point"');
   expect(topLine(whole, 0)).toBe('<span class="words">Errol and Odile <span class="kw">married</span></span>');

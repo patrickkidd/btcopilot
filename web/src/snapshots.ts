@@ -1,5 +1,6 @@
 import {
   arrange,
+  called,
   draw,
   Mark,
   Sex,
@@ -133,7 +134,7 @@ export class Family {
     const p = this.people.get(id);
     if (!p) throw new Error(`no person ${id} in the record`);
     return {
-      name: p.last_name ? `${p.name} ${p.last_name}` : p.name,
+      name: fullName(p),
       g: sexOf(p.gender),
       born: p.birth ? when(p.birth) : null,
       died: this.died(p),
@@ -264,6 +265,9 @@ const isKin = (m: Step["marks"][number]): m is Kin => m.k === Mark.Move;
 const isPair = (m: Step["marks"][number]): m is Pair =>
   m.k === Mark.Couple || m.k === Mark.Separated || m.k === Mark.Divorced;
 const isPlaced = (m: Step["marks"][number]): m is Placed => !isArrow(m) && !isPair(m) && !isKin(m);
+
+/** A person's first name and surname, as the record holds them. */
+const fullName = (p: Person) => (p.last_name ? `${p.name} ${p.last_name}` : p.name);
 
 /** A told case, laid out once and drawn per snapshot. */
 export class Told {
@@ -560,6 +564,9 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
     marked: [...marked],
     cross: [...crossed],
     words,
+    // the Family view's one frame keeps no width for a date's words (R-0784)
+    wordsUnder: everyone && !!keep,
+    others: everyone && keep ? r.tl.people.filter((p) => !cast.has(key(p.id))).map(fullName) : [],
     moves,
     places,
     kin,
@@ -643,11 +650,10 @@ const COUPLED: Record<string, string> = {
 
 /** What happened, who first, the date left to the top line: "Rose was born",
  * "Ray and June married", a shift in the record's own words after the name. */
-function happened(people: Map<number, Person>, e: TimelineEvent): string {
+function happened(people: Map<number, Person>, names: Record<string, string>, e: TimelineEvent): string {
   const name = (id: number) => {
-    const p = people.get(id);
-    if (!p) throw new Error(`event ${e.id} names person ${id}, who is not in the record`);
-    return p.name;
+    if (!people.has(id)) throw new Error(`event ${e.id} names person ${id}, who is not in the record`);
+    return names[id];
   };
   const kind = e.kind ?? "";
   if (BIRTHS.has(kind) && e.child != null) return `${name(e.child)} was ${kind === EventKind.Birth ? "born" : "adopted"}`;
@@ -675,6 +681,7 @@ export const familyStart = (tl: Timeline, c: Case): number => {
  * shift, in date order, each said once with who did it. */
 export function family(tl: Timeline): Case {
   const people = new Map(tl.people.map((p) => [p.id, p]));
+  const names = called(Object.fromEntries(tl.people.map((p) => [p.id, fullName(p)])));
   const byId = new Map(tl.events.map((e) => [e.id, e]));
   const told = untold(
     tl,
@@ -684,7 +691,7 @@ export function family(tl: Timeline): Case {
     ...told,
     snapshots: told.snapshots.map((s) => ({
       ...s,
-      fact: [...new Set(s.event_ids.map((id) => happened(people, byId.get(id)!)))].join("; "),
+      fact: [...new Set(s.event_ids.map((id) => happened(people, names, byId.get(id)!)))].join("; "),
     })),
   };
 }
