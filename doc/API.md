@@ -102,9 +102,16 @@ version; `address` (the screen), `turn_id` and `statement_id` (the coach's
 reply that offered it) are optional. A report sent carries the offered `words`;
 one declined, none. During the beta a declined bug is a 400. Any other field is a
 400; answers `{"id"}` with 201. An
-error in the page or the server is never a report: those go to Grafana (Faro
-on the page, Alloy for the server's logs), and every answer's `X-Request-Id`
-names the server's log lines for that request.
+error in the page or the server is never a report: the page posts its own to
+`/browser-errors` and the server's go to its log, and every answer's
+`X-Request-Id` names the server's log lines for that request.
+
+`POST /browser-errors` — an uncaught error or rejected promise in the page,
+written as one log line `Browser error {json}` and never a row
+(doc/MONITORING.md). Like `/reports` it takes no CSRF token, only a post from
+this site, 20 an hour per sender (counted apart from reports), then 429.
+`source` is `error` or `rejection`, `message` is required; `stack`, `address`
+and `release` are optional; any other field is a 400. Answers 204.
 
 ## Account
 

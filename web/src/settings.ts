@@ -6,7 +6,6 @@ import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { Sheet } from "./sheet";
 import { store } from "./store";
-import { identify } from "./telemetry";
 import { shortDate } from "./when";
 import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
@@ -220,7 +219,6 @@ export class Settings {
       api.passkeys().catch(() => []),
       available(),
     ]);
-    identify(this.account.email);
     this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);

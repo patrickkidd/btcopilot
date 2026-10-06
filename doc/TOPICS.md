@@ -760,7 +760,8 @@ updatekeys`, because it writes the secret store, and `docker compose pull` and `
 because that is a production deploy. Production reads on the box are refused to sub-agents too.
 Those run at the top level on Patrick's direct grant.
 **Lives in:** deploy/ (compose, Caddyfile, secrets template, README, the release workflow
-and the four appcast feeds); doc/PLATFORM_BUILD.md; doc/archive/2026-09-DATADOG.md;
+and the four appcast feeds); doc/PLATFORM_BUILD.md; doc/MONITORING.md (FD-374: monitoring
+moves off Grafana Cloud to the box's disk and Patrick's laptop, in two phases); doc/archive/2026-09-DATADOG.md;
 private/prompts/ and private/oracle/, encrypted; the Bedrock path in btcopilot/provider.py,
 btcopilot/llmutil.py, btcopilot/shadow.py (the expiry check that cleans a stale alias),
 btcopilot/tests/test_provider.py, doc/SETUP.md section 6,

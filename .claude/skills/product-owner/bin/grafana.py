@@ -1,7 +1,9 @@
 """Read-only numbers from Grafana for the product owner run, as counts only:
 every panel of the repository's dashboards over the last 30 days, LogQL
-counts, and failed traces. The token comes from the main clone's .env and is
-never printed.
+counts, and failed traces. Grafana Cloud by default, with GRAFANA_URL and
+GRAFANA_SA_TOKEN from the main clone's .env; FD_GRAFANA_URL and FD_GRAFANA_TOKEN
+in the environment point it at another Grafana, such as the laptop's
+http://localhost:3000 (doc/MONITORING.md). The token is never printed.
 
     python3 grafana.py panels
     python3 grafana.py logql '<expr>' ['<expr>' ...]
@@ -9,6 +11,7 @@ never printed.
 """
 
 import json
+import os
 import sys
 import time
 import urllib.parse
@@ -30,15 +33,17 @@ VARIABLES = {
 def env():
     lines = (clone() / ".env").read_text().splitlines()
     pairs = dict(x.split("=", 1) for x in lines if "=" in x and not x.startswith("#"))
-    return pairs["GRAFANA_URL"].removeprefix("https://"), pairs["GRAFANA_SA_TOKEN"]
+    cloud = f"https://{pairs['GRAFANA_URL'].removeprefix('https://')}"
+    url = os.environ.get("FD_GRAFANA_URL", cloud)
+    return url, os.environ.get("FD_GRAFANA_TOKEN", pairs["GRAFANA_SA_TOKEN"])
 
 
-HOST, TOKEN = env()
+URL, TOKEN = env()
 
 
 def call(path, body=None):
     request = urllib.request.Request(
-        f"https://{HOST}{path}",
+        f"{URL}{path}",
         data=json.dumps(body).encode() if body else None,
         headers={
             "Authorization": f"Bearer {TOKEN}",

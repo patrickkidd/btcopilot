@@ -131,10 +131,31 @@ name in Grafana Cloud's Postgres data source from `chat` to `familydiagram`. Onc
 site answers, `docker volume rm chat_caddy-data chat_caddy-config`.
 The app is down from step 1 to step 5, about a minute.
 
-## Grafana Cloud
+## Monitoring: the laptop, and Grafana Cloud until phase 2
 
+`fd-otel` (OpenTelemetry Collector, config `otel/config.yaml`) takes host and container
+metrics and the app's traces and holds them in its on-disk queue (`otel-queue` volume) until
+the laptop's ssh link takes them; it also passes the traces on to `fd-alloy`. Every service
+logs to the host's journal (`journald` driver), which the laptop pulls; `docker logs` still
+works. fd-postgres listens on the box's `127.0.0.1:5432` for the laptop's Grafana. The design,
+the cutover order and the phase 2 removals are in `doc/MONITORING.md`.
+
+One-time box setup for the laptop's link, as root from `/var/www/btcopilot/deploy` with the
+stack up (safe to rerun):
+
+```bash
+sh box/setup.sh "ssh-ed25519 AAAA... fd-laptop"
+```
+
+It installs `/usr/local/bin/fd-logpull` (the key's forced command: the journal after a cursor),
+writes root's `authorized_keys` line for the key with only the link's forwards allowed, adds
+`/etc/ssh/sshd_config.d/fd-laptop.conf` (`GatewayPorts clientspecified`, client-alive 30 s x 3)
+and reloads ssh, and allows TCP from the compose network to `172.17.0.1` on 18428 and 14318.
+
+Until phase 2, Grafana Cloud keeps everything it had:
 `fd-alloy` (Grafana Alloy) ships host and container metrics, every container's log
-lines and the app's and worker's traces to Grafana Cloud; nothing is stored on the box.
+lines (read through the Docker socket, which the journald driver still serves) and the
+traces `fd-otel` passes on to Grafana Cloud.
 It reads `GRAFANA_CLOUD_TOKEN` from the secrets file like everything else, and its config
 is `alloy/config.alloy`. Its UI on port 12345 has no host port, so it is not exposed.
 `fd-pdc` (Grafana's Private Data source Connect agent) holds an outbound tunnel to Grafana Cloud with `GRAFANA_PDC_TOKEN`; no port is opened.

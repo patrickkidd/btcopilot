@@ -1,4 +1,5 @@
-"""The box's telemetry agent, as deployed."""
+"""The box's Grafana Cloud agent, as deployed; kept until phase 2 of FD-374
+(doc/MONITORING.md) proves the laptop."""
 
 import re
 
@@ -17,3 +18,10 @@ def test_alloy_ships_host_metrics_and_container_logs_to_grafana_cloud():
     pushes = re.findall(r'url\s*=\s*"https://([^/"]+)', CONFIG)
     assert pushes
     assert all(host.endswith(".grafana.net") for host in pushes)
+
+
+def test_traces_still_reach_grafana_cloud_through_the_collector():
+    # R-0370
+    collector = (DEPLOY / "otel" / "config.yaml").read_text()
+    assert "endpoint: http://fd-alloy:4318" in collector
+    assert 'otelcol.receiver.otlp "app"' in CONFIG

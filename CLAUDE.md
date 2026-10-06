@@ -229,6 +229,7 @@ rulings and the oracle SPEC. The encrypted rulings store and prompts in this rep
 | Tests and known defects | [doc/TEST_STRATEGY.md](doc/TEST_STRATEGY.md), [doc/KNOWN_DEFECTS.md](doc/KNOWN_DEFECTS.md) |
 | Feedback loops | [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) — every signal, what closes it, the number that proves it; checked on demand by `/product-owner` |
 | Box and release | [doc/PLATFORM_BUILD.md](doc/PLATFORM_BUILD.md), [deploy/README.md](deploy/README.md) |
+| Monitoring: metrics, logs, traces, the laptop's Grafana | [doc/MONITORING.md](doc/MONITORING.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
 | Bowen theory | [CONTEXT.md](CONTEXT.md), [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
 | SARF definitions, IRR calibration | [doc/sarf-definitions/](doc/sarf-definitions/), [doc/irr/](doc/irr/) |

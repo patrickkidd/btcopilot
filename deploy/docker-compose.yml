@@ -6,6 +6,12 @@
 # Renamed from "chat" (R-0472); the box's one-time steps are in README.md.
 name: familydiagram
 
+# Every container's lines go to the host's journal, which outlives the
+# container and is what the laptop pulls (doc/MONITORING.md).
+x-logging: &logging
+  logging:
+    driver: journald
+
 # A service's own `environment` replaces an anchored one wholesale, so the
 # shared settings are their own anchor and each service merges them in.
 x-app-env: &app-env
@@ -16,7 +22,7 @@ x-app-env: &app-env
   CELERY_RESULT_BACKEND: redis://fd-redis:6379/0
   BTCOPILOT_INSTANCE_PATH: /app/instance
   SOPS_AGE_KEY_FILE: /run/secrets/age.key
-  OTEL_EXPORTER_OTLP_ENDPOINT: http://fd-alloy:4318
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://fd-otel:4318
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
   # Read by Google's library, not by the app's code, and only when
@@ -27,6 +33,7 @@ x-app-env: &app-env
 # new container beside the old one and stops the old one only once the new one is
 # healthy, so a deploy drops no request (2026-09-22).
 x-app: &app
+  <<: *logging
   image: ghcr.io/patrickkidd/btcopilot:${BTCOPILOT_TAG:-latest}
   restart: unless-stopped
   env_file: /etc/fd/secrets.env
@@ -42,6 +49,7 @@ x-app: &app
 
 services:
   fd-caddy:
+    <<: *logging
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
@@ -104,9 +112,13 @@ services:
       retries: 3
 
   fd-postgres:
+    <<: *logging
     image: postgres:16-alpine
     container_name: fd-postgres
     restart: unless-stopped
+    # Only the box itself, for the laptop's ssh link to Grafana's Postgres source.
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - ./instance/postgres-data:/var/lib/postgresql/data
     environment:
@@ -120,6 +132,7 @@ services:
       retries: 5
 
   fd-redis:
+    <<: *logging
     image: redis:7-alpine
     container_name: fd-redis
     restart: unless-stopped
@@ -129,9 +142,32 @@ services:
       timeout: 5s
       retries: 5
 
-  # Ships host and container metrics, every container's log lines and the app's
-  # traces to Grafana Cloud; nothing is stored on the box. Its UI on 12345 has no host port.
+  # Host and container metrics and the app's traces, held on disk until the
+  # laptop's ssh link takes them (doc/MONITORING.md); traces also go on to
+  # fd-alloy for Grafana Cloud until phase 2.
+  fd-otel:
+    <<: *logging
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    container_name: fd-otel
+    restart: unless-stopped
+    # root, to read the Docker socket
+    user: "0"
+    mem_limit: 150m
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./otel/config.yaml:/etc/otel/config.yaml:ro
+      - otel-queue:/queue
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/hostfs:ro
+    expose:
+      - "4317"
+      - "4318"
+
+  # Phase 1 of FD-374 keeps this and fd-pdc so Grafana Cloud misses nothing
+  # until the laptop is proven. Ships host and container metrics, every
+  # container's log lines and the app's traces to Grafana Cloud. Its UI on 12345 has no host port.
   fd-alloy:
+    <<: *logging
     image: grafana/alloy:latest
     container_name: fd-alloy
     restart: unless-stopped
@@ -156,6 +192,7 @@ services:
   # Opens an outbound tunnel so Grafana Cloud's Postgres data source can query
   # fd-postgres; nothing listens on the box.
   fd-pdc:
+    <<: *logging
     image: grafana/pdc-agent:latest
     container_name: fd-pdc
     restart: unless-stopped
@@ -165,3 +202,4 @@ services:
 volumes:
   caddy-data:
   caddy-config:
+  otel-queue:

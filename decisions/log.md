@@ -6,6 +6,33 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-10
+
+### 2026-10-06: FD-374 — monitoring moves off Grafana Cloud to the box's disk and Patrick's laptop
+
+**Context:** Grafana Cloud's free tier keeps 14 days. Patrick: "I need to compare historical
+metrics further back than just 14 days". Design in `doc/MONITORING.md`.
+
+**Decisions accepted (Patrick: "yes to all - I just want to make sure that we don't lose any
+data nad have no interruption of data."):**
+- OpenTelemetry Collector (contrib) on the box for host and container metrics and traces, with
+  an on-disk queue retried forever; vmagent, node_exporter and cAdvisor not used.
+- VictoriaMetrics, VictoriaLogs (with its Grafana plugin) and VictoriaTraces on the laptop,
+  kept with no time limit.
+- Browser errors go to an app endpoint as log lines; page-load timings and session replay are
+  given up with the Faro SDK.
+- One dedicated ssh key from the laptop with a forced command and forwarding limits, sshd
+  `GatewayPorts clientspecified` and client-alive settings, one ufw rule, Postgres published on
+  the box's localhost only.
+- Because no data may be lost or interrupted, the work ships in two phases: phase 1 runs the
+  laptop's path beside Grafana Cloud's; phase 2 removes Alloy, the PDC agent and the Cloud
+  wiring only after the laptop holds 7 complete days compared against Cloud.
+
+**Revisit trigger:** any gap the 7-day comparison shows between the laptop and Grafana Cloud
+blocks phase 2 until its cause is fixed.
+
+---
+
 ## 2026-06
 
 ### 2026-06-15: FD-321 — user profile (name + birth date) ground + UI decisions
