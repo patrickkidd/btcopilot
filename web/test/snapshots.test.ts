@@ -716,7 +716,7 @@ describe("moves other than toward and away", () => {
     expect(group[0]).toMatch(drawn);
   });
 
-  // R-0776
+  // R-0776, R-0798
   it("runs every field's rings out to the one reach, however near its person stands to the picture's edge, the clearing of one who holds their ground too", () => {
     const reaches = ["distance", "cutoff", "defined-self"].flatMap((kind) =>
       [...moved(kind).shot(1).svg.matchAll(/<circle class="(fld[^"]*|mv-clear)"[^>]*><animate attributeName="r" values="[\d.]+;([\d.]+)"/g)].map((m) => `${kind} ${m[1]} ${m[2]}`),
