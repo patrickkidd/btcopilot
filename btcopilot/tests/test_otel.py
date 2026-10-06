@@ -14,6 +14,7 @@ def test_the_app_and_its_workers_send_traces_to_the_collector():
     # R-0370
     env = COMPOSE["x-app-env"]
     assert env["OTEL_EXPORTER_OTLP_ENDPOINT"] == "http://fd-otel:4318"
+    assert float(env["OTEL_EXPORTER_OTLP_TIMEOUT"]) >= 30
     assert "./otel/config.yaml:/etc/otel/config.yaml:ro" in COMPOSE["services"]["fd-otel"]["volumes"]
 
 

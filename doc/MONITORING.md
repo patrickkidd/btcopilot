@@ -115,11 +115,11 @@ The connection carries:
 
 One-time box changes, in `deploy/box/setup.sh` (run at step 3 of the cutover):
 
-1. `authorized_keys` line for the dedicated key:
+1. `authorized_keys` line for the dedicated key, in the home of the user `fdlink`:
    `restrict,port-forwarding,permitopen="127.0.0.1:5432",permitlisten="172.17.0.1:18428",permitlisten="172.17.0.1:14318",command="/usr/local/bin/fd-logpull" ssh-ed25519 ...`
    `fd-logpull` checks that `$SSH_ORIGINAL_COMMAND` is a journal cursor and runs
    `journalctl --after-cursor=<it> -o export` (or `--since -30d` when empty).
-2. sshd: `GatewayPorts clientspecified` (so `-R` may bind `172.17.0.1`), and
+2. sshd, for `fdlink` only: `GatewayPorts clientspecified` (so `-R` may bind `172.17.0.1`), and
    `ClientAliveInterval 30`, `ClientAliveCountMax 3` so a link dropped by a sleeping laptop
    frees its port within 90 seconds instead of about two hours.
 3. ufw: allow TCP from the compose network `172.18.0.0/16` to `172.17.0.1` on the forwarded
@@ -177,6 +177,10 @@ for example `CONTAINER_NAME:~".+" MESSAGE:~"(?i)error|traceback|exception"`.
 
 Phase 1 (built on FD-374): the laptop's path is added and Grafana Cloud's is kept.
 
+- The app's and the Celery containers' trace exporter waits up to 60 s for the collector
+  (`OTEL_EXPORTER_OTLP_TIMEOUT=60`, the SDK's own retry with backoff 1, 2, 4, 8, 16 s), so a
+  restart of `fd-otel` loses no spans: with the default 10 s, a 12 s outage lost 23 of 116
+  spans in a local test; with 60 s, none.
 - Box compose: `fd-otel` added (contrib 0.162.0, `mem_limit` 150 MB, `file_storage` queue on
   the `otel-queue` volume, retry forever; `host_metrics` and `docker_stats` every 60 s;
   exporters to `172.17.0.1:18428` and `172.17.0.1:14318`). The app and the three Celery
@@ -202,13 +206,27 @@ Cutover order:
 1. FD-371 finishes its deploy and migrations; Patrick moves the deploy lock to FD-374.
 2. Back up the database on the box.
 3. On the box, from `/var/www/btcopilot/deploy`: `sh box/setup.sh "<laptop public key>"`.
-   The ufw step reads the compose network's subnet, so the stack must be up.
-4. Deploy FD-374 from its branch (the release workflow). Every container is recreated with the
-   journald driver; lines a container wrote before this stay only in its old json file until
-   that container is removed, as today.
-5. On the laptop: `docker compose -f deploy/laptop/compose.yml up -d`; the link connects, the
+   It creates the user `fdlink` (group systemd-journal, so it reads the whole journal) and puts
+   the key in its `authorized_keys` with the forced command and forward limits; the sshd
+   settings apply to `fdlink` only, in a `Match User` block that is checked with `sshd -t`
+   before it is put in place. Root's keys and settings are not touched. The ufw step reads the
+   compose network's subnet, so the stack must be up.
+4. Deploy FD-374 from its branch (the release workflow) at a quiet hour, straight after the
+   backup, with no coach turn queued. The deploy's `up -d` recreates fd-caddy, fd-postgres and
+   fd-redis once, because their log driver changes; release.yml is not changed for it. Each was
+   unreachable 0.5 to 0.8 s when recreated on the laptop (Docker Desktop, three runs,
+   2026-10-06); on the 2 vCPU box expect a few seconds of failed requests (guess: 2 to 5 s).
+   fd-redis keeps no volume, so whatever was queued in it is lost, as on any restart of it.
+   Note the time the deploy finished: from then on every container logs to the journal. Lines a
+   container wrote before this stay only in its old json file until that container is removed,
+   as today.
+5. On the laptop, right after the deploy:
+   `uv run python bin/cloudbackfill.py --until <time the journald switch went live>`, so the
+   laptop holds what Grafana Cloud received up to the switch.
+6. Once that final run succeeds, remove the FD-374 cloudbackfill crontab line on the laptop.
+7. On the laptop: `docker compose -f deploy/laptop/compose.yml up -d`; the link connects, the
    log pull starts with the last 30 days of the journal, the box's queues drain.
-6. Compare the laptop with Grafana Cloud for 7 days, across at least one laptop sleep:
+8. Compare the laptop with Grafana Cloud for 7 days, across at least one laptop sleep:
    metrics every minute, log line counts per container, trace counts per service.
 
 Phase 2 (after the 7 days compare complete; not built yet):
@@ -257,5 +275,6 @@ Docs: `CLAUDE.md`, `deploy/README.md`, `doc/PLATFORM_BUILD.md`, `doc/SETUP.md`,
 4. The VictoriaLogs data source plugin for Grafana.
 5. Lost with the browser SDK: session replay and page-load timings. Only uncaught errors and
    rejected promises reach the new endpoint.
-6. One dedicated ssh key for the laptop with root's forced command and forwarding limits, plus
+6. One dedicated ssh key for the laptop with a forced command and forwarding limits (built for a
+   dedicated user `fdlink`, not root), plus
    the sshd and ufw changes listed under "The private link".

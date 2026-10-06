@@ -24,6 +24,9 @@ x-app-env: &app-env
   SOPS_AGE_KEY_FILE: /run/secrets/age.key
   OTEL_EXPORTER_OTLP_ENDPOINT: http://fd-otel:4318
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  # Seconds the SDK keeps retrying a batch, so a restart of fd-otel loses no
+  # spans (doc/MONITORING.md); the default 10 gives up after about 7.
+  OTEL_EXPORTER_OTLP_TIMEOUT: "60"
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
   # Read by Google's library, not by the app's code, and only when
   # BTCOPILOT_GEMINI_ENDPOINT is vertex (README.md, "Gemini settings").

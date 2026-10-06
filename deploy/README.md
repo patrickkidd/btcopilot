@@ -148,9 +148,10 @@ sh box/setup.sh "ssh-ed25519 AAAA... fd-laptop"
 ```
 
 It installs `/usr/local/bin/fd-logpull` (the key's forced command: the journal after a cursor),
-writes root's `authorized_keys` line for the key with only the link's forwards allowed, adds
-`/etc/ssh/sshd_config.d/fd-laptop.conf` (`GatewayPorts clientspecified`, client-alive 30 s x 3)
-and reloads ssh, and allows TCP from the compose network to `172.17.0.1` on 18428 and 14318.
+creates the user `fdlink` (group systemd-journal) and writes its `authorized_keys` line for
+the key with only the link's forwards allowed, adds `/etc/ssh/sshd_config.d/fd-laptop.conf`
+(for `fdlink` only: `GatewayPorts clientspecified`, client-alive 30 s x 3), checked with
+`sshd -t` before it is put in place, and reloads ssh; root's keys and settings are untouched; and allows TCP from the compose network to `172.17.0.1` on 18428 and 14318.
 
 Until phase 2, Grafana Cloud keeps everything it had:
 `fd-alloy` (Grafana Alloy) ships host and container metrics, every container's log
