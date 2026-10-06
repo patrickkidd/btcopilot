@@ -40,7 +40,9 @@
 .pbp .draw { padding: 4px 0 0; border-top: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .pbp .draw svg { display: block; width: 100%; height: 100%; }
 
-.pbp .scroll .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
+.pbp .scroll .step, .pbp > .foot .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
+.pbp > .foot { flex: none; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+.pbp > .foot .step { justify-content: space-between; }
 .pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }
 /* the dots only say where the reader is; a play told in more snapshots than
    the row holds draws them smaller, never over Back or Next */

@@ -311,9 +311,12 @@ export class Drawer {
     this.caption = 0;
     const cluster = told.tl.clusters.find((c) => c.id === told.told.cluster_id);
     this.panel.classList.toggle("whole", told.whole);
+    // the Family view's Back and Next stand in a row of their own at the
+    // drawer's foot, so they keep their place whatever each step draws (R-0782)
     this.panel.innerHTML =
       head(this.told, cluster ? clusterStep(cluster) : spanOf(told)) +
-      `<div class="lv"><div class="wire"></div><div class="draw"></div><div class="scroll"></div></div>`;
+      `<div class="lv"><div class="wire"></div><div class="draw"></div><div class="scroll"></div></div>` +
+      (told.whole ? `<div class="foot"></div>` : "");
     slideOver(this.panel, true);
     this.render(false);
     this.onMoved?.();
@@ -361,7 +364,7 @@ export class Drawer {
     // the new drawing is the same width, so the frame sets off from where it stood
     const was = draw.scrollLeft;
     draw.innerHTML = shot.svg;
-    q(".scroll").innerHTML = below(told, this.i, this.statement);
+    q(told.whole ? ".foot" : ".scroll").innerHTML = below(told, this.i, this.statement);
     if (told.whole) this.height = null;
     this.fit(view.layout);
     draw.scrollLeft = was;
@@ -395,7 +398,7 @@ export class Drawer {
     const draw = lv.querySelector<HTMLElement>(".draw")!;
     if (this.height === null) {
       const sc = lv.querySelector<HTMLElement>(".scroll")!;
-      if (!this.caption) {
+      if (!this.caption && !told.whole) {
         const keep = sc.innerHTML;
         this.caption = Math.max(
           ...told.steps.map((_, j) => {

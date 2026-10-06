@@ -57,6 +57,21 @@ test.describe("the play-by-play drawer", () => {
     expect(away.y).toBeLessThanOrEqual(-away.h + 1);
   });
 
+  // R-0782
+  test("keeps Next in one place, so Next tapped again and again at one spot steps on each time", async ({ page }) => {
+    await settle(page);
+    await stored(page).click();
+    await expect.poll(() => step(page)).toBe("1 of 4");
+    await page.waitForTimeout(600);
+    const next = (await drawer(page).locator('[data-act="next"]').boundingBox())!;
+    for (const at of ["2 of 4", "3 of 4", "4 of 4"]) {
+      await page.mouse.click(next.x + next.width / 2, next.y + next.height / 2);
+      await expect.poll(() => step(page)).toBe(at);
+      const again = (await drawer(page).locator('[data-act="next"]').boundingBox())!;
+      expect([Math.round(again.x), Math.round(again.y)]).toEqual([Math.round(next.x), Math.round(next.y)]);
+    }
+  });
+
   // R-0768
   test("lands where it rests without passing it and settling back", async ({ page }) => {
     await settle(page);
@@ -738,6 +753,29 @@ test.describe("the Family view's three generations", () => {
     expect(await draw.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
     const three = [ids.Hugo, ids.Wanda, ids.Ws1].map(String);
     expect(await cutInFrame(page, "#pbp .draw", three)).toEqual({ fits: true, cut: {} });
+  });
+
+  // R-0782
+  test("keeps Back and Next in one place, so Next tapped again and again at one spot steps on each time", async ({ page }) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    await page.waitForTimeout(600);
+    const next = (await drawer(page).locator('[data-act="next"]').boundingBox())!;
+    const [x, y] = [next.x + next.width / 2, next.y + next.height / 2];
+    const top = drawer(page).locator(".when");
+    const seen = [await top.innerText()];
+    for (let i = 0; i < 4; i++) {
+      await page.mouse.click(x, y);
+      await expect(top).not.toHaveText(seen[seen.length - 1]);
+      seen.push(await top.innerText());
+      const again = (await drawer(page).locator('[data-act="next"]').boundingBox())!;
+      expect([Math.round(again.x), Math.round(again.y)]).toEqual([Math.round(next.x), Math.round(next.y)]);
+    }
+    expect(new Set(seen).size).toBe(5);
   });
 
   // R-0779, R-0691
