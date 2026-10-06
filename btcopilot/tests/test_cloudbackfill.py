@@ -23,15 +23,19 @@ def test_windows_cover_the_span_without_gap_or_overlap():
     assert spans == [(5000, 7200), (7200, 10800), (10800, 12000)]
 
 
-def test_an_hour_partly_copied_continues_after_its_newest_entry(monkeypatch):
+def test_an_hour_copied_in_part_gets_only_the_lines_it_lacks(monkeypatch):
     # R-0370
-    held = [{"n": "2", "t": "2026-10-06T18:49:12.000000005Z"}]
-    newest = cloudbackfill.nanos(held[0]["t"])
-    assert newest % cloudbackfill.NS == 5
+    held = [
+        {"_time": "2026-10-06T18:49:12.000000005Z", "_msg": "twice"},
+        {"_time": "2026-10-06T18:49:13Z", "_msg": "later"},
+    ]
+    at = cloudbackfill.nanos(held[0]["_time"])
+    assert at % cloudbackfill.NS == 5
     found = [
-        {"_time": newest - 1, "_msg": "old"},
-        {"_time": newest, "_msg": "held"},
-        {"_time": newest + 1, "_msg": "new"},
+        {"_time": at - 1, "_msg": "earlier"},
+        {"_time": at, "_msg": "twice"},
+        {"_time": at, "_msg": "twice"},
+        {"_time": at + cloudbackfill.NS - 5, "_msg": "later"},
     ]
     posted = []
     monkeypatch.setattr(cloudbackfill, "logsql", lambda base, query: held)
@@ -39,8 +43,9 @@ def test_an_hour_partly_copied_continues_after_its_newest_entry(monkeypatch):
     monkeypatch.setattr(
         cloudbackfill, "call", lambda url, data=None, headers=None: posted.append(data)
     )
-    assert cloudbackfill.hour(None, (0, 3600)) == 1
-    assert [json.loads(line)["_msg"] for line in posted[0].decode().splitlines()] == ["new"]
+    assert cloudbackfill.hour(None, (0, 3600)) == 2
+    sent = [json.loads(line)["_msg"] for line in posted[0].decode().splitlines()]
+    assert sent == ["earlier", "twice"]
 
 
 def test_a_cloud_log_carries_the_container_field_the_journal_uses():

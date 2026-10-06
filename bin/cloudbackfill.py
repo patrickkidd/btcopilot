@@ -7,17 +7,18 @@ window beside the count the laptop store then holds.
   GRAFANA_URL=... GRAFANA_SA_TOKEN=... uv run python bin/cloudbackfill.py [--since ISO] [--until ISO]
 
 Re-runnable up to the cutover without duplicates: VictoriaMetrics drops a
-sample it already holds at the same timestamp; a log hour already copied is
-skipped and a partly copied one continues after its newest entry; a trace
-already held is skipped.
+sample it already holds at the same timestamp; a log line or a trace already
+held is skipped.
 """
 
 import argparse
 import json
 import os
 import time
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
+from http.client import HTTPException
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -55,7 +56,7 @@ def call(url: str, params: dict | None = None, data: bytes | None = None, header
         except HTTPError as error:
             if error.code not in (429, 500, 502, 503, 504) or attempt == ATTEMPTS:
                 raise RuntimeError(f"{error.code} {url}: {error.read()[:500]!r}") from error
-        except (URLError, ConnectionError, TimeoutError):
+        except (URLError, HTTPException, ConnectionError, TimeoutError):
             if attempt == ATTEMPTS:
                 raise
         time.sleep(2**attempt)
@@ -175,9 +176,15 @@ def fields(labels: dict) -> dict:
 
 def hour(cloud: Cloud, window: tuple[int, int]) -> int:
     start, end = window
-    held = logsql(VL, f"{span(start, end)} source:={SOURCE} | stats count() n, max(_time) t")
-    newest = nanos(held[0]["t"]) if held and int(held[0]["n"]) else -1
-    fresh = [e for e in entries(cloud, start, end) if e["_time"] > newest]
+    rows = logsql(VL, f"{span(start, end)} source:={SOURCE} | fields _time, _msg")
+    held = Counter((nanos(r["_time"]), r.get("_msg", "")) for r in rows)
+    fresh = []
+    for entry in entries(cloud, start, end):
+        key = (entry["_time"], entry["_msg"])
+        if held[key]:
+            held[key] -= 1
+        else:
+            fresh.append(entry)
     if not fresh:
         return 0
     body = "".join(json.dumps(e) + "\n" for e in fresh).encode()
@@ -205,28 +212,37 @@ def logs(cloud: Cloud, since: int, until: int) -> tuple[int, int, int, int, int]
 
 
 def loki_count(cloud: Cloud, selector: str, since: int, until: int) -> int:
-    query = f"sum(count_over_time({selector}[{until - since}s]))"
-    data = cloud.json(LOKI, "/loki/api/v1/query", {"query": query, "time": until * NS})["data"]
-    return total(data)
+    def one(window: tuple[int, int]) -> int:
+        start, end = window
+        query = f"sum(count_over_time({selector}[{end - start}s]))"
+        data = cloud.json(LOKI, "/loki/api/v1/query", {"query": query, "time": end * NS})["data"]
+        return total(data)
+
+    with ThreadPoolExecutor(THREADS) as pool:
+        return sum(pool.map(one, windows(since, until, HOUR)))
 
 
-def search(cloud: Cloud, start: int, end: int) -> dict[str, int]:
+def search(cloud: Cloud, start: int, end: int) -> set[str]:
     params = {"q": "{}", "start": start, "end": end, "limit": TEMPO_LIMIT, "spss": 1}
     found = cloud.json(TEMPO, "/api/search", params).get("traces", [])
     if len(found) == TEMPO_LIMIT and end - start > 1:
         middle = (start + end) // 2
         return search(cloud, start, middle) | search(cloud, middle, end)
-    return {
-        t["traceID"]: sum(s.get("spanCount", 0) for s in t.get("serviceStats", {}).values())
-        for t in found
-    }
+    return {t["traceID"].zfill(32) for t in found}
+
+
+def span_count(cloud: Cloud, since: int, until: int) -> int:
+    counted = 0
+    for start, end in windows(since, until, DAY):
+        params = {"q": "{} | count_over_time()", "start": start, "end": end, "step": "1h"}
+        series = cloud.json(TEMPO, "/api/metrics/query_range", params)["series"]
+        counted += sum(int(v.get("value", 0)) for s in series for v in s["samples"])
+    return counted
 
 
 def traces(cloud: Cloud, since: int, until: int) -> tuple[int, int, int, int, int]:
     with ThreadPoolExecutor(THREADS) as pool:
-        found: dict[str, int] = {}
-        for part in pool.map(lambda w: search(cloud, *w), windows(since, until, HOUR)):
-            found |= part
+        found = set().union(*pool.map(lambda w: search(cloud, *w), windows(since, until, HOUR)))
     reach = span(since - DAY, until + DAY)
     held = {r["trace_id"] for r in logsql(VT, f"{reach} trace_id:* | uniq by (trace_id)")}
 
@@ -242,12 +258,13 @@ def traces(cloud: Cloud, since: int, until: int) -> tuple[int, int, int, int, in
     with ThreadPoolExecutor(THREADS) as pool:
         copied = sum(pool.map(copy, [t for t in found if t not in held]))
     call(f"{VT}/internal/force_flush", data=b"")
-    spans = logsql(VT, f"{reach} trace_id:* | stats count() n, count_uniq(trace_id) t")
+    traced = logsql(VT, f"{reach} trace_id:* | stats count_uniq(trace_id) t")
+    spans = logsql(VT, f"{span(since, until)} trace_id:* | stats count() n")
     return (
         copied,
         len(found),
-        int(spans[0]["t"]),
-        sum(found.values()),
+        int(traced[0]["t"]),
+        span_count(cloud, since, until),
         int(spans[0]["n"]),
     )
 
