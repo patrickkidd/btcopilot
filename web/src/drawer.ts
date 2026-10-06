@@ -290,6 +290,9 @@ export class Drawer {
   private height: number | null = null;
   private edge = 0;
   private scale = 1;
+  /** How far the drawing is moved from the middle of its box, across and
+   * down, so its people stand in the middle of the room (R-0797). */
+  private nudge = [0, 0];
   /** The tallest caption under the picture, measured once per telling. */
   private caption = 0;
   /** In the Family view, whom the frame is the three generations around, and
@@ -645,7 +648,8 @@ export class Drawer {
     const told = this.told!;
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
     const draw = lv.querySelector<HTMLElement>(".draw")!;
-    if (this.height === null) {
+    const fresh = this.height === null;
+    if (fresh) {
       const sc = lv.querySelector<HTMLElement>(".scroll")!;
       // one height per telling, by its longest caption, so nothing moves between steps
       if (!this.caption) {
@@ -664,12 +668,11 @@ export class Drawer {
       const style = getComputedStyle(draw);
       this.edge = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
       this.scale = this.fits(L);
-      // the picture's box takes all the room over the longest caption, the
-      // drawing centred in it both ways, once per frame (R-0797)
+      // the picture's box takes all the room over the longest caption (R-0797)
       const room = lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - this.edge - this.caption;
       this.height = Math.max(L.h * this.scale, room);
     }
-    draw.style.height = `${this.height + this.edge}px`;
+    draw.style.height = `${this.height! + this.edge}px`;
     const svg = draw.querySelector<SVGSVGElement>("svg")!;
     // a drawing as wide as its frame to within a pixel does not scroll
     const wide = L.vw * this.scale > lv.clientWidth + 1;
@@ -678,6 +681,34 @@ export class Drawer {
     // a Family view wider than the screen keeps a gutter at each side for the
     // arrows to whoever a date involves off it, so they cover no one (R-0785)
     lv.classList.toggle("gutters", told.whole && wide);
+    if (fresh) this.nudge = this.centring(draw, svg, wide);
+    svg.style.translate = `${this.nudge[0]}px ${this.nudge[1]}px`;
+  }
+
+  /** How far the drawing moves from the middle of its box so that its people
+   * and their names, the same on every step, stand in the middle of the room
+   * between the years line and Back and Next, never past the box's edges; a
+   * frame wider than the screen pans instead. Worked out once per frame, so
+   * stepping never moves the picture (R-0785, R-0797). */
+  private centring(draw: HTMLElement, svg: SVGSVGElement, wide: boolean): number[] {
+    const box = draw.getBoundingClientRect();
+    const style = getComputedStyle(draw);
+    const top = box.top + parseFloat(style.paddingTop) + parseFloat(style.borderTopWidth);
+    // Back and Next floating over the picture's foot, as on a phone turned sideways
+    const foot = this.panel.querySelector<HTMLElement>(".foot .step")?.getBoundingClientRect();
+    const bottom = Math.min(top + this.height!, foot && foot.top < top + this.height! ? foot.top : Infinity);
+    let [l, t, r, b] = [Infinity, Infinity, -Infinity, -Infinity];
+    svg.querySelectorAll<SVGGraphicsElement>(".p, .pt").forEach((g) => {
+      const k = g.getBBox();
+      if (!k.width) return;
+      [l, t, r, b] = [Math.min(l, k.x), Math.min(t, k.y), Math.max(r, k.x + k.width), Math.max(b, k.y + k.height)];
+    });
+    if (l > r) return [0, 0];
+    const k = this.scale;
+    const [w, h] = [parseFloat(svg.style.width), parseFloat(svg.style.height)];
+    const [sx, sy] = [wide ? 0 : (draw.clientWidth - w) / 2, (this.height! - h) / 2];
+    const clamp = (v: number, s: number) => Math.min(Math.max(v, -s), s);
+    return [clamp(draw.clientWidth / 2 - (sx + ((l + r) / 2) * k), sx), clamp((top + bottom) / 2 - (top + sy + ((t + b) / 2) * k), sy)];
   }
 
   private tap(e: Event): void {

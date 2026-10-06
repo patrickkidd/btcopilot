@@ -1137,21 +1137,24 @@ for (const height of [852, 759])
     });
   });
 
-/** How far the middle of the drawn frame stands from the middle of the room
- * between the years line and Back and Next, across and down, and how much of
- * the drawer's room is left under the words below Back and Next. */
+/** How far the middle of the frame's people and their names, the same on
+ * every step, stands from the middle of the room between the years line and
+ * Back and Next, across and down, and how much of the drawer's room is left
+ * under the words below Back and Next. */
 const offCentre = (page: Page) =>
   drawer(page).evaluate((p) => {
-    const svg = p.querySelector<SVGSVGElement>(".draw svg")!;
-    const m = svg.getScreenCTM()!;
-    const v = svg.viewBox.baseVal;
+    const drawn = [...p.querySelectorAll(".draw svg :is(.p, .pt)")].map((g) => g.getBoundingClientRect()).filter((r) => r.height);
+    const [l, t, r, b] = [Math.min(...drawn.map((x) => x.left)), Math.min(...drawn.map((x) => x.top)), Math.max(...drawn.map((x) => x.right)), Math.max(...drawn.map((x) => x.bottom))];
     const lv = p.querySelector(".lv")!.getBoundingClientRect();
     const top = p.querySelector(".wire")!.getBoundingClientRect().bottom;
     const step = p.querySelector(":is(.scroll, .foot) .step")!.getBoundingClientRect();
     const under = p.querySelector(".scroll")!.getBoundingClientRect().bottom;
+    const svg = p.querySelector(".draw svg")!.getBoundingClientRect();
     return {
-      across: m.e + m.a * (v.x + v.width / 2) - (lv.left + lv.right) / 2,
-      down: m.f + m.d * (v.y + v.height / 2) - (top + step.top) / 2,
+      // how much room the drawing leaves beside it, and under it, to be centred in
+      spare: [lv.width - svg.width, step.top - top - svg.height],
+      across: (l + r) / 2 - (lv.left + lv.right) / 2,
+      down: (t + b) / 2 - (top + step.top) / 2,
       left: lv.bottom - under,
     };
   });
@@ -1178,13 +1181,27 @@ test.describe("the picture centred in the room it has", () => {
   });
 
   // R-0797
-  test("stands in the middle between the years line and Back and Next on every date in the Family view, its book whole on a phone turned sideways", async ({ page }) => {
-    await familyOf(page, 2, moving(false));
-    for (let i = 0; i < 3; i++) {
-      const seen = await offCentre(page);
-      expect(Math.abs(seen.across)).toBeLessThanOrEqual(4);
-      expect(Math.abs(seen.down)).toBeLessThanOrEqual(4);
-      await drawer(page).locator('[data-act="next"]').click();
+  test("stands in the middle between the years line and Back and Next on every date in the Family view, put on someone else too, its book whole on a phone turned sideways", async ({ page }) => {
+    // Cleo's anxiety rises on one date: her rings take room in every frame she is in
+    const ids = await familyOf(page, 2, (tl, ids) => {
+      moving(false)(tl, ids);
+      const dated = tl.events.filter((e: { dateTime: string | null }) => e.dateTime);
+      Object.assign(dated[1], { person: ids.Cleo, relationship: null, relationshipTargets: [], anxiety: "up" });
+    });
+    const centred = async () => {
+      for (let i = 0; i < 3; i++) {
+        const seen = await offCentre(page);
+        // a drawing as wide as the room, kept that size by the fit (R-0796), cannot move across
+        if (seen.spare[0] > 1) expect(Math.abs(seen.across)).toBeLessThanOrEqual(4);
+        expect(Math.abs(seen.down)).toBeLessThanOrEqual(4);
+        await drawer(page).locator('[data-act="next"]').click();
+      }
+    };
+    await centred();
+    // put on someone else, as Patrick put it on his mother: frames of other shapes
+    for (const who of [ids().Wanda]) {
+      await tapPerson(page, who);
+      await centred();
     }
     // a phone turned sideways keeps the book whole on the screen
     await page.setViewportSize({ width: 844, height: 390 });
