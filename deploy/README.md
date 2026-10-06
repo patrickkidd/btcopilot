@@ -160,6 +160,8 @@ The dashboards are kept in `grafana/*.json` and provisioned read-only by the lap
 read `quality_runs`, which every release fills with `flask admin quality load` (see
 `quality/evals/README.md`).
 
+Three boards about users and the coach, the first wave of doc/FEEDBACK_LOOPS.md row 28, ship the same way with no workflow change: `fd-people` ("People: what they bring"), `fd-coach` ("The coach: what it did") and `fd-return` ("Return"), in `grafana/fd-people.json`, `fd-coach.json` and `fd-return.json`. They read only existing tables, rebuilding the record from `diagram_changes`, and need the role `grafana` to have SELECT on `invitations` and `diagram_interactions`, which no earlier panel read; the grants live on the box, not in this repository. `uv run pytest --integration btcopilot/tests/integration/test_dashboardsql.py` runs every panel of every board on Postgres before a release. A move to self-hosted Grafana must keep the data source uid `ffz1wy7unkdfke`, which every panel names.
+
 The desktop app's update feeds live on the legacy box and are forwarded because shipped apps have this address built in.
 
 ## Gemini settings

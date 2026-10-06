@@ -9,7 +9,9 @@ from decimal import Decimal
 import pytest
 import yaml
 
+from btcopilot import flow, topics
 from btcopilot.pricing import PRICES
+from btcopilot.tests import grafanasql
 from btcopilot.tests.repo import REPO
 
 GRAFANA = REPO / "deploy" / "grafana"
@@ -41,14 +43,17 @@ def test_a_panel_that_prices_tokens_lists_every_priced_model_at_its_price(board,
         for model, *rates in ROW.findall(LISTED.search(sql(panel)).group(1))
     }
     assert listed == {
-        model: (p.input, p.output, p.cache_write, p.cache_read) for model, p in PRICES.items()
+        model: (p.input, p.output, p.cache_write, p.cache_read)
+        for model, p in PRICES.items()
     }
 
 
 def test_one_panel_sums_every_row_of_the_ledger():
     # R-0628, R-0389
     (total,) = [p for b, p in panels() if p["title"] == "All model spend"]
-    (by_purpose,) = [p for b, p in panels() if p["title"] == "All model spend, by purpose"]
+    (by_purpose,) = [
+        p for b, p in panels() if p["title"] == "All model spend, by purpose"
+    ]
     for panel in (total, by_purpose):
         words = sql(panel)
         assert "sum(mc.cost_usd)" in words
@@ -59,7 +64,9 @@ def test_one_panel_sums_every_row_of_the_ledger():
 
 def test_no_cost_panel_charges_a_replay_to_a_person():
     # R-0389
-    (panel,) = [p for b, p in panels() if p["title"] == "Cost per person per feature share"]
+    (panel,) = [
+        p for b, p in panels() if p["title"] == "Cost per person per feature share"
+    ]
     assert "dg.scratch" in sql(panel)
 
 
@@ -103,3 +110,154 @@ def test_box_container_panels_name_each_compose_service_across_deploys():
         ]
         seen = [re.fullmatch(pattern, n).group(1) for n in names]
         assert seen == ["fd-app", "fd-worker", "fd-postgres", "fd-redis"]
+# The first wave of boards about users and the coach [R-0800]: each carries its
+# panels, says its rule, reads one Postgres source, leaves out the test account
+# and scratch records, and keeps its copies of the topic map and the objection
+# phrases equal to the app's own.
+
+FIRST_WAVE = {
+    "fd-people": (
+        "Topics placed in the record, share of sittings by week",
+        "Topics placed in the record: sittings and writes per topic",
+        "Top topics per record",
+        "Which relatives come up: share of messages naming each",
+        "Most-named people per record",
+        "Pushback per 100 messages, by week: words (tentative) and taps",
+        "Pushback: the counts behind the rate",
+        "Pushback: the objection phrases found",
+        "Fact questions by item: what the coach recorded and what people tapped",
+        "Fact questions by generation and side",
+        "What people correct, per 100 coach writes, by field",
+        "Picture opened in a sitting, and taps followed by talk",
+        "Picture taps by name and by item kind",
+        "Share of people who used the picture, by week",
+        "How far each record got, at the last sitting",
+        "Coverage at the last sitting: active and silent people",
+    ),
+    "fd-coach": (
+        "Share of coach turns that wrote to the record, by week and prompt version",
+        "Coach turns that wrote, by turn index and prompt version",
+        "Record tools per 100 coach turns, by tool",
+        "Beside the write share: duplicates and hand corrections per 100 coach writes",
+        "Faults per 100 coach turns, by kind",
+        "Faults ranked by the share of people who sent nothing more",
+        "Faults per 100 coach turns, by prompt version",
+        "Fact questions the coach asked, by item",
+        "Fact questions the coach asked, by generation and side",
+        "Fact questions per 100 coach turns, by prompt version",
+        "Guesses voiced per 100 coach turns, by week",
+        "How the coach's guesses fared",
+        "Guesses by prompt version",
+        "Reply length and shape by turn index and prompt version",
+        "Words per coach reply, weekly median and 90th percentile",
+    ),
+    "fd-return": (
+        "Return within a week",
+        "From invitation to second sitting",
+        "Second sitting within 7 days, by what the first sitting did",
+        "How sittings end",
+        "The last thing before silence",
+        "Active, silent, left",
+        "People active each week: first week and returning",
+        "Days between sittings",
+        "Days between sittings by cohort month",
+    ),
+}
+SOURCE = {"type": "grafana-postgresql-datasource", "uid": "ffz1wy7unkdfke"}
+# up to the "))" that closes the last row and the list
+TOPIC_MAP = re.compile(
+    r"topic_map\s*\(hook,\s*topic\)\s*as\s*\(\s*values\s*(.*?\))\s*\)", re.S | re.I
+)
+PAIR = re.compile(r"\('([^']+)',\s*'([^']+)'\)")
+OBJECTION = re.compile(
+    r"objection\s*\(phrase\)\s*as\s*\(\s*values\s*(.*?\))\s*\)", re.S | re.I
+)
+PHRASE = re.compile(r"\('((?:[^']|'')+)'\)")
+BY_VERSION = re.compile(r"group by[^;]*prompt_version", re.S | re.I)
+
+
+def built() -> list[tuple[str, dict]]:
+    return [
+        (name, json.loads((GRAFANA / f"{name}.json").read_text()))
+        for name in FIRST_WAVE
+        if (GRAFANA / f"{name}.json").exists()
+    ]
+
+
+def wave() -> list[tuple[str, dict]]:
+    return [
+        (name, p) for name, b in built() for p in b["panels"] if p.get("type") != "row"
+    ]
+
+
+def label(x):
+    return x if isinstance(x, str) else x.get("title", "")
+
+
+def phrases(found: re.Match) -> tuple[str, ...]:
+    return tuple(p.replace("''", "'") for p in PHRASE.findall(found.group(1)))
+
+
+@pytest.mark.parametrize("name, board", built(), ids=label)
+def test_a_first_wave_board_carries_its_panels_and_no_id(name, board):
+    # R-0800
+    assert board["uid"] == name and "id" not in board
+    titles = [p["title"] for p in board["panels"] if p.get("type") != "row"]
+    assert sorted(titles) == sorted(FIRST_WAVE[name])
+    ids = [p["id"] for p in board["panels"]]
+    assert len(ids) == len(set(ids))
+
+
+@pytest.mark.parametrize("name, panel", wave(), ids=label)
+def test_a_first_wave_panel_reads_one_source_and_says_its_rule(name, panel):
+    # R-0800
+    assert panel["datasource"] == SOURCE
+    assert all(t["datasource"] == SOURCE for t in panel["targets"])
+    assert panel.get("description", "").strip()
+
+
+@pytest.mark.parametrize("name, panel", wave(), ids=label)
+def test_a_first_wave_query_leaves_out_the_test_account_and_scratch(name, panel):
+    # R-0800, R-0517
+    words = sql(panel)
+    assert "claude-test" in words and "scratch" in words
+
+
+@pytest.mark.parametrize(
+    "name, panel", [x for x in wave() if "topic_map" in sql(x[1])], ids=label
+)
+def test_a_topic_panel_carries_the_app_topic_map(name, panel):
+    # R-0800
+    found = list(TOPIC_MAP.finditer(sql(panel)))
+    assert found
+    for each in found:
+        assert PAIR.findall(each.group(1)) == list(topics.TOPICS)
+
+
+@pytest.mark.parametrize(
+    "name, panel", [x for x in wave() if "objection(" in sql(x[1])], ids=label
+)
+def test_a_pushback_panel_carries_the_app_objection_phrases(name, panel):
+    # R-0800, R-0517
+    found = list(OBJECTION.finditer(sql(panel)))
+    assert found
+    for each in found:
+        assert phrases(each) == flow.OBJECTION
+
+
+@pytest.mark.parametrize(
+    "name, panel", [x for x in wave() if BY_VERSION.search(sql(x[1]))], ids=label
+)
+def test_a_panel_by_prompt_version_holds_back_a_version_under_30_people(name, panel):
+    # R-0800
+    assert re.search(r">=\s*30\b", sql(panel))
+
+
+def test_the_shared_tables_carry_the_app_objection_phrases():
+    # R-0800, R-0517
+    assert phrases(OBJECTION.search(grafanasql.FRAGMENTS)) == flow.OBJECTION
+
+
+def test_the_first_wave_has_forty_panels():
+    # R-0800
+    assert sum(map(len, FIRST_WAVE.values())) == 40

@@ -9,6 +9,8 @@ by topic carries this map as `topic_map(hook, topic) as (values ...)`, and a
 test holds that copy equal to TOPICS.
 """
 
+from btcopilot.schema import RelationshipKind
+
 PARTNERS = "Partners"
 CHILDREN = "Children and births"
 DEATHS = "Deaths"
@@ -21,11 +23,6 @@ DOING = "How people were doing"
 HARD = "Hard times"
 WHO = "Who is who"
 NONE = "no topic"
-
-RELATIONSHIPS = (
-    "fusion", "conflict", "distance", "overfunctioning", "underfunctioning",
-    "projection", "defined-self", "toward", "away", "inside", "outside", "cutoff",
-)  # fmt: skip
 
 TOPICS = (
     *((hook, PARTNERS) for hook in (
@@ -43,7 +40,7 @@ TOPICS = (
     *((hook, WORK) for hook in ("item:work", "fact:work", "fact:life_course")),
     *((hook, SCHOOL) for hook in ("item:schooling", "fact:schooling")),
     *((hook, PLACES) for hook in ("item:places", "fact:places")),
-    *((f"relationship:{kind}", CONTACT) for kind in RELATIONSHIPS),
+    *((f"relationship:{kind.value}", CONTACT) for kind in RelationshipKind),
     ("emotion", CONTACT),
     ("fact:contact", CONTACT),
     ("shift:anxiety", DOING),
