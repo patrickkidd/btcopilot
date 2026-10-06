@@ -236,7 +236,12 @@ def span_count(cloud: Cloud, since: int, until: int) -> int:
     for start, end in windows(since, until, DAY):
         params = {"q": "{} | count_over_time()", "start": start, "end": end, "step": "1h"}
         series = cloud.json(TEMPO, "/api/metrics/query_range", params)["series"]
-        counted += sum(int(v.get("value", 0)) for s in series for v in s["samples"])
+        counted += sum(
+            int(v.get("value", 0))
+            for s in series
+            for v in s["samples"]
+            if start <= int(v["timestampMs"]) // 1000 < end
+        )
     return counted
 
 
@@ -259,12 +264,13 @@ def traces(cloud: Cloud, since: int, until: int) -> tuple[int, int, int, int, in
         copied = sum(pool.map(copy, [t for t in found if t not in held]))
     call(f"{VT}/internal/force_flush", data=b"")
     traced = logsql(VT, f"{reach} trace_id:* | stats count_uniq(trace_id) t")
-    spans = logsql(VT, f"{span(since, until)} trace_id:* | stats count() n")
+    first, last = since - since % HOUR, until - until % HOUR
+    spans = logsql(VT, f"{span(first, last)} trace_id:* | stats count() n")
     return (
         copied,
         len(found),
         int(traced[0]["t"]),
-        span_count(cloud, since, until),
+        span_count(cloud, first, last),
         int(spans[0]["n"]),
     )
 
