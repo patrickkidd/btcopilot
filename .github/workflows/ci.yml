@@ -72,7 +72,10 @@ jobs:
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
+  # the browser tests run locally, only those for the features a change touches;
+  # here only by hand (R-0800)
   web-visual:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     env:
       FLASK_APP: btcopilot.app:create_app

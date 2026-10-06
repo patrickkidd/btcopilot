@@ -12,8 +12,9 @@ import { defineConfig, devices } from "@playwright/test";
 const SANDBOX = "**/sandbox*.spec.ts";
 
 /** Chromium starts silent, so the play-by-play's read-aloud never plays on
- * the machine running the tests; WebKit has no such switch. */
-const chrome = { ...devices["Desktop Chrome"], launchOptions: { args: ["--mute-audio"] } };
+ * the machine running the tests; WebKit has no such switch. Unhinted fonts
+ * keep Linux letter widths unrounded, as a phone draws them. */
+const chrome = { ...devices["Desktop Chrome"], launchOptions: { args: ["--mute-audio", "--font-render-hinting=none"] } };
 
 export default defineConfig({
   testDir: "./tests/visual",
