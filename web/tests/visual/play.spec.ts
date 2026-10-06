@@ -1743,6 +1743,21 @@ test.describe("the whole family stepped through dates", () => {
     await expect(page.locator("#caption #cap-family")).toHaveCount(0);
   });
 
+  // R-0755
+  test("goes to the chat when the Family view's address is opened on a record with no dated step", async ({ page }) => {
+    const errors = watched(page);
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      tl.events.forEach((e: Record<string, unknown>) => Object.assign(e, { kind: "noted", relationship: null, spouse: null, title: e.title ?? "Noted" }));
+      await route.fulfill({ json: tl });
+    });
+    await page.goto("/app/family");
+    await expect(page.locator("#view .ss")).toBeVisible();
+    await expect(page).toHaveURL(/\/app\/$/);
+    await expect(drawer(page)).toBeHidden();
+    expect(errors).toEqual([]);
+  });
+
   // R-0742, R-0755, R-0756, R-0775
   test("steps on to the record today and back through its history, the not yet born faded, and browser back returns to the timeline", async ({ page }) => {
     const errors = watched(page);

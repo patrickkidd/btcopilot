@@ -496,13 +496,16 @@ def after_moves(data: DiagramData, moved: list[dict]) -> DiagramData:
 
 def move(diagram: Diagram, one: dict) -> str | None:
     """One wrong-kind question to its right target, and a copy of it to each
-    other target, as one change row; why not, when the question changed since
-    the dry run or the record refuses."""
-    questions = diagram.get_diagram_data().questions
-    q = next((q for q in questions if q["id"] == one["question"]), None)
+    other target, as one change row; why not, when the question or where it
+    goes changed since the dry run, or the record refuses."""
+    data = diagram.get_diagram_data()
+    q = next((q for q in data.questions if q["id"] == one["question"]), None)
     if q is None or {k: q.get(k) for k in one["before"]} != one["before"]:
         return "the question changed since the dry run"
-    filed = refiled(questions, q, one["links"])
+    now = next((m for m in moves(data)[0] if m["question"] == q["id"]), None)
+    if now is None or now["links"] != one["links"]:
+        return "where the question goes changed since the dry run"
+    filed = refiled(data.questions, q, one["links"])
     try:
         record.apply(
             diagram.id,

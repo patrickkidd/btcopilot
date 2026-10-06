@@ -317,6 +317,23 @@ def test_a_question_changed_since_the_dry_run_is_not_moved(flask_app, tmp_path, 
     assert stored(kin)["q1"]["item_kind"] == "person"
 
 
+def test_a_question_whose_partners_changed_since_the_dry_run_is_not_moved(
+    flask_app, tmp_path, kin, past
+):
+    # R-0772, R-0773
+    filed(kin, "q1", "birth_date", "pair_bond", "3")
+    plan = dry(flask_app, tmp_path, calling())
+    data = kin.get_diagram_data()
+    data.pair_bonds[0]["person_b"] = 4
+    kin.set_diagram_data(data)
+    db.session.commit()
+
+    rows = apply(flask_app, plan)
+    assert rows[0]["refused"] == "where the question goes changed since the dry run"
+    assert [q["id"] for q in stored(kin).values()] == ["q1"]
+    assert stored(kin)["q1"]["item_kind"] == "pair_bond"
+
+
 def test_undo_takes_a_catch_up_row_back(flask_app, tmp_path, kin, past):
     # R-0772
     filed(kin, "q1", "met", "person", "1", state="asked")

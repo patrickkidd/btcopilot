@@ -348,6 +348,38 @@ test.describe("your diagrams", () => {
     await expect(page.locator("#title")).toHaveText(OTHER.name);
   });
 
+  test.describe("with a Family view", () => {
+    test.use({ storageState: stateFor("play") });
+
+    // R-0691, R-0175
+    test("the Family view's book reads its passages again for the diagram opened next", async ({ page }) => {
+      await twoDiagrams(page);
+      await page.route(/\/app\/case-report-passages(\?.*)?$/, (route) => {
+        const other = route.request().url().includes(`diagram_id=${OTHER.id}`);
+        return route.fulfill({ json: { family: [{ text: other ? "The other family's passage" : "The first family's passage", by: "Kerr & Bowen, Family Evaluation, ch. 10" }] } });
+      });
+      await settle(page);
+      const sheet = page.locator("#chat-screen .fs-sheet.bk");
+      const book = async (passage: string) => {
+        await page.locator("#cap-family").click();
+        await expect(page.locator("#pbp")).toBeVisible();
+        await page.locator("#pbp .path .book").click();
+        await expect(sheet).toHaveClass(/in/);
+        await expect(sheet.locator("blockquote")).toHaveText(passage);
+        await page.keyboard.press("Escape");
+        await expect(sheet).not.toHaveClass(/in/);
+        await page.goBack();
+        await expect(page.locator("#pbp")).toBeHidden();
+      };
+      await book("The first family's passage");
+      await openDiagrams(page);
+      await page.locator('.sn-pane[data-page="diagrams"] .sn-row', { hasText: OTHER.name }).click();
+      await expect(page.locator(".sn-stack")).toBeHidden();
+      await expect(page.locator("#title")).toHaveText(OTHER.name);
+      await book("The other family's passage");
+    });
+  });
+
   // R-0175
   test("only one diagram is open at a time", async ({ page }) => {
     await twoDiagrams(page);

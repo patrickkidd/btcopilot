@@ -200,6 +200,9 @@ function chipLabel(chip: Chip): string {
  * again. A walk told before snapshots has none and keeps its chips. */
 const cases = new Map<number, Kept>();
 
+/** The Family view's book buttons, read again for each family opened. */
+const books = new Books($("pbp").parentElement!, () => store.fetch(api.casePassages));
+
 /** The play-by-play drawer (R-0542): a tap on its path goes back to that step
  * of the picture: the whole timeline, or the case's cluster opened, whether
  * or not it was open when the drawer came up. */
@@ -212,7 +215,7 @@ const pbp = new Drawer(
     lens.rest();
   },
   (chip) => chipTap(chip),
-  new Books($("pbp").parentElement!, () => store.fetch(api.casePassages)),
+  books,
 );
 
 /** A play-by-play message opened again, from its words or its cluster chip:
@@ -888,6 +891,7 @@ store.watch({
     chat.unfold();
     cases.clear();
     pbp.close();
+    books.forget();
     menu.fold();
     picture.clear();
     lens.state = REST;
@@ -1689,11 +1693,17 @@ async function toPlay(statement: number): Promise<boolean> {
   return false;
 }
 
-/** The whole family stepped through dates, opened on the record today (R-0742). */
-function toFamily(): void {
+/** The whole family stepped through dates, opened on the record today
+ * (R-0742); false, at the chat, for a record with no dated step (R-0755). */
+function toFamily(): boolean {
   uncover();
   lens.putDown();
+  if (!family(record()).snapshots.length) {
+    toast("That place is not in the app");
+    return false;
+  }
   pbp.openFamily(record());
+  return true;
 }
 
 /** How the app gets to each place from wherever it is. */
@@ -1788,10 +1798,9 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   [Place.PlayStep]: async ([id, step]) => {
     if (await toPlay(Number(id))) pbp.to(Number(step));
   },
-  [Place.Family]: () => toFamily(),
+  [Place.Family]: () => void toFamily(),
   [Place.FamilyStep]: ([step]) => {
-    toFamily();
-    pbp.to(Number(step));
+    if (toFamily()) pbp.to(Number(step));
   },
   [Place.Coding]: async ([id]) => {
     uncover();
