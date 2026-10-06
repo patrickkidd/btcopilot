@@ -18,7 +18,9 @@ receivers:
     collection_interval: 60s
     scrapers:
       cpu: {}
-      memory: {}
+      memory:
+        metrics:
+          system.linux.memory.available: {enabled: true}
       load: {}
       filesystem: {}
   docker_stats:
