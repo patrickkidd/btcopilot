@@ -1214,6 +1214,54 @@ test.describe("the picture centred in the room it has", () => {
     await tapPerson(page, ids().Hugo);
     await centred();
   });
+
+  // R-0797, R-0785
+  test("keeps the people and their names centred over every date of a frame, a death's line late on counted from the first date, upright and on a phone turned sideways", async ({ page }) => {
+    const ids = await familyOf(page, 2, (tl, ids) => {
+      moving(false)(tl, ids);
+      const dated = tl.events.filter((e: { dateTime: string | null }) => e.dateTime);
+      Object.assign(dated[1], { person: ids.Cleo, relationship: null, relationshipTargets: [], anxiety: "up" });
+      const last = dated[dated.length - 1];
+      tl.events.push({ ...last, id: 9891, kind: "death", label: "Died", dateTime: "2040-01-01", person: ids.Wanda, person_name: "Wanda", relationship: null, relationshipTargets: [], relationshipTriangles: [], title: null, description: null, spouse: null, child: null, sentence: "Wanda died" });
+      tl.people.find((p: { id: number }) => p.id === ids.Wanda).death_event = 9891;
+    });
+    const walk = async () => {
+      const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+      while (await back.count()) await back.click();
+      const seen = [];
+      const next = drawer(page).locator('[data-act="next"]');
+      for (;;) {
+        seen.push(
+          await drawer(page).evaluate((p) => {
+            const drawn = [...p.querySelectorAll(".draw svg :is(.p .shape, .pt text)")].map((g) => g.getBoundingClientRect()).filter((r) => r.height);
+            const svg = p.querySelector(".draw svg")!.getBoundingClientRect();
+            const draw = p.querySelector(".draw")!.getBoundingClientRect();
+            const foot = p.querySelector(".foot")!.getBoundingClientRect();
+            return {
+              at: [Math.round(svg.left), Math.round(svg.top)].join(),
+              l: Math.min(...drawn.map((x) => x.left)) - draw.left,
+              r: draw.right - Math.max(...drawn.map((x) => x.right)),
+              t: Math.min(...drawn.map((x) => x.top)) - draw.top - 5,
+              b: Math.min(draw.bottom, foot.top) - Math.max(...drawn.map((x) => x.bottom)),
+            };
+          }),
+        );
+        if (await next.isDisabled()) break;
+        await next.click();
+      }
+      // the picture never moves between dates (R-0785)
+      expect(new Set(seen.map((s) => s.at)).size).toBe(1);
+      // everyone drawn on any date stands in the middle of the room, across and down
+      const [l, r, t, b] = (["l", "r", "t", "b"] as const).map((k) => Math.min(...seen.map((s) => s[k])));
+      expect(Math.abs(l - r) / 2).toBeLessThanOrEqual(4);
+      expect(Math.abs(t - b) / 2).toBeLessThanOrEqual(4);
+    };
+    await walk();
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.waitForTimeout(500);
+    await tapPerson(page, ids().Cleo);
+    await walk();
+  });
 });
 
 test.describe("a picture opened from the iPhone home screen", () => {

@@ -1457,6 +1457,24 @@ interface Where {
 
 const dimsOf = (L: Layout) => new Dims(L.w);
 
+/** Where the frame's people and their names stand on any of its steps: each
+ * name as long as its last step makes it, so it is the same box on every step
+ * (R-0797). */
+export function people(L: Layout): Box {
+  const d = dimsOf(L);
+  const shapes = Object.keys(L.P).map((id) => {
+    const e = d.half(L.P[id]);
+    return { x0: L.x[id] - e, x1: L.x[id] + e, y0: L.y[id] - e, y1: L.y[id] + e };
+  });
+  const all = [...shapes, ...L.names];
+  return {
+    x0: Math.min(...all.map((b) => b.x0)),
+    x1: Math.max(...all.map((b) => b.x1)),
+    y0: Math.min(...all.map((b) => b.y0)),
+    y1: Math.max(...all.map((b) => b.y1)),
+  };
+}
+
 function ray(o: Point, to: Point, dist: number): Point {
   const a = to[0] - o[0];
   const b = to[1] - o[1];

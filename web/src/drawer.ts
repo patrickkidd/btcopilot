@@ -3,7 +3,7 @@ import type { Books } from "./books";
 import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, fitPath, flash, pathRow, slideOver, stepBtn, still } from "./dom";
-import { fitScale, leastScale, type Layout } from "./diagram";
+import { fitScale, leastScale, people, type Layout } from "./diagram";
 import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { BIRTHS, family, familyStart, said, when, Told } from "./snapshots";
@@ -283,6 +283,13 @@ function pan(frame: HTMLElement, to: number, glide: boolean): void {
   panning.set(frame, requestAnimationFrame(tick));
 }
 
+/** How tall the drawing is with its people in the middle of it (R-0797). */
+function tall(L: Layout): number {
+  const k = people(L);
+  const mid = (k.y0 + k.y1) / 2;
+  return 2 * Math.max(mid, L.h - mid);
+}
+
 export class Drawer {
   private told: Told | null = null;
   private statement: number | null = null;
@@ -377,9 +384,11 @@ export class Drawer {
   }
 
   /** The scale that fits `L` whole in the room the drawer has under its
-   * years line and over the longest caption, both ways (R-0796). */
+   * years line and over the longest caption, both ways (R-0796), as tall as
+   * it is with its people in the middle, so there is room to centre them
+   * however far its marks reach on one side (R-0797). */
   private fits(L: Layout): number {
-    return fitScale(L, this.panel.querySelector<HTMLElement>(".lv")!.clientWidth, this.room());
+    return fitScale({ ...L, h: tall(L) }, this.panel.querySelector<HTMLElement>(".lv")!.clientWidth, this.room());
   }
 
   /** The height the drawing has under the years line, over the longest
@@ -678,7 +687,7 @@ export class Drawer {
       this.edge = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
       this.scale = this.fits(L);
       // the picture's box takes all the room over the longest caption (R-0797)
-      this.height = Math.max(L.h * this.scale, this.room());
+      this.height = Math.max(tall(L) * this.scale, this.room());
     }
     draw.style.height = `${this.height! + this.edge}px`;
     const svg = draw.querySelector<SVGSVGElement>("svg")!;
@@ -689,7 +698,7 @@ export class Drawer {
     // a Family view wider than the screen keeps a gutter at each side for the
     // arrows to whoever a date involves off it, so they cover no one (R-0785)
     lv.classList.toggle("gutters", told.whole && wide);
-    if (fresh) this.nudge = this.centring(draw, svg, wide);
+    if (fresh) this.nudge = this.centring(L, draw, svg, wide);
     svg.style.translate = `${this.nudge[0]}px ${this.nudge[1]}px`;
   }
 
@@ -698,20 +707,14 @@ export class Drawer {
    * between the years line and Back and Next, never past the box's edges; a
    * frame wider than the screen pans instead. Worked out once per frame, so
    * stepping never moves the picture (R-0785, R-0797). */
-  private centring(draw: HTMLElement, svg: SVGSVGElement, wide: boolean): number[] {
+  private centring(L: Layout, draw: HTMLElement, svg: SVGSVGElement, wide: boolean): number[] {
     const box = draw.getBoundingClientRect();
     const style = getComputedStyle(draw);
     const top = box.top + parseFloat(style.paddingTop) + parseFloat(style.borderTopWidth);
     // Back and Next floating over the picture's foot, as on a phone turned sideways
     const foot = this.panel.querySelector<HTMLElement>(".foot .step")?.getBoundingClientRect();
     const bottom = Math.min(top + this.height!, foot && foot.top < top + this.height! ? foot.top : Infinity);
-    let [l, t, r, b] = [Infinity, Infinity, -Infinity, -Infinity];
-    svg.querySelectorAll<SVGGraphicsElement>(".p, .pt").forEach((g) => {
-      const k = g.getBBox();
-      if (!k.width) return;
-      [l, t, r, b] = [Math.min(l, k.x), Math.min(t, k.y), Math.max(r, k.x + k.width), Math.max(b, k.y + k.height)];
-    });
-    if (l > r) return [0, 0];
+    const { x0: l, y0: t, x1: r, y1: b } = people(L);
     const k = this.scale;
     const [w, h] = [parseFloat(svg.style.width), parseFloat(svg.style.height)];
     const [sx, sy] = [wide ? 0 : (draw.clientWidth - w) / 2, (this.height! - h) / 2];
