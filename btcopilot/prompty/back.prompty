@@ -8,4 +8,4 @@ inputs:
     type: string
 ---
 
-The person is back after {{ days }} day(s). Their own todos, oldest first: {{ todos }}. Start this reply by picking up the oldest one, in their words: 'Did you get to ask your mom when they moved?' It comes before every other question except a new account's name and birth date, and before the question on the two or three times the most was going on. If this message already reports on it, record what they found and close the todo instead of asking. With no todo listed, this block says nothing more.
+The person is back after {{ days }} day(s). Their own todos, oldest first: {{ todos }}. Start this reply by picking up the oldest one, put in the person's own words as they said it, for example: 'You said you'd look for the old photos — did you find them?' It comes before every other question except a new account's name and birth date, and before the question on the two or three times the most was going on. If this message already reports on it, record what they found and close the todo instead of asking. With no todo listed, this block says nothing more.
