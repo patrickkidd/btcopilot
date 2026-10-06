@@ -367,23 +367,38 @@ export class Drawer {
     // children has their grandparents above their parents instead, the frame
     // scrolling sideways as any wide frame does (R-0779)
     const kids = three.cast.kids.some((k) => k.of.includes(id));
-    // on a phone held upright the frame scrolls down as well as across, so it
-    // always has them; fitted whole to the width, it takes the grandparents
-    // only where they leave everyone as large (R-0787, R-0790)
-    if (this.upright()) return kids && L.vw > three.layout.vw ? three : four;
+    // on a phone, fitted whole, it always has them, and takes the
+    // grandparents of someone with children only where they leave everyone
+    // as large (R-0787, R-0790, R-0791)
+    if (this.phone()) return kids && this.fits(L) < this.fits(three.layout) ? three : four;
     return Math.min(kids ? lv.clientWidth / L.vw : Infinity, tall / L.h) >= leastScale(L, padding) ? four : three;
   }
 
-  /** The least scale a drawing may take here: the Family view on a phone held
-   * upright fits its frame whole to the width, however small (R-0790). */
+  /** The least scale a drawing may take here: the Family view on a phone
+   * fits its frame whole, however small (R-0790, R-0791). */
   private least(L: Layout, padding: number): number {
+    return this.told?.whole && this.phone() ? this.fits(L) : leastScale(L, padding);
+  }
+
+  /** The scale that fits `L` whole: to the drawer's width on a phone held
+   * upright, which scrolls down; to the width and the height on one turned sideways. */
+  private fits(L: Layout): number {
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
-    return this.told?.whole && this.upright() ? lv.clientWidth / L.vw : leastScale(L, padding);
+    const wide = lv.clientWidth / L.vw;
+    if (this.upright()) return wide;
+    const s = getComputedStyle(lv.querySelector<HTMLElement>(".draw")!);
+    const edge = parseFloat(s.paddingTop) + parseFloat(s.paddingBottom) + parseFloat(s.borderTopWidth) + parseFloat(s.borderBottomWidth);
+    return Math.min(wide, (lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - edge) / L.h);
   }
 
   /** A phone held upright: the Family view keeps the drawer, not the whole screen. */
   private upright(): boolean {
     return !matchMedia(FILLS).matches;
+  }
+
+  /** A phone, upright or turned sideways. */
+  private phone(): boolean {
+    return this.upright() || matchMedia(SIDEWAYS).matches;
   }
 
   /** The drawer drawn again for the screen's new size, at the same date and

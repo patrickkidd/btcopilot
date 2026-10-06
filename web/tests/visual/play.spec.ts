@@ -1330,6 +1330,23 @@ test.describe("the Family view on a phone, turned", () => {
     expect(errors).toEqual([]);
   });
 
+  // R-0779, R-0791
+  test("turned sideways, draws the three generations it draws upright, scaled whole to the screen's height", async ({ page }, info) => {
+    test.skip(info.project.name !== "phone", "the size is the describe's own");
+    const ids = await familyOf(page, 2);
+    const grand = [ids().Hal, ids().Hope, ids().Walt, ids().Wren].map(String);
+    expect(await drawnIds(page)).toEqual(expect.arrayContaining(grand));
+    await page.setViewportSize({ width: 852, height: 393 });
+    await page.waitForTimeout(400);
+    // Cleo has no children: her grandparents stand above her parents here too
+    expect(await drawnIds(page)).toEqual(expect.arrayContaining(grand));
+    const whole = await drawer(page).evaluate((p) => {
+      const [lv, d] = [p.querySelector(".lv")!, p.querySelector(".draw")!];
+      return lv.scrollHeight <= lv.clientHeight + 1 && d.scrollWidth <= d.clientWidth + 1;
+    });
+    expect(whole).toBe(true);
+  });
+
   // R-0792
   test("puts the Family view full screen from a button between Back and Next, the whole page where the browser gives no full screen, and back again", async ({ page }, info) => {
     test.skip(info.project.name !== "phone", "the size is the describe's own");
