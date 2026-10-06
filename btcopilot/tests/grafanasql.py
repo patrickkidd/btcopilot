@@ -37,6 +37,8 @@ from btcopilot.schema import ItemKind
 
 SECONDS = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
 CALL = re.compile(r"\$__(\w+)\(")
+SELECT = re.compile(r"select\b", re.I)
+WORD = re.compile(r"\w")
 VARIABLE = re.compile(r"\$\{([A-Za-z]\w*)(?::(\w+))?\}|\$([A-Za-z]\w*)")
 
 
@@ -193,6 +195,26 @@ word_hit as (select s.statement_id, o.phrase from said s join objection o
              where st.sentence ~* '^\W*no\M' and mk[1] <> 'I'
                and lower(coalesce(pc.before,'')) !~ ('(^|[^a-z0-9''])' || lower(mk[1]) || '($|[^a-z0-9''])'))
 """
+
+
+def final(sql: str) -> str:
+    """The panel's own select: from the last `select` outside every bracket,
+    so the shared tables it opens with are left out."""
+    depth, at = 0, 0
+    for i, ch in enumerate(sql):
+        depth += {"(": 1, ")": -1}.get(ch, 0)
+        if (
+            depth == 0
+            and SELECT.match(sql, i)
+            and (i == 0 or not WORD.match(sql[i - 1]))
+        ):
+            at = i
+    return sql[at:]
+
+
+def by_version(sql: str) -> bool:
+    """Whether the panel's own select groups by prompt version."""
+    return bool(re.search(r"group by[^;]*prompt_version", final(sql), re.S | re.I))
 
 
 def fragments(tail: str) -> str:

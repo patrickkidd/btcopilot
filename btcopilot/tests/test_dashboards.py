@@ -173,7 +173,6 @@ OBJECTION = re.compile(
     r"objection\s*\(phrase\)\s*as\s*\(\s*values\s*(.*?\))\s*\)", re.S | re.I
 )
 PHRASE = re.compile(r"\('((?:[^']|'')+)'\)")
-BY_VERSION = re.compile(r"group by[^;]*prompt_version", re.S | re.I)
 
 
 def built() -> list[tuple[str, dict]]:
@@ -246,7 +245,7 @@ def test_a_pushback_panel_carries_the_app_objection_phrases(name, panel):
 
 
 @pytest.mark.parametrize(
-    "name, panel", [x for x in wave() if BY_VERSION.search(sql(x[1]))], ids=label
+    "name, panel", [x for x in wave() if grafanasql.by_version(sql(x[1]))], ids=label
 )
 def test_a_panel_by_prompt_version_holds_back_a_version_under_30_people(name, panel):
     # R-0800

@@ -138,8 +138,7 @@ def test_every_first_wave_panel_returns_rows(ids):
         for board, title, sql in queries()
         if board in FIRST_WAVE
         # a panel that holds back a prompt version under 30 people is empty here
-        and not re.search(r">=\s*30\b", sql)
-        and not run(sql, variables(boards()[board]))
+        and not grafanasql.by_version(sql) and not run(sql, variables(boards()[board]))
     ]
     assert not empty, "\n".join(empty)
 
