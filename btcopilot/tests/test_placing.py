@@ -19,7 +19,7 @@ PLACED = (
 
 
 def test_the_private_flow_rules_carry_the_placing_paragraph():
-    # R-0784
+    # R-0804
     path = REPO / "private" / "prompts" / "fragments" / "flow_core.md"
     if not key_present():
         pytest.skip("no key opens the private prompts")
@@ -30,7 +30,7 @@ def test_the_private_flow_rules_carry_the_placing_paragraph():
 
 
 def test_the_private_flow_rules_keep_the_observations_pairing_two_dated_facts():
-    # R-0785
+    # R-0805
     if not key_present():
         pytest.skip("no key opens the private prompts")
     fragments = REPO / "private" / "prompts" / "fragments"
@@ -47,7 +47,7 @@ def test_the_private_flow_rules_keep_the_observations_pairing_two_dated_facts():
 
 
 def test_a_sentence_placing_three_years_in_order_passes():
-    # R-0784
+    # R-0804
     assert places_in_time(
         f"That's a lot in a few years. {PLACED} How old were you?", YEARS
     )
@@ -67,7 +67,7 @@ def test_a_sentence_placing_three_years_in_order_passes():
     ],
 )
 def test_ages_and_steps_place_in_time_too(reply):
-    # R-0784
+    # R-0804
     assert places_in_time(reply, YEARS, born=1985)
 
 
@@ -75,7 +75,7 @@ EVENTS = [["wedding", "married"], ["Ivy"], ["move", "moved", "Tacoma"]]
 
 
 def test_three_events_in_record_order_with_a_time_marker_place_in_time():
-    # R-0784
+    # R-0804
     reply = "So by age six you'd been through the wedding, Ivy's arrival, and the move to Tacoma."
     assert places_in_time(reply, YEARS, born=1985, events=EVENTS)
     assert not places_in_time(
@@ -96,7 +96,7 @@ def test_three_events_in_record_order_with_a_time_marker_place_in_time():
 
 
 def test_ages_out_of_order_fail():
-    # R-0784
+    # R-0804
     assert not places_in_time(
         "At six you moved to Tacoma, at three your parents married, and at five Ivy came.",
         YEARS,
@@ -105,7 +105,7 @@ def test_ages_out_of_order_fail():
 
 
 def test_a_cause_word_fails_the_sentence():
-    # R-0784
+    # R-0804
     assert not places_in_time(
         "Your parents married in 1988 and your sister came in 1990, and the move in "
         "1991 happened because of your dad's job.",
@@ -114,14 +114,14 @@ def test_a_cause_word_fails_the_sentence():
 
 
 def test_two_years_are_not_a_placing():
-    # R-0784
+    # R-0804
     assert not places_in_time(
         "Your parents married in 1988 and your sister came in 1990.", YEARS
     )
 
 
 def test_years_out_of_order_fail():
-    # R-0784
+    # R-0804
     assert not places_in_time(
         "The move was in 1991, your parents married in 1988, and your sister came in 1990.",
         YEARS,

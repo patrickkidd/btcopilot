@@ -50,12 +50,12 @@ US = flow.line("America/New_York")
     ],
 )
 def test_the_cases_a_rule_must_not_match_do_not_fire(text):
-    # R-0790, R-0797
+    # R-0810, R-0811
     assert flow.risk(text) is None
 
 
 def test_each_group_fires_its_reply():
-    # R-0790, R-0797
+    # R-0810, R-0811
     found = flow.risk("Honestly I just want to die.")
     assert (found.group, found.reply, found.emergency) == (
         RiskGroup.Explicit,
@@ -79,20 +79,20 @@ def test_each_group_fires_its_reply():
 
 
 def test_a_means_counts_only_beside_a_phrase_about_dying():
-    # R-0790, R-0797
+    # R-0810, R-0811
     assert flow.risk("We drove over the bridge to Grandma's.") is None
     found = flow.risk("I want to die. I keep thinking about the bridge.")
     assert (found.group, found.emergency) == (RiskGroup.Plan, True)
 
 
 def test_the_persons_own_past_fires_the_less_explicit_reply():
-    # R-0790, R-0797
+    # R-0810, R-0811
     assert flow.risk("I tried to kill myself in 2010.").reply is RiskReply.Less
     assert flow.risk("I was suicidal in college.").reply is RiskReply.Less
 
 
 def test_the_line_follows_the_time_zone():
-    # R-0790, R-0797
+    # R-0810, R-0811
     assert flow.line("America/Toronto").country == "CA"
     assert flow.line("Europe/Dublin").say.startswith("call Samaritans on 116 123")
     unknown = flow.line(None)
@@ -101,7 +101,7 @@ def test_the_line_follows_the_time_zone():
 
 
 def test_protocol_passes_the_approved_replies_and_fails_the_rest():
-    # R-0790, R-0797
+    # R-0810, R-0811
     assert flow.protocol(EXPLICIT, US)
     assert flow.protocol(LESS, US)
     unknown = flow.line(None)
@@ -119,7 +119,7 @@ def test_protocol_passes_the_approved_replies_and_fails_the_rest():
 
 
 def test_tracked_rows_count_the_group_and_whether_the_reply_met_it():
-    # R-0790, R-0797
+    # R-0810, R-0811
     t0 = datetime.datetime(2026, 3, 2, 18, 0)
     messages = [
         Message(Role.Person, "I want to die and I have a gun.", t0),
@@ -146,7 +146,7 @@ def test_tracked_rows_count_the_group_and_whether_the_reply_met_it():
 
 
 def test_the_coach_reads_the_crisis_block_then_the_stay_block(session, test_user):
-    # R-0790, R-0797
+    # R-0810, R-0811
     test_user.timezone = "Europe/Dublin"
     db.session.commit()
     assert CRISIS not in turn(session, "We moved to Leeds in 1998.")
@@ -162,7 +162,7 @@ def test_the_coach_reads_the_crisis_block_then_the_stay_block(session, test_user
 
 
 def test_the_crisis_block_comes_before_the_todo_block(session):
-    # R-0790, R-0797
+    # R-0810, R-0811
     says(session, "We talked about my dad.", ago(days=3))
 
     read = turn(session, "I can't go on like this.")

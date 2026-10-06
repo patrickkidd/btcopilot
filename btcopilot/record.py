@@ -1287,7 +1287,7 @@ IMPRESSION = Note(
 )
 # Something the person said they will find out or do themselves: kept held in
 # their words, citing their message, asked when picked up, never on the page
-# or a card, and nothing the person writes on (R-0783).
+# or a card, and nothing the person writes on (R-0803).
 TODO = Note(
     "todo",
     QuestionState.Asked,
@@ -1427,7 +1427,7 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
 
 def _theirs(todo: dict, todo_id: str, state: QuestionState):
     """A todo is only ever something the person said: kept held when they say
-    it, resting on their message (R-0783)."""
+    it, resting on their message (R-0803)."""
     if state is not QuestionState.Held:
         raise Invalid(
             f"todo {todo_id} is kept held when the person says it; mark it asked "

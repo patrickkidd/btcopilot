@@ -2,7 +2,7 @@
 
 What the coach does when a person says they may want to end their life or harm themselves.
 Written so it can be published on the website, as California's companion chatbot law
-(Business and Professions Code section 22602(b)(2)) asks. Rulings: R-0790, R-0797.
+(Business and Professions Code section 22602(b)(2)) asks. Rulings: R-0810, R-0811.
 
 ## What starts it
 
@@ -95,5 +95,5 @@ no date or fact question, gave no advice).
 
 A stored row for each message that starts the protocol, and its panel on the quality dashboard,
 need a database change; they wait until database changes are allowed again after the early beta
-(R-0797). Until then the counts above are the record, and the number California asks for each
+(R-0811). Until then the counts above are the record, and the number California asks for each
 year (crisis referral notices shown, from 1 July 2027) is not yet kept in the database.

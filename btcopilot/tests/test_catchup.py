@@ -439,7 +439,7 @@ def todo(statement, text=ASK_MOM, **args):
 def test_a_todo_the_person_said_is_planned_and_one_shown_done_is_skipped(
     flask_app, tmp_path, kin, past
 ):
-    # R-0783
+    # R-0803
     session = db.session.get(Discussion, past["session"])
     mom = says(session, f"{ASK_MOM}.", "2026-09-13T10:00")
     photos = says(session, "I'm going to dig out the old photos.", "2026-09-13T10:05")
@@ -475,7 +475,7 @@ def test_a_todo_the_person_said_is_planned_and_one_shown_done_is_skipped(
 
 
 def test_no_more_than_three_todos_are_kept_per_record(flask_app, tmp_path, kin, past):
-    # R-0783
+    # R-0803
     session = db.session.get(Discussion, past["session"])
     told = [
         says(session, f"I'll ask about thing {n}.", f"2026-09-13T10:0{n}") for n in range(4)

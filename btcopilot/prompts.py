@@ -126,14 +126,14 @@ def onboarding(missing: list[str], person_id: int) -> str:
 
 def back(days: int, todos: str) -> str:
     """What the coach picks up first when the person comes back after a
-    sitting's gap: their own todos, oldest first (R-0783)."""
+    sitting's gap: their own todos, oldest first (R-0803)."""
     return files().text("back", days=days, todos=todos)
 
 
 def crisis(reply: str = "", said: str = "", line: str = "", emergency: str = "") -> str:
     """The approved crisis reply in the person's own words with the line for
     their country; with no reply, only the rules for the turn after one
-    (R-0790, R-0797)."""
+    (R-0810, R-0811)."""
     return files().text("crisis", reply=reply, said=said, line=line, emergency=emergency)
 
 

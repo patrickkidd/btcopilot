@@ -30,7 +30,7 @@ EXAMPLE = (
 
 
 def test_the_private_opening_says_what_this_is():
-    # R-0782, R-0781
+    # R-0802, R-0801
     if not key_present():
         pytest.skip("no key opens the private prompts")
     text = read(PRIVATE)
@@ -40,7 +40,7 @@ def test_the_private_opening_says_what_this_is():
 
 
 def test_the_public_prompt_says_what_this_is():
-    # R-0782, R-0781
+    # R-0802, R-0801
     text = PUBLIC.read_text()
     assert "What this is." in text
     assert "Don't lead with family or relationships." in text
@@ -48,7 +48,7 @@ def test_the_public_prompt_says_what_this_is():
 
 
 def test_onboarding_lets_the_sentence_ride_with_the_request():
-    # R-0782, R-0781
+    # R-0802, R-0801
     text = ONBOARDING.read_text()
     assert (
         "what this is and what builds up over a few conversations may come with that request"
@@ -58,7 +58,7 @@ def test_onboarding_lets_the_sentence_ride_with_the_request():
 
 
 def test_the_example_reply_passes():
-    # R-0782, R-0781
+    # R-0802, R-0801
     assert explains(EXAMPLE) and asks_hope(EXAMPLE)
 
 
@@ -76,12 +76,12 @@ def test_the_example_reply_passes():
     ],
 )
 def test_a_reply_that_leads_with_family_or_skips_the_hope_question_fails(reply):
-    # R-0782, R-0781
+    # R-0802, R-0801
     assert not (explains(reply) and asks_hope(reply))
 
 
 def test_a_question_closed_as_answered_keeps_the_message_it_answers(family, test_user):
-    # R-0782
+    # R-0802
     toolbox, said_ = speaking(family, test_user, "I want to stop dreading holidays")
     add(toolbox, "What are you hoping to get from this?", kind="thought")
 

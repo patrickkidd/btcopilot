@@ -120,7 +120,7 @@ def numbers(r: dict) -> list[float]:
 
 
 def test_every_panel_query_runs_on_postgres(ids):
-    # R-0800, R-0517
+    # R-0814, R-0517
     failed = []
     for board, title, sql in queries():
         try:
@@ -132,7 +132,7 @@ def test_every_panel_query_runs_on_postgres(ids):
 
 
 def test_every_first_wave_panel_returns_rows(ids):
-    # R-0800
+    # R-0814
     empty = [
         f"{board}: {title}"
         for board, title, sql in queries()
@@ -144,7 +144,7 @@ def test_every_first_wave_panel_returns_rows(ids):
 
 
 def test_the_shared_tables_run_and_leave_out_tests_and_scratch(ids):
-    # R-0800
+    # R-0814
     sittings = run(
         grafanasql.fragments("select user_id, nth from sit order by started")
     )
@@ -154,7 +154,7 @@ def test_the_shared_tables_run_and_leave_out_tests_and_scratch(ids):
 
 
 def test_the_log_rebuilds_the_records_questions_people_and_events(ids):
-    # R-0800
+    # R-0814
     rows = run(
         grafanasql.fragments(
             "select u.username, c.item_kind, count(distinct c.item_id) as n from cur c"
@@ -182,7 +182,7 @@ def test_the_log_rebuilds_the_records_questions_people_and_events(ids):
 
 
 def test_b2_word_hits_equal_flow_objection(ids):
-    # R-0800, R-0517
+    # R-0814, R-0517
     hits = {
         r["statement_id"]
         for r in run(grafanasql.fragments("select statement_id from word_hit"))
@@ -201,7 +201,7 @@ def test_b2_word_hits_equal_flow_objection(ids):
 
 @on("fd-people")
 def test_a1_topics_placed_count_the_sittings_each_topic_was_written_in(ids):
-    # R-0800
+    # R-0814
     rows = panel(
         "fd-people", "Topics placed in the record: sittings and writes per topic"
     )
@@ -217,7 +217,7 @@ def test_a1_topics_placed_count_the_sittings_each_topic_was_written_in(ids):
 
 @on("fd-people")
 def test_a3_most_named_people_count_the_sittings_naming_them(ids):
-    # R-0800
+    # R-0814
     rows = panel("fd-people", "Most-named people per record")
     assert 3 in numbers(row(rows, r"^Tom$"))
     assert 2 in numbers(row(rows, r"^Mary$"))
@@ -226,7 +226,7 @@ def test_a3_most_named_people_count_the_sittings_naming_them(ids):
 
 @on("fd-people")
 def test_b2_pushback_finds_each_objection_once(ids):
-    # R-0800, R-0517
+    # R-0814, R-0517
     rows = panel("fd-people", "Pushback: the objection phrases found")
     assert 1 in numbers(row(rows, r"i already told you"))
     assert 1 in numbers(row(rows, r"new date or name"))
@@ -236,7 +236,7 @@ def test_b2_pushback_finds_each_objection_once(ids):
 
 @on("fd-people")
 def test_d1_fact_questions_by_item_show_what_was_recorded_and_tapped(ids):
-    # R-0800
+    # R-0814
     rows = panel(
         "fd-people",
         "Fact questions by item: what the coach recorded and what people tapped",
@@ -250,7 +250,7 @@ def test_d1_fact_questions_by_item_show_what_was_recorded_and_tapped(ids):
 
 @on("fd-people")
 def test_d3_hand_corrections_count_a_removal_and_a_date(ids):
-    # R-0800, R-0517
+    # R-0814, R-0517
     rows = panel("fd-people", "What people correct, per 100 coach writes, by field")
     assert 1 in numbers(row(rows, r"^removed$"))
     assert 1 in numbers(row(rows, r"^dateTime$|date"))
@@ -258,7 +258,7 @@ def test_d3_hand_corrections_count_a_removal_and_a_date(ids):
 
 @on("fd-people")
 def test_e1_coverage_at_the_last_sitting(ids):
-    # R-0800
+    # R-0814
     rows = panel("fd-people", "How far each record got, at the last sitting")
     # Ann's last turn: (4 known + 1 said unknown + 0 declined) of 10; Bo's: (2 + 0 + 1) of 4
     assert {0.5, 50.0} & set(numbers(row(rows, grafanasql.ANN)))
@@ -267,7 +267,7 @@ def test_e1_coverage_at_the_last_sitting(ids):
 
 @on("fd-people")
 def test_e4_a_look_then_talk_about_the_same_person_counts(ids):
-    # R-0800
+    # R-0814
     rows = panel("fd-people", "Picture taps by name and by item kind")
     assert 1 in numbers(row(rows, r"^person_open$"))
     assert 1 in numbers(row(rows, r"^look$"))
@@ -275,7 +275,7 @@ def test_e4_a_look_then_talk_about_the_same_person_counts(ids):
 
 @on("fd-coach")
 def test_f1_fact_questions_the_coach_asked_by_item(ids):
-    # R-0800
+    # R-0814
     rows = panel("fd-coach", "Fact questions the coach asked, by item")
     assert numbers(row(rows, r"health"))[:1] == [1]
     assert numbers(row(rows, r"\bmet\b"))[:1] == [1]
@@ -283,14 +283,14 @@ def test_f1_fact_questions_the_coach_asked_by_item(ids):
 
 @on("fd-coach")
 def test_f4_the_guess_that_did_not_fit(ids):
-    # R-0800, R-0517
+    # R-0814, R-0517
     rows = panel("fd-coach", "How the coach's guesses fared")
     assert 1 in numbers(row(rows, r"doesn.t fit"))
 
 
 @on("fd-coach")
 def test_g1_record_tools_count_committed_calls(ids):
-    # R-0800, R-0517
+    # R-0814, R-0517
     rows = panel("fd-coach", "Record tools per 100 coach turns, by tool")
     # edit_person: Mary, Tom, Ann's parents, Sam, Joan, Rose; one edit_event refused
     assert 6 in numbers(row(rows, r"^edit_person$"))
@@ -299,7 +299,7 @@ def test_g1_record_tools_count_committed_calls(ids):
 
 @on("fd-coach")
 def test_g3_a_failed_turn_is_followed_by_silence(ids):
-    # R-0800, R-0517
+    # R-0814, R-0517
     rows = panel(
         "fd-coach", "Faults ranked by the share of people who sent nothing more"
     )
@@ -309,7 +309,7 @@ def test_g3_a_failed_turn_is_followed_by_silence(ids):
 
 @on("fd-coach")
 def test_h1_a_week_with_one_reply_has_its_words_as_median_and_90th(ids):
-    # R-0800
+    # R-0814
     rows = panel("fd-coach", "Words per coach reply, weekly median and 90th percentile")
     # Cy's week holds one reply, "Hi, what brings you here?": 5 words
     assert [r for r in rows if numbers(r).count(5.0) >= 2]
@@ -317,7 +317,7 @@ def test_h1_a_week_with_one_reply_has_its_words_as_median_and_90th(ids):
 
 @on("fd-return")
 def test_c1_how_sittings_end(ids):
-    # R-0800
+    # R-0814
     rows = panel("fd-return", "How sittings end")
     # Ann's three: asked, neither, a failed turn; Bo's wrote; Cy's asked
     assert 2 in numbers(row(rows, r"^asked"))
@@ -328,7 +328,7 @@ def test_c1_how_sittings_end(ids):
 
 @on("fd-return")
 def test_c3_active_silent_left(ids):
-    # R-0800
+    # R-0814
     rows = panel("fd-return", "Active, silent, left")
     # Bo spoke 3 days ago; Ann last spoke 35 days ago; Cy is no longer active
     for state in ("active", "silent", "left"):
@@ -337,7 +337,7 @@ def test_c3_active_silent_left(ids):
 
 @on("fd-return")
 def test_c3_days_between_sittings(ids):
-    # R-0800
+    # R-0814
     rows = panel("fd-return", "Days between sittings")
     # Ann: 2 days, then 23
     assert 1 in numbers(row(rows, r"^1.3"))
@@ -346,7 +346,7 @@ def test_c3_days_between_sittings(ids):
 
 @on("fd-return")
 def test_i1_from_invitation_to_second_sitting(ids):
-    # R-0800
+    # R-0814
     rows = panel("fd-return", "From invitation to second sitting")
     # used 3 (Ann, Bo, Cy; the unused and the test invitation left out),
     # a first message 3, a first write 2 (Ann, Bo), a second sitting 1 (Ann)

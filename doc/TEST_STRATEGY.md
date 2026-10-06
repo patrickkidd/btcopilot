@@ -18,7 +18,7 @@ at phone size only. Everything else asserts words, roles and geometry (visible w
 no box outside its parent, the 44px floor). The desktop project keeps its assertions
 but skips every screenshot and is not part of the gate; it runs by hand.
 
-## Saved replies of the live cases, 2026-10-06 (R-0799)
+## Saved replies of the live cases, 2026-10-06 (R-0813)
 
 The live cases' saved model replies in `private/replays/` are a local cache: git-ignored,
 never committed. A change to the prompt, a tool, the model or the effort stops every saved

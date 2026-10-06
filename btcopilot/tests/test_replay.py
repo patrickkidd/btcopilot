@@ -180,7 +180,7 @@ def aged(path):
 
 
 def test_serving_a_reply_refreshes_its_time(tmp_path):
-    # R-0799
+    # R-0813
     call(Replay(Mode.Replay, tmp_path, seal=False), Wire())
     (saved,) = tmp_path.glob("*.json")
     aged(saved)
@@ -189,7 +189,7 @@ def test_serving_a_reply_refreshes_its_time(tmp_path):
 
 
 def test_a_reply_unused_past_keep_is_deleted(tmp_path):
-    # R-0799
+    # R-0813
     call(Replay(Mode.Replay, tmp_path, seal=False), Wire())
     (saved,) = tmp_path.glob("*.json")
     fresh = tmp_path / "fresh-0.json"
@@ -200,7 +200,7 @@ def test_a_reply_unused_past_keep_is_deleted(tmp_path):
 
 
 def test_a_tracked_reply_is_never_deleted(tmp_path, monkeypatch):
-    # R-0799
+    # R-0813
     monkeypatch.setattr(replay, "REPO", tmp_path)
     store = tmp_path / "replays"
     store.mkdir()
@@ -215,7 +215,7 @@ def test_a_tracked_reply_is_never_deleted(tmp_path, monkeypatch):
 
 
 def test_pruning_an_empty_or_missing_store_works(tmp_path):
-    # R-0799
+    # R-0813
     Replay(Mode.Replay, tmp_path / "missing", seal=False).prune()
     Replay(Mode.Replay, tmp_path, seal=False).prune()
     assert not (tmp_path / "missing").exists()

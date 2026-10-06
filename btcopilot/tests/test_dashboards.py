@@ -110,7 +110,9 @@ def test_box_container_panels_name_each_compose_service_across_deploys():
         ]
         seen = [re.fullmatch(pattern, n).group(1) for n in names]
         assert seen == ["fd-app", "fd-worker", "fd-postgres", "fd-redis"]
-# The first wave of boards about users and the coach [R-0800]: each carries its
+
+
+# The first wave of boards about users and the coach [R-0814]: each carries its
 # panels, says its rule, reads one Postgres source, leaves out the test account
 # and scratch records, and keeps its copies of the topic map and the objection
 # phrases equal to the app's own.
@@ -199,7 +201,7 @@ def phrases(found: re.Match) -> tuple[str, ...]:
 
 @pytest.mark.parametrize("name, board", built(), ids=label)
 def test_a_first_wave_board_carries_its_panels_and_no_id(name, board):
-    # R-0800
+    # R-0814
     assert board["uid"] == name and "id" not in board
     titles = [p["title"] for p in board["panels"] if p.get("type") != "row"]
     assert sorted(titles) == sorted(FIRST_WAVE[name])
@@ -209,7 +211,7 @@ def test_a_first_wave_board_carries_its_panels_and_no_id(name, board):
 
 @pytest.mark.parametrize("name, panel", wave(), ids=label)
 def test_a_first_wave_panel_reads_one_source_and_says_its_rule(name, panel):
-    # R-0800
+    # R-0814
     assert panel["datasource"] == SOURCE
     assert all(t["datasource"] == SOURCE for t in panel["targets"])
     assert panel.get("description", "").strip()
@@ -217,7 +219,7 @@ def test_a_first_wave_panel_reads_one_source_and_says_its_rule(name, panel):
 
 @pytest.mark.parametrize("name, panel", wave(), ids=label)
 def test_a_first_wave_query_leaves_out_the_test_account_and_scratch(name, panel):
-    # R-0800, R-0517
+    # R-0814, R-0517
     words = sql(panel)
     assert "claude-test" in words and "scratch" in words
 
@@ -226,7 +228,7 @@ def test_a_first_wave_query_leaves_out_the_test_account_and_scratch(name, panel)
     "name, panel", [x for x in wave() if "topic_map" in sql(x[1])], ids=label
 )
 def test_a_topic_panel_carries_the_app_topic_map(name, panel):
-    # R-0800
+    # R-0814
     found = list(TOPIC_MAP.finditer(sql(panel)))
     assert found
     for each in found:
@@ -237,7 +239,7 @@ def test_a_topic_panel_carries_the_app_topic_map(name, panel):
     "name, panel", [x for x in wave() if "objection(" in sql(x[1])], ids=label
 )
 def test_a_pushback_panel_carries_the_app_objection_phrases(name, panel):
-    # R-0800, R-0517
+    # R-0814, R-0517
     found = list(OBJECTION.finditer(sql(panel)))
     assert found
     for each in found:
@@ -248,12 +250,12 @@ def test_a_pushback_panel_carries_the_app_objection_phrases(name, panel):
     "name, panel", [x for x in wave() if grafanasql.by_version(sql(x[1]))], ids=label
 )
 def test_a_panel_by_prompt_version_holds_back_a_version_under_30_people(name, panel):
-    # R-0800
+    # R-0814
     assert re.search(r">=\s*30\b", sql(panel))
 
 
 def test_a_bracket_inside_a_quoted_literal_does_not_hide_the_final_select():
-    # R-0800
+    # R-0814
     words = (
         "with t as (select prompt_version, text from statements"
         " where text ~ '[.?!)]' and text <> 'it''s )' group by prompt_version, text)"
@@ -264,10 +266,10 @@ def test_a_bracket_inside_a_quoted_literal_does_not_hide_the_final_select():
 
 
 def test_the_shared_tables_carry_the_app_objection_phrases():
-    # R-0800, R-0517
+    # R-0814, R-0517
     assert phrases(OBJECTION.search(grafanasql.FRAGMENTS)) == flow.OBJECTION
 
 
 def test_the_first_wave_has_forty_panels():
-    # R-0800
+    # R-0814
     assert sum(map(len, FIRST_WAVE.values())) == 40

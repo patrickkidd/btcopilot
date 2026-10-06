@@ -82,7 +82,7 @@ HOPE = r"\bhop(e|ing)\b|\bwant\b|\bget out of\b"
 
 def explains(reply: str) -> bool:
     """One sentence says what the coach does or what builds up, without leading
-    with family or relationships (R-0782, R-0781)."""
+    with family or relationships (R-0802, R-0801)."""
     said = [s for s in re.findall(r"[^.?!]+[.?!]?", reply) if re.search(BUILDS, s, re.I)]
     return bool(said) and all(
         len(re.findall(r"\bfamily\b", s, re.I)) <= 1 and not re.search("relationship", s, re.I)
@@ -91,7 +91,7 @@ def explains(reply: str) -> bool:
 
 
 def asks_hope(reply: str) -> bool:
-    """A question asks what the person is hoping to get from this (R-0782)."""
+    """A question asks what the person is hoping to get from this (R-0802)."""
     return any(re.search(HOPE, q, re.I) for q in questions(reply))
 
 
@@ -115,7 +115,7 @@ def places_in_time(
     reply: str, years: list[int], born: int | None = None, events: list[list[str]] = ()
 ) -> bool:
     """One sentence with no cause word puts the person's material in order of
-    time (R-0784): three or more distinct times in order, each one of the given
+    time (R-0804): three or more distinct times in order, each one of the given
     years, an age ("at five", "when I was twelve", "aged 9") counted from
     `born`, or a step ("a year later", "the next year", "two years after", "the
     year before") from the marker before it; or three or more of `events`,
@@ -150,7 +150,7 @@ def picks_up_todo(reply: str, todo_words: str) -> bool:
     """The reply's first question is about the person's todo: it and the
     sentence leading into it carry at least two of the todo's own words, each
     matched at the start of a word, and no other question comes before it
-    (R-0783)."""
+    (R-0803)."""
     led = re.search(r"([^.?!]*[.!]\s*)?[^.?!]*\?", reply)
     if led is None:
         return False

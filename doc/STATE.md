@@ -494,7 +494,7 @@ setting naming the server was missing from GitHub. Backup:
 
 **Pushed after the 05:40 deploy, not part of the app on the box**:
 - The paid behaviour suite saves each real response, sops-encrypted in private/replays (a local
-  cache, git-ignored, never committed [R-0799]) and keyed by a hash of the whole request, and replays it; LIVE_REPLAY picks replay (the default,
+  cache, git-ignored, never committed [R-0813]) and keyed by a hash of the whole request, and replays it; LIVE_REPLAY picks replay (the default,
   records what is missing), record or only; replayed calls go into the ledger at $0; the date
   the coach sees is pinned to 2026-09-25 in that suite (78ff857) [R-0531]. Two replay-only runs
   gave the same keys for each case's first call; later calls are unproven until one paid run is

@@ -54,7 +54,7 @@ class RiskReply(enum.StrEnum):
 
 @dataclasses.dataclass(frozen=True)
 class Phrase:
-    """One of the crisis protocol's phrases (R-0790, R-0797): `own` carries its
+    """One of the crisis protocol's phrases (R-0810, R-0811): `own` carries its
     own first person, `negated` its own negation, `paired` fires only beside
     a fired phrase 1 to 13, `less` always gets the less explicit reply."""
 
@@ -825,7 +825,7 @@ STEP = re.compile(
 
 def own_step(last3: list[Message], names, todo_turns) -> tuple[bool, bool]:
     """Whether the person's last three messages state their own next step with a
-    relative, and whether a todo was stored from that message (R-0783)."""
+    relative, and whether a todo was stored from that message (R-0803)."""
     said = [
         m
         for m in last3
@@ -923,7 +923,7 @@ def hits(text: str, names=()):
 
 def risk(text: str, names=()) -> Risk | None:
     """The group, the reply and the emergency sentence for the person's message,
-    or None when no phrase fires (R-0790, R-0797)."""
+    or None when no phrase fires (R-0810, R-0811)."""
     fired = list(hits(text, names))
     core = [h for h in fired if not h[0].paired]
     if not any(p.n <= 13 for p, _, _ in core):
@@ -962,7 +962,7 @@ def fact_questions(reply: str) -> int:
 
 def protocol(reply: str, crisis: Line) -> bool:
     """The line for the country named, exactly one question, no date or fact
-    question, no advice (R-0790, R-0797)."""
+    question, no advice (R-0810, R-0811)."""
     return (
         all(has(reply, m) for m in crisis.marks)
         and sum(map(asks, sentences(reply))) == 1
@@ -974,7 +974,7 @@ def protocol(reply: str, crisis: Line) -> bool:
 # F12
 def paired_with_cause(reply: str, years, events) -> int:
     """Coach sentences setting two stored years or two record events side by
-    side with a cause word (R-0784)."""
+    side with a cause word (R-0804)."""
     n = 0
     for s in sentences(reply):
         if not (CAUSE.search(s) or found(s, CONNECTIVES)):

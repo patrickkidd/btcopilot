@@ -1,6 +1,6 @@
 ---
 name: back
-description: Appended to the coach's system prompt when the person's message opens a new sitting and is not the thread's first; lists their own open todos, oldest first (R-0783).
+description: Appended to the coach's system prompt when the person's message opens a new sitting and is not the thread's first; lists their own open todos, oldest first (R-0803).
 inputs:
   days:
     type: integer

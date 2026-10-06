@@ -6,7 +6,7 @@ already answered (R-0760), and a story the talk moved past is kept to come
 back to (R-0770), the days the coach asked an open question again and the
 person passed over it are kept on it (R-0774), and what the person said they
 would find out or do themselves and has not yet reported on is kept as their
-todo (R-0783). The dry run makes the one model call per record and saves a
+todo (R-0803). The dry run makes the one model call per record and saves a
 plan a person can read; the apply writes exactly that plan, each item one
 change row, with no model call. Chat messages are never changed."""
 

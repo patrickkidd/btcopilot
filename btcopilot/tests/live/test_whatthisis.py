@@ -29,7 +29,7 @@ WANT = "I want to stop dreading holidays"
 
 @passes(3, of=3)
 def test_the_first_reply_says_what_this_is_and_the_hope_is_asked_by_the_third(coach):
-    # R-0782, R-0781
+    # R-0802, R-0801
     coach.record()
 
     replies = [coach.say(OPENING)]
@@ -43,7 +43,7 @@ def test_the_first_reply_says_what_this_is_and_the_hope_is_asked_by_the_third(co
 
 @passes(2, of=3)
 def test_the_hope_question_is_closed_with_their_own_words(coach):
-    # R-0782, R-0781
+    # R-0802, R-0801
     coach.record()
     talk = Discussion.query.filter_by(diagram_id=coach.user.free_diagram_id).one()
     for speaker, text in (

@@ -15,7 +15,7 @@ Dump mode spends nothing: a call with no saved response writes its whole request
 to a file named by the key it would be saved under, and the case awaits an
 answer written on the Claude Code subscription (answer.py).
 
-The store is a local cache, ignored by the repo (R-0799): a reply is touched
+The store is a local cache, ignored by the repo (R-0813): a reply is touched
 each time it is served, and once per run every reply neither served nor written
 in the last KEEP is deleted, unless the repo tracks it."""
 

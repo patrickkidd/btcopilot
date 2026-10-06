@@ -511,7 +511,7 @@ class CoachTurn:
     def _crisis(self, answered: Statement, data: DiagramData) -> str:
         """The crisis block when the person's message fires a phrase, the
         stay-with-it block when only their message before did, else nothing
-        (R-0790, R-0797). It goes before every other first-place block."""
+        (R-0810, R-0811). It goes before every other first-place block."""
         names = [p["name"] for p in data.people if p.get("name")]
         found = flow.risk(chips.plain(self.statement), names)
         if found:
@@ -678,7 +678,7 @@ class CoachTurn:
 def away(said: Statement) -> datetime.timedelta | None:
     """How long the family was quiet before these words; a message the coach
     sent unasked is not the family speaking. None for the thread's first
-    words (R-0783)."""
+    words (R-0803)."""
     sent = db.session.query(ProactiveMessage.statement_id).filter(
         ProactiveMessage.statement_id.isnot(None)
     )

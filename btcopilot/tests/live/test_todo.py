@@ -54,7 +54,7 @@ def kept(coach) -> None:
 
 @passes(3, of=3)
 def test_a_todo_the_person_says_is_kept_held_in_their_words(coach):
-    # R-0783
+    # R-0803
     coach.record()
     sitting(coach, EARLIER[:2])
     coach.say(EARLIER[2])
@@ -68,7 +68,7 @@ def test_a_todo_the_person_says_is_kept_held_in_their_words(coach):
 
 @passes(3, of=3)
 def test_the_person_back_a_day_later_is_asked_about_their_todo_first(coach):
-    # R-0783
+    # R-0803
     coach.record()
     kept(coach)
 
@@ -78,7 +78,7 @@ def test_the_person_back_a_day_later_is_asked_about_their_todo_first(coach):
 
 @passes(2, of=3)
 def test_the_person_back_with_the_answer_has_it_recorded_and_the_todo_closed(coach):
-    # R-0783
+    # R-0803
     coach.record()
     kept(coach)
 

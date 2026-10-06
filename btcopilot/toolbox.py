@@ -1584,7 +1584,7 @@ class Toolbox:
 
     def _add_todo(self, args: dict) -> tuple[str, dict]:
         """Something the person just said they will find out or do themselves,
-        in their words, resting on their message (R-0783)."""
+        in their words, resting on their message (R-0803)."""
         if self.said is None:
             raise ToolError(
                 "A todo rests on the person's message that said it: no message is "

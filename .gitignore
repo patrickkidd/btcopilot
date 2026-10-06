@@ -212,5 +212,5 @@ doc/archive/2026-09-trace.json
 /web/mockup/.exact-*/
 /web/mockup/dist/
 
-# Saved model replies for the live cases: a local cache, never committed (R-0799)
+# Saved model replies for the live cases: a local cache, never committed (R-0813)
 private/replays/

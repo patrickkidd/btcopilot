@@ -24,18 +24,18 @@ def hooks() -> set[str]:
 
 
 def test_every_hook_has_a_topic_or_is_named_as_having_none():
-    # R-0800, R-0517
+    # R-0814, R-0517
     mapped = {hook for hook, _ in topics.TOPICS} | set(topics.NO_TOPIC)
     assert hooks() - mapped == set()
 
 
 def test_no_hook_both_has_a_topic_and_none():
-    # R-0800
+    # R-0814
     assert {hook for hook, _ in topics.TOPICS} & set(topics.NO_TOPIC) == set()
 
 
 def test_the_sql_copy_holds_every_pair():
-    # R-0800
+    # R-0814
     sql = topics.values()
     assert sql.startswith("topic_map(hook, topic) as (values ")
     assert sql.count("('") == len(topics.TOPICS)

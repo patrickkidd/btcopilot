@@ -1,6 +1,6 @@
 ---
 name: crisis
-description: Appended to the coach's system prompt when the person's message says they may want to die or harm themselves, with the approved reply for that case; and, with no reply, on the turn after one, with only the rules for staying with them (R-0790, R-0797).
+description: Appended to the coach's system prompt when the person's message says they may want to die or harm themselves, with the approved reply for that case; and, with no reply, on the turn after one, with only the rules for staying with them (R-0810, R-0811).
 inputs:
   reply:
     type: string

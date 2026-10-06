@@ -45,7 +45,7 @@ def test_sessions_split_at_sitting_gap():
 
 
 def test_feeling_questions():
-    # R-0669, R-0787
+    # R-0669, R-0807
     assert (
         flow.feeling_questions("How did you feel when Ruth left?", "Ruth left in 2011.")
         == 1
@@ -59,7 +59,7 @@ def test_feeling_questions():
 
 
 def test_subjective():
-    # R-0669, R-0787
+    # R-0669, R-0807
     assert flow.subjective("I was devastated. It hurt for years.") == 1
     assert flow.subjective("When Dad left in 2009 I felt lost.") == 1 / 2
     assert flow.subjective("Tomas moved to Leeds. That was in March.", ["Tomas"]) == 0
@@ -69,7 +69,7 @@ def test_subjective():
 
 
 def test_rows_subjectivity_after_a_feeling_question():
-    # R-0669, R-0787
+    # R-0669, R-0807
     rows = flow.rows(
         [
             coach("What happened next?", 0),
@@ -85,7 +85,7 @@ def test_rows_subjectivity_after_a_feeling_question():
 
 
 def test_why_questions():
-    # R-0669, R-0786
+    # R-0669, R-0806
     assert flow.why_questions("Why did your brother move to Leeds?", "He moved.") == 1
     assert flow.why_questions("What year did your brother move?", "He moved.") == 0
     assert flow.why_questions("When you asked 'why me', what did she say?", "") == 1
@@ -107,7 +107,7 @@ def test_quoted_words_and_contractions():
 
 
 def test_advice():
-    # R-0798, R-0669
+    # R-0812, R-0669
     assert flow.advice("You should call your brother this week.") == 1
     assert flow.advice("When did you last speak with your brother?") == 0
     assert flow.advice("Did you try to call her?") == 0
@@ -220,7 +220,7 @@ def test_agreement():
 
 
 def test_own_step():
-    # R-0669, R-0783
+    # R-0669, R-0803
     said = [
         person("Thanks."),
         person("I'll ask Aunt Ruth on Sunday when they moved.", 1, turn_id=4),
@@ -244,14 +244,14 @@ def test_own_step():
 
 
 def test_coach_assigns():
-    # R-0669, R-0783
+    # R-0669, R-0803
     assert flow.coach_assigns(["You could ask your uncle when he left."], [])
     assert flow.coach_assigns(["Maybe ask your aunt."], [])
     assert not flow.coach_assigns(["What would you want to find out next?"], [])
 
 
 def test_returned():
-    # R-0669, R-0788
+    # R-0669, R-0808
     starts = [at(0), at(days=3), at(days=9), at(days=20)]
     assert flow.returned(starts, at(days=40)) == {
         "week": Return.Yes,
@@ -268,14 +268,14 @@ def test_returned():
 
 
 def test_risk():
-    # R-0669, R-0790, R-0797
+    # R-0669, R-0810, R-0811
     assert flow.risk("I can't go on like this.")
     assert not flow.risk("My father couldn't go on, he died by suicide in 2015.")
     assert flow.risk("Sometimes I think everyone would be better off without me.")
 
 
 def test_paired_with_cause():
-    # R-0669, R-0784
+    # R-0669, R-0804
     events = (("moved", "Leeds"), ("grandmother", "died"))
     caused = flow.paired_with_cause(
         "Your move to Leeds happened because your grandmother died.", [], events
@@ -404,7 +404,7 @@ def test_rows_split_by_model_and_prompt():
 
 
 def test_account_row():
-    # R-0669, R-0788
+    # R-0669, R-0808
     messages = [coach("Hello.", 0), person("Hi.", 1), person("Back again.", 0, days=2)]
     row = flow.account_row(messages, at(days=40))
     assert (row["week"], row["month"], row["fourth"]) == (Return.Yes, Return.Yes, False)

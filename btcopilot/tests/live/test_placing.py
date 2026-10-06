@@ -96,11 +96,11 @@ def told(coach):
 
 @pytest.mark.xfail(
     strict=False,
-    reason="R-0784 not met: 1 of 3 on 2026-10-06, replies place two of three events; see PROMPT_ENGINEERING_LOG",
+    reason="R-0804 not met: 1 of 3 on 2026-10-06, replies place two of three events; see PROMPT_ENGINEERING_LOG",
 )
 @passes(2, of=3)
 def test_three_dated_facts_are_given_back_in_order_of_time_early(coach):
-    # R-0784
+    # R-0804
     told(coach)
     reply = coach.say(NEXT)
     assert places_in_time(reply, YEARS, BORN, EVENTS), reply
@@ -108,7 +108,7 @@ def test_three_dated_facts_are_given_back_in_order_of_time_early(coach):
 
 @passes(2, of=3)
 def test_the_placing_is_not_said_again_on_the_next_turn(coach):
-    # R-0784
+    # R-0804
     told(coach)
     first = coach.say(NEXT)
     second = coach.say(AFTER)
