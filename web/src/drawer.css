@@ -41,6 +41,11 @@
 .pbp .draw svg { display: block; width: 100%; height: 100%; }
 
 .pbp .scroll .step, .pbp > .foot .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
+/* on a phone turned sideways, an iPad or a desktop, the Family view takes the
+   whole screen, so its frame has all the width there is (R-0784) */
+@media (min-width: 700px) {
+  .pbp.whole { position: fixed; inset: 0; z-index: 90; }
+}
 .pbp > .foot { flex: none; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .pbp > .foot .step { justify-content: space-between; }
 .pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }

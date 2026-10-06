@@ -186,10 +186,14 @@ export function frameOn(
   marks: SVGGraphicsElement[] = [],
   /** Others the frame holds too, but only when everyone fits. */
   also: string[] = [],
+  /** Stay where it stands while `ids` and their `marks` are all in sight. */
+  stay = false,
 ): void {
   if (frame.scrollWidth <= frame.clientWidth) return;
   const svg = frame.querySelector<SVGSVGElement>("svg")!;
   const w = frame.clientWidth;
+  const seen = ([p, q]: [number, number]) => p >= frame.scrollLeft - 0.5 && q <= frame.scrollLeft + w + 0.5;
+  if (stay && [...ids.map((id) => span(frame, svg, id)), ...marks.map((m) => reach(frame, svg, [m]))].every(seen)) return;
   const people = ids.map((id) => span(frame, svg, id));
   const base = [...people, ...marks.map((m) => reach(frame, svg, [m]))];
   const others = also.map((id) => span(frame, svg, id));
@@ -298,9 +302,21 @@ export class Drawer {
     const c = family(tl);
     const whole = new Told(tl, c, true);
     this.centre = whole.cast.index;
-    this.frame = whole.centred(this.centre);
+    this.frame = null;
     this.moved = null;
     this.show(whole, null, familyStart(tl, c));
+  }
+
+  /** The four generations around `id` when they fit the drawer's width with
+   * names at their readable size, else the three (R-0784). */
+  private framed(id: string): Told {
+    const told = this.told!;
+    const four = told.centred(id, true);
+    const three = told.centred(id);
+    if (Object.keys(four.cast.people).length === Object.keys(three.cast.people).length) return three;
+    const lv = this.panel.querySelector<HTMLElement>(".lv")!;
+    const padding = parseFloat(getComputedStyle(lv.querySelector<HTMLElement>(".draw")!).paddingTop);
+    return lv.clientWidth / four.layout.vw >= leastScale(four.layout, padding) ? four : three;
   }
 
   /** The frame put on the three generations around `id`, at the same date. */
@@ -308,7 +324,7 @@ export class Drawer {
     if (id === this.centre) return;
     const at = from?.getBoundingClientRect();
     this.centre = id;
-    this.frame = this.told!.centred(id);
+    this.frame = null;
     this.height = null;
     this.moved = { id, x: at ? at.left + at.width / 2 : NaN, y: at ? at.top + at.height / 2 : NaN };
     this.render(false);
@@ -372,6 +388,7 @@ export class Drawer {
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
     q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
     // the Family view draws one frame over every date (R-0783)
+    if (told.whole) this.frame ??= this.framed(this.centre);
     const view = told.whole ? this.frame! : told;
     const shot = view.shot(this.i);
     if (told.whole) {
@@ -418,6 +435,8 @@ export class Drawer {
         shot.mover ? [...draw.querySelectorAll<SVGGraphicsElement>(`.fore [data-mark^="move:${CSS.escape(shot.mover)}>"]`)] : [],
         // everyone the step involves, when they all fit
         shot.involved,
+        // the Family view's one frame holds still while a date's people are in sight (R-0784)
+        told.whole && glide,
       );
   }
 

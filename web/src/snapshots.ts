@@ -241,14 +241,20 @@ const peopleOf = (m: Step["marks"][number]): string[] => {
 
 /** The three generations around one person, the Family view's frame
  * (R-0783): them, their parents, their brothers and sisters, their partners
- * and their children, them first. */
-export function circle(r: Family, id: string): string[] {
+ * and their children, them first; with `grand`, their grandparents too, four
+ * generations (R-0784). */
+export function circle(r: Family, id: string, grand = false): string[] {
   const bonds = r.tl.pair_bonds;
   const of = (pb: PairBond) => [pb.person_a, pb.person_b].filter((p): p is number => p != null).map(key);
   const kids = (pb: PairBond) => r.tl.people.filter((o) => o.parents === pb.id).map((o) => key(o.id));
+  const born = (who: string) => bonds.find((pb) => pb.id === r.people.get(who)?.parents);
   const out = new Set([id]);
-  const up = bonds.find((pb) => pb.id === r.people.get(id)?.parents);
+  const up = born(id);
   if (up) [...of(up), ...kids(up)].forEach((q) => out.add(q));
+  if (up && grand) of(up).forEach((p) => {
+    const top = born(p);
+    if (top) of(top).forEach((q) => out.add(q));
+  });
   bonds.filter((pb) => of(pb).includes(id)).forEach((pb) => [...of(pb), ...kids(pb)].forEach((q) => out.add(q)));
   return [...out];
 }
@@ -325,8 +331,8 @@ export class Told {
   /** The whole family drawn as the three generations around `id`, one
    * frame over every date, each date's shifts among its people playing on it
    * in place (R-0783). */
-  centred(id: string): Told {
-    return new Told(this.tl, this.told, true, circle(new Family(this.tl), id));
+  centred(id: string, grand = false): Told {
+    return new Told(this.tl, this.told, true, circle(new Family(this.tl), id, grand));
   }
 
   /** Everyone a date's events touch whom this telling does not draw. */
