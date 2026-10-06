@@ -60,3 +60,19 @@ def asks_most_first(reply: str) -> bool:
 def title_retry(detail: dict) -> bool:
     """A refused event the coach then wrote with a title in the same turn."""
     return "needs a title" in (detail.get("refusal") or "") and bool(detail.get("retried"))
+
+
+BUILDS = r"\bpicture\b|\bover a few conversations\b|\bover time\b"
+HOPE = r"\bhop(e|ing)\b|\bwant\b|\bget out of\b"
+
+
+def explains_and_asks_hope(reply: str) -> bool:
+    """One sentence says what the coach does or what builds up, without leading
+    with family or relationships, and a question asks what the person is
+    hoping for (R-0782, R-0781)."""
+    said = [s for s in re.findall(r"[^.?!]+[.?!]?", reply) if re.search(BUILDS, s, re.I)]
+    plain = all(
+        len(re.findall(r"\bfamily\b", s, re.I)) <= 1 and not re.search("relationship", s, re.I)
+        for s in said
+    )
+    return bool(said) and plain and any(re.search(HOPE, q, re.I) for q in questions(reply))
