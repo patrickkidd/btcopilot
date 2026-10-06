@@ -238,10 +238,10 @@ const peopleOf = (m: Step["marks"][number]): string[] => {
 };
 
 /** Three generations around `seeds` (R-0779): each one's parents, partners,
- * brothers and sisters, and children, seeds first; a fourth only when the
- * seeds themselves are three generations apart, as a grandparent and a
- * grandchild are. Above the seeds one generation is drawn; below them, their
- * children only when they all stand in one generation. */
+ * brothers and sisters, and children, seeds first; more only when the seeds
+ * themselves span more, as a great-grandparent and a great-grandchild do. The
+ * generation above the seeds is drawn while they span fewer than three, the
+ * one below only while they all stand in one. */
 export function circle(r: Family, seeds: string[]): string[] {
   const bonds = r.tl.pair_bonds;
   const of = (pb: PairBond) => [pb.person_a, pb.person_b].filter((p): p is number => p != null).map(key);
@@ -271,8 +271,10 @@ export function circle(r: Family, seeds: string[]): string[] {
   }
   const at = seeds.filter((id) => gen.has(id)).map((id) => gen.get(id)!);
   const [lo, hi] = [Math.min(...at), Math.max(...at)];
+  // three generations, or as many as the seeds themselves span
+  const first = hi - lo >= 2 ? lo : lo - 1;
   const last = hi === lo ? hi + 1 : hi;
-  return [...out].filter((id) => !gen.has(id) || (gen.get(id)! >= lo - 1 && gen.get(id)! <= last));
+  return [...out].filter((id) => !gen.has(id) || (gen.get(id)! >= first && gen.get(id)! <= last));
 }
 
 const isArrow = (m: Step["marks"][number]): m is Arrow => m.k === Mark.Toward || m.k === Mark.Away;

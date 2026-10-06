@@ -1410,13 +1410,18 @@ describe("the whole family stepped through dates", () => {
   });
 
   // R-0779
-  it("draws a step between a grandparent and a grandchild across the generation between them", () => {
+  it("draws a step between a grandparent and a grandchild across the generation between them, and no further", () => {
     const tl = record();
     tl.events.push(event(305, "2012-04-01", "shift", ERROL, { relationship: "toward", relationshipTargets: [CORINNE], title: "Called", description: "Called Corinne" }));
+    // Errol's own parents, who would be a fourth generation
+    tl.people.push({ ...tl.people[0], id: 9701, name: "Abel", gender: "male", parents: null, primary: false }, { ...tl.people[0], id: 9702, name: "Ada", gender: "female", parents: null, primary: false });
+    tl.pair_bonds.push({ ...tl.pair_bonds[0], id: 9703, person_a: 9701, person_b: 9702, married: true });
+    tl.people.find((p) => p.id === ERROL)!.parents = 9703;
     const t = whole(tl);
     const v = t.around(stepOf(t, 305));
     const drawn = Object.keys(v.cast.people).map(Number);
     expect(drawn).toEqual(expect.arrayContaining([ERROL, CORINNE, DELPHINE]));
+    expect(drawn).not.toContain(9701);
     expect(new Set(Object.values(v.layout.y)).size).toBe(3);
   });
   const stepOf = (t: Told, id: number) => t.told.snapshots.findIndex((s) => s.event_ids.includes(id));
