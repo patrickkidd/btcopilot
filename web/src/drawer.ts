@@ -178,13 +178,24 @@ function reach(frame: HTMLElement, svg: SVGSVGElement, marks: Iterable<SVGGraphi
  * and ages whole inside the frame; when they reach wider than it, on `who`
  * and their words, as near the rest as that allows (R-0759). The play-by-play,
  * the Family drawer and the case report's pictures all open this way. */
-export function frameOn(frame: HTMLElement, ids: string[], who: string, glide: boolean, marks: SVGGraphicsElement[] = []): void {
+export function frameOn(
+  frame: HTMLElement,
+  ids: string[],
+  who: string,
+  glide: boolean,
+  marks: SVGGraphicsElement[] = [],
+  /** Others the frame holds too, but only when everyone fits. */
+  also: string[] = [],
+): void {
   if (frame.scrollWidth <= frame.clientWidth) return;
   const svg = frame.querySelector<SVGSVGElement>("svg")!;
-  const spans = [...ids.map((id) => span(frame, svg, id)), ...marks.map((m) => reach(frame, svg, [m]))];
+  const w = frame.clientWidth;
+  const base = [...ids.map((id) => span(frame, svg, id)), ...marks.map((m) => reach(frame, svg, [m]))];
+  const every = [...base, ...also.map((id) => span(frame, svg, id))];
+  const fits = (s: [number, number][]) => Math.max(...s.map((x) => x[1])) - Math.min(...s.map((x) => x[0])) <= w;
+  const spans = fits(every) ? every : base;
   const lo = Math.min(...spans.map((s) => s[0]));
   const hi = Math.max(...spans.map((s) => s[1]));
-  const w = frame.clientWidth;
   const [wl, wh] = span(frame, svg, who);
   const mid = hi - lo <= w ? (lo + hi) / 2 : Math.min(Math.max((lo + hi) / 2, wh - w / 2), wl + w / 2);
   const end = frame.scrollWidth - w;
@@ -357,9 +368,22 @@ export class Drawer {
     const who = shot.mover ?? shot.who;
     draw.dataset.who = who;
     const ids = [...(shot.mover ? [shot.mover, ...shot.reach, ...lit] : lit.length ? lit : [shot.who]), ...shot.couple];
-    if (this.focus) frameOn(draw, this.focus, this.focus[0], false);
+    // a tapped person opens with their parents and partners, as a step opens with its people
+    const kin = (id: string) => [
+      ...view.cast.kids.filter((k) => k.kids.includes(id)).flatMap((k) => k.of),
+      ...view.cast.bonds.filter((b) => b.a === id || b.b === id).flatMap((b) => [b.a, b.b]),
+    ];
+    if (this.focus) frameOn(draw, [...new Set([...this.focus, ...this.focus.flatMap(kin)])].filter((id) => !id.startsWith("unknown-")), this.focus[0], false);
     else
-      frameOn(draw, [...new Set(ids)], who, glide, shot.mover ? [...draw.querySelectorAll<SVGGraphicsElement>(`.fore [data-mark^="move:${CSS.escape(shot.mover)}>"]`)] : []);
+      frameOn(
+        draw,
+        [...new Set(ids)],
+        who,
+        glide,
+        shot.mover ? [...draw.querySelectorAll<SVGGraphicsElement>(`.fore [data-mark^="move:${CSS.escape(shot.mover)}>"]`)] : [],
+        // everyone the step involves, when they all fit
+        shot.involved,
+      );
   }
 
   private fit(L: Layout): void {

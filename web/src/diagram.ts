@@ -913,7 +913,8 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   const { gen, rows } = plan;
   const half = (id: string) => d.half(P[id]);
   // ruled 2026-09-26: first names; a surname initial only for two people in one
-  // row who share a first name. A stand-in is named by the nearest named person
+  // picture who share a first name, in one row or not, as a father and his
+  // grandfather both called Robert (FD-371 review, 2026-10-05). A stand-in is named by the nearest named person
   // and the relation, in the record's own words: "Jim O'Malley's partner" is
   // "Jim's partner", "Catherine's mother's partner" stays whole (R-0766).
   const standIn = (n: string) => /'s /.test(n);
@@ -929,7 +930,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
     const twin =
       parts.length > 1 &&
       !standIn(P[id].name) &&
-      ids.some((o) => o !== id && gen[o] === gen[id] && shown[o] === shown[id]);
+      ids.some((o) => o !== id && shown[o] === shown[id]);
     P[id] = {
       ...P[id],
       name: twin ? `${shown[id]} ${parts[parts.length - 1].charAt(0)}.` : shown[id],

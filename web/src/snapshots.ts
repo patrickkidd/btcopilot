@@ -40,6 +40,8 @@ export interface Shot {
   reach: string[];
   /** Both partners of a couple the step marries, separates or divorces. */
   couple: string[];
+  /** Everyone the step's marks are drawn on or between. */
+  involved: string[];
 }
 
 interface Step {
@@ -491,6 +493,7 @@ export class Told {
       // a move away runs off the far side of its mover, not toward the other
       reach: [...now.marks.filter(isArrow), ...now.marks.filter(isKin)].flatMap((m) => (m.to && m.k !== Mark.Away ? [m.to] : [])),
       couple: [...new Set(pairs.flatMap((m) => [m.a, m.b]))],
+      involved: [...new Set(now.marks.flatMap(peopleOf))].filter((id) => id in this.cast.people),
       date: now.date,
       gap: i > 0 ? gapText(this.steps[i - 1].t, now.t) : null,
       fact: snap.fact,
@@ -577,6 +580,9 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
   const places: Place[] = [];
   const kin: Kin[] = [];
   const anxious = new Set<string>();
+  // an event's words show on their own step only (R-0682): a drawing of one
+  // date makes room for that date's words, not for every earlier date's
+  const said = (s: Step) => !keep || s === steps[steps.length - 1];
   steps.forEach((s) =>
     s.marks.forEach((m) => {
       if (isArrow(m)) moves.push(m);
@@ -586,6 +592,7 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
       if (!isPlaced(m)) return;
       if (m.k === Mark.Anxiety || m.k === Mark.AnxietyDown) anxious.add(m.who);
       if (m.k === Mark.Up || m.k === Mark.Down) crossed.add(m.who);
+      if (m.k === Mark.Event && !said(s)) return;
       if (m.k === Mark.Up || m.k === Mark.Down || m.k === Mark.Event) marked.add(m.who);
       if (m.k === Mark.Event) words[m.who] = Math.max(words[m.who] ?? 0, m.word!.length);
     }),

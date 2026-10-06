@@ -193,7 +193,7 @@ describe("names", () => {
   });
 
   // R-0548
-  it("carry a surname initial only for two people in one row who share a first name", () => {
+  it("carry a surname initial only for two people in one picture who share a first name, in one row or not", () => {
     const L = layout(
       base({
         a: shape("Anna Kerr", Sex.Male, 1950),
@@ -202,7 +202,7 @@ describe("names", () => {
         d: shape("Theo Kerr", Sex.Male, 1979),
       }),
     );
-    expect([L.P.a.name, L.P.b.name, L.P.c.name]).toEqual(["Anna K.", "Anna L.", "Anna"]);
+    expect([L.P.a.name, L.P.b.name, L.P.c.name, L.P.d.name]).toEqual(["Anna K.", "Anna L.", "Anna K.", "Theo"]);
   });
 
   // R-0766, R-0759
@@ -1404,6 +1404,20 @@ describe("the whole family stepped through dates", () => {
     return tl;
   };
   const whole = (tl = record()) => new Told(tl, wholeFamily(tl), true);
+
+  // R-0781, R-0682
+  it("makes room on a date for that date's own words only, never an earlier date's", () => {
+    const tl = record();
+    tl.events.push(
+      event(306, "2001-03-01", "shift", THEO, { relationship: "toward", relationshipTargets: [DELPHINE], functioning: "up", title: "Started calling his mother every single evening for an hour", description: "Started calling his mother every single evening for an hour" }),
+      event(307, "2003-03-01", "shift", THEO, { relationship: "toward", relationshipTargets: [DELPHINE], title: "Called", description: "Called" }),
+    );
+    const t = whole(tl);
+    const wide = t.around(stepOf(t, 306)).layout.vw;
+    const later = t.around(stepOf(t, 307)).layout.vw;
+    expect(wide).toBeGreaterThan(VIEW);
+    expect(later).toBeLessThanOrEqual(VIEW);
+  });
 
   // R-0779
   it("draws a step between a mother and her son without his children, which would make a fourth generation", () => {
