@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { closeX, pathRow } from "../src/dom";
-import { leastScale } from "../src/diagram";
-import { below, head, PAN, pictureHeight, pointLine, topLine, yearsLine } from "../src/drawer";
+import { FIT, fitScale, leastScale, NAME } from "../src/diagram";
+import { below, head, PAN, pointLine, topLine, yearsLine } from "../src/drawer";
 import { family, Told, untold } from "../src/snapshots";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
@@ -57,27 +57,27 @@ it("dims the years' other events and rings this snapshot's", () => {
   expect(line).toContain('class="wgap"');
 });
 
-// R-0561
-it("shrinks the picture to leave the caption room, down to a floor, then lets the drawer scroll", () => {
-  expect(pictureHeight(300, 500, [100], 250)).toBe(300);
-  expect(pictureHeight(300, 500, [240], 250)).toBe(260);
-  expect(pictureHeight(300, 500, [300], 250)).toBe(250);
-  expect(pictureHeight(300, 500, [450], 250)).toBe(250);
+// R-0796
+it("takes whichever of the two fits is tighter, across or down", () => {
+  const L = told.layout;
+  expect(fitScale(L, L.vw * 0.8, L.h)).toBeCloseTo(0.8);
+  expect(fitScale(L, L.vw * 0.9, L.h * 0.7)).toBeCloseTo(0.7);
 });
 
-// R-0561, R-0546
-it("sizes the picture once for the case, by its longest caption, so nothing moves between snapshots", () => {
-  expect(pictureHeight(300, 500, [100, 320, 150], 0)).toBe(pictureHeight(300, 500, [320], 0));
+// R-0796
+it("never grows a small picture past its own size, and never shrinks its names under the least size, past which it pans", () => {
+  const L = told.layout;
+  expect(fitScale(L, L.vw * 3, L.h * 3)).toBe(1);
+  expect(NAME * fitScale(L, 1, 1)).toBeCloseTo(FIT);
 });
 
-// R-0547, R-0558, R-0561
+// R-0744, R-0759
 it("stops shrinking where labels reach 13px, shapes 36px or the margin 20px", () => {
   const L = told.layout;
   const least = leastScale(L, 4);
   expect(13 * least).toBeGreaterThanOrEqual(13);
   expect(L.w * least).toBeGreaterThanOrEqual(36);
   expect(L.my * least + 4).toBeGreaterThanOrEqual(20);
-  expect(pictureHeight(300, 100, [90], 1000)).toBe(300);
 });
 
 // R-0570

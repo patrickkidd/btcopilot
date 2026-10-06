@@ -11,6 +11,11 @@
   z-index: 30;
   display: flex;
   flex-direction: column;
+  /* from the home screen the drawer starts under the phone's clock and camera, and
+     its foot clears the home bar, so the picture fits the space between (R-0796) */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  padding-top: var(--safe-top);
   background: var(--panel);
   transform: translateY(-100%);
   transition: transform 0.26s cubic-bezier(0.4, 0, 0.7, 0.5);
@@ -30,7 +35,7 @@
 /* a tap on someone in the Family view puts the picture on their three generations (R-0779) */
 .pbp.whole .draw :is(.p, .pt) { cursor: pointer; pointer-events: bounding-box; }
 
-/* Q6: the picture shrinks so the caption fits; when even that does not fit, the whole drawer scrolls */
+/* the picture scales whole to fit over the caption; under the least name size the drawer scrolls (R-0796) */
 .pbp .lv { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 .pbp .wire, .pbp .draw, .pbp .scroll { flex: none; }
 .pbp .wire svg { display: block; width: 100%; height: auto; }
@@ -41,7 +46,9 @@
 .pbp .draw svg { display: block; width: 100%; height: 100%; }
 
 .pbp .scroll .step, .pbp > .foot .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
-.pbp > .foot { flex: none; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+.pbp > .foot { flex: none; border-top: 1px solid var(--line); padding-bottom: var(--safe-bottom); }
+/* a play-by-play has no foot of its own: the drawer keeps clear of the home bar */
+.pbp:not(:has(> .foot)) { padding-bottom: var(--safe-bottom); }
 .pbp > .foot .step { justify-content: space-between; }
 .pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }
 /* the dots only say where the reader is; a play told in more snapshots than

@@ -283,9 +283,13 @@ export const LEAST = { label: 13, margin: 20 };
  * frame scrolls (R-0759, R-0744). */
 export const leastScale = (L: Layout, padding: number) =>
   Math.max(LEAST.label / NAME, (LEAST.margin - padding) / L.my);
-/** The Family view on a phone held upright scales its frame whole to the
- * drawer's width, names down to 9px (Patrick, 2026-10-06, R-0787). */
-export const FIT = 9;
+/** The least a name is drawn at when a picture is scaled to fit its space;
+ * under it the picture pans (R-0796). */
+export const FIT = 6.5;
+/** The scale a drawing takes as a whole in a space `w` wide and `h` tall, in
+ * the Family view and the play-by-play alike: the smaller of the width's and
+ * the height's, never past its own size, never with names under FIT px (R-0796). */
+export const fitScale = (L: Layout, w: number, h: number) => Math.max(FIT / NAME, Math.min(1, w / L.vw, h / L.h));
 export const CH = 0.6;
 const LEAD = 15;
 /** How far a label's box reaches above its line. */

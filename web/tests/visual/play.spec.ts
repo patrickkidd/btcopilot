@@ -227,7 +227,7 @@ test.describe("the play-by-play drawer", () => {
     await expect(drawer(page).locator(".guess")).toHaveText(/^My guess: /);
   });
 
-  // R-0546, R-0561
+  // R-0546, R-0796
   test("the picture keeps its height from the first snapshot to the last", async ({ page }) => {
     await settle(page);
     await stored(page).click();
@@ -287,27 +287,16 @@ test.describe("the play-by-play drawer", () => {
 test.describe("the drawer on a small phone", () => {
   test.use({ storageState: stateFor("whitlock"), viewport: { width: 375, height: 667 } });
 
-  // R-0547, R-0558, R-0561
-  test("stops shrinking at 13px labels, 36px shapes and a 20px margin, and scrolls instead", async ({ page }) => {
+  // R-0796, R-0547, R-0558
+  test("scales the picture whole to fit over its longest caption, names under 13px but over the least size, and scrolls neither way", async ({ page }) => {
     await settle(page);
     await stored(page).click();
     await drawer(page).locator('[data-act="jump"]').last().click();
-    const seen = await drawer(page).evaluate((p) => {
-      const svg = p.querySelector<SVGSVGElement>(".draw svg")!;
-      const top = p.querySelector(".draw")!.getBoundingClientRect().top;
-      const drawn = [...svg.querySelectorAll(".p")].map((g) => g.getBoundingClientRect());
-      const lv = p.querySelector(".lv")!;
-      return {
-        label: 13 * svg.getScreenCTM()!.a,
-        shape: Math.min(...[...svg.querySelectorAll(".shape")].map((s) => s.getBoundingClientRect().width)),
-        margin: Math.min(...drawn.map((r) => r.top)) - top,
-        scrolls: lv.scrollHeight > lv.clientHeight,
-      };
-    });
-    expect(seen.label).toBeGreaterThanOrEqual(13);
-    expect(seen.shape).toBeGreaterThanOrEqual(36);
-    expect(seen.margin).toBeGreaterThanOrEqual(20);
-    expect(seen.scrolls).toBe(true);
+    const seen = await overrun(page);
+    expect(seen.name).toBeLessThan(13);
+    expect(seen.name).toBeGreaterThan(6.5);
+    expect(seen.down).toBeLessThanOrEqual(0);
+    expect(seen.across).toBeLessThanOrEqual(0);
   });
 });
 
@@ -523,9 +512,8 @@ test.describe("a family the row rules cannot place", () => {
 test.describe("a family wider than the phone", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 390, height: 844 } });
 
-  // R-0547, R-0744, R-0749
-  // re-ruled 2026-10-04, scroll below the floor
-  test("keeps its least size, scrolls in its own frame and centres the step's person", async ({ page }) => {
+  // R-0796, R-0744, R-0749
+  test("stops shrinking at the least name size, scrolls in its own frame and centres the step's person", async ({ page }) => {
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, joinedFamily([["Hugo", "Wanda"]], 6, "Hs5", "Hugo"));
     await settle(page);
     await stored(page).click();
@@ -548,7 +536,7 @@ test.describe("a family wider than the phone", () => {
     const first = await seen();
     expect(first.page).toBeLessThanOrEqual(390);
     expect(first.frame).toBe(true);
-    expect(first.label).toBeGreaterThanOrEqual(13);
+    expect(first.label).toBeCloseTo(6.5, 1);
     expect(first.inside).toBe(true);
     await drawer(page).locator('[data-act="next"]').click();
     await page.waitForTimeout(800);
@@ -568,7 +556,7 @@ const inSight = (page: Page, id: number | string) =>
   }, String(id));
 
 test.describe("a move between two people further apart than the screen is wide", () => {
-  // since R-0790 a phone held upright fits the frame whole, so this is a phone turned sideways
+  // a phone turned sideways, where the frame is shorter (R-0796)
   test.use({ storageState: stateFor("play"), viewport: { width: 852, height: 393 } });
 
   // R-0759, R-0744, R-0785
@@ -915,7 +903,7 @@ const drawnIds = (page: Page) => drawer(page).locator(".draw svg .p").evaluateAl
  * turned sideways with names at their readable size. */
 const WIDE = 16;
 
-/** Since R-0790 a phone held upright fits the frame whole, so a frame wider
+/** A phone held upright fits the frame whole down to the least name size (R-0796), so a frame wider
  * than the screen is one wider than a phone turned sideways. */
 test.describe("the Family view's frame wider than a phone turned sideways", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 852, height: 393 } });
@@ -1039,7 +1027,9 @@ test.describe("the Family view's frame wider than a phone turned sideways", () =
       const s = p.querySelector(`.draw .p[data-id="${id}"] .shape`)!.getBoundingClientRect();
       return Math.abs(s.left + s.width / 2 - (d.left + d.width / 2)) / d.width;
     }, String(ids().Hugo));
-    expect(off).toBeLessThan(0.25);
+    // in the middle third: at the least name size (R-0796) more of his
+    // brothers and sisters fit whole beside him, drawing him off the very middle
+    expect(off).toBeLessThan(1 / 3);
     expect(await cut()).toBe(0);
     await drawer(page).locator(".edge").first().click();
     await page.waitForTimeout(2300);
@@ -1103,6 +1093,88 @@ const faded = (page: Page) =>
     };
   });
 
+/** How far the drawer's picture runs past its room each way, and how large its names stand. */
+const overrun = (page: Page) =>
+  drawer(page).evaluate((p) => {
+    const lv = p.querySelector(".lv")!;
+    const d = lv.querySelector(".draw")!;
+    const svg = d.querySelector("svg")!;
+    const r = svg.getBoundingClientRect();
+    const k = Math.min(r.width / svg.viewBox.baseVal.width, r.height / svg.viewBox.baseVal.height);
+    const name = svg.querySelector(".pt .lbn");
+    return {
+      down: lv.scrollHeight - lv.clientHeight,
+      across: d.scrollWidth - d.clientWidth,
+      name: name ? parseFloat(getComputedStyle(name).fontSize) * k : 0,
+    };
+  });
+
+// 852 is a phone's browser, 759 the same phone from the home screen
+for (const height of [852, 759])
+  test.describe(`a picture on a phone ${height} tall`, () => {
+    test.use({ storageState: stateFor("play"), viewport: { width: 393, height } });
+
+    // R-0796
+    test("the Family view scales the whole frame to the width and the height, no scrolling either way", async ({ page }) => {
+      // a small family, which grew past its own size and ran off the foot before
+      await familyOf(page, 2, moving(false));
+      const seen = await overrun(page);
+      expect(seen.down).toBeLessThanOrEqual(0);
+      expect(seen.across).toBeLessThanOrEqual(0);
+      expect(seen.name).toBeLessThanOrEqual(13.01);
+    });
+
+    // R-0796
+    test("the play-by-play scales the whole picture the same way, no scrolling either way", async ({ page }) => {
+      await settle(page);
+      await stored(page).click();
+      await expect(drawer(page).locator(".draw svg")).toBeVisible();
+      await page.waitForTimeout(500);
+      const seen = await overrun(page);
+      expect(seen.down).toBeLessThanOrEqual(0);
+      expect(seen.across).toBeLessThanOrEqual(0);
+      expect(seen.name).toBeLessThanOrEqual(13.01);
+    });
+  });
+
+test.describe("a picture opened from the iPhone home screen", () => {
+  test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
+
+  // R-0796
+  test("fits the space between the phone's clock and its home bar, no scrolling either way, the path row clear of the clock", async ({ page }) => {
+    // the clock and camera take 59px at the top, the home bar 34 at the foot,
+    // as on an iPhone 14 Pro; Chromium has no insets of its own to emulate, so
+    // they are set where the drawer reads them
+    const insets = () => drawer(page).evaluate((p) => p.style.cssText += "--safe-top: 59px; --safe-bottom: 34px;");
+    for (const open of [
+      async () => {
+        await settle(page);
+        await insets();
+        await stored(page).click();
+        await expect(drawer(page).locator(".draw svg")).toBeVisible();
+        await page.waitForTimeout(500);
+      },
+      async () => {
+        await familyOf(page, 2, moving(false));
+        await insets();
+        await page.locator("#pbp .cardx").click();
+        await page.locator("#cap-family").click();
+        await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
+        await page.waitForTimeout(300);
+      },
+    ]) {
+      await open();
+      const seen = await overrun(page);
+      expect(seen.down).toBeLessThanOrEqual(0);
+      expect(seen.across).toBeLessThanOrEqual(0);
+      expect((await drawer(page).locator(".path").boundingBox())!.y).toBeGreaterThanOrEqual(59);
+      // Back and Next stand clear of the home bar
+      const steps = await drawer(page).locator('[data-act="next"]').boundingBox();
+      expect(steps!.y + steps!.height).toBeLessThanOrEqual(852 - 34);
+    }
+  });
+});
+
 test.describe("the Family view as Patrick looked at it on his own record", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 } });
 
@@ -1140,10 +1212,10 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).touchAction)).toBe("pan-x pan-y");
   });
 
-  // R-0790
-  test("scales a frame wider than the phone whole to its width, however small the names, with no arrows at its edges", async ({ page }) => {
-    const ids = await familyOf(page, 6, moving(false));
-    // Hugo's frame: his parents and his six brothers and sisters
+  // R-0796
+  test("scales a frame wider than the phone whole to its width while its names stay over the least size, with no arrows at its edges", async ({ page }) => {
+    const ids = await familyOf(page, 4, moving(false));
+    // Hugo's frame: his parents and his four brothers and sisters
     await tapPerson(page, ids().Hugo);
     const draw = drawer(page).locator(".draw");
     for (let i = 0; i < 3; i++) {
@@ -1151,10 +1223,12 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
       await expect(drawer(page).locator(".edge")).toHaveCount(0);
       await drawer(page).locator('[data-act="next"]').click();
     }
-    // scaled as one: every person's shape the same size, smaller than at the 9px names it stopped at before
+    // scaled as one: every person's shape the same size, the names under 13px and over the least size
     const sizes = await draw.locator("svg .p .shape").evaluateAll((ss) => ss.map((s) => Math.round(s.getBoundingClientRect().width)));
     expect(new Set(sizes).size).toBe(1);
-    expect(sizes[0]).toBeLessThan(44 * (9 / 13));
+    const name = (await overrun(page)).name;
+    expect(name).toBeLessThan(13);
+    expect(name).toBeGreaterThan(6.5);
   });
 
   // R-0779
@@ -1328,7 +1402,7 @@ const placeOf = (page: Page) => page.evaluate(() => [document.querySelector("#pb
 test.describe("the Family view on a phone, turned", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 }, hasTouch: true, isMobile: true });
 
-  // R-0791, R-0790
+  // R-0791, R-0796
   test("turned sideways over the chat, shows the Family view alone over the whole screen, and turned back keeps its date and person", async ({ page }, info) => {
     test.skip(info.project.name !== "phone", "the size is the describe's own");
     const errors = watched(page);
@@ -1702,17 +1776,15 @@ test.describe("the whole family of a family many phones wide", () => {
   });
 });
 
-/** The `everymark` record's play-by-play is wider than the phone at every step. */
-test.describe("a play-by-play wider than the phone", () => {
+/** The `everymark` record's play-by-play, as wide as the phone once scaled to fit (R-0796). */
+test.describe("a play-by-play as wide as the phone", () => {
   test.use({ storageState: stateFor("everymark"), viewport: { width: 393, height: 852 } });
 
-  // R-0759, R-0744
-  test("keeps every word inside what its frame scrolls to, at every step", async ({ page }) => {
+  // R-0759, R-0744, R-0796
+  test("keeps every word inside what its frame shows or scrolls to, at every step", async ({ page }) => {
     await settle(page);
     await stored(page).click();
     await expect(drawer(page)).toBeVisible();
-    const draw = drawer(page).locator(".draw");
-    expect(await draw.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
     for (;;) {
       expect(await wordsOutside(page, "#pbp .draw svg")).toEqual([]);
       const next = drawer(page).locator('[data-act="next"]:not([disabled])');
@@ -1761,16 +1833,15 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1280, height: 800 
     });
   });
 
-test.describe("a play-by-play a little wider than the phone", () => {
+test.describe("a play-by-play scaled to the phone", () => {
   test.use({ storageState: stateFor("everymark"), viewport: { width: 393, height: 852 } });
 
-  // R-0759
+  // R-0759, R-0796
   test("lands each step where no name or word is cut by the frame, whenever they all fit in it", async ({ page }) => {
     await settle(page);
     await stored(page).click();
     await expect(drawer(page)).toBeVisible();
     const draw = drawer(page).locator(".draw");
-    expect(await draw.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
     const cut: string[] = [];
     let fitting = 0;
     for (;;) {
@@ -1941,11 +2012,12 @@ test.describe("the frame's travel to a step's people", () => {
     // the moves go back and forth between the two ends of the family
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
-      const ids = joined(tl, [["Hugo", "Wanda"]], 6, "Ws5", "Hs5");
+      // wide enough to pan at the least name size (R-0796)
+      const ids = joined(tl, [["Hugo", "Wanda"]], WIDE, "Ws15", "Hs15");
       tl.events
         .filter((e: { dateTime: string | null }) => e.dateTime)
         .sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime))
-        .forEach((e: Record<string, unknown>, i: number) => Object.assign(e, i % 2 ? { person: ids.Hs5, relationshipTargets: [ids.Ws5] } : {}));
+        .forEach((e: Record<string, unknown>, i: number) => Object.assign(e, i % 2 ? { person: ids.Hs15, relationshipTargets: [ids.Ws15] } : {}));
       await route.fulfill({ json: tl });
     });
     await settle(page);

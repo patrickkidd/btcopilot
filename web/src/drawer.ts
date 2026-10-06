@@ -3,7 +3,7 @@ import type { Books } from "./books";
 import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, fitPath, flash, pathRow, slideOver, stepBtn, still } from "./dom";
-import { leastScale, type Layout } from "./diagram";
+import { fitScale, leastScale, type Layout } from "./diagram";
 import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { BIRTHS, family, familyStart, said, when, Told } from "./snapshots";
@@ -121,9 +121,6 @@ export function below(told: Told, i: number, statement: number | null): string {
   );
 }
 
-/** Ruled 2026-09-27 (Q6): the picture shrinks so the longest caption of the
- * case fits below it, down to a floor; below the floor the whole drawer
- * scrolls. One height per phone and case, so nothing moves between snapshots. */
 /** The coach's point over the drawer; a case nobody told has none. */
 export const pointLine = (told: Told) =>
   told.told.point ? `<div class="point">${esc(told.told.point)}</div>` : "";
@@ -156,9 +153,6 @@ export const head = (told: Told, cluster: string) =>
  * words; its date is the label over the years line, said once. */
 export const topLine = (told: Told, i: number, fact = told.told.snapshots[i].fact) =>
   fact ? `<span class="words">${withKind(fact, saying(told, i))}</span>` : "";
-
-export const pictureHeight = (natural: number, room: number, captions: number[], floor: number) =>
-  Math.max(Math.min(natural, floor), Math.min(natural, room - Math.max(...captions)));
 
 /** Where a drawn person and their words rest across the drawing, in the
  * frame's scroll coordinates: their place after a step's slide, never where
@@ -250,7 +244,9 @@ export function between(frame: HTMLElement, left: number, whole: [number, number
   const cut = (l: number) => 10 * across(shapes, l) + across(spans, l);
   // a gap between the edge and whoever stands beside it
   const GAP = 4;
-  const at = [left, 0, end, ...spans.flatMap(([p, q]) => [p - GAP, q + GAP, p - GAP - w, q + GAP - w])].map((l) => Math.min(Math.max(l, 0), end));
+  // with the kept person flush at an edge when no gap leaves everyone else whole
+  const flush = whole ? [whole[0], whole[1] - w] : [];
+  const at = [left, 0, end, ...flush, ...spans.flatMap(([p, q]) => [p - GAP, q + GAP, p - GAP - w, q + GAP - w])].map((l) => Math.min(Math.max(l, 0), end));
   // the person the frame was put on stays whole
   const keep = whole ? at.filter((l) => whole[0] >= l - 0.5 && whole[1] <= l + w + 0.5) : [];
   return (keep.length ? keep : at)
@@ -320,13 +316,16 @@ export class Drawer {
     panel.classList.add("pbp");
     panel.hidden = true;
     panel.addEventListener("click", (e) => this.tap(e));
-    // a phone turned, or the picture put full screen or back, draws it again
-    // for the new size, the drawing scaled as one (R-0790, R-0791)
+    // a phone turned, the picture put full screen or back, or the visible part
+    // of the screen settling (as it does from the home screen) draws it again
+    // for the new size, the drawing scaled as one (R-0791, R-0796)
     let pending = 0;
-    window.addEventListener("resize", () => {
+    const again = () => {
       cancelAnimationFrame(pending);
       pending = requestAnimationFrame(() => this.refit());
-    });
+    };
+    window.addEventListener("resize", again);
+    window.visualViewport!.addEventListener("resize", again);
     document.addEventListener("keydown", (e) => e.key === "Escape" && this.panel.classList.contains("full") && this.unfull());
   }
 
@@ -369,26 +368,18 @@ export class Drawer {
     const kids = three.cast.kids.some((k) => k.of.includes(id));
     // on a phone, fitted whole, it always has them, and takes the
     // grandparents of someone with children only where they leave everyone
-    // as large (R-0787, R-0790, R-0791)
+    // as large (R-0787, R-0791, R-0796)
     if (this.phone()) return kids && this.fits(L) < this.fits(three.layout) ? three : four;
     return Math.min(kids ? lv.clientWidth / L.vw : Infinity, tall / L.h) >= leastScale(L, padding) ? four : three;
   }
 
-  /** The least scale a drawing may take here: the Family view on a phone
-   * fits its frame whole, however small (R-0790, R-0791). */
-  private least(L: Layout, padding: number): number {
-    return this.told?.whole && this.phone() ? this.fits(L) : leastScale(L, padding);
-  }
-
-  /** The scale that fits `L` whole: to the drawer's width on a phone held
-   * upright, which scrolls down; to the width and the height on one turned sideways. */
+  /** The scale that fits `L` whole in the room the drawer has under its
+   * years line and over the longest caption, both ways (R-0796). */
   private fits(L: Layout): number {
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
-    const wide = lv.clientWidth / L.vw;
-    if (this.upright()) return wide;
     const s = getComputedStyle(lv.querySelector<HTMLElement>(".draw")!);
     const edge = parseFloat(s.paddingTop) + parseFloat(s.paddingBottom) + parseFloat(s.borderTopWidth) + parseFloat(s.borderBottomWidth);
-    return Math.min(wide, (lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - edge) / L.h);
+    return fitScale(L, lv.clientWidth, lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - edge - this.caption);
   }
 
   /** A phone held upright: the Family view keeps the drawer, not the whole screen. */
@@ -656,26 +647,24 @@ export class Drawer {
     const draw = lv.querySelector<HTMLElement>(".draw")!;
     if (this.height === null) {
       const sc = lv.querySelector<HTMLElement>(".scroll")!;
-      if (!this.caption && !told.whole) {
+      // one height per telling, by its longest caption, so nothing moves between steps
+      if (!this.caption) {
         const keep = sc.innerHTML;
-        this.caption = Math.max(
-          ...told.steps.map((_, j) => {
-            sc.innerHTML = below(told, j, this.statement);
-            return sc.offsetHeight;
-          }),
-        );
+        this.caption = told.whole
+          ? sc.offsetHeight
+          : Math.max(
+              ...told.steps.map((_, j) => {
+                sc.innerHTML = below(told, j, this.statement);
+                return sc.offsetHeight;
+              }),
+            );
         sc.innerHTML = keep;
       }
-      const captions = [this.caption];
       // the picture's box keeps its own padding and rule above the drawing
       const style = getComputedStyle(draw);
-      const padding = parseFloat(style.paddingTop);
-      this.edge = padding + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
-      const least = this.least(L, padding);
-      this.scale = Math.max(lv.clientWidth / L.vw, least);
-      const room = lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - this.edge;
-      this.height = pictureHeight(L.h * this.scale, room, captions, L.h * least);
-      this.scale = Math.min(this.scale, this.height / L.h);
+      this.edge = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+      this.scale = this.fits(L);
+      this.height = L.h * this.scale;
     }
     draw.style.height = `${this.height + this.edge}px`;
     const svg = draw.querySelector<SVGSVGElement>("svg")!;
