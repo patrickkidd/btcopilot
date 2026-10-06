@@ -1921,6 +1921,9 @@ void store
   .then(reveal)
   .then(() => landing(land));
 
+// Safari zooms on a pinch whatever the viewport says; the page's scale stays put (R-0786)
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.
 if ("serviceWorker" in navigator)

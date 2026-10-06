@@ -3,7 +3,7 @@ import type { Books } from "./books";
 import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, fitPath, flash, pathRow, slideOver, stepBtn, still } from "./dom";
-import { leastScale, type Layout } from "./diagram";
+import { FIT, leastScale, NAME, type Layout } from "./diagram";
 import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { BIRTHS, family, familyStart, said, when, Told } from "./snapshots";
@@ -345,8 +345,22 @@ export class Drawer {
     // three generations wherever the height holds them: someone with no
     // children has their grandparents above their parents instead, the frame
     // scrolling sideways as any wide frame does (R-0779)
-    const wide = three.cast.kids.some((k) => k.of.includes(id)) ? lv.clientWidth / L.vw : Infinity;
-    return Math.min(wide, tall / L.h) >= leastScale(L, padding) ? four : three;
+    const kids = three.cast.kids.some((k) => k.of.includes(id));
+    // on a phone held upright the frame scrolls down as well as across, so it always has them (R-0787)
+    if (!kids && this.upright()) return four;
+    return Math.min(kids ? lv.clientWidth / L.vw : Infinity, tall / L.h) >= this.least(L, padding) ? four : three;
+  }
+
+  /** The least scale a drawing may take here: the Family view on a phone held
+   * upright fits its frame to the width with names down to 9px (R-0787). */
+  private least(L: Layout, padding: number): number {
+    // fitted, the family's margin shrinks with the picture
+    return this.told?.whole && this.upright() ? FIT / NAME : leastScale(L, padding);
+  }
+
+  /** A phone held upright: the Family view keeps the drawer, not the whole screen. */
+  private upright(): boolean {
+    return !matchMedia("(min-width: 700px)").matches;
   }
 
   /** The frame put on the three generations around `id`, at the same date. */
@@ -591,7 +605,7 @@ export class Drawer {
       const style = getComputedStyle(draw);
       const padding = parseFloat(style.paddingTop);
       this.edge = padding + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
-      const least = leastScale(L, padding);
+      const least = this.least(L, padding);
       this.scale = Math.max(lv.clientWidth / L.vw, least);
       const room = lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - this.edge;
       this.height = pictureHeight(L.h * this.scale, room, captions, L.h * least);

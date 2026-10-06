@@ -117,7 +117,7 @@ describe("the layout", () => {
     expect(L.y[String(MARCUS)]).toBe(L.y[String(DELPHINE)]);
   });
 
-  // R-0749
+  // R-0749, R-0789
   it("keeps a couple as close as their children allow when a cousin's family settles beside them", () => {
     // Ross Brand and Cora's daughters Ellen and Kit; Ellen with Ross Hale, whose
     // parents are Lorna and Walt, and their son Owen; Kit with Chris and their

@@ -110,9 +110,9 @@
 .diagram .lbd { font-size: 13px; fill: var(--faint); }
 /* names, ages and words sit over every mark, a field's rings too, on a halo
    of the page's ground so they stay legible (Patrick, 2026-10-03) */
-/* a name over a field's rings or a line stands on a band of the page wide enough to read it (R-0679) */
-.diagram .said .band { fill: var(--panel); }
-.diagram .said text { paint-order: stroke; stroke: var(--panel); stroke-width: 6px; stroke-linejoin: round; }
+/* a name over a field's rings or a line is outlined thinly in the page's colour,
+   so it reads whole and the lines it meets still read as joined up to its letters (R-0788) */
+.diagram .said text { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
 .diagram .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
 .diagram .xd.now { stroke: var(--move); stroke-width: 2.2; }
 /* someone the record is unsure of, on the review */

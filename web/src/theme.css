@@ -93,6 +93,8 @@
 /* The ground reaches the ends of the screen, under the phone's own furniture:
    Android paints its bars from the root element rather than from the body. */
 html, body { height: 100%; overflow: hidden; background: var(--bg); }
+/* the page never zooms, by a double tap or a pinch; a picture still pans in its own frame (R-0786) */
+html { touch-action: pan-x pan-y; }
 body {
   margin: 0;
   background: var(--bg);

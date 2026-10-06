@@ -821,7 +821,6 @@ test.describe("the Family view's three generations", () => {
     await drawer(page).locator('[data-act="back"]').click();
     // the frame's travel takes up to two seconds
     await page.waitForTimeout(2300);
-    expect(await draw.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
     for (const id of [ids.Hugo, ids.Wanda, ids.Ws1]) expect(await inSight(page, id)).toBe(true);
   });
 
@@ -1061,6 +1060,23 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
     expect(inView).toBe(true);
   });
 
+  // R-0786
+  test("never zooms the page, by a double tap or a pinch", async ({ page }) => {
+    await settle(page);
+    expect(await page.locator('meta[name="viewport"]').getAttribute("content")).toContain("maximum-scale=1, user-scalable=no");
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).touchAction)).toBe("pan-x pan-y");
+  });
+
+  // R-0787
+  test("scales the frame whole to the phone's width, names never under 9px", async ({ page }) => {
+    await familyOf(page, 2);
+    const draw = drawer(page).locator(".draw");
+    expect(await draw.evaluate((d) => d.scrollWidth <= d.clientWidth + 1)).toBe(true);
+    const size = await draw.locator("svg .pt .lbn").first().evaluate((t) => t.getBoundingClientRect().height);
+    // a 9px name's box is about 1.3 times its size tall
+    expect(size).toBeGreaterThanOrEqual(9 * 1.2);
+  });
+
   // R-0779
   test("draws three generations on the phone around someone with no children, their grandparents above their parents", async ({ page }) => {
     const ids = await familyOf(page, 2);
@@ -1097,21 +1113,21 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
     expect(await cut()).toBe(0);
   });
 
-  // R-0679
-  test("keeps every name whole on a band of the page over the rings and lines that reach it", async ({ page }) => {
+  // R-0788
+  test("outlines every name thinly in the page's colour, with no box behind it to hide the lines it meets", async ({ page }) => {
     await familyOf(page, 2, moving(true));
-    const bare = await drawer(page).locator(".draw svg .pt").evaluateAll((gs) =>
-      gs.flatMap((g) => {
-        const band = g.querySelector("rect.band") as SVGRectElement | null;
-        return [...g.querySelectorAll<SVGTextElement>(".lbn, .lbd")].flatMap((name) => {
-          if (!band) return [name.textContent];
-          const [n, b] = [name.getBBox(), band.getBBox()];
-          // the band stops short of the shape under a name above it, so a descent may touch its edge
-          return n.x < b.x || n.x + n.width > b.x + b.width || n.y < b.y || n.y + n.height > b.y + b.height + 1 ? [[name.textContent, n.x, n.y, n.width, n.height, b.x, b.y, b.width, b.height].map((v) => (typeof v === "number" ? Math.round(v * 10) / 10 : v)).join(" ")] : [];
-        });
-      }),
+    const names = await drawer(page).locator(".draw svg .pt").evaluateAll((gs) =>
+      gs.flatMap((g) =>
+        [...g.querySelectorAll<SVGTextElement>(".lbn, .lbd")].map((t) => {
+          const s = getComputedStyle(t);
+          const page = getComputedStyle(document.querySelector("#pbp")!).backgroundColor;
+          return { boxed: !!g.querySelector("rect"), under: s.paintOrder.startsWith("stroke"), page: s.stroke === page, width: parseFloat(s.strokeWidth) };
+        }),
+      ),
     );
-    expect(bare).toEqual([]);
+    expect(names.length).toBeGreaterThan(0);
+    for (const n of names) expect(n).toEqual({ boxed: false, under: true, page: true, width: expect.any(Number) });
+    expect(Math.max(...names.map((n) => n.width))).toBeLessThanOrEqual(3);
   });
 
   // R-0548, R-0783
@@ -1149,6 +1165,16 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
     // "Timeline › Family › Hugo V.'s family" is cut only between words
     const path = (await drawer(page).locator(".path").textContent())!;
     expect(path).toMatch(/^Timeline › (Family|…) › Hugo V\.'s( family|…)$/);
+  });
+});
+
+test.describe("the Family view on a short phone held upright", () => {
+  test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 660 } });
+
+  // R-0779, R-0787
+  test("still draws three generations around someone with no children", async ({ page }) => {
+    const ids = await familyOf(page, 2);
+    expect(await drawnIds(page)).toEqual(expect.arrayContaining([ids().Hal, ids().Hope, ids().Walt, ids().Wren].map(String)));
   });
 });
 
@@ -1424,8 +1450,8 @@ test.describe("the whole family wider than the phone", () => {
 test.describe("the whole family of a family many phones wide", () => {
   test.use({ storageState: stateFor("case-report-dense"), viewport: { width: 393, height: 852 } });
 
-  // R-0759, R-0744, R-0749, R-0766, R-0775, R-0779
-  test("opens on the first date holding more than births, its person in the frame, names at 13px or more and short, every word inside what the frame scrolls to", async ({ page }) => {
+  // R-0759, R-0744, R-0749, R-0766, R-0775, R-0779, R-0787
+  test("opens on the first date holding more than births, its person in the frame, names at 9px or more and short, every word inside what the frame scrolls to", async ({ page }) => {
     const errors = watched(page);
     await settle(page);
     await page.locator("#cap-family").click();
@@ -1444,7 +1470,7 @@ test.describe("the whole family of a family many phones wide", () => {
     // R-0766: everyone is named as briefly as the Pembertons are, so no name takes more width than the longest of the record's own people's
     const names = await drawer(page).locator(".draw .pt .lbn").allTextContents();
     expect(names.filter((n) => n.length > "Francis-Xavier".length)).toEqual([]);
-    expect(await leastName(page, "#pbp .draw svg")).toBeGreaterThanOrEqual(13);
+    expect(await leastName(page, "#pbp .draw svg")).toBeGreaterThanOrEqual(9);
     expect(await wordsOutside(page, "#pbp .draw svg")).toEqual([]);
     expect(await sideways(page)).toBe(false);
     expect(errors).toEqual([]);

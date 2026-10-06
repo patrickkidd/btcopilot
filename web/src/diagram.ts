@@ -283,6 +283,9 @@ export const LEAST = { label: 13, margin: 20 };
  * frame scrolls (R-0759, R-0744). */
 export const leastScale = (L: Layout, padding: number) =>
   Math.max(LEAST.label / NAME, (LEAST.margin - padding) / L.my);
+/** The Family view on a phone held upright scales its frame whole to the
+ * drawer's width, names down to 9px (Patrick, 2026-10-06, R-0787). */
+export const FIT = 9;
 export const CH = 0.6;
 const LEAD = 15;
 /** How far a label's box reaches above its line. */
@@ -2000,9 +2003,6 @@ export function draw(L: Layout, s: Frame): string {
       anchor = sd === Side.Right ? "start" : "end";
       y0 = y - e + 9;
     }
-    // the name stands on a band of the page, whole over any ring or line that reaches it
-    const lw = textWidth(l);
-    t += `<rect class="band" x="${f(anchor === "start" ? lx - 3 : anchor === "end" ? lx - lw - 3 : lx - lw / 2 - 3)}" y="${f(y0 - 15)}" width="${f(lw + 6)}" height="${f(LEAD * (l.length - 1) + 18)}"/>`;
     l.forEach((line, i) => {
       if (line) t += nameText(lx, y0 + i * LEAD, line, anchor, !i);
     });
