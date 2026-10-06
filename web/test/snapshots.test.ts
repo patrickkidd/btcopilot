@@ -330,6 +330,19 @@ describe("bonds", () => {
     expect(tone(3)).toEqual(["was", "was"]);
     els(t.shot(3).svg, "path", "tie").forEach((p) => expect(p.class).not.toContain("was"));
   });
+
+  // R-0794
+  it("draws both of a divorce's slashes full strength on its own date when the couple never separated first", () => {
+    const tl = timeline();
+    tl.events = tl.events.filter((e) => e.id !== 201);
+    tl.clusters[0].event_ids = tl.clusters[0].event_ids.filter((id) => id !== 201);
+    tl.clusters[0].play_ids = tl.clusters[0].play_ids.filter((id) => id !== 201);
+    const c = apart();
+    c.snapshots[0].event_ids = [202];
+    const tone = (i: number) => els(told(c, tl).shot(i).svg, "line", "slash").map((s) => s.class.split(" ").filter((k) => k !== "slash" && k !== "pop").join(" "));
+    expect(tone(2)).toEqual(["now", "now"]);
+    expect(tone(3)).toEqual(["was", "was"]);
+  });
 });
 
 describe("emphasis and carry", () => {

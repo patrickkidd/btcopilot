@@ -391,6 +391,7 @@ export class Told {
         b: b.b,
         st: fresh ? (fresh.k === Mark.Separated ? Tie.Separated : Tie.Divorced) : tie.get(k)!,
         fresh: !!fresh,
+        was: tie.get(k),
         hot: hit.some((m) => m.k === Mark.Couple),
         married: b.married,
       };

@@ -240,6 +240,8 @@ export interface DrawnBond {
   b: string;
   st: Tie;
   fresh: boolean;
+  /** The couple's tie before this step, where a step is being told. */
+  was?: Tie;
   hot: boolean;
   married: boolean;
 }
@@ -1622,17 +1624,20 @@ export const SLASH = { below: 0.25, above: 5 / 12 };
 const STEP = 0.25;
 /** How far either side of x a run of n slashes reaches, for a person w wide. */
 const slashSpan = (n: number, w: number) => ((n - 1) * STEP * w) / 2;
+/** How many slashes a tie draws: one for a separation, two for a divorce. */
+const slashCount = (st?: Tie) => (st === Tie.Separated ? 1 : st === Tie.Divorced ? 2 : 0);
 
 /** One slash for a separation, two for a divorce, upright because custody is
  * not recorded, centred on x across the couple's line at y, for people w wide. */
 export const slashes = (n: number, x: number, y: number, w: number, fresh = false): string =>
-  slashLines(n, x, y, w, fresh).join("");
+  slashLines(n, x, y, w, fresh ? 1 : 0).join("");
 
-/** The same slashes one by one, so a fresh one can be drawn over the rest. */
-function slashLines(n: number, x: number, y: number, w: number, fresh = false, carried = ""): string[] {
+/** The same slashes one by one, the last `fresh` of them this step's own, so
+ * they can be drawn over the rest. */
+function slashLines(n: number, x: number, y: number, w: number, fresh = 0, carried = ""): string[] {
   return Array.from({ length: n }, (_, i) => {
     const sx = x - slashSpan(n, w) + i * STEP * w;
-    const pop = fresh && i === n - 1 ? " now pop" : carried;
+    const pop = i >= n - fresh ? " now pop" : carried;
     return `<line class="slash${pop}" x1="${f(sx)}" y1="${f(y + SLASH.below * w)}" x2="${f(sx)}" y2="${f(y - SLASH.above * w)}"/>`;
   });
 }
@@ -1939,8 +1944,12 @@ export function draw(L: Layout, s: Frame): string {
       (b.hot ? " now pop" : "") + yet(L.bonds.find((o) => o.a === b.a && o.b === b.b)?.from, s.t),
       ` data-bond="${esc(`${b.a}|${b.b}`)}"`,
     ), b.hot);
-    const n = b.st === Tie.Separated ? 1 : b.st === Tie.Divorced ? 2 : 0;
+    const n = slashCount(b.st);
     if (!n) return;
+    // a divorce after a separation adds one slash to the one already drawn;
+    // a divorce with no separation before it draws both on its own date (R-0794)
+    const before = slashCount(b.was);
+    const fresh = !b.fresh ? 0 : before < n ? n - before : n;
     // the slashes sit in an open stretch of the line, never on a child's line,
     // nearest the middle of the widest one where they cross no name or word
     const kids = L.kids.find((c) => c.of.includes(b.a) && c.of.includes(b.b));
@@ -1958,8 +1967,8 @@ export function draw(L: Layout, s: Frame): string {
       })
       .find(clear);
     // a slash from an earlier date fades like every other carried mark (R-0793, R-0794)
-    slashLines(n, at ?? (open[0][0] + open[0][1]) / 2, k.y, d.MARK, b.fresh, ` ${Tone.Was}`).forEach((l, i) =>
-      put(l, b.fresh && i === n - 1),
+    slashLines(n, at ?? (open[0][0] + open[0][1]) / 2, k.y, d.MARK, fresh, ` ${Tone.Was}`).forEach((l, i) =>
+      put(l, i >= n - fresh),
     );
   });
 
