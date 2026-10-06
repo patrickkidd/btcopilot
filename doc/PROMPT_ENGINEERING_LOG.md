@@ -2,7 +2,7 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-30 (the coach reads what is still unknown of the basic data)
+**Last Updated**: 2026-10-06 (the person's todos, the placing sentence, the opening sentence)
 
 ---
 
@@ -1241,3 +1241,29 @@ both a target and a third person. Not yet measured live: no model calls were mad
 **Reason**: that sentence sits after the record, outside the cached part of the prompt, so it is paid for in full on every turn; this week's additions had pushed the fixed text there to 1536 characters, over the 1500 the caching test allows. Now 1469.
 **Measured** on the subscription ($0), the four live cases for these rulings on the shorter text: the three 3 of 3 cases pass 3 of 3, the 2 of 3 case passes.
 [R-0392, R-0595, R-0762, R-0770, R-0771, R-0774]
+
+### October 2026: The person's own todos are kept and picked up first on a new sitting (FD-372)
+
+**Change** (2026-10-06): a new question kind, "todo", in the record's questions list, stored only when the person says they will find something out or do something themselves, in their words, resting on their message. It is shown on the coach's map line and never on the page, a card or the coverage count. A new block in back.prompty has the coach pick up an open todo first when the person comes back after a sitting's gap. `flask admin questions catch-up` gains a part that keeps the todos the thread has not yet reported done, three at most.
+**Reason**: per R-0783.
+**Measured** on the subscription ($0): stored in their words 3 of 3; picked up first a day later 3 of 3; closed as answered with the finding recorded when they come back with it, 2 of 3 or better. The pick-up is driven by the map line in code, so the prompt text alone was not proven: the old prompt with the new code also passes. Both prompt goldens re-captured.
+[R-0783]
+
+### October 2026: The coach gives the person's dated facts back early, in order of time (FD-372)
+
+**Change** (2026-10-06): the private coaching flow and the narration prompt (public and private copies) gain a sentence: early, once, the coach gives the person's own dated facts back in one sentence, in order of time, with names and years (or their age, or a step from the time before) and no cause word.
+**Reason**: per R-0784.
+**Measured** on the subscription ($0), the live placing case: old prompt 0 of 3, new prompt 1 of 3 against a bar of 2 of 3, after three passes at the wording and the check. Not met: the replies place two of the three events. The case is marked as a known miss in the live suite. Both prompt goldens re-captured.
+[R-0784]
+
+### October 2026: The opening says what this is, and any answered question keeps the person's message (FD-372)
+
+**Change** (2026-10-06): the private opening and the public opening gain a sentence saying what this is; the onboarding rules allow it. `set_question` now stores the person's message as the answer whenever any question closes as answered; before, only case report questions did.
+**Reason**: per R-0782 and R-0781.
+**Measured** on the subscription ($0): the sentence in reply one and the hope question by reply three, old 0 of 3, new 3 of 3. The second case, the answer stored on close, old 0 of 3, new 3 of 3. Both prompt goldens re-captured.
+[R-0782, R-0781]
+
+### October 2026: No ban on early correlations (FD-372)
+
+**Change** (2026-10-06): none. A proposed rule against offering correlations early was withdrawn by Patrick; no prompt changed.
+[R-0785]
