@@ -33,7 +33,7 @@ it drops. Make the key once on the laptop:
 ssh-keygen -t ed25519 -N '' -C fd-link -f ~/fd-monitoring/link/id_ed25519
 ```
 
-Then put the public key on the box in root's `authorized_keys` with the forced
+Then put the public key on the box in fdlink's `authorized_keys` with the forced
 command and forwarding limits given in `deploy/README.md`. The first connection
 records the box's host key in `~/fd-monitoring/link/known_hosts`.
 
