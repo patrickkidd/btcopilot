@@ -3,7 +3,7 @@ import type { Books } from "./books";
 import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, esc, fitPath, flash, pathRow, slideOver, stepBtn, still } from "./dom";
-import { FIT, leastScale, NAME, type Layout } from "./diagram";
+import { leastScale, type Layout } from "./diagram";
 import { clusterStep } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { BIRTHS, family, familyStart, said, when, Told } from "./snapshots";
@@ -21,6 +21,12 @@ enum Act {
   Next = "next",
   Jump = "jump",
 }
+
+/** A phone turned on its side: a touch screen, wider than tall and shorter
+ * than any tablet, so never a desktop window (R-0791). */
+export const SIDEWAYS = "(pointer: coarse) and (orientation: landscape) and (max-height: 500px)";
+/** Where the Family view takes the whole screen: drawer.css says it again. */
+const FILLS = `(min-width: 700px), ${SIDEWAYS}`;
 
 const f = (v: number) => v.toFixed(1);
 
@@ -78,6 +84,13 @@ export function yearsLine(tl: Timeline, told: Told, i: number): string {
 const saying = (told: Told, i: number) =>
   told.told.snapshots[i].event_ids.map((id) => told.tl.events.find((e) => e.id === id)!).flatMap(kindForms);
 
+/** The Family view's full screen button, between Back and Next: four corners
+ * out to go, in to come back (R-0792). */
+const FULL =
+  `<button type="button" class="full" data-full aria-label="full screen">` +
+  `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">` +
+  `<path class="go" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="back" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button>`;
+
 /** The controls and the caption under the picture for snapshot `i`. The
  * question of a play kept as a message is the amber chip that answers it
  * (R-0587); a play kept nowhere has no message to point at. */
@@ -86,7 +99,7 @@ export function below(told: Told, i: number, statement: number | null): string {
   const back = stepBtn("‹ Back", `data-act="${Act.Back}"`, i === 0);
   const next = stepBtn("Next ›", `data-act="${Act.Next}"`, i === n - 1);
   // the whole family's top line says where the reader is, so it has no dots (R-0742)
-  if (told.whole) return `<div class="step">${back}${next}</div>`;
+  if (told.whole) return `<div class="step">${back}${FULL}${next}</div>`;
   const shot = told.shot(i);
   const dots = Array.from(
     { length: n },
@@ -307,6 +320,14 @@ export class Drawer {
     panel.classList.add("pbp");
     panel.hidden = true;
     panel.addEventListener("click", (e) => this.tap(e));
+    // a phone turned, or the picture put full screen or back, draws it again
+    // for the new size, the drawing scaled as one (R-0790, R-0791)
+    let pending = 0;
+    window.addEventListener("resize", () => {
+      cancelAnimationFrame(pending);
+      pending = requestAnimationFrame(() => this.refit());
+    });
+    document.addEventListener("keydown", (e) => e.key === "Escape" && this.panel.classList.contains("full") && this.unfull());
   }
 
   /** Slide the drawer in on the first snapshot of a told case, and the message
@@ -346,21 +367,49 @@ export class Drawer {
     // children has their grandparents above their parents instead, the frame
     // scrolling sideways as any wide frame does (R-0779)
     const kids = three.cast.kids.some((k) => k.of.includes(id));
-    // on a phone held upright the frame scrolls down as well as across, so it always has them (R-0787)
-    if (!kids && this.upright()) return four;
-    return Math.min(kids ? lv.clientWidth / L.vw : Infinity, tall / L.h) >= this.least(L, padding) ? four : three;
+    // on a phone held upright the frame scrolls down as well as across, so it
+    // always has them; fitted whole to the width, it takes the grandparents
+    // only where they leave everyone as large (R-0787, R-0790)
+    if (this.upright()) return kids && L.vw > three.layout.vw ? three : four;
+    return Math.min(kids ? lv.clientWidth / L.vw : Infinity, tall / L.h) >= leastScale(L, padding) ? four : three;
   }
 
   /** The least scale a drawing may take here: the Family view on a phone held
-   * upright fits its frame to the width with names down to 9px (R-0787). */
+   * upright fits its frame whole to the width, however small (R-0790). */
   private least(L: Layout, padding: number): number {
-    // fitted, the family's margin shrinks with the picture
-    return this.told?.whole && this.upright() ? FIT / NAME : leastScale(L, padding);
+    const lv = this.panel.querySelector<HTMLElement>(".lv")!;
+    return this.told?.whole && this.upright() ? lv.clientWidth / L.vw : leastScale(L, padding);
   }
 
   /** A phone held upright: the Family view keeps the drawer, not the whole screen. */
   private upright(): boolean {
-    return !matchMedia("(min-width: 700px)").matches;
+    return !matchMedia(FILLS).matches;
+  }
+
+  /** The drawer drawn again for the screen's new size, at the same date and
+   * on the same person: a phone turned, or the picture put full screen. */
+  private refit(): void {
+    if (!this.panel.classList.contains("in")) return;
+    this.frame = null;
+    this.height = null;
+    this.caption = 0;
+    this.render(false);
+  }
+
+  /** The Family view full screen with no title bar: the browser's own where it
+   * gives one, else the whole page; a second tap, or Escape, leaves (R-0792). */
+  private full(): void {
+    if (document.fullscreenElement) return void document.exitFullscreen();
+    if (this.panel.classList.contains("full")) return this.unfull();
+    // iPhone Safari gives full screen to a video only
+    if (document.fullscreenEnabled) return void this.panel.parentElement!.requestFullscreen();
+    this.panel.classList.add("full");
+    this.refit();
+  }
+
+  private unfull(): void {
+    this.panel.classList.remove("full");
+    this.refit();
   }
 
   /** The frame put on the three generations around `id`, at the same date. */
@@ -400,6 +449,8 @@ export class Drawer {
   }
 
   close(): void {
+    if (document.fullscreenElement?.contains(this.panel)) void document.exitFullscreen();
+    this.panel.classList.remove("full");
     slideOver(this.panel, false);
     this.onMoved?.();
   }
@@ -526,8 +577,8 @@ export class Drawer {
   private lit = new Set<string>();
 
   /** An arrow at the screen's edge for each person the date involves who is
-   * off it, toward where they stand, with their name; it glows while their
-   * shift plays and a tap slides the picture to them. On one edge they stack,
+   * off it, toward where they stand, with their name; it glows as their
+   * shift plays and, tapped, slides the picture to them. On one edge they stack,
    * clear of Back and Next (R-0785). */
   private edges(): void {
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
@@ -623,6 +674,7 @@ export class Drawer {
 
   private tap(e: Event): void {
     if (this.books?.tap(e.target as Element)) return;
+    if ((e.target as Element).closest("[data-full]")) return this.full();
     // in the Family view a tap on someone, or on a name under the title,
     // puts the frame on their three generations, at the same date (R-0783)
     const person = this.told?.whole ? (e.target as Element).closest<SVGGElement>(".draw :is(.p, .pt)[data-id]") : null;

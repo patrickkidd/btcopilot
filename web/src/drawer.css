@@ -25,8 +25,8 @@
 .pbp .point { flex: none; padding: 0 16px; font: 400 13px/20px var(--sans); color: var(--ink); }
 .pbp .path .step:focus-visible, .pbp .stepbtn:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
 /* the Family view's book, after the path, as a case report card's book (R-0779) */
-.pbp .path .book { flex: none; width: 44px; height: 44px; margin-left: 4px; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.pbp .path .book:active { color: var(--data-press); }
+.pbp .path :is(.book, .full) { flex: none; width: 44px; height: 44px; margin-left: 4px; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.pbp .path :is(.book, .full):active { color: var(--data-press); }
 /* a tap on someone in the Family view puts the picture on their three generations (R-0779) */
 .pbp.whole .draw :is(.p, .pt) { cursor: pointer; pointer-events: bounding-box; }
 
@@ -248,16 +248,25 @@
   .fam .pop, .fam .arr, .fam .arr line { animation: none; }
 }
 
+/* the full screen button between Back and Next: the browser's own full screen
+   where it gives one, else the Family view over the whole page (R-0792) */
+.pbp .foot .full { flex: none; width: 44px; height: 44px; padding: 0; border: 0; background: none; color: var(--data); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.pbp .foot .full:active { color: var(--data-press); }
+.pbp .foot .full .back, :is(.pbp.full, :fullscreen > .pbp) .foot .full .go { display: none; }
+:is(.pbp.full, :fullscreen > .pbp) .foot .full .back { display: inline; }
+.pbp.whole.full { position: fixed; inset: 0; z-index: 90; }
+
 /* on a phone turned sideways, an iPad or a desktop, the Family view takes the
-   whole screen, so its frame has all the width there is (R-0784) */
-@media (min-width: 700px) {
+   whole screen, so its frame has all the width there is: on a phone, no header,
+   no timeline, no list beside it (R-0784, R-0791). drawer.ts's FILLS says it again. */
+@media (min-width: 700px), (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .pbp.whole { position: fixed; inset: 0; z-index: 90; }
   /* the years line keeps a phone's height, so the picture has the rest */
   .pbp.whole .wire svg { width: auto; height: 78px; max-width: 100%; margin: 0 auto; }
 }
 /* a phone turned sideways is short: the title holds one line until it needs
    more and the years line is shorter, so the picture keeps the height */
-@media (min-width: 700px) and (max-height: 500px) {
+@media (min-width: 700px) and (max-height: 500px), (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   /* the title and who else a date touches stand either side of the years line,
      in the same places on every date, so the picture keeps the height */
   .pbp.whole > :is(.when, .also) { position: absolute; top: 32px; width: calc(50% - 136px); height: 40px; box-sizing: border-box; padding: 2px 0 0; overflow: hidden; }
@@ -270,4 +279,6 @@
   .pbp.whole > .foot { position: absolute; left: 0; right: 0; bottom: 0; border-top: 0; background: none; pointer-events: none; }
   .pbp.whole > .foot .step { background: none; }
   .pbp.whole > .foot .stepbtn { pointer-events: auto; background: var(--panel); }
+  /* the full screen button stands beside the close button, off the picture */
+  .pbp.whole > .foot .full { position: fixed; top: 0; right: 48px; pointer-events: auto; }
 }

@@ -34,7 +34,7 @@ import { REST, SelKind } from "./caption";
 import { $, CLUSTER, el, flash, setTitle, slideOver, type Title } from "./dom";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
-import { Drawer } from "./drawer";
+import { Drawer, SIDEWAYS } from "./drawer";
 import { among, family, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
@@ -1923,6 +1923,13 @@ void store
 
 // Safari zooms on a pinch whatever the viewport says; the page's scale stays put (R-0786)
 document.addEventListener("gesturestart", (e) => e.preventDefault());
+
+// A phone turned on its side over the chat shows the Family view alone,
+// filling the screen; turned back, it stays at the same date and person (R-0791)
+matchMedia(SIDEWAYS).addEventListener("change", (e) => {
+  const free = here === Screen.Chat && settings.top() === null && !sessions.up && !adding() && !pbp.panel.classList.contains("in");
+  if (e.matches && free && document.activeElement !== $("composer") && family(record()).snapshots.length > 0) void navigate(address(Place.Family));
+});
 
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.
