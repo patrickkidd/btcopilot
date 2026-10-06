@@ -1072,8 +1072,9 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   const room = (a: string, b: string) =>
     Math.max(gapFor(a, b), between(a, b) + PAD + (zone[a] === 1 || zone[b] === -1 ? 2 * PAD : 0));
   // a move carries the rest of the row with it; centring a couple over their
-  // children pushes each neighbour only as far as keeps that distance (R-0749),
-  // except in the fallback, whose bars would come apart
+  // children, or children under their parents, pushes each neighbour only as
+  // far as keeps that distance (R-0749), so no one is carried off across the
+  // empty width beside them; except in the fallback, whose bars would come apart
   const shift = (row: string[], from: string, by: number, least = false) => {
     const i = row.indexOf(from);
     x[from] += by;
@@ -1136,7 +1137,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
             moved = true;
             hit.add(u);
           } else if (b0 - to > 0.5) {
-            shift(rowWith(first), first, b0 - to);
+            shift(rowWith(first), first, b0 - to, true);
             moved = true;
             hit.add(u);
           } else if (w - (b1 - b0) > 0.5) {
@@ -1147,7 +1148,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
           continue;
         }
         if (b0 - (k0 - inset) > 0.5) {
-          shift(rowWith(first), first, b0 - (k0 - inset));
+          shift(rowWith(first), first, b0 - (k0 - inset), true);
           moved = true;
           hit.add(u);
         } else if (k1 + inset - b1 > 0.5) {

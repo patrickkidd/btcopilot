@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { arrange, bar, crosses, draw, Mark, Side, VIEW, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
+import { arrange, bar, crosses, draw, Mark, Side, VIEW, W, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
 import { FIELD, Move } from "../src/moves";
 import { among, family as wholeFamily, familyStart, gapText, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
@@ -115,6 +115,18 @@ describe("the layout", () => {
     expect(L.y[String(ODILE)]).toBeLessThan(L.y[String(MARCUS)]);
     expect(L.y[String(MARCUS)]).toBeLessThan(L.y[String(CORINNE)]);
     expect(L.y[String(MARCUS)]).toBe(L.y[String(DELPHINE)]);
+  });
+
+  // R-0749
+  it("keeps a couple as close as their children allow when a cousin's family settles beside them", () => {
+    // Ross Brand and Cora's daughters Ellen and Kit; Ellen with Ross Hale, whose
+    // parents are Lorna and Walt, and their son Owen; Kit with Chris and their
+    // daughter Kay: Owen settling under his parents carried Kay, and with her
+    // Kit and her parents, a long way right
+    const S = arrange(JSON.parse(`{"people": {"1": {"name": "Owen Hale", "g": "m", "born": 1980.36, "died": null, "you": true}, "30": {"name": "Ross Hale", "g": "m", "born": null, "died": null, "you": false}, "31": {"name": "Ellen Hale", "g": "f", "born": 1954.92, "died": null, "you": false}, "54": {"name": "Lorna Hale", "g": "f", "born": 1931.47, "died": 2014.9933789954339, "you": false}, "55": {"name": "Walt Hale", "g": "m", "born": 1921, "died": 2015, "you": false}, "72": {"name": "Ross Brand", "g": "m", "born": null, "died": 1998.4221461187215, "you": false}, "73": {"name": "Cora Brand", "g": "f", "born": null, "died": 2011.0997716894976, "you": false}, "140": {"name": "Kit Brand", "g": "f", "born": 1953.15, "died": null, "you": false}, "147": {"name": "Chris", "g": "m", "born": null, "died": null, "you": false}, "149": {"name": "Kay", "g": "f", "born": null, "died": null, "you": false}}, "bonds": [{"a": "30", "b": "31", "st": "div", "married": true}, {"a": "54", "b": "55", "st": "div", "married": true}, {"a": "72", "b": "73", "st": "married", "married": true}, {"a": "140", "b": "147", "st": "married", "married": true}], "kids": [{"of": ["30", "31"], "kids": ["1"]}, {"of": ["54", "55"], "kids": ["30"]}, {"of": ["72", "73"], "kids": ["31", "140"]}, {"of": ["140", "147"], "kids": ["149"]}], "index": "1", "marked": ["73", "1", "140", "149"], "cross": ["73", "140"], "words": {"1": 29, "140": 27, "149": 18}, "wordsUnder": false, "others": [], "moves": [{"k": "toward", "from": "1", "to": "54"}, {"k": "toward", "from": "31", "to": "1"}, {"k": "toward", "from": "1", "to": "31"}], "places": [], "kin": [{"k": "move", "kind": "distance", "from": "1", "to": "31"}, {"k": "move", "kind": "conflict", "from": "1", "to": "31"}, {"k": "move", "kind": "cutoff", "from": "1", "to": "31"}, {"k": "move", "kind": "conflict", "from": "140", "to": "149"}], "anxious": ["31", "1"], "assoc": {"1": "54", "31": "1", "54": "1", "140": "149", "149": "140"}, "until": 2026}`) as Cast);
+    // the sisters stand a sibling's distance apart, three widths, and their parents over them
+    expect(S.x["140"] - S.x["31"]).toBeLessThanOrEqual(3 * W + 1);
+    expect(S.x["73"] - S.x["72"]).toBeLessThanOrEqual(3 * W + 1);
   });
 
   // R-0545, R-0187
