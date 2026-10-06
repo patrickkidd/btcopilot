@@ -133,9 +133,6 @@ export interface Cast {
   /** A step's words find room under or over their person and never widen the
    * frame: the Family view's one frame over every date (R-0784). */
   wordsUnder?: boolean;
-  /** The names of everyone else the record holds, so a first name shared with
-   * someone outside the picture is told apart too (R-0548). */
-  others?: string[];
   moves: Arrow[];
   /** The steps' insides and outsides, each moving people from their places. */
   places: Place[];
@@ -344,9 +341,10 @@ export class Unplaceable extends Error {
 
 /** What each of `names` is called in a picture and in the words around it:
  * ruled 2026-09-26, first names; a surname initial only for two people who
- * share a first name, among `names` or the `others` the picture's record
- * holds, as a father and his grandfather both called Robert (R-0548, as
- * widened in the FD-371 review, 2026-10-05). A stand-in is named by the
+ * share a first name in one picture or one line of words, among `names` or
+ * the `others` drawn beside that line, as a father and his grandfather both
+ * called Robert (R-0548, as widened in the FD-371 review, 2026-10-05); never
+ * for a namesake the record holds elsewhere. A stand-in is named by the
  * nearest named person and the relation, in the record's own words: "Jim
  * O'Malley's partner" is "Jim's partner", "Catherine's mother's partner" stays
  * whole (R-0766). */
@@ -943,7 +941,7 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   const { parents, bondsOf } = t;
   const { gen, rows } = plan;
   const half = (id: string) => d.half(P[id]);
-  const names = called(Object.fromEntries(ids.map((id) => [id, P[id].name])), cast.others);
+  const names = called(Object.fromEntries(ids.map((id) => [id, P[id].name])));
   P = Object.fromEntries(ids.map((id) => [id, { ...P[id], name: names[id] }]));
   const x: Record<string, number> = {};
   const y: Record<string, number> = {};

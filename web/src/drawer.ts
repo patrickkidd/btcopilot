@@ -269,9 +269,6 @@ export class Drawer {
   private moved: { id: string; x: number; y: number } | null = null;
   /** The Family view has just opened: it moves to the frame's own first date. */
   private opening = false;
-  /** What the Family view calls each person of the record, in its path and
-   * under its title, by the drawing's rule (R-0548). */
-  private names: Record<string, string> = {};
 
   constructor(
     readonly panel: HTMLElement,
@@ -305,7 +302,6 @@ export class Drawer {
     this.frame = null;
     this.moved = null;
     this.opening = true;
-    this.names = called(Object.fromEntries(Object.entries(whole.cast.people).map(([id, p]) => [id, p.name])));
     this.show(whole, null, familyStart(tl, c));
   }
 
@@ -411,7 +407,7 @@ export class Drawer {
     if (told.whole) {
       q(".when").innerHTML = topLine(told, this.i);
       this.also(told.outside(this.i, view));
-      q(".path").innerHTML = familyPath(this.names[this.centre]);
+      q(".path").innerHTML = familyPath(view.layout.P[this.centre].name);
       fitPath(q(".path"));
     }
     const draw = q(".draw");
@@ -496,7 +492,8 @@ export class Drawer {
       el.type = "button";
       el.className = `edge ${side}${this.lit.has(id) ? " on" : ""}`;
       el.dataset.slide = id;
-      el.innerHTML = side === "left" ? `\u2039 ${esc(this.names[id])}` : `${esc(this.names[id])} \u203a`;
+      const name = esc(this.frame!.layout.P[id].name);
+      el.innerHTML = side === "left" ? `\u2039 ${name}` : `${name} \u203a`;
       lv.appendChild(el);
       placed[side].push({ el, y: cy + ((py - cy) * (ex - cx)) / (px - cx) - H / 2 });
     });
@@ -516,7 +513,10 @@ export class Drawer {
    * the frame on them; a list longer than its line ends in how many more. */
   private also(away: string[]): void {
     const line = this.panel.querySelector<HTMLElement>(".also")!;
-    const who = (id: string) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(this.names[id])}</button>`;
+    // named beside the drawing, so a namesake drawn in it gets an initial too (R-0548)
+    const full = (ids: string[]) => Object.fromEntries(ids.map((id) => [id, this.told!.cast.people[id].name]));
+    const names = called(full(away), Object.values(full(Object.keys(this.frame!.cast.people).filter((id) => !id.startsWith("unknown-")))));
+    const who = (id: string) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(names[id])}</button>`;
     for (let n = away.length; n >= 0; n--) {
       const more = away.length - n;
       line.innerHTML = away.length ? `Also on this date: ${[...away.slice(0, n).map(who), ...(more ? [`+${more} more`] : [])].join(", ")}` : "";

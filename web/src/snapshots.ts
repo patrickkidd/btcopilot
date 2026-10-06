@@ -566,7 +566,6 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
     words,
     // the Family view's one frame keeps no width for a date's words (R-0784)
     wordsUnder: everyone && !!keep,
-    others: everyone && keep ? r.tl.people.filter((p) => !cast.has(key(p.id))).map(fullName) : [],
     moves,
     places,
     kin,
@@ -681,7 +680,6 @@ export const familyStart = (tl: Timeline, c: Case): number => {
  * shift, in date order, each said once with who did it. */
 export function family(tl: Timeline): Case {
   const people = new Map(tl.people.map((p) => [p.id, p]));
-  const names = called(Object.fromEntries(tl.people.map((p) => [p.id, fullName(p)])));
   const byId = new Map(tl.events.map((e) => [e.id, e]));
   const told = untold(
     tl,
@@ -689,10 +687,13 @@ export function family(tl: Timeline): Case {
   );
   return {
     ...told,
-    snapshots: told.snapshots.map((s) => ({
-      ...s,
-      fact: [...new Set(s.event_ids.map((id) => happened(people, names, byId.get(id)!)))].join("; "),
-    })),
+    snapshots: told.snapshots.map((s) => {
+      // an initial only for two people of one first name named on the one line (R-0548)
+      const events = s.event_ids.map((id) => byId.get(id)!);
+      const named = [...new Set(events.flatMap((e) => [e.person, e.spouse, e.child]).filter((id): id is number => id != null && people.has(id)))];
+      const names = called(Object.fromEntries(named.map((id) => [id, fullName(people.get(id)!)])));
+      return { ...s, fact: [...new Set(events.map((e) => happened(people, names, e)))].join("; ") };
+    }),
   };
 }
 

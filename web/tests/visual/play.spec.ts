@@ -1065,7 +1065,7 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
   });
 
   // R-0548, R-0783
-  test("tells two people of one first name apart under the title and in the path, a whole word at a time", async ({ page }) => {
+  test("tells two people of one first name apart where both are drawn or named together, never where only one is, and cuts the path a whole word at a time", async ({ page }) => {
     await familyOf(page, 2, (tl, ids) => {
       moving(false)(tl, ids);
       // Hugo's father is Hugo too, and Hugo's name is long
@@ -1078,7 +1078,9 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
     while (await back.count()) await back.click();
     while (!(await drawer(page).locator(".also").textContent())) await drawer(page).locator('[data-act="next"]').click();
     await expect(drawer(page).locator(".also")).toHaveText("Also on this date: Hugo V.");
-    await expect(drawer(page).locator(".when")).toContainText("Hugo B. ");
+    // the title names only the son, so he needs no initial there; his father is named beside the drawing that holds him
+    await expect(drawer(page).locator(".when")).not.toContainText("Hugo B.");
+    await expect(drawer(page).locator(".when")).toContainText("Hugo ");
     await drawer(page).locator('.also [data-centre]').click();
     // "Timeline › Family › Hugo V.'s family" is cut only between words
     const path = (await drawer(page).locator(".path").textContent())!;

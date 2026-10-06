@@ -71,7 +71,7 @@
 @keyframes pbp-edge { 50% { box-shadow: 0 0 10px 2px var(--move); } }
 @media (prefers-reduced-motion: reduce) { .pbp .edge.on { animation: none; box-shadow: 0 0 6px 1px var(--move); } }
 /* the person the Family view's frame is around, in the path's colour for where the reader is */
-.pbp.whole .draw .mid .shape { stroke: var(--data); stroke-width: 2.4; }
+.pbp.whole .draw .mid .shape { stroke: var(--data); }
 .pbp.whole .draw .pt.mid text { fill: var(--data); font-weight: 500; }
 /* someone not yet born at the step, and a couple or child line before its date, keeps its place, faded (R-0756) */
 .pbp.whole .yet { opacity: 0.3; }
