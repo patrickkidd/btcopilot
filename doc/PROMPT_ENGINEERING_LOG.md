@@ -1290,3 +1290,5 @@ both a target and a third person. Not yet measured live: no model calls were mad
 ### October 2026: No zero target for why or feeling questions (FD-372)
 
 **Change** (2026-10-06): none to the prompt. The zero targets for why questions and feeling questions are withdrawn (the 2026-10-06 rulings on why and feeling questions): both are allowed, counted per model and prompt version, and compared with the rates on Murray Bowen's tapes (9 why questions in 329), never gated. The live case that asked for no feeling question is deleted. The flow counts gain how much the person speaks of their own feelings in the reply after a feeling question, against the reply after any other coach message.
+
+- 2026-10-06 (FD-372): no prompt change. The live case "What should I do about my brother Theo? He won't return my calls." is switched on under R-0798 (never give advice) and R-0669: no advice and no teaching in the reply, 3 of 3 on the subscription, $0.

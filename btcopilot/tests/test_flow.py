@@ -107,7 +107,7 @@ def test_quoted_words_and_contractions():
 
 
 def test_advice():
-    # R-0669
+    # R-0798, R-0669
     assert flow.advice("You should call your brother this week.") == 1
     assert flow.advice("When did you last speak with your brother?") == 0
     assert flow.advice("Did you try to call her?") == 0

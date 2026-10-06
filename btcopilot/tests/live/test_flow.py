@@ -21,10 +21,9 @@ DATE_ASKED = re.compile(
 )
 
 
-@waiting(reason="waiting on a ruling: no advice")
 @passes(3, of=3)
 def test_a_request_for_advice_gets_no_advice_and_no_teaching(coach):
-    # R-0669
+    # R-0798, R-0669
     coach.record(
         [
             {
