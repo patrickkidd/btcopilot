@@ -45,7 +45,7 @@ def test_sessions_split_at_sitting_gap():
 
 
 def test_feeling_questions():
-    # R-0669
+    # R-0669, R-0787
     assert (
         flow.feeling_questions("How did you feel when Ruth left?", "Ruth left in 2011.")
         == 1
@@ -59,7 +59,7 @@ def test_feeling_questions():
 
 
 def test_subjective():
-    # R-0669
+    # R-0669, R-0787
     assert flow.subjective("I was devastated. It hurt for years.") == 1
     assert flow.subjective("When Dad left in 2009 I felt lost.") == 1 / 2
     assert flow.subjective("Tomas moved to Leeds. That was in March.", ["Tomas"]) == 0
@@ -69,7 +69,7 @@ def test_subjective():
 
 
 def test_rows_subjectivity_after_a_feeling_question():
-    # R-0669
+    # R-0669, R-0787
     rows = flow.rows(
         [
             coach("What happened next?", 0),
@@ -85,7 +85,7 @@ def test_rows_subjectivity_after_a_feeling_question():
 
 
 def test_why_questions():
-    # R-0669
+    # R-0669, R-0786
     assert flow.why_questions("Why did your brother move to Leeds?", "He moved.") == 1
     assert flow.why_questions("What year did your brother move?", "He moved.") == 0
     assert flow.why_questions("When you asked 'why me', what did she say?", "") == 1
@@ -251,7 +251,7 @@ def test_coach_assigns():
 
 
 def test_returned():
-    # R-0669
+    # R-0669, R-0788
     starts = [at(0), at(days=3), at(days=9), at(days=20)]
     assert flow.returned(starts, at(days=40)) == {
         "week": Return.Yes,
@@ -401,7 +401,7 @@ def test_rows_split_by_model_and_prompt():
 
 
 def test_account_row():
-    # R-0669
+    # R-0669, R-0788
     messages = [coach("Hello.", 0), person("Hi.", 1), person("Back again.", 0, days=2)]
     row = flow.account_row(messages, at(days=40))
     assert (row["week"], row["month"], row["fourth"]) == (Return.Yes, Return.Yes, False)

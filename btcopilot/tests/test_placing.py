@@ -13,8 +13,8 @@ from btcopilot.tests.repo import REPO
 
 YEARS = [1988, 1990, 1991]
 PLACED = (
-    "So your parents married in 1988, your sister came in 1990, and the move "
-    "was the year after."
+    "So your parents married in 1988, your sister was born in 1990, and you "
+    "moved the next year."
 )
 
 
@@ -27,6 +27,18 @@ def test_the_private_flow_rules_carry_the_placing_paragraph():
     assert "**Placing what they told you**" in text
     assert "within the first ten or so exchanges" in text
     assert 'never "because", "led to" or any other cause word' in text
+
+
+def test_the_private_flow_rules_keep_the_observations_pairing_two_dated_facts():
+    # R-0785
+    if not key_present():
+        pytest.skip("no key opens the private prompts")
+    fragments = REPO / "private" / "prompts" / "fragments"
+    core = " ".join(read(fragments / "flow_core.md").split())
+    claude = " ".join(read(fragments / "flow_claude.md").split())
+    assert "your dad left the same year the headaches started" in core
+    assert "your mom moved cross-country the same year your grandfather got sick" in claude
+    assert "your dad moved out the same year your mom started having the headaches" in claude
 
 
 def test_a_sentence_placing_three_years_in_order_passes():

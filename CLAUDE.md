@@ -225,6 +225,7 @@ rulings and the oracle SPEC. The encrypted rulings store and prompts in this rep
 | Clusters | [doc/CLUSTERS.md](doc/CLUSTERS.md) |
 | Coverage of the basic data: required items, their states, the metrics | [doc/COVERAGE.md](doc/COVERAGE.md) |
 | Drawability — when the timeline picture may draw vs must ask | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
+| Crisis protocol | [doc/CRISIS_PROTOCOL.md](doc/CRISIS_PROTOCOL.md) |
 | Diagram rendering | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md), [doc/FRAGMENT_CONVENTIONS.md](doc/FRAGMENT_CONVENTIONS.md) |
 | Tests and known defects | [doc/TEST_STRATEGY.md](doc/TEST_STRATEGY.md), [doc/KNOWN_DEFECTS.md](doc/KNOWN_DEFECTS.md) |
 | Feedback loops | [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) — every signal, what closes it, the number that proves it; checked on demand by `/product-owner` |
