@@ -811,7 +811,7 @@ function looseGens(cast: Cast, t: Ties): { gen: Record<string, number>; comps: s
   });
   // a group with no tie to the reader's, such as two friends who are a couple,
   // stands on the row of whoever in the family one of them is involved with,
-  // never on the grandparents' row by default (R-0781)
+  // never on the grandparents' row by default
   const home = comps.find((c) => c.includes(cast.index))!;
   comps.forEach((c) => {
     if (c === home) return;

@@ -135,7 +135,7 @@ const familyPath = (whose: string | null) =>
 
 export const head = (told: Told, cluster: string) =>
   told.whole
-    ? `<div class="path">${familyPath(null)}</div>` + closeX(` data-step="0"`) + `<div class="when"></div>`
+    ? `<div class="path">${familyPath(null)}</div>` + closeX(` data-step="0"`) + `<div class="when"></div><p class="also"></p>`
     : `<div class="path">${pathRow(["Timeline", cluster, "explain"])}</div>` +
       closeX(` data-step="${CLUSTER}"`) +
       pointLine(told);
@@ -261,9 +261,13 @@ export class Drawer {
   private scale = 1;
   /** The tallest caption under the picture, measured once per telling. */
   private caption = 0;
-  /** In the Family view, the person a tap put the picture on, until the next
-   * step; null while the step's own people are drawn (R-0779). */
-  private focus: string[] | null = null;
+  /** In the Family view, whom the frame is the three generations around, and
+   * the frame itself, drawn over every date (R-0783). */
+  private centre = "";
+  private frame: Told | null = null;
+  /** The frame was just put on a new person: it opens on them and their
+   * parents and partners, sliding from where the tapped person stood. */
+  private moved: { id: string; x: number; y: number } | null = null;
 
   constructor(
     readonly panel: HTMLElement,
@@ -287,15 +291,27 @@ export class Drawer {
     this.show(new Told(tl, told), statement, 0);
   }
 
-  /** Slide the drawer in on the family at the first date holding more than
-   * births, drawn as three generations around that date's people, or around
-   * the record's own person when no date holds more; Back and Next step
-   * through its history (R-0742, R-0775, R-0779). */
+  /** Slide the drawer in on the three generations around the record's own
+   * person, at the first date holding more than births; Back and Next step
+   * through the dates on that one frame (R-0742, R-0775, R-0783). */
   openFamily(tl: Timeline): void {
     const c = family(tl);
-    const i = familyStart(tl, c);
-    this.focus = i < 0 ? [String(tl.people.find((p) => p.primary)!.id)] : null;
-    this.show(new Told(tl, c, true), null, Math.max(i, 0));
+    const whole = new Told(tl, c, true);
+    this.centre = whole.cast.index;
+    this.frame = whole.centred(this.centre);
+    this.moved = null;
+    this.show(whole, null, familyStart(tl, c));
+  }
+
+  /** The frame put on the three generations around `id`, at the same date. */
+  private recentre(id: string, from: Element | null): void {
+    if (id === this.centre) return;
+    const at = from?.getBoundingClientRect();
+    this.centre = id;
+    this.frame = this.told!.centred(id);
+    this.height = null;
+    this.moved = { id, x: at ? at.left + at.width / 2 : NaN, y: at ? at.top + at.height / 2 : NaN };
+    this.render(false);
   }
 
   /** Whether the whole family is up. */
@@ -355,17 +371,20 @@ export class Drawer {
     const told = this.told!;
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
     q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
-    if (told.whole) q(".when").innerHTML = topLine(told, this.i);
-    // the Family view draws each step's own three generations (R-0779)
-    const view = told.whole ? told.around(this.i, this.focus) : told;
-    const shot = view.shot(told.whole ? view.length - 1 : this.i);
-    if (told.whole) q(".path").innerHTML = familyPath(this.focus ? view.layout.P[this.focus[0]].name : null);
+    // the Family view draws one frame over every date (R-0783)
+    const view = told.whole ? this.frame! : told;
+    const shot = view.shot(this.i);
+    if (told.whole) {
+      const away = told.outside(this.i, view).map((id) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(told.cast.people[id].name.split(" ")[0])}</button>`);
+      q(".when").innerHTML = topLine(told, this.i);
+      q(".also").innerHTML = away.length ? `Also on this date: ${away.join(", ")}` : "";
+      q(".path").innerHTML = familyPath(this.centre === told.cast.index ? null : view.layout.P[this.centre].name);
+    }
     const draw = q(".draw");
     // the new drawing is the same width, so the frame sets off from where it stood
     const was = draw.scrollLeft;
     draw.innerHTML = shot.svg;
     q(told.whole ? ".foot" : ".scroll").innerHTML = below(told, this.i, this.statement);
-    if (told.whole) this.height = null;
     this.fit(view.layout);
     draw.scrollLeft = was;
     const lit = [...draw.querySelectorAll<SVGElement>('.hl.now[data-mark^="hl:"]')].map((m) => m.dataset.mark!.slice(3));
@@ -374,13 +393,23 @@ export class Drawer {
     const who = shot.mover ?? shot.who;
     draw.dataset.who = who;
     const ids = [...(shot.mover ? [shot.mover, ...shot.reach, ...lit] : lit.length ? lit : [shot.who]), ...shot.couple];
-    // a tapped person opens with their parents and partners, as a step opens with its people
+    // a person the frame was just put on opens with their parents and
+    // partners, sliding in from where they were tapped
     const kin = (id: string) => [
       ...view.cast.kids.filter((k) => k.kids.includes(id)).flatMap((k) => k.of),
       ...view.cast.bonds.filter((b) => b.a === id || b.b === id).flatMap((b) => [b.a, b.b]),
     ];
-    if (this.focus) frameOn(draw, [...new Set([...this.focus, ...this.focus.flatMap(kin)])].filter((id) => !id.startsWith("unknown-")), this.focus[0], false);
-    else
+    const moved = this.moved;
+    this.moved = null;
+    if (moved) {
+      frameOn(draw, [...new Set([moved.id, ...kin(moved.id)])].filter((id) => !id.startsWith("unknown-")), moved.id, false);
+      const now = draw.querySelector(`.p[data-id="${CSS.escape(moved.id)}"] .shape`)?.getBoundingClientRect();
+      if (now && !Number.isNaN(moved.x) && !still())
+        draw.querySelector("svg")!.animate(
+          [{ transform: `translate(${moved.x - (now.left + now.width / 2)}px, ${moved.y - (now.top + now.height / 2)}px)` }, { transform: "none" }],
+          { duration: 450, easing: "ease-in-out" },
+        );
+    } else
       frameOn(
         draw,
         [...new Set(ids)],
@@ -426,21 +455,18 @@ export class Drawer {
 
   private tap(e: Event): void {
     if (this.books?.tap(e.target as Element)) return;
-    // in the Family view a tap on someone puts the picture on their three
-    // generations, until the next step (R-0779)
+    // in the Family view a tap on someone, or on a name under the title,
+    // puts the frame on their three generations, at the same date (R-0783)
     const person = this.told?.whole ? (e.target as Element).closest<SVGGElement>(".draw :is(.p, .pt)[data-id]") : null;
     if (person && !person.dataset.id!.startsWith("unknown-")) {
-      // the one the picture is already on: nothing to do
-      if (this.focus?.[0] === person.dataset.id) return;
-      this.focus = [person.dataset.id!];
-      return this.render(false);
+      const shape = this.panel.querySelector(`.draw .p[data-id="${CSS.escape(person.dataset.id!)}"] .shape`);
+      return this.recentre(person.dataset.id!, shape);
     }
+    const named = (e.target as Element).closest<HTMLElement>("[data-centre]");
+    if (named) return this.recentre(named.dataset.centre!, null);
     const step = (e.target as Element).closest<HTMLElement>("[data-step]");
-    // "Family" in the path puts the picture back on the step's own people
-    if (step && this.focus && this.told?.whole && step.dataset.step === "1") {
-      this.focus = null;
-      return this.render(false);
-    }
+    // "Family" in the path puts the frame back on the record's own person
+    if (step && this.told?.whole && step.dataset.step === "1") return this.recentre(this.told.cast.index, null);
     if (step) return this.back(Number(step.dataset.step), this.told!.eventIds);
     const chip = (e.target as Element).closest<HTMLElement>("button.chip[data-kind]");
     if (chip) {
@@ -454,7 +480,6 @@ export class Drawer {
     if (act === Act.Next) this.i = Math.min(this.i + 1, n - 1);
     else if (act === Act.Back) this.i = Math.max(this.i - 1, 0);
     else if (act === Act.Jump) this.i = Number(b.dataset.i);
-    this.focus = null;
     this.render();
     // a keyboard tap keeps its place
     if ((e as MouseEvent).detail === 0)

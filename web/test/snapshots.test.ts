@@ -1200,7 +1200,7 @@ describe("a family the row rules cannot place", () => {
     });
   });
 
-  // R-0781, R-0545
+  // R-0545
   it("stands a couple with no tie to the family on the row of the one of the family they are involved with, not the grandparents'", () => {
     const c = { ...families["a couple not connected to the reader's family"], assoc: { x: "c", c: "x" } };
     expect(() => layout(c)).toThrow(/cannot place/);
@@ -1405,48 +1405,27 @@ describe("the whole family stepped through dates", () => {
   };
   const whole = (tl = record()) => new Told(tl, wholeFamily(tl), true);
 
-  // R-0781, R-0682
-  it("makes room on a date for that date's own words only, never an earlier date's", () => {
-    const tl = record();
-    tl.events.push(
-      event(306, "2001-03-01", "shift", THEO, { relationship: "toward", relationshipTargets: [DELPHINE], functioning: "up", title: "Started calling his mother every single evening for an hour", description: "Started calling his mother every single evening for an hour" }),
-      event(307, "2003-03-01", "shift", THEO, { relationship: "toward", relationshipTargets: [DELPHINE], title: "Called", description: "Called" }),
-    );
-    const t = whole(tl);
-    const wide = t.around(stepOf(t, 306)).layout.vw;
-    const later = t.around(stepOf(t, 307)).layout.vw;
-    expect(wide).toBeGreaterThan(VIEW);
-    expect(later).toBeLessThanOrEqual(VIEW);
+  // R-0783
+  it("draws one frame of three generations around a person over every date, the same people and places on each", () => {
+    const t = whole();
+    const f = t.centred(String(DELPHINE));
+    const drawn = Object.keys(f.cast.people).map(Number);
+    expect(drawn).toEqual(expect.arrayContaining([DELPHINE, CORINNE, THEO]));
+    expect(drawn).not.toContain(ERROL);
+    // Theo's cutoff of his mother plays on the frame on its own date, in place
+    const at = stepOf(t, 303);
+    expect(f.shot(at).svg).toContain(`data-mark="move:${THEO}&gt;${DELPHINE}:cutoff"`);
+    const place = (i: number) => group(f.shot(i).svg, DELPHINE).slice(2).join(",");
+    expect(place(0)).toBe(place(at));
   });
 
-  // R-0779
-  it("draws a step between a mother and her son without his children, which would make a fourth generation", () => {
-    const tl = record();
-    const wife = { ...tl.people[0], id: 9601, name: "Wren", gender: "female", parents: null, primary: false };
-    const son = { ...tl.people[0], id: 9602, name: "Kip", gender: "male", parents: 9603, primary: false };
-    tl.people.push(wife, son);
-    tl.pair_bonds.push({ ...tl.pair_bonds[0], id: 9603, person_a: THEO, person_b: 9601, married: true });
-    const t = whole(tl);
-    const v = t.around(stepOf(t, 303));
-    const drawn = Object.keys(v.cast.people).map(Number);
-    expect(drawn).toEqual(expect.arrayContaining([THEO, DELPHINE]));
-    expect(drawn).not.toContain(9602);
-  });
-
-  // R-0779
-  it("draws a step between a grandparent and a grandchild across the generation between them, and no further", () => {
-    const tl = record();
-    tl.events.push(event(305, "2012-04-01", "shift", ERROL, { relationship: "toward", relationshipTargets: [CORINNE], title: "Called", description: "Called Corinne" }));
-    // Errol's own parents, who would be a fourth generation
-    tl.people.push({ ...tl.people[0], id: 9701, name: "Abel", gender: "male", parents: null, primary: false }, { ...tl.people[0], id: 9702, name: "Ada", gender: "female", parents: null, primary: false });
-    tl.pair_bonds.push({ ...tl.pair_bonds[0], id: 9703, person_a: 9701, person_b: 9702, married: true });
-    tl.people.find((p) => p.id === ERROL)!.parents = 9703;
-    const t = whole(tl);
-    const v = t.around(stepOf(t, 305));
-    const drawn = Object.keys(v.cast.people).map(Number);
-    expect(drawn).toEqual(expect.arrayContaining([ERROL, CORINNE, DELPHINE]));
-    expect(drawn).not.toContain(9701);
-    expect(new Set(Object.values(v.layout.y)).size).toBe(3);
+  // R-0783
+  it("names whom a date's events touch outside the frame", () => {
+    const t = whole();
+    const f = t.centred(String(ERROL));
+    const at = stepOf(t, 303);
+    expect(t.outside(at, f)).toEqual([String(THEO), String(DELPHINE)]);
+    expect(t.outside(at, t.centred(String(DELPHINE)))).toEqual([]);
   });
   const stepOf = (t: Told, id: number) => t.told.snapshots.findIndex((s) => s.event_ids.includes(id));
   const group = (svg: string, id: number) =>
@@ -1510,13 +1489,13 @@ describe("the whole family stepped through dates", () => {
   });
 
   // R-0775
-  it("opens on the first date holding more than births, past the early births alone, and says so when every date is births", () => {
+  it("opens on the first date holding more than births, past the early births alone, and on today when every date is births", () => {
     const tl = record();
     tl.events.push(event(308, "1920-02-01", "birth", null, { child: ERROL }), event(309, "1922-02-01", "birth", null, { child: ODILE }));
     const c = wholeFamily(tl);
     expect(c.snapshots[familyStart(tl, c)].event_ids).toEqual([103]);
     const births = { ...c, snapshots: c.snapshots.slice(0, 2) };
-    expect(familyStart(tl, births)).toBe(-1);
+    expect(familyStart(tl, births)).toBe(1);
   });
 
   // R-0777, R-0763

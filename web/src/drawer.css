@@ -55,6 +55,10 @@
 /* three lines held still, so the picture stays put; a longer title grows, whole, never under the years line */
 .pbp.whole > .when { box-sizing: content-box; min-height: 54px; line-height: 18px; align-content: flex-start; }
 .pbp .when .words { color: var(--faint); font-weight: 400; }
+/* who a date's events touch outside the frame: a tap puts the frame on them (R-0783) */
+/* one line, so the picture stands still from date to date; a long list scrolls sideways */
+.pbp > .also { flex: none; height: 18px; margin: 0; padding: 0 16px 6px; font: 400 13px/18px var(--mono); color: var(--faint); white-space: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.pbp .also .also-who { font: inherit; color: var(--data); background: none; border: 0; padding: 0; min-height: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .pbp.whole .scroll .step { justify-content: space-between; }
 /* someone not yet born at the step, and a couple or child line before its date, keeps its place, faded (R-0756) */
 .pbp.whole .yet { opacity: 0.3; }
