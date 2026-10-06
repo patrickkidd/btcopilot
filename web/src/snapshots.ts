@@ -38,6 +38,8 @@ export interface Shot {
   /** Who makes the step's move, if it has one, and everyone the move reaches. */
   mover: string | null;
   reach: string[];
+  /** Both partners of a couple the step marries, separates or divorces. */
+  couple: string[];
 }
 
 interface Step {
@@ -236,28 +238,41 @@ const peopleOf = (m: Step["marks"][number]): string[] => {
 };
 
 /** Three generations around `seeds` (R-0779): each one's parents, partners,
- * brothers and sisters, and children, seeds first. Where the seeds themselves
- * span more generations, as a grandparent and a grandchild do, so does this. */
+ * brothers and sisters, and children, seeds first; a fourth only when the
+ * seeds themselves are three generations apart, as a grandparent and a
+ * grandchild are. Above the seeds one generation is drawn; below them, their
+ * children only when they all stand in one generation. */
 export function circle(r: Family, seeds: string[]): string[] {
   const bonds = r.tl.pair_bonds;
   const of = (pb: PairBond) => [pb.person_a, pb.person_b].filter((p): p is number => p != null).map(key);
+  const born = (id: string) => bonds.find((pb) => pb.id === r.people.get(id)?.parents);
+  const kids = (pb: PairBond) => r.tl.people.filter((o) => o.parents === pb.id).map((o) => key(o.id));
   const out = new Set(seeds);
   seeds.forEach((id) => {
-    const p = r.people.get(id);
-    if (!p) return;
-    const born = bonds.find((pb) => pb.id === p.parents);
-    if (born) {
-      of(born).forEach((q) => out.add(q));
-      r.tl.people.filter((o) => o.parents === born.id).forEach((o) => out.add(key(o.id)));
-    }
-    bonds
-      .filter((pb) => of(pb).includes(id))
-      .forEach((pb) => {
-        of(pb).forEach((q) => out.add(q));
-        r.tl.people.filter((o) => o.parents === pb.id).forEach((o) => out.add(key(o.id)));
-      });
+    const up = born(id);
+    if (up) [...of(up), ...kids(up)].forEach((q) => out.add(q));
+    bonds.filter((pb) => of(pb).includes(id)).forEach((pb) => [...of(pb), ...kids(pb)].forEach((q) => out.add(q)));
   });
-  return [...out];
+  // each one's generation, counted through the whole record from the first seed
+  const gen = new Map<string, number>([[seeds[0], 0]]);
+  for (const queue = [seeds[0]]; queue.length; ) {
+    const id = queue.shift()!;
+    const g = gen.get(id)!;
+    const up = born(id);
+    const near: [string, number][] = [
+      ...(up ? of(up).map((q): [string, number] => [q, g - 1]) : []),
+      ...bonds.filter((pb) => of(pb).includes(id)).flatMap((pb) => [...of(pb).map((q): [string, number] => [q, g]), ...kids(pb).map((q): [string, number] => [q, g + 1])]),
+    ];
+    near.forEach(([q, at]) => {
+      if (gen.has(q)) return;
+      gen.set(q, at);
+      queue.push(q);
+    });
+  }
+  const at = seeds.filter((id) => gen.has(id)).map((id) => gen.get(id)!);
+  const [lo, hi] = [Math.min(...at), Math.max(...at)];
+  const last = hi === lo ? hi + 1 : hi;
+  return [...out].filter((id) => !gen.has(id) || (gen.get(id)! >= lo - 1 && gen.get(id)! <= last));
 }
 
 const isArrow = (m: Step["marks"][number]): m is Arrow => m.k === Mark.Toward || m.k === Mark.Away;
@@ -430,6 +445,7 @@ export class Told {
       mover: [...now.marks.filter(isArrow), ...now.marks.filter(isKin)][0]?.from ?? null,
       // a move away runs off the far side of its mover, not toward the other
       reach: [...now.marks.filter(isArrow), ...now.marks.filter(isKin)].flatMap((m) => (m.to && m.k !== Mark.Away ? [m.to] : [])),
+      couple: [...new Set(pairs.flatMap((m) => [m.a, m.b]))],
       date: now.date,
       gap: i > 0 ? gapText(this.steps[i - 1].t, now.t) : null,
       fact: snap.fact,

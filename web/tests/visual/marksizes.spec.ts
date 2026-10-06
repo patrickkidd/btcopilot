@@ -366,7 +366,7 @@ test.describe("every mark", () => {
       const seen = await page.evaluate(() => {
         const root = document.querySelector<SVGSVGElement>("#pbp .draw svg")!;
         const lines = root.querySelectorAll<SVGGraphicsElement>(
-          ":is(.mvk, .spikes, .arr, .mk) :is(line, polyline, circle, path):not(.mv-wall):not(.mv-strike):not(defs *), .fn",
+          ":is(.mvk, .spikes, .arr, .mk) :is(line, polyline, circle, path):not(.mv-wall):not(.mv-strike):not(defs *), .fn, .mvk.now .mv-wall",
         );
         return [...lines].map((el) => {
           const m = root.getScreenCTM()!.inverse().multiply(el.getScreenCTM()!);
@@ -901,7 +901,8 @@ test.describe("every mark", () => {
         return [...root.querySelectorAll<SVGTextElement>("text")].flatMap((t) => {
           const cs = getComputedStyle(t);
           const under = rings.some((r) => r.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_PRECEDING);
-          const bare = cs.paintOrder.split(" ")[0] !== "stroke" || parseFloat(cs.strokeWidth) < 2;
+          // a band wide enough that a ring passing behind does not show between the letters
+          const bare = cs.paintOrder.split(" ")[0] !== "stroke" || parseFloat(cs.strokeWidth) < 5;
           return under || bare ? [`${t.textContent}${under ? " under a ring" : ""}${bare ? " with no halo" : ""}`] : [];
         });
       });

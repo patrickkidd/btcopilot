@@ -80,6 +80,16 @@ test("the about page comes down from the top at its full height, with no jump on
 });
 
 // R-0680, R-0768
+test("Escape puts the about page away, as its cross does", async ({ page }) => {
+  await open(page);
+  await page.locator("#info").click();
+  await page.waitForTimeout(800);
+  await expect(page.locator("#chat-screen > .pic .view .card").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#chat-screen > .pic .view .card")).toHaveCount(0);
+});
+
+// R-0680, R-0768
 test("scrolling up the chat slides the about page out at its full height before the picture folds", async ({ page }) => {
   await open(page);
   await page.locator("#info").click();

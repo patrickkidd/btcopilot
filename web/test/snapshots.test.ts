@@ -205,17 +205,17 @@ describe("names", () => {
     expect([L.P.a.name, L.P.b.name, L.P.c.name]).toEqual(["Anna K.", "Anna L.", "Anna"]);
   });
 
-  // R-0766
-  it("name a stand-in by its last relation, the lines saying whose", () => {
+  // R-0766, R-0759
+  it("name a stand-in by the nearest named person and the relation, in the record's own words", () => {
     const L = layout(
       base({
         a: shape("Delphine's mother's partner", Sex.Male, 1920),
         b: shape("Delphine's mother", Sex.Female, 1922),
         c: { ...shape("Delphine Moreau", Sex.Female, 1950), you: true },
-        d: shape("Theo Moreau", Sex.Male, 1954),
+        d: shape("Theo Moreau's partner", Sex.Female, 1954),
       }),
     );
-    expect([L.P.a.name, L.P.b.name, L.P.c.name]).toEqual(["partner", "mother", "Delphine"]);
+    expect([L.P.a.name, L.P.b.name, L.P.c.name, L.P.d.name]).toEqual(["Delphine's mother's partner", "Delphine's mother", "Delphine", "Theo's partner"]);
   });
 
 
@@ -1394,6 +1394,20 @@ describe("the whole family stepped through dates", () => {
     return tl;
   };
   const whole = (tl = record()) => new Told(tl, wholeFamily(tl), true);
+
+  // R-0779
+  it("draws a step between a mother and her son without his children, which would make a fourth generation", () => {
+    const tl = record();
+    const wife = { ...tl.people[0], id: 9601, name: "Wren", gender: "female", parents: null, primary: false };
+    const son = { ...tl.people[0], id: 9602, name: "Kip", gender: "male", parents: 9603, primary: false };
+    tl.people.push(wife, son);
+    tl.pair_bonds.push({ ...tl.pair_bonds[0], id: 9603, person_a: THEO, person_b: 9601, married: true });
+    const t = whole(tl);
+    const v = t.around(stepOf(t, 303));
+    const drawn = Object.keys(v.cast.people).map(Number);
+    expect(drawn).toEqual(expect.arrayContaining([THEO, DELPHINE]));
+    expect(drawn).not.toContain(9602);
+  });
 
   // R-0779
   it("draws a step between a grandparent and a grandchild across the generation between them", () => {

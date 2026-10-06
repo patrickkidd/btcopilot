@@ -14,6 +14,10 @@ export class Books {
     private readonly read: () => Promise<Passages | null>,
   ) {
     this.sheet = new Sheet(root, "bk");
+    // its cross, the dimmed page above it and Escape all put it away
+    root.addEventListener("click", (e) => {
+      if ((e.target as Element).closest(".fs-sheet.bk .cardx, .fs-scrim.bk")) this.sheet.lower();
+    });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && this.sheet.up) this.sheet.lower();
     });
@@ -33,13 +37,8 @@ export class Books {
     return this.all;
   }
 
-  /** A tap on a book raises its passages, and one on the sheet's cross or
-   * scrim lowers it; false when the tap was on neither. */
+  /** A tap on a book raises its passages; false when the tap was not on one. */
   tap(target: Element): boolean {
-    if (target.closest(".fs-sheet.bk .cardx, .fs-scrim.bk")) {
-      this.sheet.lower();
-      return true;
-    }
     const book = target.closest<HTMLElement>(".book[data-book]");
     if (!book) return false;
     void this.open(book);

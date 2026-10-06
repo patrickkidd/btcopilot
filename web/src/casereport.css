@@ -75,7 +75,8 @@
 
 /* the sheet of passages behind a card: the app's modal sheet with the passages as quotes */
 .fs-scrim.bk, .fs-sheet.bk { z-index: 70; }
-.fs-sheet.bk { max-height: 85%; max-width: 480px; margin: 0 auto; }
+/* never taller than the phone's own screen, so its list scrolls to its last passage */
+.fs-sheet.bk { max-height: min(85%, 85dvh); max-width: 480px; margin: 0 auto; }
 .fs-sheet.bk:focus-visible { outline: none; }
 .fs-sheet.bk .cf-t { padding-right: 44px; }
 .bk-sub { margin: 0 0 6px; font: 400 13px/1.4 var(--mono); color: var(--faint); }

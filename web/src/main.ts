@@ -1433,6 +1433,11 @@ track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 // With a real keyboard Return sends; a new line is Shift- or Alt-Return, and
 // on a touch screen Return, so a message can have paragraphs (R-0368). The
 // break is a plain newline so the draft keeps it.
+// Escape puts the cluster's about page away, as its cross does
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && picture.aboutOpen() && $("chat-screen").offsetParent) lens.climb(CLUSTER);
+});
+
 $("composer").addEventListener("keydown", (e) => {
   const key = e as KeyboardEvent;
   const act = returnKey(key, touch());

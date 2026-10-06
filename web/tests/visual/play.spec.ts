@@ -636,9 +636,75 @@ test.describe("the Family view's three generations", () => {
     const hugo = (await square.boundingBox())!;
     await page.mouse.click(hugo.x + hugo.width / 2, hugo.y + hugo.height / 2);
     await expect.poll(drawn).toEqual(of("Hugo", "Hal", "Hope", "Hs0", "Hs1", "Wanda", "Cleo"));
+    // the path says whose family it is, and "Family" goes back to the step's own people
+    await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family › Hugo's family");
+    const centred = await drawer(page).locator(".draw").innerHTML();
+    const again = drawer(page).locator(`.draw svg .p[data-id="${ids.Hugo}"] .shape`);
+    await again.scrollIntoViewIfNeeded();
+    const box = (await again.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForTimeout(300);
+    expect(await drawer(page).locator(".draw").innerHTML()).toBe(centred);
+    await drawer(page).locator('.path [data-step="1"]').click();
+    await expect.poll(drawn).toEqual(step);
+    await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family");
+    await expect(drawer(page)).toBeVisible();
+    // and Next goes back to the next step's own people
+    await drawer(page).locator(`.draw svg .p[data-id="${ids.Hugo}"] .shape`).scrollIntoViewIfNeeded();
+    const hugo2 = (await drawer(page).locator(`.draw svg .p[data-id="${ids.Hugo}"] .shape`).boundingBox())!;
+    await page.mouse.click(hugo2.x + hugo2.width / 2, hugo2.y + hugo2.height / 2);
+    await expect.poll(drawn).toContain(String(ids.Cleo));
     await drawer(page).locator('[data-act="next"]').click();
     await expect.poll(drawn).toEqual(step);
     expect(errors).toEqual([]);
+  });
+
+  // R-0779, R-0759
+  test("settles a couple's step with both partners and their names whole when they fit", async ({ page }) => {
+    let ids: Record<string, number> = {};
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      ids = joined(tl, [["Hugo", "Wanda"]], 2, "Ws1", "Hs1");
+      // three children spread the couple further apart than half the frame
+      const cleo = tl.people.find((p: { id: number }) => p.id === ids.Cleo);
+      ["Kip", "Lux"].forEach((name, i) => tl.people.push({ ...cleo, id: 9900 + i, name, primary: false, birth: `197${7 + i}-01-01` }));
+      const first = tl.events.filter((e: { dateTime: string | null }) => e.dateTime).sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime))[0];
+      tl.events.unshift({
+        ...first, id: 9800, kind: "married", label: "Married", dateTime: "1974-06-01", relationship: null, relationshipTargets: [], relationshipTriangles: [],
+        symptom: null, anxiety: null, functioning: null, title: null, description: null,
+        person: ids.Hugo, spouse: ids.Wanda, person_name: "Hugo", sentence: "Hugo and Wanda married",
+      });
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(drawer(page).locator(".when")).toContainText("Hugo and Wanda married");
+    await page.waitForTimeout(1500);
+    const seen = await cutInFrame(page, "#pbp .draw", [String(ids.Hugo), String(ids.Wanda)]);
+    expect(seen).toEqual({ fits: true, cut: {} });
+  });
+
+  // R-0779, R-0742
+  test("writes a long step title whole, above the years line and never under it", async ({ page }) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      joined(tl, [["Hugo", "Wanda"]], 2, "Ws1", "Hs1");
+      const first = tl.events.filter((e: { dateTime: string | null }) => e.dateTime).sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime))[0];
+      first.description =
+        "kept her distance from her brother at every family gathering for years, finding him more difficult than positive, always chasing approval and trying to gain the attention of their father";
+      first.title = first.description;
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    await expect(drawer(page).locator(".when")).toContainText("kept her distance");
+    const title = await drawer(page).locator(".when").evaluate((w) => ({ clipped: w.scrollHeight > w.clientHeight + 1, bottom: w.getBoundingClientRect().bottom, lines: Math.round(w.scrollHeight / 18) }));
+    const label = (await drawer(page).locator(".wire .wlab").boundingBox())!;
+    expect(title.lines).toBeGreaterThan(3);
+    expect(title.clipped).toBe(false);
+    expect(title.bottom).toBeLessThanOrEqual(label.y + 1);
   });
 
   // R-0779, R-0691
@@ -655,6 +721,32 @@ test.describe("the Family view's three generations", () => {
     await expect(sheet.locator(".cf-t")).toHaveText("What the family diagram is for");
     await expect(sheet.locator("blockquote")).toHaveText("it is usually not necessary for a therapist to put so much information on his or her diagram");
     await page.keyboard.press("Escape");
+    await expect(sheet).not.toHaveClass(/in/);
+  });
+
+  // R-0779, R-0691
+  test("puts the book's passages away on a tap of the dimmed page above them, and scrolls to the last of them on a phone", async ({ page }) => {
+    const long = "This type of change occurs over a period of years, and a person who can see four or five generations of their own family as one living thing is beyond blaming self or others. ".repeat(3);
+    const five = Array.from({ length: 5 }, (_, i) => ({ text: `${i + 1}. ${long}`, by: "Kerr & Bowen, Family Evaluation, ch. 8" }));
+    await page.route(/\/app\/case-report-passages(\?.*)?$/, (route) => route.fulfill({ json: { family: five } }));
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    await drawer(page).locator(".path .book").click();
+    const sheet = page.locator("#chat-screen .fs-sheet.bk");
+    await expect(sheet).toHaveClass(/in/);
+    await page.waitForTimeout(400);
+    // swiped to its end, the last passage stands whole on the screen
+    const list = sheet.locator(".bk-list");
+    expect(await list.evaluate((l) => l.scrollHeight > l.clientHeight)).toBe(true);
+    await list.hover();
+    for (let i = 0; i < 12; i++) await page.mouse.wheel(0, 400);
+    await page.waitForTimeout(300);
+    const last = (await sheet.locator(".bk-by").last().boundingBox())!;
+    expect(last.y + last.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+    // the dimmed page above the sheet
+    const top = (await sheet.boundingBox())!;
+    await page.mouse.click(top.x + 20, Math.max(top.y - 30, 70));
     await expect(sheet).not.toHaveClass(/in/);
   });
 });

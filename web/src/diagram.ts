@@ -900,12 +900,15 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
   const { gen, rows } = plan;
   const half = (id: string) => d.half(P[id]);
   // ruled 2026-09-26: first names; a surname initial only for two people in one
-  // row who share a first name. A stand-in such as "Catherine's mother's
-  // partner" is named by its last relation, "partner": the lines say whose (R-0766).
+  // row who share a first name. A stand-in is named by the nearest named person
+  // and the relation, in the record's own words: "Jim O'Malley's partner" is
+  // "Jim's partner", "Catherine's mother's partner" stays whole (R-0766).
   const standIn = (n: string) => /'s /.test(n);
   const shown: Record<string, string> = {};
   ids.forEach((id) => {
-    shown[id] = P[id].name.split(/'s /).pop()!.split(" ")[0];
+    const n = P[id].name;
+    const [whose, ...rest] = n.split(/'s /);
+    shown[id] = standIn(n) ? `${whose.split(" ")[0]}'s ${rest.join("'s ")}` : n.split(" ")[0];
   });
   P = { ...P };
   ids.forEach((id) => {
@@ -1264,8 +1267,8 @@ function place(cast: Cast, opts: Options, t: Ties, plan: Plan): Layout {
       return [
         lines.filter((s) => crosses(s, bx)).length + others.filter((o) => overlap(bx, shape(o))).length,
         Math.max(0, x0 - bx.x0) + Math.max(0, bx.x1 - x1),
-        // two names that only touch read as one, so a name keeps a gap from the next
-        others.filter((o) => overlap({ x0: bx.x0, x1: bx.x1, y0: bx.y0 - NAME_GAP, y1: bx.y1 + NAME_GAP }, nameBox(o, at[o]))).length,
+        // two names that only touch read as one, so a name keeps a gap from the next, beside it and above or below
+        others.filter((o) => overlap({ x0: bx.x0 - NAME_GAP, x1: bx.x1 + NAME_GAP, y0: bx.y0 - NAME_GAP, y1: bx.y1 + NAME_GAP }, nameBox(o, at[o]))).length,
       ];
     };
     const less = (a: number[], b: number[]) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];

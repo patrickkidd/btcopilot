@@ -128,9 +128,14 @@ const spanOf = (told: Told) => {
 export const FAMILY_BOOK = "family";
 const FAMILY_TITLE = "What the family diagram is for";
 
+/** The Family view's path: whose family a tap put the picture on, after
+ * "Family", which goes back to the step's own people (R-0779). */
+const familyPath = (whose: string | null) =>
+  pathRow(whose ? ["Timeline", "Family", `${whose}'s family`] : ["Timeline", "Family"]) + book(FAMILY_BOOK, FAMILY_TITLE);
+
 export const head = (told: Told, cluster: string) =>
   told.whole
-    ? `<div class="path">${pathRow(["Timeline", "Family"])}${book(FAMILY_BOOK, FAMILY_TITLE)}</div>` + closeX(` data-step="0"`) + `<div class="when"></div>`
+    ? `<div class="path">${familyPath(null)}</div>` + closeX(` data-step="0"`) + `<div class="when"></div>`
     : `<div class="path">${pathRow(["Timeline", cluster, "explain"])}</div>` +
       closeX(` data-step="${CLUSTER}"`) +
       pointLine(told);
@@ -337,6 +342,7 @@ export class Drawer {
     // the Family view draws each step's own three generations (R-0779)
     const view = told.whole ? told.around(this.i, this.focus) : told;
     const shot = view.shot(told.whole ? view.length - 1 : this.i);
+    if (told.whole) q(".path").innerHTML = familyPath(this.focus ? view.layout.P[this.focus[0]].name : null);
     const draw = q(".draw");
     // the new drawing is the same width, so the frame sets off from where it stood
     const was = draw.scrollLeft;
@@ -350,7 +356,7 @@ export class Drawer {
     // the move as the frame holds, and everyone it reaches when they fit
     const who = shot.mover ?? shot.who;
     draw.dataset.who = who;
-    const ids = shot.mover ? [shot.mover, ...shot.reach, ...lit] : lit.length ? lit : [shot.who];
+    const ids = [...(shot.mover ? [shot.mover, ...shot.reach, ...lit] : lit.length ? lit : [shot.who]), ...shot.couple];
     if (this.focus) frameOn(draw, this.focus, this.focus[0], false);
     else
       frameOn(draw, [...new Set(ids)], who, glide, shot.mover ? [...draw.querySelectorAll<SVGGraphicsElement>(`.fore [data-mark^="move:${CSS.escape(shot.mover)}>"]`)] : []);
@@ -394,10 +400,17 @@ export class Drawer {
     // generations, until the next step (R-0779)
     const person = this.told?.whole ? (e.target as Element).closest<SVGGElement>(".draw :is(.p, .pt)[data-id]") : null;
     if (person && !person.dataset.id!.startsWith("unknown-")) {
+      // the one the picture is already on: nothing to do
+      if (this.focus?.[0] === person.dataset.id) return;
       this.focus = [person.dataset.id!];
       return this.render(false);
     }
     const step = (e.target as Element).closest<HTMLElement>("[data-step]");
+    // "Family" in the path puts the picture back on the step's own people
+    if (step && this.focus && this.told?.whole && step.dataset.step === "1") {
+      this.focus = null;
+      return this.render(false);
+    }
     if (step) return this.back(Number(step.dataset.step), this.told!.eventIds);
     const chip = (e.target as Element).closest<HTMLElement>("button.chip[data-kind]");
     if (chip) {

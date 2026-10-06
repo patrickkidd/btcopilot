@@ -50,7 +50,8 @@
 /* the whole family (R-0742): the top line says where the reader is, Back and Next sit at either end */
 /* three lines of words at phone width are kept for every step, so the picture never moves; more scroll */
 .pbp > .when { flex: none; padding: 0 16px 8px; }
-.pbp.whole > .when { box-sizing: content-box; height: 54px; line-height: 18px; overflow-y: auto; align-content: flex-start; }
+/* three lines held still, so the picture stays put; a longer title grows, whole, never under the years line */
+.pbp.whole > .when { box-sizing: content-box; min-height: 54px; line-height: 18px; align-content: flex-start; }
 .pbp .when .words { color: var(--faint); font-weight: 400; }
 .pbp.whole .scroll .step { justify-content: space-between; }
 /* someone not yet born at the step, and a couple or child line before its date, keeps its place, faded (R-0756) */
@@ -86,7 +87,8 @@
 .diagram .lbd { font-size: 13px; fill: var(--faint); }
 /* names, ages and words sit over every mark, a field's rings too, on a halo
    of the page's ground so they stay legible (Patrick, 2026-10-03) */
-.diagram .said text { paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
+/* a name over a field's rings or a line stands on a band of the page wide enough to read it (R-0679) */
+.diagram .said text { paint-order: stroke; stroke: var(--panel); stroke-width: 6px; stroke-linejoin: round; }
 .diagram .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
 .diagram .xd.now { stroke: var(--move); stroke-width: 2.2; }
 /* someone the record is unsure of, on the review */
@@ -153,6 +155,9 @@
    it comes up: the open rings hold until the shadowed ones arrive, so the
    space the wall protects never goes blank. */
 .pbp .mvk .mv-wall { animation: pbp-wall 5s ease-in-out infinite; }
+/* the wall slides in, so on its own step it is a line that moves, as wide as
+   the rest of them; carried, it stands still and keeps its width (R-0765) */
+.pbp .mvk.now .mv-wall { stroke-width: var(--mark-line); }
 .pbp .mvk .preA { animation: pbp-preA 5s infinite; }
 .pbp .mvk .postA { animation: pbp-postA 5s infinite; }
 @keyframes pbp-wall {
