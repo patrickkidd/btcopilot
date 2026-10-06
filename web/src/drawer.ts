@@ -87,7 +87,7 @@ const saying = (told: Told, i: number) =>
 /** The Family view's full screen button, between Back and Next: four corners
  * out to go, in to come back (R-0792). */
 const FULL =
-  `<button type="button" class="full" data-full aria-label="full screen">` +
+  `<button type="button" class="full" aria-label="full screen">` +
   `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">` +
   `<path class="go" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="back" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button>`;
 
@@ -724,7 +724,8 @@ export class Drawer {
 
   private tap(e: Event): void {
     if (this.books?.tap(e.target as Element)) return;
-    if ((e.target as Element).closest("[data-full]")) return this.full();
+    // a chip keeps its whole words in data-full, so the button is found by its class
+    if ((e.target as Element).closest("button.full")) return this.full();
     // in the Family view a tap on someone, or on a name under the title,
     // puts the frame on their three generations, at the same date (R-0783)
     const person = this.told?.whole ? (e.target as Element).closest<SVGGElement>(".draw :is(.p, .pt)[data-id]") : null;

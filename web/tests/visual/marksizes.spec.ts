@@ -889,8 +889,8 @@ test.describe("every mark", () => {
     expect(at.loop - at.gone).toBeCloseTo(3600, -2);
   });
 
-  // R-0679
-  test("every name, age and word sits over the field's rings on a halo of the page", async ({ page }) => {
+  // R-0679, R-0788
+  test("every name, age and word sits over the field's rings, outlined in the page's colour", async ({ page }) => {
     const svgs = await steps(page, STEPS.length);
     const wrong: string[] = [];
     for (const [i, svg] of svgs.entries()) {
@@ -901,9 +901,9 @@ test.describe("every mark", () => {
         return [...root.querySelectorAll<SVGTextElement>("text")].flatMap((t) => {
           const cs = getComputedStyle(t);
           const under = rings.some((r) => r.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_PRECEDING);
-          // a band wide enough that a ring passing behind does not show between the letters
-          const bare = cs.paintOrder.split(" ")[0] !== "stroke" || parseFloat(cs.strokeWidth) < 5;
-          return under || bare ? [`${t.textContent}${under ? " under a ring" : ""}${bare ? " with no halo" : ""}`] : [];
+          // a thin outline, never a box (R-0788)
+          const bare = cs.paintOrder.split(" ")[0] !== "stroke" || !(parseFloat(cs.strokeWidth) > 0) || cs.stroke === "none";
+          return under || bare ? [`${t.textContent}${under ? " under a ring" : ""}${bare ? " with no outline" : ""}`] : [];
         });
       });
       found.forEach((f) => wrong.push(`step ${i + 1}: ${f}`));
