@@ -7,6 +7,7 @@ import re
 from decimal import Decimal
 
 import pytest
+import yaml
 
 from btcopilot.pricing import PRICES
 from btcopilot.tests.repo import REPO
@@ -60,3 +61,45 @@ def test_no_cost_panel_charges_a_replay_to_a_person():
     # R-0389
     (panel,) = [p for b, p in panels() if p["title"] == "Cost per person per feature share"]
     assert "dg.scratch" in sql(panel)
+
+
+SOURCES = REPO / "deploy" / "laptop" / "grafana" / "datasources.yml"
+SERVICE = re.compile(r'"container_name", "([^"]+)"|"(\^[^"]+)" from CONTAINER_NAME')
+
+
+def uids(node) -> set[str]:
+    if isinstance(node, dict):
+        source = node.get("datasource")
+        found = {source["uid"]} if isinstance(source, dict) else set()
+        return found.union(*(uids(v) for v in node.values()))
+    if isinstance(node, list):
+        return set().union(*(uids(v) for v in node))
+    return set()
+
+
+def test_every_dashboard_reads_a_data_source_the_laptop_provides():
+    # R-0370
+    provided = {s["uid"] for s in yaml.safe_load(SOURCES.read_text())["datasources"]}
+    used = set().union(*(uids(json.loads(p.read_text())) for p in GRAFANA.glob("*.json")))
+    assert used <= provided
+
+
+def test_box_container_panels_name_each_compose_service_across_deploys():
+    # R-0370
+    board = json.loads((GRAFANA / "fd-box.json").read_text())
+    patterns = [
+        next(g for g in m.groups() if g)
+        for p in board["panels"]
+        for m in [SERVICE.search(p["targets"][0]["expr"])]
+        if m
+    ]
+    assert len(patterns) == 3
+    for pattern in patterns:
+        names = [
+            "familydiagram-fd-app-60",
+            "chat-fd-worker-15",
+            "fd-postgres",
+            "fd-redis",
+        ]
+        seen = [re.fullmatch(pattern, n).group(1) for n in names]
+        assert seen == ["fd-app", "fd-worker", "fd-postgres", "fd-redis"]
