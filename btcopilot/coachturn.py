@@ -24,6 +24,7 @@ from btcopilot import (
     clock,
     clusters,
     coverage,
+    flow,
     profile,
     record,
     recordtext,
@@ -45,7 +46,14 @@ from btcopilot.models import (
     TokenMeter,
     TurnEvent,
 )
-from btcopilot.prompts import agent_prompt, back, get_agent_prompt, note_register, onboarding
+from btcopilot.prompts import (
+    agent_prompt,
+    back,
+    crisis,
+    get_agent_prompt,
+    note_register,
+    onboarding,
+)
 from btcopilot.interactions import recent
 from btcopilot.toolbox import (
     LOOKUPS,
@@ -368,6 +376,8 @@ class CoachTurn:
         )
         if pairs:
             tail = f"{tail}\n\n{pairs}"
+        if not note:
+            tail = f"{tail}{self._crisis(answered, data)}"
         gaps = profile.missing(data)
         if gaps:
             tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"
@@ -497,6 +507,31 @@ class CoachTurn:
             "events": events,
             "turn_id": self.turn_id,
         }
+
+    def _crisis(self, answered: Statement, data: DiagramData) -> str:
+        """The crisis block when the person's message fires a phrase, the
+        stay-with-it block when only their message before did, else nothing
+        (R-0790, R-0797). It goes before every other first-place block."""
+        names = [p["name"] for p in data.people if p.get("name")]
+        found = flow.risk(chips.plain(self.statement), names)
+        if found:
+            line = flow.line(self.toolbox.zone)
+            block = crisis(
+                found.reply.value,
+                found.said,
+                line.say,
+                line.emergency if found.emergency else "",
+            )
+            return f"\n\n{block}"
+        before = (
+            said_before(answered)
+            .filter(Statement.speaker_id == Discussion.chat_user_speaker_id)
+            .order_by(Statement.created_at.desc(), Statement.id.desc())
+            .first()
+        )
+        if before and flow.risk(chips.plain(before.text), names):
+            return f"\n\n{crisis()}"
+        return ""
 
     def _title(self) -> None:
         """Naming the sitting is not the reply: when that call fails the

@@ -268,19 +268,10 @@ def test_returned():
 
 
 def test_risk():
-    # R-0669
+    # R-0669, R-0790, R-0797
     assert flow.risk("I can't go on like this.")
     assert not flow.risk("My father couldn't go on, he died by suicide in 2015.")
     assert flow.risk("Sometimes I think everyone would be better off without me.")
-
-
-def test_protocol():
-    # R-0669
-    lines = ("call or text 988",)
-    assert flow.protocol(
-        "I hear that you can't go on. You can call or text 988 now.", lines
-    )
-    assert not flow.protocol("When did that start?", lines)
 
 
 def test_paired_with_cause():

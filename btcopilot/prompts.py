@@ -130,6 +130,15 @@ def back(days: int, todos: str) -> str:
     return files().text("back", days=days, todos=todos)
 
 
+def crisis(reply: str = "", said: str = "", line: str = "", emergency: str = "") -> str:
+    """The approved crisis reply in the person's own words with the line for
+    their country; with no reply, only the rules for the turn after one
+    (R-0790, R-0797)."""
+    return files().text(
+        "crisis", reply=reply, said=said, line=line, emergency=emergency
+    )
+
+
 def proactive(events: str, speaker: str) -> str:
     """The coach's first words when two of the family's events just came to
     sit close together in the record."""

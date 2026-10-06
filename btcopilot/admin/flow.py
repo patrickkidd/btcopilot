@@ -59,7 +59,8 @@ def exported(folder: pathlib.Path) -> tuple[list[dict], list[dict]]:
 
 def stored() -> tuple[list[dict], list[dict]]:
     """The statements and changes in the export's shape, with the model and
-    prompt version of each coach turn."""
+    prompt version of each coach turn and the account's time zone, which picks
+    the crisis line."""
     models = dict(
         db.session.query(ModelCall.turn_id, ModelCall.model)
         .filter(ModelCall.purpose == Purpose.Coach)
@@ -67,7 +68,12 @@ def stored() -> tuple[list[dict], list[dict]]:
     )
     found = (
         db.session.query(
-            Statement, Discussion, Speaker.type, User.username, Diagram.scratch
+            Statement,
+            Discussion,
+            Speaker.type,
+            User.username,
+            User.timezone,
+            Diagram.scratch,
         )
         .join(Discussion, Statement.discussion_id == Discussion.id)
         .join(Speaker, Statement.speaker_id == Speaker.id)
@@ -89,9 +95,10 @@ def stored() -> tuple[list[dict], list[dict]]:
             "model": models.get(s.turn_id),
             "prompt_version": s.prompt_version,
             "username": username,
+            "zone": zone,
             "scratch": scratch,
         }
-        for s, d, spk, username, scratch in found
+        for s, d, spk, username, zone, scratch in found
     ]
     changes = [
         {
@@ -191,7 +198,8 @@ def tracked(stmts: list[dict], changes: list[dict], now: datetime.datetime):
     for thread, said in itertools.groupby(by, key=lambda s: s["diagram_id"]):
         said = list(said)
         held = record([c for c in changes if c["diagram_id"] == thread])
-        for (model, prompt), row in flow.rows(list(map(message, said)), held).items():
+        counted = flow.rows(list(map(message, said)), held, said[0].get("zone"))
+        for (model, prompt), row in counted.items():
             threads.append(
                 {
                     "thread": thread,
