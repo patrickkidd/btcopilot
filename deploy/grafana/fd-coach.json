@@ -1,0 +1,739 @@
+{
+  "uid": "fd-coach",
+  "title": "The coach: what it did",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "refresh": "1h",
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffz1wy7unkdfke"
+        },
+        "definition": "select distinct coalesce(prompt_version,'none') from statements order by 1",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Prompt version",
+        "multi": true,
+        "name": "prompt_version",
+        "options": [],
+        "query": "select distinct coalesce(prompt_version,'none') from statements order by 1",
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Prompt version first served",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "ffz1wy7unkdfke"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "rawQuery": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null)\nselect min(t.at) as time, 'Prompt version ' || t.prompt_version || ' first served' as text\nfrom turn t group by t.prompt_version",
+        "target": {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null)\nselect min(t.at) as time, 'Prompt version ' || t.prompt_version || ' first served' as text\nfrom turn t group by t.prompt_version",
+          "refId": "Anno"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Share of coach turns that wrote to the record, by week and prompt version",
+      "description": "Coach turns that changed a person, event, pair-bond or emotion in the record (a record tool that was not refused, or a coach row in the change log), as a share of all coach turns that week, one line per prompt version. A rate for a prompt version stays empty until 30 people have had replies from that version.",
+      "id": 1,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nwrote as (select te.turn_id from turn_events te where te.kind='tool_call' and te.payload->>'refusal' is null\n            and te.payload->>'name' in ('edit_person','edit_pair_bond','edit_event','edit_cluster','merge_people','remove','undo')\n          union select dl.turn_id from delta dl where dl.author='coach' and dl.item_kind in ('person','event','pair_bond','emotion')),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nvp as (select t.prompt_version, count(distinct s.user_id) as people from ct t join sit s on s.sitting_id = t.sitting_id group by 1),\nnw(turn_id) as (select distinct turn_id from wrote)\nselect $__timeGroupAlias(t.at, '7d'), t.prompt_version as metric,\n       case when max(vp.people) >= 30 then round(100.0 * count(w.turn_id) / count(*), 1) end as \"share that wrote (%)\"\nfrom ct t join vp on vp.prompt_version = t.prompt_version left join nw w on w.turn_id = t.turn_id\nwhere $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1, 2 order by 1, 2",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Coach turns that wrote, by turn index and prompt version",
+      "description": "The same write share split by how far into the sitting the turn came (turns 1-5, 6-15, 16 and later), and the share of sittings in which the coach wrote nothing at all. A rate for a prompt version stays empty until 30 people have had replies from that version.",
+      "id": 2,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nwrote as (select te.turn_id from turn_events te where te.kind='tool_call' and te.payload->>'refusal' is null\n            and te.payload->>'name' in ('edit_person','edit_pair_bond','edit_event','edit_cluster','merge_people','remove','undo')\n          union select dl.turn_id from delta dl where dl.author='coach' and dl.item_kind in ('person','event','pair_bond','emotion')),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nvp as (select t.prompt_version, count(distinct s.user_id) as people from ct t join sit s on s.sitting_id = t.sitting_id group by 1),\nnw(turn_id) as (select distinct turn_id from wrote),\nsw as (select t.sitting_id, t.prompt_version, bool_or(w.turn_id is not null) as wrote\n       from ct t left join nw w on w.turn_id = t.turn_id where $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring}) group by 1, 2),\nnone as (select prompt_version, 100.0 * count(*) filter (where not wrote) / count(*) as pct from sw group by 1)\nselect t.prompt_version as \"prompt version\", case when t.idx <= 5 then '1-5' when t.idx <= 15 then '6-15' else '16 and later' end as \"turn in the sitting\", count(*) as \"coach turns\",\n       case when max(vp.people) >= 30 then round(100.0 * count(w.turn_id) / count(*), 1) end as \"share that wrote (%)\",\n       case when max(vp.people) >= 30 then round(max(none.pct), 1) end as \"sittings with no write (%)\"\nfrom ct t join vp on vp.prompt_version = t.prompt_version join none on none.prompt_version = t.prompt_version\nleft join nw w on w.turn_id = t.turn_id\nwhere $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1, 2 order by 1, min(t.idx)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Record tools per 100 coach turns, by tool",
+      "description": "Each call of a tool that writes to the record (edit_person, edit_pair_bond, edit_event, edit_cluster, merge_people, remove, undo): calls committed, calls the app refused, and committed calls per 100 coach turns.",
+      "id": 3,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\ntc as (select te.payload->>'name' as tool, te.payload->>'refusal' is not null as refused\n       from turn_events te join ct t on t.turn_id = te.turn_id\n       where te.kind = 'tool_call' and te.payload->>'name' in ('edit_person', 'edit_pair_bond', 'edit_event', 'edit_cluster', 'merge_people', 'remove', 'undo')\n         and $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})),\nn as (select count(*) as turns from ct t where $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring}))\nselect tc.tool, count(*) filter (where not tc.refused) as committed, count(*) filter (where tc.refused) as refused,\n       round(100.0 * count(*) filter (where not tc.refused) / nullif(max(n.turns), 0), 1) as \"committed per 100 coach turns\"\nfrom tc cross join n group by tc.tool order by 2 desc, 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Beside the write share: duplicates and hand corrections per 100 coach writes",
+      "description": "Coach writes are the coach's adds and changes to people, events and pair-bonds in the change log, undo left out. Duplicates are the watcher's findings of a person or event put down twice; hand corrections are the person's own changes or removals of an item the coach added. Each per 100 coach writes.",
+      "id": 4,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\ncoach_item as (select distinct diagram_id, item_kind, item_id from delta\n               where author = 'coach' and op = 'add' and item_kind in ('person', 'event', 'pair_bond')),\ncw as (select count(*) as n from delta dl where dl.author = 'coach' and dl.op in ('add', 'set')\n       and dl.item_kind in ('person', 'event', 'pair_bond') and dl.turn_id not like 'undo:%' and $__timeFilter(dl.created_at)),\nhand as (select count(*) as n from delta dl join coach_item ci on (ci.diagram_id, ci.item_kind, ci.item_id) = (dl.diagram_id, dl.item_kind, dl.item_id)\n         where dl.author = 'user' and dl.turn_id not like 'undo:%' and $__timeFilter(dl.created_at)),\ndup as (select o.kind::text as kind, count(distinct o.turn_id) as n from observations o join ct t on t.turn_id = o.turn_id\n        where o.kind::text in ('duplicate_person', 'duplicate_event') and $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring}) group by 1),\nx as (select 1 as o, 'a person put down twice' as what, coalesce((select n from dup where kind = 'duplicate_person'), 0) as n\n      union all select 2, 'an event put down twice', coalesce((select n from dup where kind = 'duplicate_event'), 0)\n      union all select 3, 'a hand correction of what the coach wrote', (select n from hand))\nselect x.what, x.n as count, round(100.0 * x.n / nullif(cw.n, 0), 1) as \"per 100 coach writes\"\nfrom x cross join cw order by x.o",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Faults per 100 coach turns, by kind",
+      "description": "Turns with a fault the app logged (a refused tool, the step limit, a failed or declined turn, a duplicate, a failed picture or cluster step) or a model fallback, each kind counted once per turn, per 100 coach turns.",
+      "id": 5,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nfault as (select o.turn_id, o.kind::text as kind from observations o\n          where o.kind::text in ('tool_refused', 'step_cap', 'turn_failed', 'turn_declined', 'duplicate_person', 'duplicate_event',\n                                 'play_refused', 'play_failed', 'cluster_refused', 'cluster_failed')\n          union\n          select mc.turn_id, 'model_fallback' from model_calls mc where mc.purpose::text = 'coach' and mc.fallback is not null),\nft as (select f.turn_id, f.kind, m.sitting_id, max(m.pos) as last_pos, max(m.created_at) as at,\n              coalesce(max(tt.prompt_version), 'none') as prompt_version\n       from fault f join msg m on m.turn_id = f.turn_id left join turn tt on tt.turn_id = f.turn_id\n       group by 1, 2, 3),\nn as (select count(*) as turns from ct t where $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring}))\nselect t.kind as fault, count(*) as turns, round(100.0 * count(*) / nullif(max(n.turns), 0), 2) as \"per 100 coach turns\"\nfrom ft t cross join n where $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1 order by 2 desc, 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Faults ranked by the share of people who sent nothing more",
+      "description": "What the person did after a turn with a fault: left (no message after it in that sitting), corrected (changed by hand an item the coach added later in the sitting, or their next message objected), or continued. Ranked by the share who left. A re-sent message is counted as continued.",
+      "id": 6,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nobjection(phrase) as (values ('that''s not what i said'),('that''s not right'),('i didn''t say'),('you''ve got that wrong'),\n                             ('why are you asking'),('stop asking'),('i already told you'),('check your information')),\nsaid as (select m.*, lower(regexp_replace(translate(m.text, '\u2018\u2019', ''''''), '(^|[^A-Za-z])''|''([^A-Za-z]|$)', '\\1 \\2', 'g')) as t\n         from msg m where m.who='person' and m.text not like 'That doesn''t fit: [[impression:%'),\nword_hit as (select s.statement_id, o.phrase from said s join objection o\n             on s.t ~ ('(^|[^a-z0-9''])' || o.phrase || '($|[^a-z0-9''])')\n             union\n             select s.statement_id, 'no, with a new date or name' from said s\n             cross join lateral (select c.text from msg c where c.sitting_id=s.sitting_id and c.who='coach' and c.pos<s.pos order by c.pos desc limit 1) pc(before)\n             cross join lateral regexp_split_to_table(s.text, '(?<=[.?!])\\s+|\\n+') as st(sentence)\n             cross join lateral regexp_matches(coalesce(substring(btrim(st.sentence) from '^\\S+\\s+(.*)$'),''), '((?:1[89]|20)\\d\\d|[A-Z][a-z]+)', 'g') mk\n             where st.sentence ~* '^\\W*no\\M' and mk[1] <> 'I'\n               and lower(coalesce(pc.before,'')) !~ ('(^|[^a-z0-9''])' || lower(mk[1]) || '($|[^a-z0-9''])')),\nfault as (select o.turn_id, o.kind::text as kind from observations o\n          where o.kind::text in ('tool_refused', 'step_cap', 'turn_failed', 'turn_declined', 'duplicate_person', 'duplicate_event',\n                                 'play_refused', 'play_failed', 'cluster_refused', 'cluster_failed')\n          union\n          select mc.turn_id, 'model_fallback' from model_calls mc where mc.purpose::text = 'coach' and mc.fallback is not null),\nft as (select f.turn_id, f.kind, m.sitting_id, max(m.pos) as last_pos, max(m.created_at) as at,\n              coalesce(max(tt.prompt_version), 'none') as prompt_version\n       from fault f join msg m on m.turn_id = f.turn_id left join turn tt on tt.turn_id = f.turn_id\n       group by 1, 2, 3),\ncoach_item as (select distinct diagram_id, item_kind, item_id from delta\n               where author = 'coach' and op = 'add' and item_kind in ('person', 'event', 'pair_bond')),\nnxt as (select t.*, case\n          when not exists (select 1 from msg p where p.sitting_id = t.sitting_id and p.who = 'person' and p.pos > t.last_pos) then 'left'\n          when exists (select 1 from sit s join delta dl on dl.diagram_id = s.diagram_id\n                       join coach_item ci on (ci.diagram_id, ci.item_kind, ci.item_id) = (dl.diagram_id, dl.item_kind, dl.item_id)\n                       where s.sitting_id = t.sitting_id and dl.author = 'user' and dl.created_at > t.at and dl.created_at <= s.ended)\n            or exists (select 1 from msg p join word_hit wh on wh.statement_id = p.statement_id\n                       where p.sitting_id = t.sitting_id and p.pos = (select min(p2.pos) from msg p2 where p2.sitting_id = t.sitting_id\n                                                                    and p2.who = 'person' and p2.pos > t.last_pos))\n            then 'corrected'\n          else 'continued' end as next_move\n        from ft t where $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring}))\nselect kind as fault, count(*) as turns, count(*) filter (where next_move = 'left') as \"left\",\n       count(*) filter (where next_move = 'corrected') as corrected, count(*) filter (where next_move = 'continued') as continued,\n       round(100.0 * count(*) filter (where next_move = 'left') / count(*), 1) as \"sent nothing more (%)\"\nfrom nxt group by 1 order by 6 desc, 2 desc",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Faults per 100 coach turns, by prompt version",
+      "description": "The fault rate of each kind for each prompt version, per 100 coach turns of that version. A rate for a prompt version stays empty until 30 people have had replies from that version.",
+      "id": 7,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nvp as (select t.prompt_version, count(distinct s.user_id) as people from ct t join sit s on s.sitting_id = t.sitting_id group by 1),\nfault as (select o.turn_id, o.kind::text as kind from observations o\n          where o.kind::text in ('tool_refused', 'step_cap', 'turn_failed', 'turn_declined', 'duplicate_person', 'duplicate_event',\n                                 'play_refused', 'play_failed', 'cluster_refused', 'cluster_failed')\n          union\n          select mc.turn_id, 'model_fallback' from model_calls mc where mc.purpose::text = 'coach' and mc.fallback is not null),\nft as (select f.turn_id, f.kind, m.sitting_id, max(m.pos) as last_pos, max(m.created_at) as at,\n              coalesce(max(tt.prompt_version), 'none') as prompt_version\n       from fault f join msg m on m.turn_id = f.turn_id left join turn tt on tt.turn_id = f.turn_id\n       group by 1, 2, 3),\nn as (select t.prompt_version, count(*) as turns from ct t where $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring}) group by 1)\nselect t.prompt_version as \"prompt version\", t.kind as fault, count(*) as turns,\n       case when max(vp.people) >= 30 then round(100.0 * count(*) / nullif(max(n.turns), 0), 2) end as \"per 100 coach turns\"\nfrom ft t join n on n.prompt_version = t.prompt_version join vp on vp.prompt_version = t.prompt_version\nwhere $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1, 2 order by 1, 3 desc",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Fact questions the coach asked, by item",
+      "description": "Fact questions the coach kept as asked (asked at once, or a held one marked asked later) or held, by the fact asked for; how many people or couples it asked about; how many the coach closed as answered; each fact's share of all asks.",
+      "id": 8,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nfieldval as (select dl.diagram_id, dl.item_kind, dl.item_id, dl.change_id, dl.o, kv.key as field, kv.value as val\n             from delta dl cross join lateral jsonb_each(case when dl.op = 'add' then dl.after\n                                                    else jsonb_build_object(dl.field, dl.after) end) kv\n             where dl.op in ('add','set')),\ncur as (select distinct on (diagram_id, item_kind, item_id, field) diagram_id, item_kind, item_id, field, val\n        from fieldval order by diagram_id, item_kind, item_id, field, change_id desc, o desc),\nremoved as (select diagram_id, item_kind, item_id from (\n              select distinct on (diagram_id, item_kind, item_id) diagram_id, item_kind, item_id, op from delta\n              where op in ('add','remove') order by diagram_id, item_kind, item_id, change_id desc, o desc) x\n            where op = 'remove'),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nquest as (select c.diagram_id, c.item_id as qid,\n                  max(c.val#>>'{}') filter (where c.field = 'kind') as kind,\n                  max(c.val#>>'{}') filter (where c.field = 'fact') as fact,\n                  max(c.val#>>'{}') filter (where c.field = 'item_kind') as on_kind,\n                  max(c.val#>>'{}') filter (where c.field = 'item_id') as on_id,\n                  max(c.val#>>'{}') filter (where c.field = 'state') as state,\n                  max(c.val#>>'{}') filter (where c.field = 'outcome') as outcome,\n                  max(c.val#>>'{}') filter (where c.field = 'pushback') as pushback\n           from cur c where c.item_kind = 'question'\n             and not exists (select 1 from removed x where (x.diagram_id, x.item_kind, x.item_id) = (c.diagram_id, c.item_kind, c.item_id))\n           group by 1, 2),\nqa as (select te.turn_id, te.payload->'args'->>'fact' as fact, te.payload->'args'->>'item_kind' as on_kind,\n                 te.payload->'args'->>'item_id' as on_id, te.payload->'args'->>'state' as state\n          from turn_events te\n          where te.kind = 'tool_call' and te.payload->>'refusal' is null and te.payload->>'name' = 'add_question'\n            and te.payload->'args'->>'kind' = 'fact' and te.payload->'args'->>'state' in ('asked', 'held')\n          union all\n          select te.turn_id, q.fact, q.on_kind, q.on_id, 'asked'\n          from turn_events te join ct t on t.turn_id = te.turn_id join sit s on s.sitting_id = t.sitting_id\n          join quest q on q.diagram_id = s.diagram_id and q.qid = te.payload->'args'->>'id'\n          where te.kind = 'tool_call' and te.payload->>'refusal' is null and te.payload->>'name' = 'set_question'\n            and te.payload->'args'->>'state' = 'asked' and q.kind = 'fact'),\nasked as (select qa.*, t.at, t.prompt_version, t.sitting_id from qa join ct t on t.turn_id = qa.turn_id),\nab as (select q.fact, count(distinct (dl.diagram_id, dl.item_id)) as n from delta dl\n       join quest q on q.diagram_id = dl.diagram_id and q.qid = dl.item_id\n       where dl.author = 'coach' and dl.item_kind = 'question' and q.kind = 'fact' and $__timeFilter(dl.created_at)\n         and coalesce(case when dl.op = 'set' and dl.field = 'outcome' then dl.after#>>'{}' end, dl.after->>'outcome') in ('answered', 'fact')\n       group by 1)\nselect coalesce(t.fact, 'no fact named') as fact, count(*) filter (where t.state = 'asked') as asked,\n       count(*) filter (where t.state = 'held') as held,\n       count(distinct t.on_kind || ':' || t.on_id) filter (where t.state = 'asked') as \"people or couples asked about\",\n       coalesce(max(ab.n), 0) as \"closed as answered by the coach\",\n       round(100.0 * count(*) filter (where t.state = 'asked') / nullif(sum(count(*) filter (where t.state = 'asked')) over (), 0), 1) as \"share of asks (%)\"\nfrom asked t left join ab on ab.fact = t.fact\nwhere $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1 order by 2 desc, 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Fact questions the coach asked, by generation and side",
+      "description": "The same fact questions by whom they were about: the person themself, a parent, a grandparent and beyond on the mother's or father's line, a partner, a sibling, a child; a couple; or someone further out in the family.",
+      "id": 9,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with recursive real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nfieldval as (select dl.diagram_id, dl.item_kind, dl.item_id, dl.change_id, dl.o, kv.key as field, kv.value as val\n             from delta dl cross join lateral jsonb_each(case when dl.op = 'add' then dl.after\n                                                    else jsonb_build_object(dl.field, dl.after) end) kv\n             where dl.op in ('add','set')),\ncur as (select distinct on (diagram_id, item_kind, item_id, field) diagram_id, item_kind, item_id, field, val\n        from fieldval order by diagram_id, item_kind, item_id, field, change_id desc, o desc),\nremoved as (select diagram_id, item_kind, item_id from (\n              select distinct on (diagram_id, item_kind, item_id) diagram_id, item_kind, item_id, op from delta\n              where op in ('add','remove') order by diagram_id, item_kind, item_id, change_id desc, o desc) x\n            where op = 'remove'),\nperson as (select diagram_id, item_id as person_id,\n                  max(val#>>'{}') filter (where field='name') as name,\n                  max(val#>>'{}') filter (where field='last_name') as last_name,\n                  max(val#>>'{}') filter (where field='parents') as parents,\n                  max(val#>>'{}') filter (where field='gender') as gender\n           from cur c where item_kind = 'person'\n             and not exists (select 1 from removed x where (x.diagram_id,x.item_kind,x.item_id)=(c.diagram_id,c.item_kind,c.item_id))\n           group by 1,2),\nbond as (select diagram_id, item_id as bond_id, max(val#>>'{}') filter (where field='person_a') as person_a,\n                max(val#>>'{}') filter (where field='person_b') as person_b\n         from cur c where item_kind='pair_bond' and not exists (select 1 from removed x where (x.diagram_id,x.item_kind,x.item_id)=(c.diagram_id,c.item_kind,c.item_id)) group by 1,2),\nparent_of as (select p.diagram_id, p.person_id as child, unnest(array[b.person_a, b.person_b]) as parent\n              from person p join bond b on b.diagram_id = p.diagram_id and b.bond_id = p.parents),\nup (diagram_id, person_id, gen, side) as (\n   select diagram_id, '1', 0, 'own' from real_dg\n   union all\n   select u.diagram_id, po.parent, u.gen + 1,\n          case when u.gen > 0 then u.side when pp.gender = 'female' then 'mother''s line'\n               when pp.gender = 'male' then 'father''s line' else 'a parent''s line' end\n   from up u join parent_of po on po.diagram_id = u.diagram_id and po.child = u.person_id\n   left join person pp on pp.diagram_id = po.diagram_id and pp.person_id = po.parent\n   where u.gen < 5 and po.parent is not null),\nkin_all as (\n   select diagram_id, person_id, gen, side, case gen when 0 then 'self' when 1 then 'parent' when 2 then 'grandparent' else 'great-grandparent or above' end as link from up\n   union all select b.diagram_id, case when b.person_a='1' then b.person_b else b.person_a end, 0, 'partner''s', 'partner' from bond b where '1' in (b.person_a, b.person_b)\n   union all select p.diagram_id, p.person_id, 0, 'own', 'sibling' from person p join person me on me.diagram_id=p.diagram_id and me.person_id='1' where p.parents = me.parents and p.person_id <> '1'\n   union all select p.diagram_id, p.person_id, -1, 'own', 'child' from person p join bond b on b.diagram_id=p.diagram_id and b.bond_id=p.parents where '1' in (b.person_a, b.person_b)),\nkin as (select distinct on (diagram_id, person_id) * from kin_all order by diagram_id, person_id, abs(gen), link),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nquest as (select c.diagram_id, c.item_id as qid,\n                  max(c.val#>>'{}') filter (where c.field = 'kind') as kind,\n                  max(c.val#>>'{}') filter (where c.field = 'fact') as fact,\n                  max(c.val#>>'{}') filter (where c.field = 'item_kind') as on_kind,\n                  max(c.val#>>'{}') filter (where c.field = 'item_id') as on_id,\n                  max(c.val#>>'{}') filter (where c.field = 'state') as state,\n                  max(c.val#>>'{}') filter (where c.field = 'outcome') as outcome,\n                  max(c.val#>>'{}') filter (where c.field = 'pushback') as pushback\n           from cur c where c.item_kind = 'question'\n             and not exists (select 1 from removed x where (x.diagram_id, x.item_kind, x.item_id) = (c.diagram_id, c.item_kind, c.item_id))\n           group by 1, 2),\nqa as (select te.turn_id, te.payload->'args'->>'fact' as fact, te.payload->'args'->>'item_kind' as on_kind,\n                 te.payload->'args'->>'item_id' as on_id, te.payload->'args'->>'state' as state\n          from turn_events te\n          where te.kind = 'tool_call' and te.payload->>'refusal' is null and te.payload->>'name' = 'add_question'\n            and te.payload->'args'->>'kind' = 'fact' and te.payload->'args'->>'state' in ('asked', 'held')\n          union all\n          select te.turn_id, q.fact, q.on_kind, q.on_id, 'asked'\n          from turn_events te join ct t on t.turn_id = te.turn_id join sit s on s.sitting_id = t.sitting_id\n          join quest q on q.diagram_id = s.diagram_id and q.qid = te.payload->'args'->>'id'\n          where te.kind = 'tool_call' and te.payload->>'refusal' is null and te.payload->>'name' = 'set_question'\n            and te.payload->'args'->>'state' = 'asked' and q.kind = 'fact'),\nasked as (select qa.*, t.at, t.prompt_version, t.sitting_id from qa join ct t on t.turn_id = qa.turn_id)\nselect coalesce(k.link, case when t.on_kind = 'pair_bond' then 'a couple' when t.on_kind = 'person' then 'someone further out'\n                             else 'no one named' end) as \"about\",\n       coalesce(k.side, '-') as side,\n       count(*) filter (where t.state = 'asked') as asked, count(*) filter (where t.state = 'held') as held\nfrom asked t join sit s on s.sitting_id = t.sitting_id\nleft join kin k on k.diagram_id = s.diagram_id and t.on_kind = 'person' and k.person_id = t.on_id\nwhere $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1, 2 order by 3 desc, 1, 2",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Fact questions per 100 coach turns, by prompt version",
+      "description": "Fact questions asked per 100 coach turns of each prompt version. A rate for a prompt version stays empty until 30 people have had replies from that version.",
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nfieldval as (select dl.diagram_id, dl.item_kind, dl.item_id, dl.change_id, dl.o, kv.key as field, kv.value as val\n             from delta dl cross join lateral jsonb_each(case when dl.op = 'add' then dl.after\n                                                    else jsonb_build_object(dl.field, dl.after) end) kv\n             where dl.op in ('add','set')),\ncur as (select distinct on (diagram_id, item_kind, item_id, field) diagram_id, item_kind, item_id, field, val\n        from fieldval order by diagram_id, item_kind, item_id, field, change_id desc, o desc),\nremoved as (select diagram_id, item_kind, item_id from (\n              select distinct on (diagram_id, item_kind, item_id) diagram_id, item_kind, item_id, op from delta\n              where op in ('add','remove') order by diagram_id, item_kind, item_id, change_id desc, o desc) x\n            where op = 'remove'),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nvp as (select t.prompt_version, count(distinct s.user_id) as people from ct t join sit s on s.sitting_id = t.sitting_id group by 1),\nquest as (select c.diagram_id, c.item_id as qid,\n                  max(c.val#>>'{}') filter (where c.field = 'kind') as kind,\n                  max(c.val#>>'{}') filter (where c.field = 'fact') as fact,\n                  max(c.val#>>'{}') filter (where c.field = 'item_kind') as on_kind,\n                  max(c.val#>>'{}') filter (where c.field = 'item_id') as on_id,\n                  max(c.val#>>'{}') filter (where c.field = 'state') as state,\n                  max(c.val#>>'{}') filter (where c.field = 'outcome') as outcome,\n                  max(c.val#>>'{}') filter (where c.field = 'pushback') as pushback\n           from cur c where c.item_kind = 'question'\n             and not exists (select 1 from removed x where (x.diagram_id, x.item_kind, x.item_id) = (c.diagram_id, c.item_kind, c.item_id))\n           group by 1, 2),\nqa as (select te.turn_id, te.payload->'args'->>'fact' as fact, te.payload->'args'->>'item_kind' as on_kind,\n                 te.payload->'args'->>'item_id' as on_id, te.payload->'args'->>'state' as state\n          from turn_events te\n          where te.kind = 'tool_call' and te.payload->>'refusal' is null and te.payload->>'name' = 'add_question'\n            and te.payload->'args'->>'kind' = 'fact' and te.payload->'args'->>'state' in ('asked', 'held')\n          union all\n          select te.turn_id, q.fact, q.on_kind, q.on_id, 'asked'\n          from turn_events te join ct t on t.turn_id = te.turn_id join sit s on s.sitting_id = t.sitting_id\n          join quest q on q.diagram_id = s.diagram_id and q.qid = te.payload->'args'->>'id'\n          where te.kind = 'tool_call' and te.payload->>'refusal' is null and te.payload->>'name' = 'set_question'\n            and te.payload->'args'->>'state' = 'asked' and q.kind = 'fact'),\nasked as (select qa.*, t.at, t.prompt_version, t.sitting_id from qa join ct t on t.turn_id = qa.turn_id),\na as (select prompt_version, count(*) as n from asked t where t.state = 'asked' and $__timeFilter(t.at) group by 1)\nselect t.prompt_version as \"prompt version\", coalesce(max(a.n), 0) as asked, count(*) as \"coach turns\",\n       case when max(vp.people) >= 30 then round(100.0 * coalesce(max(a.n), 0) / count(*), 1) end as \"asked per 100 coach turns\"\nfrom ct t join vp on vp.prompt_version = t.prompt_version left join a on a.prompt_version = t.prompt_version\nwhere $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1 order by 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Guesses voiced per 100 coach turns, by week",
+      "description": "Guesses the coach put to the person (an impression tool call that was not refused) per 100 coach turns, by week.",
+      "id": 11,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nguess as (select te.turn_id from turn_events te where te.kind = 'tool_call' and te.payload->>'refusal' is null\n                 and te.payload->>'name' = 'add_impression')\nselect $__timeGroupAlias(t.at, '7d'), round(100.0 * count(g.turn_id) / count(distinct t.turn_id), 1) as \"guesses per 100 coach turns\"\nfrom ct t left join guess g on g.turn_id = t.turn_id\nwhere $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1 order by 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "How the coach's guesses fared",
+      "description": "Each guess in the record by how it stands now: the person tapped that it does not fit, the coach revised it or let it go, still raised, or held and not yet voiced. Beside it: how many the person said partly fit, taps on a guess's evidence, and guesses with no tap at all. There is no tap for a guess that fits.",
+      "id": 12,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nfieldval as (select dl.diagram_id, dl.item_kind, dl.item_id, dl.change_id, dl.o, kv.key as field, kv.value as val\n             from delta dl cross join lateral jsonb_each(case when dl.op = 'add' then dl.after\n                                                    else jsonb_build_object(dl.field, dl.after) end) kv\n             where dl.op in ('add','set')),\ncur as (select distinct on (diagram_id, item_kind, item_id, field) diagram_id, item_kind, item_id, field, val\n        from fieldval order by diagram_id, item_kind, item_id, field, change_id desc, o desc),\nremoved as (select diagram_id, item_kind, item_id from (\n              select distinct on (diagram_id, item_kind, item_id) diagram_id, item_kind, item_id, op from delta\n              where op in ('add','remove') order by diagram_id, item_kind, item_id, change_id desc, o desc) x\n            where op = 'remove'),\nsaid as (select m.*, lower(regexp_replace(translate(m.text, '\u2018\u2019', ''''''), '(^|[^A-Za-z])''|''([^A-Za-z]|$)', '\\1 \\2', 'g')) as t\n         from msg m where m.who='person' and m.text not like 'That doesn''t fit: [[impression:%'),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nquest as (select c.diagram_id, c.item_id as qid,\n                  max(c.val#>>'{}') filter (where c.field = 'kind') as kind,\n                  max(c.val#>>'{}') filter (where c.field = 'fact') as fact,\n                  max(c.val#>>'{}') filter (where c.field = 'item_kind') as on_kind,\n                  max(c.val#>>'{}') filter (where c.field = 'item_id') as on_id,\n                  max(c.val#>>'{}') filter (where c.field = 'state') as state,\n                  max(c.val#>>'{}') filter (where c.field = 'outcome') as outcome,\n                  max(c.val#>>'{}') filter (where c.field = 'pushback') as pushback\n           from cur c where c.item_kind = 'question'\n             and not exists (select 1 from removed x where (x.diagram_id, x.item_kind, x.item_id) = (c.diagram_id, c.item_kind, c.item_id))\n           group by 1, 2),\nimp as (select q.*, a.turn_id, a.created_at from quest q\n        join (select distinct on (diagram_id, item_id) diagram_id, item_id, turn_id, created_at from delta\n              where item_kind = 'question' and op = 'add' order by diagram_id, item_id, change_id) a\n          on a.diagram_id = q.diagram_id and a.item_id = q.qid\n        where q.kind = 'impression'),\npartly as (select distinct pe.diagram_id, pe.item_id from product_events pe where pe.name = 'impression_partly'\n           union select diagram_id, qid from imp where pushback = 'partly'),\nev as (select pe.diagram_id, pe.item_id, count(*) as n from product_events pe where pe.name = 'impression_evidence' group by 1, 2)\nselect case when i.outcome = 'doesnt_fit' then 'doesn''t fit, the person tapped'\n            when i.outcome = 'revised' then 'revised by the coach'\n            when i.outcome = 'let_go' then 'let go by the coach'\n            when i.state = 'raised' then 'still raised'\n            when i.state = 'held' then 'held, not yet voiced'\n            else coalesce(i.outcome, i.state, 'other') end as fate,\n       count(*) as guesses, count(p.item_id) as \"said partly\", coalesce(sum(ev.n), 0) as \"evidence taps\",\n       count(*) filter (where p.item_id is null and ev.n is null and i.outcome is distinct from 'doesnt_fit') as \"no tap yet\"\nfrom imp i join ct t on t.turn_id = i.turn_id\nleft join partly p on p.diagram_id = i.diagram_id and p.item_id = i.qid\nleft join ev on ev.diagram_id = i.diagram_id and ev.item_id = i.qid\nwhere $__timeFilter(i.created_at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1 order by 2 desc, 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Guesses by prompt version",
+      "description": "Guesses voiced per 100 coach turns, and the share of guesses the person tapped as not fitting, for each prompt version. A rate for a prompt version stays empty until 30 people have had replies from that version.",
+      "id": 13,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nfieldval as (select dl.diagram_id, dl.item_kind, dl.item_id, dl.change_id, dl.o, kv.key as field, kv.value as val\n             from delta dl cross join lateral jsonb_each(case when dl.op = 'add' then dl.after\n                                                    else jsonb_build_object(dl.field, dl.after) end) kv\n             where dl.op in ('add','set')),\ncur as (select distinct on (diagram_id, item_kind, item_id, field) diagram_id, item_kind, item_id, field, val\n        from fieldval order by diagram_id, item_kind, item_id, field, change_id desc, o desc),\nremoved as (select diagram_id, item_kind, item_id from (\n              select distinct on (diagram_id, item_kind, item_id) diagram_id, item_kind, item_id, op from delta\n              where op in ('add','remove') order by diagram_id, item_kind, item_id, change_id desc, o desc) x\n            where op = 'remove'),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nvp as (select t.prompt_version, count(distinct s.user_id) as people from ct t join sit s on s.sitting_id = t.sitting_id group by 1),\nguess as (select te.turn_id from turn_events te where te.kind = 'tool_call' and te.payload->>'refusal' is null\n                 and te.payload->>'name' = 'add_impression'),\nquest as (select c.diagram_id, c.item_id as qid,\n                  max(c.val#>>'{}') filter (where c.field = 'kind') as kind,\n                  max(c.val#>>'{}') filter (where c.field = 'fact') as fact,\n                  max(c.val#>>'{}') filter (where c.field = 'item_kind') as on_kind,\n                  max(c.val#>>'{}') filter (where c.field = 'item_id') as on_id,\n                  max(c.val#>>'{}') filter (where c.field = 'state') as state,\n                  max(c.val#>>'{}') filter (where c.field = 'outcome') as outcome,\n                  max(c.val#>>'{}') filter (where c.field = 'pushback') as pushback\n           from cur c where c.item_kind = 'question'\n             and not exists (select 1 from removed x where (x.diagram_id, x.item_kind, x.item_id) = (c.diagram_id, c.item_kind, c.item_id))\n           group by 1, 2),\ndnf as (select t.prompt_version, count(*) as guesses, count(*) filter (where q.outcome = 'doesnt_fit') as doesnt_fit\n        from delta dl join quest q on q.diagram_id = dl.diagram_id and q.qid = dl.item_id join ct t on t.turn_id = dl.turn_id\n        where dl.item_kind = 'question' and dl.op = 'add' and q.kind = 'impression' and $__timeFilter(dl.created_at) group by 1)\nselect t.prompt_version as \"prompt version\", count(g.turn_id) as \"guesses voiced\", count(distinct t.turn_id) as \"coach turns\",\n       case when max(vp.people) >= 30 then round(100.0 * count(g.turn_id) / count(distinct t.turn_id), 1) end as \"guesses per 100 coach turns\",\n       case when max(vp.people) >= 30 then round(100.0 * max(dnf.doesnt_fit) / nullif(max(dnf.guesses), 0), 1) end as \"doesn't fit (%)\"\nfrom ct t join vp on vp.prompt_version = t.prompt_version left join guess g on g.turn_id = t.turn_id\nleft join dnf on dnf.prompt_version = t.prompt_version\nwhere $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})\ngroup by 1 order by 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "table",
+      "title": "Reply length and shape by turn index and prompt version",
+      "description": "Coach replies with chips reduced to their words: median and 90th percentile words, mean sentences and question marks, the share laid out like a form (bullets, numbers or labels), chips per reply, and the median of reply words over the person's words in the same turn; by turn in the sitting and prompt version. A rate for a prompt version stays empty until 30 people have had replies from that version.",
+      "id": 14,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\ndelta as (select dc.id as change_id, dc.diagram_id, dc.turn_id, dc.statement_id, dc.author::text as author, dc.created_at,\n                 x.o, x.d->>'item_kind' as item_kind, x.d->>'item_id' as item_id, x.d->>'field' as field,\n                 x.d->'before' as before, x.d->'after' as after,\n                 case when x.d->>'field' is null and jsonb_typeof(x.d->'after') = 'object' then 'add'\n                      when x.d->>'field' is null then 'remove' else 'set' end as op\n          from diagram_changes dc join real_dg r on r.diagram_id = dc.diagram_id\n          cross join lateral jsonb_array_elements(dc.deltas) with ordinality as x(d, o)),\nfieldval as (select dl.diagram_id, dl.item_kind, dl.item_id, dl.change_id, dl.o, kv.key as field, kv.value as val\n             from delta dl cross join lateral jsonb_each(case when dl.op = 'add' then dl.after\n                                                    else jsonb_build_object(dl.field, dl.after) end) kv\n             where dl.op in ('add','set')),\ncur as (select distinct on (diagram_id, item_kind, item_id, field) diagram_id, item_kind, item_id, field, val\n        from fieldval order by diagram_id, item_kind, item_id, field, change_id desc, o desc),\nremoved as (select diagram_id, item_kind, item_id from (\n              select distinct on (diagram_id, item_kind, item_id) diagram_id, item_kind, item_id, op from delta\n              where op in ('add','remove') order by diagram_id, item_kind, item_id, change_id desc, o desc) x\n            where op = 'remove'),\nperson as (select diagram_id, item_id as person_id,\n                  max(val#>>'{}') filter (where field='name') as name,\n                  max(val#>>'{}') filter (where field='last_name') as last_name,\n                  max(val#>>'{}') filter (where field='parents') as parents,\n                  max(val#>>'{}') filter (where field='gender') as gender\n           from cur c where item_kind = 'person'\n             and not exists (select 1 from removed x where (x.diagram_id,x.item_kind,x.item_id)=(c.diagram_id,c.item_kind,c.item_id))\n           group by 1,2),\nct as (select distinct on (turn_id) turn_id, sitting_id, at, prompt_version, idx from turn order by turn_id, idx),\nvp as (select t.prompt_version, count(distinct s.user_id) as people from ct t join sit s on s.sitting_id = t.sitting_id group by 1),\nr as (select t.*, regexp_replace(t.text, '\\[\\[[a-z_]+:[^|\\]]+(\\|([^\\]]*))?\\]\\]', '\\2', 'g') as clean\n      from turn t where $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})),\nshape as (select r.turn_id, r.prompt_version, r.idx, r.at,\n                 case when btrim(r.clean) = '' then 0 else array_length(regexp_split_to_array(btrim(r.clean), '\\s+'), 1) end as words,\n                 (select count(*) from regexp_matches(r.clean, '[.?!]+(\\s|$)', 'g')) as sentences,\n                 length(r.clean) - length(replace(r.clean, '?', '')) as questions,\n                 (r.clean ~ '(^|\\n)\\s*([-*\u2022]|\\d+[.\\x29])\\s' or r.clean ~ '(^|\\n)[A-Z][A-Za-z ]{0,30}:\\s') as form_like,\n                 (select count(*) from regexp_matches(r.text, '\\[\\[[a-z_]+:', 'g')) as chips\n          from r),\npw as (select m.turn_id, sum(case when btrim(m.text) = '' then 0 else array_length(regexp_split_to_array(btrim(m.text), '\\s+'), 1) end) as words\n       from msg m where m.who = 'person' and m.turn_id is not null group by 1)\nselect t.prompt_version as \"prompt version\", case when t.idx <= 5 then '1-5' when t.idx <= 15 then '6-15' else '16 and later' end as \"turn in the sitting\", count(*) as replies,\n       percentile_cont(0.5) within group (order by t.words) as \"median words\",\n       percentile_cont(0.9) within group (order by t.words) as \"90th percentile words\",\n       round(avg(t.sentences), 1) as \"sentences\", round(avg(t.questions), 2) as \"question marks\",\n       case when max(vp.people) >= 30 then round(100.0 * count(*) filter (where t.form_like) / count(*), 1) end as \"form-like (%)\",\n       round(avg(t.chips), 2) as \"chips per reply\",\n       round((percentile_cont(0.5) within group (order by t.words::float8 / nullif(pw.words, 0)))::numeric, 2) as \"words over the person's\"\nfrom shape t join vp on vp.prompt_version = t.prompt_version left join pw on pw.turn_id = t.turn_id\ngroup by 1, 2 order by 1, min(t.idx)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Words per coach reply, weekly median and 90th percentile",
+      "description": "Words in each coach reply, chips reduced to their words, as the median and the 90th percentile of each week.",
+      "id": 15,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id\n            where not dg.scratch and u.username not like 'claude-test%'),\nsit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,\n               row_number() over w as nth, lead(min(s.created_at)) over w as next_started\n        from discussions d join real_dg r on r.diagram_id = d.diagram_id\n        join statements s on s.discussion_id = d.id and s.kind::text = 'turn'\n        join speakers sp on sp.id = s.speaker_id\n        where not d.synthetic and d.kind::text = 'chat'\n        group by d.id, d.user_id, d.diagram_id having bool_or(sp.type::text = 'Subject')\n        window w as (partition by d.user_id order by min(s.created_at))),\nmsg as (select s.id as statement_id, s.discussion_id as sitting_id, s.turn_id, s.created_at, s.text, s.prompt_version,\n               case sp.type::text when 'Subject' then 'person' else 'coach' end as who,\n               row_number() over (partition by s.discussion_id order by s.\"order\", s.id) as pos\n        from statements s join speakers sp on sp.id = s.speaker_id join sit on sit.sitting_id = s.discussion_id\n        where s.kind::text = 'turn'),\nturn as (select m.turn_id, m.sitting_id, m.statement_id as reply_id, m.created_at as at, m.text,\n                coalesce(m.prompt_version, 'none') as prompt_version,\n                row_number() over (partition by m.sitting_id order by m.pos) as idx\n         from msg m where m.who = 'coach' and m.turn_id is not null),\nr as (select t.*, regexp_replace(t.text, '\\[\\[[a-z_]+:[^|\\]]+(\\|([^\\]]*))?\\]\\]', '\\2', 'g') as clean\n      from turn t where $__timeFilter(t.at) and t.prompt_version in (${prompt_version:sqlstring})),\nshape as (select r.turn_id, r.prompt_version, r.idx, r.at,\n                 case when btrim(r.clean) = '' then 0 else array_length(regexp_split_to_array(btrim(r.clean), '\\s+'), 1) end as words,\n                 (select count(*) from regexp_matches(r.clean, '[.?!]+(\\s|$)', 'g')) as sentences,\n                 length(r.clean) - length(replace(r.clean, '?', '')) as questions,\n                 (r.clean ~ '(^|\\n)\\s*([-*\u2022]|\\d+[.\\x29])\\s' or r.clean ~ '(^|\\n)[A-Z][A-Za-z ]{0,30}:\\s') as form_like,\n                 (select count(*) from regexp_matches(r.text, '\\[\\[[a-z_]+:', 'g')) as chips\n          from r)\nselect $__timeGroupAlias(t.at, '7d'), percentile_cont(0.5) within group (order by t.words) as \"median words\",\n       percentile_cont(0.9) within group (order by t.words) as \"90th percentile words\"\nfrom shape t group by 1 order by 1",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
