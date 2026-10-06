@@ -379,10 +379,19 @@ export class Drawer {
   /** The scale that fits `L` whole in the room the drawer has under its
    * years line and over the longest caption, both ways (R-0796). */
   private fits(L: Layout): number {
+    return fitScale(L, this.panel.querySelector<HTMLElement>(".lv")!.clientWidth, this.room());
+  }
+
+  /** The height the drawing has under the years line, over the longest
+   * caption and over Back and Next where they float at the picture's foot,
+   * as on a phone turned sideways: names there would meet them (R-0797). */
+  private room(): number {
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
     const s = getComputedStyle(lv.querySelector<HTMLElement>(".draw")!);
     const edge = parseFloat(s.paddingTop) + parseFloat(s.paddingBottom) + parseFloat(s.borderTopWidth) + parseFloat(s.borderBottomWidth);
-    return fitScale(L, lv.clientWidth, lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - edge - this.caption);
+    const foot = this.panel.querySelector<HTMLElement>(".foot");
+    const floats = foot && getComputedStyle(foot).position === "absolute" ? foot.offsetHeight : 0;
+    return lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - edge - this.caption - floats;
   }
 
   /** A phone held upright: the Family view keeps the drawer, not the whole screen. */
@@ -669,8 +678,7 @@ export class Drawer {
       this.edge = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
       this.scale = this.fits(L);
       // the picture's box takes all the room over the longest caption (R-0797)
-      const room = lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - this.edge - this.caption;
-      this.height = Math.max(L.h * this.scale, room);
+      this.height = Math.max(L.h * this.scale, this.room());
     }
     draw.style.height = `${this.height! + this.edge}px`;
     const svg = draw.querySelector<SVGSVGElement>("svg")!;

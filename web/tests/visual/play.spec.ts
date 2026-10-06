@@ -1209,6 +1209,10 @@ test.describe("the picture centred in the room it has", () => {
     const book = (await drawer(page).locator(".path .book").boundingBox())!;
     expect(book.y).toBeGreaterThanOrEqual(0);
     expect(book.y + book.height).toBeLessThanOrEqual(390);
+    // and centres the picture over Back and Next, which float at its foot, on whoever it is put on
+    await centred();
+    await tapPerson(page, ids().Hugo);
+    await centred();
   });
 });
 
