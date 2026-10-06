@@ -190,10 +190,13 @@ export function frameOn(
   if (frame.scrollWidth <= frame.clientWidth) return;
   const svg = frame.querySelector<SVGSVGElement>("svg")!;
   const w = frame.clientWidth;
-  const base = [...ids.map((id) => span(frame, svg, id)), ...marks.map((m) => reach(frame, svg, [m]))];
-  const every = [...base, ...also.map((id) => span(frame, svg, id))];
+  const people = ids.map((id) => span(frame, svg, id));
+  const base = [...people, ...marks.map((m) => reach(frame, svg, [m]))];
+  const others = also.map((id) => span(frame, svg, id));
   const fits = (s: [number, number][]) => Math.max(...s.map((x) => x[1])) - Math.min(...s.map((x) => x[0])) <= w;
-  const spans = fits(every) ? every : base;
+  // everyone involved with their marks; failing that everyone involved, the
+  // marks giving way; failing that the step's own people and their marks
+  const spans = [[...base, ...others], [...people, ...others]].find(fits) ?? base;
   const lo = Math.min(...spans.map((s) => s[0]));
   const hi = Math.max(...spans.map((s) => s[1]));
   const [wl, wh] = span(frame, svg, who);

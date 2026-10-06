@@ -709,6 +709,37 @@ test.describe("the Family view's three generations", () => {
     expect(title.bottom).toBeLessThanOrEqual(label.y + 1);
   });
 
+  // R-0781, R-0759
+  test("settles a date with everyone it involves in the frame when they all fit, the second mover too", async ({ page }) => {
+    let ids: Record<string, number> = {};
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      const tl = await (await route.fetch()).json();
+      ids = joined(tl, [["Hugo", "Wanda"]], 2, "Hugo", "Wanda");
+      // on the same date Wanda's sister, at the far end of the family, takes on
+      // too much, a move that reaches no one
+      tl.people.find((p: { id: number }) => p.id === ids.Ws1).name = "Wilhelmina";
+      const first = tl.events.filter((e: { dateTime: string | null }) => e.dateTime).sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime))[0];
+      // Hugo moves away from Wanda, and his own words beside him widen the
+      // drawing past the phone on his side
+      Object.assign(first, { relationship: "away", relationshipTargets: [ids.Wanda], relationshipTriangles: [], functioning: "up", title: "Took on the whole farm alone", description: "Took on the whole farm alone" });
+      tl.events.push({ ...first, id: 9850, person: ids.Ws1, person_name: "Wilhelmina", relationship: "overfunctioning", relationshipTargets: [], functioning: null, title: "Did everything", description: "Did everything", sentence: "Wilhelmina did everything" });
+      await route.fulfill({ json: tl });
+    });
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    // from the start of the dates, stepped with Next to the first move
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    const draw = drawer(page).locator(".draw");
+    for (let i = 0; i < 20 && !(await draw.locator(`.fore [data-mark^="move:${ids.Ws1}>"]`).count()); i++)
+      await drawer(page).locator('[data-act="next"]').click();
+    await page.waitForTimeout(1500);
+    expect(await draw.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
+    const three = [ids.Hugo, ids.Wanda, ids.Ws1].map(String);
+    expect(await cutInFrame(page, "#pbp .draw", three)).toEqual({ fits: true, cut: {} });
+  });
+
   // R-0779, R-0691
   test("raises the passages on what the family diagram is for from its book", async ({ page }) => {
     await page.route(/\/app\/case-report-passages(\?.*)?$/, (route) =>
