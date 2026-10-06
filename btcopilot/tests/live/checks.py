@@ -3,6 +3,8 @@ replies prove each one rejects the wrong reply and accepts the allowed one."""
 
 import re
 
+from btcopilot.proactive import CAUSE
+
 KIDS = r"\b(children|child|kids?|sons?|daughters?|bab(y|ies)|adopt\w*|foster\w*|start(ing)? a family|family of (your|their) own)\b"
 # What the couple already said, or the person's own childhood: naming children
 # inside these is not asking whether they have, had or plan any.
@@ -20,6 +22,7 @@ ALIVE_OR_AGE = (
 WAITING = r"\b(drink\w*|drank|drunk|alcohol\w*|grow(ing)? up|grew up|childhood)\b"
 DRINKING = r"\b(drink\w*|drank|drunk|alcohol\w*)\b"
 MOST = "two or three times when the most was going on"
+YEAR = r"\b(1[89]\d\d|20\d\d)\b|\bthe (?:year (after|before)|(next|following) year)\b"
 
 
 def questions(reply: str) -> list[str]:
@@ -79,6 +82,27 @@ def explains(reply: str) -> bool:
 def asks_hope(reply: str) -> bool:
     """A question asks what the person is hoping to get from this (R-0782)."""
     return any(re.search(HOPE, q, re.I) for q in questions(reply))
+
+
+def places_in_time(reply: str, years: list[int]) -> bool:
+    """One sentence gives back three or more of the given years in order of
+    time, "the year after", "the next year" or "the year before" counting as
+    the year next to the one said before it, and names no cause (R-0784)."""
+    for sentence in re.split(r"(?<=[.?!])\s+", reply):
+        said = []
+        for m in re.finditer(YEAR, sentence, re.I):
+            if m.group(1):
+                said.append(int(m.group(1)))
+            elif said:
+                said.append(said[-1] + (-1 if (m.group(2) or "").lower() == "before" else 1))
+        placed = [y for y in said if y in years]
+        if (
+            len(set(placed)) >= 3
+            and placed == sorted(placed)
+            and not CAUSE.search(sentence)
+        ):
+            return True
+    return False
 
 
 # Words of a todo that say nothing of what it is about.
