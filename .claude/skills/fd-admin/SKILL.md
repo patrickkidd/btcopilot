@@ -122,6 +122,18 @@ Changes something: needs `--yes`.
 
 The family records.
 
+### `flask admin diagrams dates`
+
+List each event date stored as a Qt date object rather than text, with the text it becomes, and why the record's rules would refuse the write when they would. --apply writes each record's dates the rules take as one change row that `diagrams undo` takes back.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--apply` | Write the text dates; the default, --dry-run, lists them and writes nothing. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin diagrams export <diagram_id>`
 
 Write one record out as JSON.
