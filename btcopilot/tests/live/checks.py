@@ -66,13 +66,16 @@ BUILDS = r"\bpicture\b|\bover a few conversations\b|\bover time\b"
 HOPE = r"\bhop(e|ing)\b|\bwant\b|\bget out of\b"
 
 
-def explains_and_asks_hope(reply: str) -> bool:
+def explains(reply: str) -> bool:
     """One sentence says what the coach does or what builds up, without leading
-    with family or relationships, and a question asks what the person is
-    hoping for (R-0782, R-0781)."""
+    with family or relationships (R-0782, R-0781)."""
     said = [s for s in re.findall(r"[^.?!]+[.?!]?", reply) if re.search(BUILDS, s, re.I)]
-    plain = all(
+    return bool(said) and all(
         len(re.findall(r"\bfamily\b", s, re.I)) <= 1 and not re.search("relationship", s, re.I)
         for s in said
     )
-    return bool(said) and plain and any(re.search(HOPE, q, re.I) for q in questions(reply))
+
+
+def asks_hope(reply: str) -> bool:
+    """A question asks what the person is hoping to get from this (R-0782)."""
+    return any(re.search(HOPE, q, re.I) for q in questions(reply))

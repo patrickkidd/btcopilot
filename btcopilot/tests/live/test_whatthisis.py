@@ -10,13 +10,14 @@ from freezegun import freeze_time
 from btcopilot.extensions import db
 from btcopilot.models import Author, Discussion, Statement
 from btcopilot.schema import QuestionKind, QuestionOutcome, QuestionState
-from btcopilot.tests.live.checks import explains_and_asks_hope
+from btcopilot.tests.live.checks import MOST, asks_hope, explains
 from btcopilot.tests.live.conftest import TODAY
 from btcopilot.tests.live.criterion import passes
 from btcopilot.toolbox import ToolName, Toolbox
 
 OPENING = "My sister and I aren't speaking."
 FOLLOW = "It's been about a year. She stopped answering after Dad's birthday."
+BUSIEST = "Probably 2015, when Mom got sick, and last spring, when this started."
 HOPE = "What are you hoping to get from this?"
 REPLY = (
     "That sounds hard. I'll ask about what's going on and the people around it, and "
@@ -27,15 +28,17 @@ WANT = "I want to stop dreading holidays"
 
 
 @passes(3, of=3)
-def test_the_first_or_second_reply_says_what_this_is_and_asks_the_hope(coach):
+def test_the_first_reply_says_what_this_is_and_the_hope_is_asked_by_the_third(coach):
     # R-0782, R-0781
     coach.record()
 
-    reply = coach.say(OPENING)
-    if explains_and_asks_hope(reply):
-        return
-    reply = coach.say(FOLLOW)
-    assert explains_and_asks_hope(reply), reply
+    replies = [coach.say(OPENING)]
+    assert explains(replies[0]), replies[0]
+    for answer in (FOLLOW, BUSIEST):
+        if asks_hope(replies[-1]):
+            return
+        replies.append(coach.say(BUSIEST if MOST in replies[-1] else answer))
+    assert asks_hope(replies[-1]), replies
 
 
 @passes(2, of=3)

@@ -1759,11 +1759,7 @@ class Toolbox:
             fields["outcome"] = choice(QuestionOutcome, args["outcome"], "outcomes").value
         if args.get("answer") is not None:
             fields["answer"] = self._cited(self._mine(args["answer"]))
-        elif (
-            fields.get("outcome") == QuestionOutcome.Answered
-            and found.get(record.CARD)
-            and self.said is not None
-        ):
+        elif fields.get("outcome") == QuestionOutcome.Answered and self.said is not None:
             fields["answer"] = self._cited(self._mine(self.said.id))
         if record.CARD in args:
             card = args[record.CARD]

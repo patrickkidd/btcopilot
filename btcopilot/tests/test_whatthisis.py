@@ -7,8 +7,11 @@ Invented names only.
 import pytest
 
 from btcopilot.promptdir import key_present, read
-from btcopilot.tests.live.checks import explains_and_asks_hope
+from btcopilot.tests.live.checks import asks_hope, explains
 from btcopilot.tests.repo import REPO
+from btcopilot.tests.test_questions import add, clock, settle, speaking, stored  # noqa: F401
+from btcopilot.tests.test_turnhistory import family  # noqa: F401
+from btcopilot.toolbox import said_label
 
 PRIVATE = REPO / "private" / "prompts" / "fragments" / "agent_opening.md"
 PUBLIC = REPO / "btcopilot" / "prompty" / "agent.prompty"
@@ -26,8 +29,8 @@ def test_the_private_opening_says_what_this_is():
         pytest.skip("no key opens the private prompts")
     text = read(PRIVATE)
     assert "**What this is.**" in text
-    assert "Don't lead with\nfamily or relationships" in text
-    assert "`thought` question" in text
+    assert "Don't lead\nwith family or relationships" in text
+    assert "In the reply after they answer the two or three times\nquestion" in text
 
 
 def test_the_public_prompt_says_what_this_is():
@@ -35,7 +38,7 @@ def test_the_public_prompt_says_what_this_is():
     text = PUBLIC.read_text()
     assert "What this is." in text
     assert "Don't lead with family or relationships." in text
-    assert "`thought` question" in text
+    assert "In the reply after they answer the two or three times question" in text
 
 
 def test_onboarding_lets_the_sentence_ride_with_the_request():
@@ -47,7 +50,7 @@ def test_onboarding_lets_the_sentence_ride_with_the_request():
 
 def test_the_example_reply_passes():
     # R-0782, R-0781
-    assert explains_and_asks_hope(EXAMPLE)
+    assert explains(EXAMPLE) and asks_hope(EXAMPLE)
 
 
 @pytest.mark.parametrize(
@@ -63,4 +66,17 @@ def test_the_example_reply_passes():
 )
 def test_a_reply_that_leads_with_family_or_skips_the_hope_question_fails(reply):
     # R-0782, R-0781
-    assert not explains_and_asks_hope(reply)
+    assert not (explains(reply) and asks_hope(reply))
+
+
+def test_a_question_closed_as_answered_keeps_the_message_it_answers(family, test_user):
+    # R-0782
+    toolbox, said_ = speaking(family, test_user, "I want to stop dreading holidays")
+    add(toolbox, "What are you hoping to get from this?", kind="thought")
+
+    settle(toolbox, family, "q1", state="resolved", outcome="answered")
+    assert stored(family)["q1"]["answer"] == {
+        "kind": "statement",
+        "id": said_.id,
+        "label": said_label(said_),
+    }
