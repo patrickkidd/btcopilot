@@ -418,7 +418,7 @@
       },
       "type": "table",
       "title": "Fact questions the coach asked, by generation and side",
-      "description": "The same fact questions by whom they were about: the person themself, a parent, a grandparent and beyond on the mother's or father's line, a partner, a sibling, a child; a couple; or someone further out in the family.",
+      "description": "The same fact questions by whom they were about: the person themself, a parent, a grandparent and beyond on the mother's or father's line, a partner, a sibling, a child; a couple; or someone further out in the family. It counts each time the coach asked, so a question asked in two turns counts twice; the people board's Fact questions by generation and side counts each question once, so the two differ.",
       "id": 9,
       "gridPos": {
         "h": 8,
