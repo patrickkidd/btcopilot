@@ -315,8 +315,12 @@ export class Drawer {
     const three = told.centred(id);
     if (Object.keys(four.cast.people).length === Object.keys(three.cast.people).length) return three;
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
-    const padding = parseFloat(getComputedStyle(lv.querySelector<HTMLElement>(".draw")!).paddingTop);
-    return lv.clientWidth / four.layout.vw >= leastScale(four.layout, padding) ? four : three;
+    const draw = lv.querySelector<HTMLElement>(".draw")!;
+    const padding = parseFloat(getComputedStyle(draw).paddingTop);
+    // the room under the years line and over the foot, both ways
+    const tall = lv.clientHeight - lv.querySelector<HTMLElement>(".wire")!.offsetHeight - 2 * padding;
+    const L = four.layout;
+    return Math.min(lv.clientWidth / L.vw, tall / L.h) >= leastScale(L, padding) ? four : three;
   }
 
   /** The frame put on the three generations around `id`, at the same date. */
@@ -469,7 +473,8 @@ export class Drawer {
     }
     draw.style.height = `${this.height + this.edge}px`;
     const svg = draw.querySelector<SVGSVGElement>("svg")!;
-    svg.style.width = L.vw * this.scale > lv.clientWidth ? `${Math.ceil(L.vw * this.scale)}px` : "";
+    // a drawing as wide as its frame to within a pixel does not scroll
+    svg.style.width = L.vw * this.scale > lv.clientWidth + 1 ? `${Math.ceil(L.vw * this.scale)}px` : "";
   }
 
   private tap(e: Event): void {

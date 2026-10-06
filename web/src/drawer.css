@@ -41,11 +41,6 @@
 .pbp .draw svg { display: block; width: 100%; height: 100%; }
 
 .pbp .scroll .step, .pbp > .foot .step { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
-/* on a phone turned sideways, an iPad or a desktop, the Family view takes the
-   whole screen, so its frame has all the width there is (R-0784) */
-@media (min-width: 700px) {
-  .pbp.whole { position: fixed; inset: 0; z-index: 90; }
-}
 .pbp > .foot { flex: none; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .pbp > .foot .step { justify-content: space-between; }
 .pbp .dots { flex: 1; min-width: 0; display: flex; justify-content: center; }
@@ -233,4 +228,24 @@
 .fam .pop { transform-box: fill-box; transform-origin: center; animation: pbp-pop 0.2s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 @media (prefers-reduced-motion: reduce) {
   .fam .pop, .fam .arr, .fam .arr line { animation: none; }
+}
+
+/* on a phone turned sideways, an iPad or a desktop, the Family view takes the
+   whole screen, so its frame has all the width there is (R-0784) */
+@media (min-width: 700px) {
+  .pbp.whole { position: fixed; inset: 0; z-index: 90; }
+  /* the years line keeps a phone's height, so the picture has the rest */
+  .pbp.whole .wire svg { width: auto; height: 78px; max-width: 100%; margin: 0 auto; }
+}
+/* a phone turned sideways is short: the title holds one line until it needs
+   more and the years line is shorter, so the picture keeps the height */
+@media (min-width: 700px) and (max-height: 500px) {
+  .pbp.whole > .when { min-height: 18px; padding-bottom: 2px; }
+  .pbp.whole > .also:empty { display: none; }
+  .pbp.whole .wire svg { height: 40px; }
+  .pbp.whole > .path { height: 32px; }
+  /* Back and Next float at the bottom corners, in the same places every step */
+  .pbp.whole > .foot { position: absolute; left: 0; right: 0; bottom: 0; border-top: 0; background: none; pointer-events: none; }
+  .pbp.whole > .foot .step { background: none; }
+  .pbp.whole > .foot .stepbtn { pointer-events: auto; background: var(--panel); }
 }
