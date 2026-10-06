@@ -1481,6 +1481,40 @@ describe("the whole family stepped through dates", () => {
     expect(place(0)).toBe(place(at));
   });
 
+  const [JIM, JULIE, SAM] = [8, 9, 10];
+  /** Corinne's mother remarried Jim; her father married Julie and had Sam. */
+  const stepFrame = () => {
+    const tl = record();
+    tl.people.push(
+      { ...tl.people.find((p) => p.id === MARCUS)!, id: JIM, name: "Jim", parents: null, birth: "1950-01-01" },
+      { ...tl.people.find((p) => p.id === DELPHINE)!, id: JULIE, name: "Julie", parents: null, birth: "1960-01-01" },
+      { ...tl.people.find((p) => p.id === THEO)!, id: SAM, name: "Sam", parents: 31, birth: "1990-01-01", primary: false },
+    );
+    tl.pair_bonds.push(
+      { id: 30, person_a: JIM, person_b: DELPHINE, married: true },
+      { id: 31, person_a: MARCUS, person_b: JULIE, married: true },
+    );
+    const f = new Told(tl, wholeFamily(tl), true).centred(String(CORINNE));
+    return { f, svg: f.shot(f.length - 1).svg };
+  };
+
+  // R-0795
+  it("draws each parent's other partners in the frame with their couple lines, and the children they had together", () => {
+    const { f, svg } = stepFrame();
+    expect(Object.keys(f.cast.people).map(Number)).toEqual(expect.arrayContaining([JIM, JULIE, SAM]));
+    expect(svg).toMatch(new RegExp(`data-bond="(${JIM}\\|${DELPHINE}|${DELPHINE}\\|${JIM})"`));
+    expect(svg).toMatch(new RegExp(`data-bond="(${MARCUS}\\|${JULIE}|${JULIE}\\|${MARCUS})"`));
+  });
+
+  // R-0795
+  it("sets a half-brother under his own parents' line, between his father and his stepmother", () => {
+    const { f } = stepFrame();
+    const x = (id: number) => f.layout.x[String(id)];
+    const [lo, hi] = [Math.min(x(MARCUS), x(JULIE)), Math.max(x(MARCUS), x(JULIE))];
+    expect(x(SAM)).toBeGreaterThanOrEqual(lo - 1);
+    expect(x(SAM)).toBeLessThanOrEqual(hi + 1);
+  });
+
   // R-0783
   it("names whom a date's events touch outside the frame", () => {
     const t = whole();

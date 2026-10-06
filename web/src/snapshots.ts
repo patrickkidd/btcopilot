@@ -241,8 +241,9 @@ const peopleOf = (m: Step["marks"][number]): string[] => {
 };
 
 /** The three generations around one person, the Family view's frame
- * (R-0783): them, their parents, their brothers and sisters, their partners
- * and their children, them first; with `grand`, their grandparents too, four
+ * (R-0783): them, their parents, each parent's other partners and their
+ * children by them (R-0795), their brothers and sisters, their partners and
+ * their children, them first; with `grand`, their grandparents too, four
  * generations (R-0784). */
 export function circle(r: Family, id: string, grand = false): string[] {
   const bonds = r.tl.pair_bonds;
@@ -252,11 +253,13 @@ export function circle(r: Family, id: string, grand = false): string[] {
   const out = new Set([id]);
   const up = born(id);
   if (up) [...of(up), ...kids(up)].forEach((q) => out.add(q));
+  const mine = (who: string) => bonds.filter((pb) => of(pb).includes(who));
+  if (up) of(up).forEach((p) => mine(p).forEach((pb) => [...of(pb), ...kids(pb)].forEach((q) => out.add(q))));
   if (up && grand) of(up).forEach((p) => {
     const top = born(p);
     if (top) of(top).forEach((q) => out.add(q));
   });
-  bonds.filter((pb) => of(pb).includes(id)).forEach((pb) => [...of(pb), ...kids(pb)].forEach((q) => out.add(q)));
+  mine(id).forEach((pb) => [...of(pb), ...kids(pb)].forEach((q) => out.add(q)));
   return [...out];
 }
 
