@@ -30,7 +30,7 @@ COUNT = r"(\d{1,2}|" + "|".join(NUMBERS) + ")"
 # A time marker: a four-digit year, an age, or a step from the marker before.
 MARKER = (
     r"\b(?P<year>1[89]\d\d|20\d\d)\b"
-    rf"|\b(?:at|aged|at age|when (?:i|you|she|he|they) (?:was|were)) (?P<age>{COUNT})\b"
+    rf"|\b(?:at|aged|at age|by|by age|when (?:i|you|she|he|they) (?:was|were)) (?P<age>{COUNT})\b"
     rf"|\b(?:(?P<steps>a|an|{COUNT}) years? (?P<way>later|after|before|earlier)"
     r"|the (?:year (?P<next>after|before)|(?:next|following) year))\b"
 )
@@ -100,13 +100,30 @@ def number(word: str) -> int:
     return int(word) if word.isdigit() else 1 if word in ("a", "an") else NUMBERS.index(word)
 
 
-def places_in_time(reply: str, years: list[int], born: int | None = None) -> bool:
-    """One sentence gives back three or more distinct times in order: one of
-    the given years, an age ("at five", "when I was twelve", "aged 9"), counted
-    from `born`, or a step ("a year later", "the next year", "two years
-    after", "the year before") from the marker before it; and it names no
-    cause (R-0784)."""
+def told_in_order(sentence: str, events: list[list[str]]) -> bool:
+    """Three or more of the events, each found by any of its words, named in
+    the order the list gives them."""
+    found = []
+    for words in events:
+        at = [m.start() for w in words for m in re.finditer(rf"\b{re.escape(w)}", sentence, re.I)]
+        if at:
+            found.append(min(at))
+    return len(found) >= 3 and found == sorted(found)
+
+
+def places_in_time(
+    reply: str, years: list[int], born: int | None = None, events: list[list[str]] = ()
+) -> bool:
+    """One sentence with no cause word puts the person's material in order of
+    time (R-0784): three or more distinct times in order, each one of the given
+    years, an age ("at five", "when I was twelve", "aged 9") counted from
+    `born`, or a step ("a year later", "the next year", "two years after", "the
+    year before") from the marker before it; or three or more of `events`,
+    given in the record's order as words for each, named in that order with
+    at least one such time marker."""
     for sentence in re.split(r"(?<=[.?!])\s+", reply):
+        if CAUSE.search(sentence):
+            continue
         said = []
         for m in re.finditer(MARKER, sentence, re.I):
             if m["year"]:
@@ -118,7 +135,9 @@ def places_in_time(reply: str, years: list[int], born: int | None = None) -> boo
                 back = (m["way"] or m["next"] or "").lower() in ("before", "earlier")
                 step = number(m["steps"]) if m["steps"] else 1
                 said.append(said[-1] + (-step if back else step))
-        if len(set(said)) >= 3 and said == sorted(said) and not CAUSE.search(sentence):
+        if len(set(said)) >= 3 and said == sorted(said):
+            return True
+        if re.search(MARKER, sentence, re.I) and told_in_order(sentence, events):
             return True
     return False
 

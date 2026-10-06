@@ -52,6 +52,25 @@ def test_ages_and_steps_place_in_time_too(reply):
     assert places_in_time(reply, YEARS, born=1985)
 
 
+EVENTS = [["wedding", "married"], ["Ivy"], ["move", "moved", "Tacoma"]]
+
+
+def test_three_events_in_record_order_with_a_time_marker_place_in_time():
+    # R-0784
+    reply = "So by age six you'd been through the wedding, Ivy's arrival, and the move to Tacoma."
+    assert places_in_time(reply, YEARS, born=1985, events=EVENTS)
+    assert not places_in_time(reply.replace("by age six", "already"), YEARS, born=1985, events=EVENTS)
+    assert not places_in_time(
+        "By age six you'd been through the move, the wedding and Ivy's arrival.",
+        YEARS,
+        born=1985,
+        events=EVENTS,
+    )
+    assert not places_in_time(
+        "By age six the wedding and Ivy's arrival led to the move.", YEARS, born=1985, events=EVENTS
+    )
+
+
 def test_ages_out_of_order_fail():
     # R-0784
     assert not places_in_time(
