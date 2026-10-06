@@ -326,7 +326,7 @@ ANOTHER_DAY = "2026-09-29"
 def test_a_question_asked_again_keeps_each_day_and_passed_over_twice_is_left_alone(
     family, test_user
 ):
-    # R-0774
+    # R-0774, R-0799
     toolbox = box(family)
     add(toolbox, LATER)
     settle(toolbox, family, "q1", state="asked")
@@ -377,7 +377,7 @@ def test_a_question_passed_over_twice_is_asked_when_the_person_brings_it_up(fami
 
 
 def test_asking_again_is_one_day_at_a_time_on_an_open_asked_question(family):
-    # R-0774
+    # R-0774, R-0799
     toolbox = box(family)
     add(toolbox, LATER, state="held")
     with pytest.raises(ToolError) as refused:
