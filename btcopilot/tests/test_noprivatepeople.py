@@ -21,6 +21,11 @@ EMAIL = re.compile(r"\b[\w.+-]+@[\w-]+\.[a-z]{2,}\b", re.I)
 # it is added here on purpose.
 ALLOWED_EMAIL = {
     "admin_auditor@example.com",
+    "ann@example.com",
+    "bo@example.com",
+    "claude-test+1@example.com",
+    "cy@example.com",
+    "dee@example.com",
     "auditor1@example.com",
     "auditor2@example.com",
     "ballot1@fd362-fixture.invalid",
