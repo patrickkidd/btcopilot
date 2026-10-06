@@ -164,7 +164,7 @@ def test_leaves_out_plays_test_accounts_and_scratch(flask_app, tmp_path):
             "t3",
             uid=2,
             diagram_id=2,
-            username="claude-test@x.invalid",
+            username="claude-test",
         ),
         said(
             5,
@@ -174,7 +174,7 @@ def test_leaves_out_plays_test_accounts_and_scratch(flask_app, tmp_path):
             "t3",
             uid=2,
             diagram_id=2,
-            username="claude-test@x.invalid",
+            username="claude-test",
         ),
         said(6, "Subject", "A copy.", 0, "t4", uid=3, diagram_id=3, scratch=True),
         said(7, "Expert", "Why?", 1, "t4", uid=3, diagram_id=3, scratch=True),

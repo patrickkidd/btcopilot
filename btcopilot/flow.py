@@ -76,6 +76,17 @@ class Record:
     events: tuple[tuple[str, ...], ...] = ()
 
 
+# RULES.md 0.10, the kin words of REFERENT.
+KIN = (
+    tuple(
+        """mother mom mommy ma father dad daddy pop parent parents grandmother grandma nana
+    grandfather grandpa grandparents sister sisters brother brothers siblings aunt aunts uncle
+    uncles cousin niece nephew wife husband spouse son daughter child children kid kids baby boy
+    girl stepdaughter stepson stepmother stepfather in-law son-in-law mother-in-law father-in-law
+    girlfriend boyfriend oldest youngest eldest twin""".split()
+    )
+    + ("only child", "an only")
+)
 # measures.md, shared cue lists and M04, M12, M15, M32, M35, M37, M38, M49.
 FEELING = (
     "feel",
@@ -86,6 +97,8 @@ FEELING = (
     "emotional",
     "how is that for you",
     "how was that for you",
+    "what was it like for you",
+    "how did that sit with you",
     "upset",
     "hurt",
     "angry",
@@ -95,12 +108,26 @@ FEELING = (
 ADVICE = (
     "you should",
     "you could try",
+    "you might want to",
+    "maybe call",
+    "maybe ask",
+    "maybe talk to",
     "i suggest",
     "i recommend",
     "it would help to",
     "try to",
     "have you thought about doing",
     "my advice",
+)
+# "You should know / see / hear" is an idiom, not advice.
+IDIOM = ("know", "see", "hear")
+WHY = (
+    "why",
+    "how come",
+    "what made him",
+    "what made her",
+    "what made them",
+    "what made you",
 )
 TEACHING = (
     "in family systems",
@@ -138,6 +165,7 @@ DAWNING = (
     "i wonder if",
     "that makes me think",
     "i just put that together",
+    "i never saw it that way",
 )
 DAWNING_STEMS = (
     "come to think of it",
@@ -154,15 +182,17 @@ AGREEMENT = (
     "he shouldn't have",
     "she shouldn't have",
     "they shouldn't have",
+    "that was unfair of your",
     "no wonder",
     "understandably",
-)
+) + tuple(f"your {k} shouldn't have" for k in KIN if " " not in k)
 HEDGED = ("whether", "not", "don't know", "do not know")
 PRAISE = (
     "great job",
     "well done",
     "you're doing great",
-    "don't worry",
+    "doing so well",
+    "brave",
     "it'll be okay",
     "you've got this",
     "i'm proud",
@@ -177,6 +207,7 @@ RISK = (
     "suicidal",
     "i don't want to be here any more",
     "better off dead",
+    "better off without me",
 )
 # The causal connectives of measures.md that proactive.CAUSES does not already hold.
 CONNECTIVES = (
@@ -186,10 +217,35 @@ CONNECTIVES = (
     "as a result",
     "linked to",
     "explains",
+    "set off",
 )
 STEPS = ("i'll", "i will", "i'm going to", "i am going to", "i want to", "i plan to")
-ASSIGNS = ("you could ask", "try asking", "why not ask", "you might ask", "i'd suggest")
-# RULES.md 0.10, STOP and the kin words of REFERENT.
+STEP_VERBS = (
+    "ask",
+    "call",
+    "talk to",
+    "look for",
+    "find",
+    "dig out",
+    "check",
+    "visit",
+    "write to",
+    "text",
+    "email",
+    "see",
+)
+ADVERBS = ("also", "just", "probably", "maybe", "finally", "definitely")
+ASSIGNS = (
+    "you could ask",
+    "try asking",
+    "why not ask",
+    "you might ask",
+    "i'd suggest",
+    "maybe ask",
+    "maybe call",
+    "maybe talk to",
+)
+# RULES.md 0.10, STOP.
 STOP = tuple(
     """about above after again against almost already although always another anybody anyone
     anything anyway around because before being better between could couldn't didn't doesn't
@@ -199,16 +255,6 @@ STOP = tuple(
     shouldn't since somebody someone something sometimes still stuff sure their there these
     they're thing things think thought those through under until usually wasn't weren't where
     which while whole would wouldn't you're you've yourself""".split()
-)
-KIN = (
-    tuple(
-        """mother mom mommy ma father dad daddy pop parent parents grandmother grandma nana
-    grandfather grandpa grandparents sister sisters brother brothers siblings aunt aunts uncle
-    uncles cousin niece nephew wife husband spouse son daughter child children kid kids baby boy
-    girl stepdaughter stepson stepmother stepfather in-law son-in-law mother-in-law father-in-law
-    girlfriend boyfriend oldest youngest eldest twin""".split()
-    )
-    + ("only child", "an only")
 )
 QUESTION_WORDS = (
     "who",
@@ -276,6 +322,8 @@ def version(*lists) -> str:
 RULES_VERSION = version(
     FEELING,
     ADVICE,
+    IDIOM,
+    WHY,
     TEACHING,
     TEACHING_PHRASES,
     OBJECTION,
@@ -289,6 +337,8 @@ RULES_VERSION = version(
     CAUSES,
     CONNECTIVES,
     STEPS,
+    STEP_VERBS,
+    ADVERBS,
     ASSIGNS,
     STOP,
     KIN,
@@ -306,8 +356,15 @@ DATED = re.compile(rf"\d|{MONTH}")
 LEAD = re.compile(rf"^\W*(?i:(?:{'|'.join(FILLERS)})\b[\s,]*)*(?:[A-Z][a-z]+,\s*)?")
 
 
+def fold(text: str) -> str:
+    """Curly quotes made straight, and a quote mark that is not inside a word
+    (don't, I'll) made a space, so a quoted word is a word."""
+    text = re.sub(r"[‘’]", "'", text)
+    return re.sub(r"(?<![A-Za-z])'|'(?![A-Za-z])", " ", text)
+
+
 def norm(text: str) -> str:
-    return text.lower().replace("’", "'").replace("anymore", "any more")
+    return fold(text).lower().replace("anymore", "any more")
 
 
 def words(text: str) -> list[str]:
@@ -323,6 +380,15 @@ def has(text: str, phrase: str) -> bool:
 
 def found(text: str, phrases) -> list[str]:
     return [p for p in phrases if has(text, p)]
+
+
+def named(text: str, names) -> list[str]:
+    """The stored names in the text, matched with their case on word boundaries."""
+    return [
+        n
+        for n in names
+        if re.search(rf"(?<![A-Za-z0-9]){re.escape(n)}(?![A-Za-z0-9])", fold(text))
+    ]
 
 
 def own(text: str, phrases, person_last: str) -> list[str]:
@@ -366,7 +432,7 @@ def slope(values: list[float]) -> float | None:
 
 
 def relative(sentence: str, names) -> bool:
-    return bool(found(sentence, KIN) or found(sentence, names))
+    return bool(found(sentence, KIN) or named(sentence, names))
 
 
 def content(word: str) -> bool:
@@ -385,21 +451,37 @@ def feeling_questions(reply: str, person_last: str) -> int:
 # F2
 def why_questions(reply: str, person_last: str) -> int:
     return sum(
-        bool(own(s, ("why",), person_last)) for s in sentences(reply) if is_question(s)
+        bool(own(s, WHY, person_last)) for s in sentences(reply) if is_question(s)
     )
 
 
 # F3
+def advises(sentence: str) -> bool:
+    hits = found(sentence, ADVICE)
+    idiom = rf"\byou should (?!(?:{'|'.join(IDIOM)})\b)"
+    if "you should" in hits and not re.search(idiom, norm(sentence)):
+        hits.remove("you should")
+    return bool(hits)
+
+
 def advice(reply: str) -> int:
-    return sum(bool(found(s, ADVICE)) for s in sentences(reply))
+    return sum(advises(s) for s in sentences(reply) if not is_question(s))
+
+
+def teaches(sentence: str) -> bool:
+    """A teaching marker not followed by a capitalised word (Bowen Street)."""
+    text = fold(sentence)
+    return any(
+        not re.match(r"\s+[A-Z]", text[m.end() :])
+        for p in TEACHING + TEACHING_PHRASES
+        for m in re.finditer(
+            rf"(?<![A-Za-z0-9']){re.escape(p)}(?![A-Za-z0-9'])", text, re.I
+        )
+    )
 
 
 def teaching(reply: str) -> int:
-    return sum(
-        bool(found(s, TEACHING + TEACHING_PHRASES))
-        for s in sentences(reply)
-        if "?" not in s
-    )
+    return sum(teaches(s) for s in sentences(reply) if "?" not in s)
 
 
 # F4
@@ -442,7 +524,7 @@ def after_pushback(
 
 # F5
 def specifics(reply: str, person_before: str, facts, at: datetime.datetime) -> bool:
-    if found(reply, [f.value for f in facts if f.since < at]):
+    if named(reply, [f.value for f in facts if f.since < at]):
         return True
     said, line = words(person_before), f" {' '.join(words(reply))} "
     return any(
@@ -495,6 +577,14 @@ def agreement(reply: str, names) -> int:
 
 
 # F9
+STEP = re.compile(
+    rf"(?<![a-z'])(?:{'|'.join(map(re.escape, STEPS))})\s+"
+    rf"(?:(?:{'|'.join(ADVERBS)})\s+)?(?:{'|'.join(map(re.escape, STEP_VERBS))})"
+    r"\b([^,.;:!?]*)",
+    re.I,
+)
+
+
 def own_step(last3: list[Message], names, todo_turns) -> tuple[bool, bool]:
     """Whether the person's last three messages state their own next step with a
     relative, and whether a todo was stored from that message (R-0783)."""
@@ -502,8 +592,8 @@ def own_step(last3: list[Message], names, todo_turns) -> tuple[bool, bool]:
         m
         for m in last3
         for s in sentences(m.text)
-        if re.search(rf"\b({'|'.join(map(re.escape, STEPS))})\s+[a-z]+", norm(s))
-        and relative(s, names)
+        for hit in STEP.finditer(fold(s))
+        if relative(hit.group(1), names)
     ]
     return bool(said), any(m.turn_id in todo_turns for m in said)
 
@@ -560,6 +650,14 @@ def praise(reply: str) -> int:
 
 
 # F14
+def ends_question(text: str) -> bool:
+    """Ends in "?" once trailing note lines (*, _ or a parenthesis) are dropped."""
+    lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
+    while len(lines) > 1 and lines[-1][0] in "*_(":
+        lines.pop()
+    return bool(lines) and lines[-1].rstrip(" *_\"')”").endswith("?")
+
+
 def talk_shape(messages: list[Message]) -> dict:
     """The person's share of words, the coach's words per message and against
     the person's last message, and coach messages ending in a question (R-0436)."""
@@ -577,7 +675,7 @@ def talk_shape(messages: list[Message]) -> dict:
         "person_share": person / total if total else None,
         "coach_words": statistics.mean(said) if said else None,
         "coach_ratio": statistics.mean(ratios) if ratios else None,
-        "ends_question": sum(m.text.rstrip(" *_\"')”\n").endswith("?") for m in coach),
+        "ends_question": sum(map(ends_question, (m.text for m in coach))),
     }
 
 

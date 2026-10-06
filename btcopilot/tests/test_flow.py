@@ -54,18 +54,41 @@ def test_feeling_questions():
         "You said you were angry that winter; when was that?", "I was so angry."
     )
     assert quoted == 0
+    assert flow.feeling_questions("What was it like for you when she left?", "") == 1
+    assert flow.feeling_questions("How did that sit with you?", "") == 1
 
 
 def test_why_questions():
     # R-0669
     assert flow.why_questions("Why did your brother move to Leeds?", "He moved.") == 1
     assert flow.why_questions("What year did your brother move?", "He moved.") == 0
+    assert flow.why_questions("When you asked 'why me', what did she say?", "") == 1
+    assert flow.why_questions("How come she stopped calling?", "") == 1
+    assert flow.why_questions("What made him leave?", "") == 1
+
+
+def test_quoted_words_and_contractions():
+    # R-0669
+    assert flow.words("I'll say 'why me' and you're 'done'.") == [
+        "i'll",
+        "say",
+        "why",
+        "me",
+        "and",
+        "you're",
+        "done",
+    ]
 
 
 def test_advice():
     # R-0669
     assert flow.advice("You should call your brother this week.") == 1
     assert flow.advice("When did you last speak with your brother?") == 0
+    assert flow.advice("Did you try to call her?") == 0
+    assert flow.advice("You should know I keep everything you say here.") == 0
+    assert flow.advice("Maybe call your brother this week.") == 1
+    assert flow.advice("You might want to talk to your mother.") == 1
+    assert flow.advice("You could try writing it down.") == 1
 
 
 def test_teaching():
@@ -77,6 +100,8 @@ def test_teaching():
         == 1
     )
     assert flow.teaching("Does the theory say anything about that?") == 0
+    assert flow.teaching("You lived on Bowen Street then.") == 0
+    assert flow.teaching("Bowen saw this in many families.") == 1
 
 
 def test_objection():
@@ -120,6 +145,9 @@ def test_specifics():
     assert not flow.specifics(
         "Tell me more about that.", "it was a hard year", facts, at(-5)
     )
+    rose = (Fact(FactKind.Name, "Rose", at(0)),)
+    assert flow.specifics("When did Rose start school?", "", rose, at(5))
+    assert not flow.specifics("Prices rose that year; then what?", "", rose, at(5))
 
 
 def test_shrinking():
@@ -143,6 +171,7 @@ def test_dawning():
     # R-0669
     assert flow.dawning("I never realised she moved the year he died.")[Dawning.Exact]
     assert flow.dawning("Oh, I just realized that was the same winter.")[Dawning.Stem]
+    assert flow.dawning("Oh. I never saw it that way.")[Dawning.Exact]
     neither = flow.dawning("I don't realize what you mean.")
     assert neither == {Dawning.Exact: False, Dawning.Stem: False}
 
@@ -158,6 +187,10 @@ def test_agreement():
         )
         == 0
     )
+    assert flow.agreement("That was unfair of your mother.", []) == 1
+    assert flow.agreement("Your father shouldn't have done that.", []) == 1
+    assert flow.agreement("You're right, Will was there.", ["Will"]) == 1
+    assert flow.agreement("You're right, it will be hard.", ["Will"]) == 0
 
 
 def test_own_step():
@@ -172,11 +205,22 @@ def test_own_step():
         False,
         False,
     )
+    assert flow.own_step([person("I'll call my sister.")], [], frozenset())[0]
+    assert flow.own_step([person("I'll probably visit Mark.")], ["Mark"], frozenset())[
+        0
+    ]
+    for text in (
+        "I'm going to bed, my husband is asleep.",
+        "I want to mark the date down.",
+        "I'll call it a night, then see my sister.",
+    ):
+        assert flow.own_step([person(text)], ["Mark"], frozenset()) == (False, False)
 
 
 def test_coach_assigns():
     # R-0669, R-0783
     assert flow.coach_assigns(["You could ask your uncle when he left."], [])
+    assert flow.coach_assigns(["Maybe ask your aunt."], [])
     assert not flow.coach_assigns(["What would you want to find out next?"], [])
 
 
@@ -201,6 +245,7 @@ def test_risk():
     # R-0669
     assert flow.risk("I can't go on like this.")
     assert not flow.risk("My father couldn't go on, he died by suicide in 2015.")
+    assert flow.risk("Sometimes I think everyone would be better off without me.")
 
 
 def test_protocol():
@@ -231,12 +276,26 @@ def test_paired_with_cause():
         flow.paired_with_cause("That's why 2011 and 2012 matter.", [2011, 2012], ())
         == 1
     )
+    set_off = flow.paired_with_cause(
+        "The 1979 layoff set off the 1980 move.", [1979, 1980], ()
+    )
+    assert set_off == 1
 
 
 def test_praise():
     # R-0669
     assert flow.praise("Well done getting that year from your aunt.") == 1
     assert flow.praise("You got the year from your aunt.") == 0
+    assert flow.praise("You're doing so well with this.") == 1
+    assert flow.praise("That's a brave thing to share.") == 1
+    assert flow.praise("Don't worry about the exact year; roughly when?") == 0
+
+
+def test_ends_question():
+    # R-0669, R-0436
+    assert flow.ends_question("Who was there?\n\n_(saved)_")
+    assert flow.ends_question("Who was there?\n*Noted: Ruth, 2011.*")
+    assert not flow.ends_question("Who was there? Tell me.")
 
 
 def test_talk_shape():
