@@ -2194,3 +2194,26 @@ the web build is green. The force push of the rebased branch is Patrick's (the r
 **Next round, queued and not started:** his rulings on the three version 5 decisions; the
 pinned-timeline trial; then the case page built as a real screen for the seminar, released under
 the deploy lock and the project's release rules.
+
+## 2026-10-07 — FD-375: the fast-follow after FD-371, built on one branch with FD-371-dates and FD-372 merged in [T-20, T-15, T-16, T-18, T-19]
+<!-- session: session_01AfBtiD5iT7e45HQ1bkqPTE · flushed: 2026-10-07T12:00:00Z -->
+
+FD-375 (draft PR 155) carries the date fixes from FD-371-dates and FD-372 (merged, c1ff3af9);
+production runs FD-372 and the deploy lock stays on FD-372. Built: the Family button always visible;
+test browsers silent and a second test for R-0798; "Better replies" removed (R-0831); a notifications
+card and an Account row (R-0832); the Family view crash fixed (0 of 58 frames of Patrick's diagram
+crash now); a person's corrections logged as observations and a submitted report emailed to the admin
+(R-0822 to R-0824); "diagram" instead of "record" in the app's words; the case report's first card is
+the Executive Summary, a short family history by date ending with what does not fit yet (R-0820,
+R-0821; evals 3 of 3); a sheet when the diagram changed after the cards were written, with "Refresh the
+report" rewriting the five written cards in one model call (R-0825 to R-0827); attachments by
+paperclip or drag, 20 MB, a PDF read 25 pages a call, shown as text on a chip, file not kept (R-0828
+to R-0830); the admin catch-up `flask admin case-report rewrite`. This branch's R-0801 and R-0802 were
+renumbered R-0831 and R-0832 because FD-372 owns R-0799 to R-0815.
+
+Lessons written to CLAUDE.local.md the same day: a theory page starts from the passages its feature was
+designed after; a feature is regrounded in the review that made it (FD-367 for the case report cards).
+
+Left with Patrick, not built: see T-20. The FD-375 deploy for him to test waits on the independent
+verifier. After that deploy the catch-up runs on diagrams 1 (subscription, $0), 11, 79, 2 and 13
+(paid, about $0.50 to $0.80 together), backup first.

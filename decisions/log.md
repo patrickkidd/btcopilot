@@ -2223,3 +2223,12 @@ message to an agent that runs inside a Workflow (it forks a copy that edits the 
 Workflow script's shared prompt text is frozen once a stage has run (editing it restarts the
 earlier stages); unattended runs never prompt. The private corpus clone merged master to pick up
 the new efficiency and token-optimization skills (abccc30).
+
+## 2026-10-07: FD-375 — renumbering, attachment limits, and where the long-PDF read runs
+
+FD-375's R-0801 and R-0802 became R-0831 (remove Better replies) and R-0832 (notifications prompt and
+Account row) because FD-372 owns R-0799 to R-0815; the attachment rulings are R-0828 to R-0830.
+An attached file is read inside the send request (20 MB, a PDF 25 pages a call); a PDF long enough
+to pass the 120 second web timeout is the known cost, and moving the read to the worker is an
+architecture choice left to Patrick. The case report catch-up runs after the deploy that carries the
+rewrite, with a backup first, a dry run that saves a plan, then apply, and undo by change rows.
