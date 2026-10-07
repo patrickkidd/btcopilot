@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { arrange, bar, crosses, draw, Mark, Sex, Tie, VIEW, type Box, type Cast, type Frame, type Layout } from "../src/diagram";
 import { FIELD, Move } from "../src/moves";
 import { family as wholeFamily, Told } from "../src/snapshots";
-import { CORINNE, DELPHINE, MARCUS, timeline } from "./whitlock";
+import { CORINNE, DELPHINE, event, MARCUS, THEO, timeline } from "./whitlock";
 
 /** The whole family stepped through dates: lines before their date. */
 
@@ -72,6 +72,18 @@ it("shows a separation's slash only from its own date in the whole family", () =
   expect(slashes(at(109))).toBe(0);
   expect(slashes(at(201))).toBe(1);
   expect(slashes(at(204))).toBe(2);
+});
+
+// R-0783
+it("draws someone with no family tie beside a person drawn with them, though first named with someone left out", () => {
+  const tl = timeline();
+  tl.people.push({ ...tl.people.find((p) => p.id === THEO)!, id: 8, name: "Ines", gender: "female", parents: null, birth: null });
+  tl.events.push(
+    event(301, "1990-06-01", "noted", THEO, { relationshipTargets: [8], title: "Met Ines" }),
+    event(302, "1995-06-01", "noted", MARCUS, { relationshipTargets: [8], title: "Hired Ines" }),
+  );
+  const t = new Told(tl, wholeFamily(tl), true, [CORINNE, MARCUS, DELPHINE, 8].map(String));
+  expect(t.layout.y["8"]).toBe(t.layout.y[String(MARCUS)]);
 });
 
 // R-0798
