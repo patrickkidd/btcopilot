@@ -38,6 +38,7 @@ import type {
   Tally,
   Statement,
   Passages,
+  Rewrite,
   Timeline,
   TimelineEvent,
   User,
@@ -184,6 +185,12 @@ export const timeline = (diagramId: number | null, signal?: AbortSignal) =>
   call<Timeline>("GET", onDiagram("/timeline", diagramId), undefined, undefined, signal);
 
 /** The passages behind the case report's book buttons (R-0692). */
+/** The coach rewrites the case report's five cards, and how far it has got
+ * (contract pending from the server). */
+export const rewriteReport = (diagramId: number | null, signal?: AbortSignal) =>
+  call<Rewrite>("POST", onDiagram("/case-report-rewrites", diagramId), undefined, undefined, signal);
+export const reportRewrite = (id: string) => call<Rewrite>("GET", `/case-report-rewrites/${id}`);
+
 export const casePassages = (diagramId: number | null, signal?: AbortSignal) =>
   call<Passages>("GET", onDiagram("/case-report-passages", diagramId), undefined, undefined, signal);
 

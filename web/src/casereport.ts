@@ -9,10 +9,13 @@ import { BACK } from "./tokens";
 import { CLUSTER, esc, flash, slideOver } from "./dom";
 import { Drawer, frameOn } from "./drawer";
 import { Lens } from "./lens";
+import { ask, dismiss, dismissed, phase, Phase, REWRITING } from "./outdated";
+import { Sheet } from "./sheet";
 import { untold } from "./snapshots";
 import type { Opened, Part, View } from "./store";
-import { ChipKind, ChipTone, InteractionKind, ItemKind, type Chip, type Timeline } from "./types";
+import { ChipKind, ChipTone, InteractionKind, ItemKind, RewriteState, type Chip, type Rewrite, type Timeline } from "./types";
 import { Feature } from "./track";
+import { toast } from "./toast";
 import { AWAY_PX, fold, type Fold } from "./viewport";
 
 /** The case report screen: the cards drawn from the store's open diagram
@@ -31,10 +34,16 @@ export interface CaseHooks {
   wide(): boolean;
   /** Read something about the open diagram, dropped if another is opened meanwhile. */
   fetch<T>(ask: (id: number | null, signal: AbortSignal) => Promise<T>): Promise<T | null>;
+  /** Read the open diagram's record again, which redraws the report. */
+  reload(): Promise<boolean>;
 }
 
 /** As long as the longest glide to a jump's target may take (dom.ts). */
 const GLIDE_MS = 2000;
+/** How often the rewrite is asked whether the coach has finished, as the chat's vote asks of shadow replies. */
+const POLL_MS = 2000;
+/** The cards the coach writes; the rest are drawn from the diagram each time and never go out of date. */
+const WRITTEN = new Set<Card>([Card.Main, Card.Guesses, Card.OwnPart, Card.Choice, Card.WorkOn]);
 
 const q = (root: HTMLElement, id: string): HTMLElement => {
   const found = root.querySelector<HTMLElement>(`#${id}`);
@@ -62,6 +71,11 @@ export class CaseReport implements View {
   private gliding = false;
   /** The cluster whose play-by-play is up. */
   private playing: string | null = null;
+  /** The question on opening a report that is out of date; the scrim does not put it away. */
+  private readonly sheet: Sheet;
+  private rewriting = false;
+  /** The change "Refresh the report" was tapped for this time the app is open, so a failed rewrite does not ask again at once. */
+  private refreshed: number | null = null;
 
   constructor(
     private readonly root: HTMLElement,
@@ -109,6 +123,8 @@ export class CaseReport implements View {
     root.querySelector(":scope > .pic")!.addEventListener("pointerdown", () => {
       if (root.classList.contains("folded")) this.openedAt = this.body.scrollTop;
     });
+    this.sheet = new Sheet(root, "rc");
+    this.sheet.panel.addEventListener("click", (e) => this.answer(e.target as HTMLElement));
     root.addEventListener("click", (e) => this.tap(e));
     this.body.addEventListener(
       "scroll",
@@ -127,6 +143,7 @@ export class CaseReport implements View {
 
   reset(): void {
     this.opened = null;
+    this.sheet.lower();
     this.books.forget();
     this.stale = true;
     this.drawer.close();
@@ -182,7 +199,68 @@ export class CaseReport implements View {
     this.onYou(this.root);
     this.lens.picture.setData(opened.record);
     this.lens.rest();
+    this.mark();
     this.follow();
+  }
+
+  /** The grey line at the top of the cards, the coach's cards dimmed while it
+   * rewrites them, and the sheet that asks on opening a report out of date. */
+  private mark(): void {
+    const opened = this.opened!;
+    const out = opened.record.report_out_of_date ?? null;
+    const id = opened.diagram?.id ?? null;
+    const shown = [id === null ? null : dismissed(id), this.refreshed].filter((n): n is number => n !== null);
+    const now = phase(out, shown.length ? Math.max(...shown) : null, this.rewriting);
+    this.body.querySelectorAll<HTMLElement>(".level[data-card]").forEach((l) =>
+      l.classList.toggle("dim", now === Phase.Rewriting && WRITTEN.has(l.dataset.card as Card)),
+    );
+    if (now === Phase.Current) return;
+    const line = document.createElement("button");
+    line.type = "button";
+    line.className = "aged";
+    line.disabled = now === Phase.Rewriting;
+    line.textContent = now === Phase.Rewriting ? REWRITING : out!.sentence;
+    this.body.querySelector(".case")?.prepend(line);
+    if (now === Phase.Asking) this.sheet.show(ask(out!.sentence, esc));
+  }
+
+  /** The sheet's two answers: the coach rewrites its cards, or the report
+   * is read as it was, and this device does not ask again for this change. */
+  private answer(el: HTMLElement): void {
+    const act = el.closest<HTMLElement>("[data-act]")?.dataset.act;
+    const out = this.opened?.record.report_out_of_date;
+    if (!act || !out) return;
+    this.sheet.lower();
+    if (act === "refresh") {
+      this.refreshed = out.change_id;
+      void this.rewrite();
+      return;
+    }
+    const id = this.opened!.diagram?.id;
+    if (id !== undefined) dismiss(id, out.change_id);
+    this.render();
+  }
+
+  /** The coach rewrites its five cards; the report is read again when it is
+   * done. A failure says so and puts the cards back as they were. */
+  private async rewrite(): Promise<void> {
+    this.rewriting = true;
+    this.render();
+    try {
+      let job: Rewrite | null = await this.hooks.fetch(api.rewriteReport);
+      while (job?.state === RewriteState.Running) {
+        await new Promise((done) => window.setTimeout(done, POLL_MS));
+        job = await api.reportRewrite(job.id);
+      }
+      if (job?.state === RewriteState.Failed) throw new Error(`the coach could not rewrite case report job ${job.id}`);
+    } catch (error) {
+      toast("The coach could not rewrite the report. Try again.");
+      throw error;
+    } finally {
+      this.rewriting = false;
+      this.render();
+    }
+    await this.hooks.reload();
   }
 
   /** A chip on the report: an event lights on the timeline as in the chat; a
@@ -286,6 +364,8 @@ export class CaseReport implements View {
   private act(el: HTMLElement): void {
     const hit = (sel: string) => el.closest<HTMLElement>(sel);
     if (this.books.tap(el)) return;
+    const out = this.opened?.record.report_out_of_date;
+    if (hit("button.aged") && out) return this.sheet.show(ask(out.sentence, esc));
     const all = hit(".who.lall[data-target]");
     if (all) return this.chip({ kind: ChipKind.Event, target: all.dataset.target!, label: "Coach", tone: ChipTone.Data, bare: false });
     const jump = hit("[data-jump]");

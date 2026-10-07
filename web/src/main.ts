@@ -385,6 +385,7 @@ const caseReport = new CaseReport($("case-screen"), {
   track: (feature) => track.tap(feature),
   wide: () => pinned(),
   fetch: (ask) => store.fetch(ask),
+  reload: () => store.refresh(Part.Record),
 });
 store.watch(caseReport);
 
