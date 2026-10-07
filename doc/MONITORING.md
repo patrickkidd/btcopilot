@@ -227,8 +227,8 @@ for example `CONTAINER_NAME:~".+" MESSAGE:~"(?i)error|traceback|exception"`.
 - The release workflow no longer pushes dashboards and `bin/grafanapush.py` is gone: the
   laptop's Grafana provisions `deploy/grafana/*.json` itself. `GRAFANA_CLOUD_TOKEN` and
   `GRAFANA_PDC_TOKEN` leave `deploy/secrets.env.example`.
-- The laptop's Grafana answers on the home network too, at http://turin:3000 (anonymous
-  viewing, `admin` with the password to edit); its other ports stay 127.0.0.1 only.
+- The laptop's Grafana answers on the home network too, at http://turin:3000; viewing
+  needs signing in as `admin` with the password; its other ports stay 127.0.0.1 only.
 - The product owner's Grafana reader reads the laptop's Grafana (`http://127.0.0.1:3000`, as
   admin, the password from `deploy/laptop/.env`); LogQL and TraceQL became LogsQL on
   VictoriaLogs and the Jaeger API of VictoriaTraces.

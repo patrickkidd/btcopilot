@@ -13,7 +13,7 @@ docker compose -f deploy/laptop/compose.yml up -d --build
 
 Docker Desktop must be set to start at login; every container restarts by itself.
 Grafana is at http://127.0.0.1:3000 on the laptop and http://turin:3000 from the home
-network (anonymous viewing; `admin` with `GF_SECURITY_ADMIN_PASSWORD` to edit). It is
+network. Viewing needs signing in as `admin` with `GF_SECURITY_ADMIN_PASSWORD`. It is
 the only port published beyond the laptop; every other port is 127.0.0.1 only. Dashboards come from `deploy/grafana/*.json`;
 saving in the UI does not change them.
 
