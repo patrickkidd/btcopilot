@@ -13,7 +13,9 @@ import pathlib
 
 import click
 
-from btcopilot import coverage, profile, questions, record
+# btcopilot.casereport imports btcopilot.admin for its settings, and that
+# package imports this module: casereport's names are read at call time.
+from btcopilot import casereport, coverage, profile, questions, record
 from btcopilot.admin import setting
 from btcopilot.admin.diagrams import find
 from btcopilot.admin.guard import writes
@@ -21,10 +23,12 @@ from btcopilot.admin.output import rows_option
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import ToolCall, model_for
 from btcopilot.coachturn import drain, run_call
+from btcopilot.extensions import db
 from btcopilot.metered import Metered
-from btcopilot.models import Author, Change, Diagram, Purpose
+from btcopilot.models import Author, Change, Diagram, Purpose, User
+from btcopilot.modelturn import MAX_TOKENS
 from btcopilot.prompts import get_agent_prompt
-from btcopilot.recordtext import note_line, on_map, outline, question_order
+from btcopilot.recordtext import outline
 from btcopilot.schema import CaseReportCard, DiagramData, ItemKind, QuestionState
 from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
 
@@ -35,7 +39,6 @@ ALLOWED = {
     ToolName.AddQuestion: ("text", "kind", "state", CARD),
 }
 SHORT = 60
-CLOSED = "CLOSED QUESTIONS"
 START = (
     "This is not a chat; nobody reads your words. The case report's cards "
     "stay as the map shows them. These guesses and questions came in since a "
@@ -87,17 +90,6 @@ def fresh(diagram: Diagram, data: DiagramData) -> set[str]:
         for q in raised(data) + [q for q in data.questions if record.note(q) is record.QUESTION]
         if not q.get(CARD) and (not last or added.get(q["id"], 0) > last or q["id"] in uncarded)
     }
-
-
-def closed(data: DiagramData) -> str:
-    """The questions the coach's map leaves out once closed, so the pass sees
-    an own part question that was already answered."""
-    lines = [
-        note_line(q)
-        for q in sorted(data.questions, key=question_order)
-        if record.note(q) is record.QUESTION and not on_map(q)
-    ]
-    return f"\n\n{CLOSED}\n" + "\n".join(lines) if lines else ""
 
 
 def offered() -> list[dict]:
@@ -210,7 +202,7 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> list[dict]:
     )
     own = profile.own(data)
     system = get_agent_prompt(
-        record=outline(data, diagram.version, own and own["id"]) + closed(data),
+        record=outline(data, diagram.version, own and own["id"]) + casereport.closed(data),
         today=datetime.date.today().isoformat(),
         coverage=coverage.block(data),
     )
@@ -318,9 +310,164 @@ def backfill(diagram_id, apply, plan_paths, plans):
     return columns, [{k: v for k, v in row.items() if k != "args"} for row in rows]
 
 
+REWRITE = "case-report-rewrite:{}"
+# Characters to a token, for the dry run's estimate of each call's input.
+PER_TOKEN = 3.6
+
+
+def written(data: DiagramData) -> list[dict]:
+    """The guesses on the cards the coach writes now."""
+    return [q for q in data.questions if q.get(CARD) and record.note(q) is record.IMPRESSION]
+
+
+def answered(path: pathlib.Path) -> list[ToolCall]:
+    """The tool calls of a saved answer: the assistant message in the
+    Anthropic response shape, as the subscription writes it."""
+    content = json.loads(path.read_text())["content"]
+    return [ToolCall(b["id"], b["name"], b["input"]) for b in content if b["type"] == "tool_use"]
+
+
+def rewritten(diagram: Diagram, plans: pathlib.Path, requests: pathlib.Path | None,
+              answers: pathlib.Path | None) -> list[dict]:
+    """One family's dry run: the request built as the page's Refresh builds it;
+    saved for the subscription to answer, answered from a saved answer, or
+    sent to the model; and the plan of what it would write, saved."""
+    owner = db.session.get(User, diagram.user_id)
+    turn_id = REWRITE.format(diagram.id)
+    toolbox = casereport.box(diagram, owner, turn_id)
+    system, messages = casereport.asked(diagram, owner, toolbox)
+    tools = casereport.offered()
+    meter = Metered(
+        diagram.user_id,
+        diagram.id,
+        turn_id,
+        Purpose.Backfill,
+        model=model_for(setting.read(SettingKey.CoachModel, diagram.user_id)),
+    )
+    tokens = round(len(system + json.dumps(messages) + json.dumps(tools)) / PER_TOKEN)
+    name = f"case-report-{diagram.id}.json"
+    before = {q[CARD]: q for q in written(diagram.get_diagram_data())}
+    row = {"diagram": diagram.id, "owner": diagram.user_id, "input_tokens": tokens}
+    if requests:
+        requests.mkdir(parents=True, exist_ok=True)
+        request = {"model": meter.model.model, "effort": meter.model.effort,
+                   "max_tokens": MAX_TOKENS, "system": system, "messages": messages, "tools": tools}
+        (requests / name).write_text(json.dumps(request, indent=2))
+        return [{**row, "card": card, "before": short(q["text"]), "request": str(requests / name)}
+                for card, q in before.items()] or [{**row, "request": str(requests / name)}]
+    if answers:
+        calls = answered(answers / name)
+    else:
+        calls = drain(meter.turn(system, messages, tools, turn_id)).calls
+    plans.mkdir(parents=True, exist_ok=True)
+    path = plans / name
+    path.write_text(json.dumps({
+        "diagram": diagram.id,
+        "version": diagram.version,
+        "calls": [[c.id, c.name, c.args] for c in calls],
+    }, indent=2))
+    rows = []
+    for call in calls:
+        card = call.args.get(CARD)
+        old = before.get(card)
+        rows.append({**row, "card": card, "before": short(old["text"]) if old else None,
+                     "after": short(call.args.get("text") or ""), "refused": casereport.checked(call),
+                     "plan": str(path)})
+    return rows
+
+
+def rewrite_applied(path: pathlib.Path) -> dict:
+    """A saved plan written as the page's Refresh writes, against the record as
+    it stands, refused if the record moved since the dry run; no model call."""
+    plan = json.loads(path.read_text())
+    diagram = find(plan["diagram"])
+    if diagram.version != plan["version"]:
+        raise click.ClickException(
+            f"diagram {diagram.id} is at version {diagram.version}, the plan at {plan['version']}: "
+            "run the dry run again"
+        )
+    owner = db.session.get(User, diagram.user_id)
+    turn_id = REWRITE.format(diagram.id)
+    last = db.session.query(db.func.max(Change.id)).scalar() or 0
+    cards = casereport.wrote(
+        diagram,
+        casereport.box(diagram, owner, turn_id),
+        [ToolCall(*call) for call in plan["calls"]],
+    )
+    changes = [
+        c.id
+        for c in Change.query.filter(
+            Change.diagram_id == diagram.id, Change.turn_id == turn_id, Change.id > last
+        ).order_by(Change.id)
+    ]
+    return {"diagram": diagram.id, "cards": ", ".join(cards),
+            "changes": " ".join(str(c) for c in changes)}
+
+
+@click.command("rewrite")
+@click.option("--diagram", "diagram_id", type=int, help="Only this record.")
+@click.option(
+    "--apply/--dry-run",
+    default=False,
+    help="Write saved plans; the default, --dry-run, makes the model call and saves "
+    "the plan, writing nothing to the record.",
+)
+@click.option(
+    "--plan",
+    "plan_paths",
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+    multiple=True,
+    help="With --apply: a plan file the dry run printed.",
+)
+@click.option(
+    "--plans",
+    type=click.Path(file_okay=False, path_type=pathlib.Path),
+    default="case-report-plans",
+    show_default=True,
+    help="Where the dry run saves its plans.",
+)
+@click.option(
+    "--requests",
+    type=click.Path(file_okay=False, path_type=pathlib.Path),
+    help="Save each record's request here instead of calling the model, for the "
+    "Claude Code subscription to answer; nothing else is done.",
+)
+@click.option(
+    "--saved-answers",
+    "answers",
+    type=click.Path(exists=True, file_okay=False, path_type=pathlib.Path),
+    help="Take each record's answer from case-report-<id>.json here instead of calling "
+    "the model: the assistant message the subscription wrote for its saved request.",
+)
+@rows_option
+def rewrite(diagram_id, apply, plan_paths, plans, requests, answers):
+    """Write every card the coach writes again on each record that holds one,
+    the Executive Summary among them, as the page's Refresh does (R-0820,
+    R-0825). The dry run prints each card's guess now and the one it would
+    write, with the call's estimated input tokens, and saves the plan; the
+    model calls go to the model-calls ledger as a backfill, never to the
+    person's monthly tokens. --apply --plan writes exactly that plan, with no
+    model call, and prints the change rows `flask admin diagrams undo` takes
+    back."""
+    if apply:
+        if not plan_paths:
+            raise click.ClickException("--apply writes a saved plan: give --plan, from a dry run")
+        return ["diagram", "cards", "changes"], [rewrite_applied(path) for path in plan_paths]
+    found = [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
+    columns = ["diagram", "owner", "input_tokens", "card", "before", "after", "refused",
+               "request" if requests else "plan"]
+    return columns, [
+        row
+        for diagram in found
+        if written(diagram.get_diagram_data()) and questions.sessions(diagram)
+        for row in rewritten(diagram, plans, requests, answers)
+    ]
+
+
 @click.group("case-report")
 def case_report_group():
     """The case report's cards in each record."""
 
 
 case_report_group.add_command(writes(backfill))
+case_report_group.add_command(writes(rewrite))

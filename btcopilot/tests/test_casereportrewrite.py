@@ -1,18 +1,21 @@
 """The case report against the diagram: out of date once, after the coach last
 wrote a card, an event a card rests on changes its date or kind, or a death, a
-marriage, a separation, a divorce or a shift with a symptom is added; and the
+marriage, a separation, a divorce or a shift with a symptom is added; the
 rewrite of every card the coach writes at once, in one model call, run in the
-worker and followed on the turn log.
+worker and polled by the page; and the catch-up that runs the same rewrite on
+every record holding a card, from a saved plan.
 
 Invented names only.
 """
 
+import json
 from dataclasses import asdict
 
 import pytest
 from mock import patch
 
 from btcopilot import casereport, turnlog
+from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall, Observation, ObservationKind, Purpose, TokenMeter
 from btcopilot.schema import Person
@@ -222,3 +225,74 @@ def test_a_rewrite_reads_every_events_words_and_notes_into_its_one_call(web, pas
 def test_a_rewrite_of_a_family_the_reader_cannot_open_is_not_found(web):
     # R-0825
     assert web.get("/app/case-report-rewrites/nobody").status_code == 404
+
+
+def catch_up(flask_app, *args, model=None) -> list[dict]:
+    with patch("btcopilot.admin.casereport.model_for", return_value=model or Model()):
+        result = flask_app.test_cli_runner().invoke(admin, ["case-report", "rewrite", *args, "--json"])
+    assert result.exit_code == 0, result.output
+    return json.loads(result.output)
+
+
+def test_the_catch_up_dry_run_saves_the_plan_and_writes_nothing(flask_app, tmp_path, past, written, family):
+    # R-0820, R-0825
+    before = stored(family)
+    with patch.object(TokenMeter, "charge") as charge:
+        rows = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*FIVE)))
+
+    assert (rows[0]["card"], rows[0]["before"]) == ("main_guess", FELL)
+    assert stored(family) == before
+    assert ModelCall.query.filter_by(purpose=Purpose.Backfill).count() == 1
+    assert charge.called is False
+
+
+def test_the_catch_up_writes_the_plan_and_names_the_changes_undo_takes_back(
+    flask_app, tmp_path, past, written, family
+):
+    # R-0820, R-0825
+    plan = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*FIVE)))[0]["plan"]
+    (done,) = catch_up(flask_app, "--apply", "--plan", plan)
+
+    assert done["cards"] == "main_guess, coach_guess, own_part, choice, work_on"
+    assert cards(family)["i1"] is None
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(family.id), *done["changes"].split(), "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+    assert cards(family)["i1"] == "main_guess"
+
+
+def test_the_catch_up_refuses_a_plan_the_record_moved_past(flask_app, tmp_path, past, written, family):
+    # R-0825
+    plan = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*FIVE)))[0]["plan"]
+    happened(family, "death", "2019-03-01", person=2)
+    result = flask_app.test_cli_runner().invoke(admin, ["case-report", "rewrite", "--apply", "--plan", plan])
+
+    assert "run the dry run again" in result.output
+
+
+def test_the_catch_up_saves_requests_for_the_subscription_and_takes_its_answers(
+    flask_app, tmp_path, past, written, family
+):
+    # R-0825
+    asked, model = tmp_path / "requests", Model()
+    model.effort = "high"
+    catch_up(flask_app, "--requests", str(asked), model=model)
+    request = json.loads((asked / f"case-report-{family.id}.json").read_text())
+    assert [t["name"] for t in request["tools"]] == ["add_impression"]
+    answers = tmp_path / "answers"
+    answers.mkdir()
+    blocks = [
+        {"type": "tool_use", "id": f"a{n}", "name": "add_impression", "input": args}
+        for n, (_, args) in enumerate(FIVE)
+    ]
+    (answers / f"case-report-{family.id}.json").write_text(json.dumps({"model": "m", "content": blocks}))
+    rows = catch_up(flask_app, "--plans", str(tmp_path / "plans"), "--saved-answers", str(answers))
+
+    assert len(rows) == 5
+    assert ModelCall.query.filter_by(purpose=Purpose.Backfill).count() == 0
+
+
+def test_the_catch_up_leaves_a_record_with_no_written_card(flask_app, tmp_path, past, family):
+    # R-0825
+    assert catch_up(flask_app, "--plans", str(tmp_path)) == []

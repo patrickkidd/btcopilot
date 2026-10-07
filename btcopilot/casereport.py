@@ -15,7 +15,6 @@ import uuid
 
 from btcopilot import clock, coverage, extensions, profile, record, turnlog
 from btcopilot.admin import setting
-from btcopilot.admin.casereport import closed
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Refusal, model_for
 from btcopilot.coachturn import drain, run_call
@@ -33,7 +32,7 @@ from btcopilot.models import (
 )
 from btcopilot.prompts import case_report_rewrite, get_agent_prompt
 from btcopilot.questions import sessions
-from btcopilot.recordtext import outline
+from btcopilot.recordtext import note_line, on_map, outline, question_order
 from btcopilot.schema import (
     CaseReportCard,
     DiagramData,
@@ -57,6 +56,7 @@ MARKED = {EventKind.Death: "death", EventKind.Married: "marriage",
 MOVED = ("dateTime", "kind")
 SINCE = "after the coach wrote this report."
 FIELDS = ("text", "evidence", "state", CARD)
+CLOSED = "CLOSED QUESTIONS"
 BROKE = "The case report could not be written again just now."
 REFUSED = "The case report could not be written again from this diagram."
 
@@ -157,6 +157,17 @@ def stale(diagram_id: int, data: DiagramData) -> dict | None:
     return None
 
 
+def closed(data: DiagramData) -> str:
+    """The questions the coach's map leaves out once closed, so the pass sees
+    an own part question that was already answered."""
+    lines = [
+        note_line(q)
+        for q in sorted(data.questions, key=question_order)
+        if record.note(q) is record.QUESTION and not on_map(q)
+    ]
+    return f"\n\n{CLOSED}\n" + "\n".join(lines) if lines else ""
+
+
 def start(diagram: Diagram, user: User) -> dict:
     """Hold the family's report for one rewrite and hand it to the worker."""
     if not sessions(diagram):
@@ -212,18 +223,9 @@ def checked(call) -> str | None:
     return None
 
 
-def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
-    """One model call writes every card again, given every event's words and
-    notes so it reads nothing; each guess goes in through the coach's own tool,
-    and what was on a card it wrote comes off. The cards written, in order."""
-    data = diagram.get_diagram_data()
-    own = profile.own(data)
-    system = get_agent_prompt(
-        record=outline(data, diagram.version, own and own["id"]) + closed(data),
-        today=clock.today(user.timezone).isoformat(),
-        coverage=coverage.block(data),
-    )
-    toolbox = Toolbox(
+def box(diagram: Diagram, user: User, turn_id: str) -> Toolbox:
+    """The coach's tools on the family's newest session, as the coach."""
+    return Toolbox(
         diagram.id,
         turn_id,
         user_id=user.id,
@@ -231,17 +233,33 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
         author=Author.Coach,
         zone=user.timezone,
     )
-    before = {q["id"] for q in data.questions}
+
+
+def asked(diagram: Diagram, user: User, toolbox: Toolbox) -> tuple[str, list[dict]]:
+    """The one call's system prompt, the coach's own, and its opening message
+    with every event's words and notes, so it reads nothing."""
+    data = diagram.get_diagram_data()
+    own = profile.own(data)
+    system = get_agent_prompt(
+        record=outline(data, diagram.version, own and own["id"]) + closed(data),
+        today=clock.today(user.timezone).isoformat(),
+        coverage=coverage.block(data),
+    )
     events, _ = toolbox.call(ToolName.ReadEvents, {"fields": [ReadField.Words, ReadField.Notes]})
-    opening = f"{case_report_rewrite()}\n\nEVENTS\n{events}"
-    turnlog.hold(diagram.id)
-    turn = drain(meter.turn(system, [{"role": "user", "content": opening}], offered(), turn_id))
-    for call in turn.calls:
+    return system, [{"role": "user", "content": f"{case_report_rewrite()}\n\nEVENTS\n{events}"}]
+
+
+def wrote(diagram: Diagram, toolbox: Toolbox, calls: list) -> list[str]:
+    """Each guess in through the coach's own tool, a refused one written down,
+    and what was on a card written anew taken off it. The cards written, in
+    order."""
+    before = {q["id"] for q in toolbox.data.questions}
+    for call in calls:
         refusal = checked(call)
         if refusal is None:
             _, _, refusal = run_call(toolbox, call)
         if refusal:
-            _observe(diagram.id, turn_id, ObservationKind.ToolRefused,
+            _observe(diagram.id, toolbox.turn_id, ObservationKind.ToolRefused,
                      {"tool": call.name, "refusal": refusal, "retried": False,
                       "reason": f"case report rewrite: {call.name}: {refusal}"})
     after = toolbox.data.questions
@@ -254,8 +272,17 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
         and record.note(q) is record.IMPRESSION
     ]
     if off:
-        record.apply(diagram.id, off, author=Author.Coach, turn_id=turn_id, user_id=user.id)
+        record.apply(diagram.id, off, author=Author.Coach, turn_id=toolbox.turn_id, user_id=toolbox.user_id)
     return cards
+
+
+def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
+    """One model call writes every card again (R-0825)."""
+    toolbox = box(diagram, user, turn_id)
+    system, messages = asked(diagram, user, toolbox)
+    turnlog.hold(diagram.id)
+    turn = drain(meter.turn(system, messages, offered(), turn_id))
+    return wrote(diagram, toolbox, turn.calls)
 
 
 def _observe(diagram_id: int, turn_id: str, kind: ObservationKind, detail: dict) -> None:

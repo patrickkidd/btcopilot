@@ -44,6 +44,22 @@ Changes something with `--apply`. Through `flask admin run`, the words also need
 | `--plans` | Where the dry run saves its plans. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin case-report rewrite`
+
+Write every card the coach writes again on each record that holds one, the Executive Summary among them, as the page's Refresh does (R-0820, R-0825). The dry run prints each card's guess now and the one it would write, with the call's estimated input tokens, and saves the plan; the model calls go to the model-calls ledger as a backfill, never to the person's monthly tokens. --apply --plan writes exactly that plan, with no model call, and prints the change rows `flask admin diagrams undo` takes back.
+
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--apply` | Write saved plans; the default, --dry-run, makes the model call and saves the plan, writing nothing to the record. |
+| `--plan` | With --apply: a plan file the dry run printed. |
+| `--plans` | Where the dry run saves its plans. |
+| `--requests` | Save each record's request here instead of calling the model, for the Claude Code subscription to answer; nothing else is done. |
+| `--saved-answers` | Take each record's answer from case-report-<id>.json here instead of calling the model: the assistant message the subscription wrote for its saved request. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin coach-model`
 
 The coach model and the shadow models of one person, and the shadow models anyone may have.
