@@ -28,7 +28,11 @@ file. Before this there was no way to attach a file, so the case cannot pass on 
 Measured on the subscription: with neither instruction 0 of 3 runs entered the added son's
 birth (the coach added him and his parents' events in one round, then never came back for his
 birth); with the record-contract paragraph alone, 1 of 3; with the words beside the file text
-too, 2 of 3, which passes but has no margin.
+too, 2 of 3, which passes but has no margin. One more wording was tried and dropped: the
+reminder moved after the file's text, "(Enter all of this file in the record before you reply:
+every person in it, then an event for every date it gives, the birth of each person you add
+included.)", scored 1 of 3. The words before the file's text stay. A PDF is now read 25 pages a
+call, and a part cut off at the output limit fails the read instead of keeping cut text.
 
 ## FD-375 — the coach notes when the person corrects it (2026-10-07)
 

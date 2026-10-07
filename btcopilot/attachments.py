@@ -10,9 +10,13 @@ from pathlib import Path
 
 import pillow_heif
 from PIL import Image, UnidentifiedImageError
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 from pypdf.errors import PdfReadError
-from werkzeug.exceptions import RequestEntityTooLarge, UnsupportedMediaType
+from werkzeug.exceptions import (
+    InternalServerError,
+    RequestEntityTooLarge,
+    UnsupportedMediaType,
+)
 
 from btcopilot import prompts
 # The models package before the meter, which the models package imports.
@@ -22,17 +26,22 @@ from btcopilot.metered import Metered
 
 pillow_heif.register_heif_opener()
 
-MAX_BYTES = 25 * 1024 * 1024
+# The model's request limit is 32 MB, and a file grows by a third when encoded.
+MAX_BYTES = 20 * 1024 * 1024
 MAX_PAGES = 100
+# Pages read in one call, so a long PDF's text fits one call's output.
+CHUNK_PAGES = 25
 # The longest side a photo is sent at; the model reads no more detail than this.
 MAX_SIDE = 1568
 READ_TOKENS = 16000
+CUT_OFF = "max_tokens"
 
 KINDS_SAID = "PDF, JPEG, PNG, HEIC, text and Markdown files"
 UNKNOWN = f"The app reads {KINDS_SAID}; this file is none of those."
-TOO_BIG = "That file is over 25 MB; the app reads files up to 25 MB."
+TOO_BIG = "That file is over 20 MB; the app reads files up to 20 MB."
 TOO_LONG = f"That PDF has more than {MAX_PAGES} pages; the app reads up to {MAX_PAGES}."
 UNREADABLE = "The app could not open that file."
+CUT = "That file holds more than the app can read in one go; send it in parts."
 
 
 class Kind(enum.StrEnum):
@@ -78,28 +87,56 @@ class File:
                 raise UnsupportedMediaType(UNREADABLE)
         elif self.kind is Kind.Pdf:
             try:
-                pages = len(PdfReader(io.BytesIO(data)).pages)
+                pages = PdfReader(io.BytesIO(data)).pages
             except PdfReadError:
                 raise UnsupportedMediaType(UNREADABLE)
-            if pages > MAX_PAGES:
+            if len(pages) > MAX_PAGES:
                 raise RequestEntityTooLarge(TOO_LONG)
-            self.block = _block("document", "application/pdf", data)
+            self.parts = _chunks(name, pages)
         else:
-            self.block = _block("image", "image/jpeg", _jpeg(data))
+            self.parts = [
+                [_block("image", "image/jpeg", _jpeg(data)), _said(f"The file is named {name}.")]
+            ]
 
     def read(self, user_id: int, diagram_id: int, turn_id: str) -> str:
-        """The text the coach reads: the file itself for text, else what one
-        model call read from it, charged to the person like the coach's own."""
+        """The text the coach reads: the file itself for text, else what the
+        model read from it, one call a part, charged to the person like the
+        coach's own. A part cut off at the output limit fails the read, so no
+        cut text is ever kept."""
         if self.kind in (Kind.Text, Kind.Markdown):
             return self.text
         meter = Metered(user_id, diagram_id, turn_id, Purpose.Transcribe)
-        words = meter.read(
-            [self.block, {"type": "text", "text": f"The file is named {self.name}."}],
-            prompts.files().fragment("attachment"),
-            READ_TOKENS,
-        )
-        TokenMeter.charge(user_id, meter.spent)
-        return words
+        words = []
+        try:
+            for part in self.parts:
+                said = meter.read(part, prompts.files().fragment("attachment"), READ_TOKENS)
+                if said.stop == CUT_OFF:
+                    raise InternalServerError(CUT)
+                words.append(said.words)
+        finally:
+            TokenMeter.charge(user_id, meter.spent)
+        return "\n\n".join(words)
+
+
+def _chunks(name: str, pages) -> list[list[dict]]:
+    """A PDF as parts of CHUNK_PAGES pages, each its own document block."""
+    parts = []
+    for first in range(0, len(pages), CHUNK_PAGES):
+        out = PdfWriter()
+        for page in pages[first : first + CHUNK_PAGES]:
+            out.add_page(page)
+        data = io.BytesIO()
+        out.write(data)
+        said = f"The file is named {name}."
+        if len(pages) > CHUNK_PAGES:
+            last = min(first + CHUNK_PAGES, len(pages))
+            said += f" These are its pages {first + 1} to {last} of {len(pages)}."
+        parts.append([_block("document", "application/pdf", data.getvalue()), _said(said)])
+    return parts
+
+
+def _said(text: str) -> dict:
+    return {"type": "text", "text": text}
 
 
 def _block(kind: str, media_type: str, data: bytes) -> dict:

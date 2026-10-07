@@ -403,6 +403,8 @@ class Text:
     words: str
     spent: Spent
     served: Served
+    # Claude's stop reason; "max_tokens" when the words were cut off.
+    stop: str | None = None
 
 
 @dataclass
@@ -573,7 +575,7 @@ async def claude_text(prompt=None, **kwargs):
         await client.close()
     _log.debug(f"Completed Claude response in {time.time() - start_time} seconds")
     _log.debug(f"claude_text(): --> \n\n{content}")
-    return Text(content, claude_spent(response.usage), answered)
+    return Text(content, claude_spent(response.usage), answered, response.stop_reason)
 
 
 def claude_text_sync(prompt=None, **kwargs):

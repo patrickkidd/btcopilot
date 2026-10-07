@@ -11,7 +11,7 @@ import io
 import pillow_heif
 import pytest
 from PIL import Image
-from pypdf import PdfWriter
+from pypdf import PdfReader, PdfWriter
 
 from btcopilot import attachments
 from btcopilot.extensions import db
@@ -225,3 +225,29 @@ def test_a_file_sent_with_no_words_is_taken_and_the_coach_reads_the_file(
         "From the file notes.txt (enter every person and every dated event in it, "
         "births too, before you reply):\nHugh Hale died 2001."
     )
+
+
+def test_a_long_pdf_is_read_in_parts_of_25_pages_and_the_texts_joined(
+    web, token, monkeypatch, reader
+):
+    # R-0828, R-0830
+    coach(monkeypatch, Model(said("Thank you.")))
+    assert send(web, token, "diary.pdf", pdf(60)).status_code == 202
+    assert [len(PdfReader(io.BytesIO(base64.b64decode(c[0]["source"]["data"]))).pages) for c in reader] == [25, 25, 10]
+    assert reader[1][1]["text"] == "The file is named diary.pdf. These are its pages 26 to 50 of 60."
+    assert stored().attachment_text == "\n\n".join([READ] * 3)
+
+
+def test_a_part_cut_off_at_the_output_limit_fails_the_read_and_keeps_nothing(
+    web, token, monkeypatch
+):
+    # R-0828
+    monkeypatch.setattr(
+        "btcopilot.metered.claude_text_sync",
+        lambda content, **kw: Text(READ, Spent(), Served("claude-opus-5-5"), "max_tokens"),
+    )
+    coach(monkeypatch, Model(said("Thank you.")))
+    response = send(web, token, "diary.pdf", pdf())
+    assert response.status_code == 500
+    assert attachments.CUT in response.get_data(as_text=True)
+    assert Statement.query.count() == 0
