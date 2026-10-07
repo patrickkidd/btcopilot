@@ -170,7 +170,7 @@ def values(phrases) -> str:
 
 
 def risk_regex() -> str:
-    """The 24 crisis phrases as one regex; Python's \\b is Postgres's \\y."""
+    """The crisis phrases of flow.PHRASES as one regex; Python's \\b is Postgres's \\y."""
     body = "|".join(RISK_PATTERNS).replace("\\b", "\\y")
     return f"(?<![a-z0-9'])(?:{body})(?![a-z0-9'])"
 
