@@ -71,6 +71,24 @@ it("never grows a small picture past its own size, and never shrinks its names u
   expect(NAME * fitScale(L, 1, 1)).toBeCloseTo(FIT);
 });
 
+// R-0796: put full screen, Patrick's words of 2026-10-07, "The Diagram needs to scale up to fill available space"
+it("grows a small picture to fill the space only when given no ceiling, as full screen gives it", () => {
+  const L = told.layout;
+  expect(fitScale(L, L.vw * 3, L.h * 2, Infinity)).toBeCloseTo(2);
+  expect(fitScale(L, L.vw * 3, L.h * 2)).toBe(1);
+});
+
+// R-0796: "the timeline should really stretch out to fit available horizontal space" (Patrick, 2026-10-07)
+it("draws the years line across the width it is given, its ends and the last tap reaching the far edge", () => {
+  const whole = new Told(tl, family(tl), true);
+  const line = yearsLine(tl, whole, whole.length - 1, 1000);
+  expect(line).toContain('viewBox="0 0 1000.0 62"');
+  expect(line).toContain('<line class="wl" x1="26" y1="34" x2="974"');
+  const last = [...line.matchAll(/<rect class="whit" x="([\d.]+)" y="0" width="([\d.]+)"/g)].at(-1)!;
+  expect(Number(last[1]) + Number(last[2])).toBeCloseTo(1000, 0);
+  expect(Number(line.match(/<text class="wlab" x="([\d.]+)"/)![1])).toBeGreaterThan(390);
+});
+
 // R-0744, R-0759
 it("stops shrinking where labels reach 13px, shapes 36px or the margin 20px", () => {
   const L = told.layout;

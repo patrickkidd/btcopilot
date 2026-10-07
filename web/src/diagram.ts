@@ -289,8 +289,10 @@ export const leastScale = (L: Layout, padding: number) =>
 export const FIT = 6.5;
 /** The scale a drawing takes as a whole in a space `w` wide and `h` tall, in
  * the Family view and the play-by-play alike: the smaller of the width's and
- * the height's, never past its own size, never with names under FIT px (R-0796). */
-export const fitScale = (L: Layout, w: number, h: number) => Math.max(FIT / NAME, Math.min(1, w / L.vw, h / L.h));
+ * the height's, never past `most` (its own size), never with names under FIT
+ * px (R-0796). */
+export const fitScale = (L: Layout, w: number, h: number, most = 1) =>
+  Math.max(FIT / NAME, Math.min(most, w / L.vw, h / L.h));
 export const CH = 0.6;
 const LEAD = 15;
 /** How far a label's box reaches above its line. */

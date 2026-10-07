@@ -287,6 +287,8 @@
   .pbp.whole > .when .words { -webkit-line-clamp: 2; }
   .pbp.whole > .also { right: 16px; white-space: normal; text-align: right; }
   .pbp.whole .wire svg { height: 40px; }
+  /* the years line stands between them, so it reaches only to their edges */
+  .pbp.whole .wire { margin: 0 calc(50% - 120px); }
   /* the path row is shorter here, and its book with it, so the book stays whole on the screen */
   .pbp.whole > .path, .pbp.whole > .path .book { height: 32px; }
   /* Back and Next float at the bottom corners, in the same places every step */

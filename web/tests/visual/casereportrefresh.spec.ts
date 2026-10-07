@@ -84,6 +84,24 @@ test.describe("a case report out of date", () => {
     await expect(sheet(page)).toBeVisible();
   });
 
+  // R-0826
+  test("on a wide window the sheet is a card as wide as the bug report's, never a band across the window", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await answer(page, () => false);
+    await open(page);
+    await expect(sheet(page)).toBeVisible();
+    const size = await sheet(page).evaluate((n) => {
+      const report = document.createElement("div");
+      report.className = "fs-sheet cf-sheet rp";
+      n.after(report);
+      const rule = getComputedStyle(report).maxWidth;
+      report.remove();
+      return { rule, own: getComputedStyle(n).maxWidth, width: n.getBoundingClientRect().width };
+    });
+    expect(size.own).toBe(size.rule);
+    expect(size.width).toBe(parseFloat(size.rule));
+  });
+
   // R-0825
   test("Refresh the report dims the coach's five cards until the rewrite is done, then reads the report again with the line gone", async ({ page }) => {
     let done = false;

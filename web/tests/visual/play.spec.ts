@@ -1626,6 +1626,39 @@ test.describe("the Family view on a desktop window", () => {
     await drawer(page).locator(".foot .full").click();
     await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(false);
   });
+
+  // R-0796: full screen, Patrick's words of 2026-10-07, "The Diagram needs to scale up to fill available space. And then the timeline should really stretch out to fit available horizontal space."
+  test("full screen grows the picture past its own size to fill the room, the years line spanning the width, and back to its own size after", async ({ page }, info) => {
+    test.skip(info.project.name !== "phone", "the size is the describe's own");
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    const seen = () =>
+      drawer(page).evaluate((p) => {
+        const svg = p.querySelector<SVGSVGElement>(".draw svg")!;
+        const [d, wire] = [p.querySelector(".draw")!, p.querySelector(".wire")!];
+        const line = wire.querySelector("svg")!.getBoundingClientRect();
+        const dot = wire.querySelector(".wnow")!.getBoundingClientRect();
+        return {
+          scale: parseFloat(svg.style.width) / svg.viewBox.baseVal.width,
+          whole: d.scrollWidth <= d.clientWidth + 1 && d.scrollHeight <= d.clientHeight + 1,
+          line: line.width,
+          room: wire.clientWidth,
+          round: Math.abs(dot.width - dot.height),
+        };
+      });
+    const before = await seen();
+    expect(before.scale).toBeLessThanOrEqual(1);
+    expect(before.line).toBeCloseTo(before.room, 0);
+    await drawer(page).locator(".foot .full").click();
+    await expect.poll(async () => (await seen()).scale).toBeGreaterThan(1);
+    const full = await seen();
+    expect(full.whole).toBe(true);
+    expect(full.line).toBeCloseTo(full.room, 0);
+    expect(full.round).toBeLessThan(0.5);
+    await drawer(page).locator(".foot .full").click();
+    await expect.poll(async () => (await seen()).scale).toBeLessThanOrEqual(1);
+  });
 });
 
 test.describe("the Family view's frame on a phone turned sideways", () => {

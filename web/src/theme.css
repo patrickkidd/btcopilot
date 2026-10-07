@@ -2922,7 +2922,7 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* the question before a cut comes off the agenda, over the account view */
 .fs-scrim.ag, .fs-sheet.ag { z-index: 60; }
 /* on a wide screen a card at the bottom, not a band across the whole window */
-.fs-sheet.rp, .fs-sheet.ag, .fs-sheet.sh { max-height: 92%; max-width: 480px; margin: 0 auto; }
+.fs-sheet.rp, .fs-sheet.ag, .fs-sheet.sh, .fs-sheet.rc { max-height: 92%; max-width: 480px; margin: 0 auto; }
 /* the dim covers the whole window, so a tap in the margin beside the app
    column lands on it too */
 .fs-scrim.rp, .fs-scrim.ag, .fs-scrim.sh { position: fixed; }

@@ -33,9 +33,9 @@ const f = (v: number) => v.toFixed(1);
 /** The cluster's years on its own line: everything from those years dimmed,
  * this snapshot's events ringed, earlier ones solid, later ones hollow, and the
  * gap since the last snapshot drawn along the line. */
-export function yearsLine(tl: Timeline, told: Told, i: number): string {
+export function yearsLine(tl: Timeline, told: Told, i: number, w = 390): string {
   const x0 = 26;
-  const x1 = 364;
+  const x1 = w - 26;
   const y = 34;
   const dated = told.eventIds.flatMap((id) => {
     const e = tl.events.find((e) => e.id === id);
@@ -47,7 +47,7 @@ export function yearsLine(tl: Timeline, told: Told, i: number): string {
   const X = (t: number) => x0 + ((x1 - x0) * (t - t0)) / (t1 - t0);
   const own = new Map<number, number>();
   told.told.snapshots.forEach((s, j) => s.event_ids.forEach((id) => own.set(id, j)));
-  let s = `<svg viewBox="0 0 390 62" aria-hidden="true"><line class="wl" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`;
+  let s = `<svg viewBox="0 0 ${f(w)} 62" aria-hidden="true"><line class="wl" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`;
   if (i > 0)
     s += `<line class="wgap" x1="${f(X(told.steps[i - 1].t))}" y1="${y}" x2="${f(X(told.steps[i].t))}" y2="${y}"/>`;
   dated.forEach((e) => {
@@ -66,14 +66,14 @@ export function yearsLine(tl: Timeline, told: Told, i: number): string {
     .sort((a, b) => a.x - b.x);
   hits.forEach((h, k) => {
     const a = k ? (hits[k - 1].x + h.x) / 2 : 0;
-    const b = k < hits.length - 1 ? (h.x + hits[k + 1].x) / 2 : 390;
+    const b = k < hits.length - 1 ? (h.x + hits[k + 1].x) / 2 : w;
     s +=
       `<rect class="whit" x="${f(a)}" y="0" width="${f(b - a)}" height="62" data-act="${Act.Jump}" data-i="${h.j}"/>`;
   });
   // the date stays whole inside the frame: a mono character is about 0.6 of the 12px font wide
   const date = told.steps[i].date;
   const half = date.length * 3.6 + 4;
-  const cx = Math.min(Math.max(X(told.steps[i].t), half), 390 - half);
+  const cx = Math.min(Math.max(X(told.steps[i].t), half), w - half);
   s += `<text class="wlab" x="${f(cx)}" y="15" text-anchor="middle">${esc(date)}</text>`;
   s += `<text class="wyr" x="${x0}" y="57">${Math.floor(t0)}</text>`;
   s += `<text class="wyr" x="${x1}" y="57" text-anchor="end">${Math.floor(t1)}</text>`;
@@ -336,6 +336,8 @@ export class Drawer {
     };
     window.addEventListener("resize", again);
     window.visualViewport!.addEventListener("resize", again);
+    // full screen lifts the picture's ceiling, even where the size holds
+    document.addEventListener("fullscreenchange", again);
     document.addEventListener("keydown", (e) => e.key === "Escape" && this.panel.classList.contains("full") && this.unfull());
   }
 
@@ -386,9 +388,28 @@ export class Drawer {
   /** The scale that fits `L` whole in the room the drawer has under its
    * years line and over the longest caption, both ways (R-0796), as tall as
    * it is with its people in the middle, so there is room to centre them
-   * however far its marks reach on one side (R-0797). */
+   * however far its marks reach on one side (R-0797). Put full screen, the
+   * picture grows past its own size to fill it (R-0796; Patrick, 2026-10-07). */
   private fits(L: Layout): number {
-    return fitScale({ ...L, h: tall(L) }, this.panel.querySelector<HTMLElement>(".lv")!.clientWidth, this.room());
+    const lv = this.panel.querySelector<HTMLElement>(".lv")!;
+    return fitScale({ ...L, h: tall(L) }, lv.clientWidth, this.room(), this.isFull() ? Infinity : 1);
+  }
+
+  /** The Family view put full screen, by the browser or over the whole page. */
+  private isFull(): boolean {
+    return !!document.fullscreenElement?.contains(this.panel) || this.panel.classList.contains("full");
+  }
+
+  /** The years line as wide as the room it stands in, its marks kept round:
+   * drawn once to learn the height the stylesheet gives it, then again at
+   * the width that height leaves the whole room (R-0796; Patrick, 2026-10-07). */
+  private line(): void {
+    const told = this.told!;
+    const wire = this.panel.querySelector<HTMLElement>(".wire")!;
+    wire.innerHTML = yearsLine(told.tl, told, this.i);
+    const k = wire.firstElementChild!.getBoundingClientRect().height / 62;
+    // with no layout, as in a test page, it keeps its own width
+    if (k) wire.innerHTML = yearsLine(told.tl, told, this.i, wire.clientWidth / k);
   }
 
   /** The height the drawing has under the years line, over the longest
@@ -509,7 +530,7 @@ export class Drawer {
   private render(glide = true): void {
     const told = this.told!;
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
-    q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
+    this.line();
     // the Family view draws one frame over every date (R-0783)
     if (told.whole) this.frame ??= this.framed(this.centre);
     const view = told.whole ? this.frame! : told;
@@ -520,7 +541,7 @@ export class Drawer {
       const first = view.steps.findIndex((st, i) => st.marks.length && told.told.snapshots[i].event_ids.some((id) => !BIRTHS.has(told.tl.events.find((e) => e.id === id)?.kind ?? "")));
       if (first >= 0 && first !== this.i) {
         this.i = first;
-        q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
+        this.line();
       }
     }
     const shot = view.shot(this.i);
