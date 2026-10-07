@@ -169,9 +169,14 @@ for example `CONTAINER_NAME:~".+" MESSAGE:~"(?i)error|traceback|exception"`.
 - Laptop closed: the box keeps metrics and traces in the on-disk queues and logs in the journal;
   the laptop catches up when it wakes. Grafana shows nothing meanwhile.
 - Laptop closed longer than the box can hold: the journal drops its oldest entries at 4 GB; the
-  queues are bounded only by disk (48 GB free). Each pipeline sends at most one batch per 10 s,
-  so its queue of 1,000,000 batches lasts 115 days; at about 3,800 series a minute (guess: 100
-  bytes a point on disk, 550 MB a day) the disk fills after about 85 days first.
+  each of the collector's two queues holds 260,000 batches, which is 30 days of absence at the
+  most one batch per 10 s allows; past that the collector refuses new metrics and traces, and
+  they are lost, so the box's disk never fills. Measured with the collector itself against a
+  stopped receiver (Docker Desktop, 10 containers, 2026-10-07): one metrics batch a minute of
+  149 data points, 24 KB as protobuf, and the queue file at 512 KB after six batches, so at most
+  87 KB a batch on disk. A full metrics queue is then at most 22.6 GB (260,000 x 87 KB), and at
+  the measured one batch a minute it fills only after 180 days. The traces queue stays under
+  1 MB a day at a few hundred spans a day.
 - Box down: nothing is collected for that time; whatever was already on the laptop stays.
 - Laptop disk lost: history is lost; no backup is planned (a later decision if wanted).
 

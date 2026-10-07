@@ -8,7 +8,6 @@ from btcopilot.tests.test_boxsecrets import DEPLOY
 CONFIG = yaml.safe_load((DEPLOY / "otel" / "config.yaml").read_text())
 COMPOSE = yaml.safe_load((DEPLOY / "docker-compose.yml").read_text())
 LAPTOP = ("otlp_http/metrics", "otlp_http/traces")
-DAY = 86400
 
 
 def test_the_app_and_its_workers_send_traces_to_the_collector():
@@ -39,11 +38,11 @@ def test_every_container_logs_to_the_hosts_journal():
         assert service["logging"]["driver"] == "journald", name
 
 
-def test_the_queues_outlast_the_disk_at_one_batch_per_timeout():
+def test_the_queues_hold_30_days_at_one_batch_per_timeout_and_no_more():
     # R-0370
     batch = CONFIG["processors"]["batch"]
     assert batch == {"timeout": "10s", "send_batch_size": 8192}
     for pipeline in CONFIG["service"]["pipelines"].values():
         assert pipeline["processors"] == ["batch"]
     for name in LAPTOP:
-        assert CONFIG["exporters"][name]["sending_queue"]["queue_size"] >= 90 * DAY / 10
+        assert CONFIG["exporters"][name]["sending_queue"]["queue_size"] == 260_000
