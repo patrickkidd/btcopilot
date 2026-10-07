@@ -745,6 +745,15 @@ def test_a_hand_added_couple_event_adds_the_couples_bond(web, token, family):
     assert [(b["person_a"], b["person_b"], b["married"]) for b in bonds] == [(1, 2, True)]
 
 
+def test_a_hand_edited_date_is_stored_as_text_like_the_coachs(web, token, family):
+    # R-0084
+    event = post(web, token, "/app/events", SHIFT).get_json()
+    patch(web, token, f"/app/events/{event['id']}", {"endDateTime": "2019-05-01"})
+    db.session.refresh(family)
+    stored = family.get_diagram_data().events[0]
+    assert (stored["dateTime"], stored["endDateTime"]) == ("2019-04-02", "2019-05-01")
+
+
 def test_a_hand_edited_bad_date_is_refused_in_plain_words(web, token, family):
     # R-0453
     event = post(web, token, "/app/events", SHIFT).get_json()

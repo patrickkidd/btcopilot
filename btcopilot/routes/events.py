@@ -24,7 +24,6 @@ from btcopilot.schema import (
     asdict,
     enum_val,
     parse_date,
-    validatedDateTimeText,
 )
 
 WRITABLE = {f.name for f in fields(Event)} - {"id"}
@@ -86,15 +85,6 @@ def _normalize(event: Event) -> Event:
     return event
 
 
-def _qt_dates(chunk: dict) -> dict:
-    """Committed events hold Qt dates, matching what the commit path writes and
-    what the Pro app's Scene reads."""
-    for key in DATE_FIELDS:
-        if chunk.get(key):
-            chunk[key] = validatedDateTimeText(chunk[key])
-    return chunk
-
-
 def _people(data) -> set:
     return {p.get("id") for p in data.people if isinstance(p, dict)}
 
@@ -134,7 +124,7 @@ def create():
     if "kind" not in values:
         raise ValueError("An event needs a kind")
     event_id = record.next_id(data)
-    event = _qt_dates(asdict(_normalize(Event(id=event_id, **values))))
+    event = asdict(_normalize(Event(id=event_id, **values)))
     del event["id"]
     edit(
         _deltas(event_id, event)
@@ -158,9 +148,7 @@ def update(event_id: int):
         date = parse_date(existing.get(key))
         merged[key] = date.isoformat() if date else None
     merged.update(request.get_json())
-    event = _qt_dates(
-        asdict(_normalize(Event(id=event_id, **_coerce(merged, _people(data)))))
-    )
+    event = asdict(_normalize(Event(id=event_id, **_coerce(merged, _people(data)))))
     was, now = event_payload(existing), event_payload(event)
     changed = {key: event[key] for key in WRITABLE if now[key] != was[key]}
     if changed:

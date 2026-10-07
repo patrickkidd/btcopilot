@@ -2,6 +2,7 @@ import datetime
 import pickle
 
 import pytest
+from PyQt5.QtCore import QDateTime
 
 from btcopilot import diagramjson
 from btcopilot.admin import admin
@@ -936,6 +937,7 @@ def _write(diagram, kind: ItemKind, item_id, fields: dict):
         ({"description": "New Event"}, "event 40 is a shift event with no words"),
         ({"description": " unknown "}, "event 40 is a shift event with no words"),
         ({"dateTime": "1998"}, "event 40's dateTime '1998' is not a date"),
+        ({"dateTime": diagramjson.to_json(QDateTime(1998, 3, 1, 0, 0))}, "event 40's dateTime PyQt5.QtCore.QDateTime"),
         ({"kind": "divorced", "spouse": 3, "anxiety": None}, "event 40 is a divorced event between persons 1 and 3, who have no pair bond"),
         ({"kind": "birth", "child": 5, "spouse": 4, "anxiety": None}, "event 40 names person 4 as a parent of person 5, who is born to pair bond 9"),
         ({"kind": "birth", "child": 3, "person": None, "anxiety": None, "dateTime": "1991-01-01"}, "person 3 already has a birth, event 20"),
@@ -1038,5 +1040,20 @@ def test_taking_back_an_event_made_by_field_sets_then_given_targets_removes_it()
     ]
     data = {"events": [{"id": 66, "kind": "shift", "person": 1, "description": "told Lou", "relationshipTargets": [2]}]}
     record.rewind(data, targeted)
+    record.rewind(data, made)
+    assert data["events"] == []
+
+
+def test_taking_back_an_event_made_before_its_title_was_backfilled_removes_it():
+    # R-0596, R-0084
+    """Production FD-371: the titles backfill wrote titles without change
+    rows, so rewinding Patrick's record left 25 events holding a title and no
+    kind, and the replays started from them could not run the questions
+    catch-up."""
+    made = [
+        {"item_kind": "event", "item_id": 66, "field": field, "before": None, "after": after}
+        for field, after in (("kind", "noted"), ("person", 1), ("description", "told Lou"))
+    ]
+    data = {"events": [{"id": 66, "kind": "noted", "person": 1, "description": "told Lou", "title": "Told Lou"}]}
     record.rewind(data, made)
     assert data["events"] == []
