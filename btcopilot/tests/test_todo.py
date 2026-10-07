@@ -1,5 +1,5 @@
 """The person's own todos: kept only when they say them, in their words, and
-picked up first when they come back after a sitting's gap.
+offered, never pressed, when they come back after a sitting's gap.
 
 Invented names only.
 """
@@ -23,7 +23,6 @@ from btcopilot.models import (
 )
 from btcopilot.recordtext import note_line
 from btcopilot.tests.conftest import Model, said, version, wrote
-from btcopilot.tests.live.checks import picks_up_todo
 from btcopilot.tests.test_questions import stored
 from btcopilot.tests.test_searchchat import says
 from btcopilot.tests.test_turnhistory import family  # noqa: F401
@@ -93,6 +92,16 @@ def test_the_back_block_comes_only_when_the_message_opens_a_new_sitting(session)
     )
     db.session.commit()
     assert f"{BACK} 2 day(s). Their own todos, oldest first: none." in turn(session)
+
+
+def test_the_back_block_offers_the_todo_and_never_puts_it_first(session):
+    # R-0815, R-0803
+    says(session, "We talked about my dad.", ago(days=2, hours=1))
+    prompt = turn(session)
+    block = prompt[prompt.index(BACK) :]
+    assert "Start this reply" not in block
+    assert "comes before every other question" not in block
+    assert "or is something else on your mind?" in block
 
 
 def test_a_message_the_coach_sent_unasked_is_not_the_family_speaking(
@@ -245,33 +254,3 @@ def test_only_open_todos_are_listed_oldest_first_and_none_reach_the_page_or_cove
     assert coverage.block(data) == coverage.block(
         dataclasses.replace(data, questions=[])
     )
-
-
-PICKED_UP = "Good to see you again. Did you get to ask your mom when they moved?"
-
-
-def test_a_reply_that_asks_about_the_todo_first_passes_the_live_check():
-    # R-0803
-    assert picks_up_todo(PICKED_UP, ASK_MOM)
-    assert picks_up_todo("Welcome back. Did your mom say when the move was?", ASK_MOM)
-    assert picks_up_todo(
-        "Welcome back, Wren. Last time you said everything changed after your family "
-        "moved, and that you'd check with your mom about when it happened. Did you get "
-        "to ask her?",
-        ASK_MOM,
-    )
-
-
-@pytest.mark.parametrize(
-    "reply",
-    [
-        "Welcome back. How have things been with your sister?",
-        "Welcome back. How was your week? Did you get to ask your mom when they moved?",
-        "Welcome back. I hope your mom is well.",
-        "Did you ask her?",
-        "Welcome back. Your mom sounds busy. How is your sister?",
-    ],
-)
-def test_a_reply_that_skips_the_todo_or_asks_something_else_first_fails(reply):
-    # R-0803
-    assert not picks_up_todo(reply, ASK_MOM)

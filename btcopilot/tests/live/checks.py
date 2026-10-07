@@ -146,14 +146,24 @@ def places_in_time(
 PLAIN = r"\b(i'll|i'm|i|will|going|to|my|the|a|an|and|of|when|they|them|it|out|find|go|get|some|about)\b"
 
 
-def picks_up_todo(reply: str, todo_words: str) -> bool:
-    """The reply's first question is about the person's todo: it and the
-    sentence leading into it carry at least two of the todo's own words, each
-    matched at the start of a word, and no other question comes before it
-    (R-0803)."""
+def mentions_todo(text: str, todo_words: str) -> bool:
+    """The text carries at least two of the todo's own words, each matched at
+    the start of a word."""
+    words = set(re.sub(PLAIN, " ", todo_words.lower()).split())
+    return sum(bool(re.search(rf"\b{re.escape(w[:4])}", text.lower())) for w in words) >= 2
+
+
+def leads_with_todo(reply: str, todo_words: str) -> bool:
+    """The reply's first question, with the sentence leading into it, is about
+    the person's todo (R-0803, R-0815)."""
     led = re.search(r"([^.?!]*[.!]\s*)?[^.?!]*\?", reply)
-    if led is None:
+    return led is not None and mentions_todo(led.group(0), todo_words)
+
+
+def offers_todo(reply: str, todo_words: str) -> bool:
+    """The reply mentions the todo and leaves another door open: a second
+    question, or an "or ..." in the question about it (R-0815)."""
+    if not mentions_todo(reply, todo_words):
         return False
-    words = re.sub(PLAIN, " ", todo_words.lower()).split()
-    first = led.group(0).lower()
-    return sum(bool(re.search(rf"\b{re.escape(w[:4])}", first)) for w in set(words)) >= 2
+    asked = questions(reply)
+    return len(asked) >= 2 or any(re.search(r"\bor\b", q.lower()) for q in asked)

@@ -1,14 +1,18 @@
 """What the person says they will find out themselves is kept as their todo,
-in their words, and picked up first when they come back a day later; when
-they come back with the answer, it is recorded and the todo closed.
+in their words; when they come back a day later with nothing, it is offered
+as one of two doors, and when they come back with something else, that is
+followed instead; when they come back with the answer, it is recorded and the
+todo closed.
 
 Invented names only.
 """
 
+import re
+
 from btcopilot.extensions import db
 from btcopilot.models import Statement
 from btcopilot.schema import QuestionKind, QuestionOutcome, QuestionState
-from btcopilot.tests.live.checks import picks_up_todo, questions as asked
+from btcopilot.tests.live.checks import leads_with_todo, offers_todo, questions as asked
 from btcopilot.tests.live.criterion import passes
 from btcopilot.tests.live.test_mostgoingon import back, sitting
 from btcopilot.toolbox import ToolName, Toolbox
@@ -67,13 +71,24 @@ def test_a_todo_the_person_says_is_kept_held_in_their_words(coach):
 
 
 @passes(3, of=3)
-def test_the_person_back_a_day_later_is_asked_about_their_todo_first(coach):
-    # R-0803
+def test_the_person_back_a_day_later_with_nothing_is_offered_their_todo(coach):
+    # R-0815, R-0803
     coach.record()
     kept(coach)
 
     reply = coach.say("Hi, I'm back")
-    assert picks_up_todo(reply, TODO), reply
+    assert offers_todo(reply, TODO), reply
+
+
+@passes(3, of=3)
+def test_the_person_back_a_day_later_with_news_is_followed_not_led_to_the_todo(coach):
+    # R-0815, R-0803
+    coach.record()
+    kept(coach)
+
+    reply = coach.say("My dad called last night, out of the blue.")
+    assert not leads_with_todo(reply, TODO), reply
+    assert re.search(r"\b(call|dad|father|he)\b", reply.lower()), reply
 
 
 @passes(2, of=3)
