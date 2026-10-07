@@ -13,7 +13,7 @@ import { ask, dismiss, dismissed, phase, Phase, REWRITING } from "./outdated";
 import { Sheet } from "./sheet";
 import { untold } from "./snapshots";
 import type { Opened, Part, View } from "./store";
-import { ChipKind, ChipTone, InteractionKind, ItemKind, RewriteState, type Chip, type Rewrite, type Timeline } from "./types";
+import { ChipKind, ChipTone, InteractionKind, ItemKind, TurnEventKind, type Chip, type Timeline, type TurnEvent } from "./types";
 import { Feature } from "./track";
 import { toast } from "./toast";
 import { AWAY_PX, fold, type Fold } from "./viewport";
@@ -40,8 +40,6 @@ export interface CaseHooks {
 
 /** As long as the longest glide to a jump's target may take (dom.ts). */
 const GLIDE_MS = 2000;
-/** How often the rewrite is asked whether the coach has finished, as the chat's vote asks of shadow replies. */
-const POLL_MS = 2000;
 /** The cards the coach writes; the rest are drawn from the diagram each time and never go out of date. */
 const WRITTEN = new Set<Card>([Card.Main, Card.Guesses, Card.OwnPart, Card.Choice, Card.WorkOn]);
 
@@ -73,7 +71,11 @@ export class CaseReport implements View {
   private playing: string | null = null;
   /** The question on opening a report that is out of date; the scrim does not put it away. */
   private readonly sheet: Sheet;
-  private rewriting = false;
+  /** The turn rewriting the coach's cards, followed as the chat follows a reply. */
+  private watching: EventSource | null = null;
+  /** The last rewrite followed, so one that has ended is not followed again
+   * from a record read before it ended. */
+  private followed: string | null = null;
   /** The change "Refresh the report" was tapped for this time the app is open, so a failed rewrite does not ask again at once. */
   private refreshed: number | null = null;
 
@@ -144,6 +146,7 @@ export class CaseReport implements View {
   reset(): void {
     this.opened = null;
     this.sheet.lower();
+    this.unwatch();
     this.books.forget();
     this.stale = true;
     this.drawer.close();
@@ -207,10 +210,13 @@ export class CaseReport implements View {
    * rewrites them, and the sheet that asks on opening a report out of date. */
   private mark(): void {
     const opened = this.opened!;
-    const out = opened.record.report_out_of_date ?? null;
+    const out = opened.record.case_report?.out_of_date ?? null;
+    // a rewrite running when the report was read is followed from here
+    const running = opened.record.case_report?.rewriting ?? null;
+    if (running && running !== this.followed) this.watch(running);
     const id = opened.diagram?.id ?? null;
     const shown = [id === null ? null : dismissed(id), this.refreshed].filter((n): n is number => n !== null);
-    const now = phase(out, shown.length ? Math.max(...shown) : null, this.rewriting);
+    const now = phase(out, shown.length ? Math.max(...shown) : null, this.watching !== null);
     this.body.querySelectorAll<HTMLElement>(".level[data-card]").forEach((l) =>
       l.classList.toggle("dim", now === Phase.Rewriting && WRITTEN.has(l.dataset.card as Card)),
     );
@@ -219,16 +225,16 @@ export class CaseReport implements View {
     line.type = "button";
     line.className = "aged";
     line.disabled = now === Phase.Rewriting;
-    line.textContent = now === Phase.Rewriting ? REWRITING : out!.sentence;
+    line.textContent = now === Phase.Rewriting ? REWRITING : out!.text;
     this.body.querySelector(".case")?.prepend(line);
-    if (now === Phase.Asking) this.sheet.show(ask(out!.sentence, esc));
+    if (now === Phase.Asking) this.sheet.show(ask(out!.text, esc));
   }
 
   /** The sheet's two answers: the coach rewrites its cards, or the report
    * is read as it was, and this device does not ask again for this change. */
   private answer(el: HTMLElement): void {
     const act = el.closest<HTMLElement>("[data-act]")?.dataset.act;
-    const out = this.opened?.record.report_out_of_date;
+    const out = this.opened?.record.case_report?.out_of_date;
     if (!act || !out) return;
     this.sheet.lower();
     if (act === "refresh") {
@@ -241,26 +247,51 @@ export class CaseReport implements View {
     this.render();
   }
 
-  /** The coach rewrites its five cards; the report is read again when it is
-   * done. A failure says so and puts the cards back as they were. */
+  /** The coach rewrites its five cards (R-0825). Refused while a rewrite
+   * is already running or before the family has a session. */
   private async rewrite(): Promise<void> {
-    this.rewriting = true;
-    this.render();
+    let started: { turn_id: string } | null;
     try {
-      let job: Rewrite | null = await this.hooks.fetch(api.rewriteReport);
-      while (job?.state === RewriteState.Running) {
-        await new Promise((done) => window.setTimeout(done, POLL_MS));
-        job = await api.reportRewrite(job.id);
-      }
-      if (job?.state === RewriteState.Failed) throw new Error(`the coach could not rewrite case report job ${job.id}`);
+      started = await this.hooks.fetch(api.rewriteReport);
     } catch (error) {
-      toast("The coach could not rewrite the report. Try again.");
-      throw error;
-    } finally {
-      this.rewriting = false;
-      this.render();
+      if (!(error instanceof api.Failed) || error.status !== 409) throw error;
+      toast("The report is already being rewritten, or this family has no session yet");
+      return;
     }
-    await this.hooks.reload();
+    if (!started) return;
+    this.watch(started.turn_id);
+    this.render();
+  }
+
+  /** The rewrite's own stream, followed as the chat follows a coach reply:
+   * when it is done the report is read again; a failed or refused one says
+   * so and puts the cards back as they were. */
+  private watch(turnId: string): void {
+    this.unwatch();
+    const source = api.turnEvents(turnId);
+    this.watching = source;
+    this.followed = turnId;
+    const failed = (why: string) => {
+      this.unwatch();
+      console.error(`the case report rewrite ${turnId} ended: ${why}`);
+      toast("The coach could not rewrite the report. Try again.");
+      this.render();
+    };
+    source.addEventListener("message", (e) => {
+      const event = JSON.parse(e.data) as TurnEvent;
+      if (event.type === TurnEventKind.Done) {
+        this.unwatch();
+        void this.hooks.reload();
+      } else if (event.type === TurnEventKind.Failed || event.type === TurnEventKind.Refused) failed(event.message);
+    });
+    source.addEventListener("error", () => {
+      if (source.readyState === EventSource.CLOSED && this.watching === source) failed("its stream closed");
+    });
+  }
+
+  private unwatch(): void {
+    this.watching?.close();
+    this.watching = null;
   }
 
   /** A chip on the report: an event lights on the timeline as in the chat; a
@@ -364,8 +395,8 @@ export class CaseReport implements View {
   private act(el: HTMLElement): void {
     const hit = (sel: string) => el.closest<HTMLElement>(sel);
     if (this.books.tap(el)) return;
-    const out = this.opened?.record.report_out_of_date;
-    if (hit("button.aged") && out) return this.sheet.show(ask(out.sentence, esc));
+    const out = this.opened?.record.case_report?.out_of_date;
+    if (hit("button.aged") && out) return this.sheet.show(ask(out.text, esc));
     const all = hit(".who.lall[data-target]");
     if (all) return this.chip({ kind: ChipKind.Event, target: all.dataset.target!, label: "Coach", tone: ChipTone.Data, bare: false });
     const jump = hit("[data-jump]");
