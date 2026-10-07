@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { execFileSync } from "node:child_process";
 import { deadTaps, tap, watch, watchDom } from "./gate";
 import { need, sandboxOnly } from "./sandbox";

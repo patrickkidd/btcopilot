@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "./fixtures";
 import { need, sandboxOnly, walker } from "./sandbox";
 
 // A coder's own sentence about a marriage and about a parent: the scribe adds

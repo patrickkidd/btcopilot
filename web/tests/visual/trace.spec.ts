@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, boxOf } from "./setup";
 
 /** The words of the event already picked lead back to where it was said. */

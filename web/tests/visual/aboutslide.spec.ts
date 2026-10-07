@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor } from "./setup";
 
 /** How tall the about card stands on screen while it travels: read on every

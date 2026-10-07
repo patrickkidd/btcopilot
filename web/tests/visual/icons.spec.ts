@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { stateFor } from "./setup";
 
 /** The icon a phone shows for the app added to its home screen: the Family

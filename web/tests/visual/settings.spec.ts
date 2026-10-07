@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username, boxOf, inside } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.

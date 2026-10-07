@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { cutInFrame, leastName, wordsOutside } from "./gate";
 import { stateFor, type Key } from "./setup";
 

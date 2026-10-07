@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, boxOf } from "./setup";
 
 /** Every scroll area takes wheel, trackpad, touch drag AND mouse drag, and the

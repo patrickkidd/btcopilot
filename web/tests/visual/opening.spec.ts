@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page, type Route } from "./fixtures";
 import { shell, stateFor, username } from "./setup";
 import { mockTurn, STREAM } from "./turn";
 

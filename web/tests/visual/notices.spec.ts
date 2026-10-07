@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { flask, shell, stateFor, username, boxOf } from "./setup";
 
 /** Notices against the fixture that holds one unread notice, one opened four

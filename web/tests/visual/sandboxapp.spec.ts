@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "./fixtures";
 import { boxOf } from "./setup";
 import { need, sandboxOnly, walker } from "./sandbox";
 

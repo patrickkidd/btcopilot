@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { flask, shell, stateFor, username } from "./setup";
 import { mockTurn } from "./turn";
 

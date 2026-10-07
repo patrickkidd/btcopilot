@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { badLines, deadTaps, settle, stored, tap, thread, trackRequests, watch, watchDom } from "./gate";
 import { need, sandboxOnly } from "./sandbox";
 

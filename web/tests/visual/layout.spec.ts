@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { PIC_H } from "../../src/spotlight";
 import { NO_LIST, pinned, stateFor, boxOf } from "./setup";
 

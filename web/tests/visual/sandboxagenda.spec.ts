@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { need, sandboxOnly, walker } from "./sandbox";
 import { backToMine, placeCut, toTheirDiagram, username } from "./setup";
 

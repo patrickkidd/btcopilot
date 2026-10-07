@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { stateFor } from "./setup";
 
 /** Until the bundle has drawn the first screen the page shows only the splash,

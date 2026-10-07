@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { CASES, drawings, freeze } from "./drawings";
 import { PARKED, addForm, inside, lists, openList, stateFor } from "./setup";
 

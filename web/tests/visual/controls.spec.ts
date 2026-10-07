@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, tellWithoutModel } from "./setup";
 
 /** The board's controls, and the words under it.

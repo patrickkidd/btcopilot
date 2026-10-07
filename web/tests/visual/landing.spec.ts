@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { flask, stateFor, username } from "./setup";
 
 /** A tapped notification lands where it points from wherever the app is. The
