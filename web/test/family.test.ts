@@ -74,16 +74,38 @@ it("shows a separation's slash only from its own date in the whole family", () =
   expect(slashes(at(204))).toBe(2);
 });
 
-// R-0783
-it("draws someone with no family tie beside a person drawn with them, though first named with someone left out", () => {
+// a friend with no family tie, first named with Theo, who is left out, then with Marcus
+const befriended = (couple: boolean) => {
   const tl = timeline();
-  tl.people.push({ ...tl.people.find((p) => p.id === THEO)!, id: 8, name: "Ines", gender: "female", parents: null, birth: null });
+  const theo = tl.people.find((p) => p.id === THEO)!;
+  const stranger = (id: number, name: string) => ({ ...theo, id, name, parents: null, birth: null });
+  tl.people.push(stranger(8, "Ines"));
   tl.events.push(
     event(301, "1990-06-01", "noted", THEO, { relationshipTargets: [8], title: "Met Ines" }),
     event(302, "1995-06-01", "noted", MARCUS, { relationshipTargets: [8], title: "Hired Ines" }),
   );
-  const t = new Told(tl, wholeFamily(tl), true, [CORINNE, MARCUS, DELPHINE, 8].map(String));
-  expect(t.layout.y["8"]).toBe(t.layout.y[String(MARCUS)]);
+  const keep = [CORINNE, MARCUS, DELPHINE, 8];
+  if (couple) {
+    // a couple with no tie to the family, which the strict layout cannot place
+    tl.people.push(stranger(9, "Xan"), stranger(10, "Yva"));
+    tl.pair_bonds.push({ id: 23, person_a: 9, person_b: 10, married: true });
+    keep.push(9, 10);
+  }
+  return new Told(tl, wholeFamily(tl), true, keep.map(String)).layout;
+};
+
+// R-0783
+it("draws someone with no family tie beside a person drawn with them, though first named with someone left out", () => {
+  const L = befriended(false);
+  expect(L.loose).toBe(false);
+  expect(L.y["8"]).toBe(L.y[String(MARCUS)]);
+});
+
+// R-0783
+it("draws them beside that person when the family can only be laid out generation by generation", () => {
+  const L = befriended(true);
+  expect(L.loose).toBe(true);
+  expect(L.y["8"]).toBe(L.y[String(MARCUS)]);
 });
 
 // R-0798
