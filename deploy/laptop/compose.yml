@@ -3,6 +3,8 @@ name: fd-monitoring
 x-store: &store
   restart: unless-stopped
 
+x-required: ${GF_SECURITY_ADMIN_PASSWORD:?set in deploy/laptop/.env}${GRAFANA_PG_PASSWORD:?set in deploy/laptop/.env}
+
 services:
   vm:
     <<: *store
@@ -40,11 +42,11 @@ services:
     <<: *store
     image: grafana/grafana:12.2.0
     environment:
-      GF_INSTALL_PLUGINS: victoriametrics-logs-datasource
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set in deploy/laptop/.env}
-      GRAFANA_PG_PASSWORD: ${GRAFANA_PG_PASSWORD:?set in deploy/laptop/.env}
+      - GF_INSTALL_PLUGINS=victoriametrics-logs-datasource
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_SECURITY_ADMIN_PASSWORD
+      - GRAFANA_PG_PASSWORD
     volumes:
       - "${HOME}/fd-monitoring/grafana:/var/lib/grafana"
       - "./grafana/datasources.yml:/etc/grafana/provisioning/datasources/fd.yml:ro"
