@@ -11,11 +11,11 @@ import { ChipKind, ChipTone, type Passages } from "./types";
  * (R-0702). Every word comes from the CaseView; this module writes none of its
  * own about the record. */
 
-/** The card titles, as Patrick reviewed them (R-0716). */
+/** The card titles, as Patrick reviewed them (R-0716), card one's renamed (R-0821). */
 export function title(card: Card, v: CaseView): string {
   switch (card) {
     case Card.Main:
-      return "The coach's main guess";
+      return "Executive Summary";
     case Card.Family:
       return "Who is in the family";
     case Card.Brought:
@@ -41,7 +41,7 @@ export function title(card: Card, v: CaseView): string {
 function short(card: Card, v: CaseView): string {
   switch (card) {
     case Card.Main:
-      return "The coach's main guess";
+      return "Executive Summary";
     case Card.Family:
       return "The family";
     case Card.Brought:

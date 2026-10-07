@@ -110,6 +110,13 @@ it("draws the cards in the proposal's order, each with its strip item in the sam
   expect(order(rail(v), "jump")).toEqual(ORDER);
 });
 
+// R-0821
+it("titles the first card Executive Summary, on the card and on its strip item", () => {
+  const v = caseView(halloran(), ONE, "Patrick");
+  expect(cards(v, true)).toContain(`<p class="label">1 · Executive Summary</p>`);
+  expect(rail(v)).toContain(`<b>1</b>Executive Summary</button>`);
+});
+
 // R-0694
 it("shows the couple card only for a marriage the picture draws solid, with both partners alive", () => {
   const tl = halloran();
