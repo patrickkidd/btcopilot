@@ -48,6 +48,20 @@ The link carries:
 
 `docker compose -f deploy/laptop/compose.yml logs fd-link` shows each pull.
 
+## Until the box has the fdlink user
+
+`deploy/laptop/interim-link.sh` forwards `127.0.0.1:15432` to fd-postgres over
+Patrick's own root ssh (`ssh familydiagram`), so the four Postgres dashboards work
+now. `GRAFANA_PG_PASSWORD` in `deploy/laptop/.env` is the box's value of the same
+name in `/etc/fd/secrets.env`.
+
+```bash
+nohup deploy/laptop/interim-link.sh > ~/fd-monitoring/interim-link.log 2>&1 &
+```
+
+Stop it (`pkill -f interim-link.sh`, then the ssh it holds) before starting fd-link,
+which takes the same port; the data source stays as it is.
+
 ## What Grafana Cloud held
 
 `bin/cloudbackfill.py` copies what Grafana Cloud still holds (its last 14 days)

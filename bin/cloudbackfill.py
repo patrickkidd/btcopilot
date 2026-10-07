@@ -240,7 +240,7 @@ def span_count(cloud: Cloud, since: int, until: int) -> int:
             int(v.get("value", 0))
             for s in series
             for v in s["samples"]
-            if start <= int(v["timestampMs"]) // 1000 < end
+            if start < int(v["timestampMs"]) // 1000 <= end
         )
     return counted
 

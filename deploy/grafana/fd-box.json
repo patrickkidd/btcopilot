@@ -6,7 +6,7 @@
     "box"
   ],
   "time": {
-    "from": "now-6h",
+    "from": "now-7d",
     "to": "now"
   },
   "timezone": "browser",
@@ -63,9 +63,9 @@
             "type": "prometheus",
             "uid": "fd-vm"
           },
-          "expr": "system_linux_memory_available_bytes",
-          "instant": true,
-          "range": false,
+          "expr": "max(system_linux_memory_available_bytes) or max(node_memory_MemAvailable_bytes)",
+          "instant": false,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -122,9 +122,9 @@
             "type": "prometheus",
             "uid": "fd-vm"
           },
-          "expr": "system_filesystem_usage_bytes{mountpoint=\"/\", state=\"free\"}",
-          "instant": true,
-          "range": false,
+          "expr": "max(system_filesystem_usage_bytes{mountpoint=\"/\", state=\"free\"}) or max(node_filesystem_avail_bytes{mountpoint=\"/\"})",
+          "instant": false,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -182,9 +182,9 @@
             "type": "prometheus",
             "uid": "fd-vm"
           },
-          "expr": "1 - avg(rate(system_cpu_time_seconds_total{state=\"idle\"}[5m]))",
-          "instant": true,
-          "range": false,
+          "expr": "(1 - avg(rate(system_cpu_time_seconds_total{state=\"idle\"}[5m]))) or (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))",
+          "instant": false,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -242,9 +242,9 @@
             "type": "prometheus",
             "uid": "fd-vm"
           },
-          "expr": "system_cpu_load_average_1m",
-          "instant": true,
-          "range": false,
+          "expr": "max(system_cpu_load_average_1m) or max(node_load1)",
+          "instant": false,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -302,7 +302,7 @@
             "type": "prometheus",
             "uid": "fd-vm"
           },
-          "expr": "sum by (service) (label_replace(container_memory_usage_total_bytes, \"service\", \"$1\", \"container_name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\"))",
+          "expr": "sum by (service) (label_replace(container_memory_usage_total_bytes, \"service\", \"$1\", \"container_name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\")) or sum by (service) (label_replace(container_memory_working_set_bytes{name=~\".+\"}, \"service\", \"$1\", \"name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\"))",
           "instant": false,
           "legendFormat": "{{service}}",
           "range": true,
@@ -363,7 +363,7 @@
             "type": "prometheus",
             "uid": "fd-vm"
           },
-          "expr": "sum by (service) (label_replace(rate(container_cpu_usage_nanoseconds_total[5m]), \"service\", \"$1\", \"container_name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\")) / 1e9",
+          "expr": "sum by (service) (label_replace(rate(container_cpu_usage_nanoseconds_total[5m]), \"service\", \"$1\", \"container_name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\")) / 1e9 or sum by (service) (label_replace(rate(container_cpu_usage_seconds_total{name=~\".+\"}[5m]), \"service\", \"$1\", \"name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\"))",
           "instant": false,
           "legendFormat": "{{service}}",
           "range": true,
@@ -405,7 +405,7 @@
           "refId": "A"
         }
       ],
-      "title": "Errors and exceptions (last 6h)",
+      "title": "Errors and exceptions",
       "type": "logs"
     },
     {
