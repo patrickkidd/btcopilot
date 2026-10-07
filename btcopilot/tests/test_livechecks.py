@@ -12,6 +12,8 @@ from btcopilot.tests.live.checks import (
     asks_most_first,
     asks_only_waiting,
     asks_passed_over,
+    leads_with_todo,
+    offers_todo,
     title_retry,
 )
 
@@ -148,3 +150,61 @@ def test_asking_the_question_passed_over_twice_fails(reply):
 def test_following_the_person_or_asking_something_else_passes(reply):
     # R-0774
     assert asks_passed_over(reply) == []
+
+
+ASK_MOM = "ask my mom when they moved"
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Last time you were going to ask your mom when they moved. Did that happen, "
+        "or is something else on your mind?",
+        "Welcome back. Did you get to ask your mom when they moved? What has been "
+        "on your mind since we talked?",
+    ],
+)
+def test_a_reply_that_offers_the_todo_as_one_of_two_doors_passes(reply):
+    # R-0815
+    assert offers_todo(reply, ASK_MOM)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Welcome back. Did you get to ask your mom when they moved?",
+        "Welcome back. How have things been with your sister, or with work?",
+        "Welcome back. I hope your mom is well.",
+    ],
+)
+def test_a_reply_that_presses_the_todo_or_never_mentions_it_does_not_offer_it(reply):
+    # R-0815
+    assert not offers_todo(reply, ASK_MOM)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Good to see you again. Did you get to ask your mom when they moved?",
+        "Welcome back. Did your mom say when the move was?",
+        "Last time you were going to ask your mom when they moved. Did that happen, "
+        "or is something else on your mind?",
+    ],
+)
+def test_a_reply_whose_first_question_is_the_todo_leads_with_it(reply):
+    # R-0815, R-0803
+    assert leads_with_todo(reply, ASK_MOM)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "That call sounds like it shook you. What did he say?",
+        "Welcome back. How was your week? Did you get to ask your mom when they moved?",
+        "Did you ask her?",
+        "Welcome back. Your mom sounds busy. How is your sister?",
+    ],
+)
+def test_a_reply_that_asks_something_else_first_does_not_lead_with_the_todo(reply):
+    # R-0815, R-0803
+    assert not leads_with_todo(reply, ASK_MOM)

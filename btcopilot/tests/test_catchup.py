@@ -17,12 +17,13 @@ from mock import patch
 from btcopilot import record
 from btcopilot.admin import admin
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change, ModelCall, Purpose, Statement
+from btcopilot.models import Author, Change, Discussion, ModelCall, Purpose, Statement
 from btcopilot.schema import PairBond, Person
 from btcopilot.tests.conftest import Model, calling
 from btcopilot.tests.test_questionbackfill import past  # noqa: F401
 from btcopilot.recordtext import outline
 from btcopilot.tests.test_questions import stored
+from btcopilot.tests.test_searchchat import says
 from btcopilot.tests.test_turnhistory import family  # noqa: F401
 from btcopilot.toolbox import ToolName
 
@@ -127,6 +128,7 @@ def test_the_dry_run_saves_a_readable_plan_and_writes_nothing(flask_app, tmp_pat
         "left_as_is": 0,
         "facts": 1,
         "stories": 1,
+        "todos": 0,
         "asked_again": 0,
         "dropped": 0,
     }
@@ -171,6 +173,7 @@ def test_a_second_pass_proposes_nothing_already_written(flask_app, tmp_path, kin
         "left_as_is": 0,
         "facts": 0,
         "stories": 0,
+        "todos": 0,
         "asked_again": 0,
         "dropped": 2,
     }
@@ -203,7 +206,7 @@ def test_a_proposal_the_tool_would_refuse_is_dropped_with_its_reason(
     assert reasons[1:5] == [
         "the record already holds it",
         "the record already holds it",
-        "only a fact already answered or a story held is kept here",
+        "only a fact already answered, a story held or a todo held is kept here",
         "it names no message of the person's in this record",
     ]
     assert reasons[5:] == ["more than 8 stories"]
@@ -421,3 +424,91 @@ def test_a_message_from_before_the_first_ask_is_not_counted(flask_app, tmp_path,
     assert [d["reason"] for d in plan["dropped"]] == [
         "the coach's message is not after the question was first asked"
     ]
+
+
+ASK_MOM = "I'll ask my mom when they moved"
+
+
+def todo(statement, text=ASK_MOM, **args):
+    return (
+        ToolName.AddQuestion,
+        {"text": text, "kind": "todo", "state": "held", "statement": statement, **args},
+    )
+
+
+def test_a_todo_the_person_said_is_planned_and_one_shown_done_is_skipped(
+    flask_app, tmp_path, kin, past
+):
+    # R-0803
+    session = db.session.get(Discussion, past["session"])
+    mom = says(session, f"{ASK_MOM}.", "2026-09-13T10:00")
+    photos = says(session, "I'm going to dig out the old photos.", "2026-09-13T10:05")
+    found = says(session, "I found the photos, they were in the attic.", "2026-09-14T10:00")
+    before, changes = stored(kin), Change.query.count()
+    plan = dry(
+        flask_app,
+        tmp_path,
+        calling(todo(mom.id), todo(photos.id, "dig out the old photos", answer=found.id)),
+    )
+
+    assert (plan["counts"]["todos"], plan["counts"]["dropped"]) == (1, 1)
+    assert (plan["todos"][0]["words"], plan["todos"][0]["statement"]) == (ASK_MOM, mom.id)
+    assert plan["dropped"][0]["reason"] == (
+        f"the thread already shows it done, in message {found.id}"
+    )
+    assert (stored(kin), Change.query.count()) == (before, changes)
+
+    start = db.session.query(db.func.max(Change.id)).scalar() or 0
+    rows = apply(flask_app, plan)
+    assert [(r["part"], r["entry"], r["refused"]) for r in rows] == [("todo", "q1", None)]
+    kept = stored(kin)["q1"]
+    assert (kept["kind"], kept["state"], kept["text"]) == ("todo", "held", ASK_MOM)
+    assert [e["id"] for e in kept["evidence"]] == [mom.id]
+    made = Change.query.filter(Change.id > start).all()
+    assert [(c.turn_id, c.statement_id) for c in made] == [(f"catch-up:{kin.id}", mom.id)]
+
+    result = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(kin.id), str(made[0].id), "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+    assert stored(kin) == before
+
+
+def test_the_three_todos_kept_are_the_most_recent(flask_app, tmp_path, kin, past):
+    # R-0803
+    session = db.session.get(Discussion, past["session"])
+    told = [
+        says(session, f"I'll ask about thing {n}.", f"2026-09-13T10:0{n}") for n in range(4)
+    ]
+    plan = dry(
+        flask_app,
+        tmp_path,
+        calling(*(todo(s.id, f"ask about thing {n}") for n, s in enumerate(told))),
+    )
+
+    assert plan["counts"]["todos"] == 3
+    assert [(d["statement"], d["reason"]) for d in plan["dropped"]] == [
+        (told[0].id, "more than 3 todos")
+    ]
+
+
+def test_a_todo_in_the_words_of_a_question_still_open_is_dropped(flask_app, tmp_path, kin, past):
+    # R-0803, R-0815
+    filed(kin, "q1", "alive", "person", "2", state="asked")
+    session = db.session.get(Discussion, past["session"])
+    told = says(session, "I'll ask if Ash is alive.", "2026-09-13T10:00")
+    plan = dry(flask_app, tmp_path, calling(todo(told.id, "Asked q1?")))
+
+    assert plan["counts"]["todos"] == 0
+    assert [d["reason"] for d in plan["dropped"]] == ["those words are already q1, asked"]
+
+
+def test_scratch_records_and_claude_test_accounts_are_left_out(flask_app, tmp_path, kin, past):
+    # R-0803
+    kin.user.username = "claude-test+1@example.com"
+    db.session.commit()
+    assert catch_up(flask_app, "--plans", str(tmp_path), model=Model()) == []
+    kin.user.username = "ann@example.com"
+    kin.scratch = True
+    db.session.commit()
+    assert catch_up(flask_app, "--plans", str(tmp_path), model=Model()) == []

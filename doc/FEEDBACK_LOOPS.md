@@ -45,8 +45,8 @@ Panels that show the same people and messages: "People who chatted", "Messages f
 | 8 | Bug reports and feedback the coach offers | reports, kind `bug` or `feedback`, sent or declined, when the coach offers one and the person answers the sheet. Sent rows carry the person's words. Errors in the code are Grafana's, never a row. | You: each sent report is emailed to you with the account, the diagram, what was said and the coach's reply [Oracle: R-0824]. No admin command lists the rows; a panel counts them. | partial | Sent and declined per week. | "Bug reports and feedback the coach offered to send, per week"; query 8 |
 | 9 | Product notices | notices, and a notifications row of kind `notice` for each person a notice reaches, with opened_at. | You decide the next notice. `flask admin notice list` prints how many got and opened each one. | partial | Opened ÷ got, per notice. | "Notices: how many people each was sent to, and how many opened it"; query 9 |
 | 10 | Which features people use | product_events: every screen a person opens and about sixty named taps. | What to cut or build next. Nobody reads it on a schedule. | partial | People active per week; days active per person. | "People active"; "Sessions"; "Taps"; "Screens opened"; "Features by use"; "Features by person"; "Feature use a day"; "Screens opened a day"; "First use of each feature, by person"; "Days active, by person"; "First session path"; "Cost per person per feature share"; the Features dashboard's section "What the coach and the app sent, and what came back"; the Features dashboard's section "Coverage of the basic data": "Coverage curve, across all sittings", "Coverage curve, each sitting", "Coach turns to 50% coverage, by family"; query 10 |
-| 11 | Errors on the page and session replay | Grafana Faro on familydiagram.com: page errors in Grafana's logs with kind exception, and session replay with every element masked. | Someone opens Frontend Observability. You ruled that alerts wait until after the beta (09-22). | partial | Page errors and error groups per week; sessions with an error. Last known: 296 page errors in the 30 days to 09-29. | Query 11 |
-| 12 | Server logs and traces | Alloy sends container logs, host metrics and the coach turn traces to Grafana Cloud. Every request carries an id. | Read when something breaks. No alerting. | partial | Server error lines per day; failed traces per day. | "Memory available"; "Disk free on /"; "CPU busy"; "Load (1m)"; "Memory used by container"; "CPU by container"; "Errors and exceptions (last 6h)"; "Log lines a minute by container"; query 12 |
+| 11 | Errors on the page and session replay | The page posts each uncaught error and rejected promise to `/app/browser-errors`, one fd-app log line `Browser error {json}` in the laptop's VictoriaLogs; until FD-374, Grafana Faro's exceptions, copied over from Grafana Cloud. Session replay was given up with Faro (FD-374). | Someone reads the laptop's logs. You ruled that alerts wait until after the beta (09-22). | partial | Page errors per week; distinct error messages. Last known: 296 page errors in the 30 days to 09-29. | Query 11 |
+| 12 | Server logs and traces | The box's journal holds every container's log lines and fd-otel holds host metrics and the coach turn traces until the laptop pulls them (doc/MONITORING.md). Every request carries an id. | Read when something breaks. No alerting. | partial | Server error lines per day; failed traces per day. | "Memory available"; "Disk free on /"; "CPU busy"; "Load (1m)"; "Memory used by container"; "CPU by container (cores)"; "Errors and exceptions"; "Log lines a minute by container"; query 12 |
 | 13 | How much of the family evaluation is covered | The coach's own notes on each turn: whether the history has levelled off, its biggest gap, and whether the turn is evaluation or coaching. Stored with each coach turn's tool calls. | The three-generation coverage brainstorm, which you ruled waits for the frame session. Nothing counts the notes. | missing | None today. One candidate: the share of families with grandparents named. | None |
 | 14 | Requests to join the beta | The landing page's form emails you each request. No table stores the requests, because new schema needs your yes [R-0581]. The page needs its Turnstile keys before it can go out. | You send an invite, a row in invitations. | missing | Requests: none. Invites sent per week. | Query 14 |
 | 15 | Evals gating a prompt change | A live eval case built from your ruling, answered on the Claude Code subscription and saved as a replay in private/replays, then one paid run at the end of the batch. | The session ships the prompt change or holds it. Of the 3 prompt changes logged since 09-28, one is held and two are not evaluated. Ten live cases have no saved answers. | partial | Prompt changes shipped with a passing eval ÷ prompt changes made. Last known: 0 of 3. | doc/PROMPT_ENGINEERING_LOG.md; btcopilot/tests/live; private/replays |
@@ -61,8 +61,9 @@ Panels that show the same people and messages: "People who chatted", "Messages f
 | 24 | The scout and the loop review | The scout was to read the corpus and propose up to ten ranked process changes. | Retired on 2026-09-23 [R-0420] without ever running once. | retired | None. | None |
 | 25 | Notes on votes in the chat | The optional note a person writes with a vote on shadow replies in the chat, stored with the vote in the model_picks table, source chat [R-0668]. | Nobody yet. The aim is an automated step that turns the notes into checks on replies, a rubric; it is not built and not designed. | open | None today. | None |
 | 26 | Acceptable and best marks on votes in the chat | The replies a person marks acceptable and the one marked best, on every vote in the chat, stored with the vote in the model_picks table, source chat [R-0668]. | Nobody yet. Nothing turns the marks into a change to the coach; it is not built and not designed. | open | None today. | None |
-| 27 | The measurement suite for the coach's replies | Not built. Checks on every stored reply, grouped by prompt version and model [R-0669]. | A session finds the checks and keeps improving them, and you review the direction. Parked on 2026-10-02 until you ask; files in the private corpus folder private/eval-suite/. | missing | None today. | None |
-| 28 | The person correcting the coach | Observations row `person_corrected` after a coach turn whose notes say the person told it it got them wrong (assumed, misheard, read into what they said), with the statement and what was corrected [Oracle: R-0822]. Written from the notes the coach already writes each turn, no extra model call. | The rows group as one item in your accept-or-reject queue; a session takes cases from them for the coach's evals. | partial | Share of coach turns with such a row, per week. | "Watcher findings per coach turn, by kind"; "Tuning queue: the ten biggest groups not yet rejected" |
+| 27 | The conversational-flow numbers per model and prompt version | Fourteen fixed word rules over every real thread's messages and stored record (feeling and why questions, advice, teaching, use of the person's specifics, objections and what the coach did after, agreement about a relative, praise, two years set side by side with a cause, the person's own next step and whether a todo was stored, shrinking replies, the person's share of words), counted per thread, model, prompt version and rules version, and each account's return within 7 and 30 days; counts only, no text [R-0669]. `flask admin flow track` writes them to threads.jsonl and accounts.jsonl in ~/.claude/research/FD-conversation-flow/tracked/, outside every repository; claude-test accounts, scratch records and play-by-plays are left out. | A session runs the command after a prompt or model change and compares the new prompt version's rows with the old; you rule on targets. The wider eval suite stays parked (private corpus folder private/eval-suite/). | partial | Rows in threads.jsonl for the current prompt version. | Query 27 |
+| 28 | Users and the coach, first wave | Fifteen measures over tables that already exist, no new table and no migration [R-0814]: what people talk about and whom, their pushback, the fact questions they leave and the corrections they make, how far each record got and the picture's use; what the coach wrote, asked, guessed and got wrong, and how long its replies are; how sittings end and who comes back. Every query rebuilds the record from the change log (diagram_changes), never from the stored record, so pickled records count only from their first chat write. Taps are counted once, from the change-log outcome. Names and words show on the boards, which only the laptop's Grafana loads [R-0814]. | You read the three boards and rule on what to change in the coach or the app; nobody reads them on a schedule. | partial | Return within a week, and the share of coach turns that wrote to the record, per prompt version once a version has 30 people. | The People board: "Topics placed in the record, share of sittings by week"; "Topics placed in the record: sittings and writes per topic"; "Top topics per record"; "Which relatives come up: share of messages naming each"; "Most-named people per record"; "Pushback per 100 messages, by week: words (tentative) and taps"; "Pushback: the counts behind the rate"; "Pushback: the objection phrases found"; "Fact questions by item: what the coach recorded and what people tapped"; "Fact questions by generation and side"; "What people correct, per 100 coach writes, by field"; "Picture opened in a sitting, and taps followed by talk"; "Picture taps by name and by item kind"; "Share of people who used the picture, by week"; "How far each record got, at the last sitting"; "Coverage at the last sitting: active and silent people". The Coach board: "Share of coach turns that wrote to the record, by week and prompt version"; "Coach turns that wrote, by turn index and prompt version"; "Record tools per 100 coach turns, by tool"; "Beside the write share: duplicates and hand corrections per 100 coach writes"; "Faults per 100 coach turns, by kind"; "Faults ranked by the share of people who sent nothing more"; "Faults per 100 coach turns, by prompt version"; "Fact questions the coach asked, by item"; "Fact questions the coach asked, by generation and side"; "Fact questions per 100 coach turns, by prompt version"; "Guesses voiced per 100 coach turns, by week"; "How the coach's guesses fared"; "Guesses by prompt version"; "Reply length and shape by turn index and prompt version"; "Words per coach reply, weekly median and 90th percentile". The Return board: "Return within a week"; "From invitation to second sitting"; "Second sitting within 7 days, by what the first sitting did"; "How sittings end"; "The last thing before silence"; "Active, silent, left"; "People active each week: first week and returning"; "Days between sittings"; "Days between sittings by cohort month". Query 28 |
+| 29 | The person correcting the coach | Observations row `person_corrected` after a coach turn whose notes say the person told it it got them wrong (assumed, misheard, read into what they said), with the statement and what was corrected [Oracle: R-0822]. Written from the notes the coach already writes each turn, no extra model call. | The rows group as one item in your accept-or-reject queue; a session takes cases from them for the coach's evals. | partial | Share of coach turns with such a row, per week. | "Watcher findings per coach turn, by kind"; "Tuning queue: the ten biggest groups not yet rejected" |
 
 ## Queries
 
@@ -308,24 +309,26 @@ ask density against return within a week.
 
 ### 11. Errors on the page and session replay
 
-LogQL on the data source `grafanacloud-logs`:
+LogsQL on the laptop's VictoriaLogs (data source `fd-vl`); `kind:="exception"` matches the
+Faro lines copied from Grafana Cloud, `"Browser error "` the page's own posts since FD-374:
 
 ```
-sum(count_over_time({kind="exception"}[7d]))
-sum(count_over_time({kind="exception"}[30d]))
-count(sum by (value) (count_over_time({kind="exception"} | logfmt | keep value [30d])))
-count(sum by (session_id) (count_over_time({kind="exception"} | logfmt | keep session_id [30d])))
+_time:7d (kind:="exception" OR "Browser error ") | stats count() errors
+_time:30d (kind:="exception" OR "Browser error ") | stats count() errors
+_time:30d "Browser error " | extract "Browser error <line>" | unpack_json from line fields (message) | stats count_uniq(message) messages
 ```
 
 ### 12. Server logs and traces
 
-LogQL on `grafanacloud-logs`, the same filter as the "Errors and exceptions (last 6h)" panel:
+LogsQL on `fd-vl`; `service_name` matches the lines copied from Grafana Cloud,
+`CONTAINER_NAME` the journal's:
 
 ```
-sum by (service_name) (count_over_time({service_name=~"fd-app|fd-worker|fd-beat|fd-shadow"} |~ "(?i)error|traceback|exception" [7d]))
+_time:7d (service_name:~"^fd-(app|worker|beat|shadow)$" OR CONTAINER_NAME:~"fd-(app|worker|beat|shadow)") _msg:~"(?i)error|traceback|exception" -"Browser error " | stats count() errors
 ```
 
-Failed traces: TraceQL `{ status = error }` on the data source `grafanacloud-traces`, over 7 days.
+Failed traces: traces tagged `error=true` in the laptop's VictoriaTraces (data source `fd-vt`,
+its Jaeger API), each service, over 7 days.
 
 ### 14. Requests to join the beta
 
@@ -387,4 +390,43 @@ select count(*) as cuts, count(ratified_at) as ratified, max(ratified_at)::date 
        (select count(*) from review_codings where created_at > now() - interval '30 days') as codings_30d,
        (select count(*) from quality_runs where kind::text = 'coding_f1') as coding_f1_points
 from review_cuts;
+```
+
+### 27. The conversational-flow numbers
+
+Run on a sandbox or a copy of the database, or over an export folder holding
+stmts.json and changes.json; on production only with `--production`. Keys already
+written (thread, model, prompt version, rules version) are kept unless `--again`.
+
+```bash
+uv run flask admin flow track --database
+uv run flask admin flow track --export ~/.claude/research/FD-conversation-flow/data2
+jq -s 'group_by(.prompt_version) | map({prompt_version: .[0].prompt_version, coach: (map(.coach_messages) | add), feeling: (map(.feeling_questions) | add)})' \
+  ~/.claude/research/FD-conversation-flow/tracked/threads.jsonl
+```
+
+### 28. Users and the coach, first wave
+
+The three boards are deploy/grafana/fd-people.json, fd-coach.json and fd-return.json,
+loaded with the others by the laptop's Grafana from deploy/grafana/. Each panel opens with the same shared tables
+(sittings, messages, coach turns, the record rebuilt from the change log, the family
+around the person, the objection phrases); the canonical copy is `FRAGMENTS` in
+btcopilot/tests/grafanasql.py, and the topic map's is btcopilot/topics.py. The gate:
+
+```bash
+uv run pytest btcopilot/tests/test_dashboards.py btcopilot/tests/test_topics.py -q
+uv run pytest --integration btcopilot/tests/integration/test_dashboardsql.py -q
+```
+
+The second runs every panel of every board on a Postgres container against a small
+dataset and checks one value per measure worked out by hand. Any shared table reads
+on production in the read-only psql above, for example the questions the change log
+holds per record:
+
+```sql
+with recursive <the shared tables of grafanasql.FRAGMENTS>
+select c.diagram_id, count(distinct c.item_id) from cur c
+where c.item_kind = 'question'
+  and not exists (select 1 from removed x where (x.diagram_id, x.item_kind, x.item_id) = (c.diagram_id, c.item_kind, c.item_id))
+group by 1;
 ```

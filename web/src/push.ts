@@ -45,7 +45,7 @@ export async function subscribe(): Promise<boolean> {
 }
 
 /** Whether this device can be reached by notifications, in the words the
- * account view says it in (R-0802). */
+ * account view says it in (R-0832). */
 export enum Reach {
   On = "on",
   Off = "off",
@@ -167,7 +167,7 @@ function card(): HTMLElement {
 
 /** As the app opens: subscribe again where permission was given and the
  * subscription was lost, or ask with the card where the app is installed and
- * nobody has been asked (R-0802). */
+ * nobody has been asked (R-0832). */
 export async function offerNotifications(): Promise<void> {
   const next = plan(await device());
   if (next === Plan.Quiet) await subscribe();

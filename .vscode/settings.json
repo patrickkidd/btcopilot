@@ -1,4 +1,7 @@
 {
+    "git.detectWorktrees": true,
+    "git.detectWorktreesLimit": 50,
+    "scm.repositories.visible": 20,
     "python.languageServer": "Pylance",
     "python.testing.pytestArgs": [
         "btcopilot/tests",

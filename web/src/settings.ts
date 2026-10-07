@@ -6,7 +6,6 @@ import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { Sheet } from "./sheet";
 import { store } from "./store";
-import { identify } from "./telemetry";
 import { shortDate } from "./when";
 import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
@@ -229,7 +228,6 @@ export class Settings {
       api.passkeys().catch(() => []),
       available(),
     ]);
-    identify(this.account.email);
     this.mark();
     this.applyTheme();
     this.handlers.onPrefs(this.prefs);
@@ -681,7 +679,7 @@ export class Settings {
   /** The keys that sign this account in without an emailed code, and the way to
    * make one when there are none. */
   /** This device's notifications, for everyone, whatever the coach's
-   * "messages first" says (R-0802). */
+   * "messages first" says (R-0832). */
   private notificationsRow(): HTMLElement {
     const row = el("div", "sn-row");
     row.id = "notifications";

@@ -40,10 +40,10 @@ bp = Blueprint(
 
 # What a browser fetches without its cookie: the service worker, the manifest,
 # the icons the manifest names, and the icon iOS puts on the home screen; and
-# where a report is posted, which takes no CSRF token, so the browser's word
-# that the post came from this site stands in for one.
-PUBLIC = {"app.service_worker", "app.manifest", "app.apple_touch_icon", "app.create_report"}
-TOKENLESS = {"app.create_report"}
+# where a report or a page's error is posted, which takes no CSRF token, so the
+# browser's word that the post came from this site stands in for one.
+TOKENLESS = {"app.create_report", "app.create_browser_error"}
+PUBLIC = {"app.service_worker", "app.manifest", "app.apple_touch_icon", *TOKENLESS}
 PUBLIC_STATIC = re.compile(r"web/icon-\w+\.png")
 
 
@@ -256,6 +256,7 @@ def edit(deltas: list[dict]):
 
 
 from btcopilot.routes import (  # noqa: E402  bp must exist first
+    browsererrors,
     casereport,
     diagrams,
     events,

@@ -877,7 +877,7 @@ def test_tracing_provider(monkeypatch):
     assert isinstance(tracing.provider(), trace.NoOpTracerProvider)
 
     exported = InMemorySpanExporter()
-    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://fd-alloy:4318")
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://fd-otel:4318")
     monkeypatch.setattr(tracing, "OTLPSpanExporter", lambda: exported)
     sdk = tracing.provider()
     sdk.get_tracer(__name__).start_span("coach.turn").end()

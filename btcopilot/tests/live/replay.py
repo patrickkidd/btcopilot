@@ -13,7 +13,11 @@ private prompt, so the suite's store is sealed with sops like the prompts.
 
 Dump mode spends nothing: a call with no saved response writes its whole request
 to a file named by the key it would be saved under, and the case awaits an
-answer written on the Claude Code subscription (answer.py)."""
+answer written on the Claude Code subscription (answer.py).
+
+The store is a local cache, ignored by the repo (R-0813): a reply is touched
+each time it is served, and once per run every reply neither served nor written
+in the last KEEP is deleted, unless the repo tracks it."""
 
 import datetime
 import enum
@@ -31,6 +35,7 @@ from btcopilot.quality import Source
 
 REPO = Path(__file__).parents[3]
 STORE = REPO / "private" / "replays"
+KEEP = datetime.timedelta(days=14)
 
 
 class Mode(enum.StrEnum):
@@ -88,6 +93,24 @@ class Replay:
         self.awaiting: list[str] = []
         self.subscribed = mode is Mode.Dump
 
+    def prune(self) -> None:
+        if not self.store.exists():
+            return
+        tracked = set()
+        if self.store.is_relative_to(REPO):
+            listed = subprocess.run(
+                ["git", "ls-files", "-z", str(self.store.relative_to(REPO))],
+                cwd=REPO,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+            tracked = {REPO / name for name in listed.split("\0") if name}
+        stale = (datetime.datetime.now() - KEEP).timestamp()
+        for path in self.store.glob("*.json"):
+            if path not in tracked and path.stat().st_mtime < stale:
+                path.unlink()
+
     def begin(self) -> None:
         self.seen.clear()
         self.awaiting.clear()
@@ -106,6 +129,7 @@ class Replay:
             if path.exists() and self.mode is not Mode.Record:
                 self.replayed += 1
                 raw = json.loads(promptdir.read(path))
+                path.touch()
                 self.subscribed |= Source(raw["source"]) is Source.Subscription
                 saved = loaded(raw)
                 if saved.text:

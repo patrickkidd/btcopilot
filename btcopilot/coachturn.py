@@ -8,6 +8,7 @@ The turn returns the coach's words plus the typed events behind them, so the
 page can move the picture with the same reply it types out.
 """
 
+import datetime
 import hashlib
 import itertools
 import logging
@@ -23,26 +24,36 @@ from btcopilot import (
     clock,
     clusters,
     coverage,
+    flow,
     profile,
+    record,
     recordtext,
     turnlog,
     turnstore,
 )
 from btcopilot.coachmodel import CoachModel, marked_ends
-from btcopilot.discussions import previous
+from btcopilot.discussions import SITTING_GAP, previous
 from btcopilot.llmutil import UNANSWERED
 from btcopilot.metered import Metered
 from btcopilot.models import (
     Change,
     Discussion,
     DiscussionKind,
+    ProactiveMessage,
     Purpose,
     Statement,
     StatementKind,
     TokenMeter,
     TurnEvent,
 )
-from btcopilot.prompts import agent_prompt, get_agent_prompt, note_register, onboarding
+from btcopilot.prompts import (
+    agent_prompt,
+    back,
+    crisis,
+    get_agent_prompt,
+    note_register,
+    onboarding,
+)
 from btcopilot.interactions import recent
 from btcopilot.toolbox import (
     LOOKUPS,
@@ -54,7 +65,7 @@ from btcopilot.toolbox import (
 )
 from btcopilot.toolnames import toolcall
 from btcopilot.turnlog import TurnEventKind
-from btcopilot.schema import DiagramData, ItemKind
+from btcopilot.schema import DiagramData, ItemKind, QuestionState
 
 _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
@@ -365,9 +376,14 @@ class CoachTurn:
         )
         if pairs:
             tail = f"{tail}\n\n{pairs}"
+        if not note:
+            tail = f"{tail}{self._crisis(answered, data)}"
         gaps = profile.missing(data)
         if gaps:
             tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"
+        gone = None if note else away(answered)
+        if gone is not None and gone > SITTING_GAP:
+            tail = f"{tail}\n\n{back(max(1, gone.days), todos(data))}"
         messages = self._history(tail, answered)
         if self.resume:
             messages += self._picked_up()
@@ -491,6 +507,31 @@ class CoachTurn:
             "events": events,
             "turn_id": self.turn_id,
         }
+
+    def _crisis(self, answered: Statement, data: DiagramData) -> str:
+        """The crisis block when the person's message fires a phrase, the
+        stay-with-it block when only their message before did, else nothing
+        (R-0810, R-0811). It goes before every other first-place block."""
+        names = [p["name"] for p in data.people if p.get("name")]
+        found = flow.risk(chips.plain(self.statement), names)
+        if found:
+            line = flow.line(self.toolbox.zone)
+            block = crisis(
+                found.reply.value,
+                found.said,
+                line.say,
+                line.emergency if found.emergency else "",
+            )
+            return f"\n\n{block}"
+        before = (
+            said_before(answered)
+            .filter(Statement.speaker_id == Discussion.chat_user_speaker_id)
+            .order_by(Statement.created_at.desc(), Statement.id.desc())
+            .first()
+        )
+        if before and flow.risk(chips.plain(before.text), names):
+            return f"\n\n{crisis()}"
+        return ""
 
     def _title(self) -> None:
         """Naming the sitting is not the reply: when that call fails the
@@ -632,6 +673,32 @@ class CoachTurn:
             spoken = f"{spoken}\n\n{pointed}"
         _say(messages, ("user", _blocks(tail) + _blocks(spoken)))
         return messages
+
+
+def away(said: Statement) -> datetime.timedelta | None:
+    """How long the family was quiet before these words; a message the coach
+    sent unasked is not the family speaking. None for the thread's first
+    words (R-0803)."""
+    sent = db.session.query(ProactiveMessage.statement_id).filter(
+        ProactiveMessage.statement_id.isnot(None)
+    )
+    last = (
+        said_before(said)
+        .filter(Statement.id.notin_(sent))
+        .order_by(Statement.created_at.desc(), Statement.id.desc())
+        .first()
+    )
+    return None if last is None else said.created_at - last.created_at
+
+
+def todos(data: DiagramData) -> str:
+    """The person's own open todos, oldest first, as the coach reads them."""
+    open_ = [
+        recordtext.note_line(q)
+        for q in sorted(data.questions, key=recordtext.question_order)
+        if record.note(q) is record.TODO and q["state"] != QuestionState.Resolved
+    ]
+    return "; ".join(open_) or "none"
 
 
 def _recent(said: Statement) -> list[Statement]:

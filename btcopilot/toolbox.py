@@ -465,7 +465,10 @@ def schemas(coder: bool = False) -> list[dict]:
             "description": (
                 "Keep a question in the record: asked when you ask it in this "
                 "reply, held when you keep it to ask later, resolved when the "
-                "person has just answered it unasked, so it is never asked."
+                "person has just answered it unasked, so it is never asked. A todo "
+                "is kept only when the person says they will find something out or "
+                "do something themselves, held, in their words, resting on the "
+                "message you are answering."
             ),
             "input_schema": {
                 "type": "object",
@@ -476,8 +479,14 @@ def schemas(coder: bool = False) -> list[dict]:
                     },
                     "kind": {
                         "type": "string",
-                        "enum": [QuestionKind.Thought.value, QuestionKind.Fact.value],
-                        "description": "Food for thought, or a fact to find.",
+                        "enum": [
+                            QuestionKind.Thought.value,
+                            QuestionKind.Fact.value,
+                            QuestionKind.Todo.value,
+                        ],
+                        "description": (
+                            "Food for thought, a fact to find, or the person's own todo."
+                        ),
                     },
                     "state": {
                         "type": "string",
@@ -1196,19 +1205,19 @@ class Toolbox:
         return {event: said[turn] for event, turn in turns.items() if turn in said}
 
     def _read_questions(self, args: dict) -> tuple[str, None]:
-        return self._read_notes_of(record.QUESTION, args), None
+        return self._read_notes_of((record.QUESTION, record.TODO), args), None
 
     def _read_impressions(self, args: dict) -> tuple[str, None]:
-        return self._read_notes_of(record.IMPRESSION, args), None
+        return self._read_notes_of((record.IMPRESSION,), args), None
 
     def _read_notes_of(self, rules, args: dict) -> str:
         shown = [
             q
             for q in self.data.questions
-            if record.note(q) is rules and (args.get("closed") or on_map(q))
+            if record.note(q) in rules and (args.get("closed") or on_map(q))
         ]
         lines = [note_line(q) for q in sorted(shown, key=question_order)]
-        return "\n".join(lines) or f"No {rules.noun}s."
+        return "\n".join(lines) or f"No {rules[0].noun}s."
 
     def _read_changes(self, args: dict) -> tuple[str, None]:
         rows = (
@@ -1569,6 +1578,8 @@ class Toolbox:
     # ── QUESTIONS ───────────────────────────────────────────────────────────
 
     def _add_question(self, args: dict) -> tuple[str, dict]:
+        if args["kind"] == QuestionKind.Todo:
+            return self._add_todo(args)
         return self._add_note(
             args,
             record.QUESTION,
@@ -1577,6 +1588,27 @@ class Toolbox:
                 "item_kind": args.get("item_kind"),
                 "item_id": args.get("item_id"),
                 "fact": args.get("fact") and choice(Fact, args["fact"], "facts").value,
+            },
+        )
+
+    def _add_todo(self, args: dict) -> tuple[str, dict]:
+        """Something the person just said they will find out or do themselves,
+        in their words, resting on their message (R-0803)."""
+        if self.said is None:
+            raise ToolError(
+                "A todo rests on the person's message that said it: no message is "
+                "being answered now",
+                "A todo is only ever something the person said.",
+            )
+        return self._add_note(
+            args,
+            record.TODO,
+            {
+                "kind": QuestionKind.Todo.value,
+                "item_kind": None,
+                "item_id": None,
+                "fact": args.get("fact") and choice(Fact, args["fact"], "facts").value,
+                "evidence": [self._cited(self._mine(self.said.id))],
             },
         )
 
@@ -1737,7 +1769,9 @@ class Toolbox:
         fields.update(self._asked(None))
 
     def _set_question(self, args: dict) -> tuple[str, dict]:
-        return self._set_note(args, record.QUESTION)
+        found = next((q for q in self.data.questions if q["id"] == str(args["id"])), None)
+        todo = found is not None and record.note(found) is record.TODO
+        return self._set_note(args, record.TODO if todo else record.QUESTION)
 
     def _set_impression(self, args: dict) -> tuple[str, dict]:
         return self._set_note(args, record.IMPRESSION)
@@ -1768,11 +1802,7 @@ class Toolbox:
             fields["outcome"] = choice(QuestionOutcome, args["outcome"], "outcomes").value
         if args.get("answer") is not None:
             fields["answer"] = self._cited(self._mine(args["answer"]))
-        elif (
-            fields.get("outcome") == QuestionOutcome.Answered
-            and found.get(record.CARD)
-            and self.said is not None
-        ):
+        elif fields.get("outcome") == QuestionOutcome.Answered and self.said is not None:
             fields["answer"] = self._cited(self._mine(self.said.id))
         if record.CARD in args:
             card = args[record.CARD]

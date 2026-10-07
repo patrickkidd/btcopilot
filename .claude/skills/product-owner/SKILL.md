@@ -25,7 +25,7 @@ is unset) holds the run's working files; nothing there is committed.
   read inside a read-only transaction (`bin/tables.py` sets it). No `flask admin` command that
   changes something, no `--yes`, no queue group rejected, no eval run, no deploy, no notice sent.
 - **A ledger edit.** Changes to the ledger are proposed as a unified diff for Patrick's yes.
-- **A secret printed.** `bin/grafana.py` reads the token from the main clone's `.env` itself.
+- **A secret printed.** `bin/grafana.py` reads the laptop Grafana's password from the main clone's `deploy/laptop/.env` itself.
   Nobody runs `env`, `docker inspect`, `cat .env` or reads `/etc/fd/`.
 - **A person named.** No name, email or person's words in any file or line. People are counts,
   or "the heaviest user". The scripts return counts only; readers keep it that way.
@@ -76,7 +76,7 @@ looking for a file a script did not name: a script's error goes under "not_read"
 |---|---|---|---|
 | production | haiku | `python3 $SKILL/bin/tables.py G1 G2 1 2 3 4 5 6 7 8 9 14 16 17 18` | goal and rows 1-9, 14, 16-18 |
 | product events | haiku | `python3 $SKILL/bin/tables.py 10` | row 10 |
-| grafana | haiku | `python3 $SKILL/bin/grafana.py panels` (every panel of the repository's dashboards over 30 days, written whole under "panels": a rate panel gives its days' mean, a count panel its total, a table its rows); `python3 $SKILL/bin/grafana.py logql` with each LogQL line under the ledger's queries 11 and 12; `python3 $SKILL/bin/grafana.py traces` | rows 11 and 12, and every row whose "Read by" names a panel |
+| grafana | haiku | `python3 $SKILL/bin/grafana.py panels` (every panel of the repository's dashboards over 30 days, written whole under "panels": a rate panel gives its days' mean, a count panel its total, a table its rows); `python3 $SKILL/bin/grafana.py logsql` with each LogsQL line under the ledger's queries 11 and 12; `python3 $SKILL/bin/grafana.py traces` (all from the laptop's Grafana, doc/MONITORING.md; with the laptop's stack down, every grafana loop goes under "not_read") | rows 11 and 12, and every row whose "Read by" names a panel |
 | corpus | haiku | `python3 $SKILL/bin/files.py SINCE`: the rulings queue in the private corpus, the tests owed and waived, the correction cases, prompt changes logged since SINCE, saved replays and live cases, recorded runs, the API dollars in every checkout's eval ledger, and the efficiency skill's rules and corrections | rows 7, 15, 16, 20, 21, 23 |
 | git | haiku | `git fetch -q origin`; `gh pr list --state merged --search "merged:>=SINCE" --json number,title,mergedAt --limit 100`; `gh pr list --state open --json number,title,isDraft`; `gh run list --workflow release.yml --created ">=SINCE" --json conclusion,headBranch,createdAt --limit 100` | "closures": each merged pull request as number, date and title; row 22: deploys and failed deploys |
 

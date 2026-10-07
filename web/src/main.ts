@@ -1971,7 +1971,7 @@ if (CODER && parse(location.pathname)?.place === Place.Chat) {
 
 // The page is only served to a signed-in reader, so this is the moment to ask
 // about a key on this device, and then about the home screen or, once on it,
-// about notifications — one card at a time, never two at once (R-0802).
+// about notifications — one card at a time, never two at once (R-0832).
 void offerPasskey(() => {
   offerHomeScreen();
   void offerNotifications();

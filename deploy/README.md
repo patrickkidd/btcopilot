@@ -131,19 +131,36 @@ name in Grafana Cloud's Postgres data source from `chat` to `familydiagram`. Onc
 site answers, `docker volume rm chat_caddy-data chat_caddy-config`.
 The app is down from step 1 to step 5, about a minute.
 
-## Grafana Cloud
+## Monitoring
 
-`fd-alloy` (Grafana Alloy) ships host and container metrics, every container's log
-lines and the app's and worker's traces to Grafana Cloud; nothing is stored on the box.
-It reads `GRAFANA_CLOUD_TOKEN` from the secrets file like everything else, and its config
-is `alloy/config.alloy`. Its UI on port 12345 has no host port, so it is not exposed.
-`fd-pdc` (Grafana's Private Data source Connect agent) holds an outbound tunnel to Grafana Cloud with `GRAFANA_PDC_TOKEN`; no port is opened.
-Grafana's Postgres data source reaches `fd-postgres:5432` through it as the read-only role `grafana`, password `GRAFANA_PG_PASSWORD`.
-The quality dashboard, `fd-quality`, is kept in `grafana/fd-quality.json` and put to Grafana
-with `POST /api/dashboards/db` (`{"dashboard": ..., "overwrite": true}`) on the service account
-token `GRAFANA_SA_TOKEN`. Its recorded-run panels read `quality_runs`, which every release fills
-with `flask admin quality load` (see `quality/evals/README.md`).
-The features dashboard, `fd-features` (what people use, and what the coach and the app sent and what came back), is kept in `grafana/fd-features.json` and put the same way: the release's "Push the dashboards" step (`bin/grafanapush.py`) puts every file in `grafana/`.
+`fd-otel` (OpenTelemetry Collector, config `otel/config.yaml`) takes host and container
+metrics and the app's traces and holds them in its on-disk queue (`otel-queue` volume) until
+the laptop's ssh link takes them. Every service logs to the host's journal (`journald`
+driver), which the laptop pulls; `docker logs` still works. fd-postgres listens on the box's
+`127.0.0.1:5432` for the laptop's Grafana, as the read-only role `grafana` with password
+`GRAFANA_PG_PASSWORD`. Nothing leaves the box except over that link; the design and the
+cutover are in `doc/MONITORING.md`.
+
+One-time box setup for the laptop's link, as root from `/var/www/btcopilot/deploy` with the
+stack up (safe to rerun):
+
+```bash
+sh box/setup.sh "ssh-ed25519 AAAA... fd-laptop"
+```
+
+It installs `/usr/local/bin/fd-logpull` (the key's forced command: the journal after a cursor),
+creates the user `fdlink` (group systemd-journal) and writes its `authorized_keys` line for
+the key with only the link's forwards allowed, adds `/etc/ssh/sshd_config.d/fd-laptop.conf`
+(for `fdlink` only: `GatewayPorts clientspecified`, client-alive 30 s x 3), checked with
+`sshd -t` before it is put in place, and reloads ssh; root's keys and settings are untouched;
+and allows TCP from the compose network to `172.17.0.1` on 18428 and 14318.
+
+The dashboards are kept in `grafana/*.json` and provisioned read-only by the laptop's Grafana
+(`deploy/laptop/`); a change is made in the file. The quality dashboard's recorded-run panels
+read `quality_runs`, which every release fills with `flask admin quality load` (see
+`quality/evals/README.md`).
+
+Three boards about users and the coach, the first wave of doc/FEEDBACK_LOOPS.md row 28, are loaded the same way, by the laptop's Grafana from this folder: `fd-people` ("People: what they bring"), `fd-coach` ("The coach: what it did") and `fd-return` ("Return"), in `grafana/fd-people.json`, `fd-coach.json` and `fd-return.json`. They read only existing tables, rebuilding the record from `diagram_changes`, and need the role `grafana` to have SELECT on `invitations` and `diagram_interactions`, which no earlier panel read; the grants live on the box, not in this repository. `uv run pytest --integration btcopilot/tests/integration/test_dashboardsql.py` runs every panel of every board on Postgres before a release. Every panel names the data source uid `ffz1wy7unkdfke`, which the laptop's Grafana provides (`laptop/grafana/datasources.yml`).
 
 The desktop app's update feeds live on the legacy box and are forwarded because shipped apps have this address built in.
 

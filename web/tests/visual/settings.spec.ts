@@ -35,7 +35,7 @@ test.describe("the settings stack", () => {
     expect(Math.round(box.height)).toBe(44);
   });
 
-  // R-0098, R-0631, R-0802
+  // R-0098, R-0631, R-0832
   test("it opens on Account with the ruled rows in the ruled order", async ({
     page,
   }) => {
@@ -58,7 +58,7 @@ test.describe("the settings stack", () => {
     );
   });
 
-  // R-0802
+  // R-0832
   test("every account has a Notifications row saying this device's state, with a way to turn them on, whatever the coach's messages first says", async ({
     page,
   }) => {
@@ -71,7 +71,7 @@ test.describe("the settings stack", () => {
     await expect(row.locator("button.sn-manage")).toHaveText("Turn on");
   });
 
-  // R-0802
+  // R-0832
   test("the installed app asks once to turn on notifications, and Not now keeps it from asking again on this device", async ({
     page,
   }) => {
@@ -622,7 +622,7 @@ test.describe("the coding and quality sections", () => {
   };
   test.afterAll(() => roles("subscriber"));
 
-  // R-0259, R-0265, R-0631, R-0801
+  // R-0259, R-0265, R-0631, R-0831
   test("a subscriber sees neither, an auditor sees Coding, and an admin sees Coding with the meeting and no Better replies", async ({
     page,
   }) => {
