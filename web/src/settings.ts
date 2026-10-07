@@ -164,6 +164,7 @@ const REACH: Record<Reach, string> = {
   [Reach.Off]: "Off on this device",
   [Reach.Blocked]: "Blocked in this device's system settings",
   [Reach.Unavailable]: "Not available here. Open the app from your home screen",
+  [Reach.Failed]: "Could not start on this device. Close the app and open it again",
 };
 
 /** Asked for inside the tap that lets the coach message first. A browser that
@@ -179,7 +180,8 @@ export class Settings {
   private account: Account | null = null;
   private passkeys: Passkey[] = [];
   private canPasskey = false;
-  private reach = Reach.Unavailable;
+  /** Null until the worker answers; the page never waits for it. */
+  private reach: Reach | null = null;
   private host = el("div", "sn-stack");
   /** The question before the shadows are switched on. */
   private ask: Sheet;
@@ -220,12 +222,12 @@ export class Settings {
 
   /** The avatar carries the initial of whatever name the account has. */
   async load(): Promise<void> {
-    [this.prefs, this.account, this.passkeys, this.canPasskey, this.reach] = await Promise.all([
+    void this.check();
+    [this.prefs, this.account, this.passkeys, this.canPasskey] = await Promise.all([
       api.preferences(),
       api.account(),
       api.passkeys().catch(() => []),
       available(),
-      device().then(reach),
     ]);
     identify(this.account.email);
     this.mark();
@@ -684,7 +686,8 @@ export class Settings {
     const row = el("div", "sn-row");
     row.id = "notifications";
     const main = el("div", "sn-m");
-    main.append(el("div", "sn-t", "Notifications"), el("div", "sn-s sn-wrap", esc(REACH[this.reach])));
+    const state = this.reach === null ? "Checking this device" : REACH[this.reach];
+    main.append(el("div", "sn-t", "Notifications"), el("div", "sn-s sn-wrap", esc(state)));
     row.append(main);
     if (this.reach === Reach.Off) {
       const on = document.createElement("button");
@@ -698,6 +701,18 @@ export class Settings {
       row.append(on);
     }
     return row;
+  }
+
+  /** This device's notifications, read apart from the page, which is drawn
+   * at once; the row is drawn again when they are known. */
+  private async check(): Promise<void> {
+    this.reach = await device()
+      .then(reach)
+      .catch((error: unknown) => {
+        console.error(error);
+        return Reach.Failed;
+      });
+    this.host.querySelector("#notifications")?.replaceWith(this.notificationsRow());
   }
 
   private passkeyRows(): HTMLElement[] {

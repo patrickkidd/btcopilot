@@ -46,7 +46,7 @@ import { WIDE } from "./viewport";
 import { shortDate } from "./when";
 import * as speech from "./speech";
 import { NOTES_TOOL, type Notes } from "./notes";
-import { landing, offerNotifications } from "./push";
+import { landing, offerNotifications, register } from "./push";
 import * as track from "./track";
 import { Feature, Screen } from "./track";
 import {
@@ -1927,10 +1927,7 @@ matchMedia(SIDEWAYS).addEventListener("change", (e) => {
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.
 if ("serviceWorker" in navigator)
-  void navigator.serviceWorker.register(
-    `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
-    { scope: "/app/" },
-  );
+  register(`/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`);
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),
 // and still does between meetings, when the card carries what they finished

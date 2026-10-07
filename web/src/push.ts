@@ -10,6 +10,20 @@ function bytes(key: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array([...atob(padded)].map((c) => c.charCodeAt(0)));
 }
 
+/** The worker as registered and running; a registration that fails rejects
+ * here rather than leaving `navigator.serviceWorker.ready` waiting forever. */
+let running: Promise<ServiceWorkerRegistration> | null = null;
+
+export function register(url: string): void {
+  running = navigator.serviceWorker
+    .register(url, { scope: "/app/" })
+    .then(() => navigator.serviceWorker.ready);
+}
+
+function worker(): Promise<ServiceWorkerRegistration> {
+  return running ?? Promise.reject(new Error("the service worker was never registered"));
+}
+
 /** Run inside a tap: a browser asks for permission only on one, and iOS only
  * when the request is the tap's first wait. iOS offers web push only to the
  * app added to the home screen. Says whether this browser can now be reached
@@ -18,11 +32,11 @@ function bytes(key: string): Uint8Array<ArrayBuffer> {
 export async function subscribe(): Promise<boolean> {
   if (!supported()) return false;
   if ((await Notification.requestPermission()) !== "granted") return false;
-  const [{ key }, worker] = await Promise.all([
+  const [{ key }, registration] = await Promise.all([
     call<{ key: string }>("GET", "/push-subscriptions"),
-    navigator.serviceWorker.ready,
+    worker(),
   ]);
-  const subscription = await worker.pushManager.subscribe({
+  const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: bytes(key),
   });
@@ -37,6 +51,8 @@ export enum Reach {
   Off = "off",
   Blocked = "blocked",
   Unavailable = "unavailable",
+  /** The worker that receives them could not start on this device. */
+  Failed = "failed",
 }
 
 /** What the app does about notifications as it opens on this device. */
@@ -101,11 +117,11 @@ function decline(): void {
 }
 
 async function saved(): Promise<boolean> {
-  const [{ subscriptions }, worker] = await Promise.all([
+  const [{ subscriptions }, registration] = await Promise.all([
     call<{ subscriptions: { endpoint: string }[] }>("GET", "/push-subscriptions"),
-    navigator.serviceWorker.ready,
+    worker(),
   ]);
-  const mine = await worker.pushManager.getSubscription();
+  const mine = await registration.pushManager.getSubscription();
   return !!mine && subscriptions.some((s) => s.endpoint === mine.endpoint);
 }
 
