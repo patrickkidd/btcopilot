@@ -1328,20 +1328,26 @@ export class Picture {
         clip(said, Math.min(88, wide * ROWS.length)),
         wide,
       );
+      // stepping event by event, the words stand over their dot, kept inside
+      // the line, so the step's dot is the one they name (Patrick, 2026-10-07)
+      const at = (line: string) => {
+        if (!this.stepping) return { left: x0, width: x1 - x0 };
+        const width = Math.min(x1 - x0, Math.ceil(line.length * CH) + 2);
+        return { left: Math.min(Math.max(chosen.x - width / 2, x0), x1 - width), width };
+      };
       const text = lines
-        .map((line, i) =>
-          line
-            ? `<div class="ss-t on" ` +
-              `style="left:${x0}px;top:${ROWS[i]}px;width:${x1 - x0}px">${esc(line)}</div>`
-            : "",
-        )
+        .map((line, i) => {
+          if (!line) return "";
+          const { left, width } = at(line);
+          return `<div class="ss-t on" style="left:${left.toFixed(1)}px;top:${ROWS[i]}px;width:${width.toFixed(1)}px">${esc(line)}</div>`;
+        })
         .join("");
       // the words of the moment already picked are its label, so a tap on them
       // is a tap on it and picks it again rather than putting the picture down
       return {
         text,
         rowsLaid: lines
-          .map((line, row) => ({ id: event.id, row, left: x0, width: x1 - x0, line }))
+          .map((line, row) => ({ id: event.id, row, ...at(line), line }))
           .filter((r) => r.line)
           .map(({ id, row, left, width }) => ({ id, row, left, width })),
       };

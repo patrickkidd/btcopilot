@@ -1254,7 +1254,8 @@ test.describe("the picture centred in the room it has", () => {
       for (;;) {
         seen.push(
           await drawer(page).evaluate((p) => {
-            const drawn = [...p.querySelectorAll(".draw svg :is(.p .shape, .pt text)")].map((g) => g.getBoundingClientRect()).filter((r) => r.height);
+            // the ring of the diagram's own person is part of their mark, as the layout counts it
+            const drawn = [...p.querySelectorAll(".draw svg :is(.p :is(.shape, .you), .pt text)")].map((g) => g.getBoundingClientRect()).filter((r) => r.height);
             const svg = p.querySelector(".draw svg")!.getBoundingClientRect();
             const draw = p.querySelector(".draw")!.getBoundingClientRect();
             const foot = p.querySelector(".foot")!.getBoundingClientRect();
@@ -1706,6 +1707,15 @@ for (const [what, viewport] of [
       const date = (await stamp(page).textContent())!;
       // the step's event is picked on the timeline, inside its cluster, opened
       await expect(drawer(page).locator(".wire rect.pill.on")).toHaveCount(1);
+      // the step's words stand over its dot, inside the line's visible stretch
+      const over = await drawer(page).evaluate((p) => {
+        const [dot, words, line] = [".wire .dot.on", ".wire .ss-t.on", ".lv > .wire"].map((s) => p.querySelector(s)!.getBoundingClientRect());
+        const mid = dot.left + dot.width / 2;
+        return { inside: words.left >= line.left - 1 && words.right <= line.right + 1, off: Math.abs(words.left + words.width / 2 - mid), edge: Math.min(words.left - line.left, line.right - words.right) };
+      });
+      expect(over.inside).toBe(true);
+      // centred on the dot, or held at the line's edge
+      expect(over.off < 2 || over.edge < 24).toBe(true);
       await drawer(page).locator('[data-act="next"]').click();
       await expect(title).not.toHaveText(at);
       await expect(stamp(page)).not.toHaveText(date);
