@@ -195,6 +195,12 @@ def impression_backfill(map: str, transcript: str) -> str:
     return files().text("impression_backfill", map=map, transcript=transcript)
 
 
+def case_report_rewrite() -> str:
+    """The opening message of a rewrite of the case report: every card the
+    coach writes, written again at once from the diagram (R-0825)."""
+    return files().text("case_report_rewrite")
+
+
 def event_title(kind: str, description: str, notes: str) -> str:
     """Asks for one event's title, for the one pass over events older than
     titles (R-0681)."""

@@ -26,8 +26,8 @@ cannot pass on the old prompt and tools.
 
 **Change**: a refresh of the case report is one coach turn with the coach's own system prompt
 (the record map, the coverage block and the private fragments, card instructions included; no
-chat transcript) and one new opening message, kept in code beside the catch-up's
-(`btcopilot/casereport.py`, START): not a chat; write every card again from the diagram as it
+chat transcript) and one new opening message, the private prompt file
+`case_report_rewrite.prompty` (an open-source default beside it): not a chat; write every card again from the diagram as it
 stands; read what you need first, since the map gives no event's words; then each card's
 guesses with add_impression, raised, with the card; write all five, leaving one out only when
 nothing on the diagram could rest under it; ask nothing; stop when done [R-0825]. The tools are

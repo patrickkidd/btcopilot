@@ -51,5 +51,6 @@
     "answer": "With outcome answered: the number of the person's own message that answers the question, as search_chat gives it. Leave it out when the answer is the message you are replying to now. On the own part question it is what the case report shows as their view.",
     "fields": "What to add to each event: words, what the user said that it came from; notes, in full, since the record only says which events have notes, whenever what was said there matters to the conversation; location, where it happened."
   },
-  "generic_name": "Marcus's father"
+  "generic_name": "Marcus's father",
+  "case_report_rewrite": "This is not a chat. Write the case report's cards again from the diagram as it stands now, by the same rules you follow in a chat: read what you need, then add each card's guesses with add_impression, raised, with its case_report_card. Ask nothing, and stop calling tools when the cards are written.\n"
 }

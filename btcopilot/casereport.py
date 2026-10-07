@@ -32,7 +32,7 @@ from btcopilot.models import (
     TokenMeter,
     User,
 )
-from btcopilot.prompts import get_agent_prompt
+from btcopilot.prompts import case_report_rewrite, get_agent_prompt
 from btcopilot.questions import sessions
 from btcopilot.recordtext import outline
 from btcopilot.schema import (
@@ -63,18 +63,6 @@ STEPS = 8
 # The longest a rewrite may run, in seconds: past it, it ends failed before
 # its next model call, so the page never waits on it for good.
 LIMIT = 300
-START = (
-    "This is not a chat; nobody reads your words. Write the person's case "
-    "report again from the diagram as it stands now: every card you write, all "
-    "at once, by the same rules you follow in a chat. Read what you need "
-    "first; the map gives no event's words. Then give each card its "
-    "guesses with add_impression, in state raised, with its case_report_card "
-    "and the events it rests on: main_guess, coach_guess, own_part, choice and "
-    "work_on. What you write replaces what is on that card now. Write all "
-    "five; leave a card out only when nothing on the diagram could rest under "
-    "it, and ask nothing: there is no one to answer. When every card is "
-    "written, stop calling tools."
-)
 BROKE = "The case report could not be written again just now."
 REFUSED = "The case report could not be written again from this diagram."
 
@@ -259,7 +247,7 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
         zone=user.timezone,
     )
     before = {q["id"] for q in data.questions}
-    messages = [{"role": "user", "content": START}]
+    messages = [{"role": "user", "content": case_report_rewrite()}]
     began = time.monotonic()
     for _ in range(STEPS):
         if time.monotonic() - began > LIMIT:
