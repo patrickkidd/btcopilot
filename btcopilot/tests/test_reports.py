@@ -1,7 +1,8 @@
 import pytest
 
 import btcopilot
-from btcopilot import reports, toolbox
+from btcopilot import extensions, reports, toolbox
+from btcopilot.extensions import db
 from btcopilot.models import Report, ReportKind, ReportStatus
 from btcopilot.toolbox import ToolName
 
@@ -69,7 +70,7 @@ def test_sent_feedback_keeps_the_words(web):
 
 
 def test_feedback_the_person_turned_down_keeps_where_it_was_and_no_words(web):
-    # R-0056
+    # R-0056, R-0823
     declined = {"kind": "feedback", "status": "declined", "release": "r", "turn_id": "t2", "statement_id": 9202}
     response = post(web, declined)
     assert response.status_code == 201
@@ -127,3 +128,36 @@ def test_the_report_tool_names_the_four_bug_triggers():
     tool = next(one for one in toolbox.schemas() if one["name"] == ToolName.Report.value)
     for trigger in ("did not work", "did not update", "repeating", "misunderstood", "a second time", "frustration"):
         assert trigger in tool["description"]
+
+
+def test_a_sent_report_is_emailed_to_patrick_with_who_where_and_what_was_said(
+    flask_app, web, test_user, discussion
+):
+    # R-0824
+    them, coach = discussion.speakers
+    discussion.chat_user_speaker_id, discussion.chat_ai_speaker_id = them.id, coach.id
+    hello, reply = sorted(discussion.statements, key=lambda s: s.order)
+    hello.turn_id = reply.turn_id = "t1"
+    db.session.commit()
+    with extensions.mail.record_messages() as outbox:
+        assert post(web, dict(BUG, statement_id=reply.id)).status_code == 201
+    [mail] = outbox
+    assert mail.recipients == [flask_app.config["ADMIN_EMAIL"]]
+    assert mail.subject == f"Family Diagram bug report from {test_user.username}"
+    for line in (
+        f"Account: {test_user.username}",
+        f"Diagram: {test_user.free_diagram.name} ({test_user.free_diagram_id})",
+        f"They said (statement {hello.id}):\nHello",
+        f"The coach replied (statement {reply.id}):\nHi there",
+        f"The report:\n{BUG['words']}",
+        f"/app/account/diagrams/{test_user.id}",
+    ):
+        assert line in mail.body
+
+
+def test_a_declined_report_sends_no_email(web):
+    # R-0823, R-0824
+    with extensions.mail.record_messages() as outbox:
+        declined = {"kind": "feedback", "status": "declined", "release": "r", "turn_id": "t2"}
+        assert post(web, declined).status_code == 201
+    assert outbox == []

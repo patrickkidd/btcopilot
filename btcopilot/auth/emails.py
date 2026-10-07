@@ -6,7 +6,8 @@ from flask_mail import Message
 import btcopilot
 from btcopilot import extensions
 from btcopilot.config import Config
-from btcopilot.models import User
+from btcopilot.extensions import db
+from btcopilot.models import Diagram, Report, Statement, User
 
 _log = logging.getLogger(__name__)
 
@@ -102,4 +103,41 @@ def send_beta_request(name: str, email: str, words: str):
         f"Name: {name}\nEmail: {email}\n\nA few words about them and their "
         f"interest:\n{words or '(none given)'}\n",
         reply_to=email,
+    )
+
+
+def send_report(report: Report, sender: str):
+    """Patrick hears of each report a person sends [Oracle: R-0824]."""
+    user = db.session.get(User, report.user_id) if report.user_id else None
+    diagram = db.session.get(Diagram, report.diagram_id) if report.diagram_id else None
+    reply = (
+        db.session.get(Statement, report.statement_id) if report.statement_id else None
+    )
+    said = (
+        Statement.query.filter_by(
+            turn_id=report.turn_id, speaker_id=reply.discussion.chat_user_speaker_id
+        ).first()
+        if reply
+        else None
+    )
+    site = current_app.config["SITE_URL"].rstrip("/")
+    lines = [
+        f"Account: {user.username if user else f'signed out ({sender})'}",
+        f"Diagram: {f'{diagram.name} ({diagram.id})' if diagram else 'none'}",
+        f"Release: {report.release}",
+        f"Screen: {report.address or 'not given'}",
+        f"Turn: {report.turn_id or 'none'}",
+    ]
+    if said:
+        lines.append(f"\nThey said (statement {said.id}):\n{said.text}")
+    if reply:
+        lines.append(f"\nThe coach replied (statement {reply.id}):\n{reply.text}")
+    lines.append(f"\nThe report:\n{report.words}")
+    if user:
+        lines.append(f"\nTheir diagrams: {site}/app/account/diagrams/{user.id}")
+    _deliver(
+        current_app.config["ADMIN_EMAIL"],
+        f"Family Diagram {report.kind.value} report"
+        + (f" from {user.username}" if user else ""),
+        "\n".join(lines) + "\n",
     )

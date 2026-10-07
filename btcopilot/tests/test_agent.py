@@ -337,7 +337,7 @@ def test_navigate_to_a_coder_screen_opens_for_a_coder(discussion, family):
 
 
 def test_a_report_asks_the_page_and_keeps_no_observation(discussion, family):
-    # R-0056
+    # R-0056, R-0823
     words = "I wish the picture were bigger."
     reply = run(
         discussion,

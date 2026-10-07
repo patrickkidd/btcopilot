@@ -828,6 +828,15 @@ def schemas(coder: bool = False) -> list[dict]:
                     },
                     "person": {"type": "string", "description": "How the person seems."},
                     "variable": _enum_param(Variable, "The variable this turn is on."),
+                    "corrected": {
+                        "type": "string",
+                        "description": (
+                            "Only when the person's newest message tells you that you "
+                            "got them wrong: you assumed, misheard, or put words or "
+                            "feelings into what they said. What they corrected, in a "
+                            "short phrase. Leave it out otherwise."
+                        ),
+                    },
                 },
                 "required": [
                     "register",

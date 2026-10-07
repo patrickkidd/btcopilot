@@ -6,6 +6,22 @@
 
 ---
 
+## FD-375 — the coach notes when the person corrects it (2026-10-07)
+
+**Change**: the coach's notes tool takes an optional `corrected` field: what the person's newest
+message corrected, only when it says the coach got them wrong (assumed, misheard, put words or
+feelings in their mouth). The notes fragment, private and public alike, gains one sentence telling
+the coach to fill it on such a turn, even when it also takes the point back in its reply, and to
+leave it out otherwise. The watcher after the turn writes an observations row `person_corrected`
+from it, so no extra model call [R-0822].
+
+**Why**: on production Patrick wrote "that's you assuming ... too touchy-feely and not
+data-driven"; the coach apologised and put the correction in its notes as free text, which nothing
+counts. The live eval `test_corrections.py` gives a fictionalized correction after a plain first
+turn and passes when exactly one row is written after the second turn and none after the first,
+2 of 3, on the subscription replay. Before this change the tool had no such field, so the case
+cannot pass on the old prompt and tools.
+
 ## FD-375 — the Executive Summary card (2026-10-07)
 
 **Change**: in the private impressions fragment, the `main_guess` value now describes the case

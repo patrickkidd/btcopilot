@@ -1,6 +1,7 @@
 """Bugs and feedback the coach offered from the conversation and the person
-answered on the page, all written here [Oracle: R-0056]. An error in the code
-is never a row: the page's and the server's errors go to Grafana."""
+answered on the page, all written here [Oracle: R-0056]; each one sent is
+emailed to Patrick [Oracle: R-0824]. An error in the code is never a row: the
+page's and the server's errors go to Grafana."""
 
 import threading
 import time
@@ -9,6 +10,7 @@ from collections import deque
 from flask import current_app, request
 
 import btcopilot
+from btcopilot.auth import emails
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, Report, ReportKind, ReportStatus, User
 
@@ -68,4 +70,6 @@ def take(body: dict, user: User | None, diagram: Diagram | None) -> Report:
     )
     db.session.add(row)
     db.session.commit()
+    if status is ReportStatus.Sent:
+        emails.send_report(row, sender(user))
     return row

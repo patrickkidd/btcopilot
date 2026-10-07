@@ -16,6 +16,7 @@ from btcopilot.models import Observation, ObservationKind
 from btcopilot.schema import DiagramData
 from btcopilot.toolbox import ToolName
 from btcopilot.tests.conftest import Model, called, csrf_token, said, version, wrote
+from btcopilot.tests.test_coachnotes import NOTES
 from btcopilot.tests.test_turnhistory import Breaks, coach, post, resume
 
 WREN = {"id": 1, "name": "Wren"}
@@ -323,3 +324,43 @@ def test_edits_on_what_an_earlier_sitting_made_are_counted(
             {"count": 1, "calls": [{"name": "edit_person", "item": ["person", "1"]}]},
         )
     ]
+
+
+def test_notes_saying_the_person_corrected_the_coach_are_written_down(
+    web, token, test_user, monkeypatch
+):
+    # R-0822
+    record(test_user)
+    coach(
+        monkeypatch,
+        Model(
+            called(
+                ToolName.CoachNotes,
+                **NOTES,
+                corrected="I read feelings into the teacher",
+            ),
+            said("You are right, you did not say that."),
+        ),
+    )
+    body = post(web, token, "That's you assuming, I never said that.").get_json()
+    assert seen() == [
+        (
+            ObservationKind.PersonCorrected,
+            {
+                "statement": body["statement_id"],
+                "what": "I read feelings into the teacher",
+                "reason": "the person corrected the coach",
+            },
+        )
+    ]
+
+
+def test_notes_with_no_correction_write_nothing(web, token, test_user, monkeypatch):
+    # R-0822
+    record(test_user)
+    coach(
+        monkeypatch,
+        Model(called(ToolName.CoachNotes, **NOTES), said("Tell me more.")),
+    )
+    post(web, token)
+    assert seen() == []
