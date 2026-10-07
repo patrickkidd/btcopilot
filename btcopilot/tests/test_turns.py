@@ -223,13 +223,20 @@ def test_a_follow_up_for_tomorrow_in_anchorage_is_not_refused_as_today(
 def test_the_turn_is_handed_over_and_the_post_answers_at_once(
     web, token, family, monkeypatch
 ):
-    # R-0369
+    # R-0369, R-0829
     coach(monkeypatch, said("Tell me about Nell."))
     response = post(web, token)
     assert response.status_code == 202
 
     body = response.get_json()
-    assert set(body) == {"turn_id", "discussion_id", "statement_id"}
+    assert body.keys() == {
+        "turn_id",
+        "discussion_id",
+        "statement_id",
+        "attachment_name",
+        "attachment_text",
+    }
+    assert (body["attachment_name"], body["attachment_text"]) == (None, None)
     assert db.session.get(Statement, body["statement_id"]).text == "My sister is Nell."
 
 
