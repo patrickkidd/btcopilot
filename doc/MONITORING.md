@@ -169,7 +169,9 @@ for example `CONTAINER_NAME:~".+" MESSAGE:~"(?i)error|traceback|exception"`.
 - Laptop closed: the box keeps metrics and traces in the on-disk queues and logs in the journal;
   the laptop catches up when it wakes. Grafana shows nothing meanwhile.
 - Laptop closed longer than the box can hold: the journal drops its oldest entries at 4 GB; the
-  queues are bounded only by disk (48 GB free).
+  queues are bounded only by disk (48 GB free). Each pipeline sends at most one batch per 10 s,
+  so its queue of 1,000,000 batches lasts 115 days; at about 3,800 series a minute (guess: 100
+  bytes a point on disk, 550 MB a day) the disk fills after about 85 days first.
 - Box down: nothing is collected for that time; whatever was already on the laptop stays.
 - Laptop disk lost: history is lost; no backup is planned (a later decision if wanted).
 
@@ -212,7 +214,18 @@ deploy (estimate, to be measured on the box).
    settings apply to `fdlink` only, in a `Match User` block that is checked with `sshd -t`
    before it is put in place. Root's keys and settings are not touched. The ufw step reads the
    compose network's subnet, so the stack must be up.
-4. Deploy FD-374 from its branch (the release workflow) at a quiet hour, straight after the
+4. Straight before the deploy, on the box, check that Alloy holds nothing Grafana Cloud has not
+   received. Alloy keeps its buffer inside its container, so the deploy's removal of it loses
+   whatever is still pending:
+
+   ```sh
+   ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' fd-alloy)
+   curl -s "http://$ip:12345/metrics" | grep -E '^(prometheus_remote_storage_samples_pending|otelcol_exporter_queue_size|loki_write_(encoded|sent)_bytes_total)'
+   ```
+
+   Go ahead only when the pending samples and every exporter queue size are 0, and each host's
+   encoded bytes equal its sent bytes. Otherwise wait a minute and read again.
+5. Deploy FD-374 from its branch (the release workflow) at a quiet hour, straight after the
    backup, with no coach turn queued. The deploy's `up -d` recreates fd-caddy, fd-postgres and
    fd-redis once, because their log driver changes, and its `--remove-orphans` removes fd-alloy
    and fd-pdc. Each recreated service was unreachable
@@ -221,15 +234,18 @@ deploy (estimate, to be measured on the box).
    whatever was queued in it is lost, as on any restart of it. Note the time the deploy
    finished: from then on every container logs to the journal, and Grafana Cloud receives
    nothing more.
-5. Immediately, on the laptop:
+6. At least 10 minutes after the deploy finished, on the laptop:
    `uv run python bin/cloudbackfill.py --until <deploy time>`, which copies Cloud's last hours
-   up to the switch.
-6. Within minutes, check the laptop receives the box's data, printed as expected vs seen: a
+   up to the switch. Cloud makes a line or sample queryable a few minutes after it arrives (the
+   backfill's own default stops 5 minutes short of now for this reason), so the wait lets
+   everything Alloy sent before its removal be read; the run skips what the laptop already holds,
+   so running it again later is safe.
+7. Within minutes, check the laptop receives the box's data, printed as expected vs seen: a
    memory sample in VictoriaMetrics newer than 2 minutes; fd-app lines in VictoriaLogs newer
    than the deploy; an fd-app or fd-worker trace in VictoriaTraces newer than the deploy.
-7. Once the backfill run succeeded and step 6 holds, remove the FD-374 cloudbackfill crontab
+8. Once the backfill run succeeded and step 7 holds, remove the FD-374 cloudbackfill crontab
    line on the laptop.
-8. Patrick closes the Grafana Cloud account himself.
+9. Patrick closes the Grafana Cloud account himself.
 
 ## Ruled by Patrick (2026-10-06): yes to all six
 
