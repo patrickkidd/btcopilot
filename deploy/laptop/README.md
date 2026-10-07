@@ -43,8 +43,11 @@ The link carries:
   VictoriaTraces, which the box's collector sends to;
 - every minute, the journal after the saved cursor (`~/fd-monitoring/link/cursor`),
   posted to VictoriaLogs. The cursor is saved only after VictoriaLogs answers 200;
-  a failed post is pulled again the next minute. With no cursor the box sends its
-  last 30 days.
+  a failed post is pulled again the next minute. A missing, malformed or refused
+  cursor stops the pull and logs `JOURNAL PULL STOPPED:` every minute, since with no
+  cursor the box sends its last 30 days (about 2 GB). To allow that once:
+  `touch ~/fd-monitoring/link/approve-repull` (doc/MONITORING.md, "Reconnects and
+  the cursor").
 
 `docker compose -f deploy/laptop/compose.yml logs fd-link` shows each pull.
 
