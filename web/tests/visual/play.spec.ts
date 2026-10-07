@@ -1627,7 +1627,8 @@ test.describe("the Family view on a desktop window", () => {
     await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(false);
   });
 
-  // R-0796: full screen, Patrick's words of 2026-10-07, "The Diagram needs to scale up to fill available space. And then the timeline should really stretch out to fit available horizontal space."
+  // full screen, Patrick's words of 2026-10-07, "The Diagram needs to scale up to fill available space. And then the timeline should really stretch out to fit available horizontal space."
+  // R-0796
   test("full screen grows the picture past its own size to fill the room, the years line spanning the width, and back to its own size after", async ({ page }, info) => {
     test.skip(info.project.name !== "phone", "the size is the describe's own");
     await settle(page);

@@ -71,14 +71,16 @@ it("never grows a small picture past its own size, and never shrinks its names u
   expect(NAME * fitScale(L, 1, 1)).toBeCloseTo(FIT);
 });
 
-// R-0796: put full screen, Patrick's words of 2026-10-07, "The Diagram needs to scale up to fill available space"
+// put full screen, Patrick's words of 2026-10-07, "The Diagram needs to scale up to fill available space"
+// R-0796
 it("grows a small picture to fill the space only when given no ceiling, as full screen gives it", () => {
   const L = told.layout;
   expect(fitScale(L, L.vw * 3, L.h * 2, Infinity)).toBeCloseTo(2);
   expect(fitScale(L, L.vw * 3, L.h * 2)).toBe(1);
 });
 
-// R-0796: "the timeline should really stretch out to fit available horizontal space" (Patrick, 2026-10-07)
+// "the timeline should really stretch out to fit available horizontal space" (Patrick, 2026-10-07)
+// R-0796
 it("draws the years line across the width it is given, its ends and the last tap reaching the far edge", () => {
   const whole = new Told(tl, family(tl), true);
   const line = yearsLine(tl, whole, whole.length - 1, 1000);
