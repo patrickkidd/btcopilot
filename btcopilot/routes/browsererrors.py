@@ -41,5 +41,5 @@ def create_browser_error():
         "user_id": user.id if user else None,
         "agent": request.user_agent.string,
     }
-    _log.error(f"Browser error {json.dumps(line)}")
+    _log.warning(f"Browser error {json.dumps(line)}")
     return "", 204

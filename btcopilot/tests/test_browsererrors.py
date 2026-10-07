@@ -17,16 +17,14 @@ def post(client, body, **headers):
 
 
 def logged(caplog) -> list[dict]:
-    return [
-        json.loads(r.message.removeprefix("Browser error "))
-        for r in caplog.records
-        if r.message.startswith("Browser error ")
-    ]
+    records = [r for r in caplog.records if r.message.startswith("Browser error ")]
+    assert {r.levelno for r in records} <= {logging.WARNING}
+    return [json.loads(r.message.removeprefix("Browser error ")) for r in records]
 
 
 def test_a_page_error_is_one_log_line_with_the_person(web, test_user, caplog):
     # R-0370
-    with caplog.at_level(logging.ERROR, logger="btcopilot.routes.browsererrors"):
+    with caplog.at_level(logging.WARNING, logger="btcopilot.routes.browsererrors"):
         assert post(web, ERROR).status_code == 204
     [line] = logged(caplog)
     agent = line.pop("agent")
@@ -37,7 +35,7 @@ def test_a_page_error_is_one_log_line_with_the_person(web, test_user, caplog):
 def test_a_signed_out_page_posts_without_a_csrf_token_but_only_from_this_site(flask_app, caplog):
     # R-0370
     client = flask_app.test_client()
-    with caplog.at_level(logging.ERROR, logger="btcopilot.routes.browsererrors"):
+    with caplog.at_level(logging.WARNING, logger="btcopilot.routes.browsererrors"):
         assert post(client, ERROR).status_code == 204
         assert post(client, ERROR, **{"Sec-Fetch-Site": "cross-site"}).status_code == 403
         assert post(client, ERROR | {"cookie": "x"}).status_code == 400
@@ -57,6 +55,6 @@ def test_a_page_caught_in_a_loop_is_cut_off_without_using_up_its_reports(flask_a
 
 def test_an_error_too_large_to_be_a_real_one_is_refused(web, caplog):
     # R-0370
-    with caplog.at_level(logging.ERROR, logger="btcopilot.routes.browsererrors"):
+    with caplog.at_level(logging.WARNING, logger="btcopilot.routes.browsererrors"):
         assert post(web, ERROR | {"stack": "x" * 70_000}).status_code == 413
     assert logged(caplog) == []

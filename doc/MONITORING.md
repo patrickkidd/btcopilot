@@ -61,7 +61,7 @@ Memory during the test (arm64, so only a guide for the box): vmagent 40 to 57 MB
 | Metrics (host, containers) | the same OpenTelemetry Collector: `hostmetrics` (cpu, memory, load, filesystem) and `docker_stats` receivers, every 60 s | the collector's on-disk queue, retry forever | VictoriaMetrics |
 | Logs (every container) | Docker's `journald` log driver | the systemd journal, cap 4 GB (years at today's volume) | VictoriaLogs, filled by a pull: `ssh box journalctl --after-cursor=<c> -o export` every minute, posted to `/insert/journald/upload`; the cursor is saved only after a 200 |
 | Traces | OpenTelemetry Collector (contrib build) receives OTLP from the app | the collector's on-disk queue (`file_storage`), retry forever | VictoriaTraces |
-| Browser errors | `POST /app/browser-errors` writes each error as one log line, `Browser error {json}` at level ERROR (logger `btcopilot.routes.browsererrors`) | the journal, like any log line | VictoriaLogs |
+| Browser errors | `POST /app/browser-errors` writes each error as one log line, `Browser error {json}` at level WARNING, below the error email (logger `btcopilot.routes.browsererrors`) | the journal, like any log line | VictoriaLogs |
 | Postgres tables (the four existing dashboards) | fd-postgres, read-only role `grafana` | nothing to hold: read live | Grafana's Postgres data source through the private link |
 
 Log lines from removed containers are kept, because the journal belongs to the host, not the
