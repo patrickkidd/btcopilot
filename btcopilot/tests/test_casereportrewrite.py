@@ -17,7 +17,7 @@ from mock import patch
 from btcopilot import casereport, turnlog
 from btcopilot.admin import admin
 from btcopilot.extensions import db
-from btcopilot.models import ModelCall, Observation, ObservationKind, Purpose, TokenMeter
+from btcopilot.models import Change, ModelCall, Observation, ObservationKind, Purpose, TokenMeter
 from btcopilot.schema import Person
 from btcopilot.tests.conftest import Model, calling, csrf_token, version
 from btcopilot.tests.test_casereport import card, cards
@@ -69,7 +69,7 @@ def out_of_date(family) -> dict | None:
 
 
 def test_a_report_the_coach_never_wrote_is_never_out_of_date(family):
-    # R-0827
+    # R-0825, R-0827
     happened(family, "death", "2010-01-01")
 
     assert out_of_date(family) is None
@@ -109,14 +109,20 @@ def test_a_card_events_new_date_or_kind_puts_the_report_out_of_date(written, fam
     )
 
 
-@pytest.mark.parametrize(
-    "kind, fields",
-    [("noted", {"title": "Moved to Leeds"}), ("shift", {"title": "Started a new job", "functioning": "up"})],
-)
-def test_a_move_a_job_or_an_uncited_date_leaves_the_report_as_it_was(written, family, kind, fields):
-    # R-0827
-    other = happened(family, kind, "2019-03-01", **fields)
+def test_any_change_to_the_family_puts_the_report_out_of_date_and_several_are_counted(written, family):
+    # R-0825, R-0826
+    other = happened(family, "noted", "2019-03-01", title="Moved to Leeds")
+
+    assert out_of_date(family)["sentence"] == "Wren's “Moved to Leeds” in 2019 was added after the coach wrote this report."
     moved(family, other, "e3", date="2020-01-01")
+    found = out_of_date(family)
+    assert found["sentence"] == "2 changes to the diagram since the coach wrote this report."
+    assert found["change_id"] == Change.query.filter_by(turn_id="e3").one().id
+
+
+def test_a_new_guess_off_the_cards_leaves_the_report_as_it_was(written, family):
+    # R-0825
+    impress(box(family, "r2"), text="A guess on no card.")
 
     assert out_of_date(family) is None
 

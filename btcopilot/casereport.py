@@ -2,9 +2,8 @@
 changed since the coach wrote its cards (R-0827), and the rewrite of every card
 the coach writes at once, from the diagram, in one model call (R-0825).
 
-Out of date is a rule on the command log, no model: after any card on the
-report was last written, an event a card rests on changed its date or kind, or a death, a
-marriage, a separation, a divorce or a shift with a symptom was added. The
+Out of date is a rule on the command log, no model: a person, an event or a
+pair-bond changed after a card on the report was last written. The
 rewrite runs in the worker like a coach turn and ends in a done or failed
 event on the turn log; the page polls its state.
 """
@@ -37,7 +36,6 @@ from btcopilot.schema import (
     CaseReportCard,
     DiagramData,
     EventKind,
-    EvidenceKind,
     ItemKind,
     QuestionState,
     enum_val,
@@ -50,10 +48,11 @@ _log = logging.getLogger(__name__)
 
 TASK = "case_report_rewrite"
 CARD = record.CARD
-# What a later added event must be to put the report out of date.
+# What a couple's event is called in a sentence.
 MARKED = {EventKind.Death: "death", EventKind.Married: "marriage",
           EventKind.Separated: "separation", EventKind.Divorced: "divorce"}
-MOVED = ("dateTime", "kind")
+# What a change must touch to put the report out of date (R-0825).
+FAMILY = {ItemKind.Person.value, ItemKind.Event.value, ItemKind.PairBond.value}
 SINCE = "after the coach wrote this report."
 FIELDS = ("text", "evidence", "state", CARD)
 CLOSED = "CLOSED QUESTIONS"
@@ -107,32 +106,34 @@ def _label(event: dict, people: dict) -> str:
     return f"{label} in {when.year}" if when else label
 
 
-def _why(delta: dict, cited: set[str], events: dict, people: dict) -> str | None:
-    """The sentence a delta puts the report out of date with, or None."""
-    if delta["item_kind"] != ItemKind.Event.value:
-        return None
-    eid = str(delta["item_id"])
-    if delta["field"] is None and delta.get("before") is None and delta["after"]:
-        added = delta["after"]
-        kind = enum_val(added.get("kind"))
-        if kind in {k.value for k in MARKED} or (kind == EventKind.Shift.value and added.get("symptom")):
-            label = _label(events.get(eid, added), people)
-            return f"{label[0].upper()}{label[1:]} was added {SINCE}"
-        return None
-    if delta["field"] in MOVED and eid in cited and delta.get("before") != delta["after"]:
-        label = _label(events[eid], people) if eid in events else "an event the report rests on"
-        if delta["field"] == "dateTime":
-            return f"The date of {label} changed {SINCE}"
+def _said(delta: dict, events: dict, people: dict) -> str:
+    """The sentence one change to the family puts the report out of date with."""
+    iid = str(delta["item_id"])
+    whole = delta.get("after") or delta.get("before") or {}
+    if delta["item_kind"] == ItemKind.Event.value:
+        label = _label(events.get(iid, whole), people)
+    elif delta["item_kind"] == ItemKind.Person.value:
+        label = _name(people, iid) or whole.get("name") or "a person"
+    else:
+        label = "a pair-bond"
+    if delta["field"] is None:
+        done = "added" if delta.get("before") is None else "removed"
+        return f"{label[0].upper()}{label[1:]} was {done} {SINCE}"
+    if delta["item_kind"] == ItemKind.Event.value and delta["field"] == "dateTime":
+        return f"The date of {label} changed {SINCE}"
+    if delta["item_kind"] == ItemKind.Event.value and delta["field"] == "kind":
         return f"What kind of event {label} is changed {SINCE}"
-    return None
+    return f"{label[0].upper()}{label[1:]} changed {SINCE}"
 
 
 def stale(diagram_id: int, data: DiagramData) -> dict | None:
-    """The newest change that puts the case report out of date, or None: its
-    change row id, when, and one sentence naming it. A change counts while any
-    card on the report was last written before it, so the coach writing one
-    card again leaves the others out of date. A change taken back, and the
-    undo itself, count for nothing."""
+    """The newest change to a person, an event or a pair-bond made after a card
+    on the report was last written, or None: its change row id, when, and one
+    sentence naming it, or how many when there are several: one item in one
+    turn is one change, and a pair-bond written with an event is part of that
+    event. The coach writing
+    one card again leaves the others older than the change. A change taken
+    back, and the undo itself, count for nothing."""
     taken = record.undone(diagram_id)
     rows = [
         c
@@ -146,22 +147,27 @@ def stale(diagram_id: int, data: DiagramData) -> dict | None:
             last[card] = i
     if not last:
         return None
-    cited = {
-        str(one["id"])
-        for q in data.questions
-        if q.get(CARD)
-        for one in q.get("evidence") or []
-        if one["kind"] == EvidenceKind.Event.value
-    }
-    events = {str(e["id"]): e for e in data.events}
-    people = {str(p["id"]): p for p in data.people}
-    oldest = min(last.values())
-    for change in reversed(rows[oldest + 1 :]):
-        for delta in reversed(change.deltas):
-            said = _why(delta, cited, events, people)
-            if said:
-                return {"change_id": change.id, "at": change.created_at.isoformat(), "sentence": said}
-    return None
+    since = {}
+    for change in rows[min(last.values()) + 1 :]:
+        for delta in change.deltas:
+            if delta["item_kind"] in FAMILY:
+                since.setdefault((change.turn_id, delta["item_kind"], str(delta["item_id"])), (change, delta))
+    with_event = {turn for turn, kind, _ in since if kind == ItemKind.Event.value}
+    since = [
+        found
+        for (turn, kind, _), found in since.items()
+        if not (kind == ItemKind.PairBond.value and turn in with_event)
+    ]
+    if not since:
+        return None
+    change = max((c for c, _ in since), key=lambda c: c.id)
+    if len(since) == 1:
+        events = {str(e["id"]): e for e in data.events}
+        people = {str(p["id"]): p for p in data.people}
+        sentence = _said(since[0][1], events, people)
+    else:
+        sentence = f"{len(since)} changes to the diagram since the coach wrote this report."
+    return {"change_id": change.id, "at": change.created_at.isoformat(), "sentence": sentence}
 
 
 def closed(data: DiagramData) -> str:

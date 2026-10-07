@@ -64,14 +64,18 @@ words (null once the session is gone); on the `own_part` question it is the
 person's view of their own part (R-0708). The case report reads this same
 `/timeline`.
 
-`report_out_of_date`: null, or the newest change since the coach last put a
-guess on a case report card that makes the report out of date:
+`report_out_of_date`: null, or the newest change to a person, an event or a
+pair-bond made after a case report card was last written:
 `{change_id, at, sentence}`, the `diagram_changes` row id, its UTC time (ISO),
-and one sentence such as "Ada's death in 2019 was added after the coach wrote
-this report." A change counts when an event a card's guess rests on changed its
-date or its kind, or when a death, a marriage, a separation, a divorce or a
-shift with a symptom was added; a change taken back counts for nothing, and a
-report the coach never wrote is never out of date (R-0827). The page keeps the
+and one sentence naming it, such as "Ada's death in 2019 was added after the
+coach wrote this report." or "The date of Ada's death in 2019 changed after the
+coach wrote this report.", or "3 changes to the diagram since the coach wrote
+this report." when there are several. One item in one turn is one change, and a
+pair-bond written with an event is part of that event. A new guess or question
+is no change. Each card keeps its own last write, so the coach writing one card
+again leaves the report out of date while another card is older than the
+change; the rewrite writes every card and clears it (R-0825, R-0826). A change
+taken back counts for nothing, and a report the coach never wrote is never out of date (R-0827). The page keeps the
 `change_id` the person last chose "Show the last report" on and offers the
 sheet again only for a newer one (R-0826, R-0827).
 
