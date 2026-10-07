@@ -277,22 +277,29 @@ export interface Timeline {
   /** Where each moment was coded, by event id: the session, and the statement
    * inside it. Two-way traceability runs on this. */
   coded_in: Record<string, CodedIn>;
-  /** Whether the coach's case report cards still stand, and the turn
-   * rewriting them now, if one is (doc/API.md). */
-  case_report?: CaseReportState;
+  /** Set when something changed in the diagram since the coach wrote its
+   * five case report cards; null while they stand (doc/API.md). */
+  report_out_of_date?: OutOfDate | null;
 }
 
-export interface CaseReportState {
-  out_of_date: OutOfDate | null;
-  rewriting: string | null;
-}
-
-/** The newest change since the coach wrote its case report cards that puts
- * them out of date, and the sentence that says what it was. */
+/** The latest change since the coach wrote its case report cards that may
+ * put them out of date, and the sentence that says what it was. */
 export interface OutOfDate {
   change_id: number;
   at: string;
-  text: string;
+  sentence: string;
+}
+
+export enum RewriteState {
+  Running = "running",
+  Done = "done",
+  Failed = "failed",
+}
+
+/** The coach rewriting the case report's five cards. */
+export interface Rewrite {
+  id: string;
+  state: RewriteState;
 }
 
 /** A record with nothing in it yet, which is what every surface starts on. A
@@ -322,7 +329,14 @@ export enum StatementKind {
   Play = "play",
 }
 
-export interface Statement {
+/** The file a message came with: its name and what the server read from it
+ * for the coach; both null on a message without one. */
+export interface Attached {
+  attachment_name: string | null;
+  attachment_text: string | null;
+}
+
+export interface Statement extends Attached {
   id: number | null;
   role: Role;
   text: string;
