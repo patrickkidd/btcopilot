@@ -22,7 +22,7 @@ saving in the UI does not change them.
 | vl (VictoriaLogs) | 9428 | the box's journal, every container's log lines |
 | vt (VictoriaTraces) | 10428 | the app's traces |
 | grafana | 3000 | dashboards |
-| fd-link | 15432 | the box's Postgres, for the four Postgres dashboards |
+| fd-pg-interim, later fd-link | 15432 | the box's Postgres, for the four Postgres dashboards |
 
 ## The link key
 
@@ -50,17 +50,18 @@ The link carries:
 
 ## Until the box has the fdlink user
 
-`deploy/laptop/interim-link.sh` forwards `127.0.0.1:15432` to fd-postgres over
-Patrick's own root ssh (`ssh familydiagram`), so the four Postgres dashboards work
-now. `GRAFANA_PG_PASSWORD` in `deploy/laptop/.env` is the box's value of the same
-name in `/etc/fd/secrets.env`.
+The service `fd-pg-interim` (profile `interim`, set by `COMPOSE_PROFILES=interim` in
+`deploy/laptop/.env`) forwards `127.0.0.1:15432` to fd-postgres over Patrick's own
+root ssh, with `~/.ssh/id_rsa` and `~/.ssh/known_hosts` mounted read-only, and
+restarts by itself like the stores. `GRAFANA_PG_PASSWORD` in `deploy/laptop/.env` is
+the box's value of the same name in `/etc/fd/secrets.env`.
+
+After the deploy, when fdlink's key is on the box, switch to fd-link on the same
+port with no change to the data source:
 
 ```bash
-nohup deploy/laptop/interim-link.sh > ~/fd-monitoring/interim-link.log 2>&1 &
+sed -i '' 's/^COMPOSE_PROFILES=interim$/COMPOSE_PROFILES=link/' deploy/laptop/.env && docker compose -f deploy/laptop/compose.yml rm -sf fd-pg-interim && docker compose -f deploy/laptop/compose.yml up -d --build
 ```
-
-Stop it (`pkill -f interim-link.sh`, then the ssh it holds) before starting fd-link,
-which takes the same port; the data source stays as it is.
 
 ## What Grafana Cloud held
 

@@ -55,8 +55,23 @@ services:
     ports: ["127.0.0.1:3000:3000"]
     depends_on: [vm, vl, vt]
 
+  fd-pg-interim:
+    restart: unless-stopped
+    profiles: [interim]
+    build: ./link
+    command: ["sh", "/interim-link.sh"]
+    environment:
+      FD_BOX_ADMIN: familydiagram.com
+      LISTEN: 0.0.0.0
+    volumes:
+      - "./interim-link.sh:/interim-link.sh:ro"
+      - "${HOME}/.ssh/id_rsa:/root/.ssh/id_rsa:ro"
+      - "${HOME}/.ssh/known_hosts:/root/.ssh/known_hosts:ro"
+    ports: ["127.0.0.1:15432:15432"]
+
   fd-link:
     restart: always
+    profiles: [link]
     build: ./link
     environment:
       FD_BOX: ${FD_BOX:?set in deploy/laptop/.env}
