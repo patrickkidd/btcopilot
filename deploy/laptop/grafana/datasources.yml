@@ -1,0 +1,38 @@
+apiVersion: 1
+
+datasources:
+  - name: fd-postgres
+    uid: ffz1wy7unkdfke
+    type: grafana-postgresql-datasource
+    url: host.docker.internal:15432
+    user: grafana
+    jsonData:
+      database: familydiagram
+      sslmode: disable
+      postgresVersion: 1600
+      maxOpenConns: 4
+      maxIdleConns: 2
+    secureJsonData:
+      password: $GRAFANA_PG_PASSWORD
+
+  - name: fd-metrics
+    uid: fd-vm
+    type: prometheus
+    url: http://vm:8428
+    isDefault: true
+    jsonData:
+      prometheusType: Prometheus
+      timeInterval: 60s
+
+  - name: fd-logs
+    uid: fd-vl
+    type: victoriametrics-logs-datasource
+    url: http://vl:9428
+
+  - name: fd-traces
+    uid: fd-vt
+    type: jaeger
+    url: http://vt:10428/select/jaeger
+    jsonData:
+      traceIdTimeParams:
+        enabled: true

@@ -1,22 +1,28 @@
-import { ReplayInstrumentation } from "@grafana/faro-instrumentation-replay";
-import { getWebInstrumentations, initializeFaro } from "@grafana/faro-web-sdk";
+/** Uncaught errors and rejected promises go to the page's own server, which
+ * writes each as one log line (doc/MONITORING.md). */
 
-const FARO_URL =
-  "https://faro-collector-prod-us-west-0.grafana.net/collect/5f770e33802f802976174ef8f5ff793b";
-
-/** Only the page production serves reports to the production collector; a
- * sandbox or a dev server reports nothing (R-0370). */
-const PRODUCTION = "familydiagram.com";
-
-const faro =
-  location.hostname === PRODUCTION
-    ? initializeFaro({
-        url: FARO_URL,
-        app: { name: "fd-app", environment: import.meta.env.MODE },
-        instrumentations: [...getWebInstrumentations(), new ReplayInstrumentation()],
-      })
-    : undefined;
-
-export function identify(email: string): void {
-  faro?.api.setUser({ email });
+export enum Source {
+  Error = "error",
+  Rejection = "rejection",
 }
+
+export const ERRORS_URL = "/app/browser-errors";
+
+function send(source: Source, reason: unknown): void {
+  const error = reason instanceof Error ? reason : undefined;
+  void fetch(ERRORS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    keepalive: true,
+    body: JSON.stringify({
+      source,
+      message: error ? `${error.name}: ${error.message}` : String(reason),
+      stack: error?.stack,
+      address: location.pathname,
+      release: window.BOOTSTRAP?.version,
+    }),
+  }).catch((failed: unknown) => console.warn("The page's error was not sent", failed));
+}
+
+addEventListener("error", (e) => send(Source.Error, e.error ?? e.message));
+addEventListener("unhandledrejection", (e) => send(Source.Rejection, e.reason));

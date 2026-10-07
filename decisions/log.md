@@ -6,6 +6,34 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-10
+
+### 2026-10-06: FD-374 — monitoring moves off Grafana Cloud to the box's disk and Patrick's laptop
+
+**Context:** Grafana Cloud's free tier keeps 14 days. Patrick: "I need to compare historical
+metrics further back than just 14 days". Design in `doc/MONITORING.md`.
+
+**Decisions accepted (Patrick: "yes to all - I just want to make sure that we don't lose any
+data nad have no interruption of data."):**
+- OpenTelemetry Collector (contrib) on the box for host and container metrics and traces, with
+  an on-disk queue retried forever; vmagent, node_exporter and cAdvisor not used.
+- VictoriaMetrics, VictoriaLogs (with its Grafana plugin) and VictoriaTraces on the laptop,
+  kept with no time limit.
+- Browser errors go to an app endpoint as log lines; page-load timings and session replay are
+  given up with the Faro SDK.
+- One dedicated ssh key from the laptop with a forced command and forwarding limits, sshd
+  `GatewayPorts clientspecified` and client-alive settings, one ufw rule, Postgres published on
+  the box's localhost only.
+- Grafana Cloud leaves in the same PR and deploy (Patrick: "yes, take grafana cloud out of this
+  PR"); the box holds all data and the laptop syncs from it. A two-phase plan that kept Cloud
+  for a 7-day comparison was dropped. No data is lost: `bin/cloudbackfill.py` copies what Cloud
+  received up to the deploy, and the laptop's receipt of box data is checked within minutes.
+
+**Revisit trigger:** if the check after the deploy finds the laptop not receiving metrics, logs
+or traces from the box, the cause is fixed before the cloudbackfill crontab line is removed.
+
+---
+
 ## 2026-06
 
 ### 2026-06-15: FD-321 — user profile (name + birth date) ground + UI decisions

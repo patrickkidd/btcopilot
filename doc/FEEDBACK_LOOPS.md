@@ -45,8 +45,8 @@ Panels that show the same people and messages: "People who chatted", "Messages f
 | 8 | Bug reports and feedback the coach offers | reports, kind `bug` or `feedback`, sent or declined, when the coach offers one and the person answers the sheet. Sent rows carry the person's words. Errors in the code are Grafana's, never a row. | Nobody yet. The route only takes posts and no admin command lists the rows; a panel counts them, and nobody reads it on a schedule. | partial | Sent and declined per week. | "Bug reports and feedback the coach offered to send, per week"; query 8 |
 | 9 | Product notices | notices, and a notifications row of kind `notice` for each person a notice reaches, with opened_at. | You decide the next notice. `flask admin notice list` prints how many got and opened each one. | partial | Opened ÷ got, per notice. | "Notices: how many people each was sent to, and how many opened it"; query 9 |
 | 10 | Which features people use | product_events: every screen a person opens and about sixty named taps. | What to cut or build next. Nobody reads it on a schedule. | partial | People active per week; days active per person. | "People active"; "Sessions"; "Taps"; "Screens opened"; "Features by use"; "Features by person"; "Feature use a day"; "Screens opened a day"; "First use of each feature, by person"; "Days active, by person"; "First session path"; "Cost per person per feature share"; the Features dashboard's section "What the coach and the app sent, and what came back"; the Features dashboard's section "Coverage of the basic data": "Coverage curve, across all sittings", "Coverage curve, each sitting", "Coach turns to 50% coverage, by family"; query 10 |
-| 11 | Errors on the page and session replay | Grafana Faro on familydiagram.com: page errors in Grafana's logs with kind exception, and session replay with every element masked. | Someone opens Frontend Observability. You ruled that alerts wait until after the beta (09-22). | partial | Page errors and error groups per week; sessions with an error. Last known: 296 page errors in the 30 days to 09-29. | Query 11 |
-| 12 | Server logs and traces | Alloy sends container logs, host metrics and the coach turn traces to Grafana Cloud. Every request carries an id. | Read when something breaks. No alerting. | partial | Server error lines per day; failed traces per day. | "Memory available"; "Disk free on /"; "CPU busy"; "Load (1m)"; "Memory used by container"; "CPU by container"; "Errors and exceptions (last 6h)"; "Log lines a minute by container"; query 12 |
+| 11 | Errors on the page and session replay | The page posts each uncaught error and rejected promise to `/app/browser-errors`, one fd-app log line `Browser error {json}` in the laptop's VictoriaLogs; until FD-374, Grafana Faro's exceptions, copied over from Grafana Cloud. Session replay was given up with Faro (FD-374). | Someone reads the laptop's logs. You ruled that alerts wait until after the beta (09-22). | partial | Page errors per week; distinct error messages. Last known: 296 page errors in the 30 days to 09-29. | Query 11 |
+| 12 | Server logs and traces | The box's journal holds every container's log lines and fd-otel holds host metrics and the coach turn traces until the laptop pulls them (doc/MONITORING.md). Every request carries an id. | Read when something breaks. No alerting. | partial | Server error lines per day; failed traces per day. | "Memory available"; "Disk free on /"; "CPU busy"; "Load (1m)"; "Memory used by container"; "CPU by container (cores)"; "Errors and exceptions"; "Log lines a minute by container"; query 12 |
 | 13 | How much of the family evaluation is covered | The coach's own notes on each turn: whether the history has levelled off, its biggest gap, and whether the turn is evaluation or coaching. Stored with each coach turn's tool calls. | The three-generation coverage brainstorm, which you ruled waits for the frame session. Nothing counts the notes. | missing | None today. One candidate: the share of families with grandparents named. | None |
 | 14 | Requests to join the beta | The landing page's form emails you each request. No table stores the requests, because new schema needs your yes [R-0581]. The page needs its Turnstile keys before it can go out. | You send an invite, a row in invitations. | missing | Requests: none. Invites sent per week. | Query 14 |
 | 15 | Evals gating a prompt change | A live eval case built from your ruling, answered on the Claude Code subscription and saved as a replay in private/replays, then one paid run at the end of the batch. | The session ships the prompt change or holds it. Of the 3 prompt changes logged since 09-28, one is held and two are not evaluated. Ten live cases have no saved answers. | partial | Prompt changes shipped with a passing eval ÷ prompt changes made. Last known: 0 of 3. | doc/PROMPT_ENGINEERING_LOG.md; btcopilot/tests/live; private/replays |
@@ -307,24 +307,26 @@ ask density against return within a week.
 
 ### 11. Errors on the page and session replay
 
-LogQL on the data source `grafanacloud-logs`:
+LogsQL on the laptop's VictoriaLogs (data source `fd-vl`); `kind:="exception"` matches the
+Faro lines copied from Grafana Cloud, `"Browser error "` the page's own posts since FD-374:
 
 ```
-sum(count_over_time({kind="exception"}[7d]))
-sum(count_over_time({kind="exception"}[30d]))
-count(sum by (value) (count_over_time({kind="exception"} | logfmt | keep value [30d])))
-count(sum by (session_id) (count_over_time({kind="exception"} | logfmt | keep session_id [30d])))
+_time:7d (kind:="exception" OR "Browser error ") | stats count() errors
+_time:30d (kind:="exception" OR "Browser error ") | stats count() errors
+_time:30d "Browser error " | extract "Browser error <line>" | unpack_json from line fields (message) | stats count_uniq(message) messages
 ```
 
 ### 12. Server logs and traces
 
-LogQL on `grafanacloud-logs`, the same filter as the "Errors and exceptions (last 6h)" panel:
+LogsQL on `fd-vl`; `service_name` matches the lines copied from Grafana Cloud,
+`CONTAINER_NAME` the journal's:
 
 ```
-sum by (service_name) (count_over_time({service_name=~"fd-app|fd-worker|fd-beat|fd-shadow"} |~ "(?i)error|traceback|exception" [7d]))
+_time:7d (service_name:~"^fd-(app|worker|beat|shadow)$" OR CONTAINER_NAME:~"fd-(app|worker|beat|shadow)") _msg:~"(?i)error|traceback|exception" -"Browser error " | stats count() errors
 ```
 
-Failed traces: TraceQL `{ status = error }` on the data source `grafanacloud-traces`, over 7 days.
+Failed traces: traces tagged `error=true` in the laptop's VictoriaTraces (data source `fd-vt`,
+its Jaeger API), each service, over 7 days.
 
 ### 14. Requests to join the beta
 

@@ -52,7 +52,7 @@ slug), created from the main clone with
 
 ## Production
 
-The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds the image, tagged `<branch>-g<sha7>`, and makes a git tag only for a release from master after the PR merges, never from a ticket branch; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Grafana Cloud is administered through its API with `GRAFANA_SA_TOKEN` and `GRAFANA_URL` from `.env` at the clone root. The deploy lock moves to the ticket branch when Patrick says so, by Claude, never by him [Oracle: R-0623].
+The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw IP). Deploys: the release workflow builds the image, tagged `<branch>-g<sha7>`, and makes a git tag only for a release from master after the PR merges, never from a ticket branch; the rollout runs on the box from `/var/www/btcopilot/deploy` with `--env-file /etc/fd/secrets.env`. Monitoring has no cloud service: the box keeps metrics, logs and traces on its own disk and Patrick's laptop pulls them into its own Grafana (doc/MONITORING.md). The deploy lock moves to the ticket branch when Patrick says so, by Claude, never by him [Oracle: R-0623].
 
 ## Deploy and spend
 
@@ -229,6 +229,7 @@ rulings and the oracle SPEC. The encrypted rulings store and prompts in this rep
 | Tests and known defects | [doc/TEST_STRATEGY.md](doc/TEST_STRATEGY.md), [doc/KNOWN_DEFECTS.md](doc/KNOWN_DEFECTS.md) |
 | Feedback loops | [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) — every signal, what closes it, the number that proves it; checked on demand by `/product-owner` |
 | Box and release | [doc/PLATFORM_BUILD.md](doc/PLATFORM_BUILD.md), [deploy/README.md](deploy/README.md) |
+| Monitoring: metrics, logs, traces, the laptop's Grafana | [doc/MONITORING.md](doc/MONITORING.md) |
 | Prompt engineering decisions | [doc/PROMPT_ENGINEERING_LOG.md](doc/PROMPT_ENGINEERING_LOG.md) |
 | Bowen theory | [CONTEXT.md](CONTEXT.md), [doc/specs/BOWEN_THEORY.md](doc/specs/BOWEN_THEORY.md) |
 | SARF definitions, IRR calibration | [doc/sarf-definitions/](doc/sarf-definitions/), [doc/irr/](doc/irr/) |

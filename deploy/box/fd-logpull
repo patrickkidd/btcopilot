@@ -1,0 +1,20 @@
+#!/bin/sh
+# The forced command on the laptop's ssh key (doc/MONITORING.md): the journal
+# after the cursor the laptop sends, or the last 30 days when it sends none.
+set -eu
+cursor="${SSH_ORIGINAL_COMMAND:-}"
+if [ -z "$cursor" ]; then
+  exec journalctl --since=-30d -o export
+fi
+case "$cursor" in
+  *"
+"*)
+    echo "not a journal cursor" >&2
+    exit 2
+    ;;
+esac
+if ! printf '%s\n' "$cursor" | grep -Eqx '[a-z]=[0-9a-f]+(;[a-z]=[0-9a-f]+)*'; then
+  echo "not a journal cursor" >&2
+  exit 2
+fi
+exec journalctl --after-cursor="$cursor" -o export

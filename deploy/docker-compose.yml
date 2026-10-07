@@ -6,6 +6,12 @@
 # Renamed from "chat" (R-0472); the box's one-time steps are in README.md.
 name: familydiagram
 
+# Every container's lines go to the host's journal, which outlives the
+# container and is what the laptop pulls (doc/MONITORING.md).
+x-logging: &logging
+  logging:
+    driver: journald
+
 # A service's own `environment` replaces an anchored one wholesale, so the
 # shared settings are their own anchor and each service merges them in.
 x-app-env: &app-env
@@ -16,8 +22,11 @@ x-app-env: &app-env
   CELERY_RESULT_BACKEND: redis://fd-redis:6379/0
   BTCOPILOT_INSTANCE_PATH: /app/instance
   SOPS_AGE_KEY_FILE: /run/secrets/age.key
-  OTEL_EXPORTER_OTLP_ENDPOINT: http://fd-alloy:4318
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://fd-otel:4318
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  # Seconds the SDK keeps retrying a batch, so a restart of fd-otel loses no
+  # spans (doc/MONITORING.md); the default 10 gives up after about 7.
+  OTEL_EXPORTER_OTLP_TIMEOUT: "60"
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
   # Read by Google's library, not by the app's code, and only when
   # BTCOPILOT_GEMINI_ENDPOINT is vertex (README.md, "Gemini settings").
@@ -27,6 +36,7 @@ x-app-env: &app-env
 # new container beside the old one and stops the old one only once the new one is
 # healthy, so a deploy drops no request (2026-09-22).
 x-app: &app
+  <<: *logging
   image: ghcr.io/patrickkidd/btcopilot:${BTCOPILOT_TAG:-latest}
   restart: unless-stopped
   env_file: /etc/fd/secrets.env
@@ -42,6 +52,7 @@ x-app: &app
 
 services:
   fd-caddy:
+    <<: *logging
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
@@ -104,9 +115,13 @@ services:
       retries: 3
 
   fd-postgres:
+    <<: *logging
     image: postgres:16-alpine
     container_name: fd-postgres
     restart: unless-stopped
+    # Only the box itself, for the laptop's ssh link to Grafana's Postgres source.
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - ./instance/postgres-data:/var/lib/postgresql/data
     environment:
@@ -120,6 +135,7 @@ services:
       retries: 5
 
   fd-redis:
+    <<: *logging
     image: redis:7-alpine
     container_name: fd-redis
     restart: unless-stopped
@@ -129,39 +145,27 @@ services:
       timeout: 5s
       retries: 5
 
-  # Ships host and container metrics, every container's log lines and the app's
-  # traces to Grafana Cloud; nothing is stored on the box. Its UI on 12345 has no host port.
-  fd-alloy:
-    image: grafana/alloy:latest
-    container_name: fd-alloy
+  # Host and container metrics and the app's traces, held on disk until the
+  # laptop's ssh link takes them (doc/MONITORING.md).
+  fd-otel:
+    <<: *logging
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    container_name: fd-otel
     restart: unless-stopped
-    env_file: /etc/fd/secrets.env
-    # The host cgroup tree and Docker data dir, read-only, so cadvisor sees every
-    # container and not only its own (verified empty without, 2026-09-22).
-    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy"]
+    # root, to read the Docker socket
+    user: "0"
+    mem_limit: 150m
+    command: ["--config=/etc/otel/config.yaml"]
     volumes:
-      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./otel/config.yaml:/etc/otel/config.yaml:ro
+      - otel-queue:/queue
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /:/rootfs:ro
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
-      - /var/lib/docker:/var/lib/docker:ro
-      - /dev/disk:/dev/disk:ro
+      - /:/hostfs:ro
     expose:
       - "4317"
       - "4318"
 
-  # Opens an outbound tunnel so Grafana Cloud's Postgres data source can query
-  # fd-postgres; nothing listens on the box.
-  fd-pdc:
-    image: grafana/pdc-agent:latest
-    container_name: fd-pdc
-    restart: unless-stopped
-    env_file: /etc/fd/secrets.env
-    command: ["-token", "${GRAFANA_PDC_TOKEN}", "-cluster", "prod-us-west-0", "-gcloud-hosted-grafana-id", "1840239"]
-
 volumes:
   caddy-data:
   caddy-config:
+  otel-queue:

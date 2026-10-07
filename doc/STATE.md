@@ -162,7 +162,8 @@ closing by itself after ten seconds. Each answer is one row in the new `reports`
 sent (with the words) or declined (without them). The coach page has a "Bug reports" setting:
 ask me, or always send. An exception reporter, which raised the sheet and wrote rows for errors
 on the page and the server, was built and removed the same night, because Grafana Faro (the
-page) and Alloy (the server's logs) already hold every error; a migration deleted the rows it
+page) and Alloy (the server's logs) already held every error (both replaced by FD-374,
+doc/MONITORING.md); a migration deleted the rows it
 had written. Every server answer now carries an `X-Request-Id` naming its log lines, and source
 maps are built hidden, never served, and kept 90 days with the release run.
 
@@ -277,7 +278,8 @@ rather than twelve, and every deploy keeps the old container answering until the
 healthy (106 probes during a roll, none failed). Production is where the beta iterates: a change
 to the web pages is copied into the running container while the image rebuilds behind it.
 
-**Later on 2026-09-22.** Observability left Datadog for Grafana Cloud Free, which costs nothing
+**Later on 2026-09-22.** Observability left Datadog for Grafana Cloud Free (left in turn for
+the box's disk and Patrick's laptop by FD-374, doc/MONITORING.md), which costs nothing
 and covers figures, logs, traces and browser sessions [R-0370]; no health information of any kind
 reaches any of them. Every coach call now reads the fixed coaching text and the tool definitions
 from the model's cache, and each step of a turn reuses the steps before it: measured live, a step

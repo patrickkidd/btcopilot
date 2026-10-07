@@ -661,8 +661,8 @@ RULINGS_TO_APPEND_2026-09-25.md and session-dc02180f/MIGRATION_PLAN.md.
 **Status:** the app is live at https://familydiagram.com/app with its certificate, its database
 and Patrick's account, at commit ec757d5 and migration 1b00000000ad since 2026-09-25, on its
 own production key; he has chatted with the coach from his phone, and the invite mail has been
-sent and received. Deploys roll without dropping a request. Datadog is gone and Grafana Cloud is
-live in its place. Every coach call now reads most of its words from the model's cache and writes
+sent and received. Deploys roll without dropping a request. Datadog is gone; Grafana Cloud replaced
+it and FD-374 then replaced Grafana Cloud with the box's own disk and Patrick's laptop. Every coach call now reads most of its words from the model's cache and writes
 what it cost to a table. fdserver is out of this ticket and the Pro backend has its own
 maintenance branch. A second session owns the dashboards, the command line the bot drives and the
 per-call cost rows; it shares this branch and commits within minutes of each change. Since
@@ -684,7 +684,8 @@ everything else on familydiagram.com keeps redirecting to alaskafamilysystems.co
 ruled Datadog [R-0328] and this session moved it to Grafana Cloud Free, which covers metrics,
 logs, traces and browser sessions at no cost and is the stack Patrick already runs at work
 [R-0370]; self-hosting the stores on the 2 GB box and running them on his laptop were both set
-aside. No health information of any kind goes into a log, a metric, a trace or a session
+aside then. On 2026-10-06 (FD-374) the laptop was chosen after all, because Cloud keeps only
+14 days: doc/MONITORING.md. No health information of any kind goes into a log, a metric, a trace or a session
 recording.
 Added 2026-09-25, not yet numbered: production and testing use separate Anthropic keys — the box
 runs on the new production key and the old key is off it, every test path spends the testing
@@ -760,7 +761,8 @@ updatekeys`, because it writes the secret store, and `docker compose pull` and `
 because that is a production deploy. Production reads on the box are refused to sub-agents too.
 Those run at the top level on Patrick's direct grant.
 **Lives in:** deploy/ (compose, Caddyfile, secrets template, README, the release workflow
-and the four appcast feeds); doc/PLATFORM_BUILD.md; doc/archive/2026-09-DATADOG.md;
+and the four appcast feeds); doc/PLATFORM_BUILD.md; doc/MONITORING.md (FD-374: monitoring
+moves off Grafana Cloud to the box's disk and Patrick's laptop); doc/archive/2026-09-DATADOG.md;
 private/prompts/ and private/oracle/, encrypted; the Bedrock path in btcopilot/provider.py,
 btcopilot/llmutil.py, btcopilot/shadow.py (the expiry check that cleans a stale alias),
 btcopilot/tests/test_provider.py, doc/SETUP.md section 6,
@@ -892,7 +894,7 @@ list`; doc/FEEDBACK_LOOPS.md row 9.
 production yet.
 **Decided:** a modal sheet from the bottom, only from the coach's offers, never touching the
 thread; one row per answer in the `reports` table, sent or declined; errors in the code are
-Grafana's (Faro and Alloy), never a report [queued R-0615].
+logs (the page's posted to `/app/browser-errors` since FD-374, the server's in its own log), never a report [queued R-0615].
 **Open:** (1) [build] the beta's forced send, "Don't send" disabled on the bug sheet and a declined
 bug refused by the server, is on branch FD-365, not deployed; (2) [build] the report route's limit
 is held in server memory; (3) [verify] a real turn on production offering a report.

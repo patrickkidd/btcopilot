@@ -1,0 +1,80 @@
+name: fd-monitoring
+
+x-store: &store
+  restart: unless-stopped
+
+x-required: ${GF_SECURITY_ADMIN_PASSWORD:?set in deploy/laptop/.env}${GRAFANA_PG_PASSWORD:?set in deploy/laptop/.env}
+
+services:
+  vm:
+    <<: *store
+    image: victoriametrics/victoria-metrics:v1.153.0
+    command:
+      - -storageDataPath=/data
+      - -retentionPeriod=100y
+      - -dedup.minScrapeInterval=1ms
+      - -opentelemetry.usePrometheusNaming
+    volumes: ["${HOME}/fd-monitoring/vm:/data"]
+    ports: ["127.0.0.1:8428:8428"]
+
+  vl:
+    <<: *store
+    image: victoriametrics/victoria-logs:v1.53.0
+    command:
+      - -storageDataPath=/data
+      - -retentionPeriod=100y
+      - -journald.streamFields=_HOSTNAME,_SYSTEMD_UNIT,CONTAINER_NAME
+    volumes: ["${HOME}/fd-monitoring/vl:/data"]
+    ports: ["127.0.0.1:9428:9428"]
+
+  vt:
+    <<: *store
+    image: victoriametrics/victoria-traces:v0.12.0
+    command:
+      - -storageDataPath=/data
+      - -retentionPeriod=100y
+      - -search.streamFieldsLookbehind=720h
+      - -search.fieldsLookbehind=720h
+    volumes: ["${HOME}/fd-monitoring/vt:/data"]
+    ports: ["127.0.0.1:10428:10428"]
+
+  grafana:
+    <<: *store
+    image: grafana/grafana:12.2.0
+    environment:
+      - GF_INSTALL_PLUGINS=victoriametrics-logs-datasource
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_SECURITY_ADMIN_PASSWORD
+      - GRAFANA_PG_PASSWORD
+    volumes:
+      - "${HOME}/fd-monitoring/grafana:/var/lib/grafana"
+      - "./grafana/datasources.yml:/etc/grafana/provisioning/datasources/fd.yml:ro"
+      - "./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/fd.yml:ro"
+      - "../grafana:/var/lib/fd-dashboards:ro"
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on: [vm, vl, vt]
+
+  fd-pg-interim:
+    restart: unless-stopped
+    profiles: [interim]
+    build: ./link
+    command: ["sh", "/interim-link.sh"]
+    environment:
+      FD_BOX_ADMIN: familydiagram.com
+      LISTEN: 0.0.0.0
+    volumes:
+      - "./interim-link.sh:/interim-link.sh:ro"
+      - "${HOME}/.ssh/id_rsa:/root/.ssh/id_rsa:ro"
+      - "${HOME}/.ssh/known_hosts:/root/.ssh/known_hosts:ro"
+    ports: ["127.0.0.1:15432:15432"]
+
+  fd-link:
+    restart: always
+    profiles: [link]
+    build: ./link
+    environment:
+      FD_BOX: ${FD_BOX:?set in deploy/laptop/.env}
+    volumes: ["${HOME}/fd-monitoring/link:/link"]
+    ports: ["127.0.0.1:15432:15432"]
+    depends_on: [vm, vl, vt]
