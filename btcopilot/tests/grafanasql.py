@@ -1,6 +1,6 @@
 """A panel's SQL as Grafana's Postgres data source sends it, and a small
 dataset to run every board on, so a query that fails on Postgres fails here
-and not on the hosted board.
+and not on the board in the laptop's Grafana.
 
 `expand` writes out the time macros and the board's variables the way Grafana
 does; `FRAGMENTS` holds the shared tables the first-wave panels open with
