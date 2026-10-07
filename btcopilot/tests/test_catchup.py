@@ -474,7 +474,7 @@ def test_a_todo_the_person_said_is_planned_and_one_shown_done_is_skipped(
     assert stored(kin) == before
 
 
-def test_no_more_than_three_todos_are_kept_per_record(flask_app, tmp_path, kin, past):
+def test_the_three_todos_kept_are_the_most_recent(flask_app, tmp_path, kin, past):
     # R-0803
     session = db.session.get(Discussion, past["session"])
     told = [
@@ -487,4 +487,28 @@ def test_no_more_than_three_todos_are_kept_per_record(flask_app, tmp_path, kin, 
     )
 
     assert plan["counts"]["todos"] == 3
-    assert [d["reason"] for d in plan["dropped"]] == ["more than 3 todos"]
+    assert [(d["statement"], d["reason"]) for d in plan["dropped"]] == [
+        (told[0].id, "more than 3 todos")
+    ]
+
+
+def test_a_todo_in_the_words_of_a_question_still_open_is_dropped(flask_app, tmp_path, kin, past):
+    # R-0803, R-0815
+    filed(kin, "q1", "alive", "person", "2", state="asked")
+    session = db.session.get(Discussion, past["session"])
+    told = says(session, "I'll ask if Ash is alive.", "2026-09-13T10:00")
+    plan = dry(flask_app, tmp_path, calling(todo(told.id, "Asked q1?")))
+
+    assert plan["counts"]["todos"] == 0
+    assert [d["reason"] for d in plan["dropped"]] == ["those words are already q1, asked"]
+
+
+def test_scratch_records_and_claude_test_accounts_are_left_out(flask_app, tmp_path, kin, past):
+    # R-0803
+    kin.user.username = "claude-test+1@example.com"
+    db.session.commit()
+    assert catch_up(flask_app, "--plans", str(tmp_path), model=Model()) == []
+    kin.user.username = "ann@example.com"
+    kin.scratch = True
+    db.session.commit()
+    assert catch_up(flask_app, "--plans", str(tmp_path), model=Model()) == []

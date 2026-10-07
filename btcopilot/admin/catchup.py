@@ -28,7 +28,7 @@ from btcopilot.coachmodel import model_for
 from btcopilot.coachturn import drain
 from btcopilot.extensions import db
 from btcopilot.metered import Metered
-from btcopilot.models import Author, Change, Diagram, Discussion, Purpose, Statement
+from btcopilot.models import Author, Change, Diagram, Discussion, Purpose, Statement, User
 from btcopilot.prompts import get_agent_prompt
 from btcopilot.recordtext import outline
 from btcopilot.schema import (
@@ -41,6 +41,7 @@ from btcopilot.schema import (
     QuestionState,
 )
 from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
+from btcopilot.tuning import TEST_ACCOUNTS
 
 TURN = "catch-up:{}"
 SAID = 120
@@ -78,7 +79,9 @@ START = (
     "4. Each thing the person said they would find out or do themselves, such "
     "as asking a relative or digging out old papers: kind todo, state held, in "
     "the person's own words, statement the message that said it. When a later "
-    "message of theirs reports it done, give that message as answer too.\n"
+    "message of theirs reports it done, give that message as answer too. "
+    "Leave out one whose answer a question the map shows still open already "
+    "asks for, in any words.\n"
     "Propose nothing the map already holds, open or closed. Change nothing "
     "else.\n\n{transcript}"
 )
@@ -363,6 +366,26 @@ def part_of(args: dict) -> Part | None:
     return None
 
 
+def order(name: str, args: dict) -> int:
+    """The questions asked again by the coach's message, oldest first, after
+    the rest; todos newest first, so the cap keeps the most recent."""
+    if name == ToolName.SetQuestion:
+        return args.get("statement") or 0
+    if args.get("kind") == QuestionKind.Todo:
+        return -(args.get("statement") or 0)
+    return 0
+
+
+def real() -> list[Diagram]:
+    """Every record but the scratch copies and the claude-test accounts'."""
+    return (
+        Diagram.query.join(User, Diagram.user_id == User.id)
+        .filter(Diagram.scratch.is_(False), User.username.notlike(TEST_ACCOUNTS))
+        .order_by(Diagram.id)
+        .all()
+    )
+
+
 def proposals(
     diagram: Diagram,
     data: DiagramData,
@@ -380,9 +403,7 @@ def proposals(
     first = record.asked_in(diagram.id)
     zone = Toolbox(diagram.id, TURN.format(diagram.id), user_id=diagram.user_id).zone
     facts, stories, todos, again, dropped = [], [], [], [], []
-    ordered = sorted(
-        calls, key=lambda c: (c[0] == ToolName.SetQuestion and c[1].get("statement")) or 0
-    )
+    ordered = sorted(calls, key=lambda c: order(*c))
     for name, args in ordered:
         if name == ToolName.SetQuestion:
             entry, reason = asked_again(held, args, coach, first, counted, zone)
@@ -671,7 +692,7 @@ def catch_up(diagram_id, apply, plan_paths, plans):
         rows = [row for path in plan_paths for row in applied(path)]
     else:
         columns.append("plan")
-        diagrams = [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
+        diagrams = [d for d in real() if diagram_id in (None, d.id)]
         rows = []
         for diagram in diagrams:
             path = planned(diagram, plans)
