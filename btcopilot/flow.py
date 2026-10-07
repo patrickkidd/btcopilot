@@ -457,6 +457,11 @@ FACT_ASKS = (
     "born",
     "name",
 )
+# "When you say ..." opens a question on the person's own words, not a time.
+REFLECTS = re.compile(
+    r"\bwhen you (?:say|said|talk about|talked about|mention|mentioned|tell me|told me)\b",
+    re.I,
+)
 LINES = {
     "US": Line("US", "call or text 988", ("988",), "911"),
     "CA": Line("CA", "call or text 988", ("988",), "911"),
@@ -954,8 +959,11 @@ def asks(sentence: str) -> bool:
 
 
 def fact_questions(reply: str) -> int:
+    """Questions asking for a date or a fact. "When you say you want to die,
+    what is that like?" reflects the person's own words, so its "when" asks
+    for no date."""
     return sum(
-        asks(s) and bool(DATED.search(s) or found(s, FACT_ASKS))
+        asks(s) and bool(DATED.search(s) or found(REFLECTS.sub("", s), FACT_ASKS))
         for s in sentences(reply)
     )
 

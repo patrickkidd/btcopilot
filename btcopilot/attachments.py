@@ -35,6 +35,7 @@ CHUNK_PAGES = 25
 MAX_SIDE = 1568
 READ_TOKENS = 16000
 CUT_OFF = "max_tokens"
+DECLINED = "refusal"
 
 KINDS_SAID = "PDF, JPEG, PNG, HEIC, text and Markdown files"
 UNKNOWN = f"The app reads {KINDS_SAID}; this file is none of those."
@@ -42,6 +43,7 @@ TOO_BIG = "That file is over 20 MB; the app reads files up to 20 MB."
 TOO_LONG = f"That PDF has more than {MAX_PAGES} pages; the app reads up to {MAX_PAGES}."
 UNREADABLE = "The app could not open that file."
 CUT = "That file holds more than the app can read in one go; send it in parts."
+REFUSED = "The app could not read that file."
 
 
 class Kind(enum.StrEnum):
@@ -112,6 +114,8 @@ class File:
                 said = meter.read(part, prompts.files().fragment("attachment"), READ_TOKENS)
                 if said.stop == CUT_OFF:
                     raise InternalServerError(CUT)
+                if said.stop == DECLINED or not said.words.strip():
+                    raise InternalServerError(REFUSED)
                 words.append(said.words)
         finally:
             TokenMeter.charge(user_id, meter.spent)

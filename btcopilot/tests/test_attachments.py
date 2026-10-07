@@ -238,6 +238,22 @@ def test_a_long_pdf_is_read_in_parts_of_25_pages_and_the_texts_joined(
     assert stored().attachment_text == "\n\n".join([READ] * 3)
 
 
+@pytest.mark.parametrize("stop, words", [("refusal", "I can't help with that."), ("end_turn", " ")])
+def test_a_read_the_model_declines_or_leaves_empty_fails_the_send_and_keeps_nothing(
+    web, token, monkeypatch, stop, words
+):
+    # R-0829
+    monkeypatch.setattr(
+        "btcopilot.metered.claude_text_sync",
+        lambda content, **kw: Text(words, Spent(), Served("claude-opus-5-5"), stop),
+    )
+    coach(monkeypatch, Model(said("Thank you.")))
+    response = send(web, token, "grave.jpg", photo("JPEG"))
+    assert response.status_code == 500
+    assert attachments.REFUSED in response.get_data(as_text=True)
+    assert Statement.query.count() == 0
+
+
 def test_a_part_cut_off_at_the_output_limit_fails_the_read_and_keeps_nothing(
     web, token, monkeypatch
 ):

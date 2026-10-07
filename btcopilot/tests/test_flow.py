@@ -117,6 +117,14 @@ def test_advice():
     assert flow.advice("You could try writing it down.") == 1
 
 
+def test_a_question_on_the_persons_own_words_asks_no_fact():
+    # R-0810, R-0811
+    assert flow.fact_questions("When you say you want to die, what is that like for you?") == 0
+    assert flow.fact_questions("When you told me it has been bad, what did you mean?") == 0
+    assert flow.fact_questions("When did the divorce happen?") == 1
+    assert flow.fact_questions("When you say that, when did it start?") == 1
+
+
 def test_teaching():
     # R-0669
     assert (
