@@ -136,11 +136,13 @@ def apply(
         )
 
 
-def preview(diagram_id: int, deltas: list[dict], *, author: Author) -> None:
+def preview(
+    diagram_id: int, deltas: list[dict], *, author: Author, turn_id: str = ""
+) -> None:
     """Raise Invalid where `apply` would refuse these deltas; writes nothing."""
     data = diagramjson.loads(db.session.get(Diagram, diagram_id).data)
     applied = [d for delta in deltas for d in _apply(data, delta)]
-    _validate(data, compress(applied), author, False)
+    _check(data, compress(applied), author, turn_id, False)
 
 
 def undo(
@@ -197,7 +199,10 @@ def rewind(data: dict, deltas: list[dict]):
     one for one: a removal's cascade is logged delta by delta, so nothing here
     cascades. A thing the row made comes off whole, whether it was logged as one
     add or, as rows written before adds were logged whole did, as field sets on
-    a new id, which once taken back leave it holding nothing but that id."""
+    a new id, which once taken back leave it holding nothing but that id. An
+    event taken back to no kind did not exist yet, since every write gives one
+    a kind, and comes off whole even where a field written without a change
+    row, such as a backfilled title, is still on it."""
     for delta in reversed(deltas):
         _back(data, delta)
     for kind, item_id in {
@@ -206,7 +211,9 @@ def rewind(data: dict, deltas: list[dict]):
         if d["field"] is not None and d["item_kind"] != ItemKind.Diagram.value
     }:
         item = _find(data, kind, item_id)
-        if all(value in (None, []) for field, value in item.items() if field != "id"):
+        if all(value in (None, []) for field, value in item.items() if field != "id") or (
+            kind is ItemKind.Event and item.get("kind") is None
+        ):
             _collection(data, kind).remove(item)
 
 
@@ -575,6 +582,28 @@ def _removes(delta: dict) -> bool:
     return delta["field"] is None and delta["after"] is None
 
 
+def _check(
+    data: dict,
+    deltas: list[dict],
+    author: Author,
+    turn_id: str,
+    undoing: bool,
+    refile: bool = False,
+):
+    """The stored-date repair turns a date into text and nothing else, so it
+    answers only to the date rule, and an older fault elsewhere in the same
+    event does not block it; taking it back puts the stored date back as it
+    was [Oracle: R-0084]."""
+    if not turn_id.removeprefix("undo:").startswith(DATE_REPAIR):
+        _validate(data, deltas, author, undoing, refile)
+        return
+    other = [d for d in deltas if d["item_kind"] != ItemKind.Event.value or d["field"] not in DATES]
+    if other:
+        raise ValueError(f"the date repair writes event dates only, not {other[0]}")
+    if not undoing:
+        _dates(data, deltas)
+
+
 def _validate(
     data: dict, deltas: list[dict], author: Author, undoing: bool, refile: bool = False
 ):
@@ -615,6 +644,7 @@ def _validate(
     _values(data, deltas)
     _words(data, deltas)
     _moves(data, deltas)
+    _dates(data, deltas)
     _twins(data, deltas)
     _people(data, deltas)
     _structure(data, deltas)
@@ -652,6 +682,8 @@ WORDED_KINDS = (EventKind.Noted.value, EventKind.Shift.value)
 PLACEHOLDERS = {"", "new event", "unknown"}
 TRIANGLES = (RelationshipKind.Inside.value, RelationshipKind.Outside.value)
 DATES = ("dateTime", "endDateTime")
+#: The turn id of the stored-date repair, `flask admin diagrams dates`.
+DATE_REPAIR = "dates:"
 #: Each closed field of an event, the values it may hold, and what they are called.
 EVENT_SETS = (
     ("kind", KINDS, "event kinds"),
@@ -770,8 +802,7 @@ def _moves(data: dict, deltas: list[dict]):
     """A noted event and a shift say in words what happened under a short
     title (R-0681), a shift says which way something moved, and only a shift
     carries a move: a birth, marriage or death is not itself a shift (R-0037,
-    R-0364, R-0375). Dates are dates, and an event ends after it begins.
-    Checked on the events this write touches, the way the cluster floor is."""
+    R-0364, R-0375). Checked on the events this write touches, the way the cluster floor is."""
     for event_id in _touched(deltas):
         event = _find(data, ItemKind.Event, event_id)
         if event is None:
@@ -818,6 +849,15 @@ def _moves(data: dict, deltas: list[dict]):
                 "Only a noted event says it records schooling, work, health or "
                 "where someone lived.",
             )
+
+
+def _dates(data: dict, deltas: list[dict]):
+    """Dates are YYYY-MM-DD text, and an event ends after it begins. Checked on
+    the events this write touches."""
+    for event_id in _touched(deltas):
+        event = _find(data, ItemKind.Event, event_id)
+        if event is None:
+            continue
         for field in DATES:
             value = event.get(field)
             if value and not (isinstance(value, str) and parse_date(value)):
@@ -1604,7 +1644,7 @@ def _commit(
     undoing=False,
     refile=False,
 ) -> Change:
-    _validate(data, deltas, author, undoing, refile)
+    _check(data, deltas, author, turn_id, undoing, refile)
     version = db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)

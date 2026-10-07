@@ -34,7 +34,7 @@ The case report's cards in each record.
 
 Put each family's raised guesses and its questions on the case report's cards, and add the question about the person's own part where the record has none, as the coach would have had the report been there from the start. The dry run makes one model call per family that has a raised guess or question on no card that came in after the newest card was set, goes to the model-calls ledger, prints each card before and after, and saves the plan to a file; --apply --plan writes exactly that plan, checked again, with no model call.
 
-Changes something: needs `--yes`.
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
 
 | Argument | What it is |
 |---|---|
@@ -124,9 +124,9 @@ The family records.
 
 ### `flask admin diagrams dates`
 
-List each event date stored as a Qt date object rather than text, with the text it becomes, and why the record's rules would refuse the write when they would. --apply writes each record's dates the rules take as one change row that `diagrams undo` takes back.
+List each event date stored as a Qt date object rather than text, with the text it becomes, and why the date rule would refuse the write when it would; nothing else in the event is checked or changed. --apply writes each record's dates the rule takes as one change row that `diagrams undo` takes back.
 
-Changes something: needs `--yes`.
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
 
 | Argument | What it is |
 |---|---|
@@ -156,7 +156,7 @@ Every record, with how much is in it.
 
 Regroup each record whose events changed since its last grouping, or that has events to group and no groups. The dry run lists them and makes no model call; --apply makes the grouping calls a turn makes, one or two per record, each in the model-calls ledger, and writes each record's new grouping as one change row that `diagrams undo` takes back. A record whose answers are both refused gets the rules' groups under their years, and `failed` says so.
 
-Changes something: needs `--yes`.
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
 
 | Argument | What it is |
 |---|---|
@@ -423,7 +423,7 @@ Changes something: needs `--yes`.
 
 Bring each record's questions to where they would stand had the coach's question rules been there from the first session: a fact question filed on the wrong kind of thing moves to the right person or pair-bond, a fact the person already said is kept as a question already answered, a story the talk moved past is kept to come back to, and each day the coach asked an open question again and the person passed over it is kept on that question. Chat messages are never changed. The dry run makes one model call per record with a session, goes to the model-calls ledger, and saves a plan a person can read; --apply --plan writes exactly that plan, each item one change row that `diagrams undo` takes back, with no model call.
 
-Changes something: needs `--yes`.
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
 
 | Argument | What it is |
 |---|---|

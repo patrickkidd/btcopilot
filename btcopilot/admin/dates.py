@@ -14,8 +14,6 @@ from btcopilot.extensions import db
 from btcopilot.models import Author, Diagram
 from btcopilot.schema import ItemKind, parse_date
 
-TURN = "dates:{}:{}"
-
 
 def qt_dates(diagram: Diagram) -> list[dict]:
     return [
@@ -41,12 +39,13 @@ def qt_dates(diagram: Diagram) -> list[dict]:
 @rows_option
 def dates(diagram_id, apply):
     """List each event date stored as a Qt date object rather than text, with
-    the text it becomes, and why the record's rules would refuse the write when
-    they would. --apply writes each record's dates the rules take as one change
+    the text it becomes, and why the date rule would refuse the write when it
+    would; nothing else in the event is checked or changed. --apply writes each record's dates the rule takes as one change
     row that `diagrams undo` takes back."""
     columns = ["diagram", "event", "field", "before", "after", "refused", "change"]
     found = [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
     stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%S")
+    turn = record.DATE_REPAIR + "{}:" + stamp
     rows = []
     for diagram in found:
         fixes = qt_dates(diagram)
@@ -63,7 +62,9 @@ def dates(diagram_id, apply):
         ]
         refused = change = None
         try:
-            record.preview(diagram.id, deltas, author=Author.Coach)
+            record.preview(
+                diagram.id, deltas, author=Author.Coach, turn_id=turn.format(diagram.id)
+            )
         except record.Invalid as e:
             refused = str(e)
         if apply and refused is None:
@@ -71,7 +72,7 @@ def dates(diagram_id, apply):
                 diagram.id,
                 deltas,
                 author=Author.Coach,
-                turn_id=TURN.format(diagram.id, stamp),
+                turn_id=turn.format(diagram.id),
                 user_id=diagram.user_id,
             ).id
             db.session.commit()

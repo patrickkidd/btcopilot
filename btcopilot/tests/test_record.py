@@ -1042,3 +1042,18 @@ def test_taking_back_an_event_made_by_field_sets_then_given_targets_removes_it()
     record.rewind(data, targeted)
     record.rewind(data, made)
     assert data["events"] == []
+
+
+def test_taking_back_an_event_made_before_its_title_was_backfilled_removes_it():
+    # R-0596, R-0084
+    """Production FD-371: the titles backfill wrote titles without change
+    rows, so rewinding Patrick's record left 25 events holding a title and no
+    kind, and the replays started from them could not run the questions
+    catch-up."""
+    made = [
+        {"item_kind": "event", "item_id": 66, "field": field, "before": None, "after": after}
+        for field, after in (("kind", "noted"), ("person", 1), ("description", "told Lou"))
+    ]
+    data = {"events": [{"id": 66, "kind": "noted", "person": 1, "description": "told Lou", "title": "Told Lou"}]}
+    record.rewind(data, made)
+    assert data["events"] == []
