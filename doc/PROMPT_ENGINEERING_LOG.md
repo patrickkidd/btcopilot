@@ -2,9 +2,46 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-09-30 (the coach reads what is still unknown of the basic data)
+**Last Updated**: 2026-10-07 (the Executive Summary card)
 
 ---
+
+## FD-375 — the Executive Summary card (2026-10-07)
+
+**Change**: in the private impressions fragment, the `main_guess` value now describes the case
+report's first card, retitled Executive Summary [R-0821]: the thesis of the whole report in one
+short passage for the person; where they sit in the family; each hard stretch set beside what
+happened in the family in the months before it, both sides and the grandparents' generation, in
+date order, as closeness in time and never cause; ending on what does not fit yet and the two or
+three facts that would check the reading. Every date an event on the diagram, at least two of
+them other people's; never "you tend to" or "you always", never advice, never a count or a word
+of certainty; under 200 words. The `coach_guess` value now says that card holds the full reading
+the summary is the short form of, never the summary's sentences again, usually one, up to three
+[R-0732]. The public tool wording for `case_report_card` says the same in short.
+
+**Why**: Patrick read a sample summary written from his own record this way and ruled it a good
+reading: a timeline stitched into a new story, ending on curiosity rather than a hard, overfit
+prescription [R-0820]. Before, the two guess cards split one pool of impressions and read as two
+copies of the coach's opinion. Sources behind the wording: Bowen 1978 ch. 9 (a formulation over at
+least two generations; symptomatic eruptions timed with events in the nuclear and extended family;
+sibling position; never beyond noting a striking time sequence), Kerr and Bowen 1988 ch. 10 (a
+correlation is suggestive, not established), and Patrick's request of 2026-10-02 for an executive
+summary of the thesis across the sections. They are kept here, not in the fragment, which is sent
+whole to the model.
+
+**Left out**: the draft's clause on when the summary is replaced (after a date change or an added
+death, illness, marriage, separation or move); Patrick has not ruled on it. The fragment's general
+rule still holds: a revised impression on a card is put on the card again.
+
+**Eval**: `btcopilot/tests/live/test_executivesummary.py`, 2 of 3, on the Claude Code
+subscription ($0): 0 of 3 on the old prompt (each summary called the person's trouble a thing
+that "tends to show up" after a family change, or left out her sister), 3 of 3 on the new.
+
+**Open**: two cases of `test_casereportcards.py` that pass on the old prompt fail on the new, on
+the subscription. Asked for its main guess on a record with no grandparents and no brothers or
+sisters, the coach asks for them instead of putting a summary on the card (1 of 3, R-0709).
+Asked which of five raised guesses matter most, it puts none on the coach's guess card, which is
+now described as the full reading rather than the parts that matter most (0 of 3, R-0732).
 
 ## FD-366 — the coach reads what is still unknown of the basic data (2026-09-30)
 
