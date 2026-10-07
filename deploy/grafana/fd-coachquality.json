@@ -456,7 +456,7 @@
       },
       "type": "timeseries",
       "title": "When it puts two events side by side, does it ask or tell?",
-      "description": "Of coach sentences naming two different years, the share that is a question or is followed at once by one. Bowen: 9 of 12 as a question, 0 of 12 with a cause word; his side-by-sides join two event words with a time word rather than two years, so the share, not the form, is compared.",
+      "description": "Of coach sentences naming two different years, the share that is a question or is followed at once by one. Bowen: 9 of 12 as a question, 0 of 12 with a cause word; he sets two events side by side with a time word rather than two years, so the share, not the form, is compared.",
       "id": 4,
       "gridPos": {
         "h": 9,
