@@ -130,6 +130,21 @@ def test_a_card_written_after_the_change_makes_the_report_current_again(written,
     assert out_of_date(family) is None
 
 
+def test_the_coach_writing_one_card_again_leaves_the_others_out_of_date(web, past, written, family):
+    # R-0825, R-0826
+    impress(box(family, "r2"), text="The coach's own guess.", evidence=({"kind": "event", "id": written},))
+    card(family, "i2", "coach_guess", "c2")
+    moved(family, written, "e3", date="2005-01-01")
+    impress(box(family, "e3"), text="A guess on the new date.", evidence=({"kind": "event", "id": written},))
+    card(family, "i3", "main_guess", "e3")
+
+    assert out_of_date(family)["sentence"] == (
+        "The date of Wren's “Stopped sleeping well” in 2005 changed after the coach wrote this report."
+    )
+    rewrite(web, Model(calling(*FIVE)))
+    assert out_of_date(family) is None
+
+
 def test_the_timeline_says_what_put_the_report_out_of_date(web, written, family):
     # R-0826, R-0827
     happened(family, "death", "2019-03-01", person=2)

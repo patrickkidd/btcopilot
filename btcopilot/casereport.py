@@ -2,8 +2,8 @@
 changed since the coach wrote its cards (R-0827), and the rewrite of every card
 the coach writes at once, from the diagram, in one model call (R-0825).
 
-Out of date is a rule on the command log, no model: after the newest card
-was written, an event a card rests on changed its date or kind, or a death, a
+Out of date is a rule on the command log, no model: after any card on the
+report was last written, an event a card rests on changed its date or kind, or a death, a
 marriage, a separation, a divorce or a shift with a symptom was added. The
 rewrite runs in the worker like a coach turn and ends in a done or failed
 event on the turn log; the page polls its state.
@@ -75,14 +75,14 @@ class Sessionless(Exception):
     """A family with no session has no case report to write again."""
 
 
-def _carded(delta: dict) -> bool:
-    """A delta that put an entry on a case report card."""
+def _carded(delta: dict) -> str | None:
+    """The case report card a delta put an entry on, or None."""
     if delta["item_kind"] != ItemKind.Question.value:
-        return False
+        return None
     if delta["field"] == CARD:
-        return delta["after"] is not None
+        return delta["after"]
     whole = delta["field"] is None and delta.get("before") is None and delta["after"]
-    return bool(whole and whole.get(CARD))
+    return whole.get(CARD) if whole else None
 
 
 def _name(people: dict, pid) -> str | None:
@@ -128,17 +128,23 @@ def _why(delta: dict, cited: set[str], events: dict, people: dict) -> str | None
 
 
 def stale(diagram_id: int, data: DiagramData) -> dict | None:
-    """The newest change since the coach last wrote a card that puts the case
-    report out of date, or None: its change row id, when, and one sentence
-    naming it. A change taken back, and the undo itself, count for nothing."""
+    """The newest change that puts the case report out of date, or None: its
+    change row id, when, and one sentence naming it. A change counts while any
+    card on the report was last written before it, so the coach writing one
+    card again leaves the others out of date. A change taken back, and the
+    undo itself, count for nothing."""
     taken = record.undone(diagram_id)
     rows = [
         c
         for c in Change.query.filter_by(diagram_id=diagram_id).order_by(Change.id)
         if c.id not in taken and not c.turn_id.startswith("undo:")
     ]
-    written = [i for i, c in enumerate(rows) if any(_carded(d) for d in c.deltas)]
-    if not written:
+    shown = {q[CARD] for q in data.questions if q.get(CARD)}
+    last = {}
+    for i, change in enumerate(rows):
+        for card in shown.intersection(map(_carded, change.deltas)):
+            last[card] = i
+    if not last:
         return None
     cited = {
         str(one["id"])
@@ -149,7 +155,8 @@ def stale(diagram_id: int, data: DiagramData) -> dict | None:
     }
     events = {str(e["id"]): e for e in data.events}
     people = {str(p["id"]): p for p in data.people}
-    for change in reversed(rows[written[-1] + 1 :]):
+    oldest = min(last.values())
+    for change in reversed(rows[oldest + 1 :]):
         for delta in reversed(change.deltas):
             said = _why(delta, cited, events, people)
             if said:
