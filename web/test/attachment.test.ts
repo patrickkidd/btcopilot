@@ -4,7 +4,7 @@ import { fileChip, Picked, readSheet } from "../src/attachment";
 
 const pdf = () => new File(["%PDF"], "Mom's letter.pdf", { type: "application/pdf" });
 
-// R-0713
+// R-0828
 it("keeps one file for the next message, a second pick taking the first one's place, and sends it once", () => {
   const box = new Picked();
   expect(box.take()).toBeNull();
@@ -16,7 +16,7 @@ it("keeps one file for the next message, a second pick taking the first one's pl
   expect(box.take()).toBeNull();
 });
 
-// R-0713
+// R-0828
 it("sends the words, the time zone and the file as one form", () => {
   const form = said("Here is her letter", "America/Anchorage", pdf());
   expect(form.get("statement")).toBe("Here is her letter");
@@ -24,7 +24,7 @@ it("sends the words, the time zone and the file as one form", () => {
   expect((form.get("file") as File).name).toBe("Mom's letter.pdf");
 });
 
-// R-0713
+// R-0829, R-0830
 it("shows the file's name still while it is read, and once read a chip that opens what the coach read", () => {
   const reading = fileChip("Mom's letter.pdf");
   expect(reading).toContain('class="chip file reading"');

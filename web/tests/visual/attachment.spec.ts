@@ -58,7 +58,7 @@ async function serve(page: Page): Promise<{ release: () => void; sent: () => str
 
 test.use({ storageState: stateFor("moves") });
 
-// R-0713
+// R-0828, R-0829, R-0830
 test("a file picked or dropped goes with the message, reads, and shows what the coach read; one refused is said in a toast", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
