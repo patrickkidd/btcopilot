@@ -71,9 +71,9 @@ it("never grows a small picture past its own size, and never shrinks its names u
   expect(NAME * fitScale(L, 1, 1)).toBeCloseTo(FIT);
 });
 
-// put full screen, Patrick's words of 2026-10-07, "The Diagram needs to scale up to fill available space"
+// "When showing the full Family Diagram view, I think it should just automatically scale to fill all available space." (Patrick, 2026-10-07)
 // R-0796
-it("grows a small picture to fill the space only when given no ceiling, as full screen gives it", () => {
+it("grows a small picture to fill the space only when given no ceiling, as the Family view gives it; the play-by-play keeps its own size", () => {
   const L = told.layout;
   expect(fitScale(L, L.vw * 3, L.h * 2, Infinity)).toBeCloseTo(2);
   expect(fitScale(L, L.vw * 3, L.h * 2)).toBe(1);

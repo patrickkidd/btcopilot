@@ -381,23 +381,20 @@ export class Drawer {
     // on a phone, fitted whole, it always has them, and takes the
     // grandparents of someone with children only where they leave everyone
     // as large (R-0787, R-0791, R-0796)
-    if (this.phone()) return kids && this.fits(L) < this.fits(three.layout) ? three : four;
+    // as large at their own size: past it, fewer people would always be larger
+    if (this.phone()) return kids && this.fits(L, 1) < this.fits(three.layout, 1) ? three : four;
     return Math.min(kids ? lv.clientWidth / L.vw : Infinity, tall / L.h) >= leastScale(L, padding) ? four : three;
   }
 
   /** The scale that fits `L` whole in the room the drawer has under its
    * years line and over the longest caption, both ways (R-0796), as tall as
    * it is with its people in the middle, so there is room to centre them
-   * however far its marks reach on one side (R-0797). Put full screen, the
-   * picture grows past its own size to fill it (R-0796; Patrick, 2026-10-07). */
-  private fits(L: Layout): number {
+   * however far its marks reach on one side (R-0797). The Family view's
+   * picture grows past its own size to fill it (R-0796; Patrick, 2026-10-07);
+   * `most` caps it at its own size. */
+  private fits(L: Layout, most = this.told!.whole ? Infinity : 1): number {
     const lv = this.panel.querySelector<HTMLElement>(".lv")!;
-    return fitScale({ ...L, h: tall(L) }, lv.clientWidth, this.room(), this.isFull() ? Infinity : 1);
-  }
-
-  /** The Family view put full screen, by the browser or over the whole page. */
-  private isFull(): boolean {
-    return !!document.fullscreenElement?.contains(this.panel) || this.panel.classList.contains("full");
+    return fitScale({ ...L, h: tall(L) }, lv.clientWidth, this.room(), most);
   }
 
   /** The years line as wide as the room it stands in, its marks kept round:

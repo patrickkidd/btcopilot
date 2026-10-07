@@ -21,6 +21,22 @@ const settle = async (page: Page) => {
 
 const drawer = (page: Page) => page.locator("#pbp");
 
+/** The Family view's picture scale against its own size, whether it is whole
+ * in its box, and the years line's width against its room. */
+const filled = (page: Page) =>
+  drawer(page).evaluate((p) => {
+    const svg = p.querySelector<SVGSVGElement>(".draw svg")!;
+    const [d, wire] = [p.querySelector(".draw")!, p.querySelector(".wire")!];
+    const dot = wire.querySelector(".wnow")!.getBoundingClientRect();
+    return {
+      scale: parseFloat(svg.style.width) / svg.viewBox.baseVal.width,
+      whole: d.scrollWidth <= d.clientWidth + 1 && d.scrollHeight <= d.clientHeight + 1,
+      line: wire.querySelector("svg")!.getBoundingClientRect().width,
+      room: wire.clientWidth,
+      round: Math.abs(dot.width - dot.height),
+    };
+  });
+
 /** The stored play message, the one the session already holds. */
 const stored = (page: Page) => page.locator(".bub.coach[data-play]").last();
 
@@ -1627,40 +1643,46 @@ test.describe("the Family view on a desktop window", () => {
     await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(false);
   });
 
-  // full screen, Patrick's words of 2026-10-07, "The Diagram needs to scale up to fill available space. And then the timeline should really stretch out to fit available horizontal space."
+  // "When showing the full Family Diagram view, I think it should just automatically scale to fill all available space. Not just when you click the full screen button." and "the timeline should really stretch out to fit available horizontal space." (Patrick, 2026-10-07)
   // R-0796
-  test("full screen grows the picture past its own size to fill the room, the years line spanning the width, and back to its own size after", async ({ page }, info) => {
+  test("grows the picture past its own size to fill the room, full screen or not, the years line spanning the width", async ({ page }, info) => {
     test.skip(info.project.name !== "phone", "the size is the describe's own");
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
-    const seen = () =>
-      drawer(page).evaluate((p) => {
-        const svg = p.querySelector<SVGSVGElement>(".draw svg")!;
-        const [d, wire] = [p.querySelector(".draw")!, p.querySelector(".wire")!];
-        const line = wire.querySelector("svg")!.getBoundingClientRect();
-        const dot = wire.querySelector(".wnow")!.getBoundingClientRect();
-        return {
-          scale: parseFloat(svg.style.width) / svg.viewBox.baseVal.width,
-          whole: d.scrollWidth <= d.clientWidth + 1 && d.scrollHeight <= d.clientHeight + 1,
-          line: line.width,
-          room: wire.clientWidth,
-          round: Math.abs(dot.width - dot.height),
-        };
-      });
-    const before = await seen();
-    expect(before.scale).toBeLessThanOrEqual(1);
+    const before = await filled(page);
+    expect(before.scale).toBeGreaterThan(1);
+    expect(before.whole).toBe(true);
     expect(before.line).toBeCloseTo(before.room, 0);
+    expect(before.round).toBeLessThan(0.5);
     await drawer(page).locator(".foot .full").click();
-    await expect.poll(async () => (await seen()).scale).toBeGreaterThan(1);
-    const full = await seen();
+    await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true);
+    const full = await filled(page);
+    expect(full.scale).toBeGreaterThanOrEqual(before.scale);
     expect(full.whole).toBe(true);
     expect(full.line).toBeCloseTo(full.room, 0);
-    expect(full.round).toBeLessThan(0.5);
-    await drawer(page).locator(".foot .full").click();
-    await expect.poll(async () => (await seen()).scale).toBeLessThanOrEqual(1);
   });
 });
+
+for (const [what, viewport] of [
+  ["a desktop window", { width: 1440, height: 900 }],
+  ["a phone", { width: 393, height: 852 }],
+] as const)
+  test.describe(`the Whitlocks' Family view on ${what}`, () => {
+    test.use({ storageState: stateFor("whitlock"), viewport });
+
+    // "When showing the full Family Diagram view, I think it should just automatically scale to fill all available space." (Patrick, 2026-10-07)
+    // R-0796
+    test("draws the family as large as the room lets it, never under the size its names are read at", async ({ page }, info) => {
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      await settle(page);
+      await page.locator("#cap-family").click();
+      await expect(drawer(page)).toBeVisible();
+      const seen = await filled(page);
+      expect(seen.line).toBeCloseTo(seen.room, 0);
+      if (seen.whole) expect(seen.scale).toBeGreaterThanOrEqual(1);
+    });
+  });
 
 test.describe("the Family view's frame on a phone turned sideways", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 852, height: 393 } });
