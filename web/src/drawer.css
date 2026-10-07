@@ -38,7 +38,9 @@
 /* the picture scales whole to fit over the caption; under the least name size the drawer scrolls (R-0796) */
 .pbp .lv { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 .pbp .wire, .pbp .draw, .pbp .scroll { flex: none; }
-.pbp .wire svg { display: block; width: 100%; height: auto; }
+/* the dots-only years line, the play-by-play's and a short screen's Family view's; elsewhere the
+   Family view has the chat's own timeline, at its own height (R-0796) */
+.pbp .wire > svg { display: block; width: 100%; height: auto; }
 /* an event on the years line takes a tap to its step */
 .pbp .whit { fill: transparent; cursor: pointer; }
 /* re-ruled 2026-10-04: a family wider than the drawer keeps its least size and scrolls sideways in its own frame */
@@ -275,7 +277,7 @@
 @media (min-width: 700px), (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .pbp.whole { position: fixed; inset: 0; z-index: 90; }
   /* the years line keeps a phone's height, so the picture has the rest */
-  .pbp.whole .wire svg { width: auto; height: 78px; max-width: 100%; margin: 0 auto; }
+  .pbp.whole .wire > svg { width: auto; height: 78px; max-width: 100%; margin: 0 auto; }
 }
 /* a phone turned sideways is short: the title holds one line until it needs
    more and the years line is shorter, so the picture keeps the height */
@@ -286,7 +288,7 @@
   .pbp.whole > .when { left: 16px; display: block; line-height: 18px; }
   .pbp.whole > .when .words { -webkit-line-clamp: 2; }
   .pbp.whole > .also { right: 16px; white-space: normal; text-align: right; }
-  .pbp.whole .wire svg { height: 40px; }
+  .pbp.whole .wire > svg { height: 40px; }
   /* the years line stands between them, so it reaches only to their edges */
   .pbp.whole .wire { margin: 0 calc(50% - 120px); }
   /* the path row is shorter here, and its book with it, so the book stays whole on the screen */

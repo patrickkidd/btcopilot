@@ -2,12 +2,12 @@ import "./drawer.css";
 import type { Books } from "./books";
 import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
-import { CLUSTER, closeX, esc, fitPath, flash, pathRow, slideOver, stepBtn, still } from "./dom";
+import { CLUSTER, closeX, el, esc, fitPath, flash, pathRow, slideOver, stepBtn, still } from "./dom";
 import { fitScale, leastScale, people, type Layout } from "./diagram";
-import { clusterStep } from "./picture";
+import { clusterStep, Picture, Target, Via, type Tap } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { BIRTHS, family, familyStart, said, when, Told } from "./snapshots";
-import type { Case, Chip, Timeline } from "./types";
+import { Spotlight, type Case, type Chip, type Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
  * the chat (R-0542). The path row with the close button at its right, the
@@ -79,6 +79,25 @@ export function yearsLine(tl: Timeline, told: Told, i: number, w = 390): string 
   s += `<text class="wyr" x="${x1}" y="57" text-anchor="end">${Math.floor(t1)}</text>`;
   return s + "</svg>";
 }
+
+/** The step a tap on the Family view's timeline goes to: the first holding
+ * one of `ids`, else the one nearest in time to `t`. */
+export function stepOf(told: Told, t: number, ids: number[] = []): number {
+  const held = told.told.snapshots.findIndex((s) => s.event_ids.some((id) => ids.includes(id)));
+  if (held >= 0) return held;
+  const far = told.steps.map((st) => Math.abs(st.t - t));
+  return far.indexOf(Math.min(...far));
+}
+
+/** The event a step is shown by on the timeline: its first with a date. */
+export function shownBy(told: Told, i: number): number | null {
+  return told.told.snapshots[i].event_ids.find((id) => told.tl.events.find((e) => e.id === id)?.dateTime) ?? null;
+}
+
+/** Where the Family view's years line stays the dots-only line between the
+ * title and who else a date touches: a screen too short for the timeline's
+ * own row. drawer.css says it again. */
+const SHORT = "(min-width: 700px) and (max-height: 500px), (pointer: coarse) and (orientation: landscape) and (max-height: 500px)";
 
 /** What can say the kind of each of snapshot `i`'s events (Patrick, 2026-10-03). */
 const saying = (told: Told, i: number) =>
@@ -311,6 +330,15 @@ export class Drawer {
   private moved: { id: string; x: number; y: number } | null = null;
   /** The Family view has just opened: it moves to the frame's own first date. */
   private opening = false;
+  /** The Family view's timeline: the chat's own, its clusters and events, the
+   * step's event picked on it (R-0796; Patrick, 2026-10-07). */
+  private readonly strip = el("div", "view");
+  private readonly timeline = new Picture(this.strip, { onTap: (tap) => this.jump(tap) }, Spotlight.Unified, true);
+  /** The telling the timeline was last given, so it is given each one once:
+   * every setData sends the line back to the present. */
+  private given: Told | null = null;
+  /** The event a tap on the timeline picked, shown in place of its step's first. */
+  private tapped: number | null = null;
 
   constructor(
     readonly panel: HTMLElement,
@@ -403,6 +431,20 @@ export class Drawer {
   private line(): void {
     const told = this.told!;
     const wire = this.panel.querySelector<HTMLElement>(".wire")!;
+    const chat = told.whole && !matchMedia(SHORT).matches;
+    wire.classList.toggle("pic", chat);
+    if (chat) {
+      if (this.strip.parentElement !== wire) wire.replaceChildren(this.strip);
+      if (this.given !== told) {
+        this.given = told;
+        this.timeline.setData(told.tl);
+      }
+      // the event tapped, where its step holds several, else the step's first
+      const id = this.tapped ?? shownBy(told, this.i);
+      this.tapped = null;
+      if (id !== null) this.timeline.pick(id, [], Via.Chip);
+      return;
+    }
     wire.innerHTML = yearsLine(told.tl, told, this.i);
     const k = wire.firstElementChild!.getBoundingClientRect().height / 62;
     // with no layout, as in a test page, it keeps its own width
@@ -778,5 +820,28 @@ export class Drawer {
     // a keyboard tap keeps its place
     if ((e as MouseEvent).detail === 0)
       this.panel.querySelector<HTMLElement>(`[data-act="${act}"]:not([disabled])`)?.focus();
+  }
+
+  /** A tap on the Family view's timeline steps to what it touched: a
+   * cluster's first step, an event's own step, the words of the event
+   * picked its step again; anything else leaves the step where it is. */
+  private jump(tap: Tap): void {
+    const told = this.told!;
+    const line = this.timeline;
+    let to: number | null = null;
+    if (tap.target === Target.Cluster) {
+      const c = line.clusterAt(tap.index);
+      if (c) to = stepOf(told, when(c.start), c.event_ids);
+    } else if (tap.target === Target.Zone || tap.target === Target.Band) {
+      const id = tap.target === Target.Zone ? line.next(tap.index, line.selection()) : line.rowAt(tap.x, tap.y);
+      const e = told.tl.events.find((e) => e.id === id);
+      if (e?.dateTime) {
+        to = stepOf(told, when(e.dateTime), [e.id]);
+        if (told.told.snapshots[to].event_ids.includes(e.id)) this.tapped = e.id;
+      }
+    }
+    if (to === null) return;
+    this.i = to;
+    this.render();
   }
 }

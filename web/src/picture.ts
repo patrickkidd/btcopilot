@@ -611,6 +611,9 @@ export class Picture {
     private host: HTMLElement,
     private handlers: PictureHandlers,
     private spot = Spotlight.Unified,
+    /** The Family view steps through events one by one, so the event picked
+     * inside a cluster is drawn on it too (R-0796). */
+    private stepping = false,
   ) {
     window.addEventListener("resize", () => this.render());
     this.host.addEventListener("click", (e) => {
@@ -1098,6 +1101,14 @@ export class Picture {
     for (const event of this.gone)
       if (!kept.has(event.id) && !claimed.has(event.id) && dateOf(event))
         dot(event.id, at(event.dateTime as string));
+    // stepping event by event, the step's event is drawn and named over its
+    // cluster's pill as well (Patrick, 2026-10-07)
+    const inside = this.stepping ? dated.find((e) => e.id === this.selected && claimed.has(e.id)) : undefined;
+    if (inside) {
+      const x = at(inside.dateTime as string);
+      dot(inside.id, x);
+      marks.push({ event: inside, x });
+    }
     for (const tick of ruler(yearAt(first), yearAt(last), at, x0, x1))
       svg +=
         `<text class="ep-yrs" x="${tick.x.toFixed(1)}" y="${RULER_Y}" ` +

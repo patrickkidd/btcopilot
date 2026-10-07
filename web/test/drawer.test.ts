@@ -1,8 +1,8 @@
 import { expect, it } from "vitest";
 import { closeX, pathRow } from "../src/dom";
 import { FIT, fitScale, leastScale, NAME } from "../src/diagram";
-import { below, head, PAN, pointLine, topLine, yearsLine } from "../src/drawer";
-import { family, Told, untold } from "../src/snapshots";
+import { below, head, PAN, pointLine, shownBy, stepOf, topLine, yearsLine } from "../src/drawer";
+import { family, Told, untold, when } from "../src/snapshots";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
 /** The play-by-play drawer's own words and controls, read off its markup. */
@@ -135,6 +135,20 @@ it("steps the whole family with Back and Next only, says where in its top line, 
   expect(topLine(whole, 0)).toBe('<span class="words">Errol and Odile <span class="kw">married</span></span>');
   const toward = whole.told.snapshots.findIndex((s) => s.event_ids.includes(131));
   expect(topLine(whole, toward)).toBe('<span class="words">Delphine started calling Corinne every night</span>');
+});
+
+// "Yes, build that change to reuse the main timeline in the full Diagram view. But we still need to be stepping through the timeline event by event just like we are right now." (Patrick, 2026-10-07)
+// R-0796
+it("steps the Family view to a tapped cluster's first step, to a tapped event's own step, and to the nearest by date for an event no step holds", () => {
+  const whole = new Told(tl, family(tl), true);
+  const cluster = tl.clusters[0];
+  const first = whole.told.snapshots.findIndex((s) => s.event_ids.some((id) => cluster.event_ids.includes(id)));
+  expect(stepOf(whole, when(cluster.start), cluster.event_ids)).toBe(first);
+  const j = 3;
+  const id = whole.told.snapshots[j].event_ids[0];
+  expect(stepOf(whole, 0, [id])).toBe(j);
+  expect(stepOf(whole, whole.steps[j].t + 0.01, [-1])).toBe(j);
+  expect(shownBy(whole, j)).toBe(id);
 });
 
 // R-0742
