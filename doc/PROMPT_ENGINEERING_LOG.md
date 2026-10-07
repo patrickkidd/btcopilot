@@ -22,6 +22,26 @@ turn and passes when exactly one row is written after the second turn and none a
 2 of 3, on the subscription replay. Before this change the tool had no such field, so the case
 cannot pass on the old prompt and tools.
 
+## FD-375 — rewriting the whole case report (2026-10-07)
+
+**Change**: a refresh of the case report is one coach turn with the coach's own system prompt
+(the record map, the coverage block and the private fragments, card instructions included; no
+chat transcript) and one new opening message, kept in code beside the catch-up's
+(`btcopilot/casereport.py`, START): not a chat; write every card again from the diagram as it
+stands; read what you need first, since the map gives no event's words; then each card's
+guesses with add_impression, raised, with the card; write all five, leaving one out only when
+nothing on the diagram could rest under it; ask nothing; stop when done [R-0825]. The tools are
+the coach's reads and add_impression limited to text, evidence, state and card.
+
+**Why**: on the subscription, offered add_impression alone, the coach wrote two or three
+cards and left the rest, saying most events had only a date and a person: the map carries no
+event's words. Asked to write all five with nothing to read, it still left the own part,
+choice and work-on cards. With the reads, it read the events once and wrote all five.
+
+**Eval**: `btcopilot/tests/live/test_casereportrewrite.py`, 2 of 3, on the subscription
+($0): 3 of 3, every card holding a new guess and the summary passing the four checks of the
+Executive Summary eval, which still passes 3 of 3.
+
 ## FD-375 — the Executive Summary card (2026-10-07)
 
 **Change**: in the private impressions fragment, the `main_guess` value now describes the case

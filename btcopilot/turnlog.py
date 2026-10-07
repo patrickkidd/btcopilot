@@ -22,6 +22,9 @@ TICK = 1.0
 # in an hour. The task pushes it out again with every event it writes, so a turn
 # that is still working never lets go.
 RUNNING_TTL = 180
+# How long a family's case report stays held for the rewrite writing it: one
+# model call, which says nothing until it answers.
+REPORT_TTL = 600
 
 
 class TurnLogBackend(enum.StrEnum):
@@ -142,6 +145,23 @@ class RedisLog:
     def halted(self, turn_id: str) -> bool:
         return bool(self.redis.exists(f"turn:{turn_id}:stop"))
 
+    def rewriting(self, diagram_id: int) -> str | None:
+        found = self.redis.get(f"diagram:{diagram_id}:report")
+        return found.decode() if found else None
+
+    def report(self, turn_id: str) -> int | None:
+        found = self.redis.get(f"turn:{turn_id}:diagram")
+        return int(found) if found else None
+
+    def claim(self, diagram_id: int, turn_id: str) -> bool:
+        if not self.redis.set(f"diagram:{diagram_id}:report", turn_id, nx=True, ex=REPORT_TTL):
+            return False
+        self.redis.set(f"turn:{turn_id}:diagram", diagram_id, ex=TTL)
+        return True
+
+    def release(self, diagram_id: int) -> None:
+        self.redis.delete(f"diagram:{diagram_id}:report")
+
 
 class MemoryLog:
     """The same log in one process, which is what the tests read and write."""
@@ -150,6 +170,8 @@ class MemoryLog:
         self.events: dict[str, list[dict]] = {}
         self.turns: dict[int, tuple[str, float]] = {}
         self.owners: dict[str, int] = {}
+        self.reports: dict[int, tuple[str, float]] = {}
+        self.reported: dict[str, int] = {}
         self.stops: set[str] = set()
         self.readers: dict[str, list[queue.Queue]] = {}
         self.lock = threading.Lock()
@@ -225,6 +247,27 @@ class MemoryLog:
     def halted(self, turn_id: str) -> bool:
         return turn_id in self.stops
 
+    def rewriting(self, diagram_id: int) -> str | None:
+        held = self.reports.get(diagram_id)
+        if held is None or held[1] <= time.time():
+            self.reports.pop(diagram_id, None)
+            return None
+        return held[0]
+
+    def report(self, turn_id: str) -> int | None:
+        return self.reported.get(turn_id)
+
+    def claim(self, diagram_id: int, turn_id: str) -> bool:
+        with self.lock:
+            if self.rewriting(diagram_id) is not None:
+                return False
+            self.reports[diagram_id] = (turn_id, time.time() + REPORT_TTL)
+            self.reported[turn_id] = diagram_id
+        return True
+
+    def release(self, diagram_id: int) -> None:
+        self.reports.pop(diagram_id, None)
+
 
 _store = None
 
@@ -289,3 +332,21 @@ def halt(turn_id: str) -> None:
 
 def halted(turn_id: str) -> bool:
     return store().halted(turn_id)
+
+
+def rewriting(diagram_id: int) -> str | None:
+    """The rewrite of the family's case report running now, if one is."""
+    return store().rewriting(diagram_id)
+
+
+def report(turn_id: str) -> int | None:
+    """Which family's case report a rewrite is writing."""
+    return store().report(turn_id)
+
+
+def claim(diagram_id: int, turn_id: str) -> bool:
+    return store().claim(diagram_id, turn_id)
+
+
+def release(diagram_id: int) -> None:
+    store().release(diagram_id)

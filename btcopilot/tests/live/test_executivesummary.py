@@ -62,6 +62,17 @@ def summary(coach) -> dict | None:
     return carded[-1] if carded else None
 
 
+def reads(main: dict, events: list[dict]) -> tuple[bool, bool, bool, bool]:
+    """Events of two generations, the 2016 stretch named, the sister named,
+    and no standing description of the speaker."""
+    found = {e["id"]: e for e in events}
+    cited = [found[int(one["id"])] for one in main["evidence"] if one["kind"] == "event" and int(one["id"]) in found]
+    generations = {GENERATION[e.get("child") or e["person"]] for e in cited if (e.get("child") or e["person"]) in GENERATION}
+    unfit = PANIC["id"] in {e["id"] for e in cited} or "2016" in main["text"]
+    placed = TESS["name"] in main["text"] or {"kind": "person", "id": str(TESS["id"])} in main["evidence"]
+    return len(generations) >= 2, unfit, placed, TYPE.search(main["text"]) is None
+
+
 @passes(2, of=3)
 def test_the_executive_summary_reads_the_family_over_generations_and_ends_on_what_does_not_fit(coach):
     # R-0820
@@ -69,9 +80,4 @@ def test_the_executive_summary_reads_the_family_over_generations_and_ends_on_wha
     coach.turn(ASKED)
     main = summary(coach)
     assert main, "no raised impression on the main_guess card"
-    events = {e["id"]: e for e in coach.events}
-    cited = [events[int(one["id"])] for one in main["evidence"] if one["kind"] == "event" and int(one["id"]) in events]
-    generations = {GENERATION[e.get("child") or e["person"]] for e in cited if (e.get("child") or e["person"]) in GENERATION}
-    unfit = PANIC["id"] in {e["id"] for e in cited} or "2016" in main["text"]
-    placed = TESS["name"] in main["text"] or {"kind": "person", "id": str(TESS["id"])} in main["evidence"]
-    assert (len(generations) >= 2, unfit, placed, TYPE.search(main["text"]) is None) == (True,) * 4, main
+    assert reads(main, coach.events) == (True,) * 4, main
