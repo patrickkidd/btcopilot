@@ -124,7 +124,6 @@ R-0607 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests 
 R-0608 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0609 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0611 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
-R-0612 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0613 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0614 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0615 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist

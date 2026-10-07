@@ -1,6 +1,5 @@
 import * as api from "./api";
 import { el, esc } from "./dom";
-import { NOTE_CAP } from "./pairs";
 import { toast } from "./toast";
 import { PickChoice, PickSource, type Shadows } from "./types";
 
@@ -18,6 +17,8 @@ export const IDLE_MS = 5 * 60_000;
 /** How often the review is asked whether the shadows have finished. */
 const POLL_MS = 2000;
 const HELP = "One or two sentences, optional";
+/** The longest note a vote keeps, as the review's own cap. */
+export const NOTE_CAP = 200;
 
 const FOLD =
   `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="5.5" width="9" height="8" rx="1.5"/>` +

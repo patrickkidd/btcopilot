@@ -115,8 +115,6 @@ export interface SettingsHandlers {
   onTask(): void;
   /** The agenda, which is Patrick's whole administration (R-0259). */
   onAgenda(): void;
-  /** Two replies to the same words, picked blind (R-0599). */
-  onPairs(): void;
   /** Every notice sent to this person, newest first (R-0613). */
   notices(): Delivery[];
   /** A notice tapped in the list: counted opened, then where it points when
@@ -583,14 +581,6 @@ export class Settings {
           ],
           "Coding",
         ),
-      );
-    if (admin)
-      pane.append(
-        this.group(
-          [this.screenRow("Better replies", Feature.PairsOpen, () => this.handlers.onPairs())],
-          "Quality",
-        ),
-        el("div", "sn-hint", "Pick the better of two coach replies"),
       );
 
     const out = document.createElement("button");

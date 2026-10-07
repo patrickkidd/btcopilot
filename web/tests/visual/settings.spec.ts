@@ -585,8 +585,8 @@ test.describe("the coding and quality sections", () => {
   };
   test.afterAll(() => roles("subscriber"));
 
-  // R-0259, R-0265, R-0599, R-0631
-  test("a subscriber sees neither, an auditor sees Coding, and an admin sees Coding with the meeting and Quality", async ({
+  // R-0259, R-0265, R-0631, R-0801
+  test("a subscriber sees neither, an auditor sees Coding, and an admin sees Coding with the meeting and no Better replies", async ({
     page,
   }) => {
     await as(page);
@@ -598,27 +598,23 @@ test.describe("the coding and quality sections", () => {
     await expect(row(page, "Next meeting")).toHaveCount(0);
 
     await as(page, "admin");
-    expect(await heads(page)).toEqual(["Data", "Coding", "Quality"]);
+    expect(await heads(page)).toEqual(["Data", "Coding"]);
     await expect(row(page, "Next meeting")).toHaveCount(1);
-    await expect(row(page, "Better replies")).toHaveCount(1);
-    await expect(page.locator(".sn-pane.in .sn-hint")).toHaveText(
-      "Pick the better of two coach replies",
-    );
+    await expect(row(page, "Better replies")).toHaveCount(0);
     await row(page, "Your coding task").click();
     await expect(page.locator(".sn-pane.in #task-screen")).toBeVisible();
     await page.locator("#settings-back").click();
     await expect(page.locator(".sn-pane.in")).toHaveAttribute("data-page", "root");
   });
 
-  // R-0259, R-0265, R-0599
-  test("the task, the meeting and the better replies each open on the account view's stack, and back returns to the account view", async ({
+  // R-0259, R-0265
+  test("the task and the meeting each open on the account view's stack, and back returns to the account view", async ({
     page,
   }) => {
     await as(page, "admin");
     for (const [label, screen, title] of [
       ["Your coding task", "task-screen", null],
       ["Next meeting", "agenda-screen", "Next meeting"],
-      ["Better replies", "pairs-screen", "Better replies"],
     ] as const) {
       await row(page, label).click();
       const top = page.locator(".sn-pane.in:not(.under)");

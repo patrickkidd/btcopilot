@@ -12,7 +12,6 @@ import { Ballot } from "./ballot";
 import { Coding } from "./coding";
 import { CutSelect } from "./cut";
 import { Agenda } from "./agenda";
-import { Pairs } from "./pairs";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
 import { CODER, OneTask, beforeMeeting, coder } from "./task";
@@ -388,13 +387,6 @@ const caseReport = new CaseReport($("case-screen"), {
   fetch: (ask) => store.fetch(ask),
 });
 store.watch(caseReport);
-const PAIRS: Sub = {
-  title: "Better replies",
-  screen: $("pairs-screen"),
-  name: Screen.Pairs,
-  wide: true,
-  at: address(Place.Pairs),
-};
 
 const oneTask = new OneTask($("task-body"), {
   onStart: (task) => void startTask(task),
@@ -593,9 +585,6 @@ async function toMeeting(day: string | null): Promise<void> {
   await settings.show(AGENDA, MEET);
 }
 
-/** Two replies to the same words, picked blind (R-0599). Patrick's. */
-const pairs = new Pairs($("pairs-body"));
-
 /** Where the guidelines go back to when closed: the coding screen mid-task,
  * the one task card between meetings. */
 let rulesBack: () => void;
@@ -727,7 +716,6 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onOpen: openDiagram,
   onTask: () => void readTask().then(() => settings.push(TASK)),
   onAgenda: () => void agenda.load().then(() => settings.push(AGENDA)),
-  onPairs: () => void pairs.load().then(() => settings.push(PAIRS)),
   notices: () => notices.list,
   // one with nothing more to see is only counted read, which its row then shows
   onNotice: (one) => notices.open(one, beyond(one.link) !== null),
@@ -1756,10 +1744,6 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     await GO[Place.MeetingDay]([day]);
     if (!(await settings.light(`[data-cut="${cut}"]`)))
       toast("That session is not on this meeting");
-  },
-  [Place.Pairs]: async () => {
-    await pairs.load();
-    await toAccount(PAIRS);
   },
   [Place.Literature]: () => toAccount(settings.literature),
   [Place.Cluster]: ([id]) => toCluster(id),

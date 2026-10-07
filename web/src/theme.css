@@ -3421,68 +3421,6 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   .slideover { transition: none !important; }
 }
 
-/* Blind pairs (R-0599): the conversation once, then the two replies, side by
-   side where the app widens and stacked on a phone. */
-.pr-ctx {
-  max-height: 40vh;
-  overflow-y: auto;
-  margin: 0 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
-.pr-line {
-  padding: 8px 12px;
-  border-top: 1px solid var(--line);
-  font: 400 15px/1.4 var(--sans);
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-.pr-line:first-child { border-top: none; }
-.pr-line.coach { background: var(--tint); }
-.pr-who {
-  margin-bottom: 2px;
-  font: 500 12px var(--mono);
-  color: var(--faint);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.pr-two { display: grid; gap: 10px; margin: 0 16px; }
-.pr-card {
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
-.pr-text {
-  font: 400 16px/1.45 var(--sans);
-  color: var(--ink);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.pr-note {
-  display: block;
-  box-sizing: border-box;
-  width: calc(100% - 32px);
-  min-height: 44px;
-  margin: 14px 16px 0;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--ink);
-  font: 400 15px var(--sans);
-}
-.pr-picks { display: flex; gap: 8px; margin: 0 16px 14px; }
-.pr-picks .nudge { flex: 1; width: auto; margin: 14px 0 0; }
-.pr-wide { display: none; }
-@media (min-width: 840px) {
-  .pr-two { grid-template-columns: 1fr 1fr; }
-  .pr-wide { display: inline; }
-  .pr-narrow { display: none; }
-}
-
 /* The picture folds to a strip under the title row while a phone's keyboard is
    up or the chat is scrolled up (Patrick, 2026-10-01, frame A1): the same line,
    40 tall, its wire 16 down and the years under it; the name row above and the

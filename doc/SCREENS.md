@@ -367,7 +367,7 @@ What it is for: your past conversations.
 - With no sessions at all it says past conversations collect here. [built]
 - The sheet holds only the sessions of the family the app is on; the family is chosen on the account page, never in the sheet, and a personal user never sees the word case at all. [built] {R-0285, R-0347}
 - The buttons at the foot, a professional's upload and new note, are spaced apart. [built] {R-0347}
-- The sheet holds no way to coding, the meeting or picking the better reply, and a session row neither opens nor goes on the agenda; those live on the account page, since none of them hangs on the family the app is on. [built] {R-0259, R-0267}
+- The sheet holds no way to coding or the meeting, and a session row neither opens nor goes on the agenda; those live on the account page, since none of them hangs on the family the app is on. [built] {R-0259, R-0267}
 - Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]
 - The history in the review database is kept across code changes rather than reset. [built] {R-0191}
 - Existing diagrams and conversations made before this app must open in it as sessions; old training transcripts are kept out of the list. [built]
@@ -406,8 +406,7 @@ What it is for: you, your families, your plan, and signing out.
 - Admins see a "Find a person" box at the top of that page: with the box empty the page shows only the admin's own diagrams; two or more letters show only the people whose email or name match, and the admin's own diagrams are hidden until the box is cleared; tapping a person slides in a page of its own titled with their name, listing their diagrams in the same rows, the way every page of the account view slides in; back slides it away to the search with the words and the people found as they were; tapping a diagram opens it read-only: one quiet line under the title row says "Viewing <name>'s diagram, read-only" with "Back to my diagram", which puts the app back on the admin's most recently used diagram. While it is open the record, the timeline, the chat history and the lists show, and the message box, Send, rename and delete, a question's actions, and a detail card's "Tap to comment…" are hidden; no tap is recorded and nothing is sent. It is never listed among the admin's own diagrams, and no sharing is granted. Nobody else sees the box. [built] (Patrick, 2026-10-01) {R-0630}
 - Licences and the plan are listed; nothing on that page implies a price yet. [built]
 - Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Auditor's Coding Guide, which opens the concept pages on a page of its own. [built] {R-0265, R-0259, R-0541, R-0567}
-- Admins also see a Quality section with one row, Better replies, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind, titled Better replies. [built] {R-0599}
-- Better replies serves the pairs a conversation at a time, in the order the words were said, so a session reads as it happened; the conversation up to the words both replies answer stays above the two replies. [built] {R-0599}
+- There is no Quality section and no screen of its own for comparing coach replies: replies are compared only by the vote in the chat, under the coach's reply. [built] {R-0801}
 - Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Your Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
 - A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
@@ -451,7 +450,6 @@ What it is for: every screen and everything on it has its own web address, so th
 | `/app/account/meeting` | Next meeting |
 | `/app/account/meeting/<day>` | the page of the meeting on that day (`undated` for the one with no day) |
 | `/app/account/meeting/<day>/<cut>` | that meeting's page, with that cut ringed |
-| `/app/account/better-replies` | Better replies |
 | `/app/account/literature-review` | Auditor's Coding Guide |
 | `/app/cluster/<cluster>` | that cluster opened on the picture |
 | `/app/event/<event>` | that event picked on the picture |
