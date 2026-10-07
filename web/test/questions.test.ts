@@ -182,7 +182,7 @@ describe("what a question tool call says in plain words", () => {
   it("says how a closed question ended", () => {
     const closed = (outcome: string) =>
       line(ToolName.SetQuestion, { id: "q2", version: 3, state: "resolved", outcome });
-    expect(closed("fact")).toBe(`Closed “${WORDS}”: the answer is in the record`);
+    expect(closed("fact")).toBe(`Closed “${WORDS}”: the answer is in the diagram`);
     expect(closed("answered")).toBe(`Closed “${WORDS}”: you answered it`);
     expect(closed("unknown")).toBe(`Closed “${WORDS}”: you don't know`);
     expect(closed("declined_in_chat")).toBe(`Closed “${WORDS}”: you'd rather not say`);
@@ -199,7 +199,7 @@ describe("what a question tool call says in plain words", () => {
         refusal,
       });
     expect(kept("let_go")).toBe("Let go of a question kept for later");
-    expect(kept("fact")).toBe("Closed a question kept for later: the answer is in the record");
+    expect(kept("fact")).toBe("Closed a question kept for later: the answer is in the diagram");
     expect(kept("answered")).toBe("Closed a question kept for later: you answered it");
     expect(kept("unknown")).toBe("Closed a question kept for later: you don't know");
     expect(kept("declined_in_chat")).toBe("Closed a question kept for later: you'd rather not say");

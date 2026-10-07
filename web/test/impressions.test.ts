@@ -35,7 +35,7 @@ const note = (
           { kind: EvidenceKind.Event, id: 14, label: "Moved to Tacoma" },
           { kind: EvidenceKind.Cluster, id: "c2", label: "The winter the mill shut" },
           { kind: EvidenceKind.Statement, id: 812, label: "You said, 2 Sep", discussion_id: 5, at: "2026-09-02" },
-          { kind: EvidenceKind.Statement, id: 90, label: "a message no longer in the record", discussion_id: null, at: null },
+          { kind: EvidenceKind.Statement, id: 90, label: "a message no longer in the diagram", discussion_id: null, at: null },
         ]
       : [],
   pushback: null,
@@ -75,7 +75,7 @@ describe("impressions on the coach's tab", () => {
       "Moved to Tacoma",
       "The winter the mill shut",
       "You said, 2 Sep",
-      "a message no longer in the record",
+      "a message no longer in the diagram",
       "Raised Sunday ›",
       "⋯",
       "Doesn't fit",
@@ -84,7 +84,7 @@ describe("impressions on the coach's tab", () => {
     expect(said).not.toContain("You go quiet when the family fights.");
     // a message whose session is gone goes nowhere
     expect(questionsHtml(FAMILY, NOW)).toContain(
-      '<span class="blabel">a message no longer in the record</span>',
+      '<span class="blabel">a message no longer in the diagram</span>',
     );
   });
 

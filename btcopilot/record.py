@@ -80,7 +80,7 @@ class Invalid(Exception):
 # A question is closed, never removed (R-0006): what the user declined has to
 # stay where the coach can see it.
 NEVER_REMOVED = ("a question is never removed; close it", "A question is never removed.")
-GONE = "That is not in the record."
+GONE = "That is not in the diagram."
 
 
 class Conflict(Exception):

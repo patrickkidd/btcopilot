@@ -105,7 +105,7 @@ test.describe("the case report with little in the record", () => {
     expect(record.asked_questions.filter((q: { open: boolean; kind: string; case_report_card: string | null }) => q.open && q.kind === "impression" && q.case_report_card === "work_on")).toEqual([]);
     const card = page.locator('#case-body .level[data-card="work_on"]');
     await expect(card.locator(".bub.coach")).toHaveText(/You haven't said yet what you're working on\. Chat more with me about it\./);
-    await expect(card).not.toContainText("Not enough in the record to make a guess yet");
+    await expect(card).not.toContainText("Not enough in the diagram to make a guess yet");
   });
 });
 
@@ -303,7 +303,7 @@ test.describe("the case report's taps", () => {
     const words = await card.locator(".bub.coach").allTextContents();
     for (const q of record.asked_questions.filter((q: { kind: string; case_report_card: string | null }) => q.kind === "impression" && q.case_report_card === null))
       expect(words.join(" ")).not.toContain(q.text);
-    if (!chosen.length) await expect(card).toContainText("Not enough in the record to make a guess yet");
+    if (!chosen.length) await expect(card).toContainText("Not enough in the diagram to make a guess yet");
     else for (const q of chosen.slice(-3)) await expect(card).toContainText(q.text);
   });
 

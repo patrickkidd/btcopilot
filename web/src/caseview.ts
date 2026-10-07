@@ -288,7 +288,7 @@ class Reader {
     const clusters = this.tl.clusters.filter((c) => c.event_ids.some((id) => ids.has(id)));
     // dates only inside chips: the lead counts, the chips date
     return {
-      lead: flares.length ? `${s.name}'s symptoms appear in ${flares.length === 1 ? "one event" : `${flares.length} events`} in the record.` : "",
+      lead: flares.length ? `${s.name}'s symptoms appear in ${flares.length === 1 ? "one event" : `${flares.length} events`} in the diagram.` : "",
       first: flares.length ? this.fact(flares[0]) : null,
       latest: flares.length > 1 ? this.fact(flares[flares.length - 1]) : null,
       clusters: clusters.map((c) => ({ id: c.id, label: `${c.label} · ${c.title}` })),
@@ -384,7 +384,7 @@ class Reader {
   personLine(p: Person, side: number[]): string {
     const bits = this.died(p) ? ["who has died"] : [];
     const told = this.tl.events.filter((e) => e.dateTime && !OPENERS.has(e.kind ?? "") && e.person != null && side.includes(e.person));
-    const held = told.length ? ` The record holds ${told.length === 1 ? "one event" : `${told.length} events`} about this side of the family.` : "";
+    const held = told.length ? ` The diagram holds ${told.length === 1 ? "one event" : `${told.length} events`} about this side of the family.` : "";
     return bits.length || held ? `${p.name}${bits.length ? `, ${bits.join(", ")}` : ""}.${held}` : "";
   }
 

@@ -1053,7 +1053,7 @@ class Toolbox:
             raise ToolError(
                 "Say which record version you are changing: the number at the end "
                 "of your last read, or on the map",
-                "It did not say which version of the record it had read.",
+                "It did not say which version of the diagram it had read.",
             )
         now = self.diagram.version
         own = self.versions | {
@@ -1069,7 +1069,7 @@ class Toolbox:
                 f"The record has changed since version {version}; it is at {now} "
                 "now. Read what you are changing again, then change it with the "
                 "new version",
-                "The record had changed since it was read; read it again.",
+                "The diagram had changed since it was read; read it again.",
             )
 
     def _coach_notes(self, args: dict) -> tuple[str, None]:
@@ -1690,7 +1690,7 @@ class Toolbox:
             raise ToolError(
                 f"The record already answers {coverage.WORDS[fact]} for {where}: "
                 f"{coverage.evidence(data, fact, kind, iid)}. Do not ask it; use the answer",
-                "It was about to ask something the record already holds.",
+                "It was about to ask something the diagram already holds.",
             )
         if self.said is None:
             return None

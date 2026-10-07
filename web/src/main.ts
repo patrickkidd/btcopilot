@@ -832,7 +832,7 @@ function showPrompt(kind?: SessionKind): void {
   if (kind === SessionKind.Note)
     chat.prompt("Write up the session", [
       `Tell the coach what happened in the session you just had with the ${familyTitle()} family: who was there, what came up, what changed.`,
-      "The coach puts it into the record the way a session's own words would be.",
+      "The coach puts it into the diagram the way a session's own words would be.",
     ]);
   else if (PRO)
     chat.prompt("Start the session", [
@@ -1655,7 +1655,7 @@ function toCluster(id: string): void {
   uncover();
   lens.putDown();
   const cluster = record().clusters.find((c) => c.id === id || c.cluster_ids.includes(id));
-  if (!cluster) return toast("That cluster is no longer in the record");
+  if (!cluster) return toast("That cluster is no longer in the diagram");
   picture.spotlight(cluster.event_ids);
   lens.actions();
 }
@@ -1665,7 +1665,7 @@ function toEvent(id: number): void {
   uncover();
   lens.putDown();
   if (!record().events.some((e) => e.id === id))
-    return toast("That event is no longer in the record");
+    return toast("That event is no longer in the diagram");
   lens.state = { sel: { kind: SelKind.Event, id: String(id) }, playing: null };
   picture.pick(id, [id], Via.Chip);
   lens.actions();

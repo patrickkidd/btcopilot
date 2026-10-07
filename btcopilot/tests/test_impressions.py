@@ -107,8 +107,8 @@ def test_a_raised_impression_is_one_whole_add_never_removed_and_left_by_undo(fam
     "evidence,plain",
     [
         ([], "It gave the impression nothing to rest on."),
-        ([{"kind": "event", "id": "99"}], "That is not in the record."),
-        ([{"kind": "statement", "id": "9999"}], "That is not in the record."),
+        ([{"kind": "event", "id": "99"}], "That is not in the diagram."),
+        ([{"kind": "statement", "id": "9999"}], "That is not in the diagram."),
     ],
 )
 def test_an_impression_must_rest_on_something_the_record_or_the_sessions_hold(

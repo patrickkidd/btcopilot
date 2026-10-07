@@ -23,16 +23,16 @@ from btcopilot.turnlog import TurnEventKind
 UNSAID = {EventKind.Noted.value: "a note", EventKind.Shift.value: "a shift"}
 
 GONE = {
-    ItemKind.Person: "a person no longer in the record",
-    ItemKind.Event: "an event no longer in the record",
-    ItemKind.PairBond: "a pair bond no longer in the record",
-    ItemKind.Cluster: "a cluster no longer in the record",
-    ItemKind.Emotion: "a relationship no longer in the record",
-    ItemKind.Question: "a question no longer in the record",
+    ItemKind.Person: "a person no longer in the diagram",
+    ItemKind.Event: "an event no longer in the diagram",
+    ItemKind.PairBond: "a pair bond no longer in the diagram",
+    ItemKind.Cluster: "a cluster no longer in the diagram",
+    ItemKind.Emotion: "a relationship no longer in the diagram",
+    ItemKind.Question: "a question no longer in the diagram",
 }
 # What a remove call or an impression's evidence names when its kind is none
 # the record holds; the toolbox refuses the call.
-NO_KIND = "something the record has no kind for"
+NO_KIND = "something the diagram has no kind for"
 
 ARGS = {
     **dict.fromkeys(
@@ -105,7 +105,7 @@ def label(data: DiagramData, kind: ItemKind, item_id) -> str:
     return GONE[kind] if item is None else LABELS[kind](item, {p["id"]: p for p in data.people})
 
 
-MESSAGE_GONE = "a message no longer in the record"
+MESSAGE_GONE = "a message no longer in the diagram"
 
 
 def evidence_label(data: DiagramData, one: dict) -> str:

@@ -180,13 +180,13 @@ REFUSED = [
     (ToolName.AddQuestion, {"text": ASK, "kind": "fact", "state": "asked", "item_kind": "person"},
      "It named what the question is about only halfway."),
     (ToolName.AddQuestion, {"text": ASK, "kind": "fact", "state": "asked", "item_kind": "person", "item_id": "99"},
-     "That is not in the record."),
+     "That is not in the diagram."),
     (ToolName.SetQuestion, {"id": "q1", "state": "resolved"}, "It did not say how the question ended."),
     (ToolName.SetQuestion, {"id": "q1", "state": "asked", "outcome": "fact"}, "It did not say how the question ended."),
     (ToolName.SetQuestion, {"id": "q1", "state": "resolved", "outcome": "declined_by_user"},
      "Only you can dismiss a question."),
     (ToolName.SetQuestion, {"id": "q2", "state": "resolved", "outcome": "answered"}, "That question is already closed."),
-    (ToolName.SetQuestion, {"id": "q9", "state": "asked"}, "That is not in the record."),
+    (ToolName.SetQuestion, {"id": "q9", "state": "asked"}, "That is not in the diagram."),
 ]
 
 
@@ -615,7 +615,7 @@ HUGH, SAM, ADA = 2, 3, 4
 COUPLE, HOME = 7, 10
 CHILDREN = "Do you and Sam have children?"
 ALIVE = "Is your father still alive?"
-HOLDS = "It was about to ask something the record already holds."
+HOLDS = "It was about to ask something the diagram already holds."
 
 
 def grown(diagram):

@@ -191,7 +191,7 @@ const DID = new Map([
 /** How a question the coach closed ended, said after its words; the
  * reader's own dismissal is not a tool call and has no line. */
 const ENDED = new Map([
-  [QuestionOutcome.Fact, "the answer is in the record"],
+  [QuestionOutcome.Fact, "the answer is in the diagram"],
   [QuestionOutcome.Answered, "you answered it"],
   [QuestionOutcome.Unknown, "you don't know"],
   [QuestionOutcome.DeclinedInChat, "you'd rather not say"],

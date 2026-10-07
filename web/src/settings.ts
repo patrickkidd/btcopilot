@@ -906,7 +906,7 @@ export class Settings {
           PRO
             ? "Each case has its own sessions and its own picture."
             : account.diagrams.length
-              ? "One family, one record — it grows as you talk."
+              ? "One family, one diagram — it grows as you talk."
               : "No diagrams yet.",
         ),
       );

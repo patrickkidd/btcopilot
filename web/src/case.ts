@@ -93,7 +93,7 @@ export const ORDER_BOOK = "order";
 export const ORDER_TITLE = "Why these cards, in this order";
 
 /** What a guess card says when the coach has put nothing on it (R-0699, Patrick, 2026-10-04). */
-export const NOT_ENOUGH = "Not enough in the record to make a guess yet. Chat more with me so I have more to go on.";
+export const NOT_ENOUGH = "Not enough in the diagram to make a guess yet. Chat more with me so I have more to go on.";
 /** What the work card says when the person has not said what they are working on (R-0740). */
 export const NOT_SAID = "You haven't said yet what you're working on. Chat more with me about it.";
 

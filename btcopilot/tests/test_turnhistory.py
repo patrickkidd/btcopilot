@@ -244,7 +244,7 @@ def test_a_refused_call_stays_on_the_thread_with_why_in_plain_words(
         "refusal": "No people were named.",
     }
     assert [t["refusal"] for t in tools[1:]] == [
-        "The record had changed since it was read; read it again.",
+        "The diagram had changed since it was read; read it again.",
         "A noted event needs a few words saying what happened.",
     ]
 
