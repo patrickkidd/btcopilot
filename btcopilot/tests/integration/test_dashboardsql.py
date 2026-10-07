@@ -2,15 +2,17 @@
 and each first-wave measure returns the value its rule gives on that dataset,
 worked out by hand from the rule rather than read off the SQL."""
 
+import calendar
 import datetime
 import json
+import math
 import re
 from types import SimpleNamespace
 
 import pytest
 import sqlalchemy as sa
 
-from btcopilot import flow
+from btcopilot import bowen, flow
 from btcopilot.extensions import db
 from btcopilot.tables import TABLES
 from btcopilot.tests import grafanasql
@@ -22,7 +24,8 @@ pytestmark = pytest.mark.integration
 GRAFANA = REPO / "deploy" / "grafana"
 TODAY = datetime.datetime.utcnow()
 START, END = TODAY - datetime.timedelta(days=90), TODAY + datetime.timedelta(days=1)
-FIRST_WAVE = ("fd-people", "fd-coach", "fd-return")
+FIRST_WAVE = ("fd-people", "fd-coach", "fd-return", "fd-coachquality")
+WEEK = 7 * 86400
 
 
 def boards() -> dict[str, dict]:
@@ -342,6 +345,180 @@ def test_c3_days_between_sittings(ids):
     # Ann: 2 days, then 23
     assert 1 in numbers(row(rows, r"^1.3"))
     assert 1 in numbers(row(rows, r"^14.28"))
+
+
+def week_of(days_ago: int) -> float:
+    """The 7-day bucket $__timeGroup puts a message of that day at 10:00 in."""
+    at = TODAY.replace(hour=10, minute=0, second=0, microsecond=0) - datetime.timedelta(
+        days=days_ago
+    )
+    return math.floor(calendar.timegm(at.timetuple()) / WEEK) * WEEK
+
+
+def coach_week(key: str, days_ago: int = 3) -> dict:
+    """The all-versions row of a Bowen-board panel for the week of Bo's sitting."""
+    board = boards()["fd-coachquality"]
+    (p,) = [p for p in board["panels"] if p["title"] == bowen.BY_KEY[key].title]
+    (coach,) = [t["rawSql"] for t in p["targets"] if t["refId"] == "A"]
+    rows = run(coach, variables(board))
+    (found,) = [
+        r
+        for r in rows
+        if r["metric"] == "the coach, all versions" and r["time"] == week_of(days_ago)
+    ]
+    return found
+
+
+def value(found: dict, key: str) -> float:
+    return float(found[bowen.BY_KEY[key].unit])
+
+
+# Bo's sitting, 158 coach words in 8 replies with 8 question sentences, the
+# person's 47 words; every count below is worked by hand from the rule.
+
+
+@on("fd-coachquality")
+def test_q1_advice_counts_the_advice_sentence_and_not_the_idiom(ids):
+    # R-0812
+    found = coach_week("advice")
+    # "You might want to ask your aunt" is advice; "You should know that" is not
+    assert value(found, "advice") == pytest.approx(1000 * 1 / 158, abs=0.005)
+    assert found["coach words"] == 158
+
+
+@on("fd-coachquality")
+def test_q2_agreement_counts_the_sentences_siding_about_a_relative(ids):
+    # R-0809
+    # "That was wrong of him ... your mother" and "no wonder ... your aunt"
+    assert value(coach_week("agreement"), "agreement") == pytest.approx(
+        1000 * 2 / 158, abs=0.005
+    )
+
+
+@on("fd-coachquality")
+def test_q3_cause_words_are_counted_as_tokens(ids):
+    # R-0804, R-0805
+    # "so that is", "which is why", "it explains"
+    assert value(coach_week("cause"), "cause") == pytest.approx(
+        1000 * 3 / 158, abs=0.005
+    )
+
+
+@on("fd-coachquality")
+def test_q4_two_years_side_by_side_asked_or_told(ids):
+    # R-0805
+    found = coach_week("side_by_side_asked")
+    # 1999 and 2001 followed by a question; 1999 and 2001 followed by a lesson
+    assert value(found, "side_by_side_asked") == pytest.approx(0.5, abs=0.0005)
+    assert found["side-by-side sentences"] == 2
+
+
+@on("fd-coachquality")
+def test_q5_the_person_share_of_words(ids):
+    # R-0003, R-0801
+    found = coach_week("person_share")
+    assert value(found, "person_share") == pytest.approx(47 / (47 + 158), abs=0.0005)
+    assert found["coach replies"] == 8
+
+
+@on("fd-coachquality")
+def test_q6_question_marks_per_100_coach_words(ids):
+    # R-0436
+    assert value(coach_week("question_marks"), "question_marks") == pytest.approx(
+        100 * 8 / 158, abs=0.005
+    )
+
+
+@on("fd-coachquality")
+def test_q7_why_questions_per_100_question_sentences(ids):
+    # R-0806
+    found = coach_week("why")
+    # "Why do you think she kept quiet?"; "which is why I ask" is a statement
+    assert value(found, "why") == pytest.approx(100 * 1 / 8, abs=0.005)
+    assert found["coach question sentences"] == 8
+
+
+@on("fd-coachquality")
+def test_q8_feeling_questions_per_100_question_sentences(ids):
+    # R-0807
+    # "How did that feel for you?"; "no wonder you felt alone" is a statement
+    assert value(coach_week("feeling"), "feeling") == pytest.approx(
+        100 * 1 / 8, abs=0.005
+    )
+
+
+@on("fd-coachquality")
+def test_q9_teaching_sentences_per_1000_words(ids):
+    # R-0810
+    # "In family systems, this is called a cutoff"
+    assert value(coach_week("teaching"), "teaching") == pytest.approx(
+        1000 * 1 / 158, abs=0.005
+    )
+
+
+@on("fd-coachquality")
+def test_q10_widening_questions_name_someone_the_last_three_messages_did_not(ids):
+    # R-0801, R-0618
+    # the aunt, Rose by her record name, the mother; Rose in the first reply was just named
+    assert value(coach_week("widening"), "widening") == pytest.approx(
+        100 * 3 / 8, abs=0.005
+    )
+
+
+@on("fd-coachquality")
+def test_q11_date_questions_per_100_question_sentences(ids):
+    # R-0686, R-0618
+    # how old, how long after, when did, how many years
+    assert value(coach_week("date_asked"), "date_asked") == pytest.approx(
+        100 * 4 / 8, abs=0.005
+    )
+
+
+@on("fd-coachquality")
+def test_q12_heavy_disclosures_met_with_comfort_or_advice(ids):
+    # R-0807, R-0812, R-0810
+    found = coach_week("comfort_after_blow")
+    # four deaths told; the praise after "Hal killed himself" and the advice after the date
+    assert value(found, "comfort_after_blow") == pytest.approx(0.5, abs=0.0005)
+    assert found["heavy disclosures"] == 4
+
+
+@on("fd-coachquality")
+def test_q13_praise_sentences_per_1000_words(ids):
+    # R-0810
+    # "you're doing great" and "Well done"
+    assert value(coach_week("praise"), "praise") == pytest.approx(
+        1000 * 2 / 158, abs=0.005
+    )
+
+
+@on("fd-coachquality")
+def test_q14_plain_words_for_death_over_euphemisms(ids):
+    # R-0810, R-0737
+    found = coach_week("plain_words")
+    # died, died; "after she was gone"; "lost both of them" is not a euphemism by the rule
+    assert value(found, "plain_words") == pytest.approx(2 / 3, abs=0.0005)
+    assert found["death words"] == 3
+
+
+@on("fd-coachquality")
+def test_bowen_constant_lines_span_the_range_at_the_module_value(ids):
+    # R-0810, R-0814
+    board = boards()["fd-coachquality"]
+    for figure in bowen.FIGURES:
+        (p,) = [p for p in board["panels"] if p["title"] == figure.title]
+        (constant,) = [t["rawSql"] for t in p["targets"] if t["refId"] == "B"]
+        rows = run(constant, variables(board))
+        assert [float(r[figure.unit]) for r in rows] == [figure.value, figure.value]
+        assert {r["metric"] for r in rows} == {bowen.LEGEND}
+
+
+@on("fd-coachquality")
+def test_never_panels_read_zero_in_the_weeks_without_the_fault(ids):
+    # R-0812, R-0809
+    for key in ("advice", "agreement", "praise"):
+        found = coach_week(key, days_ago=20)  # Cy's week: "Hi, what brings you here?"
+        assert value(found, key) == 0
 
 
 @on("fd-return")

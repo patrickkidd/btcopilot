@@ -542,6 +542,45 @@ def build(today: datetime.datetime) -> dict:
         writes=[[add(E, 2, kind="shift", person=2, functioning="up", dateTime="1990-01-01")]],
         coverage=coverage(4, 2, 0, 0, 1, 1),
     )  # fmt: skip
+    # The same sitting goes on with the coach doing, once each, what the board
+    # "How the coach compares to Bowen" counts: two years side by side (asked,
+    # then told), cause words, a why and a feeling question, the idiom that is
+    # not advice and the advice that is, agreement about a relative, praise and
+    # a euphemism after a death, a teaching sentence, date questions, and
+    # widening to an aunt, to Rose by name and to the mother.
+    ids["tb3"] = sb.turn(
+        "She passed away in 1999 and my grandfather Hal died in 2001.",
+        "Rose died in 1999 and Hal died in 2001, so that is two deaths close together,"
+        " which is why I ask. How long after that did she move out?",
+    )
+    ids["tb4"] = sb.turn(
+        "My mother never talked about it.",
+        "Why do you think she kept quiet? You should know that is common, but I wonder"
+        " how your mother and your uncle took it.",
+    )
+    ids["tb5"] = sb.turn(
+        "They did not get along.",
+        "How did Hal get along with your aunt? How did that feel for you?",
+    )
+    ids["tb6"] = sb.turn(
+        "Hal killed himself.",
+        "I'm so sorry, you're doing great by talking about this. Well done for saying"
+        " it. When did Rose find out?",
+    )
+    ids["tb7"] = sb.turn(
+        "In 2003, two years after Hal died.",
+        "That was wrong of him to leave your mother like that after she was gone. You"
+        " might want to ask your aunt about it, no wonder you felt alone.",
+    )
+    ids["tb8"] = sb.turn(
+        "I never thought about that.",
+        "Between 1999 and 2001 you lost both of them. In family systems, this is called"
+        " a cutoff, and it explains a lot. How many years did your mother and Hal not"
+        " speak?",
+        calls=[("edit_event", {"id": 2, "dateTime": "1991-01-01"}, None)],
+        writes=[[put(E, 2, "dateTime", "1991-01-01", "1990-01-01")]],
+        coverage=coverage(4, 2, 0, 0, 1, 1),
+    )
 
     # Cy: one sitting, nothing written, then left.
     ids["ty1"] = Sitting(cy, dy, day(20), "v2").turn(
