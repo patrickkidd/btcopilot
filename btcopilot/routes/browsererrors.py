@@ -14,6 +14,7 @@ from btcopilot.routes import bp
 _log = logging.getLogger(__name__)
 
 FIELDS = {"source", "message", "stack", "address", "release"}
+MAX_BYTES = 64 * 1024
 
 
 class Source(enum.StrEnum):
@@ -26,6 +27,7 @@ def create_browser_error():
     user = auth.signed_in()
     if not reports.allowed(f"browser errors from {reports.sender(user)}"):
         return "Too many errors from here; try again in an hour", 429
+    request.max_content_length = MAX_BYTES
     body = request.get_json()
     unknown = set(body) - FIELDS
     if unknown:

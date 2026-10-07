@@ -151,8 +151,8 @@ def total(data: dict) -> int:
 def entries(cloud: Cloud, start: int, end: int) -> list[dict]:
     params = {
         "query": LOGS,
-        "start": start * NS,
-        "end": end * NS,
+        "start": start,
+        "end": end,
         "limit": LOKI_LIMIT,
         "direction": "forward",
     }
@@ -164,6 +164,8 @@ def entries(cloud: Cloud, start: int, end: int) -> list[dict]:
     ]
     if len(found) < LOKI_LIMIT:
         return found
+    if end - start == 1:
+        raise RuntimeError(f"{LOKI_LIMIT} or more log lines at {start} ns cannot be split")
     middle = (start + end) // 2
     return entries(cloud, start, middle) + entries(cloud, middle, end)
 
@@ -179,7 +181,7 @@ def hour(cloud: Cloud, window: tuple[int, int]) -> int:
     rows = logsql(VL, f"{span(start, end)} source:={SOURCE} | fields _time, _msg")
     held = Counter((nanos(r["_time"]), r.get("_msg", "")) for r in rows)
     fresh = []
-    for entry in entries(cloud, start, end):
+    for entry in entries(cloud, start * NS, end * NS):
         key = (entry["_time"], entry["_msg"])
         if held[key]:
             held[key] -= 1

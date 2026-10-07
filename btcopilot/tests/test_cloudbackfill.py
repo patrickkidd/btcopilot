@@ -63,3 +63,17 @@ def test_a_cloud_log_carries_the_container_field_the_journal_uses():
         "CONTAINER_NAME": "familydiagram-fd-app-60",
         "source": "grafana-cloud",
     }
+
+
+def test_a_second_with_more_lines_than_a_page_is_read_by_the_nanosecond():
+    # R-0370
+    lines = [cloudbackfill.NS * 7 + i for i in range(cloudbackfill.LOKI_LIMIT + 3)]
+
+    class Cloud:
+        def json(self, uid, path, params):
+            got = [t for t in lines if params["start"] <= t < params["end"]]
+            values = [[str(t), f"line {t}"] for t in got[: cloudbackfill.LOKI_LIMIT]]
+            return {"data": {"result": [{"stream": {"service_name": "fd-app"}, "values": values}]}}
+
+    found = cloudbackfill.entries(Cloud(), 7 * cloudbackfill.NS, 8 * cloudbackfill.NS)
+    assert sorted(e["_time"] for e in found) == lines
