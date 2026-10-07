@@ -18,6 +18,7 @@ SSH="ssh -T -i $KEY -o BatchMode=yes -o UserKnownHostsFile=$DIR/known_hosts -o S
 
 tunnel() {
   while true; do
+    rm -f "$CTL"
     $SSH -M -S "$CTL" -N -o GatewayPorts=yes \
       -L 0.0.0.0:15432:127.0.0.1:5432 \
       -R 172.17.0.1:18428:vm:8428 \
