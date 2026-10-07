@@ -6,6 +6,30 @@
 
 ---
 
+## FD-375 — a file attached to a message is read into text once (2026-10-07)
+
+**Change**: a new instruction, `fragments/attachment` (private, with the same public wording), is
+the system prompt of one model call that reads an attached PDF or photo: write out everything the
+file holds as plain text, people with their dates, events with their dates as given, in the file's
+own words and order, saying where a date or a part is unclear; no interpretation, summary or
+remarks. The file goes as a document or image block; a photo is sent as a JPEG no larger than 1568
+pixels on its longest side. Output is capped at 16000 tokens. Text and Markdown files make no call.
+The read text reaches the coach after the person's words, marked "From the file <name> (enter
+every person and every dated event in it, births too, before you reply):", and the private record
+contract gains a paragraph saying the same: enter everything the file holds this turn, a person
+added first and their events, birth among them, once their id is back, every date checked before
+replying [R-0828, R-0829, R-0830].
+
+**Why**: Patrick wants any file dropped on the app to be input to the case, with the coach seeing
+only text. The live eval `test_attachments.py` (2 of 3, subscription replay) proves the coach
+enters a one-page PDF's people and events on the reply that carries it; the reading call itself is
+stood in for by the PDF's extracted text there, so its own wording is not yet measured on a real
+file. Before this there was no way to attach a file, so the case cannot pass on the old code.
+Measured on the subscription: with neither instruction 0 of 3 runs entered the added son's
+birth (the coach added him and his parents' events in one round, then never came back for his
+birth); with the record-contract paragraph alone, 1 of 3; with the words beside the file text
+too, 2 of 3, which passes but has no margin.
+
 ## FD-375 — the coach notes when the person corrects it (2026-10-07)
 
 **Change**: the coach's notes tool takes an optional `corrected` field: what the person's newest

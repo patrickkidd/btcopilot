@@ -10,6 +10,7 @@ from btcopilot.llmutil import (
     Billed,
     Served,
     Spent,
+    claude_text_sync,
     gemini_structured_sync,
     gemini_text_sync,
     response_text_sync,
@@ -70,6 +71,17 @@ class Metered:
         started = self._begin()
         with self._billed(started):
             said = response_text_sync(prompt)
+        self._write(said.served, said.spent, started, 0)
+        return said.words
+
+    def read(self, content: list[dict], system: str, limit: int) -> str:
+        """A file read into words: the file goes as content blocks, so this
+        call is always the response model's."""
+        started = self._begin()
+        with self._billed(started):
+            said = claude_text_sync(
+                content, system_instruction=system, max_output_tokens=limit
+            )
         self._write(said.served, said.spent, started, 0)
         return said.words
 

@@ -10,7 +10,7 @@ import logging
 import uuid
 
 import btcopilot
-from btcopilot import extensions
+from btcopilot import attachments, extensions
 from btcopilot.extensions import db
 from btcopilot import chips, coverage, observer, record, shadow, turnlog, turnstore
 from btcopilot.admin import setting
@@ -57,19 +57,36 @@ class Idle(Exception):
     """A stop for a turn that is not running."""
 
 
-def start(discussion: Discussion, statement: str, zone: str | None = None) -> dict:
-    """Store what the user said, reserve the turn, and hand it over, with the
-    person's time zone so the coach's day is theirs."""
+def start(
+    discussion: Discussion,
+    statement: str,
+    zone: str | None = None,
+    attached: attachments.File | None = None,
+) -> dict:
+    """Store what the user said, with the text read from a file attached to
+    it, reserve the turn, and hand it over, with the person's time zone so the
+    coach's day is theirs. A file is read once the turn is reserved, so a busy
+    session spends nothing; a read that fails frees the turn."""
     turn_id = uuid.uuid4().hex
+    text = chips.validate(statement, record_of(discussion), discussion.diagram_id)
     if not turnlog.start(discussion.id, turn_id):
         raise Busy(BUSY)
+    read = None
+    if attached:
+        try:
+            read = attached.read(discussion.user_id, discussion.diagram_id, turn_id)
+        finally:
+            if read is None:
+                turnlog.clear(discussion.id)
     said = Statement(
         discussion_id=discussion.id,
-        text=chips.validate(statement, record_of(discussion), discussion.diagram_id),
+        text=text,
         speaker=discussion.chat_user_speaker,
         order=discussion.next_order(),
         kind=StatementKind.Turn,
         turn_id=turn_id,
+        attachment_name=attached.name if attached else None,
+        attachment_text=read,
     )
     db.session.add(said)
     db.session.commit()
@@ -153,7 +170,7 @@ def run(
     covered = coverage.counts(record_of(discussion))
     turn = CoachTurn(
         discussion,
-        said.text,
+        said.spoken,
         purpose=Purpose.Coach,
         model=model_for(setting.read(SettingKey.CoachModel, discussion.user_id)),
         statement_id=statement_id,

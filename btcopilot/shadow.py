@@ -301,7 +301,7 @@ def run(row_id: int) -> None:
     try:
         turn = CoachTurn(
             copy,
-            said.text,
+            said.spoken,
             purpose=Purpose.Shadow,
             model=model_for(row.model),
             statement_id=said.id,

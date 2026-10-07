@@ -52,6 +52,10 @@ app = [
     "markdown-it-py",
     "requests",
     "pywebpush>=2.5.0",
+    # files attached to a message: HEIC photos are read as JPEG, PDFs counted by page
+    "pillow",
+    "pillow-heif",
+    "pypdf",
 ]
 
 test = [
