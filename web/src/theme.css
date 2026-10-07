@@ -1225,6 +1225,24 @@ button { font-family: inherit; }
 .chip.merge::before { inset: 0; }
 .chip.merge .half { padding: 8px 8px 6px; min-width: 0; }
 .chip.merge .half + .half { border-left: 1px solid var(--ask); }
+
+/* The file a message carries, on its own line above its words; dimmed and
+   still while the server reads it, a tap once read shows what the coach read. */
+.bub > .file { margin-bottom: 4px; }
+.bub > .file:only-child { margin-bottom: 0; }
+.chip.file.reading { opacity: 0.6; cursor: default; }
+.chip.file.reading::after { content: " · reading"; }
+/* the file picked for the next message, in the box with its cross */
+.field > .attached { display: flex; align-items: center; padding: 4px 0 0 12px; }
+.field > .attached[hidden] { display: none; }
+.field > .attached .chip { max-width: calc(100% - 44px); cursor: default; }
+.field > .attached .cardx { position: static; flex: none; }
+.fs-glyph.clip svg { width: 18px; height: 18px; }
+/* a file dragged over the chat on a computer lands on it */
+#chat-screen.dropping .chat { outline: 2px dashed var(--data); outline-offset: -6px; }
+.fs-sheet.fl { max-height: min(85%, 85dvh); }
+.fs-sheet.fl .cf-t { padding-right: 44px; overflow-wrap: anywhere; }
+.fl-text { min-height: 0; overflow-y: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 15px/1.45 var(--sans); color: var(--ink); }
 .chip.merge .nm { display: block; font-weight: 500; }
 .chip.merge .facts { color: var(--faint); }
 .chip.merge .differ { color: var(--ask-text); }

@@ -38,6 +38,7 @@ import { among, family, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
+import { Attachment } from "./attachment";
 import { BACK } from "./tokens";
 import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
 import { offerPasskey } from "./passkey";
@@ -269,6 +270,8 @@ const chat = new Chat($("chat"), $("composer"), {
     return picture.settled;
   },
 });
+
+const attachment = new Attachment($("attach"), $("composer").parentElement!, $("chat-screen"), $("chat"));
 
 /** An event or a person carried from its detail card into the message box:
  * the chat comes up with it as a lit chip at the caret and nothing sent
@@ -796,6 +799,8 @@ function addStatements(statements: api.Said[], newest = false): void {
       coach ? lines : [],
       coach && notes ? (notes.args as unknown as Notes) : null,
     );
+    if (statement.attachment_name !== null)
+      attachment.show(bubble, statement.attachment_name, statement.attachment_text);
     if (statement.feedback)
       chat.kept(bubble, statement.turn_id!, statement.feedback, newest && statement === statements.at(-1));
     if (statement.stopped) chat.halted(statement.conflict ? STOPPED_KEPT : STOPPED);
@@ -1046,13 +1051,13 @@ let inFlight = false;
 
 async function send(): Promise<void> {
   const statement = chat.draft();
-  if (!statement) return;
+  if (!statement && !attachment.picked.file) return;
   // sent while the coach replies, it waits in the box for the reply to end,
   // and never changes the reply under way (R-0636)
   if (inFlight) return chat.keep();
   await questions.sending(statement);
   chat.resetDraft();
-  post(statement);
+  post(statement, attachment.take());
 }
 
 /** A message held while the coach replied goes once the reply has ended and
@@ -1079,22 +1084,36 @@ function flying(on: boolean): void {
   chat.running(on);
 }
 
-/** The reader's words go into the thread as theirs and on to the coach. */
-function post(statement: string): void {
-  if (!statement || inFlight || looking()) return;
+/** The reader's words go into the thread as theirs and on to the coach, with
+ * the file's name on them while the server reads it. */
+function post(statement: string, file: File | null = null): void {
+  if ((!statement && !file) || inFlight || looking()) return;
   track.tap(Feature.SendMessage);
-  chat.add(Role.User, statement);
+  const bubble = chat.add(Role.User, statement);
+  if (file) attachment.show(bubble, file.name);
   const lapsed = chat.sent();
   feedback();
-  void deliver(statement, lapsed);
+  void deliver(statement, file, bubble, lapsed);
 }
 
-async function deliver(statement: string, lapsed = false): Promise<void> {
+async function deliver(statement: string, file: File | null, bubble: HTMLElement, lapsed = false): Promise<void> {
   // read before this message is stored, which would count as the last one
   if (lapsed) await settings.refresh();
-  const started = await begin(() => api.say(store.id(), statement), () => void deliver(statement));
+  const started = await begin(
+    () => api.say(store.id(), statement, file),
+    () => void deliver(statement, file, bubble),
+    // a file the server will not take is said in its words, and the message
+    // goes back in the box to send without it
+    file
+      ? (failed) => {
+          toast(api.whatFailed(failed, (words) => words));
+          chat.takeBack(bubble);
+        }
+      : null,
+  );
   if (!started) return;
-  sat(started.discussion_id, [...$("chat").querySelectorAll(".bub.user")].at(-1) ?? null);
+  if (started.attachment_name !== null) attachment.show(bubble, started.attachment_name, started.attachment_text);
+  sat(started.discussion_id, bubble);
   follow(started.turn_id);
 }
 
@@ -1104,10 +1123,11 @@ async function resume(turnId: string): Promise<void> {
   if (await begin(() => api.resume(turnId), () => void resume(turnId))) follow(turnId);
 }
 
-async function begin(
-  ask: () => Promise<Started>,
+async function begin<T extends Started>(
+  ask: () => Promise<T>,
   again: () => void,
-): Promise<Started | null> {
+  refused: ((failed: api.Failed) => void) | null = null,
+): Promise<T | null> {
   // One turn at a time: a second send while the coach is answering would store
   // the words again.
   flying(true);
@@ -1123,7 +1143,8 @@ async function begin(
     if (!live()) return null;
     flying(false);
     chat.busy(false);
-    chat.warn(whatFailed(error), again);
+    if (refused && error instanceof api.Failed && error.status >= 400 && error.status < 500) refused(error);
+    else chat.warn(whatFailed(error), again);
     return null;
   }
   if (!live()) return null;

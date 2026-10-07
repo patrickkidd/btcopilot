@@ -165,6 +165,8 @@ export class Chat {
       if (play) return this.read(play);
       const info = (e.target as Element).closest<HTMLElement>(".info");
       if (info) return this.open(info.parentElement as HTMLElement);
+      // a message's file chip raises what the coach read, nothing else
+      if ((e.target as Element).closest(".bub > .file")) return;
       // [try again] looks like a chip but names nothing in the record.
       const button = (e.target as Element).closest<HTMLElement>("button.chip[data-kind]");
       if (!button) {
@@ -730,6 +732,16 @@ export class Chat {
   resetDraft(): void {
     this.composer.innerHTML = "";
     this.unhold();
+  }
+
+  /** Words the server refused go back in the box as they were typed, and
+   * their bubble goes. */
+  takeBack(bubble: HTMLElement): void {
+    bubble.querySelector(":scope > .file")?.remove();
+    for (const chip of bubble.querySelectorAll<HTMLElement>(".chip")) chip.contentEditable = "false";
+    this.composer.replaceChildren(...bubble.childNodes);
+    bubble.remove();
+    this.mark();
   }
 
   /** How far from the bottom still counts as watching the newest words. */
