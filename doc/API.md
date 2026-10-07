@@ -63,18 +63,16 @@ words (null once the session is gone); on the `own_part` question it is the
 person's view of their own part (R-0708). The case report reads this same
 `/timeline`.
 
-`case_report`: `{out_of_date, rewriting}`. `out_of_date` is null, or the newest
-change since the coach last put a guess on a card that makes the report out of
-date: `{change_id, at, text}`, the `diagram_changes` row id, its UTC time
-(ISO), and one sentence such as "Ada's death in 2019 was added after the coach
-wrote this report." A change counts when an event a card's guess rests on
-changed its date or its kind, or when a death, a marriage, a separation, a
-divorce or a shift with a symptom was added; a change taken back counts for
-nothing, and a report the coach never wrote is never out of date (R-0827). The
-page keeps the `change_id` the person last chose "Show the last report" on and
-offers the sheet again only for a newer one (R-0826, R-0827). `rewriting` is
-the turn id of a rewrite of the report running now, or null; a page that comes
-back follows it as below.
+`report_out_of_date`: null, or the newest change since the coach last put a
+guess on a case report card that makes the report out of date:
+`{change_id, at, sentence}`, the `diagram_changes` row id, its UTC time (ISO),
+and one sentence such as "Ada's death in 2019 was added after the coach wrote
+this report." A change counts when an event a card's guess rests on changed its
+date or its kind, or when a death, a marriage, a separation, a divorce or a
+shift with a symptom was added; a change taken back counts for nothing, and a
+report the coach never wrote is never out of date (R-0827). The page keeps the
+`change_id` the person last chose "Show the last report" on and offers the
+sheet again only for a newer one (R-0826, R-0827).
 
 ## Case report
 
@@ -84,21 +82,24 @@ private corpus the way the theory pages are, and given only to a signed-in user
 who may open the diagram; any other is a 404 (R-0692, R-0715). The keys are the
 mockup's: `why`, `1` to `6`, `7a`, `9a`, `10`, `3s` and `order`.
 
-`POST /case-report?diagram_id=` — write every card the coach writes again from
-the diagram as it stands: Executive Summary (`main_guess`), the coach's guess,
-own part, the choice and what to work on, in one coach turn in the worker
-(R-0825). 202 `{turn_id}`; 409 while a rewrite of that family's report is
-running, or when the family has no session yet; a read-only diagram is refused
-as every write is. Follow it on `GET /turns/<turn_id>/events` exactly as a
-coach reply: it ends in one event, `done` with `{turn_id, cards, version}`
-(`cards` the card values written, in order; `version` the diagram's version
-after), `failed` with `message`, or `refused` with `message`. Read `/timeline`
-again after `done`: the new guesses are on their cards, the guesses they
-replaced are on none, and `out_of_date` is null. A card the coach could not
-fill keeps what it had. The person's own answer and the questions on the own
-part and choice cards stay. The model calls are charged to the person's monthly
-tokens like a coach turn, and a refused tool call or a failed or refused turn
-is written to the observations table.
+`POST /case-report-rewrites?diagram_id=` — write every card the coach writes
+again from the diagram as it stands: Executive Summary (`main_guess`), the
+coach's guess, own part, the choice and what to work on, in one coach turn in
+the worker (R-0825). 202 `{id, state: "running"}`; 409 while a rewrite of that
+family's report is running, or when the family has no session yet; a read-only
+diagram is refused as every write is.
+
+`GET /case-report-rewrites/<id>` — `{id, state}`, `state` one of `running`,
+`done`, `failed`. A rewrite that runs past 300 seconds ends `failed` before its
+next model call, and one whose worker stopped reads `failed` within three
+minutes, so polling always ends. A rewrite of a family the reader may not open,
+or one older than an hour, is a 404. After `done`, read `/timeline` again: the
+new guesses are on their cards, the guesses they replaced are on none, and
+`report_out_of_date` is null. A card the coach could not fill keeps what it
+had; the questions on the own part and choice cards and the person's own answer
+stay. The model calls are charged to the person's monthly tokens like a coach
+turn, and a refused tool call or a failed or refused rewrite is written to the
+observations table.
 
 ## Preferences
 

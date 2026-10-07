@@ -22,9 +22,10 @@ TICK = 1.0
 # in an hour. The task pushes it out again with every event it writes, so a turn
 # that is still working never lets go.
 RUNNING_TTL = 180
-# How long a family's case report stays held for the rewrite writing it: one
-# model call, which says nothing until it answers.
-REPORT_TTL = 600
+# How long a family's case report stays held for the rewrite writing it without
+# a word from it: the rewrite holds it again before each model call, which may
+# take the model's whole limit, so a worker that dies lets go within minutes.
+REPORT_TTL = 180
 
 
 class TurnLogBackend(enum.StrEnum):
@@ -159,6 +160,9 @@ class RedisLog:
         self.redis.set(f"turn:{turn_id}:diagram", diagram_id, ex=TTL)
         return True
 
+    def hold(self, diagram_id: int) -> None:
+        self.redis.expire(f"diagram:{diagram_id}:report", REPORT_TTL)
+
     def release(self, diagram_id: int) -> None:
         self.redis.delete(f"diagram:{diagram_id}:report")
 
@@ -265,6 +269,11 @@ class MemoryLog:
             self.reported[turn_id] = diagram_id
         return True
 
+    def hold(self, diagram_id: int) -> None:
+        held = self.reports.get(diagram_id)
+        if held:
+            self.reports[diagram_id] = (held[0], time.time() + REPORT_TTL)
+
     def release(self, diagram_id: int) -> None:
         self.reports.pop(diagram_id, None)
 
@@ -346,6 +355,10 @@ def report(turn_id: str) -> int | None:
 
 def claim(diagram_id: int, turn_id: str) -> bool:
     return store().claim(diagram_id, turn_id)
+
+
+def hold(diagram_id: int) -> None:
+    store().hold(diagram_id)
 
 
 def release(diagram_id: int) -> None:

@@ -27,7 +27,6 @@ from btcopilot.tests.live.test_executivesummary import (
     event,
     reads,
 )
-from btcopilot.turnlog import TurnEventKind, read_from
 
 CARDS = ("main_guess", "coach_guess", "own_part", "choice", "work_on")
 MORE = [
@@ -60,10 +59,10 @@ def test_a_refresh_writes_all_five_cards_again_and_the_summary_reads_the_family(
     # R-0825, R-0820
     seeded(coach)
     coach.turn("I'm trying to call my mother every week now, even when things are tense.")
-    response = coach.web.post("/app/case-report", headers={"X-CSRFToken": coach.token})
+    response = coach.web.post("/app/case-report-rewrites", headers={"X-CSRFToken": coach.token})
     assert response.status_code == 202, response.get_data(as_text=True)
-    ended = read_from(response.get_json()["turn_id"], 0)[-1][1]
-    assert ended["type"] == TurnEventKind.Done.value, ended
+    rewrite = response.get_json()["id"]
+    assert coach.web.get(f"/app/case-report-rewrites/{rewrite}").get_json()["state"] == "done"
     db.session.expire_all()
     now = coach.user.free_diagram.get_diagram_data().questions
     held = {card: [q for q in now if q.get("case_report_card") == card] for card in CARDS}

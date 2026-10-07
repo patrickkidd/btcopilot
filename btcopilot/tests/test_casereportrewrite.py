@@ -93,7 +93,7 @@ def test_an_added_death_marriage_separation_divorce_or_symptom_puts_the_report_o
     happened(family, kind, "2019-03-01", **fields)
 
     found = out_of_date(family)
-    assert found["text"] == said
+    assert found["sentence"] == said
     assert found["change_id"] and found["at"]
 
 
@@ -101,7 +101,7 @@ def test_a_card_events_new_date_or_kind_puts_the_report_out_of_date(written, fam
     # R-0827
     moved(family, written, date="2005-01-01")
 
-    assert out_of_date(family)["text"] == (
+    assert out_of_date(family)["sentence"] == (
         "The date of Wren's “Stopped sleeping well” in 2005 changed after the coach wrote this report."
     )
 
@@ -131,9 +131,8 @@ def test_the_timeline_says_what_put_the_report_out_of_date(web, written, family)
     # R-0826, R-0827
     happened(family, "death", "2019-03-01", person=2)
 
-    report = web.get("/app/timeline").get_json()["case_report"]
-    assert report["out_of_date"]["text"] == "Ada's death in 2019 was added after the coach wrote this report."
-    assert report["rewriting"] is None
+    found = web.get("/app/timeline").get_json()["report_out_of_date"]
+    assert found["sentence"] == "Ada's death in 2019 was added after the coach wrote this report."
 
 
 FIVE = [
@@ -145,7 +144,7 @@ FIVE = [
 
 def rewrite(web, model):
     with patch("btcopilot.casereport.model_for", return_value=model):
-        return web.post("/app/case-report", headers={"X-CSRFToken": csrf_token(web)})
+        return web.post("/app/case-report-rewrites", headers={"X-CSRFToken": csrf_token(web)})
 
 
 def test_a_rewrite_writes_every_card_again_until_the_coach_stops(web, past, written, family):
@@ -155,13 +154,14 @@ def test_a_rewrite_writes_every_card_again_until_the_coach_stops(web, past, writ
     response = rewrite(web, model)
 
     assert response.status_code == 202
-    done = turnlog.read_from(response.get_json()["turn_id"], 0)[-1][1]
-    assert (done["type"], done["cards"]) == ("done", ["main_guess", "coach_guess", "own_part", "choice", "work_on"])
+    turn_id = response.get_json()["id"]
+    assert web.get(f"/app/case-report-rewrites/{turn_id}").get_json() == {"id": turn_id, "state": "done"}
+    done = turnlog.read_from(turn_id, 0)[-1][1]
+    assert done["cards"] == ["main_guess", "coach_guess", "own_part", "choice", "work_on"]
     now = cards(family)
     assert now["i1"] is None
     assert sorted(v for v in now.values() if v) == ["choice", "coach_guess", "main_guess", "own_part", "work_on"]
     assert [names[-1] for names in model.offered] == ["add_impression"] * 3
-    turn_id = response.get_json()["turn_id"]
     assert ModelCall.query.filter_by(purpose=Purpose.Coach, turn_id=turn_id).count() == 3
     assert TokenMeter.query.filter_by(user_id=family.user_id).count() == 1
 
@@ -202,9 +202,26 @@ def test_a_family_with_no_session_has_no_report_to_write_again(web, written, fam
     assert stored(family)
 
 
-def test_the_page_follows_a_rewrite_on_its_turn_like_a_coach_reply(web, past, written, family):
+def test_a_rewrite_whose_worker_let_go_reads_failed(web, past, written, family):
     # R-0825
-    turn_id = rewrite(web, Model(calling(*FIVE), said("Done."))).get_json()["turn_id"]
+    turnlog.claim(family.id, "lost")
+    turnlog.release(family.id)
 
-    followed = web.get(f"/app/turns/{turn_id}/events").get_data(as_text=True)
-    assert '"type": "done"' in followed
+    assert web.get("/app/case-report-rewrites/lost").get_json() == {"id": "lost", "state": "failed"}
+
+
+def test_a_rewrite_past_its_time_limit_ends_failed(web, past, written, family, monkeypatch):
+    # R-0825
+    monkeypatch.setattr(casereport, "LIMIT", -1)
+    turnlog.claim(family.id, "slow")
+    with patch("btcopilot.casereport.model_for", return_value=Model()):
+        with pytest.raises(casereport.Overdue):
+            casereport.run("slow", family.id, family.user_id)
+
+    assert casereport.state("slow", family.id) is casereport.State.Failed
+    assert cards(family)["i1"] == "main_guess"
+
+
+def test_a_rewrite_of_a_family_the_reader_cannot_open_is_not_found(web):
+    # R-0825
+    assert web.get("/app/case-report-rewrites/nobody").status_code == 404

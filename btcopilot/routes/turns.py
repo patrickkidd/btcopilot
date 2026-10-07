@@ -12,23 +12,18 @@ from flask import Response, abort, jsonify, request, stream_with_context
 from btcopilot import auth
 from btcopilot.extensions import db
 from btcopilot import toolnames, turnlog, turns
-from btcopilot.models import Diagram, Discussion, TurnEvent
-from btcopilot.routes import bp, opens, owned_session, require_write_access
+from btcopilot.models import Discussion, TurnEvent
+from btcopilot.routes import bp, owned_session, require_write_access
 
 HEARTBEAT_TICKS = 15
 
 
 def _mine(turn_id: str) -> None:
-    """A turn belongs to the session it was started on, and a case report's
-    rewrite to its family; anyone else asking for it is told there is no such
-    turn, the way a session they do not own is."""
+    """A turn belongs to the session it was started on; anyone else asking for
+    it is told there is no such turn, the way a session they do not own is."""
     session_id = turnlog.owner(turn_id)
     if session_id is None:
-        family = turnlog.report(turn_id)
-        found = db.session.get(Diagram, family) if family is not None else None
-        if found is None or not opens(found, auth.current_user()):
-            abort(404)
-        return
+        abort(404)
     discussion = db.session.get(Discussion, session_id)
     if discussion is None or discussion.user_id != auth.current_user().id:
         abort(404)

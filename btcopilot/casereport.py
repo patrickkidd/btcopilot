@@ -6,10 +6,12 @@ Out of date is a rule on the command log, no model: after the newest card
 was written, an event a card rests on changed its date or kind, or a death, a
 marriage, a separation, a divorce or a shift with a symptom was added. The
 rewrite runs in the worker like a coach turn and ends in a done or failed
-event on the turn log, which the page follows on /turns/<id>/events.
+event on the turn log; the page polls its state.
 """
 
+import enum
 import logging
+import time
 import uuid
 
 from btcopilot import clock, coverage, extensions, profile, record, turnlog
@@ -58,6 +60,9 @@ SINCE = "after the coach wrote this report."
 FIELDS = ("text", "evidence", "state", CARD)
 # Model calls in one rewrite: its reads, then five cards a few guesses a call.
 STEPS = 8
+# The longest a rewrite may run, in seconds: past it, it ends failed before
+# its next model call, so the page never waits on it for good.
+LIMIT = 300
 START = (
     "This is not a chat; nobody reads your words. Write the person's case "
     "report again from the diagram as it stands now: every card you write, all "
@@ -72,6 +77,16 @@ START = (
 )
 BROKE = "The case report could not be written again just now."
 REFUSED = "The case report could not be written again from this diagram."
+
+
+class State(enum.StrEnum):
+    Running = "running"
+    Done = "done"
+    Failed = "failed"
+
+
+class Overdue(Exception):
+    """A rewrite past its time limit."""
 
 
 class Busy(Exception):
@@ -160,7 +175,7 @@ def stale(diagram_id: int, data: DiagramData) -> dict | None:
         for delta in reversed(change.deltas):
             said = _why(delta, cited, events, people)
             if said:
-                return {"change_id": change.id, "at": change.created_at.isoformat(), "text": said}
+                return {"change_id": change.id, "at": change.created_at.isoformat(), "sentence": said}
     return None
 
 
@@ -172,7 +187,17 @@ def start(diagram: Diagram, user: User) -> dict:
     if not turnlog.claim(diagram.id, turn_id):
         raise Busy("the case report is already being written again")
     enqueue(turn_id, diagram.id, user.id)
-    return {"turn_id": turn_id}
+    return {"id": turn_id, "state": State.Running.value}
+
+
+def state(turn_id: str, diagram_id: int) -> State:
+    """Running while the family's report is held for it; done or failed by its
+    last event; failed when the hold ran out with no last event, as when the
+    worker died."""
+    ended = [e for _, e in turnlog.read_from(turn_id, 0) if turnlog.ended(e)]
+    if ended:
+        return State.Done if ended[-1]["type"] == TurnEventKind.Done.value else State.Failed
+    return State.Running if turnlog.rewriting(diagram_id) == turn_id else State.Failed
 
 
 def enqueue(turn_id: str, diagram_id: int, user_id: int) -> None:
@@ -235,7 +260,11 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
     )
     before = {q["id"] for q in data.questions}
     messages = [{"role": "user", "content": START}]
+    began = time.monotonic()
     for _ in range(STEPS):
+        if time.monotonic() - began > LIMIT:
+            raise Overdue(f"case report rewrite {turn_id} ran past {LIMIT} seconds")
+        turnlog.hold(diagram.id)
         turn = drain(meter.turn(system, messages, offered(), turn_id))
         if not turn.calls:
             break
