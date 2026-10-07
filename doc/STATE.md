@@ -176,8 +176,8 @@ address table is in SCREENS.md.
 **Coding and Quality in the account view.** "Your coding task" and "Next meeting" moved from the
 sessions sheet to a Coding section of the account view for auditors and admins, Next meeting
 for admins only, with the literature review row now titled "Auditor's Coding Guide" [queued
-R-0609, R-0601]. Admins have a Quality section with one row, "Better replies", the page formerly
-called Compare replies [queued R-0612]. Each opens as a page of the account view. A cut starts
+R-0609, R-0601]. The Quality section and its "Better replies" page were removed in FD-375; the
+vote on replies in the chat replaces them [R-0801]. Each opens as a page of the account view. A cut starts
 from the meeting page, never from a session: "Put a session on the agenda" lists every session on
 every family, searchable by words said in them. One meeting date is one meeting.
 
@@ -2174,7 +2174,7 @@ You rule fix now, later, or accept.
 
 22. **26 shadow answers on your account await your picks**
    - Fixed 2026-09-30: The Sonnet and Flash picks still await Patrick.
-   - Done: They are in Better replies.
+   - Done: Better replies was removed in FD-375; replies are now voted on in the chat [R-0801].
    - Why it matters: Shadow quality cannot be judged until you pick.
    - You decide: Pick when you have time.
 
