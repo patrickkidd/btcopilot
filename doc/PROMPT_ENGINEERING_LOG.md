@@ -37,11 +37,17 @@ rule still holds: a revised impression on a card is put on the card again.
 subscription ($0): 0 of 3 on the old prompt (each summary called the person's trouble a thing
 that "tends to show up" after a family change, or left out her sister), 3 of 3 on the new.
 
-**Open**: two cases of `test_casereportcards.py` that pass on the old prompt fail on the new, on
-the subscription. Asked for its main guess on a record with no grandparents and no brothers or
-sisters, the coach asks for them instead of putting a summary on the card (1 of 3, R-0709).
-Asked which of five raised guesses matter most, it puts none on the coach's guess card, which is
-now described as the full reading rather than the parts that matter most (0 of 3, R-0732).
+**Second version, same day**: the first wording broke two cases of `test_casereportcards.py`
+that pass on the old prompt. Asked for its main guess on a record with no grandparents and no
+brothers or sisters, the coach asked for them instead of carding a summary (1 of 3, R-0709).
+Asked which of five raised guesses matter most, it carded none, since card six had become "the
+full reading" (0 of 3, R-0732). The main_guess line now says to write the summary whenever asked,
+from whatever the diagram holds, naming what is missing among the facts to check, never asking for
+it instead; and at least two dates are other people's only where the diagram has such events. The
+coach_guess line is again the one to three raised guesses that matter most, each a part of the
+reading the summary is the short form of, picked whenever asked, even among guesses already raised.
+The tool wording says the same. On the subscription: the Executive Summary eval 3 of 3, and every
+case of `test_casereportcards.py` 3 of 3.
 
 ## FD-366 — the coach reads what is still unknown of the basic data (2026-09-30)
 
