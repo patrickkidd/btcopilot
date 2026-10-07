@@ -371,16 +371,17 @@ FIGURES = (
     Figure(
         "widening",
         "Does it keep other family members in the picture?",
-        15.59,
+        20.29,
         "per 100 questions",
-        "Coach question sentences naming a kin word or a record person none of the "
-        "person's last three messages named, per 100 coach question sentences.",
+        "Coach sentences ending in a question mark that name a kin word, matched as written, or a record "
+        "person, matched with the name's case, that none of the person's last three messages named, per"
+        " 100 coach sentences ending in a question mark.",
         ("flow.KIN rows",),
         TEN,
-        53,
-        QUESTION_MARKS,
-        "TOTALS.md section 11, column widen q (RULES 2.19, with the synonym rows and no "
-        "vocatives); scripts/job-020: 72 of 340 under the coach's literal matching",
+        69,
+        340,
+        "scripts/job-020/run20.py widen_coach: 69 of 340 question sentences under the "
+        "coach's own SQL rule (bowen-numbers.json, widening, coach_rule)",
     ),
     Figure(
         "date_asked",

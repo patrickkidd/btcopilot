@@ -1178,7 +1178,7 @@
       },
       "type": "timeseries",
       "title": "Does it keep other family members in the picture?",
-      "description": "Coach question sentences naming a kin word or a record person none of the person's last three messages named, per 100 coach question sentences. Bowen by interview: 15.3 (the couple), 23.8 (the double-blind family), 21.6 (the EPPI couple), 0 (the one-year family: in therapy he widened only in statements); a first sitting is a consultation's kind, later sittings the one-year family's. Kin words are matched as written, without the rulebook's synonym rows, and a name used as address counts; under that literal matching his figure reads 21.",
+      "description": "Coach sentences ending in a question mark that name a kin word, matched as written, or a record person, matched with the name's case, that none of the person's last three messages named, per 100 coach sentences ending in a question mark. Bowen: 69 of his 340 question sentences on ten tapes, by this same rule.",
       "id": 10,
       "gridPos": {
         "h": 9,
@@ -1286,7 +1286,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeFrom()::timestamptz as time, 'Bowen, 471 turns on ten tapes' as metric, 15.59 as \"per 100 questions\"\nunion all\nselect $__timeTo()::timestamptz, 'Bowen, 471 turns on ten tapes', 15.59",
+          "rawSql": "select $__timeFrom()::timestamptz as time, 'Bowen, 471 turns on ten tapes' as metric, 20.29 as \"per 100 questions\"\nunion all\nselect $__timeTo()::timestamptz, 'Bowen, 471 turns on ten tapes', 20.29",
           "refId": "B"
         }
       ]
