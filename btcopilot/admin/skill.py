@@ -61,7 +61,13 @@ def _section(path: str, command: click.Command, parent: click.Context) -> str:
     heading = f"{path} {_usage(command)}".rstrip()
     lines = [f"\n### `{heading}`\n"]
     lines.append(f"\n{_help(command)}\n")
-    if marked(command):
+    names = {param.name for param in command.get_params(context)}
+    if marked(command) and "apply" in names:
+        lines.append(
+            "\nChanges something with `--apply`. Through `flask admin run`, the "
+            "words also need `--yes`, even for the dry run.\n"
+        )
+    elif marked(command):
         lines.append("\nChanges something: needs `--yes`.\n")
     rows = [_param(param) for param in command.get_params(context) if _named(param)]
     if rows:

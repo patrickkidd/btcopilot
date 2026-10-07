@@ -167,6 +167,12 @@ def rebuilt(said: Statement) -> bytes:
     data = diagramjson.loads(said.discussion.diagram.data)
     for change in rewound(said):
         record.rewind(data, change.deltas)
+    kindless = [e["id"] for e in data.get("events") or [] if e.get("kind") is None]
+    if kindless:
+        raise ValueError(
+            f"record {said.discussion.diagram.id} before statement {said.id} holds "
+            f"events {kindless} with no kind"
+        )
     return diagramjson.dumps(data)
 
 
