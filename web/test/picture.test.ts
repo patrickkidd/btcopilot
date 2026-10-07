@@ -360,6 +360,11 @@ describe("the path row over the line", () => {
   });
 
   // R-0540
+  it("drops the words' own separator where they are cut, so the date's separator before the rest is never doubled", () => {
+    expect(told("Harold Bell", "died · of lung cancer")).toEqual(["Harold died", "of lung cancer"]);
+  });
+
+  // R-0540
   it("writes a cluster's years short, and in full across a century", () => {
     expect(spanYears("2009-03-01", "2009-11-20")).toBe("2009");
     expect(spanYears("1998-03-01", "2003-11-20")).toBe("1998–2003");

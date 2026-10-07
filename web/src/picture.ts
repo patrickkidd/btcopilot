@@ -303,6 +303,8 @@ export enum Level {
 
 /** How many characters of a moment the path gives its last step. */
 const TOLD_CH = 20;
+/** What stands between the parts of a moment's words. */
+const SEP = "·";
 
 /** A moment picked, as the path names it: the first name and what happened,
  * "Delphine died" or, from the title "Stopped calling", "Ben stopped calling",
@@ -321,7 +323,11 @@ export function told(who: string, label: string, family: string[] = []): [string
   let n = 1;
   while (n < all.length && all.slice(0, n + 1).join(" ").length <= TOLD_CH) n += 1;
   while (n > 1 && n < all.length && all[n - 1].length <= 2) n -= 1;
-  return [all.slice(0, n).join(" "), all.slice(n).join(" ")];
+  // a separator in the words is dropped where they are cut, so the line's
+  // own separator before the rest is never doubled: "2011 · of lung cancer"
+  const rest = all.slice(n);
+  while (rest[0] === SEP) rest.shift();
+  return [all.slice(0, n).join(" "), rest.join(" ")];
 }
 
 /** What each mode inside a cluster is called in the path. */
@@ -1323,7 +1329,7 @@ export class Picture {
         told(event.person_name, event.label, this.firstNames())[1],
       ]
         .filter(Boolean)
-        .join(" \u00b7 ");
+        .join(` ${SEP} `);
       const lines = wrap2(
         clip(said, Math.min(88, wide * ROWS.length)),
         wide,
