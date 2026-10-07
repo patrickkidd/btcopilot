@@ -46,7 +46,7 @@ import { WIDE } from "./viewport";
 import { shortDate } from "./when";
 import * as speech from "./speech";
 import { NOTES_TOOL, type Notes } from "./notes";
-import { landing } from "./push";
+import { landing, offerNotifications } from "./push";
 import * as track from "./track";
 import { Feature, Screen } from "./track";
 import {
@@ -1951,7 +1951,10 @@ if (CODER && parse(location.pathname)?.place === Place.Chat) {
 }
 
 // The page is only served to a signed-in reader, so this is the moment to ask
-// about a key on this device, and then about the home screen — one card at a
-// time, never both at once.
-void offerPasskey(offerHomeScreen);
+// about a key on this device, and then about the home screen or, once on it,
+// about notifications — one card at a time, never two at once (R-0802).
+void offerPasskey(() => {
+  offerHomeScreen();
+  void offerNotifications();
+});
 homeScreenBadge($("homescreen"), showHomeScreen);

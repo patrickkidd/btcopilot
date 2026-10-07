@@ -75,6 +75,7 @@ class Feature(enum.StrEnum):
     PasskeyAdd = "passkey_add"
     PasskeyRemove = "passkey_remove"
     SignOut = "sign_out"
+    NotificationsOn = "notifications_on"
     CodingDone = "coding_done"
     RulesOpen = "rules_open"
     Back = "back"

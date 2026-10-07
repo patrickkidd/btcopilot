@@ -38,6 +38,7 @@ What it is for: getting into the app without a password.
 - After the first sign-in the app offers to let you use Face ID or a fingerprint instead, and asks only once per phone. [built]
 - If you say no to Face ID it waits a month before offering again. [built]
 - On a phone the app offers, once, to add itself to your home screen, and shows the exact button to tap. [built]
+- Opened from the home screen or the dock, the app asks once on that device, in the same kind of card, whether to turn on notifications: one sentence on what they are for, a Turn on notifications button that brings up the system's own question, and Not now, after which it does not ask again on that device. A device that allowed notifications before but lost its subscription is subscribed again as the app opens, with no question. [built] {R-0802}
 - If you dismiss the home-screen card it comes back no sooner than a week later. [built]
 - The card never blocks the conversation; you can ignore it and keep typing. [built]
 - Signed out, you see the app name, who you are signing in as, and one button to sign in. [drawn]
@@ -390,6 +391,7 @@ What it is for: you, your families, your plan, and signing out.
 - The top of it shows your name, your email and your plan. [built]
 - While a notice is unread, the account mark carries a small amber dot, the amber of the coach's question; the dot goes when none is unread. [built] {R-0611}
 - Under your name, one row, Notices, with the number unread as its figure, opens the Notices page: every notice you have been sent, newest first, each with its day and its first line; an unread one has the same amber dot before it. Tapping one opens the screen it points to and counts it read; one that points to the account view, its Notices, or nowhere has no arrow and a tap only counts it read, in place. There is no row until a notice has been sent. [built] {R-0611}
+- Under Coach and Appearance, a Notifications row says what this device does: On on this device, Off on this device with a Turn on button, Blocked in this device's system settings, or Not available here with the advice to open the app from the home screen. It is there for everyone and does not depend on how often the coach messages first. [built] {R-0802}
 - Your profile page holds your first name, last name and birthdate. [built]
 - There is a row for whether the coach speaks its replies out loud. [built]
 - The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]

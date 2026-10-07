@@ -17,6 +17,10 @@ const openSettings = async (page: Page) => {
   await page.waitForTimeout(300);
 };
 
+/** Headless Chromium answers every notification request with a refusal; a
+ * phone that has never been asked says "default". */
+const undecided = () => Object.defineProperty(Notification, "permission", { get: () => "default" });
+
 test.describe("the settings stack", () => {
   test.use({ storageState: stateFor("moves") });
 
@@ -31,10 +35,11 @@ test.describe("the settings stack", () => {
     expect(Math.round(box.height)).toBe(44);
   });
 
-  // R-0098, R-0631
+  // R-0098, R-0631, R-0802
   test("it opens on Account with the ruled rows in the ruled order", async ({
     page,
   }) => {
+    await page.addInitScript(undecided);
     await settle(page);
     await openSettings(page);
     await expect(page.locator("#title")).toHaveText("Account");
@@ -51,6 +56,38 @@ test.describe("the settings stack", () => {
       "settings-root.png",
       EXACT,
     );
+  });
+
+  // R-0802
+  test("every account has a Notifications row saying this device's state, with a way to turn them on, whatever the coach's messages first says", async ({
+    page,
+  }) => {
+    await page.addInitScript(undecided);
+    await settle(page);
+    await openSettings(page);
+    const row = page.locator(".sn-pane.in #notifications");
+    await expect(row.locator(".sn-t")).toHaveText("Notifications");
+    await expect(row.locator(".sn-s")).toHaveText("Off on this device");
+    await expect(row.locator("button.sn-manage")).toHaveText("Turn on");
+  });
+
+  // R-0802
+  test("the installed app asks once to turn on notifications, and Not now keeps it from asking again on this device", async ({
+    page,
+  }) => {
+    await page.addInitScript(undecided);
+    await page.addInitScript(() => {
+      localStorage.setItem("fd-passkey-asked", String(Date.now()));
+      Object.defineProperty(navigator, "standalone", { value: true });
+    });
+    await settle(page);
+    const card = page.locator(".hs-card", { hasText: "Turn on notifications" });
+    await expect(card).toBeVisible();
+    await expect(card.locator(".hs-go")).toHaveText("Turn on notifications");
+    await card.locator(".hs-later").click();
+    await expect(card).toHaveCount(0);
+    await settle(page);
+    await expect(page.locator(".hs-card")).toHaveCount(0);
   });
 
   // R-0004

@@ -11,7 +11,7 @@ import { shortDate } from "./when";
 import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
 import { IDLE_MS } from "./vote";
-import { subscribe } from "./push";
+import { device, reach, Reach, subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
 import { address, beyond, NAMES, Place } from "./place";
 import {
@@ -159,6 +159,13 @@ function tick(host: HTMLElement): void {
   }
 }
 
+const REACH: Record<Reach, string> = {
+  [Reach.On]: "On on this device",
+  [Reach.Off]: "Off on this device",
+  [Reach.Blocked]: "Blocked in this device's system settings",
+  [Reach.Unavailable]: "Not available here. Open the app from your home screen",
+};
+
 /** Asked for inside the tap that lets the coach message first. A browser that
  * cannot be reached by push gets email instead, and the reader is told so. */
 async function offerPush(): Promise<void> {
@@ -172,6 +179,7 @@ export class Settings {
   private account: Account | null = null;
   private passkeys: Passkey[] = [];
   private canPasskey = false;
+  private reach = Reach.Unavailable;
   private host = el("div", "sn-stack");
   /** The question before the shadows are switched on. */
   private ask: Sheet;
@@ -212,11 +220,12 @@ export class Settings {
 
   /** The avatar carries the initial of whatever name the account has. */
   async load(): Promise<void> {
-    [this.prefs, this.account, this.passkeys, this.canPasskey] = await Promise.all([
+    [this.prefs, this.account, this.passkeys, this.canPasskey, this.reach] = await Promise.all([
       api.preferences(),
       api.account(),
       api.passkeys().catch(() => []),
       available(),
+      device().then(reach),
     ]);
     identify(this.account.email);
     this.mark();
@@ -551,6 +560,7 @@ export class Settings {
         this.pushRow("Coach", `speak ${prefs.speak ? "on" : "off"}`, Page.Coach),
         this.pushRow("Appearance", prefs.theme, Page.Appearance),
       ]),
+      this.group([this.notificationsRow()]),
       this.group([
         this.pushRow(
           PRO ? Records : "Diagrams",
@@ -565,9 +575,9 @@ export class Settings {
       ], "Data"),
     );
 
-    // Coding and its meeting are for coders, and the meeting and the replies
-    // picked blind are Patrick's; none of it hangs on the family the app is
-    // on. Each opens on this stack, the coding guide too (R-0567).
+    // Coding and its meeting are for coders, and the meeting is Patrick's;
+    // none of it hangs on the family the app is on. Each opens on this stack,
+    // the coding guide too (R-0567).
     const admin = isAdmin();
     if (isCoder())
       pane.append(
@@ -668,6 +678,28 @@ export class Settings {
 
   /** The keys that sign this account in without an emailed code, and the way to
    * make one when there are none. */
+  /** This device's notifications, for everyone, whatever the coach's
+   * "messages first" says (R-0802). */
+  private notificationsRow(): HTMLElement {
+    const row = el("div", "sn-row");
+    row.id = "notifications";
+    const main = el("div", "sn-m");
+    main.append(el("div", "sn-t", "Notifications"), el("div", "sn-s sn-wrap", esc(REACH[this.reach])));
+    row.append(main);
+    if (this.reach === Reach.Off) {
+      const on = document.createElement("button");
+      on.type = "button";
+      on.className = "sn-manage";
+      on.textContent = "Turn on";
+      on.addEventListener("click", () => {
+        tap(Feature.NotificationsOn);
+        void subscribe().then(() => this.load());
+      });
+      row.append(on);
+    }
+    return row;
+  }
+
   private passkeyRows(): HTMLElement[] {
     const rows = this.passkeys.map((passkey) => {
       const row = el("div", "sn-row");
