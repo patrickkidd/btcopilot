@@ -39,9 +39,6 @@ exporters:
     traces_endpoint: http://172.17.0.1:14318/insert/opentelemetry/v1/traces
     retry_on_failure: {enabled: true, max_elapsed_time: 0}
     sending_queue: {enabled: true, storage: file_storage, queue_size: 100000}
-  # Grafana Cloud keeps its traces through Alloy until phase 2 removes both.
-  otlp_http/alloy:
-    endpoint: http://fd-alloy:4318
 
 service:
   extensions: [file_storage]
@@ -53,4 +50,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp_http/traces, otlp_http/alloy]
+      exporters: [otlp_http/traces]

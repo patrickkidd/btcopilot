@@ -3,11 +3,12 @@ the feedback loops ledger, so a new signal gets its loop the day it is added."""
 
 import json
 
-from bin.grafanapush import DASHBOARDS
 from btcopilot.models.notification import NotificationKind
 from btcopilot.models.observation import ObservationKind
 from btcopilot.models.report import ReportKind
 from btcopilot.tests.repo import REPO
+
+DASHBOARDS = REPO / "deploy" / "grafana"
 
 LEDGER = (REPO / "doc" / "FEEDBACK_LOOPS.md").read_text()
 

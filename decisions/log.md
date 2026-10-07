@@ -24,12 +24,13 @@ data nad have no interruption of data."):**
 - One dedicated ssh key from the laptop with a forced command and forwarding limits, sshd
   `GatewayPorts clientspecified` and client-alive settings, one ufw rule, Postgres published on
   the box's localhost only.
-- Because no data may be lost or interrupted, the work ships in two phases: phase 1 runs the
-  laptop's path beside Grafana Cloud's; phase 2 removes Alloy, the PDC agent and the Cloud
-  wiring only after the laptop holds 7 complete days compared against Cloud.
+- Grafana Cloud leaves in the same PR and deploy (Patrick: "yes, take grafana cloud out of this
+  PR"); the box holds all data and the laptop syncs from it. A two-phase plan that kept Cloud
+  for a 7-day comparison was dropped. No data is lost: `bin/cloudbackfill.py` copies what Cloud
+  received up to the deploy, and the laptop's receipt of box data is checked within minutes.
 
-**Revisit trigger:** any gap the 7-day comparison shows between the laptop and Grafana Cloud
-blocks phase 2 until its cause is fixed.
+**Revisit trigger:** if the check after the deploy finds the laptop not receiving metrics, logs
+or traces from the box, the cause is fixed before the cloudbackfill crontab line is removed.
 
 ---
 

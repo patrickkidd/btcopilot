@@ -1,15 +1,17 @@
-"""Read-only numbers from Grafana for the product owner run, as counts only:
-every panel of the repository's dashboards over the last 30 days, LogQL
-counts, and failed traces. Grafana Cloud by default, with GRAFANA_URL and
-GRAFANA_SA_TOKEN from the main clone's .env; FD_GRAFANA_URL and FD_GRAFANA_TOKEN
-in the environment point it at another Grafana, such as the laptop's
-http://localhost:3000 (doc/MONITORING.md). The token is never printed.
+"""Read-only numbers from the laptop's Grafana for the product owner run, as
+counts only: every panel of the repository's dashboards over the last 30 days,
+LogsQL counts from VictoriaLogs, and failed traces from VictoriaTraces
+(doc/MONITORING.md). Grafana at http://127.0.0.1:3000 as admin, with
+GF_SECURITY_ADMIN_PASSWORD from the main clone's deploy/laptop/.env;
+FD_GRAFANA_URL and FD_GRAFANA_PASSWORD override them. The password is never
+printed.
 
     python3 grafana.py panels
-    python3 grafana.py logql '<expr>' ['<expr>' ...]
+    python3 grafana.py logsql '<query>' ['<query>' ...]
     python3 grafana.py traces
 """
 
+import base64
 import json
 import os
 import sys
@@ -30,15 +32,19 @@ VARIABLES = {
 }
 
 
-def env():
-    lines = (clone() / ".env").read_text().splitlines()
+def password():
+    lines = (clone() / "deploy" / "laptop" / ".env").read_text().splitlines()
     pairs = dict(x.split("=", 1) for x in lines if "=" in x and not x.startswith("#"))
-    cloud = f"https://{pairs['GRAFANA_URL'].removeprefix('https://')}"
-    url = os.environ.get("FD_GRAFANA_URL", cloud)
-    return url, os.environ.get("FD_GRAFANA_TOKEN", pairs["GRAFANA_SA_TOKEN"])
+    return pairs["GF_SECURITY_ADMIN_PASSWORD"]
 
 
-URL, TOKEN = env()
+def env():
+    url = os.environ.get("FD_GRAFANA_URL", "http://127.0.0.1:3000")
+    secret = os.environ.get("FD_GRAFANA_PASSWORD") or password()
+    return url, base64.b64encode(f"admin:{secret}".encode()).decode()
+
+
+URL, AUTH = env()
 
 
 def call(path, body=None):
@@ -46,7 +52,7 @@ def call(path, body=None):
         f"{URL}{path}",
         data=json.dumps(body).encode() if body else None,
         headers={
-            "Authorization": f"Bearer {TOKEN}",
+            "Authorization": f"Basic {AUTH}",
             "Content-Type": "application/json",
         },
     )
@@ -55,7 +61,8 @@ def call(path, body=None):
 
 
 def sql(panel):
-    text = panel["targets"][0]["rawSql"]
+    target = panel["targets"][0]
+    text = target.get("rawSql") or target["expr"]
     for name, value in VARIABLES.items():
         text = text.replace(name, value)
     return text
@@ -112,12 +119,10 @@ def panels():
         for panel in dashboard["panels"]:
             if not panel.get("targets"):
                 continue
-            query = {
-                "refId": "A",
-                "datasource": panel["datasource"],
-                "rawSql": sql(panel),
-                "format": panel["targets"][0].get("format", "time_series"),
-            }
+            target = panel["targets"][0]
+            query = {**target, "refId": "A", "datasource": panel["datasource"]}
+            query["rawSql" if "rawSql" in target else "expr"] = sql(panel)
+            query["format"] = target.get("format", "time_series")
             answer = call(
                 "/api/ds/query", {"from": "now-30d", "to": "now", "queries": [query]}
             )["results"]["A"]
@@ -130,34 +135,40 @@ def panels():
     return out
 
 
-def logql(exprs):
-    now = int(time.time())
+def logsql(queries):
     out = {}
-    for expr in exprs:
-        query = urllib.parse.urlencode({"query": expr, "time": f"{now}000000000"})
+    for text in queries:
+        query = urllib.parse.urlencode({"query": text})
         result = call(
-            f"/api/datasources/proxy/uid/grafanacloud-logs/loki/api/v1/query?{query}"
+            f"/api/datasources/proxy/uid/fd-vl/select/logsql/stats_query?{query}"
         )["data"]["result"]
-        out[expr] = sum(float(r["value"][1]) for r in result)
+        out[text] = sum(float(r["value"][1]) for r in result)
     return out
 
 
 def traces():
     now = int(time.time())
-    query = urllib.parse.urlencode(
-        {"q": "{ status = error }", "start": now - 7 * DAY, "end": now, "limit": 1000}
+    window = urllib.parse.urlencode(
+        {
+            "start": (now - 7 * DAY) * 1_000_000,
+            "end": now * 1_000_000,
+            "limit": 1000,
+            "tags": json.dumps({"error": "true"}),
+        }
     )
-    found = call(
-        f"/api/datasources/proxy/uid/grafanacloud-traces/api/search?{query}"
-    ).get("traces", [])
-    return {"failed_traces_7d": len(found)}
+    jaeger = "/api/datasources/proxy/uid/fd-vt/api"
+    found = 0
+    for service in call(f"{jaeger}/services")["data"]:
+        query = f"{window}&{urllib.parse.urlencode({'service': service})}"
+        found += len(call(f"{jaeger}/traces?{query}")["data"])
+    return {"failed_traces_7d": found}
 
 
 if __name__ == "__main__":
     command, args = sys.argv[1], sys.argv[2:]
     print(
         json.dumps(
-            {"panels": panels, "logql": lambda: logql(args), "traces": traces}[
+            {"panels": panels, "logsql": lambda: logsql(args), "traces": traces}[
                 command
             ](),
             indent=1,

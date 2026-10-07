@@ -6,9 +6,9 @@ laptop and shows nothing while the laptop is closed. There are no alerts. [Desig
 Patrick 2026-10-06; every open choice below ruled yes the same day, with "I just want to make
 sure that we don't lose any data and have no interruption of data" (decisions/log.md).]
 
-The work ships in two phases so no data is lost and none stops arriving: phase 1 adds the
-laptop's path beside Grafana Cloud's, and phase 2 removes Grafana Cloud's only after the laptop
-has held 7 complete days. See "Phases and cutover".
+Grafana Cloud leaves the stack in the same deploy that brings the box side in (Patrick: "yes,
+take grafana cloud out of this PR"). No data is lost: the box holds everything from the deploy
+on, and `bin/cloudbackfill.py` copies what Cloud received before it. See "Cutover".
 
 ## What was measured (2026-10-06)
 
@@ -173,35 +173,36 @@ for example `CONTAINER_NAME:~".+" MESSAGE:~"(?i)error|traceback|exception"`.
 - Box down: nothing is collected for that time; whatever was already on the laptop stays.
 - Laptop disk lost: history is lost; no backup is planned (a later decision if wanted).
 
-## Phases and cutover
+## What FD-374 changes
 
-Phase 1 (built on FD-374): the laptop's path is added and Grafana Cloud's is kept.
-
+- Box compose: `fd-otel` added (contrib 0.162.0, `mem_limit` 150 MB, `file_storage` queue on
+  the `otel-queue` volume, retry forever; `host_metrics` and `docker_stats` every 60 s;
+  exporters to `172.17.0.1:18428` and `172.17.0.1:14318`). The app and the three Celery
+  containers send OTLP to `fd-otel`. `fd-alloy`, `fd-pdc` and `deploy/alloy/` are removed.
 - The app's and the Celery containers' trace exporter waits up to 60 s for the collector
   (`OTEL_EXPORTER_OTLP_TIMEOUT=60`, the SDK's own retry with backoff 1, 2, 4, 8, 16 s), so a
   restart of `fd-otel` loses no spans: with the default 10 s, a 12 s outage lost 23 of 116
   spans in a local test; with 60 s, none.
-- Box compose: `fd-otel` added (contrib 0.162.0, `mem_limit` 150 MB, `file_storage` queue on
-  the `otel-queue` volume, retry forever; `host_metrics` and `docker_stats` every 60 s;
-  exporters to `172.17.0.1:18428` and `172.17.0.1:14318`). The app and the three Celery
-  containers send OTLP to `fd-otel`, which also passes traces on to `fd-alloy`, so Grafana
-  Cloud's traces keep arriving. `fd-alloy` and `fd-pdc` stay as they are.
-- Every service logs through the `journald` driver. Alloy keeps reading logs through the
-  Docker socket: checked 2026-10-06 on Ubuntu 24.04's docker.io 29.1.3 with the journald
-  driver, where the Docker API's container-logs call (what Alloy's `loki.source.docker` uses)
-  answered both the backlog and a follow, and the journal held `CONTAINER_NAME` and `MESSAGE`.
+- Every service logs through the `journald` driver; `docker logs` keeps working (checked
+  2026-10-06 on Ubuntu 24.04's docker.io 29.1.3: the Docker API's container-logs call answered
+  both the backlog and a follow, and the journal held `CONTAINER_NAME` and `MESSAGE`).
 - fd-postgres published on `127.0.0.1:5432` only.
 - Browser: the Faro SDK is gone; `web/src/telemetry.ts` posts uncaught errors and rejected
   promises to `/app/browser-errors`. Page-load timings and session replay stop here (ruled).
-- `deploy/box/setup.sh` and `deploy/box/fd-logpull`: the one-time box changes (key line,
-  sshd drop-in, ufw rule), written, run at the cutover below.
-- The product owner's Grafana reader takes `FD_GRAFANA_URL` and `FD_GRAFANA_TOKEN` to read
-  the laptop's Grafana (`http://localhost:3000`); Grafana Cloud stays its default.
+- `deploy/box/setup.sh` and `deploy/box/fd-logpull`: the one-time box changes (the `fdlink`
+  user and its key line, the sshd drop-in, the ufw rule), run at step 3 of the cutover.
+- The release workflow no longer pushes dashboards and `bin/grafanapush.py` is gone: the
+  laptop's Grafana provisions `deploy/grafana/*.json` itself. `GRAFANA_CLOUD_TOKEN` and
+  `GRAFANA_PDC_TOKEN` leave `deploy/secrets.env.example`.
+- The product owner's Grafana reader reads the laptop's Grafana (`http://127.0.0.1:3000`, as
+  admin, the password from `deploy/laptop/.env`); LogQL and TraceQL became LogsQL on
+  VictoriaLogs and the Jaeger API of VictoriaTraces.
 
-Memory in phase 1: 1054 MB available on 2026-10-06 with Alloy running; the collector measured
-77 to 92 MB (cap 150 MB), so about 900 to 980 MB stays available.
+Memory: 1054 MB available on 2026-10-06 with Alloy (360 MB) and fd-pdc (11 MB) running; the
+collector measured 77 to 92 MB (cap 150 MB), so about 1300 MB should be available after the
+deploy (estimate, to be measured on the box).
 
-Cutover order:
+## Cutover
 
 1. FD-371 finishes its deploy and migrations; Patrick moves the deploy lock to FD-374.
 2. Back up the database on the box.
@@ -213,55 +214,22 @@ Cutover order:
    compose network's subnet, so the stack must be up.
 4. Deploy FD-374 from its branch (the release workflow) at a quiet hour, straight after the
    backup, with no coach turn queued. The deploy's `up -d` recreates fd-caddy, fd-postgres and
-   fd-redis once, because their log driver changes; release.yml is not changed for it. Each was
-   unreachable 0.5 to 0.8 s when recreated on the laptop (Docker Desktop, three runs,
-   2026-10-06); on the 2 vCPU box expect a few seconds of failed requests (guess: 2 to 5 s).
-   fd-redis keeps no volume, so whatever was queued in it is lost, as on any restart of it.
-   Note the time the deploy finished: from then on every container logs to the journal. Lines a
-   container wrote before this stay only in its old json file until that container is removed,
-   as today.
-5. On the laptop, right after the deploy:
-   `uv run python bin/cloudbackfill.py --until <time the journald switch went live>`, so the
-   laptop holds what Grafana Cloud received up to the switch.
-6. Once that final run succeeds, remove the FD-374 cloudbackfill crontab line on the laptop.
-7. On the laptop: `docker compose -f deploy/laptop/compose.yml up -d`; the link connects, the
-   log pull starts with the last 30 days of the journal, the box's queues drain.
-8. Compare the laptop with Grafana Cloud for 7 days, across at least one laptop sleep:
-   metrics every minute, log line counts per container, trace counts per service.
-
-Phase 2 (after the 7 days compare complete; not built yet):
-
-- [ ] Remove `fd-alloy`, `fd-pdc` and `deploy/alloy/`; drop the `otlp_http/alloy` exporter;
-  `btcopilot/tests/test_alloy.py` goes with them.
-- [ ] Remove `GRAFANA_CLOUD_TOKEN` and `GRAFANA_PDC_TOKEN` from `deploy/secrets.env.example`
-  and the box's secrets.
-- [ ] Remove the release workflow's dashboard push step, `bin/grafanapush.py` and
-  `btcopilot/tests/test_grafanapush.py` (the dashboard list `test_feedbackloops.py` imports
-  moves with it).
-- [ ] Product owner skill: the laptop's Grafana becomes the default; the LogQL and Tempo
-  readers become LogsQL and Jaeger; `SKILL.md` updated.
-- [ ] Comments that name Grafana Cloud, Faro or Alloy: `web/src/main.ts`, `report.ts`,
-  `track.ts`, `vite.config.ts`, `btcopilot/reports.py`, `productevents.py`,
-  `models/report.py`, `web/tests/visual/gate.ts`; docs listed below.
-- [ ] Box memory checked against the table at the top: about 280 MB lower than today.
-- [ ] Patrick closes the Grafana Cloud stack (his account; not done by Claude).
-
-## Files that reference Grafana Cloud today
-
-Code and config: `deploy/docker-compose.yml`, `deploy/alloy/config.alloy`,
-`deploy/secrets.env.example`, `deploy/grafana/*.json` (data source uids),
-`.github/workflows/release.yml` (dashboard push step), `bin/grafanapush.py`,
-`web/src/telemetry.ts`, `web/package.json`, `web/package-lock.json`, `web/vite.config.ts`
-(comment), `web/src/main.ts`, `web/src/report.ts`, `web/src/track.ts`,
-`btcopilot/reports.py`, `btcopilot/productevents.py`, `btcopilot/models/report.py` (comments),
-`.claude/skills/product-owner/bin/grafana.py`, `.claude/skills/product-owner/SKILL.md`.
-Tests: `btcopilot/tests/test_alloy.py`, `test_grafanapush.py`, `test_dashboards.py`,
-`test_feedbackloops.py`, `test_agent.py`, `web/test/telemetry.test.ts`,
-`web/tests/visual/{gate.ts,failure.spec.ts,reports.spec.ts}`.
-Docs: `CLAUDE.md`, `deploy/README.md`, `doc/PLATFORM_BUILD.md`, `doc/SETUP.md`,
-`doc/FEEDBACK_LOOPS.md`, `doc/STATE.md`, `doc/TOPICS.md`, `doc/API.md`, `doc/SCREENS.md`,
-`doc/specs/DATA_MODEL.md`; history files (`doc/HISTORY.md`, `doc/REVIEW_LOG.md`,
-`decisions/log.md`, `doc/archive/`) are left as they are.
+   fd-redis once, because their log driver changes, and its `--remove-orphans` removes fd-alloy
+   and fd-pdc. Each recreated service was unreachable
+   0.5 to 0.8 s on the laptop (Docker Desktop, three runs, 2026-10-06); on the 2 vCPU box
+   expect a few seconds of failed requests (guess: 2 to 5 s). fd-redis keeps no volume, so
+   whatever was queued in it is lost, as on any restart of it. Note the time the deploy
+   finished: from then on every container logs to the journal, and Grafana Cloud receives
+   nothing more.
+5. Immediately, on the laptop:
+   `uv run python bin/cloudbackfill.py --until <deploy time>`, which copies Cloud's last hours
+   up to the switch.
+6. Within minutes, check the laptop receives the box's data, printed as expected vs seen: a
+   memory sample in VictoriaMetrics newer than 2 minutes; fd-app lines in VictoriaLogs newer
+   than the deploy; an fd-app or fd-worker trace in VictoriaTraces newer than the deploy.
+7. Once the backfill run succeeded and step 6 holds, remove the FD-374 cloudbackfill crontab
+   line on the laptop.
+8. Patrick closes the Grafana Cloud account himself.
 
 ## Ruled by Patrick (2026-10-06): yes to all six
 

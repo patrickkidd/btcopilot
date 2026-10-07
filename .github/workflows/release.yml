@@ -166,12 +166,3 @@ jobs:
               [ "$t" = "$BTCOPILOT_TAG" ] || [ "$t" = "$prev" ] || docker rmi "ghcr.io/patrickkidd/btcopilot:$t" || echo "prune: could not remove $t" >&2
             done
             docker image prune -f || echo "prune: dangling prune failed" >&2
-
-      - uses: actions/checkout@v4
-
-      # dashboards as code: Grafana holds what deploy/grafana says
-      - name: Push the dashboards
-        env:
-          GRAFANA_URL: https://alaskafamilysystems.grafana.net
-          GRAFANA_SA_TOKEN: ${{ secrets.GRAFANA_SA_TOKEN }}
-        run: python bin/grafanapush.py

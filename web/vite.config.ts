@@ -10,8 +10,8 @@ import { parse } from "./src/place";
 const BASE = "/app/static/web/";
 
 /** Where the build keeps the bundle's source maps, one folder per release,
- * outside the folder the server serves: a stack Grafana caught on the page is
- * read against them, and nobody else ever fetches them. The release workflow names
+ * outside the folder the server serves: a stack the page posted to
+ * /app/browser-errors is read against them, and nobody else ever fetches them. The release workflow names
  * the release and keeps its folder with the run. */
 const MAPS = new URL(`./sourcemaps/${process.env.RELEASE ?? "local"}/`, import.meta.url).pathname;
 

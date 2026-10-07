@@ -146,8 +146,7 @@ services:
       retries: 5
 
   # Host and container metrics and the app's traces, held on disk until the
-  # laptop's ssh link takes them (doc/MONITORING.md); traces also go on to
-  # fd-alloy for Grafana Cloud until phase 2.
+  # laptop's ssh link takes them (doc/MONITORING.md).
   fd-otel:
     <<: *logging
     image: otel/opentelemetry-collector-contrib:0.162.0
@@ -165,42 +164,6 @@ services:
     expose:
       - "4317"
       - "4318"
-
-  # Phase 1 of FD-374 keeps this and fd-pdc so Grafana Cloud misses nothing
-  # until the laptop is proven. Ships host and container metrics, every
-  # container's log lines and the app's traces to Grafana Cloud. Its UI on 12345 has no host port.
-  fd-alloy:
-    <<: *logging
-    image: grafana/alloy:latest
-    container_name: fd-alloy
-    restart: unless-stopped
-    env_file: /etc/fd/secrets.env
-    # The host cgroup tree and Docker data dir, read-only, so cadvisor sees every
-    # container and not only its own (verified empty without, 2026-09-22).
-    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy"]
-    volumes:
-      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /:/rootfs:ro
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
-      - /var/lib/docker:/var/lib/docker:ro
-      - /dev/disk:/dev/disk:ro
-    expose:
-      - "4317"
-      - "4318"
-
-  # Opens an outbound tunnel so Grafana Cloud's Postgres data source can query
-  # fd-postgres; nothing listens on the box.
-  fd-pdc:
-    <<: *logging
-    image: grafana/pdc-agent:latest
-    container_name: fd-pdc
-    restart: unless-stopped
-    env_file: /etc/fd/secrets.env
-    command: ["-token", "${GRAFANA_PDC_TOKEN}", "-cluster", "prod-us-west-0", "-gcloud-hosted-grafana-id", "1840239"]
 
 volumes:
   caddy-data:

@@ -92,7 +92,7 @@ export function watch(page: Page) {
   const bad: string[] = [];
   const posts: string[] = [];
   page.on("console", (m) => {
-    if (m.type() === "error" && !/faro|grafana|Failed to load resource/.test(m.text()))
+    if (m.type() === "error" && !/Failed to load resource/.test(m.text()))
       bad.push(`console: ${m.text()}`);
   });
   page.on("pageerror", (e) => bad.push(`pageerror: ${e.message}`));
