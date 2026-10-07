@@ -12,8 +12,9 @@ docker compose -f deploy/laptop/compose.yml up -d --build
 ```
 
 Docker Desktop must be set to start at login; every container restarts by itself.
-Grafana is at http://127.0.0.1:3000 (anonymous viewing; `admin` with
-`GF_SECURITY_ADMIN_PASSWORD` to edit). Dashboards come from `deploy/grafana/*.json`;
+Grafana is at http://127.0.0.1:3000 on the laptop and http://turin:3000 from the home
+network (anonymous viewing; `admin` with `GF_SECURITY_ADMIN_PASSWORD` to edit). It is
+the only port published beyond the laptop; every other port is 127.0.0.1 only. Dashboards come from `deploy/grafana/*.json`;
 saving in the UI does not change them.
 
 | Service | Port on 127.0.0.1 | Holds |
@@ -43,8 +44,11 @@ The link carries:
   VictoriaTraces, which the box's collector sends to;
 - every minute, the journal after the saved cursor (`~/fd-monitoring/link/cursor`),
   posted to VictoriaLogs. The cursor is saved only after VictoriaLogs answers 200;
-  a failed post is pulled again the next minute. With no cursor the box sends its
-  last 30 days.
+  a failed post is pulled again the next minute. A missing, malformed or refused
+  cursor stops the pull and logs `JOURNAL PULL STOPPED:` every minute, since with no
+  cursor the box sends its last 30 days (about 2 GB). To allow that once:
+  `touch ~/fd-monitoring/link/approve-repull` (doc/MONITORING.md, "Reconnects and
+  the cursor").
 
 `docker compose -f deploy/laptop/compose.yml logs fd-link` shows each pull.
 

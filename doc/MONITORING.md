@@ -70,6 +70,32 @@ container. `docker logs` keeps working with the journald driver.
 A retry after a failed log post can store some lines twice (VictoriaLogs stores what arrived
 before the failure); accepted, since the cursor is advanced only after a complete post.
 
+### Reconnects and the cursor
+
+After a sleep, a restart, a Wi-Fi drop or a restart of fd-link, each signal sends only what
+the laptop does not have yet:
+
+- Logs: fd-link reads the saved cursor (`~/fd-monitoring/link/cursor`) and asks for the journal
+  after it. It writes the cursor to a new file, syncs it to disk and renames it over the old one,
+  so a crash leaves the old cursor or the new one, never half of one.
+- Metrics and traces: the box's collector pushes from its `file_storage` queue, which holds only
+  batches the laptop has not acknowledged (`sending_queue` with `storage: file_storage` and
+  `retry_on_failure` with no time limit in `deploy/otel/config.yaml`); an acknowledged batch
+  leaves the queue, so a reconnect sends only what is new.
+
+A missing cursor, a cursor that is not in the journal's cursor form, or a cursor the box refuses
+stops the log pull, because asking the box with no cursor brings its last 30 days (about 2 GB).
+fd-link then logs, every minute, `JOURNAL PULL STOPPED:` with the reason and the command that
+approves one re-pull: `touch ~/fd-monitoring/link/approve-repull`. With that file, the next pull
+sends no cursor, the box sends its last 30 days once, and fd-link deletes the file once the box
+has answered. A cursor the box refuses is moved to `~/fd-monitoring/link/cursor.refused`, and
+the box's error text is in the log line; from then on it reads as a missing cursor.
+
+Not built, for Patrick to decide: a bounded re-pull, from the newest journal entry the laptop's
+VictoriaLogs already holds instead of 30 days. It needs a box change: `fd-logpull` would accept
+`--since=<time>` besides a cursor, and fd-link would ask VictoriaLogs for its newest `_time`
+first. Until then a re-pull is 30 days or nothing.
+
 ## Components
 
 On the box (replaces fd-alloy 360 MB and fd-pdc 11 MB):
@@ -201,6 +227,8 @@ for example `CONTAINER_NAME:~".+" MESSAGE:~"(?i)error|traceback|exception"`.
 - The release workflow no longer pushes dashboards and `bin/grafanapush.py` is gone: the
   laptop's Grafana provisions `deploy/grafana/*.json` itself. `GRAFANA_CLOUD_TOKEN` and
   `GRAFANA_PDC_TOKEN` leave `deploy/secrets.env.example`.
+- The laptop's Grafana answers on the home network too, at http://turin:3000 (anonymous
+  viewing, `admin` with the password to edit); its other ports stay 127.0.0.1 only.
 - The product owner's Grafana reader reads the laptop's Grafana (`http://127.0.0.1:3000`, as
   admin, the password from `deploy/laptop/.env`); LogQL and TraceQL became LogsQL on
   VictoriaLogs and the Jaeger API of VictoriaTraces.
