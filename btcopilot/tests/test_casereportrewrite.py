@@ -16,7 +16,7 @@ from btcopilot import casereport, turnlog
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall, Observation, ObservationKind, Purpose, TokenMeter
 from btcopilot.schema import Person
-from btcopilot.tests.conftest import Model, calling, csrf_token, said, version
+from btcopilot.tests.conftest import Model, calling, csrf_token, version
 from btcopilot.tests.test_casereport import card, cards
 from btcopilot.tests.test_impressions import impress
 from btcopilot.tests.test_questionbackfill import past  # noqa: F401
@@ -147,10 +147,10 @@ def rewrite(web, model):
         return web.post("/app/case-report-rewrites", headers={"X-CSRFToken": csrf_token(web)})
 
 
-def test_a_rewrite_writes_every_card_again_until_the_coach_stops(web, past, written, family):
+def test_a_rewrite_writes_every_card_again_in_one_model_call(web, past, written, family):
     # R-0825
     card(family, "i1", "coach_guess", "c2")
-    model = Model(calling(*FIVE[:3]), calling(*FIVE[3:]), said("Done."))
+    model = Model(calling(*FIVE))
     response = rewrite(web, model)
 
     assert response.status_code == 202
@@ -161,15 +161,15 @@ def test_a_rewrite_writes_every_card_again_until_the_coach_stops(web, past, writ
     now = cards(family)
     assert now["i1"] is None
     assert sorted(v for v in now.values() if v) == ["choice", "coach_guess", "main_guess", "own_part", "work_on"]
-    assert [names[-1] for names in model.offered] == ["add_impression"] * 3
-    assert ModelCall.query.filter_by(purpose=Purpose.Coach, turn_id=turn_id).count() == 3
+    assert model.offered == [["add_impression"]]
+    assert ModelCall.query.filter_by(purpose=Purpose.Coach, turn_id=turn_id).count() == 1
     assert TokenMeter.query.filter_by(user_id=family.user_id).count() == 1
 
 
 def test_a_rewrite_refuses_any_other_tool_and_writes_it_down(web, past, written, family):
     # R-0825
     asked = (ToolName.AddQuestion, {"text": "What happened?", "kind": "thought", "state": "asked"})
-    rewrite(web, Model(calling(FIVE[0], asked), said("Done.")))
+    rewrite(web, Model(calling(FIVE[0], asked)))
 
     assert cards(family)["i1"] is None
     refused = Observation.query.filter_by(kind=ObservationKind.ToolRefused).one()
@@ -210,16 +210,13 @@ def test_a_rewrite_whose_worker_let_go_reads_failed(web, past, written, family):
     assert web.get("/app/case-report-rewrites/lost").get_json() == {"id": "lost", "state": "failed"}
 
 
-def test_a_rewrite_past_its_time_limit_ends_failed(web, past, written, family, monkeypatch):
+def test_a_rewrite_reads_every_events_words_and_notes_into_its_one_call(web, past, written, family):
     # R-0825
-    monkeypatch.setattr(casereport, "LIMIT", -1)
-    turnlog.claim(family.id, "slow")
-    with patch("btcopilot.casereport.model_for", return_value=Model()):
-        with pytest.raises(casereport.Overdue):
-            casereport.run("slow", family.id, family.user_id)
+    model = Model(calling(*FIVE))
+    rewrite(web, model)
 
-    assert casereport.state("slow", family.id) is casereport.State.Failed
-    assert cards(family)["i1"] == "main_guess"
+    opening = model.histories[0][0]["content"]
+    assert ("EVENTS" in opening, "Stopped sleeping well" in opening) == (True, True)
 
 
 def test_a_rewrite_of_a_family_the_reader_cannot_open_is_not_found(web):

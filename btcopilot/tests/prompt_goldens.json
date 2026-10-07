@@ -52,5 +52,5 @@
     "fields": "What to add to each event: words, what the user said that it came from; notes, in full, since the record only says which events have notes, whenever what was said there matters to the conversation; location, where it happened."
   },
   "generic_name": "Marcus's father",
-  "case_report_rewrite": "This is not a chat. Write the case report's cards again from the diagram as it stands now, by the same rules you follow in a chat: read what you need, then add each card's guesses with add_impression, raised, with its case_report_card. Ask nothing, and stop calling tools when the cards are written.\n"
+  "case_report_rewrite": "This is not a chat. Write the case report's cards again from the diagram as it stands now, by the same rules you follow in a chat; every event is below. Add each card's guesses with add_impression, raised, with its case_report_card, all in this one answer, and ask nothing.\n"
 }

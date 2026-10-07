@@ -1,6 +1,6 @@
 """The case report against the diagram as it stands: whether something has
 changed since the coach wrote its cards (R-0827), and the rewrite of every card
-the coach writes at once, from the diagram, in one coach turn (R-0825).
+the coach writes at once, from the diagram, in one model call (R-0825).
 
 Out of date is a rule on the command log, no model: after the newest card
 was written, an event a card rests on changed its date or kind, or a death, a
@@ -11,7 +11,6 @@ event on the turn log; the page polls its state.
 
 import enum
 import logging
-import time
 import uuid
 
 from btcopilot import clock, coverage, extensions, profile, record, turnlog
@@ -45,7 +44,7 @@ from btcopilot.schema import (
     enum_val,
     parse_date,
 )
-from btcopilot.toolbox import LOOKUPS, ToolName, Toolbox, schemas
+from btcopilot.toolbox import ReadField, ToolName, Toolbox, schemas
 from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
@@ -58,11 +57,6 @@ MARKED = {EventKind.Death: "death", EventKind.Married: "marriage",
 MOVED = ("dateTime", "kind")
 SINCE = "after the coach wrote this report."
 FIELDS = ("text", "evidence", "state", CARD)
-# Model calls in one rewrite: its reads, then five cards a few guesses a call.
-STEPS = 8
-# The longest a rewrite may run, in seconds: past it, it ends failed before
-# its next model call, so the page never waits on it for good.
-LIMIT = 300
 BROKE = "The case report could not be written again just now."
 REFUSED = "The case report could not be written again from this diagram."
 
@@ -71,10 +65,6 @@ class State(enum.StrEnum):
     Running = "running"
     Done = "done"
     Failed = "failed"
-
-
-class Overdue(Exception):
-    """A rewrite past its time limit."""
 
 
 class Busy(Exception):
@@ -193,13 +183,10 @@ def enqueue(turn_id: str, diagram_id: int, user_id: int) -> None:
 
 
 def offered() -> list[dict]:
-    """The coach's reads as they are, and add_impression with only the fields
-    a card's guess gives."""
-    reads = {name.value for name in LOOKUPS}
-    out = [s for s in schemas() if s["name"] in reads]
+    """add_impression, with only the fields a card's guess gives."""
     (schema,) = [s for s in schemas() if s["name"] == ToolName.AddImpression.value]
     given = schema["input_schema"]
-    return out + [
+    return [
         {
             **schema,
             "input_schema": {
@@ -213,8 +200,6 @@ def offered() -> list[dict]:
 
 def checked(call) -> str | None:
     """Why the rewrite may not make a call, or None."""
-    if call.name in {name.value for name in LOOKUPS}:
-        return None
     if call.name != ToolName.AddImpression.value:
         return f"{call.name} is not part of a case report rewrite"
     extra = sorted(set(call.args) - set(FIELDS))
@@ -228,9 +213,9 @@ def checked(call) -> str | None:
 
 
 def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
-    """The coach writes every card again, a guess at a time through its own
-    tool, told what each call did, until it stops calling; what was on a card
-    it wrote comes off. The cards written, in order."""
+    """One model call writes every card again, given every event's words and
+    notes so it reads nothing; each guess goes in through the coach's own tool,
+    and what was on a card it wrote comes off. The cards written, in order."""
     data = diagram.get_diagram_data()
     own = profile.own(data)
     system = get_agent_prompt(
@@ -247,28 +232,18 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
         zone=user.timezone,
     )
     before = {q["id"] for q in data.questions}
-    messages = [{"role": "user", "content": case_report_rewrite()}]
-    began = time.monotonic()
-    for _ in range(STEPS):
-        if time.monotonic() - began > LIMIT:
-            raise Overdue(f"case report rewrite {turn_id} ran past {LIMIT} seconds")
-        turnlog.hold(diagram.id)
-        turn = drain(meter.turn(system, messages, offered(), turn_id))
-        if not turn.calls:
-            break
-        results = []
-        for call in turn.calls:
-            refusal = checked(call)
-            text = f"That did not work: {refusal}"
-            if refusal is None:
-                text, _, refusal = run_call(toolbox, call)
-            if refusal:
-                _observe(diagram.id, turn_id, ObservationKind.ToolRefused,
-                         {"tool": call.name, "refusal": refusal, "retried": False,
-                          "reason": f"case report rewrite: {call.name}: {refusal}"})
-            results.append({"type": "tool_result", "tool_use_id": call.id, "content": text,
-                            "is_error": refusal is not None})
-        messages += [{"role": "assistant", "content": turn.blocks}, {"role": "user", "content": results}]
+    events, _ = toolbox.call(ToolName.ReadEvents, {"fields": [ReadField.Words, ReadField.Notes]})
+    opening = f"{case_report_rewrite()}\n\nEVENTS\n{events}"
+    turnlog.hold(diagram.id)
+    turn = drain(meter.turn(system, [{"role": "user", "content": opening}], offered(), turn_id))
+    for call in turn.calls:
+        refusal = checked(call)
+        if refusal is None:
+            _, _, refusal = run_call(toolbox, call)
+        if refusal:
+            _observe(diagram.id, turn_id, ObservationKind.ToolRefused,
+                     {"tool": call.name, "refusal": refusal, "retried": False,
+                      "reason": f"case report rewrite: {call.name}: {refusal}"})
     after = toolbox.data.questions
     new = [q for q in after if q["id"] not in before and q.get(CARD)]
     cards = list(dict.fromkeys(q[CARD] for q in new))

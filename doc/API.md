@@ -84,15 +84,15 @@ mockup's: `why`, `1` to `6`, `7a`, `9a`, `10`, `3s` and `order`.
 
 `POST /case-report-rewrites?diagram_id=` — write every card the coach writes
 again from the diagram as it stands: Executive Summary (`main_guess`), the
-coach's guess, own part, the choice and what to work on, in one coach turn in
-the worker (R-0825). 202 `{id, state: "running"}`; 409 while a rewrite of that
+coach's guess, own part, the choice and what to work on, in one model call in
+the worker, given every event's words and notes (R-0825). 202 `{id, state: "running"}`; 409 while a rewrite of that
 family's report is running, or when the family has no session yet; a read-only
 diagram is refused as every write is.
 
 `GET /case-report-rewrites/<id>` — `{id, state}`, `state` one of `running`,
-`done`, `failed`. A rewrite that runs past 300 seconds ends `failed` before its
-next model call, and one whose worker stopped reads `failed` within three
-minutes, so polling always ends. A rewrite of a family the reader may not open,
+`done`, `failed`. The rewrite is one model call, bounded by the model's own
+time limit; one whose worker stopped reads `failed` within three minutes, so
+polling always ends. A rewrite of a family the reader may not open,
 or one older than an hour, is a 404. After `done`, read `/timeline` again: the
 new guesses are on their cards, the guesses they replaced are on none, and
 `report_out_of_date` is null. A card the coach could not fill keeps what it

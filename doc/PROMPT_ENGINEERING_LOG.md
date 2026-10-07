@@ -24,23 +24,26 @@ cannot pass on the old prompt and tools.
 
 ## FD-375 — rewriting the whole case report (2026-10-07)
 
-**Change**: a refresh of the case report is one coach turn with the coach's own system prompt
+**Change**: a refresh of the case report is one model call with the coach's own system prompt
 (the record map, the coverage block and the private fragments, card instructions included; no
-chat transcript) and one new opening message, the private prompt file
-`case_report_rewrite.prompty` (an open-source default beside it): not a chat; write every card again from the diagram as it
-stands; read what you need first, since the map gives no event's words; then each card's
-guesses with add_impression, raised, with the card; write all five, leaving one out only when
-nothing on the diagram could rest under it; ask nothing; stop when done [R-0825]. The tools are
-the coach's reads and add_impression limited to text, evidence, state and card.
+chat transcript) and one opening message, the private prompt file `case_report_rewrite.prompty`
+(an open-source default beside it), followed by every event as read_events gives it with the
+person's words and the notes: not a chat; write every card again from the diagram as it stands;
+each card's guesses with add_impression, raised, with the card, all in this one answer; write all
+five, leaving one out only when nothing on the diagram could rest under it; ask nothing
+[R-0825]. The one tool is add_impression limited to text, evidence, state and card.
 
-**Why**: on the subscription, offered add_impression alone, the coach wrote two or three
-cards and left the rest, saying most events had only a date and a person: the map carries no
-event's words. Asked to write all five with nothing to read, it still left the own part,
-choice and work-on cards. With the reads, it read the events once and wrote all five.
+**Why**: offered add_impression alone with only the map, the coach wrote two or three cards and
+left the rest, saying most events had only a date and a person: the map carries no event's
+words. Given the coach's reads, it read every event's words and notes once and wrote all five,
+over three model calls. Given those same words in the opening message, one call writes all
+five, with about a third of the input: on Patrick's diagram (105 events) about 29,000 to
+37,000 tokens for the one call against about 85,000 to 100,000 over the three (a guess from
+characters at 3.6 a token; the person's words are bounded by everything they said).
 
 **Eval**: `btcopilot/tests/live/test_casereportrewrite.py`, 2 of 3, on the subscription
-($0): 3 of 3, every card holding a new guess and the summary passing the four checks of the
-Executive Summary eval, which still passes 3 of 3.
+($0): 3 of 3 with the reads over three calls, and 3 of 3 in one call, every card holding a new
+guess and the summary passing the four checks of the Executive Summary eval.
 
 ## FD-375 — the Executive Summary card (2026-10-07)
 

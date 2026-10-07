@@ -2,4 +2,4 @@
 name: case_report_rewrite
 description: The opening message of a rewrite of the case report, every card the coach writes at once.
 ---
-This is not a chat. Write the case report's cards again from the diagram as it stands now, by the same rules you follow in a chat: read what you need, then add each card's guesses with add_impression, raised, with its case_report_card. Ask nothing, and stop calling tools when the cards are written.
+This is not a chat. Write the case report's cards again from the diagram as it stands now, by the same rules you follow in a chat; every event is below. Add each card's guesses with add_impression, raised, with its case_report_card, all in this one answer, and ask nothing.
