@@ -7,7 +7,7 @@ vi.stubGlobal("window", { BOOTSTRAP: { version: "3.2026.10.6.1" } });
 const page = new EventTarget();
 vi.stubGlobal("addEventListener", page.addEventListener.bind(page));
 
-const { ERRORS_URL, Source } = await import("../src/telemetry");
+const { ERRORS_URL, RESIZE_NOTICE, Source } = await import("../src/telemetry");
 
 beforeEach(() => sent.mockClear());
 
@@ -37,4 +37,12 @@ it("posts an uncaught error to the page's own server, never to an outside collec
 it("posts a rejected promise with what it was rejected with", () => {
   fire("unhandledrejection", { reason: "timed out" });
   expect(body()).toMatchObject({ source: Source.Rejection, message: "timed out" });
+});
+
+// R-0370
+it("posts a real error but not the browser's notice of a resize put off a frame", () => {
+  fire("error", { error: null, message: RESIZE_NOTICE });
+  expect(sent).not.toHaveBeenCalled();
+  fire("error", { error: new Error("broke"), message: "broke" });
+  expect(body()).toMatchObject({ source: Source.Error, message: "Error: broke" });
 });
