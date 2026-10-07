@@ -38,7 +38,7 @@ export interface LensHooks {
   /** The list glyph at the end of the row: whether to draw it, and what it
    * opens. Null where there is no list to open. */
   list: { shown(): boolean; open(): void } | null;
-  /** The Family button beside the list at rest: whether the record has a
+  /** The Family button beside the list, whatever is open: whether the record has a
    * dated step to show, and what it opens (R-0742). Absent where there is none. */
   family?: { live(): boolean; open(): void };
   /** After every redraw of the row, for whatever follows the picture (the address bar). */
@@ -216,18 +216,17 @@ export class Lens {
     const picture = this.picture;
     const sel = this.state.sel;
     const open = picture.openCluster();
-    const list = this.hooks.list?.shown() ? listButton("menu-open") : "";
+    // the Family button is on the row whatever is open or picked; a record with
+    // no dated step has none at all
+    const family = this.hooks.family?.live() ? this.hooks.family : null;
+    const tail = (family ? tok("cap-family", "g", FAMILY_MARK, "Family", true) : "") + (this.hooks.list?.shown() ? listButton("menu-open") : "");
     // Nothing open and nothing picked: there is nothing to act on, so the row
     // says what a tap will do instead.
     if (!sel && !open) {
       // the about page is words already, and an empty picture has nothing to
       // tap; no hint under either
       const hint = picture.aboutOpen() || picture.empty() ? "" : "tap a cluster";
-      // a record with no dated step has no Family button at all
-      const family = this.hooks.family?.live() ? this.hooks.family : null;
-      host.innerHTML =
-        `<span class="cta">${hint}</span>` + (family ? tok("cap-family", "g", FAMILY_MARK, "Family", true) : "") + list;
-      if (family) host.querySelector<HTMLElement>("#cap-family")!.addEventListener("click", () => family.open());
+      host.innerHTML = `<span class="cta">${hint}</span>` + tail;
       this.wireList();
       return;
     }
@@ -242,7 +241,7 @@ export class Lens {
       (ASK_SHOWN ? tok("cap-chip", "", ASK_MARK, "ask", true) : "") +
       tok("cap-play", "g", PLAY_MARK, "explain", moves > 0) +
       tok("cap-trace", "data", IN_CHAT_MARK, "in chat", !!trace) +
-      list;
+      tail;
 
     const at = (id: string) => host.querySelector<HTMLElement>(`#${id}`);
     if (ASK_SHOWN)
@@ -266,6 +265,8 @@ export class Lens {
   }
 
   private wireList(): void {
+    const family = this.hooks.family;
+    if (family) this.hosts.caption.querySelector<HTMLElement>("#cap-family")?.addEventListener("click", () => family.open());
     // on the wide layout the drawer is pinned open and no button is drawn (R-0352)
     const list = this.hooks.list;
     if (!list?.shown()) return;

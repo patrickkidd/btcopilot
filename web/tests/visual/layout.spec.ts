@@ -450,8 +450,8 @@ test.describe("the row under the picture from one view to the next", () => {
 
     // what can be pressed follows what is on the picture
     expect(rest.live).toEqual(["cap-family"]);
-    expect(open.live).toEqual(["cap-play"]);
-    expect(picked.live).toEqual(["cap-trace"]);
+    expect(open.live).toEqual(["cap-play", "cap-family"]);
+    expect(picked.live).toEqual(["cap-trace", "cap-family"]);
     // and nothing above or around the row moves for it
     for (const now of [open.at, picked.at]) {
       expect(now.picture).toEqual(rest.at.picture);

@@ -1732,6 +1732,24 @@ test.describe("the whole family stepped through dates", () => {
   });
 
   // R-0755
+  test("keeps its Family button with a cluster open and after the cluster is put down, and it opens the whole family", async ({ page }) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
+    await settle(page);
+    const family = page.locator("#caption #cap-family");
+    await expect(family).toBeVisible();
+    await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
+    await expect(page.locator("#caption #cap-play")).toBeVisible();
+    await expect(family).toBeVisible();
+    await expect(family).toBeEnabled();
+    await page.locator("#path [data-step='0']").click();
+    await expect(page.locator("#caption .cta")).toHaveText("tap a cluster");
+    await expect(family).toBeVisible();
+    await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
+    await family.click();
+    await expect(page).toHaveURL(/\/app\/family$/);
+  });
+
+  // R-0755
   test("has no Family button on a record with no dated birth, couple, death or relationship shift", async ({ page }) => {
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
