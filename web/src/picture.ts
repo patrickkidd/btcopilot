@@ -520,6 +520,16 @@ export function years(iso: string): number {
   return new Date(iso + "T00:00:00Z").getTime() / YEAR;
 }
 
+/** Where a line `width` wide slides to so a point `x` on it stands in the
+ * middle of a `screen`, as near as its ends allow. */
+export const centredOn = (x: number, width: number, screen: number) =>
+  Math.max(0, Math.min(width - screen, x - screen / 2));
+
+/** Whether a point `x` on the line is in sight, the line slid to `left`,
+ * clear of the picture's side margins. */
+export const inSight = (x: number, left: number, screen: number) =>
+  x >= left + X_PAD && x <= left + screen - X_PAD;
+
 /** The calendar year a point on the line falls in. years() counts from 1970,
  * so the way back to a year is through the date that point stands for. */
 export function yearAt(at: number): number {
@@ -1125,7 +1135,11 @@ export class Picture {
     this.laid.zones = zoned.map((zone) => zone.marks);
 
     const aimed = marks.find((m) => m.event.id === this.aimed);
-    const onX = aimed?.x ?? null;
+    // stepping event by event, a draw that would leave the step's dot out of
+    // sight, as one that lands mid-travel does, goes to it again (Patrick, 2026-10-07)
+    const step = this.stepping && !aimed ? marks.find((m) => m.event.id === this.selected) : undefined;
+    if (step && !inSight(step.x, held ?? Math.max(0, width - screen), screen)) this.park = Park.Named;
+    const onX = (aimed ?? step)?.x ?? null;
     // where the line comes to rest, so the words of a picked event are
     // written across the stretch the reader will be looking at
     const shows = this.stands({ width, screen }, held, onX);
@@ -1172,8 +1186,7 @@ export class Picture {
     onX: number | null,
   ): number {
     const end = Math.max(0, view.width - view.screen);
-    if (this.park === Park.Named && onX !== null)
-      return Math.max(0, Math.min(end, onX - view.screen / 2));
+    if (this.park === Park.Named && onX !== null) return centredOn(onX, view.width, view.screen);
     if (this.park === Park.Held && held !== null) return Math.min(end, held);
     return end;
   }
@@ -1194,8 +1207,9 @@ export class Picture {
     // the line travelling to what was named is the picture answering the
     // coach's words; every other draw puts it down where it belongs at once.
     // The line is drawn anew at its left end, so a travel sets out from where
-    // the reader left it.
-    if (named && held !== null && !still()) {
+    // the reader left it. Stepping event by event it is put on the step at
+    // once: Safari leaves a travel set out on a line just drawn where it began.
+    if (named && held !== null && !still() && !this.stepping) {
       scroll.scrollLeft = held;
       scroll.scrollTo({ left: to, behavior: "smooth" });
     } else scroll.scrollLeft = to;

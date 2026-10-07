@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   Level,
   Target,
+  centredOn,
   dotLayers,
+  inSight,
   pills,
   reach,
   restLayers,
@@ -381,4 +383,16 @@ it("names an event whose title starts with someone else in the family with a col
   expect(told("Ben Holt", "Christmas at home", family)[0]).toBe("Ben christmas");
   // the 20-letter cut still applies
   expect(told("Ben Holt", "Marcus moved out of the flat in Oslo", family)).toEqual(["Ben: Marcus moved", "out of the flat in Oslo"]);
+});
+
+// "the timeline needs to scroll to the right in the full family diagram view." (Patrick, 2026-10-07)
+// R-0796
+it("slides the line to put the step's dot in the middle, as near as its ends allow, and knows when a dot is out of sight", () => {
+  expect(centredOn(2000, 2880, 1440)).toBe(1280);
+  expect(centredOn(100, 2880, 1440)).toBe(0);
+  expect(centredOn(2850, 2880, 1440)).toBe(1440);
+  expect(centredOn(200, 300, 393)).toBe(0);
+  expect(inSight(2000, 0, 1440)).toBe(false);
+  expect(inSight(2000, 1280, 1440)).toBe(true);
+  expect(inSight(10, 0, 1440)).toBe(false);
 });

@@ -1724,6 +1724,34 @@ for (const [what, viewport] of [
       await expect(stamp(page)).toHaveText(date);
       expect(errors).toEqual([]);
     });
+
+    // "the timeline needs to scroll to the right in the full family diagram view." (Patrick, 2026-10-07)
+    // R-0796
+    test("scrolls its timeline with the steps, so the step's dot is always in sight", async ({ page }, info) => {
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      await settle(page);
+      await page.locator("#cap-family").click();
+      await expect(drawer(page)).toBeVisible();
+      const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+      while (await back.count()) await back.click();
+      const sight = () =>
+        drawer(page).evaluate((p) => {
+          const [dot, line] = [".wire .dot.on", ".lv > .wire"].map((s) => p.querySelector(s)!.getBoundingClientRect());
+          const scroll = p.querySelector<HTMLElement>(".wire .ss-scroll")!;
+          return { inside: dot.left >= line.left && dot.right <= line.right, left: scroll.scrollLeft, wide: scroll.scrollWidth > scroll.clientWidth };
+        });
+      expect((await sight()).wide).toBe(true);
+      await expect.poll(async () => (await sight()).inside).toBe(true);
+      const next = drawer(page).locator('[data-act="next"]');
+      let far = 0;
+      while (await next.isEnabled()) {
+        await next.click();
+        await expect.poll(async () => (await sight()).inside).toBe(true);
+        far = Math.max(far, (await sight()).left);
+      }
+      // the line went past its first screen to follow the steps
+      expect(far).toBeGreaterThan(0);
+    });
   });
 
 test.describe("the Family view's frame on a phone turned sideways", () => {
