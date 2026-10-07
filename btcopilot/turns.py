@@ -95,6 +95,8 @@ def start(
         "turn_id": turn_id,
         "discussion_id": discussion.id,
         "statement_id": said.id,
+        "attachment_name": said.attachment_name,
+        "attachment_text": said.attachment_text,
     }
 
 

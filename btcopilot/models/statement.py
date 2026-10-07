@@ -76,11 +76,11 @@ class Statement(db.Model, ModelMixin):
         attached file holds [Oracle: R-0828, R-0829]."""
         if self.attachment_name is None:
             return self.text
-        return (
-            f"{self.text}\n\nFrom the file {self.attachment_name} (enter every "
-            f"person and every dated event in it, births too, before you reply):\n"
-            f"{self.attachment_text}"
+        attached = (
+            f"From the file {self.attachment_name} (enter every person and every "
+            f"dated event in it, births too, before you reply):\n{self.attachment_text}"
         )
+        return f"{self.text}\n\n{attached}" if self.text else attached
 
     @property
     def is_approved(self):

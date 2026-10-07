@@ -205,3 +205,23 @@ def test_words_with_no_file_have_no_attachment(web, token, monkeypatch):
     assert send_plain.status_code == 202
     assert {name for (name,) in db.session.query(Statement.attachment_name)} == {None}
     assert "From the file" not in words(model)
+
+
+def test_the_answer_to_a_send_carries_the_file_name_and_its_text(web, token, monkeypatch, reader):
+    # R-0830
+    coach(monkeypatch, Model(said("Thank you.")))
+    body = send(web, token, "page.pdf", pdf()).get_json()
+    assert (body["attachment_name"], body["attachment_text"]) == ("page.pdf", READ)
+
+
+def test_a_file_sent_with_no_words_is_taken_and_the_coach_reads_the_file(
+    web, token, monkeypatch, reader
+):
+    # R-0828
+    model = coach(monkeypatch, Model(said("Thank you.")))
+    assert send(web, token, "notes.txt", b"Hugh Hale died 2001.", statement="").status_code == 202
+    assert stored().text == ""
+    assert words(model).endswith(
+        "From the file notes.txt (enter every person and every dated event in it, "
+        "births too, before you reply):\nHugh Hale died 2001."
+    )
