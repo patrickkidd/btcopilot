@@ -52,7 +52,7 @@ services:
       - "./grafana/datasources.yml:/etc/grafana/provisioning/datasources/fd.yml:ro"
       - "./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/fd.yml:ro"
       - "../grafana:/var/lib/fd-dashboards:ro"
-    ports: ["127.0.0.1:3000:3000"]
+    ports: ["3000:3000"]
     depends_on: [vm, vl, vt]
 
   fd-pg-interim:
