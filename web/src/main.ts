@@ -1106,7 +1106,7 @@ async function deliver(statement: string, file: File | null, bubble: HTMLElement
     // goes back in the box to send without it
     file
       ? (failed) => {
-          toast(api.whatFailed(failed, (words) => words));
+          toast(api.whatFailed(failed, (words) => words), true);
           chat.takeBack(bubble);
         }
       : null,

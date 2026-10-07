@@ -6,7 +6,11 @@ const FADE_MS = 220;
 
 let host: HTMLElement | null = null;
 
-export function toast(text: string): void {
+/** Long enough to read: a toast that must be read, such as the server's reason
+ * for refusing something, stays this long for each of its letters. */
+const LETTER_MS = 60;
+
+export function toast(text: string, read = false): void {
   if (!host) {
     host = el("div", "toasts");
     document.querySelector(".app")?.append(host);
@@ -19,5 +23,5 @@ export function toast(text: string): void {
   window.setTimeout(() => {
     node.classList.remove("in");
     window.setTimeout(() => node.remove(), FADE_MS);
-  }, SHOWN_MS);
+  }, read ? Math.max(SHOWN_MS, text.length * LETTER_MS) : SHOWN_MS);
 }

@@ -118,6 +118,9 @@ test("a file picked or dropped goes with the message, reads, and shows what the 
   await page.locator("#send").click();
   server.release();
   await expect(page.locator(".toast")).toHaveText(REFUSED);
+  // it stays long enough to read, past the 1.5 s of every other toast
+  await page.waitForTimeout(3000);
+  await expect(page.locator(".toast")).toHaveCount(1);
   await expect(page.locator("#composer")).toHaveText("And this one");
   await expect(page.locator(".bub.user")).toHaveCount(users);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
