@@ -1233,10 +1233,23 @@ button { font-family: inherit; }
 .chip.file.reading { opacity: 0.6; cursor: default; }
 .chip.file.reading::after { content: " · reading"; }
 /* the file picked for the next message, in the box with its cross */
-.field > .attached { display: flex; align-items: center; padding: 4px 0 0 12px; }
+.field > .attached { grid-area: slot; display: flex; align-items: center; padding-top: 4px; }
 .field > .attached[hidden] { display: none; }
 .field > .attached .chip { max-width: calc(100% - 44px); cursor: default; }
 .field > .attached .cardx { position: static; flex: none; }
+/* The paperclip sits inside the message box at its left edge, so the
+   sessions button stays beside the box (R-0090); its 44px target spills over
+   the box's hairline rather than making the box taller than 44px. */
+#inbar > .field {
+  display: grid;
+  grid-template: "clip slot" auto "clip words" auto "clip held" auto / 44px minmax(0, 1fr);
+  align-items: end;
+}
+#inbar > .field > [contenteditable] { grid-area: words; padding-left: 0; }
+#inbar > .field > .held { grid-area: held; padding-left: 0; }
+.fs-glyph.clip { grid-area: clip; margin: -1px 0 -1px -1px; border-radius: 22px; }
+.fs-glyph.clip::before { content: none; }
+.fs-glyph.clip:active { background: var(--tint); }
 .fs-glyph.clip svg { width: 18px; height: 18px; }
 /* a file dragged over the chat on a computer lands on it */
 #chat-screen.dropping .chat { outline: 2px dashed var(--data); outline-offset: -6px; }

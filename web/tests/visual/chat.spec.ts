@@ -481,7 +481,7 @@ test.describe("the message box while the coach replies", () => {
 
     await page.route(SEND, (route) => {
       added = true;
-      return route.fulfill({ status: 202, json: { turn_id: "t1", discussion_id: 1, statement_id: 9300 } });
+      return route.fulfill({ status: 202, json: { turn_id: "t1", discussion_id: 1, statement_id: 9300, attachment_name: null, attachment_text: null } });
     });
     let stopped = false;
     await page.route(/\/app\/turns\/t1\/stop$/, (route) => {

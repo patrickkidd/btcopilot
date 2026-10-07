@@ -79,7 +79,8 @@ test.describe("the sessions sheet", () => {
     await settle(page);
     await expect(page.locator(".titlerow #sessions-open, .titlerow [aria-label='sessions']")).toHaveCount(0);
     const button = await boxOf(page.locator("#sessions-open"));
-    const field = await boxOf(page.locator("#composer"));
+    // the box is its rounded outline, which holds the paperclip and the words
+    const field = await boxOf(page.locator("#inbar .field"));
     const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
     expect(Math.abs(middle(button) - middle(field))).toBeLessThanOrEqual(2);
     const gap = field.x - (button.x + button.width);

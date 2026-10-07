@@ -19,29 +19,6 @@ const picked = (page: Page) => page.locator("#inbar .attached");
  * Each answer waits for `release`, so the page can be seen while it reads. */
 async function serve(page: Page): Promise<{ release: () => void; sent: () => string }> {
   await mockTurn(page, { statement: "Thank you for her letter.", statement_id: 9601 });
-  // the stored messages carry the two fields the server adds, null without a
-  // file, until the sandbox runs the server that adds them
-  const carry = (one: unknown): unknown =>
-    Array.isArray(one)
-      ? one.map(carry)
-      : one && typeof one === "object"
-        ? Object.fromEntries([
-            ...("role" in one && "turn_id" in one && !("attachment_name" in one)
-              ? [["attachment_name", null], ["attachment_text", null]]
-              : []),
-            ...Object.entries(one).map(([k, v]) => [k, carry(v)]),
-          ])
-        : one;
-  await page.route(/\/app\/(statements|sessions)(\/\d+)?(\?.*)?$/, async (route) =>
-    route.fulfill({ json: carry(await (await route.fetch()).json()) }),
-  );
-  await page.route(/\/app\/$/, async (route) => {
-    const html = await (await route.fetch()).text();
-    await route.fulfill({
-      contentType: "text/html",
-      body: html.replace(/window\.BOOTSTRAP=(.*?)<\/script>/, (_, json: string) => `window.BOOTSTRAP=${JSON.stringify(carry(JSON.parse(json)))}</script>`),
-    });
-  });
   let open: () => void = () => undefined;
   let body = "";
   await page.route(SEND, async (route) => {
@@ -66,6 +43,13 @@ test("a file picked or dropped goes with the message, reads, and shows what the 
   await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
   await page.goto("/app/");
   await expect(page.locator(".bub").last()).toBeVisible();
+
+  // the paperclip is a 44 px target inside the message box at its left edge
+  const clip = (await page.locator("#attach").boundingBox())!;
+  const box = (await page.locator("#inbar .field").boundingBox())!;
+  expect([Math.round(clip.width), Math.round(clip.height)]).toEqual([44, 44]);
+  expect(Math.abs(clip.x - box.x)).toBeLessThanOrEqual(1);
+  expect(Math.round(box.height)).toBe(44);
 
   // picked, then taken out again with its cross
   await picker(page).setInputFiles(file("notes.pdf", "application/pdf"));
