@@ -1,0 +1,55 @@
+# The box's one collector (FD-374, doc/MONITORING.md): host and container
+# metrics and the app's traces, queued on disk and retried forever, so the
+# laptop gets everything whenever its link is up. 172.17.0.1 is the box's
+# docker0 address, where the laptop's ssh link listens.
+extensions:
+  file_storage:
+    directory: /queue
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  host_metrics:
+    root_path: /hostfs
+    collection_interval: 60s
+    scrapers:
+      cpu: {}
+      memory:
+        metrics:
+          system.linux.memory.available: {enabled: true}
+      load: {}
+      filesystem: {}
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 60s
+
+processors:
+  batch: {timeout: 10s, send_batch_size: 8192}
+
+# 260,000 batches is 30 days of laptop absence at the most one batch per 10 s
+# allows; the box's disk is never the limit (doc/MONITORING.md).
+exporters:
+  otlp_http/metrics:
+    metrics_endpoint: http://172.17.0.1:18428/opentelemetry/v1/metrics
+    retry_on_failure: {enabled: true, max_elapsed_time: 0}
+    sending_queue: {enabled: true, storage: file_storage, queue_size: 260000}
+  otlp_http/traces:
+    traces_endpoint: http://172.17.0.1:14318/insert/opentelemetry/v1/traces
+    retry_on_failure: {enabled: true, max_elapsed_time: 0}
+    sending_queue: {enabled: true, storage: file_storage, queue_size: 260000}
+
+service:
+  extensions: [file_storage]
+  pipelines:
+    metrics:
+      receivers: [host_metrics, docker_stats]
+      processors: [batch]
+      exporters: [otlp_http/metrics]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_http/traces]

@@ -1,0 +1,474 @@
+{
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "fd",
+    "box"
+  ],
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Box: health",
+  "uid": "fd-box",
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fd-vm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fd-vm"
+          },
+          "expr": "max(system_linux_memory_available_bytes) or max(node_memory_MemAvailable_bytes)",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Memory available",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fd-vm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fd-vm"
+          },
+          "expr": "max(system_filesystem_usage_bytes{mountpoint=\"/\", state=\"free\"}) or max(node_filesystem_avail_bytes{mountpoint=\"/\"})",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Disk free on /",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fd-vm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fd-vm"
+          },
+          "expr": "(1 - avg(rate(system_cpu_time_seconds_total{state=\"idle\"}[5m]))) or (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "CPU busy",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fd-vm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fd-vm"
+          },
+          "expr": "max(system_cpu_load_average_1m) or max(node_load1)",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Load (1m)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fd-vm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fd-vm"
+          },
+          "expr": "sum by (service) (label_replace(container_memory_usage_total_bytes, \"service\", \"$1\", \"container_name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\")) or sum by (service) (label_replace(container_memory_working_set_bytes{name=~\".+\"}, \"service\", \"$1\", \"name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\"))",
+          "instant": false,
+          "legendFormat": "{{service}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Memory used by container",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fd-vm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fd-vm"
+          },
+          "expr": "sum by (service) (label_replace(rate(container_cpu_usage_nanoseconds_total[5m]), \"service\", \"$1\", \"container_name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\")) / 1e9 or sum by (service) (label_replace(rate(container_cpu_usage_seconds_total{name=~\".+\"}[5m]), \"service\", \"$1\", \"name\", \"^(?:familydiagram-|chat-)?(.+?)(?:-[0-9]+)?$\"))",
+          "instant": false,
+          "legendFormat": "{{service}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "CPU by container (cores)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "fd-vl"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 7,
+      "options": {
+        "enableLogDetails": true,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "fd-vl"
+          },
+          "editorMode": "code",
+          "expr": "CONTAINER_NAME:~\".+\" _msg:~\"(?i)error|traceback|exception\"",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Errors and exceptions",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "fd-vl"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "fd-vl"
+          },
+          "editorMode": "code",
+          "expr": "CONTAINER_NAME:~\".+\" | extract_regexp \"^(?:familydiagram-|chat-)?(?P<service>.+?)(?:-[0-9]+)?$\" from CONTAINER_NAME | stats by (service) count() lines",
+          "queryType": "statsRange",
+          "refId": "A",
+          "step": "1m",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "title": "Log lines a minute by container",
+      "type": "timeseries"
+    }
+  ]
+}

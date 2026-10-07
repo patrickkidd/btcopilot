@@ -83,8 +83,9 @@ def pytest_collection_modifyitems(config, items):
     for item in live:
         item.add_marker(pytest.mark.live)
         item.add_marker(pytest.mark.e2e)
-        if item.get_closest_marker("waiting"):
-            item.add_marker(pytest.mark.skip(reason=WAITING))
+        held = item.get_closest_marker("waiting")
+        if held:
+            item.add_marker(pytest.mark.skip(reason=held.kwargs.get("reason", WAITING)))
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -108,6 +109,7 @@ def run(request):
         Path(os.environ.get("LIVE_STORE", STORE)).resolve(),
         requests=Path(os.environ["LIVE_REQUESTS"]) if mode() is Mode.Dump else None,
     )
+    replay.prune()
     if not replay.mode.offline:
         opened.open(require_testing_key())
     charged = opened.recorded

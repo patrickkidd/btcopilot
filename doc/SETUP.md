@@ -100,11 +100,11 @@ work; the file on Patrick's Mac also carries keys for his other projects.
 | `ANTHROPIC_TESTING_KEY` | needed for `sandbox up --real` and the live evals; spends real money, ask Patrick first | Anthropic console, the testing workspace |
 | `GOOGLE_GEMINI_API_KEY` | needed for `pytest --e2e` and `--real` | Google AI Studio |
 | `ATLASSIAN_TOKEN` | needed for Jira reads and writes | Atlassian account, API tokens |
-| `GRAFANA_SA_TOKEN`, `GRAFANA_URL` | pushing dashboards (`bin/grafanapush.py`) | Grafana Cloud service account |
+| `GRAFANA_SA_TOKEN`, `GRAFANA_URL` | only `bin/cloudbackfill.py`, once, at the FD-374 cutover (doc/MONITORING.md) | the old Grafana Cloud service account |
 | `DIGITALOCEAN_ADMIN` | box administration, confirmed with Patrick each time | DigitalOcean API tokens |
 | `GITHUB_FD_THEORY_TOKEN` | the concept pages locally; the app reads it as `FLASK_THEORY_GITHUB_TOKEN` | GitHub fine-grained token, read-only on btcopilot-sources |
 | `ASSEMBLYAI_API_KEY` | transcription | AssemblyAI dashboard |
-| `ANTHROPIC_PRODUCTION_KEY`, `GRAFANA_CLOUD_TOKEN`, `GRAFANA_PDC_TOKEN`, `GRAFANA_PG_PASSWORD` | the box's own secrets, kept for reference; production reads `/etc/fd/secrets.env` | the same consoles |
+| `ANTHROPIC_PRODUCTION_KEY`, `GRAFANA_PG_PASSWORD` | the box's own secrets, kept for reference; production reads `/etc/fd/secrets.env` | the same consoles |
 | `FLASK_APP`, `FLASK_CONFIG` | local flask commands outside the sandbox | fixed values: `btcopilot.app:create_app` and `development` |
 | `FLASK_VAPID_PUBLIC_KEY`, `FLASK_VAPID_PRIVATE_KEY`, `FLASK_VAPID_SUBJECT` | needed by every local flask command outside the sandbox: the app refuses to start without them | `python -m btcopilot.push` prints the pair; the subject is `mailto:` and your own address |
 | `GROK_API_KEY`, `OPENAI_API_KEY`, `MINIMAX_API_KEY`, `TWINE_*`, `GITHUB_TOKEN`, `FD_BUILD_*` | not read by this repo; the desktop app's build and older experiments | — |

@@ -185,6 +185,24 @@ Changes something: needs `--yes`.
 | `change_ids` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin flow`
+
+The conversational-flow numbers per model and prompt version.
+
+### `flask admin flow track`
+
+Count the flow rules over every real thread, leaving out claude-test accounts, scratch records and plays, and add the counts per thread, model, prompt version and rules version to threads.jsonl and the return of each account to accounts.jsonl. No text is written.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--export` | A folder holding stmts.json and changes.json. |
+| `--database` | Read the configured database. |
+| `--out` | Where threads.jsonl and accounts.jsonl go; never inside a git work tree. |
+| `--again` | Recompute keys already written. |
+| `--production` | Read the production database: Patrick agreed. |
+
 ### `flask admin imports`
 
 The one-time read of the old Pro database.

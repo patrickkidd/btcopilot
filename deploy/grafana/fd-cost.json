@@ -665,7 +665,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select distinct on (dg.id, date_trunc('day', te.created_at)) date_trunc('day', te.created_at) as time, u.username || ' / ' || dg.id as metric, (te.payload->'coverage'->'after'->>'known')::float / nullif((te.payload->'coverage'->'after'->>'required')::float, 0) as value from turn_events te join discussions d on d.id = te.discussion_id join diagrams dg on dg.id = d.diagram_id join users u on u.id = dg.user_id where te.kind = 'done' and te.payload->'coverage' is not null and not dg.scratch and not d.synthetic and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(te.created_at) order by dg.id, date_trunc('day', te.created_at), te.created_at desc, te.id desc",
+          "rawSql": "select * from (select distinct on (dg.id, date_trunc('day', te.created_at)) date_trunc('day', te.created_at) as time, u.username || ' / ' || dg.id as metric, (te.payload->'coverage'->'after'->>'known')::float / nullif((te.payload->'coverage'->'after'->>'required')::float, 0) as value from turn_events te join discussions d on d.id = te.discussion_id join diagrams dg on dg.id = d.diagram_id join users u on u.id = dg.user_id where te.kind = 'done' and te.payload->'coverage' is not null and not dg.scratch and not d.synthetic and u.id in ($user) and u.username not like 'claude-test%' and $__timeFilter(te.created_at) order by dg.id, date_trunc('day', te.created_at), te.created_at desc, te.id desc) c order by time",
           "refId": "A"
         }
       ],

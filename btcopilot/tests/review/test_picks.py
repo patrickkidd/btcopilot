@@ -206,7 +206,7 @@ def test_a_long_note_is_refused(patrick, test_user, case):
 
 
 def test_the_better_replies_screen_is_gone(patrick, test_user, case):
-    # R-0801
+    # R-0828
     turn_of(test_user, case)
     assert patrick.get("/review/pairs").status_code == 404
     assert patrick.get("/review/picks").status_code == 400
