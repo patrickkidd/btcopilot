@@ -63,21 +63,21 @@ def start(
     zone: str | None = None,
     attached: attachments.File | None = None,
 ) -> dict:
-    """Store what the user said, with the text read from a file attached to
-    it, reserve the turn, and hand it over, with the person's time zone so the
-    coach's day is theirs. A file is read once the turn is reserved, so a busy
-    session spends nothing; a read that fails frees the turn."""
+    """Store what the user said, reserve the turn, and hand it over, with the
+    person's time zone so the coach's day is theirs. A text file's words are
+    stored with the message; a PDF or a photo is left in Redis for the worker,
+    which reads it before the coach's turn, so the statement goes in with its
+    file's name and no text yet (R-0828, R-0829). A busy session holds nothing."""
     turn_id = uuid.uuid4().hex
     text = chips.validate(statement, record_of(discussion), discussion.diagram_id)
     if not turnlog.start(discussion.id, turn_id):
         raise Busy(BUSY)
-    read = None
-    if attached:
+    if attached and not attached.ready:
         try:
-            read = attached.read(discussion.user_id, discussion.diagram_id, turn_id)
-        finally:
-            if read is None:
-                turnlog.clear(discussion.id)
+            attachments.hold(turn_id, attached.data)
+        except Exception:
+            turnlog.clear(discussion.id)
+            raise
     said = Statement(
         discussion_id=discussion.id,
         text=text,
@@ -86,7 +86,7 @@ def start(
         kind=StatementKind.Turn,
         turn_id=turn_id,
         attachment_name=attached.name if attached else None,
-        attachment_text=read,
+        attachment_text=attached.text if attached and attached.ready else None,
     )
     db.session.add(said)
     db.session.commit()
@@ -160,10 +160,16 @@ def run(
 ) -> dict:
     """The task itself. It ends in one of two events, always: the reply, or a
     sentence saying it did not finish. A resumed turn carries no zone, so its
-    day is in the zone kept on the person's row."""
+    day is in the zone kept on the person's row. A message whose file is not
+    yet read has it read first, here on the worker; the coach never starts
+    without the text (R-0829)."""
     _log.info(f"coach_turn {turn_id} discussion={discussion_id}")
     discussion = db.session.get(Discussion, discussion_id)
     said = db.session.get(Statement, statement_id)
+    if said.attachment_name is not None and said.attachment_text is None:
+        failed = _read(turn_id, discussion, said)
+        if failed is not None:
+            return failed
     # a resumed turn's record already holds its first attempt's edits, so it
     # has no clean copy to run a shadow on
     on = not resume and shadow.expiry(discussion.user, said.created_at, statement_id)
@@ -235,6 +241,55 @@ def run(
     for model in shadows:
         shadow.start(turn, statement_id, model, before)
     return reply
+
+
+def _read(turn_id: str, discussion: Discussion, said: Statement) -> dict | None:
+    """The file left for this turn, read into the statement's text with the
+    same calls, ledger rows and charge as the request once made, holding the
+    session through every part. A read that fails ends the turn here, before
+    the coach: nothing is kept as text, the thread is told why in the same
+    words a refused read always had, and the session takes the next message.
+    The file stays held for the hour, so trying the turn again reads it again.
+    None when the text is in; else the event that ended the turn. A read the
+    model declined, cut off, or could not find is its own ending; anything
+    else goes on to be logged like a turn that broke."""
+    try:
+        said.attachment_text = attachments.read_held(
+            turn_id,
+            said.attachment_name,
+            discussion.user_id,
+            discussion.diagram_id,
+            keep=lambda: turnlog.keep(discussion.id),
+        )
+    except Exception as error:
+        # no rollback: the parts already read are charged whatever came after
+        _log.warning(f"coach_turn {turn_id} could not read its file: {error}")
+        db.session.add(
+            Observation(
+                diagram_id=discussion.diagram_id,
+                turn_id=turn_id,
+                kind=ObservationKind.TurnFailed,
+                detail={
+                    "error": f"{type(error).__name__}: {error}",
+                    "reason": type(error).__name__,
+                },
+            )
+        )
+        own = attachments.why(error)
+        failed = {
+            "type": TurnEventKind.Failed.value,
+            "message": own or attachments.REFUSED,
+        }
+        turnstore.save(turn_id, discussion.id, [failed])
+        db.session.commit()
+        turnlog.clear(discussion.id)
+        turnlog.append(turn_id, failed)
+        if own is None:
+            raise
+        return failed
+    db.session.commit()
+    attachments.drop(turn_id)
+    return None
 
 
 def _stopped(turn: CoachTurn, statement_id: int) -> dict:
