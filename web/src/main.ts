@@ -1112,6 +1112,9 @@ async function deliver(statement: string, file: File | null, bubble: HTMLElement
       : null,
   );
   if (!started) return;
+  // the bubble carries its statement, so a file still being read on the worker
+  // is read back to it once the turn has ended
+  bubble.dataset.statement = String(started.statement_id);
   if (started.attachment_name !== null) attachment.show(bubble, started.attachment_name, started.attachment_text);
   sat(started.discussion_id, bubble);
   follow(started.turn_id);
@@ -1216,9 +1219,11 @@ function follow(turnId: string): void {
       });
   };
 
-  // a message held while the coach replied goes once the reply is drawn
+  // a message held while the coach replied goes once the reply is drawn; a file
+  // chip still reading is filled in from the thread once the turn has ended
   const last = (work: () => Promise<void> | void) => {
     step(work);
+    step(readBack);
     step(flush);
   };
 
@@ -1307,6 +1312,32 @@ function stopFollowing(): void {
   store.release();
   onTurn = null;
   flying(false);
+}
+
+/** A file chip still dimmed "reading" once its turn has ended: a PDF or a
+ * photo is read on the worker after the send has answered, so the thread's
+ * newest page is read back and the chip filled in with what the coach read. A
+ * chip whose read failed stays dimmed, under the thread's warning saying why
+ * (R-0830). */
+async function readBack(): Promise<void> {
+  const reading = [...$("chat").querySelectorAll<HTMLElement>(".bub[data-statement] > .file > .chip.reading")];
+  if (!reading.length) return;
+  const live = store.live();
+  let page: api.Said[];
+  try {
+    page = await api.thread(store.id());
+  } catch (error) {
+    if (!(error instanceof api.Failed)) throw error;
+    console.warn(error.message);
+    return;
+  }
+  if (!live()) return;
+  for (const chip of reading) {
+    const bubble = chip.closest<HTMLElement>(".bub")!;
+    const said = page.find((one) => one.id === Number(bubble.dataset.statement));
+    if (said?.attachment_name != null && said.attachment_text !== null)
+      attachment.show(bubble, said.attachment_name, said.attachment_text);
+  }
 }
 
 /** A page that has just loaded, or come back to the front, or a diagram just

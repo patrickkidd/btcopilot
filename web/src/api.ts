@@ -211,8 +211,10 @@ export const say = (diagramId: number | null, statement: string, file: File | nu
     file ? READ_MS : undefined,
   );
 
-/** A message with a file goes as a form, the file read by the server before
- * the coach's turn starts. */
+/** A message with a file goes as a form. The server checks the file and
+ * answers; a text file's words come back with the answer, a PDF or a photo is
+ * read on the worker before the coach's turn, and the thread carries the text
+ * once it is in. */
 export function said(statement: string, zone: string, file: File): FormData {
   const form = new FormData();
   form.append("statement", statement);
@@ -221,7 +223,8 @@ export function said(statement: string, zone: string, file: File): FormData {
   return form;
 }
 
-/** How long the server may take to read a file of the largest size it takes. */
+/** How long a send may take with a file of the largest size the server takes:
+ * the upload on a slow link, and the server's checks of it. */
 const READ_MS = 120_000;
 
 /** Where one sitting starts, carried by its first words, and when the
