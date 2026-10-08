@@ -1,6 +1,7 @@
 """The landing page at familydiagram.com and its two forms."""
 
 import datetime
+import json
 import re
 
 import pytest
@@ -15,7 +16,9 @@ from btcopilot.models import User
 from btcopilot.tests.test_passwordless import INVITED, browser, token  # noqa: F401
 
 ASKER = "test@example.com"
-SENT = "If that address has been invited, a sign-in link is on its way. It lasts one day."
+SENT = (
+    "If that address has been invited, a sign-in link is on its way. It lasts one day."
+)
 THANKS = "Thanks. You are on the list and will hear from us when a spot opens."
 
 
@@ -63,8 +66,8 @@ def test_a_visitor_sees_the_landing_page(flask_app, browser, keyed):
     html = response.get_data(as_text=True)
     text = seen(response)
     assert "Alaska Family Systems" in text
-    assert "Version 3" in text and "Family Diagram" in text
-    assert "Beta access is by direct invitation only." in text
+    assert "Family Diagram" in text
+    assert "Family Diagram is by invitation only for now." in text
     assert 'action="/app/signin-link"' in html
     assert 'action="/app/beta-request"' in html
     assert html.count('data-sitekey="site-key-for-tests"') == 2
@@ -72,49 +75,83 @@ def test_a_visitor_sees_the_landing_page(flask_app, browser, keyed):
     assert "!" not in text
     assert '<link rel="icon" type="image/png" href="/app/afs-logo.png"' in html
     assert "/app/theory" not in html
-    assert '<meta name="theme-color" content="#f6f6fb"' in html
-    assert '<meta name="theme-color" content="#16152a"' in html
+    assert '<meta name="theme-color" content="#f7f6f2"' in html
+    assert '<meta name="theme-color" content="#171d1c"' in html
 
 
-PARAGRAPH = (
-    "An AI coach that keeps the story of your life. Tell it what happened, year by "
-    "year; the record builds with every conversation, and it gets smarter at seeing "
-    "patterns in the moments that matter."
-)
+# Job 026 (2026-10-07): the page was rebuilt around the stepping family diagram, so
+# the description is no longer one paragraph under the heading but the hero line and
+# three one-line facts about what the app does today. R-0602's words ("the record
+# builds", "it gets smarter") are off the page by the job's brief; Patrick rules.
+HERO = "Your family, as dated facts you can check."
+FACTS = [
+    "A coach that asks about your family.",
+    "Each fact you state becomes a dated event you can read and correct.",
+    "Your family diagram, drawn from those facts, as it stood on any date.",
+]
 
 
-def described(browser) -> str:
-    """The paragraph under the heading, as a visitor reads it."""
+def described(browser) -> list[str]:
+    """The three facts under the picture, as a visitor reads them."""
     html = browser.get("/").get_data(as_text=True)
-    return " ".join(re.search(r"</h1>\s*<p>(.*?)</p>", html, re.S).group(1).split())
+    facts = re.search(r'<section class="facts">(.*?)</section>', html, re.S).group(1)
+    return [" ".join(li.split()) for li in re.findall(r"<li>(.*?)</li>", facts, re.S)]
 
 
-def test_the_page_says_what_the_app_is_in_patricks_words(browser, keyed):
+def test_the_page_says_what_the_app_is_in_the_briefs_words(browser, keyed):
     # R-0601, R-0602
-    assert described(browser) == PARAGRAPH
     html = browser.get("/").get_data(as_text=True)
+    assert f"<h1>{HERO}</h1>" in html
+    assert described(browser) == FACTS
     assert "<abbr" not in html and "SARF" not in html and "chat-first" not in html
 
 
-def test_the_description_starts_from_the_persons_own_life(browser, keyed):
+def test_the_description_claims_only_what_the_app_does_today(browser, keyed):
     # R-0602
-    first = described(browser).split(". ")[0].lower()
-    assert "your life" in first
-    assert "family" not in described(browser).lower()
+    text = seen(browser.get("/")).lower()
+    for word in (
+        "record",
+        "smarter",
+        "better",
+        "pattern",
+        "moment",
+        "stretch",
+        "bowen",
+    ):
+        assert word not in text
 
 
 def test_the_description_is_never_framed_as_therapy(browser, keyed):
     # R-0602
     text = seen(browser.get("/")).lower()
-    for word in ("therapy", "therapist", "wounded", "hard stretch", "healing", "trauma"):
+    for word in (
+        "therapy",
+        "therapist",
+        "wounded",
+        "hard stretch",
+        "healing",
+        "trauma",
+    ):
         assert word not in text
 
 
-def test_the_description_says_the_record_grows_and_the_coach_learns(browser, keyed):
-    # R-0602
-    words = described(browser)
-    assert "the record builds with every conversation" in words
-    assert "it gets smarter" in words
+def test_the_picture_steps_through_the_dated_events(browser, keyed):
+    # R-0601
+    html = browser.get("/").get_data(as_text=True)
+    steps = json.loads(re.search(r'id="steps">(.*?)</script>', html, re.S).group(1))
+    assert [s["d"] for s in steps] == [
+        "19 Jun 2010",
+        "2 Nov 2011",
+        "2012",
+        "Oct 2012",
+        "21 Jan 2014",
+    ]
+    for step in ("back", "next"):
+        assert (
+            html.count(f'<button type="button" class="stepbtn" data-step="{step}">')
+            == 1
+        )
+    assert 'id="join"' in html and 'href="#join"' in html
 
 
 def test_an_invited_address_gets_a_link_that_signs_in(flask_app, browser, keyed):
@@ -273,9 +310,10 @@ def test_development_without_keys_uses_the_always_passing_keys(flask_app, browse
     html = browser.get("/").get_data(as_text=True)
     assert html.count(f'data-sitekey="{turnstile.TEST_SITE_KEY}"') == 2
 
-    with flask_app.test_request_context(), patch.object(
-        turnstile.requests, "post"
-    ) as post:
+    with (
+        flask_app.test_request_context(),
+        patch.object(turnstile.requests, "post") as post,
+    ):
         post.return_value.json.return_value = {"success": True}
         assert turnstile.verify("a-token", "203.0.113.9") is True
     assert post.call_args.kwargs["data"]["secret"] == turnstile.TEST_SECRET_KEY
@@ -286,9 +324,10 @@ def test_the_person_check_fails_closed(flask_app):
     # R-0601
     flask_app.config["TURNSTILE_SITE_KEY"] = "site-key-for-tests"
     flask_app.config["TURNSTILE_SECRET_KEY"] = "secret-key-for-tests"
-    with flask_app.test_request_context(), patch.object(
-        turnstile.requests, "post"
-    ) as post:
+    with (
+        flask_app.test_request_context(),
+        patch.object(turnstile.requests, "post") as post,
+    ):
         post.return_value.json.return_value = {"success": False}
         assert turnstile.verify("a-token", None) is False
         post.side_effect = turnstile.requests.Timeout()
@@ -303,18 +342,19 @@ def test_the_copyright_year_is_the_year_of_the_visit(browser, keyed):
     assert "© 2031 Alaska Family Systems" in text
 
 
-def test_the_logo_and_the_copyright_link_to_alaska_family_systems(browser, keyed):
+def test_the_copyright_links_to_alaska_family_systems_and_the_logo_is_the_icon(
+    browser, keyed
+):
     # R-0601
+    # Job 026 (2026-10-07): the logo image left the page (the picture is the page);
+    # the logo stays as the page's icon. Patrick rules on R-0601's logo and colours.
     html = browser.get("/").get_data(as_text=True)
     year = datetime.date.today().year
     assert re.search(
         rf'<a href="https://alaskafamilysystems.com">© {year} Alaska Family Systems</a>',
         html,
     )
-    assert re.search(
-        r'<a class="logo" href="https://alaskafamilysystems.com"><img src="/app/afs-logo.png" alt="Alaska Family Systems"',
-        html,
-    )
+    assert "<img" not in html
     logo = browser.get("/app/afs-logo.png")
     assert logo.status_code == 200
     assert logo.mimetype == "image/png"
