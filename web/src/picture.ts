@@ -1,5 +1,5 @@
 import { DateCertainty } from "./certainty";
-import { closeX, esc, still } from "./dom";
+import { closeX, esc, pan, still } from "./dom";
 // this line draws pills, dots and the wire
 import {
   CH,
@@ -1207,12 +1207,11 @@ export class Picture {
     // the line travelling to what was named is the picture answering the
     // coach's words; every other draw puts it down where it belongs at once.
     // The line is drawn anew at its left end, so a travel sets out from where
-    // the reader left it. Stepping event by event it is put on the step at
-    // once: Safari leaves a travel set out on a line just drawn where it began.
-    if (named && held !== null && !still() && !this.stepping) {
-      scroll.scrollLeft = held;
-      scroll.scrollTo({ left: to, behavior: "smooth" });
-    } else scroll.scrollLeft = to;
+    // the reader left it. It travels frame by frame: Safari leaves the
+    // browser's own smooth scroll, set out on a line just drawn, where it began.
+    const glide = named && held !== null && !still();
+    if (glide) scroll.scrollLeft = held;
+    pan(scroll, to, glide);
   }
 
   /** The clusters the resting level draws, in time order. They are the ones

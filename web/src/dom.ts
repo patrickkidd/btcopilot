@@ -211,3 +211,36 @@ export const shift = (list: HTMLElement, by: number): void => {
   list.scrollTop = to;
   list.style.setProperty(ROOM, `${list.scrollTop - to}px`);
 };
+
+/** How long the frame takes to travel to a step's people: about 1,200 px a
+ * second, never under half a second nor over two, eased in and out, from where
+ * it stood to exactly where it lands, never past it (R-0778). */
+export const PAN = {
+  ms: (px: number) => Math.min(Math.max(Math.abs(px) / 1.2, 500), 2000),
+  ease: (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (2 - 2 * t) ** 3 / 2),
+};
+const panning = new WeakMap<HTMLElement, number>();
+
+/** A frame slid sideways to `to`, travelling there when `glide`, which a
+ * reader taking it in hand stops; the play-by-play's frame and the timeline
+ * alike, the same way in every browser. */
+export function pan(frame: HTMLElement, to: number, glide: boolean): void {
+  if (panning.has(frame)) cancelAnimationFrame(panning.get(frame)!);
+  const from = frame.scrollLeft;
+  if (!glide || from === to) {
+    frame.scrollLeft = to;
+    return;
+  }
+  // a reader who takes the frame in hand stops it
+  if (!panning.has(frame))
+    for (const kind of ["pointerdown", "touchstart", "wheel"])
+      frame.addEventListener(kind, () => cancelAnimationFrame(panning.get(frame)!), { passive: true });
+  const t0 = performance.now();
+  const ms = PAN.ms(to - from);
+  const tick = (now: number) => {
+    const t = Math.min((now - t0) / ms, 1);
+    frame.scrollLeft = from + (to - from) * PAN.ease(t);
+    if (t < 1) panning.set(frame, requestAnimationFrame(tick));
+  };
+  panning.set(frame, requestAnimationFrame(tick));
+}
