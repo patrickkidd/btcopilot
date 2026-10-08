@@ -86,8 +86,8 @@ def test_a_visitor_sees_the_landing_page(flask_app, browser, keyed):
 HERO = "Your family, as dated facts you can check."
 FACTS = [
     "A coach that asks about your family.",
-    "Each fact you state becomes a dated event you can read and correct.",
-    "Your family diagram, drawn from those facts, as it stood on any date.",
+    "Each fact you state becomes a dated event you can correct.",
+    "Your family diagram, drawn from those facts, on any date.",
 ]
 
 

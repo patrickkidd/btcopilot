@@ -15,11 +15,11 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 v
 header { padding: 14px 0 0; }
 .mark { font: 600 16px/1.25 var(--sans); color: var(--ink); }
 h1 { margin: 18px 0 14px; font: 600 30px/1.12 var(--sans); letter-spacing: -0.018em; text-wrap: balance; }
-.panel { padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
-.pic { width: 100%; aspect-ratio: 333 / 286; }
-.draw { display: block; width: 100%; height: 100%; }
+.panel { padding: 0; }
+.pic { width: 100%; }
+.draw { display: block; width: 100%; height: auto; }
 .draw text { font-family: var(--mono); font-size: 13px; }
-.draw .shape { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; transition: stroke-width 0.4s; }
+.draw .shape { fill: var(--bg); stroke: var(--ink); stroke-width: 1.6; transition: stroke-width 0.4s; }
 .draw .on .shape { stroke-width: 3; }
 .draw .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
 .draw .age { fill: var(--faint); text-anchor: middle; }
@@ -30,13 +30,13 @@ h1 { margin: 18px 0 14px; font: 600 30px/1.12 var(--sans); letter-spacing: -0.01
 .draw .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
 .draw .off { opacity: 0; }
 .draw g, .draw path, .draw text { transition: opacity 0.4s; }
-.tl { display: block; overflow: visible; margin: 8px 0 0; }
+.tl { display: block; overflow: visible; margin: 10px 0 0; }
 .tl .base, .tl .tick { stroke: var(--line); stroke-width: 1.5; }
-.tl .dot { fill: var(--panel); stroke: var(--ink); stroke-width: 1.5; }
-.tl .dot.cur { fill: var(--ink); stroke: var(--panel); stroke-width: 2; }
+.tl .dot { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
+.tl .dot.cur { fill: var(--ink); stroke: var(--bg); stroke-width: 2; }
 .tl .yr { font: 400 13px var(--mono); fill: var(--faint); }
 .step { display: flex; align-items: center; gap: 10px; margin: 6px 0 0; min-height: 60px; }
-.stepbtn { flex: none; height: 44px; min-width: 72px; padding: 0 12px; border: 1px solid var(--line); border-radius: 22px; background: var(--panel); color: var(--ink); font: 500 13px var(--mono); cursor: pointer; white-space: nowrap; }
+.stepbtn { flex: none; height: 44px; min-width: 76px; padding: 0 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--panel); color: var(--ink); font: 500 15px var(--sans); cursor: pointer; white-space: nowrap; }
 .stepbtn:disabled { opacity: 0.35; cursor: default; }
 .stepbtn:not(:disabled):active { background: var(--bg); }
 .ev { flex: 1 1 auto; min-width: 0; margin: 0; text-align: center; }
@@ -73,18 +73,27 @@ footer a { color: var(--faint); text-decoration: none; }
   header { padding-top: 12px; }
   .mark { font-size: 17px; }
   h1 { margin: 14px auto 16px; font-size: 44px; letter-spacing: -0.022em; text-align: center; max-width: 22ch; }
-  .panel { max-width: 640px; margin: 0 auto; padding: 18px; }
-  .pic { aspect-ratio: 604 / 460; }
+  .panel { max-width: 600px; margin: 0 auto; }
   .ev .w { font-size: 17px; }
   .act { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 18px; }
   .why { font-size: 17px; }
-  .go { margin: 0; flex: none; }
+  .go { margin: 0; flex: none; font-size: 17px; }
   .facts { margin-top: 72px; }
   .facts ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 28px; }
   .facts li { border-bottom: 1px solid var(--line); }
   .forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; max-width: 900px; }
   .form { margin-top: 56px; }
   footer { padding: 72px 0 40px; }
+}
+@media (min-width: 1100px) {
+  .wrap { max-width: 1280px; }
+  .hero { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(0, 680px); grid-template-rows: auto 1fr; grid-template-areas: "head pic" "act pic"; column-gap: 56px; align-content: start; margin-top: 24px; }
+  h1 { grid-area: head; margin: 8px 0 24px; text-align: left; max-width: none; }
+  .panel { grid-area: pic; max-width: none; margin: 0; }
+  .act { grid-area: act; align-self: start; display: block; margin: 0; }
+  .why { max-width: 24em; }
+  .go { display: inline-flex; margin: 22px 0 0; }
+  .facts { margin-top: 64px; }
 }
 {% endraw %}</style>
   </head>
@@ -95,14 +104,14 @@ footer a { color: var(--faint); text-decoration: none; }
 <section class="hero">
 <h1>Your family, as dated facts you can check.</h1>
 <div class="panel">
-<div class="pic"><svg class="draw" viewBox="-28 -31 329.4 202.4" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="ev"><path class="tie" data-id="ar" d="M0 22V42H120V22"/><path class="tie" data-id="ol" d="M120 144.4V164.4H208V140"/><path class="kin" data-id="june" d="M0 96L0 42"/><path class="kin" data-id="owen" d="M120 91.6L120 42"/><path class="kin off" data-id="iris" d="M164 214L164 164.4"/><g class="p" data-id="arthur"><rect class="shape" x="-22" y="-22" width="44" height="44"/><path class="xd off" data-id="arthur" d="M-22 -22L22 22M22 -22L-22 22"/></g><g class="p" data-id="ruth"><circle class="shape" cx="120" cy="0" r="22"/></g><g class="p" data-id="june"><circle class="shape" cx="0" cy="118" r="22"/></g><g class="p on" data-id="owen"><rect class="you" x="93.6" y="91.6" width="52.8" height="52.8"/><rect class="shape" x="98" y="96" width="44" height="44"/></g><g class="p on" data-id="lena"><circle class="shape" cx="208" cy="118" r="22"/></g><g class="p off" data-id="iris"><circle class="shape" cx="164" cy="236" r="22"/></g><g class="pt" data-id="arthur"><text class="age" data-id="arthur" x="0" y="4.5">61</text><text class="lbn" x="30.8" y="-13" text-anchor="start">Arthur</text><text class="lbd" x="30.8" y="2" text-anchor="start">b. 1949</text><text class="lbd dl off" data-id="arthur" x="30.8" y="17" text-anchor="start">d. 2011</text></g><g class="pt" data-id="ruth"><text class="age" data-id="ruth" x="120" y="4.5">57</text><text class="lbn" x="150.8" y="-13" text-anchor="start">Ruth</text><text class="lbd" x="150.8" y="2" text-anchor="start">b. 1952</text></g><g class="pt" data-id="june"><text class="age" data-id="june" x="0" y="122.5">32</text><text class="lbn" x="30.8" y="105" text-anchor="start">June</text><text class="lbd" x="30.8" y="120" text-anchor="start">b. 1978</text></g><g class="pt" data-id="owen"><text class="age" data-id="owen" x="120" y="122.5">28</text><text class="lbn" x="125" y="68.2" text-anchor="start">Owen</text><text class="lbd" x="125" y="83.2" text-anchor="start">b. 1981</text></g><g class="pt" data-id="lena"><text class="age" data-id="lena" x="208" y="122.5">27</text><text class="lbn" x="238.8" y="105" text-anchor="start">Lena</text><text class="lbd" x="238.8" y="120" text-anchor="start">b. 1983</text></g><g class="pt off" data-id="iris"><text class="age off" data-id="iris" x="164" y="240.5"></text><text class="lbn" x="194.8" y="223" text-anchor="start">Iris</text><text class="lbd" x="194.8" y="238" text-anchor="start">b. 2014</text></g></svg></div>
+<div class="pic"><svg class="draw" viewBox="-28 -31 309.4 202.4" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="ev"><path class="tie" data-id="ar" d="M0 22V42H112V22"/><path class="tie" data-id="ol" d="M112 144.4V164.4H188V140"/><path class="kin" data-id="june" d="M0 96L0 42"/><path class="kin" data-id="owen" d="M112 91.6L112 42"/><path class="kin off" data-id="iris" d="M150 214L150 164.4"/><g class="p" data-id="arthur"><rect class="shape" x="-22" y="-22" width="44" height="44"/><path class="xd off" data-id="arthur" d="M-22 -22L22 22M22 -22L-22 22"/></g><g class="p" data-id="ruth"><circle class="shape" cx="112" cy="0" r="22"/></g><g class="p" data-id="june"><circle class="shape" cx="0" cy="118" r="22"/></g><g class="p on" data-id="owen"><rect class="you" x="85.6" y="91.6" width="52.8" height="52.8"/><rect class="shape" x="90" y="96" width="44" height="44"/></g><g class="p on" data-id="lena"><circle class="shape" cx="188" cy="118" r="22"/></g><g class="p off" data-id="iris"><circle class="shape" cx="150" cy="236" r="22"/></g><g class="pt" data-id="arthur"><text class="age" data-id="arthur" x="0" y="4.5">61</text><text class="lbn" x="30.8" y="-13" text-anchor="start">Arthur</text><text class="lbd" x="30.8" y="2" text-anchor="start">b. 1949</text><text class="lbd dl off" data-id="arthur" x="30.8" y="17" text-anchor="start">d. 2011</text></g><g class="pt" data-id="ruth"><text class="age" data-id="ruth" x="112" y="4.5">57</text><text class="lbn" x="142.8" y="-13" text-anchor="start">Ruth</text><text class="lbd" x="142.8" y="2" text-anchor="start">b. 1952</text></g><g class="pt" data-id="june"><text class="age" data-id="june" x="0" y="122.5">32</text><text class="lbn" x="30.8" y="105" text-anchor="start">June</text><text class="lbd" x="30.8" y="120" text-anchor="start">b. 1978</text></g><g class="pt" data-id="owen"><text class="age" data-id="owen" x="112" y="122.5">28</text><text class="lbn" x="117" y="68.2" text-anchor="start">Owen</text><text class="lbd" x="117" y="83.2" text-anchor="start">b. 1981</text></g><g class="pt" data-id="lena"><text class="age" data-id="lena" x="188" y="122.5">27</text><text class="lbn" x="218.8" y="105" text-anchor="start">Lena</text><text class="lbd" x="218.8" y="120" text-anchor="start">b. 1983</text></g><g class="pt off" data-id="iris"><text class="age off" data-id="iris" x="150" y="240.5"></text><text class="lbn" x="180.8" y="223" text-anchor="start">Iris</text><text class="lbd" x="180.8" y="238" text-anchor="start">b. 2014</text></g></svg></div>
 <svg class="tl" width="100%" height="44" aria-hidden="true"><line class="base" x1="6.0%" y1="12" x2="98%" y2="12"/><line class="tick" x1="6.00%" y1="6" x2="6.00%" y2="18"/><text class="yr" x="6.00%" y="38" text-anchor="middle">2010</text><line class="tick" x1="25.79%" y1="6" x2="25.79%" y2="18"/><text class="yr" x="25.79%" y="38" text-anchor="middle">2011</text><line class="tick" x1="45.58%" y1="6" x2="45.58%" y2="18"/><text class="yr" x="45.58%" y="38" text-anchor="middle">2012</text><line class="tick" x1="65.37%" y1="6" x2="65.37%" y2="18"/><text class="yr" x="65.37%" y="38" text-anchor="middle">2013</text><line class="tick" x1="85.16%" y1="6" x2="85.16%" y2="18"/><text class="yr" x="85.16%" y="38" text-anchor="middle">2014</text><circle class="dot cur" data-i="0" cx="15.16%" cy="12" r="5.5"/><circle class="dot" data-i="1" cx="42.33%" cy="12" r="4"/><circle class="dot" data-i="2" cx="45.58%" cy="12" r="4"/><circle class="dot" data-i="3" cx="60.43%" cy="12" r="4"/><circle class="dot" data-i="4" cx="86.24%" cy="12" r="4"/></svg>
 <div class="step">
 <button type="button" class="stepbtn" data-step="back">‹ Back</button>
 <p class="ev" id="ev"><span class="d">19 Jun 2010</span><span class="w">Owen and Lena married</span></p>
 <button type="button" class="stepbtn" data-step="next">Next ›</button>
 </div>
-<p class="key">Numbers are ages on that date. Crossed box: died. Double outline: Owen, who is telling it.</p>
+<p class="key">Numbers are ages on that date. Crossed box: died. Double outline: Owen, who is telling it. Heavier outline: who the event is about.</p>
 </div>
 <div class="act">
 <p class="why">A fact with a date can be found wrong. An opinion cannot.</p>
@@ -111,7 +120,7 @@ footer a { color: var(--faint); text-decoration: none; }
 </section>
 <section class="facts">
 <ul>
-<li>A coach that asks about your family.</li><li>Each fact you state becomes a dated event you can read and correct.</li><li>Your family diagram, drawn from those facts, as it stood on any date.</li>
+<li>A coach that asks about your family.</li><li>Each fact you state becomes a dated event you can correct.</li><li>Your family diagram, drawn from those facts, on any date.</li>
 </ul>
 </section>
 <div class="forms">
@@ -161,7 +170,7 @@ footer a { color: var(--faint); text-decoration: none; }
 </main>
 <footer><a href="https://alaskafamilysystems.com">© {{ year }} Alaska Family Systems</a></footer>
 </div>
-<script type="application/json" id="steps">{% raw %}[{"d":"19 Jun 2010","w":"Owen and Lena married","who":["owen","lena"],"p":{"arthur":{"v":1,"age":61,"dead":0},"ruth":{"v":1,"age":57,"dead":0},"june":{"v":1,"age":32,"dead":0},"owen":{"v":1,"age":28,"dead":0},"lena":{"v":1,"age":27,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,329.4,202.4]},{"d":"2 Nov 2011","w":"Arthur died","who":["arthur"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,329.4,202.4]},{"d":"2012","w":"Ruth sold the house on Fell Street","who":["ruth"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,329.4,202.4]},{"d":"Oct 2012","w":"Owen's back pain started","who":["owen"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":60,"dead":0},"june":{"v":1,"age":34,"dead":0},"owen":{"v":1,"age":31,"dead":0},"lena":{"v":1,"age":29,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,329.4,202.4]},{"d":"21 Jan 2014","w":"Iris born","who":["iris"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":61,"dead":0},"june":{"v":1,"age":35,"dead":0},"owen":{"v":1,"age":32,"dead":0},"lena":{"v":1,"age":30,"dead":0},"iris":{"v":1,"age":0,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":1},"vb":[-28.0,-31.0,329.4,295.0]}]{% endraw %}</script>
+<script type="application/json" id="steps">{% raw %}[{"d":"19 Jun 2010","w":"Owen and Lena married","who":["owen","lena"],"p":{"arthur":{"v":1,"age":61,"dead":0},"ruth":{"v":1,"age":57,"dead":0},"june":{"v":1,"age":32,"dead":0},"owen":{"v":1,"age":28,"dead":0},"lena":{"v":1,"age":27,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"2 Nov 2011","w":"Arthur died","who":["arthur"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"2012","w":"Ruth sold the house on Fell Street","who":["ruth"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"Oct 2012","w":"Owen's back pain started","who":["owen"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":60,"dead":0},"june":{"v":1,"age":34,"dead":0},"owen":{"v":1,"age":31,"dead":0},"lena":{"v":1,"age":29,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"21 Jan 2014","w":"Iris born","who":["iris"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":61,"dead":0},"june":{"v":1,"age":35,"dead":0},"owen":{"v":1,"age":32,"dead":0},"lena":{"v":1,"age":30,"dead":0},"iris":{"v":1,"age":0,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":1},"vb":[-28.0,-31.0,309.4,295.0]}]{% endraw %}</script>
 <script>{% raw %}
 (function () {
   var data = document.getElementById('steps');
