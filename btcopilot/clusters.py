@@ -614,15 +614,51 @@ def _holds(
     when: dict[int, datetime.date],
     held: set[int],
     around: list[tuple[str, Span]],
-) -> str | None:
-    """Why a stored grouping fails a definitional check, or nothing."""
+) -> ClusterCheck | None:
+    """Which definitional check a stored grouping fails, or nothing."""
     dates = _dates(cluster, when, held)
     if too_long(dates):
-        return f"the {MAX_SPAN_YEARS}-year check"
+        return ClusterCheck.TooLong
     span = span_of(dates)
     if span and any(overlapping(span, other) for _, other in around):
-        return "the overlap check"
+        return ClusterCheck.Overlap
     return None
+
+
+def _judged(
+    data: DiagramData,
+) -> tuple[dict[str, dict], list[tuple[dict, ClusterCheck, str]]]:
+    """The stored model groupings that pass the checks, by id, and each one that
+    fails with a sentence naming its years and the check it fails."""
+    when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
+    held, fixed = _theirs(data)
+    model = [c for c in _stored(data) if _regroupable(c)]
+    around = {
+        str(c["id"]): (f"the group {_title(c)!r}", span_of(_dates(c, when, held)))
+        for c in model
+    }
+    kept, failing = {}, []
+    for cluster in model:
+        others = fixed + [
+            said
+            for cid, said in around.items()
+            if cid != str(cluster["id"]) and said[1]
+        ]
+        check = _holds(cluster, when, held, others)
+        if check is None:
+            kept[str(cluster["id"])] = cluster
+            continue
+        span = span_of(_dates(cluster, when, held))
+        name = _said(_title(cluster), span) if span else repr(_title(cluster))
+        why = (
+            f"the {MAX_SPAN_YEARS}-year check"
+            if check is ClusterCheck.TooLong
+            else "the overlap check"
+        )
+        failing.append(
+            (cluster, check, f"Stored grouping {cluster['id']} {name} fails {why}")
+        )
+    return kept, failing
 
 
 def mine(data: DiagramData) -> dict[str, dict]:
@@ -631,30 +667,19 @@ def mine(data: DiagramData) -> dict[str, dict]:
     reading, not a category error, so its events fall back to the proposal and
     the record regroups on this run [Oracle: R-0838, R-0839]. A model group
     whose years overlap another stored group's, the person's own included, is
-    such a one; the person's own groups are never regrouped and so never fail."""
-    when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
-    held, fixed = _theirs(data)
-    model = [c for c in _stored(data) if _regroupable(c)]
-    around = {
-        str(c["id"]): (f"the group {_title(c)!r}", span_of(_dates(c, when, held)))
-        for c in model
-    }
-    kept = {}
-    for cluster in model:
-        others = fixed + [
-            said
-            for cid, said in around.items()
-            if cid != str(cluster["id"]) and said[1]
-        ]
-        why = _holds(cluster, when, held, others)
-        if why is None:
-            kept[str(cluster["id"])] = cluster
-        else:
-            _log.info(
-                f"Stored grouping {cluster['id']} {_title(cluster)!r} fails "
-                f"{why} and is not handed back"
-            )
+    such a one; the person's own groups are never regrouped and so never fail.
+    Two model groups overlapping each other both fail: neither has a better
+    claim to the years."""
+    kept, failing = _judged(data)
+    for _, _, why in failing:
+        _log.info(f"{why} and is not handed back")
     return kept
+
+
+def broken(data: DiagramData) -> list[tuple[dict, ClusterCheck, str]]:
+    """The stored model groupings that fail a check, each with the check and a
+    sentence naming its years and the check."""
+    return _judged(data)[1]
 
 
 def answer_schema(stored: dict[str, dict]) -> dict:
@@ -1025,7 +1050,8 @@ def sync(
         # Both answers refused: the rules' groups go in under their years, unless
         # the model's own groups are already there to keep [Oracle: R-0780]. A
         # stored group that fails the check is not one to keep [Oracle: R-0838].
-        fallback = not mine(data)
+        kept, failing = _judged(data)
+        fallback = not kept
         observe(
             ObservationKind.ClusterFailed,
             {
@@ -1037,7 +1063,39 @@ def sync(
         )
         _log.warning(f"Turn {turn_id} grouping refused twice: {failed}")
         if not fallback:
-            return None
+            # The model's groups that pass are kept; one that fails a check is
+            # removed, its events dots until a regroup passes [Oracle: R-0840].
+            for cluster, check, why in failing:
+                _log.warning(f"Turn {turn_id} removes: {why}")
+                observe(
+                    ObservationKind.ClusterFailed,
+                    {
+                        "check": check.value,
+                        "detail": why,
+                        "fallback": False,
+                        "reason": check.value,
+                        "removed": str(cluster["id"]),
+                    },
+                )
+            if not failing:
+                return None
+            change = record.apply(
+                diagram_id,
+                [
+                    {
+                        "item_kind": ItemKind.Cluster.value,
+                        "item_id": str(cluster["id"]),
+                        "field": None,
+                        "after": None,
+                    }
+                    for cluster, _, _ in failing
+                ],
+                author=Author.Coach,
+                turn_id=turn_id,
+                user_id=user_id,
+                session_id=session_id,
+            )
+            return Regroup(change=change, sentences=[])
         result = by_years(data, cache_key)
     deltas = _deltas(data.clusters, result.clusters, dates)
     deltas.append(

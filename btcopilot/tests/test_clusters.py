@@ -1138,3 +1138,87 @@ def test_the_fallback_cuts_its_groups_around_the_persons_own():
     result = by_years(STRADDLED, "key")
     assert [c.eventIds for c in result.clusters] == [[30, 31, 34], [35, 36, 37]]
     assert spans(result) == [("2008", "2008"), ("2010", "2011")]
+
+
+EARLY = [
+    moment(60, "1970-02-01", person=2, anxiety=VariableShift.Up),
+    moment(61, "1970-05-01", person=2, description="that spring"),
+    moment(62, "1970-09-01", person=2, description="that autumn"),
+]
+UNKNOWN = answers(named(999, 60, 61))
+
+
+def regrouped(test_user, data: DiagramData):
+    diagram = test_user.free_diagram
+    diagram.set_diagram_data(data)
+    db.session.commit()
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[parsed(UNKNOWN), parsed(UNKNOWN)],
+    ):
+        done = sync(diagram.id, turn_id="t1", user_id=diagram.user_id, force=True)
+    removed = [
+        o.detail
+        for o in Observation.query.filter_by(kind=ObservationKind.ClusterFailed)
+        if "removed" in o.detail
+    ]
+    return done, removed, [c["id"] for c in diagram.get_diagram_data().clusters]
+
+
+def test_refused_twice_removes_a_stored_model_group_over_the_persons_own(test_user):
+    # R-0840
+    done, removed, kept = regrouped(
+        test_user,
+        record(
+            *AROUND.events,
+            *EARLY,
+            clusters=[
+                own(20, 21, 22),
+                already(30, 31, 34, 32, cluster_id="c1", name="Around it"),
+                already(60, 61, 62, cluster_id="c2", name="That year"),
+            ],
+        ),
+    )
+    assert done is not None
+    assert [(r["removed"], r["check"]) for r in removed] == [("c1", "overlap")]
+    assert "(2008-03-01 to 2011-09-01)" in removed[0]["detail"]
+    assert sorted(kept) == ["c2", "u1"]
+
+
+def test_refused_twice_removes_a_stored_model_group_over_ten_years(test_user):
+    # R-0840
+    done, removed, kept = regrouped(
+        test_user,
+        record(
+            moment(70, "1990-01-01", person=1, anxiety=VariableShift.Up),
+            moment(71, "1995-01-01", person=1, description="later"),
+            moment(72, "2003-01-01", person=1, description="much later"),
+            *EARLY,
+            clusters=[
+                already(70, 71, 72, cluster_id="c1", name="Thirteen years"),
+                already(60, 61, 62, cluster_id="c2", name="That year"),
+            ],
+        ),
+    )
+    assert done is not None
+    assert [(r["removed"], r["check"]) for r in removed] == [("c1", "too_long")]
+    assert "(1990-01-01 to 2003-01-01)" in removed[0]["detail"]
+    assert kept == ["c2"]
+
+
+def test_refused_twice_removes_nothing_when_every_stored_group_passes(test_user):
+    # R-0840
+    done, removed, kept = regrouped(
+        test_user,
+        record(
+            *AROUND.events,
+            *EARLY,
+            clusters=[
+                own(20, 21, 22),
+                already(60, 61, 62, cluster_id="c2", name="That year"),
+            ],
+        ),
+    )
+    assert done is None
+    assert removed == []
+    assert kept == ["u1", "c2"]

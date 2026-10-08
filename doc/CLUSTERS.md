@@ -90,6 +90,18 @@ change; the production catch-up is `flask admin diagrams regroup --apply`
 [Oracle: R-0772]. Not changed on this pass: `--apply` still hands the stored
 groups that pass the check to the model as existing.
 
+**Refused twice, the failing stored clusters are removed [Oracle: R-0840].**
+When both answers are refused and at least one stored model cluster passes the
+checks, nothing is regrouped, but every stored model cluster that fails the
+ten-year or overlap check is deleted in one record change by the coach. Two
+model clusters overlapping each other both fail, as neither has the better
+claim to the years; one overlapping the person's own cluster fails and the
+person's stays. Each removal logs a warning and writes a `cluster_failed`
+observations row whose detail names the cluster, its dates, the check, and
+`removed` with its id. The cache key is not advanced, so the next turn regroups.
+A coach chip pointing at a removed cluster keeps the words it was written with,
+and a tap on it does nothing.
+
 **Data shown, not a rule.** Each proposed group the model is shown carries one
 plain line before its events, "38 years and 4 months with nothing recorded
 before this group" (or "first group in the record"), so the model reads the
