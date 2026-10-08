@@ -106,6 +106,14 @@ coach rather than the person.
   person or couple and item is asked and open, another on the same item is not
   kept, in any words; the refusal names the open one, to close with the
   person's answer first.
+- **A fact the person will find out stays asked.** Closing a fact question as
+  unknown, or keeping one born closed as unknown, is refused while the message
+  being answered says the person will find out or ask someone ("I'll ask my
+  mom", "let me find out", "I'd have to look it up"; the words are
+  `toolbox.FIND_OUT`); the refusal says to leave it asked and keep what they
+  said they would do as their todo [Oracle: R-0803]. Unknown is for a fact
+  nobody can tell them (Patrick, 2026-10-07). The said-unknown state and its
+  outcome value are unchanged.
 
 A fact placed on the wrong kind of thing (how many children or when they met on
 a person, any other item on a couple) names no item of the checklist, so these
@@ -155,11 +163,30 @@ breaks the cached coaching text. Two sentences under it say it is what is
 still unknown, for the coach's judgement, never a script, and that a fact said
 unknown is evidence about cutoff in the parents' generation, not a stop.
 
-- **The nearest unasked items**: the first eight not asked, in the checklist's
-  order, at most three on one person or couple so the list reaches past the
-  first person with many gaps; one line per person or couple, with the id,
-  the name and what they are to the person ("2 Ada (mother): birth date,
-  alive or not, schooling"). An item asked and still open is not listed.
+- **The nearest unasked items**: the first eight not asked, the structure items
+  first and then the rest, each part in the checklist's order, at most three on
+  one person or couple so the list reaches past the first person with many
+  gaps; one line per person or couple, with the id, the name and what they are
+  to the person ("2 Ada (mother): who their parents are, marriages with
+  dates"). An item asked and still open is not listed.
+
+**Structure before stories.** The structure items are the names, who each
+person's parents are, how many children each couple had, marriages with dates
+and when the person's couple met (`coverage.STRUCTURE`). They lead the list for
+every diagram until they are closed, so the grandparents' children and the
+parents' marriage come up before anyone's schooling, and the story items follow;
+the times the most was going on keep their place ahead of everything
+[Oracle: R-0735]. The order is read from the record's shape each turn, the same
+rule for every family, and no diagram is edited to get it. It governs only the
+question the coach chooses when the person gives it the floor; when the person
+brings a topic or tells a story, the coach follows them and the structure item
+waits (Patrick, 2026-10-07: the basic family structure is mapped before any
+coach-driven story; "When the client wants to talk about something the coach
+has to follow them"). When how many children a couple had is closed as answered,
+the tool says how many children of that couple the record holds, so a child
+counted but not named is still asked for, as a fact question on the couple that
+names no fact. Not built, put to Patrick: an open item of its own for each
+missing child, which needs the number the person said kept on the question.
 - **Said unknown**: every item said unknown, on one line, as evidence.
 - **One line of fractions**: coverage (known over required) and resolution
   (known, said unknown or declined over required).

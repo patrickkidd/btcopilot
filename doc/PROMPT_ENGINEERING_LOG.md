@@ -2,9 +2,61 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-07 (the Executive Summary card)
+**Last Updated**: 2026-10-08 (structure before stories; a fact to find stays open)
 
 ---
+
+## Worker job 024 — structure before stories; a fact to find stays open (2026-10-08)
+
+**Change**: two things the coach reads. (1) The block headed WHAT IS STILL UNKNOWN now lists the
+structure items first, in the order Patrick gave them (who each person is, whose parents are whose
+and how many children each couple had; then marriages with dates and when the person's couple met),
+and the story items after, each part in Kerr's order; the times the most was going on keep their
+place ahead of everything (`coverage.structure_first`, the same rule read from the record's shape
+for every diagram). The private question fragment's "What to ask next" paragraph gains two
+sentences: when the choice of question is the coach's, take the first item of that list, so the
+structure is mapped before any story the coach would open itself; a topic the person brings, or a
+story they are telling, always comes first. (2) The same fragment's closing sentence now says
+`unknown` is for a fact nobody can tell the person, and a fact they say they will find out or ask
+someone for is not settled: leave it `asked`, on their list of facts to find, with what they said
+they would do as their todo. The question tool's outcome descriptions say the same, and the tool
+refuses a close as unknown, or a question born closed as unknown, while the message being answered
+says the person will find out (`toolbox.FIND_OUT`: "I'll ask", "let me find out", "I'd have to
+look it up", and so on); the refusal says to leave it asked and keep the todo. The public copy of
+the fragment (`btcopilot/prompty/fragments/open_questions.md`) was not edited: it is outside this
+job's file list, so it now lags the private one by these sentences.
+
+**Why**: Patrick, 2026-10-07: "the basic family structure should be mapped out at least earlier
+than later. Definitely before any Coach driven rabbit holes on stories"; then "just to be clear, I
+specifically said Coach driven questions. When the client wants to talk about something the coach
+has to follow them." On a diagram like his, how many children a parent's parents had sat at
+position 100 of 163 in the one fixed order, and the coach sees eight items, so it never came up.
+And "Yes" to keeping a question open when the person says they will find out: "I don't know, I'll
+ask my uncle" was closed as unknown, the same as "nobody knows", and fell off the facts-to-find
+list.
+
+**Measured**: `btcopilot/tests/live/test_structurefirst.py`, three cases, each 2 of 3, on the
+worker machine's Claude Code (AWS Bedrock, model `us.anthropic.claude-opus-5`, which the app prices
+as `claude-opus-5`; not the production model) through `bin/subscribe.py` with a PATH wrapper that
+restores the Bedrock sign-in the nested `claude -p` is otherwise stripped of. Fictional record:
+Wren, her parents Ada and Hugh, three events (two moves, one symptom), an earlier sitting with
+what brings her and the two or three times answered.
+- Given the floor ("That's about all I can think of for now. What else do you need to know?"), the
+  coach keeps a fact question naming a structure item (or asks one in those words): old prompt and
+  block 0 of 3 (it asked what she hopes to get from the conversations, twice, and her mother's age
+  once); new 2 of 3 (the miss opened the year 1996 she had named, as the fidelity fragment tells it
+  to follow a named time).
+- A topic she brings ("My sister Nell called last night and we ended up arguing about Mom's care
+  again. I hung up on her."): no fact question on anyone's parents, marriages or meeting is kept,
+  and the first question is about the story: 3 of 3 on both, as it should be; this case guards
+  Patrick's correction rather than measuring the change.
+- A fact she will ask for ("Honestly, no idea. Dad never talked about himself and I never asked. I
+  suppose I could ask my mom sometime." to an open question on her father's birth date): the
+  question stays asked: 3 of 3 on both, also with the plainer "I honestly don't know when Dad was
+  born. I'll ask my mom next time I see her." So this run did not reproduce the production
+  finding on the old prompt (which already said a todo is not the answer to the fact question);
+  what guarantees it now is the tool's refusal, proven by the unit tests in
+  `btcopilot/tests/test_questions.py`, which fail without it.
 
 ## FD-375 — a file attached to a message is read into text once (2026-10-07)
 

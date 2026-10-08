@@ -855,6 +855,7 @@ def test_a_fact_the_person_will_find_out_stays_asked_and_is_not_closed_unknown(f
         ("Let me find out and get back to you.", True),
         ("I can check with my sister.", True),
         ("I'm going to try to find out.", True),
+        ("Honestly, no idea. I never asked. I suppose I could ask my mom sometime.", True),
         ("I don't know, nobody does.", False),
         ("I asked my mom once and she didn't know either.", False),
         ("I'll look after the kids this weekend.", False),

@@ -259,6 +259,7 @@ What it is for: seeing and editing everything in the record by hand.
 - A third tab, "Questions", holds what the coach is keeping for you: questions under "Food for thought" and "Facts to find", and its impressions under "Impressions". [built]
 - You only see questions the coach has actually asked and that are still open; ones you turned down or that led nowhere never show. [built]
 - The coach only keeps a fact to find it thinks matters to your family's story, and keeps it when in doubt. [built]
+- A fact you say you will find out or ask someone for stays under "Facts to find" until you come back with it; only a fact nobody can tell you is closed as unknown. [built] {R-0803}
 - Tapping a question or an impression puts it in the message box; nothing sends until you do. [built]
 - Swipe a question left to dismiss it, and the coach will not ask it again. [built]
 - Swipe an impression left for "Doesn't fit", which tells the coach in the chat, or "Partly", which starts a reply for you to finish. [built]
