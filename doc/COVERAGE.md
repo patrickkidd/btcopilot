@@ -54,7 +54,7 @@ children and the partner's family when not attached need neither.
 
 | State | From |
 |---|---|
-| Known | The record: a name; a dated birth; a death event (alive), its date and its description (cause); a shift with a symptom, or a noted event naming health (health); a noted event naming schooling or work; a dated bond, marriage, separation or divorce (marriages); a noted event with a place, or naming places lived (places lived); a man or woman (sex); a parents' couple (parents); every child of the parents with a dated birth, two or more of them or their number known (birth order); a dated bond or marriage on the couple (met); any cluster (periods of stress; never the times the most was going on). Or a fact question naming the item, closed as a fact or answered. |
+| Known | The record: a name (a child added only as the couple's child has none); a dated birth; a death event (alive), its date and its description (cause); a shift with a symptom, or a noted event naming health (health); a noted event naming schooling or work; a dated bond, marriage, separation or divorce (marriages); a noted event with a place, or naming places lived (places lived); a man or woman (sex); a parents' couple (parents); every child of the parents with a dated birth, two or more of them or their number known (birth order); a dated bond or marriage on the couple (met); any cluster (periods of stress; never the times the most was going on). Or a fact question naming the item, closed as a fact or answered. |
 | Asked | A fact question naming the item, asked and not yet closed. |
 | Said unknown | A fact question naming the item, closed as unknown. |
 | Declined | A fact question naming the item, closed as declined, by the person or in the chat. |
@@ -182,11 +182,18 @@ question the coach chooses when the person gives it the floor; when the person
 brings a topic or tells a story, the coach follows them and the structure item
 waits (Patrick, 2026-10-07: the basic family structure is mapped before any
 coach-driven story; "When the client wants to talk about something the coach
-has to follow them"). When how many children a couple had is closed as answered,
-the tool says how many children of that couple the record holds, so a child
-counted but not named is still asked for, as a fact question on the couple that
-names no fact. Not built, put to Patrick: an open item of its own for each
-missing child, which needs the number the person said kept on the question.
+has to follow them").
+
+**A child counted but not named.** Closing how many children a couple had as
+answered requires `count`, the number the person said (0 when none, or when
+they cannot have any), on the tool call, never stored. For each child counted
+beyond those the record holds of that couple, the tool adds a person named only
+as the couple's child ("Ada and Hugh's child"), the way an unnamed parent or
+partner is added [Oracle: R-0325]; nobody is removed when the count is lower,
+and nothing is added when the record already holds that many. The reply says
+what was added. Such a name is no name (`coverage.unnamed`), so the child's
+name is an open structure item, listed before any story (Patrick, 2026-10-07:
+"sounds like you should at least add the person with no name").
 - **Said unknown**: every item said unknown, on one line, as evidence.
 - **One line of fractions**: coverage (known over required) and resolution
   (known, said unknown or declined over required).

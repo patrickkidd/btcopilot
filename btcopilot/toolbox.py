@@ -182,6 +182,19 @@ CERTAINTY = (
     'for "sometime around" or any hedge'
 )
 
+# The number of children the person said, given when how many children a couple
+# had is closed as answered; the tool adds a child named only as the couple's
+# child for each one counted but not yet in the record (R-0325; Patrick, 2026-10-07).
+COUNT = {
+    "type": "integer",
+    "description": (
+        "Required with answered on how many children: the number the person said, "
+        "0 when none or when they cannot have any. A child counted but not yet in the "
+        "record is added as the couple's child with no name of their own; nobody is "
+        "removed."
+    ),
+}
+NO_COUNT = "It did not say how many children were counted."
 ASKED_IN = {
     "type": "integer",
     "description": (
@@ -513,6 +526,7 @@ def schemas(coder: bool = False) -> list[dict]:
                         "type": "integer",
                         "description": means[prompts.ToolText.Answer],
                     },
+                    "count": COUNT,
                     "item_kind": {
                         "type": "string",
                         "enum": [kind.value for kind in record.QUESTION_LINKS],
@@ -560,6 +574,7 @@ def schemas(coder: bool = False) -> list[dict]:
                         "type": "integer",
                         "description": means[prompts.ToolText.Answer],
                     },
+                    "count": COUNT,
                     "case_report_card": _card_param(
                         record.QUESTION_CARDS,
                         means[prompts.ToolText.CaseReportCard],
@@ -1679,6 +1694,12 @@ class Toolbox:
         if args.get(record.CARD) is not None:
             fields[record.CARD] = choice(CaseReportCard, args[record.CARD], "cards").value
         text, patch = self._write(ItemKind.Question, None, fields, said and said.id)
+        counted = (
+            fields.get("outcome") == QuestionOutcome.Answered
+            and fields.get("fact") == Fact.Children
+        )
+        if counted:
+            text = f"{text}\n\n{self._counted(int(fields['item_id']), args['count'])}"
         if heard:
             where, lines = heard
             text = (
@@ -1792,6 +1813,8 @@ class Toolbox:
                     "It kept an answer with no message behind it.",
                 )
             fields["answer"] = self._cited(answer)
+            if fields.get("fact") == Fact.Children:
+                self._count(args)
         fields.update(self._asked(None))
 
     def _set_question(self, args: dict) -> tuple[str, dict]:
@@ -1844,9 +1867,15 @@ class Toolbox:
         if record.CARD in args:
             card = args[record.CARD]
             fields[record.CARD] = card and choice(CaseReportCard, card, "cards").value
+        counted = (
+            fields.get("outcome") == QuestionOutcome.Answered
+            and found.get("fact") == Fact.Children
+        )
+        if counted:
+            self._count(args)
         text, patch = self._write(ItemKind.Question, args["id"], fields, raised)
-        if fields.get("outcome") == QuestionOutcome.Answered and found.get("fact") == Fact.Children:
-            text = f"{text}\n\n{self._counted(found)}"
+        if counted:
+            text = f"{text}\n\n{self._counted(int(found['item_id']), args['count'])}"
         return text, patch
 
     def _finding_out(self) -> bool:
@@ -1854,18 +1883,55 @@ class Toolbox:
         fact out or ask someone for it, which leaves its question asked."""
         return self.said is not None and bool(FIND_OUT.search(self.said.text or ""))
 
-    def _counted(self, question: dict) -> str:
-        """How many children of the couple the record holds, said when their
-        number is closed as answered, so a child counted but not named is
-        still asked for (Patrick, 2026-10-07)."""
-        held = len(
-            [p for p in self.data.people if str(p.get("parents")) == str(question["item_id"])]
-        )
-        where = coverage.label(self.data, ItemKind.PairBond, int(question["item_id"]))
+    @staticmethod
+    def _count(args: dict) -> int:
+        """The number of children the person said, required when how many
+        children a couple had is closed as answered."""
+        count = args.get("count")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            raise ToolError(
+                "Say how many children the person counted: count, a whole number, 0 "
+                "when none or when they cannot have any",
+                NO_COUNT,
+            )
+        return count
+
+    def _counted(self, bid: int, count: int) -> str:
+        """A child for each one the person counted that the record does not
+        hold, added as the couple's child with no name of their own, the way an
+        unnamed parent or partner is added (R-0325; Patrick, 2026-10-07); nobody
+        is removed when the count is lower. Says what it did, and that each
+        added child's name is now on the list of what is still unknown."""
+        data = self.data
+        held = [p for p in data.people if str(p.get("parents")) == str(bid)]
+        where = coverage.label(data, ItemKind.PairBond, bid)
+        missing = count - len(held)
+        if missing <= 0:
+            return (
+                f"The record already holds {len(held)} "
+                f"{'child' if len(held) == 1 else 'children'} of {where}; the count "
+                f"{count} adds no one, and no one is removed"
+            )
+        bond = next(b for b in data.pair_bonds if b["id"] == bid)
+        names = [
+            self._find_person(pid).get("name")
+            for pid in (bond["person_a"], bond["person_b"])
+            if pid is not None
+        ]
+        whose = " and ".join(n for n in names if n and not coverage.unnamed(n)) or "someone"
+        added = []
+        for _ in range(missing):
+            _, patch = self._write(
+                ItemKind.Person,
+                None,
+                {"name": f"{whose}'s {coverage.CHILD_ROLE}", "parents": bid},
+            )
+            added.append(str(patch["deltas"][0]["item_id"]))
         return (
-            f"The record holds {held} {'child' if held == 1 else 'children'} of {where}. If "
-            "the person counted more, add each one they named, and for the rest keep one "
-            "fact question on the couple, naming no fact, that asks who they are"
+            f"Added {missing} {'child' if missing == 1 else 'children'} of {where} with no "
+            f"name of their own, person {' and '.join(added)}, so the record holds the "
+            f"{count} counted; each one's name is now on the list of what is still "
+            "unknown, so ask who they are"
         )
 
     def _asked_again(self, found: dict, args: dict) -> tuple[list[str], int | None]:

@@ -8,7 +8,7 @@ import datetime
 
 from btcopilot import profile
 from btcopilot.prompts import Role
-from btcopilot.record import PLACEHOLDERS, ROLE_WORDS, generic_key
+from btcopilot.record import GENERIC, PLACEHOLDERS, ROLE_WORDS, generic_key
 from btcopilot.recordtext import event_line, note_line, person_line
 from btcopilot.schema import (
     DECLINED,
@@ -222,6 +222,19 @@ PLATEAU_TURNS = 5
 HEAD = "WHAT IS STILL UNKNOWN"
 
 UNNAMED = ("", profile.PLACEHOLDER_NAME, DEFAULT_SUBJECT_NAME)
+# A child counted but not named is added as "<the couple>'s child", the way an
+# unnamed parent or partner is added (R-0325; Patrick, 2026-10-07: "sounds like
+# you should at least add the person with no name"). Such a name is no name,
+# so the child's own name is an open item.
+CHILD_ROLE = "child"
+
+
+def unnamed(name: str | None) -> bool:
+    """Whether a person's name is no name: empty, a placeholder, or the generic
+    name of a child nobody named."""
+    name = (name or "").strip()
+    match = GENERIC.match(name)
+    return name in UNNAMED or bool(match and match.group(2).lower() == CHILD_ROLE)
 ANSWERS = {
     QuestionOutcome.Fact: FactState.Known,
     QuestionOutcome.Answered: FactState.Known,
@@ -407,7 +420,7 @@ def spoken_as(data: DiagramData, kind: ItemKind, iid: int) -> list[str] | None:
     words = []
     for pid in people:
         name = _person(data, pid).get("name") or ""
-        if name not in UNNAMED and generic_key({"name": name}) is None:
+        if not unnamed(name) and generic_key({"name": name}) is None:
             words.append(name)
         role = _role_of(data, ItemKind.Person, pid)
         if role is not None:
@@ -557,7 +570,7 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
     fact, _, iid = item
     match fact:
         case Fact.Name:
-            return (_person(data, iid).get("name") or "") not in UNNAMED
+            return not unnamed(_person(data, iid).get("name"))
         case Fact.Alive:
             own = profile.own(data)
             if own is not None and iid == own["id"]:

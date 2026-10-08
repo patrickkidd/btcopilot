@@ -58,6 +58,16 @@ what brings her and the two or three times answered.
   what guarantees it now is the tool's refusal, proven by the unit tests in
   `btcopilot/tests/test_questions.py`, which fail without it.
 
+**Then, on Patrick's ruling the same day** ("sounds like you should at least add the person with no
+name"): closing how many children a couple had as answered now requires `count`, the number the
+person said, as a tool argument (0 for none or cannot have any); for each child counted beyond
+those the record holds, the tool adds a person named only as the couple's child, the record's own
+way with an unnamed parent or partner (R-0325), removes nobody, and says what it added; the child's
+name is then an open structure item in the WHAT IS STILL UNKNOWN list. The fragment's closing
+paragraph says the same in one sentence; the tool's `count` description says it too. Proven by unit
+tests on the tool and the checklist, not by a live case: the behaviour is the tool's, not the
+model's.
+
 ## FD-375 — a file attached to a message is read into text once (2026-10-07)
 
 **Change**: a new instruction, `fragments/attachment` (private, with the same public wording), is
