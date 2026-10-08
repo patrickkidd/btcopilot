@@ -52,6 +52,16 @@ export default defineConfig({
       ignoreSnapshots: true,
       use: { ...chrome, viewport: { width: 1280, height: 800 } },
     },
+    // Phone Safari, as Patrick's phone runs the page: touch, no hover. No
+    // WebKit goldens are kept, so its screenshot calls are skipped. Its page
+    // routes never see a fetch the page's service worker makes, so the worker
+    // is kept off and the push test, which needs it, does not run here.
+    {
+      name: "webkit-phone",
+      testIgnore: [SANDBOX, "**/push.spec.ts"],
+      ignoreSnapshots: true,
+      use: { ...devices["iPhone 14 Pro"], serviceWorkers: "block" },
+    },
     // The review walks: journeys against a running review sandbox, in both
     // engines at phone size and in Chromium at desktop size. They skip unless
     // the sandbox and its sign-in links are named in the environment, so a
