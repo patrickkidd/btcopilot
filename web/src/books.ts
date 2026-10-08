@@ -19,8 +19,18 @@ export class Books {
       if ((e.target as Element).closest(".fs-sheet.bk .cardx, .fs-scrim.bk")) this.sheet.lower();
     });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && this.sheet.up) this.sheet.lower();
+      if (e.key === "Escape" && this.sheet.up) {
+        this.sheet.lower();
+        // the key put the passages away and nothing else: the page behind a
+        // cluster's i, which Escape also closes, stays where it was
+        e.stopImmediatePropagation();
+      }
     });
+  }
+
+  /** Whether the passages are up. */
+  get up(): boolean {
+    return this.sheet.up;
   }
 
   /** Read again at the next ask, as when another family is opened. */
