@@ -802,6 +802,91 @@ def test_a_fact_question_can_be_added_already_said_unknown_citing_an_older_messa
     assert coverage.state_of(data, Fact.Alive, ItemKind.Person, HUGH) is FactState.Known
 
 
+FIND_OUT = "I honestly don't know when Dad was born. I'll ask my mom next time I see her."
+NOBODY = "Nobody knows when Dad was born; his papers were lost in the fire."
+STAYS = "It was about to close a question the person said they would find the answer to."
+
+
+def test_a_fact_the_person_will_find_out_stays_asked_and_is_not_closed_unknown(family, test_user):
+    # R-0803
+    # Patrick, 2026-10-07: "Yes" to keeping a question open when the person says they
+    # will find out, instead of closing it as unknown.
+    grown(family)
+    toolbox, _ = speaking(family, test_user, FIND_OUT)
+    add(toolbox, "When was your father born?", fact="birth_date", item_kind="person", item_id=str(HUGH))
+
+    with pytest.raises(ToolError) as refused:
+        settle(toolbox, family, "q1", state="resolved", outcome="unknown")
+    assert refused.value.plain == STAYS
+    assert str(refused.value) == (
+        "The person said they will find out, so question q1 is not settled: leave it "
+        "asked, and keep what they said they would do as a todo in their words"
+    )
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, "Where was your father born?", state="resolved", outcome="unknown", fact="places", item_kind="person", item_id=str(HUGH))
+    assert refused.value.plain == STAYS
+    # their todo is kept beside it, and closes as it always did
+    add(toolbox, "ask my mom when Dad was born", kind="todo", state="held")
+    settle(toolbox, family, "q2", state="resolved", outcome="unknown")
+    kept = stored(family)
+    assert [(q["id"], q["kind"], q["state"], q["outcome"]) for q in kept.values()] == [
+        ("q1", "fact", "asked", None),
+        ("q2", "todo", "resolved", "unknown"),
+    ]
+    assert coverage.state_of(stored_data(family), Fact.BirthDate, ItemKind.Person, HUGH) is FactState.Asked
+    assert [(q["id"], q["open"]) for q in questions.asked(family.id, stored_data(family))] == [
+        ("q1", True)
+    ]
+    # a fact nobody can tell them is still said unknown, and so is one closed
+    # outside a turn that answers a message
+    toolbox, _ = speaking(family, test_user, NOBODY)
+    settle(toolbox, family, "q1", state="resolved", outcome="unknown")
+    assert stored(family)["q1"]["outcome"] == "unknown"
+    add(box(family), "Where did your father grow up?", fact="places", item_kind="person", item_id=str(HUGH))
+    settle(box(family), family, "q3", state="resolved", outcome="unknown")
+    assert stored(family)["q3"]["outcome"] == "unknown"
+
+
+@pytest.mark.parametrize(
+    "said,finding",
+    [
+        ("I'll ask my uncle at Thanksgiving.", True),
+        ("I’d have to look it up.", True),
+        ("Let me find out and get back to you.", True),
+        ("I can check with my sister.", True),
+        ("I'm going to try to find out.", True),
+        ("I don't know, nobody does.", False),
+        ("I asked my mom once and she didn't know either.", False),
+        ("I'll look after the kids this weekend.", False),
+    ],
+)
+def test_the_words_that_say_a_fact_is_theirs_to_find(said, finding):
+    # R-0803
+    from btcopilot.toolbox import FIND_OUT as WORDS
+
+    assert bool(WORDS.search(said)) is finding, said
+
+
+def test_closing_how_many_children_as_answered_says_how_many_the_record_holds(family, test_user):
+    # R-0618
+    # Patrick, 2026-10-07: once a count is answered, what the diagram holds is
+    # compared with it, so a child counted but not named is still asked for.
+    grown(family)
+    toolbox, _ = speaking(family, test_user, "There were three of us.")
+    add(toolbox, "How many children did your parents have?", fact="children", item_kind="pair_bond", item_id=str(HOME))
+
+    text, _ = settle(toolbox, family, "q1", state="resolved", outcome="answered")
+    assert text == (
+        "Changed question q1.\n\n"
+        "The record holds 1 child of couple 10, Ada and Hugh (parents). If the person "
+        "counted more, add each one they named, and for the rest keep one fact question on "
+        "the couple, naming no fact, that asks who they are"
+    )
+    # the question that asks for the rest names no fact, so nothing refuses it
+    add(toolbox, "Who were the other two children?", item_kind="pair_bond", item_id=str(HOME))
+    assert [q["state"] for q in stored(family).values()] == ["resolved", "asked"]
+
+
 BORN_CLOSED = [
     (
         {"kind": "fact", "fact": "children", "item_kind": "pair_bond", "item_id": "7", "outcome": "let_go"},
