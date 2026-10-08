@@ -52,6 +52,8 @@ _log = logging.getLogger(__name__)
 # grouped by the older rules re-groups on its next event-changing turn. 6: the
 # prompt lines the books contradict reworded and the ten-year check added, so
 # every record regroups on its next event change [Oracle: R-0836, R-0838].
+# 7: two groups never share years, the person's own shown to the model and
+# counted, so every record regroups on its next event change [Oracle: R-0839].
 DETECTION_VERSION = 7
 
 NODAL_KINDS = frozenset(
@@ -428,7 +430,12 @@ def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
     return f"{silence(first - max(earlier))} with nothing recorded before this group"
 
 
-def _prompt(cands: list[Candidate], free: list[Event], stored: dict[str, dict]) -> str:
+def _prompt(
+    cands: list[Candidate],
+    free: list[Event],
+    stored: dict[str, dict],
+    fixed: list[tuple[str, Span]],
+) -> str:
     by_id = {e.id: e for e in free}
     when = {e.id: parse_date(e.dateTime) for e in free}
     blocks = [
@@ -451,6 +458,13 @@ def _prompt(cands: list[Candidate], free: list[Event], stored: dict[str, dict]) 
                     "eventIds": cluster.get("eventIds") or [],
                 }
                 for cluster_id, cluster in stored.items()
+            ],
+            indent=2,
+        ),
+        theirs=json.dumps(
+            [
+                {"name": name, "from": span[0].isoformat(), "to": span[1].isoformat()}
+                for name, span in fixed
             ],
             indent=2,
         ),
@@ -492,7 +506,7 @@ def _check(
     marked = {i for candidate in cands for i in candidate.nodalOrShiftIds}
     seen: set[int] = set()
     claimed: set[str] = set()
-    drawn: list[tuple[str, Span]] = list(fixed)
+    drawn = [(f"the group this person made, {name!r}", span) for name, span in fixed]
     for cluster in response.clusters:
         unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
         if unknown:
@@ -597,9 +611,9 @@ def _dates(
 
 
 def _theirs(data: DiagramData) -> tuple[set[int], list[tuple[str, Span]]]:
-    """The events in the groups the person made, and those groups' years as the
-    timeline draws them. Such a group's own dates stand in where its events are
-    not dated in the record."""
+    """The events in the groups the person made, and each such group's name and
+    years as the timeline draws them. Such a group's own dates stand in where
+    its events are not dated in the record."""
     when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
     events: set[int] = set()
     spans: list[tuple[str, Span]] = []
@@ -611,7 +625,7 @@ def _theirs(data: DiagramData) -> tuple[set[int], list[tuple[str, Span]]]:
         if span is None and cluster.get("startDate") and cluster.get("endDate"):
             span = (parse_date(cluster["startDate"]), parse_date(cluster["endDate"]))
         if span:
-            spans.append((f"the group this person made, {_title(cluster)!r}", span))
+            spans.append((_title(cluster), span))
     return events, spans
 
 
@@ -717,7 +731,7 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
     taken = {str(cluster["id"]) for cluster in _stored(data)}
     existing = mine(data)
     theirs, fixed = _theirs(data)
-    prompt = _prompt(cands, free, existing)
+    prompt = _prompt(cands, free, existing, fixed)
     schema = answer_schema(existing)
     limit = THINKING_ROOM + PER_EVENT * len(free)
     _log.info(
@@ -776,27 +790,56 @@ def years(start: str, end: str) -> str:
     return str(first) if first == last else f"{first}–{last}"
 
 
+def _apart(
+    ids: list[int], when: dict, held: set[int], spans: list[Span]
+) -> list[list[int]]:
+    """A proposal's events less the person's own and any dated inside the years
+    of a group the person made, cut wherever such a group falls between two of
+    them, so no piece shares a day with theirs [Oracle: R-0839]."""
+    pieces: list[list[int]] = [[]]
+    for event_id in ids:
+        day = when[event_id]
+        if event_id in held or any(start < day < end for start, end in spans):
+            continue
+        if pieces[-1] and any(
+            overlapping((when[pieces[-1][-1]], day), span) for span in spans
+        ):
+            pieces.append([])
+        pieces[-1].append(event_id)
+    return pieces
+
+
 def by_years(data: DiagramData, cache_key: str) -> ClusterResult:
     """The rules' groups, each titled with the years it spans, for a turn whose
-    grouping answers were all refused."""
+    grouping answers were all refused. A proposal is cut around the groups the
+    person made, as the write would otherwise store it across them."""
     taken = {str(cluster["id"]) for cluster in _stored(data)}
+    held, fixed = _theirs(data)
+    spans = [span for _, span in fixed]
+    when = {e.id: parse_date(e.dateTime) for e in joinable(data)}
     made = []
     for candidate in candidates(data):
-        cluster_id = next_id(taken)
-        taken.add(cluster_id)
-        title = years(candidate.startDate, candidate.endDate)
-        made.append(
-            Cluster(
-                id=cluster_id,
-                title=title,
-                name=title,
-                summary="",
-                eventIds=list(candidate.eventIds),
-                startDate=candidate.startDate,
-                endDate=candidate.endDate,
-                source=ClusterSource.Model,
+        for ids in _apart(candidate.eventIds, when, held, spans):
+            if len(ids) < MIN_CLUSTER_EVENTS or not set(ids) & set(
+                candidate.nodalOrShiftIds
+            ):
+                continue
+            cluster_id = next_id(taken)
+            taken.add(cluster_id)
+            start, end = when[ids[0]].isoformat(), when[ids[-1]].isoformat()
+            title = years(start, end)
+            made.append(
+                Cluster(
+                    id=cluster_id,
+                    title=title,
+                    name=title,
+                    summary="",
+                    eventIds=ids,
+                    startDate=start,
+                    endDate=end,
+                    source=ClusterSource.Model,
+                )
             )
-        )
     return ClusterResult(clusters=made, cacheKey=cache_key)
 
 

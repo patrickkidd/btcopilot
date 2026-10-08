@@ -63,13 +63,17 @@ the by-years fallback applies. A cluster's years are those the timeline draws,
 its first dated event to its last (`span_of`, the same dates the ten-year check
 reads), and a returned group is measured without the events of the person's own
 clusters, which the write holds out of it. The person's own clusters count: a
-model group straddling one is refused. Two clusters that only touch on one day
+model group straddling one is refused, and the prompt lists the person's own
+clusters by name and years under GROUPS THIS PERSON MADE, so the model sees them
+before its first answer. Two clusters that only touch on one day
 are not overlapping (`overlapping` in `btcopilot/clusters.py` is strict on both
 ends), because the page draws neighbouring pills apart at a seam
 (`web/src/picture.ts`, `edges`), so touching is a closeness it can still draw as
 two. The rules' own proposal joins two groups whose years overlap into one
-proposal, whatever their people (`_one_axis`), so the fallback never stores an
-overlap either; groups that only touch stay two.
+proposal, whatever their people (`_one_axis`), and the fallback (`by_years`)
+leaves out the person's own events and any dated inside their clusters' years
+and cuts a proposal wherever one of their clusters falls (`_apart`), so the
+fallback never stores an overlap either; groups that only touch stay two.
 
 **A stored cluster that fails the check is not handed back [Oracle: R-0838].**
 "Keep what is there" protects a reading, not a category error: a stored

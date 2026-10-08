@@ -22,6 +22,7 @@ from btcopilot.clusters import (
     ModelCluster,
     _deltas,
     answer_schema,
+    by_years,
     candidates,
     detect_clusters,
     joinable,
@@ -1101,3 +1102,37 @@ def test_a_stored_group_overlapping_another_stored_group_is_not_handed_back():
         ],
     )
     assert list(clusters.mine(beside)) == ["c1"]
+
+
+def test_the_persons_own_groups_are_shown_to_the_model_with_their_years():
+    # R-0839
+    with replies(INSIDE_ANSWER, INSIDE_ANSWER) as ask:
+        with pytest.raises(ClusterError):
+            detect_clusters(AROUND, ask)
+    prompt = ask.call_args_list[0].args[0]
+    assert '"name": "The years I was ill"' in prompt
+    assert '"from": "2009-02-01"' in prompt and '"to": "2011-06-01"' in prompt
+
+
+# Her own two years sit inside one run of the rules' proposal, so the fallback
+# would store one group from 2008 to 2011 across them.
+STRADDLED = record(
+    moment(30, "2008-03-01", person=1, anxiety=VariableShift.Up),
+    moment(31, "2008-06-01", person=1, description="that summer"),
+    moment(34, "2008-11-01", person=1, description="that autumn"),
+    moment(20, "2009-02-01", person=1, symptom=VariableShift.Up),
+    moment(21, "2009-08-01", person=1, description="that summer"),
+    moment(22, "2010-01-01", person=1, functioning=VariableShift.Down),
+    moment(35, "2010-06-01", person=1, anxiety=VariableShift.Up),
+    moment(36, "2010-12-01", person=1, description="that winter"),
+    moment(37, "2011-03-01", person=1, description="that spring"),
+    clusters=[own(20, 21, 22)],
+)
+
+
+def test_the_fallback_cuts_its_groups_around_the_persons_own():
+    # R-0839, R-0780
+    assert grouped(STRADDLED) == [[30, 31, 34, 20, 21, 22, 35, 36, 37]]
+    result = by_years(STRADDLED, "key")
+    assert [c.eventIds for c in result.clusters] == [[30, 31, 34], [35, 36, 37]]
+    assert spans(result) == [("2008", "2008"), ("2010", "2011")]
