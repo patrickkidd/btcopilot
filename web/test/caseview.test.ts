@@ -315,6 +315,8 @@ function lenaOmar(): Timeline {
       noted(323, "2013-06-01", 6, "Moved into the spare room", { location: "Tucson" }),
       shift(324, "2014-03-01", 1, "Conflict with Farida", { relationship: "conflict", relationshipTargets: [6] }),
       shift(334, "2016-01-01", 2, "Lent Karim money", { relationship: "toward", relationshipTargets: [8] }),
+      noted(336, "2016-09-01", 8, "Moved to Tucson", { location: "Tucson" }),
+      event(337, EventKind.Married, "2023-01-01", { person: 8 }),
       noted(328, "2018-08-01", 9, "Left for college", { location: "Eugene" }),
       event(326, EventKind.Married, "2024-06-01", { person: 9, spouse: 13 }),
       shift(327, "2025-02-01", 9, "Burned out at work", { functioning: "down" }),
@@ -398,12 +400,30 @@ it("shows any other relative's event only when the record ties them to a partner
   const all = faces(v).flat();
   // tied by her distance aimed at Omar, on the wedding's own day
   expect(all).toContain("Jun 1998 · Farida · Did not come to the wedding");
-  // tied, within two years of Omar drawing closer to her
-  expect(all).toContain("Jun 2013 · Farida · Moved into the spare room");
+  // tied, and within two years of Noor's wedding
+  expect(all).toContain("Jan 2023 · Karim · married");
+  // tied, but near only Omar's own shift toward her, not an event of the couple's own
+  expect(all).not.toContain("Jun 2013 · Farida · Moved into the spare room");
   // tied by Omar's loan, but no event of the couple's own within two years of his divorce
-  expect(all.join("\n")).not.toContain("Karim · ");
+  expect(all).not.toContain("Jun 2008 · Karim · divorced");
   // within two years of Noor's school refusal, but nothing in the record ties Dana to either partner
   expect(all.join("\n")).not.toContain("Dana · ");
+});
+
+// R-0834
+it("measures the two years from the couple's own events only, never from a partner's or a child's own shifts and moves", () => {
+  const v = caseView(lenaOmar(), ONE, "");
+  const all = faces(v).flat();
+  // Karim's move: eight months after Omar's own shift toward him, but years from every event of the couple's own
+  expect(all).not.toContain("Sep 2016 · Karim · Moved to Tucson");
+  // the same relative's marriage, a year and a half before Noor's wedding: shown
+  expect(all).toContain("Jan 2023 · Karim · married");
+  const tl = lenaOmar();
+  // a child's marked shift near the relative's move does not open the window either
+  tl.events.push(event(338, EventKind.Shift, "2016-06-01", { person: 10, title: "Failed a year at school", functioning: "down" }));
+  const again = faces(caseView(tl, ONE, "")).flat();
+  expect(again).toContain("Jun 2016 · Eli · Failed a year at school");
+  expect(again).not.toContain("Sep 2016 · Karim · Moved to Tucson");
 });
 
 // R-0835

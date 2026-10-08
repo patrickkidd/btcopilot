@@ -428,12 +428,16 @@ class Reader {
       if (left && e.dateTime! >= left) return false;
       return (e.kind === EventKind.Shift && marked(e)) || (e.kind === EventKind.Noted && !!e.location) || e.kind === EventKind.Death;
     });
-    const couples = [...own, ...births, ...weddings, ...theirs, ...kids];
+    // the couple's own events, which the two-year window is measured from (R-0834): got together,
+    // married, separated or divorced, each child's birth, each child's marriage; never a partner's or
+    // a child's own shifts and moves
+    const couples = [...own, ...births, ...weddings];
+    const taken = new Set([...couples, ...theirs, ...kids]);
     const near = (e: TimelineEvent) => couples.some((o) => Math.abs(when(o.dateTime!) - when(e.dateTime!)) <= NEAR_YEARS);
     const tied = (id: number) => this.tl.events.some((x) => (x.person === id && aimedAt(x).some(inPair)) || (inPair(x.person) && aimedAt(x).includes(id)));
     const others = dated.filter((e) => {
       const who = e.person;
-      if (!since(e) || who == null || inPair(who) || children.includes(who) || couples.includes(e)) return false;
+      if (!since(e) || who == null || inPair(who) || children.includes(who) || taken.has(e)) return false;
       if (kin.has(who) && (e.kind === EventKind.Death || (e.kind === EventKind.Shift && e.symptom != null))) return true;
       return tied(who) && near(e);
     });
