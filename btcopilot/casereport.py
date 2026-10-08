@@ -16,7 +16,7 @@ from btcopilot import clock, coverage, extensions, profile, record, turnlog
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Refusal, model_for
-from btcopilot.coachturn import drain, run_call
+from btcopilot.coachturn import run_call
 from btcopilot.extensions import db
 from btcopilot.metered import Metered
 from btcopilot.models import (
@@ -58,6 +58,7 @@ FIELDS = ("text", "evidence", "state", CARD)
 CLOSED = "CLOSED QUESTIONS"
 BROKE = "The case report could not be written again just now."
 REFUSED = "The case report could not be written again from this diagram."
+MOVED = "The diagram changed while the case report was being written; refresh it again."
 
 
 class State(enum.StrEnum):
@@ -289,12 +290,28 @@ def wrote(diagram: Diagram, toolbox: Toolbox, calls: list) -> list[str]:
     return cards
 
 
+class Moved(Exception):
+    """The family changed while the model wrote, so its cards would be old."""
+
+
 def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
-    """One model call writes every card again (R-0825)."""
+    """One model call writes every card again (R-0825), the report held
+    through every piece of it. Cards read from a family that changed during
+    the call are not written, so the report stays out of date (R-0826)."""
     toolbox = box(diagram, user, turn_id)
+    version = diagram.version
     system, messages = asked(diagram, user, toolbox)
-    turnlog.hold(diagram.id)
-    turn = drain(meter.turn(system, messages, offered(), turn_id))
+    words = meter.turn(system, messages, offered(), turn_id)
+    while True:
+        turnlog.hold(diagram.id, turn_id)
+        try:
+            next(words)
+        except StopIteration as stop:
+            turn = stop.value
+            break
+    db.session.refresh(diagram)
+    if diagram.version != version:
+        raise Moved(f"diagram {diagram.id} moved from version {version} to {diagram.version}")
     return wrote(diagram, toolbox, turn.calls)
 
 
@@ -318,6 +335,11 @@ def run(turn_id: str, diagram_id: int, user_id: int) -> dict:
     )
     try:
         cards = rewrite(diagram, meter, user, turn_id)
+    except Moved as moved:
+        _log.info(f"{TASK} {turn_id} wrote nothing: {moved}")
+        TokenMeter.charge(user_id, meter.spent)
+        db.session.commit()
+        return _end(diagram_id, turn_id, {"type": TurnEventKind.Failed.value, "message": MOVED})
     except Refusal as refused:
         db.session.rollback()
         _observe(diagram_id, turn_id, ObservationKind.TurnDeclined,
@@ -343,5 +365,5 @@ def run(turn_id: str, diagram_id: int, user_id: int) -> dict:
 
 def _end(diagram_id: int, turn_id: str, event: dict) -> dict:
     turnlog.append(turn_id, event)
-    turnlog.release(diagram_id)
+    turnlog.release(diagram_id, turn_id)
     return event

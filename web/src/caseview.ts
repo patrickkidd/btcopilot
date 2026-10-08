@@ -363,12 +363,22 @@ class Reader {
 
   /** An earlier marriage of a partner, shown as Kerr places it, before they met
    * (R-0833): one stage opened by its first dated event, holding the children
-   * born to it and how it ended, dated as they are. */
-  earlier(ob: PairBond): Stage | null {
+   * born to it and how it ended, a divorce or the former spouse's death before
+   * any divorce (R-0834),
+   * dated as they are. */
+  earlier(ob: PairBond, partner: number): Stage | null {
     const two = this.pair(ob);
+    const former = this.other(ob, partner);
     const kids = this.childrenOf(ob).map((c) => c.id);
+    const divorced = this.tl.events.find((e) => e.dateTime && e.kind === EventKind.Divorced && this.between(e, two))?.dateTime;
     const events = this.tl.events
-      .filter((e) => e.dateTime && (this.between(e, two) || (BIRTHS.has(e.kind ?? "") && e.child != null && kids.includes(e.child))))
+      .filter(
+        (e) =>
+          e.dateTime &&
+          (this.between(e, two) ||
+            (BIRTHS.has(e.kind ?? "") && e.child != null && kids.includes(e.child)) ||
+            (e.kind === EventKind.Death && e.person === former && !(divorced && divorced < e.dateTime))),
+      )
       .sort(byDate);
     if (!events.length) return null;
     const [first, ...rest] = events;
@@ -416,7 +426,7 @@ class Reader {
     const grown = (child: number) => children.includes(child) && weddings.find((e) => e.person === child || e.spouse === child)?.dateTime;
     const start = (own.find((e) => e.kind === EventKind.Bonded) ?? own[0] ?? births[0])?.dateTime ?? null;
     const needs = this.needs(pair, own, children);
-    const before = pair.flatMap((id) => this.bondsOf(id).filter((ob) => ob.id !== b.id && this.other(ob, id) != null)).map((ob) => this.earlier(ob));
+    const before = pair.flatMap((id) => this.bondsOf(id).filter((ob) => ob.id !== b.id && this.other(ob, id) != null).map((ob) => this.earlier(ob, id)));
     const at = (st: Stage) => this.event(st.head.id)!.dateTime!;
     const sorted = (stages: Stage[]) => stages.sort((p, q) => at(p).localeCompare(at(q)));
     if (!start) return { lead, stages: sorted(before.filter((st): st is Stage => !!st)), needs };

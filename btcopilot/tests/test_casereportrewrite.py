@@ -229,9 +229,44 @@ def test_a_family_with_no_session_has_no_report_to_write_again(web, written, fam
 def test_a_rewrite_whose_worker_let_go_reads_failed(web, past, written, family):
     # R-0825
     turnlog.claim(family.id, "lost")
-    turnlog.release(family.id)
+    turnlog.release(family.id, "lost")
 
     assert web.get("/app/case-report-rewrites/lost").get_json() == {"id": "lost", "state": "failed"}
+
+
+class Edited(Model):
+    """The model's call, during which the person adds a death to the family."""
+
+    def __init__(self, family, *turns):
+        super().__init__(*turns)
+        self.family = family
+
+    def turn(self, system, messages, tools, turn_id=""):
+        happened(self.family, "death", "2019-03-01", person=2, turn="e9")
+        return (yield from super().turn(system, messages, tools, turn_id))
+
+
+def test_a_rewrite_whose_family_changed_during_the_call_writes_nothing_and_stays_out_of_date(
+    web, past, written, family
+):
+    # R-0825, R-0826
+    response = rewrite(web, Edited(family, calling(*FIVE)))
+
+    turn_id = response.get_json()["id"]
+    assert turnlog.read_from(turn_id, 0)[-1][1] == {"type": "failed", "message": casereport.MOVED}
+    assert cards(family)["i1"] == "main_guess"
+    assert out_of_date(family)["sentence"] == "Ada's death in 2019 was added after the coach wrote this report."
+    assert turnlog.rewriting(family.id) is None
+
+
+def test_a_rewrite_whose_hold_ran_out_never_holds_or_lets_go_of_the_next_ones(family):
+    # R-0825
+    turnlog.claim(family.id, "next")
+    turnlog.hold(family.id, "lost")
+    turnlog.release(family.id, "lost")
+    assert turnlog.rewriting(family.id) == "next"
+    turnlog.release(family.id, "next")
+    assert turnlog.rewriting(family.id) is None
 
 
 def test_a_rewrite_reads_every_events_words_and_notes_into_its_one_call(web, past, written, family):

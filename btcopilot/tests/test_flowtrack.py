@@ -9,6 +9,7 @@ from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.models import (
     Discussion,
+    DiscussionKind,
     ModelCall,
     Purpose,
     Speaker,
@@ -218,6 +219,49 @@ def test_refuses_a_folder_inside_a_git_work_tree(flask_app, tmp_path):
     assert result.exit_code != 0
     assert "inside a git work tree" in result.output
     assert not (tmp_path / "repo/tracked").exists()
+
+
+def test_database_leaves_out_recordings_notes_and_synthetic_threads(
+    flask_app, test_user, tmp_path
+):
+    # R-0669
+    for kind, synthetic in [
+        (DiscussionKind.Chat, False),
+        (DiscussionKind.Recording, False),
+        (DiscussionKind.Note, False),
+        (DiscussionKind.Chat, True),
+    ]:
+        discussion = Discussion(
+            user_id=test_user.id,
+            diagram_id=test_user.free_diagram_id,
+            kind=kind,
+            synthetic=synthetic,
+        )
+        db.session.add(discussion)
+        db.session.flush()
+        person = Speaker(
+            discussion_id=discussion.id, name="Person", type=SpeakerType.Subject
+        )
+        coach = Speaker(
+            discussion_id=discussion.id, name="Coach", type=SpeakerType.Expert
+        )
+        db.session.add_all([person, coach])
+        db.session.flush()
+        for order, speaker in enumerate([person, coach]):
+            db.session.add(
+                Statement(
+                    discussion_id=discussion.id,
+                    speaker_id=speaker.id,
+                    text="My aunt Rosa moved to Leeds in 1984.",
+                    order=order,
+                    turn_id=f"t{discussion.id}",
+                )
+            )
+    db.session.commit()
+    result = track(flask_app, "--database", "--out", tmp_path / "out")
+    assert result.exit_code == 0, result.output
+    threads = lines(tmp_path / "out/threads.jsonl")
+    assert [r["coach_messages"] for r in threads] == [1]
 
 
 def test_refuses_production_without_leave(flask_app, tmp_path, monkeypatch):

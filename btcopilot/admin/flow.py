@@ -19,6 +19,7 @@ from btcopilot.models import (
     Change,
     Diagram,
     Discussion,
+    DiscussionKind,
     ModelCall,
     Purpose,
     Speaker,
@@ -60,7 +61,8 @@ def exported(folder: pathlib.Path) -> tuple[list[dict], list[dict]]:
 def stored() -> tuple[list[dict], list[dict]]:
     """The statements and changes in the export's shape, with the model and
     prompt version of each coach turn and the account's time zone, which picks
-    the crisis line."""
+    the crisis line. Chat sessions only: a recording, a note or a synthetic
+    thread is not a person talking with the coach."""
     models = dict(
         db.session.query(ModelCall.turn_id, ModelCall.model)
         .filter(ModelCall.purpose == Purpose.Coach)
@@ -79,6 +81,7 @@ def stored() -> tuple[list[dict], list[dict]]:
         .join(Speaker, Statement.speaker_id == Speaker.id)
         .join(Diagram, Discussion.diagram_id == Diagram.id)
         .join(User, Discussion.user_id == User.id)
+        .filter(Discussion.kind == DiscussionKind.Chat, Discussion.synthetic.is_(False))
     )
     stmts = [
         {
