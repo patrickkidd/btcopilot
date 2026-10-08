@@ -56,6 +56,10 @@ way you would say it aloud about this person's history. Not "merged two groups".
 Not "added event 41". A change without that sentence is thrown out and you are
 asked again.
 
+Never return two groups whose years overlap, this person's own groups
+included: the timeline is one line, and a group's years run from its first
+event to its last.
+
 Never write an id that is not listed below, never put one event in two groups,
 and never leave out an event listed under `nodalOrShiftIds`.
 

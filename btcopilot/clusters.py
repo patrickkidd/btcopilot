@@ -52,7 +52,7 @@ _log = logging.getLogger(__name__)
 # grouped by the older rules re-groups on its next event-changing turn. 6: the
 # prompt lines the books contradict reworded and the ten-year check added, so
 # every record regroups on its next event change [Oracle: R-0836, R-0838].
-DETECTION_VERSION = 6
+DETECTION_VERSION = 7
 
 NODAL_KINDS = frozenset(
     {EventKind.Death, EventKind.Married, EventKind.Divorced, EventKind.Separated}
@@ -128,6 +128,7 @@ class ClusterCheck(enum.StrEnum):
     NoChangeReason = "no_change_reason"
     OutsideWords = "outside_words"
     TooLong = "too_long"
+    Overlap = "overlap"
     LeftOut = "left_out"
     CutOff = "cut_off"
     Unreadable = "unreadable"
@@ -191,6 +192,38 @@ def too_long(dates: list[datetime.date]) -> bool:
     """Whether a group's dated events span more than MAX_SPAN_YEARS
     [Oracle: R-0837]."""
     return bool(dates) and max(dates) > _years_after(min(dates), MAX_SPAN_YEARS)
+
+
+Span = tuple[datetime.date, datetime.date]
+
+
+def span_of(dates: list[datetime.date]) -> Span | None:
+    """The years the timeline draws for a group: its first dated event to its
+    last; nothing for a group with no dated event of its own."""
+    return (min(dates), max(dates)) if dates else None
+
+
+def overlapping(a: Span, b: Span) -> bool:
+    """Whether two groups would share a day on the timeline [Oracle: R-0839].
+    Two groups that only touch on one day do not: the page draws neighbouring
+    pills apart at a seam (web/src/picture.ts, `edges`), so touching is the
+    one closeness it can still draw as two."""
+    return a[0] < b[1] and b[0] < a[1]
+
+
+def _overlap(
+    spans: list[tuple[str, Span]],
+) -> tuple[tuple[str, Span], tuple[str, Span]] | None:
+    """The first pair of groups whose years overlap, or nothing."""
+    for n, (label, span) in enumerate(spans):
+        for other, theirs in spans[n + 1 :]:
+            if overlapping(span, theirs):
+                return (label, span), (other, theirs)
+    return None
+
+
+def _said(label: str, span: Span) -> str:
+    return f"{label} ({span[0].isoformat()} to {span[1].isoformat()})"
 
 
 def silence(gap: datetime.timedelta) -> str:
@@ -257,6 +290,25 @@ def _split(ids: list[int], when: dict, marked: set[int]) -> list[list[int]]:
     return pieces
 
 
+def _one_axis(groups: list[set[int]], when: dict) -> list[set[int]]:
+    """Two proposed groups whose years overlap are one proposal, whatever their
+    people: the timeline is one line and cannot draw them side by side, and the
+    fallback stores the proposal as it stands [Oracle: R-0839]. Groups that
+    only touch on a day stay two, as the page draws them; a group too small to
+    be a cluster stays as it was, since it is dropped below anyway."""
+    bounds = lambda group: (min(when[i] for i in group), max(when[i] for i in group))
+    big = sorted(
+        (g for g in groups if len(g) >= MIN_CLUSTER_EVENTS), key=lambda g: bounds(g)[0]
+    )
+    joined: list[set[int]] = []
+    for group in big:
+        if joined and overlapping(bounds(joined[-1]), bounds(group)):
+            joined[-1] |= group
+        else:
+            joined.append(set(group))
+    return joined + [g for g in groups if len(g) < MIN_CLUSTER_EVENTS]
+
+
 @dataclass
 class Candidate:
     eventIds: list[int]
@@ -292,11 +344,12 @@ def candidates(data: DiagramData) -> list[Candidate]:
                 or reach[e.id][1] & reach[seed.id][1]
             )
         }
-        overlapping = [group for group in groups if group & near]
-        for group in overlapping:
+        touching = [group for group in groups if group & near]
+        for group in touching:
             groups.remove(group)
             near |= group
         groups.append(near)
+    groups = _one_axis(groups, when)
 
     marked_ids = {e.id for e in marked}
     kept = [
@@ -424,7 +477,12 @@ def _check(
     cands: list[Candidate],
     free: list[Event],
     stored: dict[str, dict],
+    fixed: list[tuple[str, Span]] = (),
+    theirs: set[int] = frozenset(),
 ) -> list[ModelCluster]:
+    """`fixed` is the years of the groups the person made, which the model
+    may not touch, and `theirs` the events in them: a returned group is
+    measured without those events, as the write will store it."""
     if response is None:
         raise ClusterError("No grouping came back.", ClusterCheck.Missing)
 
@@ -434,6 +492,7 @@ def _check(
     marked = {i for candidate in cands for i in candidate.nodalOrShiftIds}
     seen: set[int] = set()
     claimed: set[str] = set()
+    drawn: list[tuple[str, Span]] = list(fixed)
     for cluster in response.clusters:
         unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
         if unknown:
@@ -499,10 +558,24 @@ def _check(
                 "you were given do not contain.",
                 ClusterCheck.OutsideWords,
             )
+        own = span_of([when[i] for i in cluster.eventIds if i not in theirs])
+        if own:
+            drawn.append((f"the group {cluster.name!r}", own))
     dropped = marked - seen
     if dropped:
         raise ClusterError(
             f"Events {sorted(dropped)} were left out.", ClusterCheck.LeftOut
+        )
+    # The timeline is one line, so two groups never share a day [Oracle: R-0839].
+    shared = _overlap(drawn)
+    if shared:
+        (first, span), (second, other) = shared
+        said = _said(first, span)
+        raise ClusterError(
+            f"{said[0].upper()}{said[1:]} and {_said(second, other)} overlap "
+            "in time. The timeline is one line, so two groups never share a day: "
+            "give each its own years, or make them one group.",
+            ClusterCheck.Overlap,
         )
     return response.clusters
 
@@ -515,27 +588,77 @@ def _stored(data: DiagramData) -> list[dict]:
     ]
 
 
-def _holds(cluster: dict, when: dict[int, datetime.date]) -> bool:
-    """Whether a stored grouping still passes the definitional check."""
-    return not too_long([when[i] for i in cluster.get("eventIds") or [] if i in when])
+def _dates(
+    cluster: dict, when: dict[int, datetime.date], held: set[int] = frozenset()
+) -> list[datetime.date]:
+    return [
+        when[i] for i in cluster.get("eventIds") or [] if i in when and i not in held
+    ]
+
+
+def _theirs(data: DiagramData) -> tuple[set[int], list[tuple[str, Span]]]:
+    """The events in the groups the person made, and those groups' years as the
+    timeline draws them. Such a group's own dates stand in where its events are
+    not dated in the record."""
+    when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
+    events: set[int] = set()
+    spans: list[tuple[str, Span]] = []
+    for cluster in _stored(data):
+        if _regroupable(cluster):
+            continue
+        events.update(cluster.get("eventIds") or [])
+        span = span_of(_dates(cluster, when))
+        if span is None and cluster.get("startDate") and cluster.get("endDate"):
+            span = (parse_date(cluster["startDate"]), parse_date(cluster["endDate"]))
+        if span:
+            spans.append((f"the group this person made, {_title(cluster)!r}", span))
+    return events, spans
+
+
+def _holds(
+    cluster: dict,
+    when: dict[int, datetime.date],
+    held: set[int],
+    around: list[tuple[str, Span]],
+) -> str | None:
+    """Why a stored grouping fails a definitional check, or nothing."""
+    dates = _dates(cluster, when, held)
+    if too_long(dates):
+        return f"the {MAX_SPAN_YEARS}-year check"
+    span = span_of(dates)
+    if span and any(overlapping(span, other) for _, other in around):
+        return "the overlap check"
+    return None
 
 
 def mine(data: DiagramData) -> dict[str, dict]:
     """The stored groupings the model made and may be handed back as existing.
-    One that fails the check is left out: keeping what is there protects a
+    One that fails a check is left out: keeping what is there protects a
     reading, not a category error, so its events fall back to the proposal and
-    the record regroups on this run [Oracle: R-0838]."""
-    when = {e.id: parse_date(e.dateTime) for e in joinable(data)}
+    the record regroups on this run [Oracle: R-0838, R-0839]. A model group
+    whose years overlap another stored group's, the person's own included, is
+    such a one; the person's own groups are never regrouped and so never fail."""
+    when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
+    held, fixed = _theirs(data)
+    model = [c for c in _stored(data) if _regroupable(c)]
+    around = {
+        str(c["id"]): (f"the group {_title(c)!r}", span_of(_dates(c, when, held)))
+        for c in model
+    }
     kept = {}
-    for cluster in _stored(data):
-        if not _regroupable(cluster):
-            continue
-        if _holds(cluster, when):
+    for cluster in model:
+        others = fixed + [
+            said
+            for cid, said in around.items()
+            if cid != str(cluster["id"]) and said[1]
+        ]
+        why = _holds(cluster, when, held, others)
+        if why is None:
             kept[str(cluster["id"])] = cluster
         else:
             _log.info(
-                f"Stored grouping {cluster['id']} {_title(cluster)!r} fails the "
-                f"{MAX_SPAN_YEARS}-year check and is not handed back"
+                f"Stored grouping {cluster['id']} {_title(cluster)!r} fails "
+                f"{why} and is not handed back"
             )
     return kept
 
@@ -593,6 +716,7 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
     free = joinable(data)
     taken = {str(cluster["id"]) for cluster in _stored(data)}
     existing = mine(data)
+    theirs, fixed = _theirs(data)
     prompt = _prompt(cands, free, existing)
     schema = answer_schema(existing)
     limit = THINKING_ROOM + PER_EVENT * len(free)
@@ -603,7 +727,7 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
     answer = None
     try:
         answer = _answered(ask, prompt, schema, limit)
-        named = _check(answer, cands, free, existing)
+        named = _check(answer, cands, free, existing, fixed, theirs)
     except ClusterError as rejected:
         _log.warning(f"Grouping sent back: {rejected}")
         if refused:
@@ -616,7 +740,7 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
                 schema,
                 limit,
             )
-            named = _check(answer, cands, free, existing)
+            named = _check(answer, cands, free, existing, fixed, theirs)
         except ClusterError as again:
             if refused:
                 refused(2, again, answer)

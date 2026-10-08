@@ -25,6 +25,7 @@ from btcopilot.clusters import (
     candidates,
     detect_clusters,
     joinable,
+    overlapping,
     silence,
     sync,
     too_long,
@@ -885,3 +886,218 @@ def test_a_too_long_refusal_is_an_observation_row_and_the_record_regroups(hale_d
         "1996\u20132001",
     ]
     assert "c1" not in {c["id"] for c in stored}
+
+
+# Two clusters on the one line never share a day [Oracle: R-0839]. The shapes
+# seen on production on 2026-10-08: the person's own 2009 to 2011 with the
+# model's 2008 to 2011 over it, and 2025 to 2026 inside 2017 to 2026.
+
+
+def own(*event_ids: int, cluster_id="u1", name="The years I was ill") -> Cluster:
+    return Cluster(
+        id=cluster_id,
+        title=name,
+        name=name,
+        summary="",
+        eventIds=list(event_ids),
+        source=ClusterSource.User,
+    )
+
+
+AROUND_ALL = [30, 31, 34, 20, 21, 22, 32]
+AROUND = record(
+    moment(30, "2008-03-01", person=1, anxiety=VariableShift.Up),
+    moment(31, "2008-06-01", person=1, description="that summer"),
+    moment(34, "2008-11-01", person=1, description="that autumn"),
+    moment(20, "2009-02-01", person=1, symptom=VariableShift.Up),
+    moment(21, "2010-05-01", person=1, description="the next year"),
+    moment(22, "2011-06-01", person=1, functioning=VariableShift.Down),
+    moment(32, "2011-09-01", person=1, description="that autumn too"),
+    clusters=[own(20, 21, 22)],
+)
+
+
+def test_a_group_straddling_the_persons_own_cluster_is_refused_then_the_re_ask_is_kept():
+    # R-0839, R-0780
+    """One group from 2008 to 2011 around the person's own 2009 to 2011:
+    measured without the person's events it still runs 2008 to 2011, so it is
+    refused with both named by their dates, and the second answer, the 2008
+    run on its own, is kept."""
+    assert grouped(AROUND) == [[30, 31, 34, 20], [21, 22, 32]]
+    seen = []
+    with replies(
+        answers(
+            named(
+                *AROUND_ALL,
+                name="The years around her illness",
+                change="Her illness and the year before it are one story.",
+            )
+        ),
+        answers(
+            named(
+                30,
+                31,
+                34,
+                name="The year before",
+                change="The year before she fell ill stands on its own.",
+            ),
+            named(
+                20,
+                21,
+                22,
+                32,
+                name="The years I was ill",
+                change="Her own years keep their shape.",
+            ),
+        ),
+    ) as ask:
+        result = detect_clusters(
+            AROUND, ask, lambda n, err, _: seen.append((n, err.check))
+        )
+    assert seen == [(1, ClusterCheck.Overlap)]
+    second = ask.call_args_list[1].args[0]
+    assert "thrown out" in second and "overlap in time" in second
+    assert "(2008-03-01 to 2011-09-01)" in second
+    assert (
+        "this person made, 'The years I was ill' (2009-02-01 to 2011-06-01)" in second
+    )
+    assert spans(result) == [("2008", "2008"), ("2009", "2011")]
+
+
+INSIDE_ONE = [40, 41, 42, 43, 44, 45, 46, 47]
+INSIDE_TWO = [50, 51, 52]
+# Her run is nine years of shifts about sixteen months apart, each within the
+# rules' reach of the next and none two years from the last; his sits inside it.
+INSIDE = record(
+    moment(40, "2017-01-10", person=1, anxiety=VariableShift.Up),
+    moment(41, "2018-05-01", person=1, anxiety=VariableShift.Up),
+    moment(42, "2019-09-01", person=1, anxiety=VariableShift.Up),
+    moment(43, "2021-01-01", person=1, anxiety=VariableShift.Up),
+    moment(44, "2022-05-01", person=1, anxiety=VariableShift.Up),
+    moment(45, "2023-09-01", person=1, anxiety=VariableShift.Up),
+    moment(46, "2025-01-01", person=1, anxiety=VariableShift.Up),
+    moment(47, "2026-04-01", person=1, anxiety=VariableShift.Up),
+    moment(50, "2025-03-01", person=2, symptom=VariableShift.Up),
+    moment(51, "2025-09-01", person=2, description="that autumn"),
+    moment(52, "2026-02-01", person=2, description="this winter"),
+)
+INSIDE_ANSWER = answers(
+    named(*INSIDE_ONE, name="Nine years of it", change="One long run for her."),
+    named(
+        *INSIDE_TWO, name="His bad year", change="His own trouble, inside her years."
+    ),
+)
+
+
+def test_a_group_inside_anothers_years_is_refused():
+    # R-0839
+    with replies(INSIDE_ANSWER, INSIDE_ANSWER) as ask:
+        with pytest.raises(ClusterError, match="overlap in time") as refused:
+            detect_clusters(INSIDE, ask)
+    assert refused.value.check is ClusterCheck.Overlap
+    assert "'Nine years of it' (2017-01-10 to 2026-04-01)" in str(refused.value)
+    assert "'His bad year' (2025-03-01 to 2026-02-01)" in str(refused.value)
+    assert ask.call_count == 2
+
+
+def test_without_the_overlap_check_the_nested_groups_are_accepted():
+    # R-0839
+    """What the code did before the check: both groups passed and were stored
+    one inside the other on the one line."""
+    with patch.object(clusters, "overlapping", return_value=False):
+        with replies(INSIDE_ANSWER) as ask:
+            result = detect_clusters(INSIDE, ask)
+    assert spans(result) == [("2017", "2026"), ("2025", "2026")]
+
+
+def test_the_proposal_joins_two_runs_that_share_years():
+    # R-0839
+    """Two people's runs over the same years are one proposal, so the fallback
+    never stores an overlap; without the joining they are the two runs."""
+    assert grouped(INSIDE) == [[40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 47]]
+    with patch.object(clusters, "overlapping", return_value=False):
+        assert grouped(INSIDE) == [INSIDE_ONE, INSIDE_TWO]
+
+
+TOUCHING = record(
+    moment(60, "2014-01-01", person=1, anxiety=VariableShift.Up),
+    moment(61, "2014-09-01", person=1, description="that autumn"),
+    moment(62, "2015-06-01", person=1, description="to the next summer"),
+    moment(70, "2015-06-01", person=2, symptom=VariableShift.Up),
+    moment(71, "2016-01-01", person=2, description="that winter"),
+    moment(72, "2016-08-01", person=2, description="to the next summer"),
+)
+
+
+def test_two_groups_that_touch_on_one_day_are_two_and_accepted():
+    # R-0839
+    """The page draws neighbouring pills apart at a seam, so touching is a
+    closeness it can still draw as two: the proposal keeps them two and the
+    answer as given is kept."""
+    assert grouped(TOUCHING) == [[60, 61, 62], [70, 71, 72]]
+    day = datetime.date(2015, 6, 1)
+    assert not overlapping(
+        (datetime.date(2014, 1, 1), day), (day, datetime.date(2016, 8, 1))
+    )
+    assert overlapping(
+        (datetime.date(2014, 1, 1), datetime.date(2015, 6, 2)),
+        (day, datetime.date(2016, 8, 1)),
+    )
+    with replies(answers(named(60, 61, 62), named(70, 71, 72, name="His turn"))) as ask:
+        result = detect_clusters(TOUCHING, ask)
+    assert spans(result) == [("2014", "2015"), ("2015", "2016")]
+
+
+def test_a_stored_group_overlapping_another_stored_group_is_not_handed_back():
+    # R-0839, R-0838
+    """Both nested model groups fail against each other and come back as the
+    proposal under new ids; a model group straddling the person's own is not
+    offered, one beside it is."""
+    nested = record(
+        *INSIDE.events,
+        clusters=[
+            already(*INSIDE_ONE, cluster_id="c1", name="Nine years of it"),
+            already(*INSIDE_TWO, cluster_id="c2", name="His bad year"),
+        ],
+    )
+    assert clusters.mine(nested) == {}
+    with replies(
+        answers(
+            named(40, 41, 42, 43, 44, 45, change="Her first years stand on their own."),
+            named(
+                46,
+                50,
+                51,
+                52,
+                47,
+                name="Then",
+                change="His trouble came into her last years.",
+            ),
+        )
+    ) as ask:
+        result = detect_clusters(nested, ask)
+    assert "EXISTING GROUPS\n\n[]" in ask.call_args_list[0].args[0]
+    assert [c.id for c in result.clusters] == ["c3", "c4"]
+    dates = {e["id"]: e["dateTime"] for e in INSIDE.events}
+    removed = sorted(
+        d["item_id"]
+        for d in _deltas(nested.clusters, result.clusters, dates)
+        if d["field"] is None
+    )
+    assert removed == ["c1", "c2"]
+    straddling = record(
+        *AROUND.events,
+        clusters=[
+            own(20, 21, 22),
+            already(30, 31, 34, 32, cluster_id="c1", name="Around it"),
+        ],
+    )
+    assert clusters.mine(straddling) == {}
+    beside = record(
+        *AROUND.events,
+        clusters=[
+            own(20, 21, 22),
+            already(30, 31, 34, cluster_id="c1", name="The year before"),
+        ],
+    )
+    assert list(clusters.mine(beside)) == ["c1"]

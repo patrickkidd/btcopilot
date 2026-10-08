@@ -53,10 +53,29 @@ R-0374 protects, and the two tests that encode that freedom (joining proposals
 same number to the proposal's cuts or to a group's internal gaps would be a rule
 about edges, which R-0374 rejects, and is not done.
 
+**The overlap check [Oracle: R-0839].** The timeline is one line, so two
+clusters never share a day. A returned grouping in which any two clusters' years
+overlap is refused with the reason naming both by their dates ("The group 'A'
+(2008-03-01 to 2011-09-01) and the group this person made, 'B' (2009-02-01 to
+2011-06-01) overlap in time"), and the model is asked again; the refusal is an
+observations row `cluster_refused` with check `overlap`, and after two refusals
+the by-years fallback applies. A cluster's years are those the timeline draws,
+its first dated event to its last (`span_of`, the same dates the ten-year check
+reads), and a returned group is measured without the events of the person's own
+clusters, which the write holds out of it. The person's own clusters count: a
+model group straddling one is refused. Two clusters that only touch on one day
+are not overlapping (`overlapping` in `btcopilot/clusters.py` is strict on both
+ends), because the page draws neighbouring pills apart at a seam
+(`web/src/picture.ts`, `edges`), so touching is a closeness it can still draw as
+two. The rules' own proposal joins two groups whose years overlap into one
+proposal, whatever their people (`_one_axis`), so the fallback never stores an
+overlap either; groups that only touch stay two.
+
 **A stored cluster that fails the check is not handed back [Oracle: R-0838].**
 "Keep what is there" protects a reading, not a category error: a stored
-model-made cluster that fails the check is left out of the groups the model is
-told to keep, its id is offered nowhere in the answer's shape (an answer naming
+model-made cluster that fails the ten-year check, or whose years overlap another
+stored cluster's (the person's own included) [Oracle: R-0839], is left out of
+the groups the model is told to keep, its id is offered nowhere in the answer's shape (an answer naming
 it is refused as an unknown group), its events fall back to the proposal, and
 the record change removes it, so a diagram holding one regroups on its next run.
 Such a cluster also does not count as "the model's own groups already there"
