@@ -4,7 +4,7 @@ import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
 import { CLUSTER, closeX, el, esc, fitPath, flash, pan, pathRow, slideOver, stepBtn, still } from "./dom";
 import { fitScale, leastScale, people, type Layout } from "./diagram";
-import { clusterStep, Picture, Target, Via, type Tap } from "./picture";
+import { clusterStep, dateOf, Picture, Target, type Tap } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { BIRTHS, family, familyStart, said, when, Told } from "./snapshots";
 import { Spotlight, type Case, type Chip, type Timeline } from "./types";
@@ -89,9 +89,13 @@ export function stepOf(told: Told, t: number, ids: number[] = []): number {
   return far.indexOf(Math.min(...far));
 }
 
-/** The event a step is shown by on the timeline: its first with a date. */
+/** The event a step is shown by on the timeline: its first the line draws,
+ * which an event whose date is unknown is not. */
 export function shownBy(told: Told, i: number): number | null {
-  return told.told.snapshots[i].event_ids.find((id) => told.tl.events.find((e) => e.id === id)?.dateTime) ?? null;
+  return told.told.snapshots[i].event_ids.find((id) => {
+    const e = told.tl.events.find((e) => e.id === id);
+    return e && dateOf(e);
+  }) ?? null;
 }
 
 /** Where the Family view's years line stays the dots-only line between the
@@ -413,7 +417,7 @@ export class Drawer {
       // the event tapped, where its step holds several, else the step's first
       const id = this.tapped ?? shownBy(told, this.i);
       this.tapped = null;
-      if (id !== null) this.timeline.pick(id, [], Via.Chip);
+      this.timeline.step(id);
       return;
     }
     wire.innerHTML = yearsLine(told.tl, told, this.i);

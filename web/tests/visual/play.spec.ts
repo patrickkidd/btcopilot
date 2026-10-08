@@ -1752,6 +1752,49 @@ for (const [what, viewport] of [
       // the line went past its first screen to follow the steps
       expect(far).toBeGreaterThan(0);
     });
+
+    // "when I click next in the full family diagram view, the timeline sometimes jumps around to a destination with no selected event visible." (Patrick, 2026-10-07)
+    // R-0796
+    test("keeps the step's dot or pill in sight on every step, and holds the line still on a step whose date is unknown", async ({ page }, info) => {
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      // Delphine's and Theo's births with their dates unknown: steps the
+      // timeline draws nothing of, as on Patrick's own diagram
+      await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+        const tl = await (await route.fetch()).json();
+        for (const e of tl.events) if (e.id === 105 || e.id === 108) e.dateCertainty = "unknown";
+        await route.fulfill({ json: tl });
+      });
+      await settle(page);
+      await page.locator("#cap-family").click();
+      await expect(drawer(page)).toBeVisible();
+      const seen = () =>
+        drawer(page).evaluate((p) => {
+          const line = p.querySelector(".lv > .wire")!.getBoundingClientRect();
+          const lit = (p.querySelector(".wire .dot.on") ?? p.querySelector(".wire rect.pill.on"))?.getBoundingClientRect();
+          const mid = lit && lit.left + lit.width / 2;
+          return {
+            lit: !!lit,
+            inside: mid !== undefined && mid >= line.left && mid <= line.right,
+            left: p.querySelector<HTMLElement>(".wire .ss-scroll")!.scrollLeft,
+          };
+        });
+      await expect.poll(async () => (await seen()).inside).toBe(true);
+      const next = drawer(page).locator('[data-act="next"]');
+      let held = 0;
+      while (await next.isEnabled()) {
+        const was = (await seen()).left;
+        await next.click();
+        if ((await seen()).lit) {
+          await expect.poll(async () => (await seen()).inside).toBe(true);
+          continue;
+        }
+        // nothing on the line stands for the step, so the line stays put
+        held++;
+        await page.waitForTimeout(600);
+        expect((await seen()).left).toBe(was);
+      }
+      expect(held).toBe(2);
+    });
   });
 
 test.describe("the Family view's frame on a phone turned sideways", () => {

@@ -3,6 +3,7 @@ import { closeX, PAN, pathRow } from "../src/dom";
 import { FIT, fitScale, leastScale, NAME } from "../src/diagram";
 import { below, head, pointLine, shownBy, stepOf, topLine, yearsLine } from "../src/drawer";
 import { family, Told, untold, when } from "../src/snapshots";
+import { DateCertainty } from "../src/certainty";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
 /** The play-by-play drawer's own words and controls, read off its markup. */
@@ -187,4 +188,15 @@ it("travels to a step's people at about 1,200 px a second, from half a second to
   expect(at.every((v, i) => v >= 0 && v <= 1 && (i === 0 || v >= at[i - 1]))).toBe(true);
   expect(at[5]).toBeLessThan(0.01);
   expect(1 - at[95]).toBeLessThan(0.01);
+});
+
+// "when I click next in the full family diagram view, the timeline sometimes jumps around to a destination with no selected event visible." (Patrick, 2026-10-07)
+// R-0796
+it("shows a step on the timeline by an event the line draws, and by none when every date it holds is unknown", () => {
+  const unknown = structuredClone(tl);
+  const whole = new Told(unknown, family(unknown), true);
+  const j = 3;
+  const id = whole.told.snapshots[j].event_ids[0];
+  unknown.events.find((e) => e.id === id)!.dateCertainty = DateCertainty.Unknown;
+  expect(shownBy(whole, j)).toBe(whole.told.snapshots[j].event_ids.find((other) => other !== id) ?? null);
 });

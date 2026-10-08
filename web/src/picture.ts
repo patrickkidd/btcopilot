@@ -513,7 +513,7 @@ export interface PictureHandlers {
 const YEAR = 365.25 * 24 * 3600 * 1000;
 
 /** When a moment happened, or nothing when the record cannot say. */
-const dateOf = (event: TimelineEvent) =>
+export const dateOf = (event: TimelineEvent) =>
   event.dateCertainty === DateCertainty.Unknown ? null : event.dateTime;
 
 export function years(iso: string): number {
@@ -818,9 +818,19 @@ export class Picture {
     return best;
   }
 
-  step(eventId: number): void {
-    this.selected = eventId;
-    this.aim(eventId);
+  /** The Family view's step: its event picked as a chip picks it, or, for a
+   * step the line draws nothing of, nothing picked and the line left where it
+   * stands, never sent to the present. */
+  step(eventId: number | null): void {
+    if (eventId !== null) {
+      this.pick(eventId, [], Via.Chip);
+      return;
+    }
+    this.named = [];
+    this.selected = null;
+    this.focus = null;
+    this.level = Level.Rest;
+    this.aim(null);
     this.render();
   }
 
