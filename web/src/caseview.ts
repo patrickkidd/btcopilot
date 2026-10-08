@@ -125,6 +125,8 @@ export interface CaseView {
   stages: StageRow[];
   sides: Side[];
   guesses: Guess[];
+  /** Every stored cluster in date order, worded as the hypothesis it is (R-0698, R-0841). */
+  hypotheses: ClusterRef[];
   /** The coach's first open question on no card, asked in its bubble. */
   ask: string | null;
   ownPart: { guess: Guess | null; ask: string | null; answer: string | null };
@@ -599,6 +601,9 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     sides: r.sides(),
     // only what the coach chose for this card, never every guess it holds (Patrick, 2026-10-04)
     guesses: guesses.filter(onCard(CaseReportCard.CoachGuess)).slice(-COACH_GUESS_MAX).map((q) => r.guess(q)),
+    hypotheses: [...tl.clusters]
+      .sort((a, b) => a.start.localeCompare(b.start))
+      .map((c) => ({ id: c.id, label: `Hypothesis: ${c.title ? `${c.title} \u00b7 ` : ""}${c.label}` })),
     ask: questions.find((q) => open(q) && onCard(null)(q))?.text ?? null,
     ownPart: { guess: own && r.guess(own), ask: answered ? null : askOn(CaseReportCard.OwnPart), answer: answered?.answer?.text ?? null },
     choice: { guess: choice && r.guess(choice), ask: askOn(CaseReportCard.Choice) },

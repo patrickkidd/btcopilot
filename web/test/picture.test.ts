@@ -6,6 +6,8 @@ import {
   Target,
   aboutMarkup,
   centredOn,
+  clusterLabel,
+  clusterStep,
   dotLayers,
   inSight,
   pills,
@@ -326,10 +328,20 @@ describe("the path row over the line", () => {
   const cluster = { title: "", start: "2009-03-01", end: "2010-11-20" };
 
   // R-0767
-  it("names an open cluster by its name and its years in one step", () => {
+  it("names an open cluster by its name alone, its years going under the line", () => {
     const named = { title: "Every mark", start: "1972-06-10", end: "1999-02-01" };
-    expect(trail(Level.Wire, named, null)).toEqual(["Timeline", "Every mark · 1972–99"]);
-    expect(trail(Level.About, named, null)).toEqual(["Timeline", "Every mark · 1972–99", "about"]);
+    expect(trail(Level.Wire, named, null)).toEqual(["Timeline", "Every mark"]);
+    expect(trail(Level.About, named, null)).toEqual(["Timeline", "Every mark", "about"]);
+  });
+
+  // R-0583, R-0767
+  it("writes the years and the count once under the line, the name once above it", () => {
+    const open = { title: "Every mark", start: "1972-06-10", end: "1999-02-01", count: 12 };
+    expect(clusterLabel(open)).toBe("1972–1999 · 12 events");
+    expect(clusterLabel({ ...open, end: "1972-12-01", count: 1 })).toBe("1972 · 1 event");
+    expect(clusterLabel(open)).not.toContain("Every mark");
+    expect(clusterStep(open)).toBe("Every mark");
+    expect(clusterStep(open)).not.toMatch(/\d{4}/);
   });
 
   // R-0540

@@ -1,10 +1,8 @@
-"""The rules propose the clusters; the model decides them and says what it
-changed.
+"""The rules find runs of events as a hint; the model holds each period of
+heightened difficulty as a hypothesis and the code only backstops it.
 
-The first half of this file runs without a model at all — that is the point of
-the deterministic pass. The second half scripts the model and checks what the
-record refuses to store, and that a grouping already there is kept rather than
-rebuilt.
+The first half of this file runs without a model at all. The second half
+scripts the model and checks what the code drops, merges and keeps.
 """
 
 import datetime
@@ -22,7 +20,6 @@ from btcopilot.clusters import (
     ModelCluster,
     _deltas,
     answer_schema,
-    by_years,
     candidates,
     detect_clusters,
     joinable,
@@ -30,7 +27,6 @@ from btcopilot.clusters import (
     silence,
     sync,
     too_long,
-    years,
 )
 from btcopilot.extensions import db
 from btcopilot.llmutil import Parsed, Served, Spent, gemini_structured_sync
@@ -354,6 +350,10 @@ def real(prompt: str, schema: dict) -> ClusterListResponse:
     return gemini_structured_sync(prompt, ClusterListResponse, schema=schema).value
 
 
+def heard(seen: list):
+    return lambda n, err, _: seen.append((n, err.check))
+
+
 def test_the_model_names_the_candidates_it_was_given():
     # R-0076, R-0287
     with replies(
@@ -365,6 +365,17 @@ def test_the_model_names_the_candidates_it_was_given():
     assert all(c.reason for c in result.clusters)
 
 
+def test_an_answer_leaving_events_out_is_kept_on_the_first_ask():
+    # R-0842, R-0841
+    """Most events stay outside any period: an answer that leaves a marked
+    shift out, and joins nothing the rules proposed, says no change sentence
+    and is still kept as given."""
+    with replies(answers(named(1, 2, 3, 4, 5))) as ask:
+        result = detect_clusters(RECORD, ask)
+    assert ask.call_count == 1
+    assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 4, 5]]
+
+
 def test_a_grouping_that_names_an_event_the_record_does_not_hold_is_rejected():
     # R-0076
     with replies(answers(named(1, 2, 3, 99)), answers(named(1, 2, 3, 99))) as ask:
@@ -372,37 +383,18 @@ def test_a_grouping_that_names_an_event_the_record_does_not_hold_is_rejected():
             detect_clusters(RECORD, ask)
 
 
-def test_a_group_that_is_not_a_candidate_and_says_no_why_is_rejected():
-    # R-0287, R-0371
-    joined = named(1, 2, 3, 4, 5, 6)
-    with replies(answers(joined), answers(joined)) as ask:
-        with pytest.raises(ClusterError, match="says no reason"):
-            detect_clusters(RECORD, ask)
-
-
-def test_the_model_may_join_two_candidates_when_it_says_why():
-    # R-0287, R-0371
-    with replies(
-        answers(named(1, 2, 3, 4, 5, 6, change="the same argument came back in 1997"))
-    ) as ask:
-        result = detect_clusters(RECORD, ask)
-    assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 4, 5, 6]]
-
-
-def test_a_group_under_three_events_is_rejected():
+def test_a_group_under_three_events_is_dropped_on_the_second_answer():
     # R-0215
-    """Three moments is the minimum, whatever the model says. Asked once more,
-    still handing back a pair, it fails rather than storing it."""
-    small = answers(
-        named(1, 2, 3),
-        named(4, 5, change="these two stand apart"),
-        named(6, change="and this one stands alone"),
-    )
+    """Asked once more and still handing back a pair and a single, the pieces
+    under three are dropped and the rest kept."""
+    small = answers(named(1, 2, 3), named(4, 5), named(6))
+    seen = []
     with replies(small, small) as ask:
-        with pytest.raises(ClusterError, match="never a cluster"):
-            detect_clusters(RECORD, ask)
+        result = detect_clusters(RECORD, ask, heard(seen))
     assert ask.call_count == 2
     assert "thrown out" in ask.call_args_list[1].args[0]
+    assert [c.eventIds for c in result.clusters] == [[1, 2, 3]]
+    assert seen == [(n, ClusterCheck.TooSmall) for n in (1, 1, 2, 2)]
 
 
 def test_a_split_under_the_minimum_that_is_corrected_is_stored():
@@ -415,19 +407,19 @@ def test_a_split_under_the_minimum_that_is_corrected_is_stored():
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3], [4, 5, 6]]
 
 
-def test_a_group_with_no_reason_is_rejected():
+def test_a_group_with_no_reason_is_dropped_on_the_second_answer():
     # R-0287, R-0205
     silent = answers(named(1, 2, 3, reason=""), named(4, 5, 6))
     with replies(silent, silent) as ask:
-        with pytest.raises(ClusterError, match="needs a reason"):
-            detect_clusters(RECORD, ask)
+        result = detect_clusters(RECORD, ask)
+    assert "needs a reason" in ask.call_args_list[1].args[0]
+    assert [c.eventIds for c in result.clusters] == [[4, 5, 6]]
 
 
 def test_words_from_outside_the_given_definitions_are_rejected():
     # R-0195
-    """The prompt tells the model to use only the terms it was handed; the
-    record refuses to store the diagnostic vocabulary anyway. Asked once more,
-    still contaminated, it fails rather than storing the words."""
+    """The record refuses to store the diagnostic vocabulary. Asked once more,
+    still contaminated everywhere, nothing is kept and the grouping fails."""
     outside = answers(
         named(1, 2, 3, name="The toxic spring"),
         named(4, 5, 6, reason="his narcissistic gaslighting set it off"),
@@ -539,9 +531,7 @@ KEPT = record(
 
 
 def test_a_grouping_already_there_is_handed_back_and_kept():
-    # R-0374, R-0371
-    """Nothing changed about it, so it keeps its id and the name that has
-    already been read, and says nothing about a change."""
+    # R-0842, R-0371
     with replies(answers(named(1, 2, 3, cluster_id="c1", name=SPRING))) as ask:
         result = detect_clusters(KEPT, ask)
     assert [(c.id, c.name) for c in result.clusters] == [("c1", SPRING)]
@@ -550,25 +540,26 @@ def test_a_grouping_already_there_is_handed_back_and_kept():
 
 
 def test_a_grouping_already_there_is_given_to_the_model_with_its_id():
-    # R-0374
+    # R-0842
     with replies(answers(named(1, 2, 3, cluster_id="c1", name=SPRING))) as ask:
         detect_clusters(KEPT, ask)
     asked = ask.call_args_list[0].args[0]
-    assert "EXISTING GROUPS" in asked
+    assert "PERIODS THIS DIAGRAM HAS" in asked
     assert '"id": "c1"' in asked
 
 
-def test_renaming_a_grouping_already_there_and_saying_nothing_is_rejected():
-    # R-0371, R-0374
-    renamed = answers(named(1, 2, 3, cluster_id="c1", name="A better sounding name"))
-    with replies(renamed, renamed) as ask:
-        with pytest.raises(ClusterError, match="says no reason"):
-            detect_clusters(KEPT, ask)
-    assert ask.call_count == 2
-    assert "thrown out" in ask.call_args_list[1].args[0]
+def test_a_renamed_grouping_with_no_change_sentence_is_kept():
+    # R-0842
+    """The name is the hypothesis, revised as the picture clears: a rename
+    needs no sentence and costs no second call."""
+    renamed = answers(named(1, 2, 3, cluster_id="c1", name="After the move"))
+    with replies(renamed) as ask:
+        result = detect_clusters(KEPT, ask)
+    assert ask.call_count == 1
+    assert [(c.id, c.name) for c in result.clusters] == [("c1", "After the move")]
 
 
-def test_changing_a_grouping_already_there_is_kept_when_it_says_what_changed():
+def test_changing_a_grouping_already_there_passes_its_sentence_on():
     # R-0371, R-0372
     moved = "She stepped back a month later than the record first said."
     with replies(
@@ -595,31 +586,22 @@ FAR = record(
 )
 
 
-def test_an_event_years_outside_the_proposal_joins_when_the_model_says_why():
-    # R-0374, R-0194
-    """The 18 months the rules reach is a proposal, not a wall: an event five
-    years later joins on a stated reason."""
+def test_an_event_years_outside_the_proposal_may_join():
+    # R-0842, R-0194
+    """The 18 months the rules reach is a hint, not a wall."""
     assert grouped(FAR) == [[1, 2, 3]]
-    late = "The trouble she had in 1999 started in the year they argued."
-    with replies(answers(named(1, 2, 3, 7, change=late))) as ask:
+    with replies(answers(named(1, 2, 3, 7))) as ask:
         result = detect_clusters(FAR, ask)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 7]]
-    assert result.changes == [late]
 
 
 def test_the_answer_may_name_only_the_groups_the_record_holds():
-    # R-0517, R-0780
+    # R-0517, R-0844
     group = answer_schema({"c2": {}, "c1": {}})["properties"]["clusters"]["items"]
     assert group["properties"]["id"]["enum"] == ["c1", "c2"]
     assert group["required"] == ["eventIds", "name", "reason"]
     fresh = answer_schema({})["properties"]["clusters"]["items"]
     assert "id" not in fresh["properties"]
-
-
-def test_a_fallback_title_is_the_years_the_group_spans():
-    # R-0780
-    assert years("2024-03-01", "2026-01-09") == "2024\u20132026"
-    assert years("1994-01-01", "1994-06-01") == "1994"
 
 
 # The Hale record: the rules' proposal, the scripted answers the check refuses
@@ -650,25 +632,34 @@ def test_the_hale_record_proposes_three_groups_decades_apart_and_two_strays():
     assert [e.id for e in joinable(HALE) if e.id not in grouped] == HALE_STRAYS
 
 
-def test_a_group_spanning_more_than_ten_years_is_refused_both_times():
-    # R-0837, R-0780
-    """One group of all fourteen events, 1948 to 2001, with a change sentence:
-    every other check passes it, and the ten-year check refuses it on both
-    asks, naming its kind, so the refusal is counted by kind."""
+def test_a_whole_history_period_given_twice_fails_the_grouping():
+    # R-0837, R-0846
+    """One period of all fourteen events, 1948 to 2001, on both asks: it is
+    dropped, nothing is left, and the grouping fails rather than store it."""
     seen = []
     with replies(MERGED, MERGED) as ask:
         with pytest.raises(ClusterError, match="ordinary level") as refused:
-            detect_clusters(HALE, ask, lambda n, err, _: seen.append((n, err.check)))
+            detect_clusters(HALE, ask, heard(seen))
     assert refused.value.check is ClusterCheck.TooLong
     assert seen == [(1, ClusterCheck.TooLong), (2, ClusterCheck.TooLong)]
     second = ask.call_args_list[1].args[0]
     assert "thrown out" in second and "1948 to 2001" in second
 
 
+def test_a_ten_year_period_is_dropped_and_the_rest_kept():
+    # R-0846
+    long = answers(
+        named(1, 2, 3, 4, 5, 6, 7, 8, name="The women of this family"),
+        named(9, 10, 12, 13, 14, name="Nell and Theo"),
+    )
+    with replies(long, long) as ask:
+        result = detect_clusters(HALE, ask)
+    assert ask.call_count == 2
+    assert [c.name for c in result.clusters] == ["Nell and Theo"]
+
+
 def test_without_the_ten_year_check_the_merged_answer_is_accepted():
     # R-0837
-    """What the code did before the check: the fifty-year group passed every
-    check and was stored 1948 to 2001. Only the ceiling refuses it."""
     with patch.object(clusters, "MAX_SPAN_YEARS", 100):
         with replies(MERGED) as ask:
             result = detect_clusters(HALE, ask)
@@ -692,16 +683,14 @@ def test_the_three_proposals_as_given_pass():
     assert all(1 not in c.eventIds for c in result.clusters)
 
 
-def test_the_grandfathers_death_joins_the_run_it_fell_in_on_a_sentence():
-    # R-0837, R-0374
-    """The 1998 death is 258 days from the fights over money; the record holds
-    the reaction, and 1996 to 2001 is under the ceiling."""
-    joined = "Walter's death in early 1998 sits inside Nell and Theo's trouble: the fights over money came that autumn."
+def test_the_grandfathers_death_joins_the_run_it_fell_in():
+    # R-0837, R-0842
+    joined = "Walter's death in early 1998 sits inside Nell and Theo's trouble."
     with replies(
         answers(
             named(2, 3, 4, 5, name="Edith's headaches"),
             named(6, 7, 8, name="June's divorce"),
-            named(9, 10, 11, 12, 13, 14, name="Nell and Theo", change=joined),
+            named(9, 10, 11, 12, 13, 14, name="After Walter's death", change=joined),
         )
     ) as ask:
         result = detect_clusters(HALE, ask)
@@ -710,14 +699,12 @@ def test_the_grandfathers_death_joins_the_run_it_fell_in_on_a_sentence():
 
 
 def test_the_early_marriage_joined_to_the_first_run_passes_the_check():
-    # R-0837, R-0374
+    # R-0837, R-0842
     """1948 to 1955 is seven years, under the ceiling: whether the marriage
-    belongs with the headaches six years on is the model's call, and the check
-    does not make it."""
-    joined = "Edith's headaches began in the marriage's first years."
+    belongs with the headaches six years on is the model's call."""
     with replies(
         answers(
-            named(1, 2, 3, 4, 5, name="The marriage", change=joined),
+            named(1, 2, 3, 4, 5, name="The marriage"),
             named(6, 7, 8, name="June's divorce"),
             named(9, 10, 12, 13, 14, name="Nell and Theo"),
         )
@@ -731,15 +718,14 @@ HALE_STORED = hale(FIFTY_YEARS)
 
 
 def test_a_stored_group_that_fails_the_check_is_not_handed_back_as_existing():
-    # R-0838, R-0374
-    """The fifty-year group is already stored as the model's. It is left out of
-    the groups the model is told to keep, its id is offered nowhere in the
-    answer's shape, the three proposals come back under new ids, and the record
-    change removes it."""
+    # R-0838
+    """The fifty-year period is already stored as the model's. It is left out
+    of what the model is shown, its id is offered nowhere in the answer's
+    shape, and the record change removes it."""
     with replies(THREE) as ask:
         result = detect_clusters(HALE_STORED, ask)
     asked = ask.call_args_list[0].args[0]
-    assert "EXISTING GROUPS\n\n[]" in asked
+    assert "PERIODS THIS DIAGRAM HAS\n\n[]" in asked
     assert "The women of this family" not in asked
     assert (
         "id"
@@ -763,15 +749,13 @@ def test_the_model_handing_back_the_dropped_groups_id_is_refused_as_unknown():
     # R-0838, R-0076
     kept = answers(named(*ALL_HALE, cluster_id="c1", name="The women of this family"))
     with replies(kept, kept) as ask:
-        with pytest.raises(ClusterError, match="not one of the groups") as refused:
+        with pytest.raises(ClusterError, match="not one this diagram") as refused:
             detect_clusters(HALE_STORED, ask)
     assert refused.value.check is ClusterCheck.UnknownGroup
 
 
 def test_a_stored_group_within_ten_years_is_still_handed_back():
-    # R-0838, R-0374
-    """The rule protects a reading, not a category error: a stored group that
-    passes the check is offered as before."""
+    # R-0838
     data = hale(already(6, 7, 8, cluster_id="c1", name="June's divorce"))
     with replies(
         answers(
@@ -785,11 +769,8 @@ def test_a_stored_group_within_ten_years_is_still_handed_back():
     assert [c.id for c in result.clusters] == ["c2", "c1", "c3"]
 
 
-def test_the_prompt_states_the_silence_before_each_proposal_and_the_reworded_lines():
-    # R-0836
-    """The model reads the gap before each proposed group as words instead of
-    inferring it from two dates, and the lines the books contradicted are
-    gone from the prompt it is given."""
+def test_the_prompt_holds_periods_as_hypotheses_with_the_silence_before_each_hint():
+    # R-0836, R-0841
     with replies(THREE) as ask:
         detect_clusters(HALE, ask)
     # the prompt's lines wrap, so phrases are matched on its words alone
@@ -798,21 +779,23 @@ def test_the_prompt_states_the_silence_before_each_proposal_and_the_reworded_lin
     assert "38 years and 4 months with nothing recorded before this group" in asked
     assert "1 year and 10 months with nothing recorded before this group" in asked
     for sentence in (
-        "with the silence before it stated",
-        "separate is the ordinary case",
-        "The same people alone is never a reason",
-        "with nothing settled in between",
-        "It ends where the record shows the family settled",
-        "never a stage of the family's life",
-        "is not protected when it covers most of the record's years",
-        "never a name for one part of a group that spans more",
+        "Each period is a loose hypothesis",
+        "some bigger shift happened in the family around then",
+        "A shift can be a fall as well as a rise",
+        "infer it from what piles up",
+        "no visible opening event and no definite end",
+        "two periods never cover the same days",
+        "Most events stay outside any period",
+        "a hint only",
+        "never its length, and never its years alone",
     ):
         assert sentence in asked, sentence
     for gone in (
-        "about the same people, or the later consequence",
-        "Events months or years later can still belong",
-        "It ends where anxiety comes back to the level it sat at before",
-        "a quiet stretch is not evidence of calm",
+        "separate is the ordinary case",
+        "Keep what is there",
+        "Never leave out an event listed under",
+        "those are fixed, and you cannot change them",
+        "A change without that sentence is thrown out",
     ):
         assert gone not in asked, gone
 
@@ -854,44 +837,40 @@ def hale_diagram(test_user):
     return diagram
 
 
-def test_a_too_long_refusal_is_an_observation_row_and_the_record_regroups(hale_diagram):
-    # R-0837, R-0838, R-0780
+def test_a_whole_history_answer_twice_stores_nothing_named_after_years(hale_diagram):
+    # R-0837, R-0838, R-0844
     """Through the turn's own path: both answers refused by the ten-year check
-    write two cluster_refused rows naming it, the failure row says so, and the
-    stored fifty-year group is not one to keep, so the rules' groups go in
-    under their years and the fifty-year group is removed."""
-    with patch("btcopilot.clusters.sync", new=sync):
-        with patch(
-            "btcopilot.metered.gemini_structured_sync",
-            side_effect=[parsed(MERGED), parsed(MERGED)],
-        ):
-            sync(hale_diagram.id, turn_id="t1", user_id=hale_diagram.user_id)
+    write two cluster_refused rows carrying the model's own answer, the stored
+    fifty-year period is removed, and nothing is stored in its place."""
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[parsed(MERGED), parsed(MERGED)],
+    ):
+        sync(hale_diagram.id, turn_id="t1", user_id=hale_diagram.user_id)
     refused = (
         Observation.query.filter_by(kind=ObservationKind.ClusterRefused)
         .order_by(Observation.id)
         .all()
     )
-    assert [
-        (o.detail["attempt"], o.detail["check"], o.detail["reason"]) for o in refused
-    ] == [
-        (1, "too_long", "too_long"),
-        (2, "too_long", "too_long"),
+    assert [(o.detail["attempt"], o.detail["check"]) for o in refused] == [
+        (1, "too_long"),
+        (2, "too_long"),
     ]
     assert "1948 to 2001" in refused[0].detail["detail"]
-    failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
-    assert (failed.detail["check"], failed.detail["fallback"]) == ("too_long", True)
-    stored = hale_diagram.get_diagram_data().clusters
-    assert sorted(c["title"] for c in stored) == [
-        "1954\u20131955",
-        "1994",
-        "1996\u20132001",
+    assert (refused[0].detail["name"], refused[0].detail["eventIds"]) == (
+        "The women of this family",
+        ALL_HALE,
+    )
+    assert (refused[0].detail["start"], refused[0].detail["end"]) == (
+        "1948-06-12",
+        "2001-06-30",
+    )
+    checks = [
+        o.detail["check"]
+        for o in Observation.query.filter_by(kind=ObservationKind.ClusterFailed)
     ]
-    assert "c1" not in {c["id"] for c in stored}
-
-
-# Two clusters on the one line never share a day [Oracle: R-0839]. The shapes
-# seen on production on 2026-10-08: the person's own 2009 to 2011 with the
-# model's 2008 to 2011 over it, and 2025 to 2026 inside 2017 to 2026.
+    assert checks == ["too_long", "too_long"]
+    assert hale_diagram.get_diagram_data().clusters == []
 
 
 def own(*event_ids: int, cluster_id="u1", name="The years I was ill") -> Cluster:
@@ -900,75 +879,103 @@ def own(*event_ids: int, cluster_id="u1", name="The years I was ill") -> Cluster
         title=name,
         name=name,
         summary="",
+        reason="I was not well",
         eventIds=list(event_ids),
         source=ClusterSource.User,
     )
 
 
-AROUND_ALL = [30, 31, 34, 20, 21, 22, 32]
-AROUND = record(
-    moment(30, "2008-03-01", person=1, anxiety=VariableShift.Up),
-    moment(31, "2008-06-01", person=1, description="that summer"),
-    moment(34, "2008-11-01", person=1, description="that autumn"),
-    moment(20, "2009-02-01", person=1, symptom=VariableShift.Up),
-    moment(21, "2010-05-01", person=1, description="the next year"),
-    moment(22, "2011-06-01", person=1, functioning=VariableShift.Down),
-    moment(32, "2011-09-01", person=1, description="that autumn too"),
-    clusters=[own(20, 21, 22)],
+# Shaped like Patrick's own case, fictionalized: the person drew her own run of
+# trouble from September 2009 to January 2011; her grandmother's cancer was in
+# the autumn of 2008, and her trouble began with a burnout the next spring.
+OWN = [20, 21, 22]
+WIDER = [30, 31, 20, 21, 22, 32]
+GRANDMOTHER = record(
+    moment(30, "2008-09-01", person=2, symptom=VariableShift.Up),
+    moment(31, "2009-03-01", person=1, functioning=VariableShift.Down),
+    moment(20, "2009-09-01", person=1, symptom=VariableShift.Up),
+    moment(21, "2010-05-01", person=1, anxiety=VariableShift.Up),
+    moment(22, "2011-01-01", person=1, functioning=VariableShift.Down),
+    moment(32, "2011-02-01", person=2, kind=EventKind.Death),
+    clusters=[own(*OWN)],
 )
+HYPOTHESIS = "After her grandmother's cancer, 2008"
 
 
-def test_a_group_straddling_the_persons_own_cluster_is_refused_then_the_re_ask_is_kept():
-    # R-0839, R-0780
-    """One group from 2008 to 2011 around the person's own 2009 to 2011:
-    measured without the person's events it still runs 2008 to 2011, so it is
-    refused with both named by their dates, and the second answer, the 2008
-    run on its own, is kept."""
-    assert grouped(AROUND) == [[30, 31, 34, 20], [21, 22, 32]]
+def test_the_persons_own_period_is_shown_to_the_model_as_theirs():
+    # R-0843
+    with replies(answers(named(*OWN, cluster_id="u1", name="The years I was ill"))) as ask:
+        detect_clusters(GRANDMOTHER, ask)
+    asked = ask.call_args_list[0].args[0]
+    assert '"note": "the person drew this period"' in asked
+    assert '"reason": "I was not well"' in asked
+    assert ask.call_args_list[0].args[1]["properties"]["clusters"]["items"][
+        "properties"
+    ]["id"]["enum"] == ["u1"]
+
+
+def test_a_wider_period_named_for_the_hypothesis_absorbs_the_persons_own():
+    # R-0843, R-0841
+    with replies(answers(named(*WIDER, name=HYPOTHESIS))) as ask:
+        result = detect_clusters(GRANDMOTHER, ask)
+    assert [(c.name, c.startDate, c.endDate) for c in result.clusters] == [
+        (HYPOTHESIS, "2008-09-01", "2011-02-01")
+    ]
+    assert result.clusters[0].source is ClusterSource.Model
+    dates = {e["id"]: e["dateTime"] for e in GRANDMOTHER.events}
+    deltas = _deltas(GRANDMOTHER.clusters, result.clusters, dates)
+    assert {"item_kind": "cluster", "item_id": "u1", "field": None, "after": None} in (
+        deltas
+    )
+
+
+def test_a_reshaped_persons_own_period_is_kept_under_its_id():
+    # R-0843
+    with replies(answers(named(*WIDER, cluster_id="u1", name=HYPOTHESIS))) as ask:
+        result = detect_clusters(GRANDMOTHER, ask)
+    assert [(c.id, c.eventIds, c.source) for c in result.clusters] == [
+        ("u1", WIDER, ClusterSource.Model)
+    ]
+
+
+def test_the_persons_own_period_handed_back_as_it_was_stays_theirs():
+    # R-0843
+    with replies(answers(named(*OWN, cluster_id="u1", name="The years I was ill"))) as ask:
+        result = detect_clusters(GRANDMOTHER, ask)
+    assert [(c.id, c.source) for c in result.clusters] == [("u1", ClusterSource.User)]
+
+
+def test_two_periods_sharing_days_are_merged_into_the_one_holding_more():
+    # R-0845, R-0844
+    """Her own period handed back as it was, beside the model's wider one over
+    the same years: one family, one reading, so they become one period under
+    the wider one's name, and the merge is heard with her period's own words."""
     seen = []
     with replies(
         answers(
-            named(
-                *AROUND_ALL,
-                name="The years around her illness",
-                change="Her illness and the year before it are one story.",
-            )
-        ),
-        answers(
-            named(
-                30,
-                31,
-                34,
-                name="The year before",
-                change="The year before she fell ill stands on its own.",
-            ),
-            named(
-                20,
-                21,
-                22,
-                32,
-                name="The years I was ill",
-                change="Her own years keep their shape.",
-            ),
-        ),
+            named(*OWN, cluster_id="u1", name="The years I was ill"),
+            named(30, 31, 32, name=HYPOTHESIS),
+        )
     ) as ask:
         result = detect_clusters(
-            AROUND, ask, lambda n, err, _: seen.append((n, err.check))
+            GRANDMOTHER, ask, lambda n, err, _: seen.append((n, err.check, err.said))
         )
-    assert seen == [(1, ClusterCheck.Overlap)]
-    second = ask.call_args_list[1].args[0]
-    assert "thrown out" in second and "overlap in time" in second
-    assert "(2008-03-01 to 2011-09-01)" in second
-    assert (
-        "this person made, 'The years I was ill' (2009-02-01 to 2011-06-01)" in second
-    )
-    assert spans(result) == [("2008", "2008"), ("2009", "2011")]
+    assert ask.call_count == 1
+    assert [(c.name, c.eventIds) for c in result.clusters] == [(HYPOTHESIS, WIDER)]
+    assert seen == [
+        (
+            1,
+            ClusterCheck.Merged,
+            {
+                "name": "The years I was ill",
+                "eventIds": OWN,
+                "start": "2009-09-01",
+                "end": "2011-01-01",
+            },
+        )
+    ]
 
 
-INSIDE_ONE = [40, 41, 42, 43, 44, 45, 46, 47]
-INSIDE_TWO = [50, 51, 52]
-# Her run is nine years of shifts about sixteen months apart, each within the
-# rules' reach of the next and none two years from the last; his sits inside it.
 INSIDE = record(
     moment(40, "2017-01-10", person=1, anxiety=VariableShift.Up),
     moment(41, "2018-05-01", person=1, anxiety=VariableShift.Up),
@@ -982,43 +989,20 @@ INSIDE = record(
     moment(51, "2025-09-01", person=2, description="that autumn"),
     moment(52, "2026-02-01", person=2, description="this winter"),
 )
-INSIDE_ANSWER = answers(
-    named(*INSIDE_ONE, name="Nine years of it", change="One long run for her."),
-    named(
-        *INSIDE_TWO, name="His bad year", change="His own trouble, inside her years."
-    ),
-)
 
 
-def test_a_group_inside_anothers_years_is_refused():
-    # R-0839
-    with replies(INSIDE_ANSWER, INSIDE_ANSWER) as ask:
-        with pytest.raises(ClusterError, match="overlap in time") as refused:
-            detect_clusters(INSIDE, ask)
-    assert refused.value.check is ClusterCheck.Overlap
-    assert "'Nine years of it' (2017-01-10 to 2026-04-01)" in str(refused.value)
-    assert "'His bad year' (2025-03-01 to 2026-02-01)" in str(refused.value)
-    assert ask.call_count == 2
-
-
-def test_without_the_overlap_check_the_nested_groups_are_accepted():
-    # R-0839
-    """What the code did before the check: both groups passed and were stored
-    one inside the other on the one line."""
-    with patch.object(clusters, "overlapping", return_value=False):
-        with replies(INSIDE_ANSWER) as ask:
-            result = detect_clusters(INSIDE, ask)
-    assert spans(result) == [("2017", "2026"), ("2025", "2026")]
-
-
-def test_the_fallback_joins_two_runs_that_share_years():
-    # R-0839
-    """Two people's runs over the same years stay two proposals for the model;
-    the fallback, which stores what it is given, joins them into one."""
-    assert grouped(INSIDE) == [INSIDE_ONE, INSIDE_TWO]
-    result, _ = by_years(INSIDE, "key")
-    assert [c.eventIds for c in result.clusters] == [
-        [40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 47]
+def test_a_period_inside_anothers_years_is_merged_not_refused():
+    # R-0845
+    with replies(
+        answers(
+            named(40, 41, 42, 43, 44, 45, 46, 47, name="Nine years of it"),
+            named(50, 51, 52, name="His bad year"),
+        )
+    ) as ask:
+        result = detect_clusters(INSIDE, ask)
+    assert ask.call_count == 1
+    assert [(c.name, c.eventIds) for c in result.clusters] == [
+        ("Nine years of it", [40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 47])
     ]
 
 
@@ -1032,112 +1016,17 @@ TOUCHING = record(
 )
 
 
-def test_two_groups_that_touch_on_one_day_are_two_and_accepted():
-    # R-0839
+def test_two_periods_that_touch_on_one_day_stay_two():
+    # R-0845
     """The page draws neighbouring pills apart at a seam, so touching is a
-    closeness it can still draw as two: the proposal keeps them two and the
-    answer as given is kept."""
-    assert grouped(TOUCHING) == [[60, 61, 62], [70, 71, 72]]
+    closeness it can still draw as two."""
     day = datetime.date(2015, 6, 1)
     assert not overlapping(
         (datetime.date(2014, 1, 1), day), (day, datetime.date(2016, 8, 1))
     )
-    assert overlapping(
-        (datetime.date(2014, 1, 1), datetime.date(2015, 6, 2)),
-        (day, datetime.date(2016, 8, 1)),
-    )
     with replies(answers(named(60, 61, 62), named(70, 71, 72, name="His turn"))) as ask:
         result = detect_clusters(TOUCHING, ask)
     assert spans(result) == [("2014", "2015"), ("2015", "2016")]
-
-
-def test_a_stored_group_overlapping_another_stored_group_is_not_handed_back():
-    # R-0839, R-0838
-    """Both nested model groups fail against each other and come back as the
-    proposal under new ids; a model group straddling the person's own is not
-    offered, one beside it is."""
-    nested = record(
-        *INSIDE.events,
-        clusters=[
-            already(*INSIDE_ONE, cluster_id="c1", name="Nine years of it"),
-            already(*INSIDE_TWO, cluster_id="c2", name="His bad year"),
-        ],
-    )
-    assert clusters.mine(nested) == {}
-    with replies(
-        answers(
-            named(40, 41, 42, 43, 44, 45, change="Her first years stand on their own."),
-            named(
-                46,
-                50,
-                51,
-                52,
-                47,
-                name="Then",
-                change="His trouble came into her last years.",
-            ),
-        )
-    ) as ask:
-        result = detect_clusters(nested, ask)
-    assert "EXISTING GROUPS\n\n[]" in ask.call_args_list[0].args[0]
-    assert [c.id for c in result.clusters] == ["c3", "c4"]
-    dates = {e["id"]: e["dateTime"] for e in INSIDE.events}
-    removed = sorted(
-        d["item_id"]
-        for d in _deltas(nested.clusters, result.clusters, dates)
-        if d["field"] is None
-    )
-    assert removed == ["c1", "c2"]
-    straddling = record(
-        *AROUND.events,
-        clusters=[
-            own(20, 21, 22),
-            already(30, 31, 34, 32, cluster_id="c1", name="Around it"),
-        ],
-    )
-    assert clusters.mine(straddling) == {}
-    beside = record(
-        *AROUND.events,
-        clusters=[
-            own(20, 21, 22),
-            already(30, 31, 34, cluster_id="c1", name="The year before"),
-        ],
-    )
-    assert list(clusters.mine(beside)) == ["c1"]
-
-
-def test_the_persons_own_groups_are_shown_to_the_model_with_their_years():
-    # R-0839
-    with replies(INSIDE_ANSWER, INSIDE_ANSWER) as ask:
-        with pytest.raises(ClusterError):
-            detect_clusters(AROUND, ask)
-    prompt = ask.call_args_list[0].args[0]
-    assert '"name": "The years I was ill"' in prompt
-    assert '"from": "2009-02-01"' in prompt and '"to": "2011-06-01"' in prompt
-
-
-# Her own two years sit inside one run of the rules' proposal, so the fallback
-# would store one group from 2008 to 2011 across them.
-STRADDLED = record(
-    moment(30, "2008-03-01", person=1, anxiety=VariableShift.Up),
-    moment(31, "2008-06-01", person=1, description="that summer"),
-    moment(34, "2008-11-01", person=1, description="that autumn"),
-    moment(20, "2009-02-01", person=1, symptom=VariableShift.Up),
-    moment(21, "2009-08-01", person=1, description="that summer"),
-    moment(22, "2010-01-01", person=1, functioning=VariableShift.Down),
-    moment(35, "2010-06-01", person=1, anxiety=VariableShift.Up),
-    moment(36, "2010-12-01", person=1, description="that winter"),
-    moment(37, "2011-03-01", person=1, description="that spring"),
-    clusters=[own(20, 21, 22)],
-)
-
-
-def test_the_fallback_cuts_its_groups_around_the_persons_own():
-    # R-0839, R-0780
-    assert grouped(STRADDLED) == [[30, 31, 34, 20, 21, 22, 35, 36, 37]]
-    result, _ = by_years(STRADDLED, "key")
-    assert [c.eventIds for c in result.clusters] == [[30, 31, 34], [35, 36, 37]]
-    assert spans(result) == [("2008", "2008"), ("2010", "2011")]
 
 
 EARLY = [
@@ -1165,26 +1054,6 @@ def regrouped(test_user, data: DiagramData):
     return done, removed, [c["id"] for c in diagram.get_diagram_data().clusters]
 
 
-def test_refused_twice_removes_a_stored_model_group_over_the_persons_own(test_user):
-    # R-0840
-    done, removed, kept = regrouped(
-        test_user,
-        record(
-            *AROUND.events,
-            *EARLY,
-            clusters=[
-                own(20, 21, 22),
-                already(30, 31, 34, 32, cluster_id="c1", name="Around it"),
-                already(60, 61, 62, cluster_id="c2", name="That year"),
-            ],
-        ),
-    )
-    assert done is not None
-    assert [(r["removed"], r["check"]) for r in removed] == [("c1", "overlap")]
-    assert "(2008-03-01 to 2011-09-01)" in removed[0]["detail"]
-    assert sorted(kept) == ["c2", "u1"]
-
-
 def test_refused_twice_removes_a_stored_model_group_over_ten_years(test_user):
     # R-0840
     done, removed, kept = regrouped(
@@ -1206,15 +1075,15 @@ def test_refused_twice_removes_a_stored_model_group_over_ten_years(test_user):
     assert kept == ["c2"]
 
 
-def test_refused_twice_removes_nothing_when_every_stored_group_passes(test_user):
-    # R-0840
+def test_refused_twice_keeps_the_persons_own_and_every_passing_group(test_user):
+    # R-0840, R-0844
     done, removed, kept = regrouped(
         test_user,
         record(
-            *AROUND.events,
+            *GRANDMOTHER.events,
             *EARLY,
             clusters=[
-                own(20, 21, 22),
+                own(*OWN),
                 already(60, 61, 62, cluster_id="c2", name="That year"),
             ],
         ),
@@ -1224,33 +1093,9 @@ def test_refused_twice_removes_nothing_when_every_stored_group_passes(test_user)
     assert kept == ["u1", "c2"]
 
 
-def test_the_fallback_stores_no_joined_group_over_ten_years(test_user):
-    # R-0837, R-0840
-    """Her eight years and his five share years, so the fallback joins them;
-    the joined group runs twelve years and is not stored."""
-    data = record(
-        moment(80, "2010-01-01", person=1, anxiety=VariableShift.Up),
-        moment(81, "2011-05-01", person=1, anxiety=VariableShift.Up),
-        moment(82, "2012-09-01", person=1, anxiety=VariableShift.Up),
-        moment(83, "2014-01-01", person=1, anxiety=VariableShift.Up),
-        moment(84, "2015-05-01", person=1, anxiety=VariableShift.Up),
-        moment(85, "2016-09-01", person=1, anxiety=VariableShift.Up),
-        moment(86, "2018-01-01", person=1, anxiety=VariableShift.Up),
-        moment(90, "2017-06-01", person=2, symptom=VariableShift.Up),
-        moment(91, "2018-10-01", person=2, symptom=VariableShift.Up),
-        moment(92, "2020-02-01", person=2, symptom=VariableShift.Up),
-        moment(93, "2021-06-01", person=2, symptom=VariableShift.Up),
-        moment(94, "2022-01-01", person=2, symptom=VariableShift.Up),
-    )
-    assert grouped(data) == [[80, 81, 82, 83, 84, 85, 86], [90, 91, 92, 93, 94]]
-    regrouped(test_user, data)
-    assert test_user.free_diagram.get_diagram_data().clusters == []
-    failed = [
-        o.detail["detail"]
-        for o in Observation.query.filter_by(kind=ObservationKind.ClusterFailed)
-        if o.detail["check"] == ClusterCheck.TooLong.value
-    ]
-    assert failed == [
-        "Fallback grouping '2010–2022' (2010-01-01 to 2022-01-01) fails the "
-        "10-year check"
-    ]
+def test_refused_twice_with_nothing_stored_names_nothing_after_its_years(test_user):
+    # R-0844
+    done, removed, kept = regrouped(test_user, record(*EARLY))
+    assert done is None
+    assert kept == []
+    assert not test_user.free_diagram.get_diagram_data().clusterCacheKey

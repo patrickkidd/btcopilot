@@ -1,8 +1,10 @@
 """The grouping call on the fictional Hale record: three runs of events decades
-apart and two strays, the shape of the fault seen on production. The old
-prompt let the model fold them into one group of fifty years; the reworded
-prompt and the ten-year check keep them three (R-0836, R-0837, R-0838).
-Invented names only; no real record is involved.
+apart and two strays, the shape of the fault seen on production. An older
+prompt let the model fold them into one period of fifty years. Read as
+hypotheses of a family process, the periods stay apart across the quiet
+decades, each named for what seems to have shifted, never for its years
+(R-0841, R-0844, R-0837, R-0838). Invented names only; no real record is
+involved.
 
 The app's grouping model is Gemini, and this suite's machine may have no key
 for it, so the call goes through Claude Code (`claude -p` with the answer's
@@ -117,22 +119,22 @@ def years_outside(cluster) -> list[int]:
     return [y for y in said if not first <= y <= last]
 
 
+YEARS_ONLY = re.compile(r"^\W*\d{4}(\W+\d{2,4})?\W*$")
+
+
 @passes(8, of=10)
-def test_three_runs_decades_apart_stay_three_groups():
-    # R-0836, R-0837
-    """The 1950s, 1994 and 1996 to 2001 come back as three groups; the 1948
-    marriage joins none of them; no group spans 1955 and 1994; the grandfather's
-    1998 death sits in the 1996 to 2001 group or in none; and no name or reason
-    reaches outside its own events."""
+def test_runs_decades_apart_stay_apart_as_named_hypotheses():
+    # R-0841, R-0837
+    """One to three periods come back; none spans 1955 and 1994; none is named
+    by its years alone; the grandfather's 1998 death sits with Nell and Theo's
+    trouble or in none; and no name or reason reaches outside its own events."""
     result = detect_clusters(HALE, ask)
     for cluster in result.clusters:
         print(
             f"  {span(cluster)} {cluster.eventIds} {cluster.name!r}: {cluster.reason}"
         )
-    assert len(result.clusters) == 3, [c.eventIds for c in result.clusters]
-    assert all(
-        1 not in c.eventIds for c in result.clusters
-    ), "the 1948 marriage joined a group"
+    assert 1 <= len(result.clusters) <= 3, [c.eventIds for c in result.clusters]
+    assert not [c.name for c in result.clusters if YEARS_ONLY.match(c.name)]
     assert not [
         c for c in result.clusters if span(c)[0] <= 1955 and span(c)[1] >= 1994
     ], "a group spans 1955 and 1994"
@@ -150,14 +152,13 @@ def test_three_runs_decades_apart_stay_three_groups():
 def test_a_stored_fifty_year_group_is_not_handed_back_unchanged():
     # R-0838
     """With the merged 1948 to 2001 group already stored as the model's, one
-    real run either returns the groups inside it or is refused, which leads to
-    the rules' groups under their years; the stored group never comes back as
-    it was."""
+    real run either returns the periods inside it or is refused, which leaves
+    no period at all; the stored group never comes back as it was."""
     try:
         result = detect_clusters(HALE_STORED, ask)
     except ClusterError as refused:
-        # both answers refused: in the turn this leads to the rules' groups
-        # under their years, and the stored group is removed (R-0780, R-0838)
+        # both answers refused: in the turn the stored group is removed and
+        # nothing is named after its years (R-0844, R-0838)
         print(f"  refused twice, the last by {refused.check.value}: {refused}")
         return
     for cluster in result.clusters:

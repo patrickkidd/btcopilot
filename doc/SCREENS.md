@@ -161,6 +161,8 @@ What it is for: one group of related events, opened from the line.
 - The grey line above the picture becomes the name of what you are looking at, with a back arrow beside it. [built] {R-0223}
 - Tapping either the name or the back arrow goes up one level. [built] {R-0223}
 - An open cluster shows its name and the reason it is a cluster, never a list of its events, because a cluster can hold fifteen. [built] {R-0213}
+- The header says each fact once: the path over the line reads "Timeline › <name>" (the years alone for a cluster with no name), and the words under the line read "<years> · <count> events". [built] {R-0767, R-0583}
+- A cluster is a period of heightened difficulty held as a hypothesis of a broader family process and named for it; the model may rename or reshape any cluster, yours included; two periods never share days; nothing is named after its years. [built] {R-0841, R-0843, R-0845, R-0844}
 - The page behind the small i beside an open cluster's name carries the app's book button, the same one the Family view's cards have; it opens a sheet titled "What a cluster is" with the passages from the books that say what a cluster is: a period of stress against the family's calm, the longest waves on record, and a quiet stretch as the sign a period ended. Each passage is the passage itself with its book and chapter under it, never the reference alone, and the passages are nowhere else on the page. [built] {R-0691, R-0688} (Patrick, 2026-10-08, with R-0836 to R-0838)
 - The events inside stay as marks; tapping one shows its words. [built] {R-0213}
 - A cluster needs at least three events to exist. [built] {R-0215}
@@ -543,6 +545,7 @@ What it is for: one screen to present your own record from, in the order the Bow
 - Text never folds and cards never collapse; only each side of the family folds. [built] {R-0689, R-0690}
 - The timeline is pinned at the top; every chip lights what it names on it. A person's chip lights that person's events; a cluster's chip opens the cluster with explain offered, and explain opens the play-by-play of the cluster's own dated events. [built] {R-0696, R-0700}
 - A coach's guess is the chat's own coach bubble, straight on the white card, with the dated facts it rests on as one-line chips under it; its "Coach" label lights them all. [built] {R-0698}
+- Under the coach's guesses on the coach's guess card, every cluster in the diagram sits as one chip in date order, worded "Hypothesis: <name> · <years>"; a tap opens that cluster on the picture, as any cluster chip does. None when the diagram has none. [built] {R-0698, R-0201} (Patrick, 2026-10-08)
 - The main guess, the own part, the choice and what to work on (up to three) are the guesses the coach put on those cards; the newest replaces the one before. The screen never picks a guess itself. [built] {R-0709, R-0713}
 - A guess card the coach has put nothing on says in the coach's bubble that there is not enough in the record yet, and to chat more with the coach. A record card with nothing in it keeps its title and its book. [built] {R-0699, R-0710}
 - The own part card shows the coach's guess and, once the person has answered the coach's question, the person's own words under their name as their own view. [built] {R-0708}

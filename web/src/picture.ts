@@ -339,13 +339,20 @@ const MODE: Partial<Record<Level, string>> = {
 
 type Named = { title: string; start: string; end: string };
 
-/** The open cluster as the path names it: its name and its years, "Every mark ·
- * 1972–99", the years alone for a cluster with no name (R-0767). */
-export const clusterStep = (c: Named) => (c.title ? `${c.title} \u00b7 ${spanYears(c.start, c.end)}` : spanYears(c.start, c.end));
+/** The open cluster as the path names it: its name alone, "Every mark", the
+ * years alone for a cluster with no name (R-0767); the years go under
+ * the line, so neither is on the screen twice. */
+export const clusterStep = (c: Named) => c.title || spanYears(c.start, c.end);
+
+/** The words under the line with a cluster open and nothing picked: its years
+ * and how many events it holds, "1981\u20132003 \u00b7 3 events" (R-0583, R-0767);
+ * the name is in the path above. */
+export const clusterLabel = (c: { start: string; end: string; count: number }) =>
+  `${fullYears(c.start, c.end)} \u00b7 ${c.count} event${c.count === 1 ? "" : "s"}`;
 
 /** The path over the line, from the whole timeline down to where the reader
- * is: the cluster open by its name and years, then the mode it is in or the
- * moment picked (R-0540, R-0767). */
+ * is: the cluster open by its name, then the mode it is in or the event
+ * picked (R-0540, R-0767). */
 export function trail(level: Level, cluster: Named | null, picked: string | null): string[] {
   const last = MODE[level] ?? picked;
   return [
@@ -1183,12 +1190,12 @@ export class Picture {
     this.laid.rows = said.rowsLaid;
     const chosen = marks.find((m) => m.event.id === this.selected);
     // With a cluster open and nothing picked, the words over the line are the
-    // cluster's own name and how many events it holds, so the reader can find
-    // what is open (R-0538, R-0583); the path above names it too (R-0767).
+    // cluster's years and how many events it holds (R-0538, R-0583); its name
+    // is in the path above, so neither is on the screen twice (R-0767).
     const title =
       !said.text && open && !chosen
         ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
-          `width:${screen - 2 * X_PAD}px"><span>${esc(open.title || open.label)}</span> <span class="ct">(${open.count})</span></div>`
+          `width:${screen - 2 * X_PAD}px"><span>${esc(clusterLabel(open))}</span></div>`
         : "";
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";

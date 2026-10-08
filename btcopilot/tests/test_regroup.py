@@ -45,7 +45,7 @@ def grouped_now(diagram) -> None:
 def test_the_dry_run_lists_records_behind_their_events_and_calls_no_model(
     flask_app, family
 ):
-    # R-0772, R-0780
+    # R-0772, R-0844
     with patch("btcopilot.metered.gemini_structured_sync") as asked:
         rows = regroup(flask_app)
     assert [(r["diagram"], r["why"], r["groups"]) for r in rows] == [
@@ -58,14 +58,14 @@ def test_the_dry_run_lists_records_behind_their_events_and_calls_no_model(
 def test_a_record_with_events_and_no_groups_is_listed_though_its_events_held(
     flask_app, family
 ):
-    # R-0772, R-0780
+    # R-0772, R-0844
     grouped_now(family)
     rows = regroup(flask_app)
     assert [r["why"] for r in rows] == ["events and no groups"]
 
 
 def test_apply_regroups_as_one_change_that_undo_takes_back(flask_app, family):
-    # R-0772, R-0780
+    # R-0772, R-0844
     grouped_now(family)
     with patch(
         "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
@@ -83,13 +83,13 @@ def test_apply_regroups_as_one_change_that_undo_takes_back(flask_app, family):
     assert clusters_of(family) == {}
 
 
-def test_apply_says_which_records_fell_back_to_their_years(flask_app, family):
-    # R-0517, R-0780
+def test_apply_says_which_records_got_no_answer_and_names_nothing(flask_app, family):
+    # R-0517, R-0844
     with patch(
         "btcopilot.metered.gemini_structured_sync",
         side_effect=[TimeoutError(), TimeoutError()],
     ):
         rows = regroup(flask_app, "--apply", "--diagram", str(family.id))
-    assert [(r["regrouped"], r["failed"]) for r in rows] == [(1, True)]
-    assert [c["title"] for c in clusters_of(family).values()] == ["1994"]
+    assert [(r["regrouped"], r["failed"]) for r in rows] == [(0, True)]
+    assert clusters_of(family) == {}
     assert Observation.query.filter_by(kind=ObservationKind.ClusterFailed).count() == 1

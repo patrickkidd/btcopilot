@@ -9,6 +9,7 @@ import {
   QuestionKind,
   emptyTimeline,
   type AskedQuestion,
+  type Cluster,
   type Person,
   SessionKind,
   type Session,
@@ -474,4 +475,35 @@ it("never puts an undated event on the couple card", () => {
   const all = faces(caseView(lenaOmar(), ONE, "")).flat().join("\n");
   expect(all).not.toContain("Moved without telling anyone");
   expect(all).not.toMatch(/NaN|undefined|null/);
+});
+
+const cluster = (id: string, title: string, start: string, end: string): Cluster => ({
+  id,
+  label: start.slice(0, 4) === end.slice(0, 4) ? start.slice(0, 4) : `${start.slice(0, 4)}\u2013${end.slice(0, 4)}`,
+  title,
+  summary: null,
+  reason: null,
+  cluster_ids: [id],
+  start,
+  end,
+  event_ids: [],
+  play_ids: [],
+  count: 3,
+  digest: "",
+});
+
+// R-0698, R-0201
+it("adds every cluster to the coach's guess card as a hypothesis chip, in date order, that opens it", () => {
+  const tl = halloran();
+  tl.asked_questions = [guess("i1", "Guess one.", CaseReportCard.CoachGuess, [202])];
+  const before = cards(caseView(tl, ONE, ""), false).split(`data-card="${Card.Guesses}"`)[1].split("</section>")[0];
+  tl.clusters = [cluster("c2", "After Walter's death", "2011-02-01", "2013-05-01"), cluster("c1", "The move north", "2004-03-01", "2004-11-01")];
+  const v = caseView(tl, ONE, "");
+  expect(v.hypotheses.map((c) => c.label)).toEqual(["Hypothesis: The move north \u00b7 2004", "Hypothesis: After Walter's death \u00b7 2011\u20132013"]);
+  const card = cards(v, false).split(`data-card="${Card.Guesses}"`)[1].split("</section>")[0];
+  expect(card.startsWith(before.split("</div></div>")[0])).toBe(true);
+  const targets = [...card.matchAll(/data-kind="cluster" data-target="(c\d)"/g)].map((m) => m[1]);
+  expect(targets).toEqual(["c1", "c2"]);
+  tl.clusters = [];
+  expect(caseView(tl, ONE, "").hypotheses).toEqual([]);
 });

@@ -190,7 +190,9 @@ function body(card: Card, v: CaseView): string {
       return v.sides.map((s) => fold(s.label, lead(s.lead) + picture(v, s.still, s.label))).join("");
     case Card.Guesses: {
       const ask = v.ask ? `<div class="gbub">${bubble("", [], v.ask)}</div>` : "";
-      return `<div class="glist">${v.guesses.length ? v.guesses.map((g) => guessBlock(g)).join("") : notEnough()}${ask}</div>`;
+      // the clusters as hypotheses, under the coach's own chips, each opening its cluster (R-0698, R-0201)
+      const held = chips(v.hypotheses.map((c) => chip(ChipKind.Cluster, c.id, c.label)));
+      return `<div class="glist">${v.guesses.length ? v.guesses.map((g) => guessBlock(g)).join("") : notEnough()}${held}${ask}</div>`;
     }
     case Card.OwnPart: {
       const o = v.ownPart;

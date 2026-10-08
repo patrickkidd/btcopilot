@@ -2,7 +2,36 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-08 (structure before stories; a fact to find stays open)
+**Last Updated**: 2026-10-08 (clusters as hypotheses of a family process)
+
+---
+
+## FD-375 job 034 — clusters as hypotheses of a family process (2026-10-08)
+
+**Change**: the cluster prompt (private and public) is rewritten in a few plain sections: read
+the events as a clinician reads a family history; notice periods where shifts and events pile up
+(a fall counts as much as a rise; anxiety is inferred); hold each as a loose guess that something
+bigger shifted in the family around then, with no opening event or clear end required; one reading
+per family, so no two periods share days, and most events stay outside; every stored period, the
+person's own marked as theirs, may be kept, renamed, reshaped, merged or dropped; the rules' runs
+are a hint only; name each for the guess, never its length or its years alone. Gone: "keep what is
+there", the change-sentence demand, "never leave out a marked event", the person's periods as
+fixed, the no-overlap order. The terms fragment's paragraph on what holds a cluster together and
+"a reading is kept, not rebuilt" are replaced by what a cluster is as a hypothesis; a quiet span may
+be a gap in the telling. The coach's story fragment (private and public) gains one paragraph: a
+cluster is a guess about the family; when the person's own topic leaves room, ask what was going
+on in the wider family around those years; ask, never tell the link. Code: overlaps are merged,
+not refused; only the three-event floor and ten-year check remain as backstops, dropped per period
+on the second answer; no fallback named after years; DETECTION_VERSION 8.
+
+**Why**: Patrick's direction of 2026-10-08, in the rulings store as R-0841 to R-0846: clusters
+are loose hypotheses of a family process, not precise measurement, and the family is one unit.
+
+**Evals**: `btcopilot/tests/live/test_clusters.py` (Hale, the grouping prompt, 8 of 10, now: one
+to three periods, none across 1955 to 1994, none named by years alone) and the new coach case
+`btcopilot/tests/live/test_clustercuriosity.py` (2 of 3: the reply's question asks about the
+family around the person's 2008 to 2011 trouble, the grandmother's cancer and death elsewhere in
+the diagram). Not run yet; no spend.
 
 ---
 
