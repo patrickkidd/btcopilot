@@ -17,7 +17,7 @@
   --ink: #221f3d;
   --quiet: #4a4669;
   --rule: #cbc8dd;
-  --wire: #8d87b1;
+  --wire: #8580ab;
   --fill: #e8f1f6;
   --accent: #655aa6;
   --onaccent: #fff;
@@ -48,17 +48,20 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 v
 a { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.logo { display: inline-block; margin: 8px 0 0; border-radius: 8px; line-height: 0; }
+/* The logo heads the plate, above the name; the PNG is transparent, so in the dark it sits
+   on the ground itself, lifted a step. */
+.logo { display: block; width: fit-content; margin: 0 0 14px; line-height: 0; }
 .logo img { display: block; width: 128px; height: auto; }
-@media (prefers-color-scheme: dark) { .logo { background: var(--plate); padding: 6px 8px; } }
+@media (prefers-color-scheme: dark) { .logo img { filter: brightness(1.3); } }
 
-/* The picture: a fixed box the size of its last frame, anchored at the top, so the
-   third row stands empty until Iris is born and nothing under the picture ever moves. */
-.pic { margin: 4px 0 0; }
+/* The picture. Below 1100 px its box follows the frame (the family fills the width, the
+   years line sits under the youngest row); from 1100 px the box is fixed at the last
+   frame's size, anchored at the top, so nothing in the desktop hero ever moves. */
+.pic { margin: 12px 0 0; }
 .draw { display: block; width: 100%; height: auto; }
 .draw text { font: 500 13px var(--sans); }
-.draw .age, .draw .lbd { font: 400 13px var(--mono); }
-.draw .age { font-weight: 500; fill: var(--quiet); text-anchor: middle; }
+.draw .age { font: 500 13px var(--mono); fill: var(--quiet); text-anchor: middle; }
+.draw .lbd { font: 400 12px var(--sans); font-variant-numeric: tabular-nums; }
 .draw .shape { fill: var(--fill); stroke: var(--ink); stroke-width: 1.6; }
 .draw .on .shape { stroke: var(--accent); stroke-width: 2.8; }
 .draw .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
@@ -80,7 +83,7 @@ a { color: var(--accent); }
 
 /* Tall enough for two lines of event words, so a long event never moves the key. */
 .step { display: flex; align-items: center; gap: 10px; margin: 0; min-height: 60px; }
-.stepbtn { flex: none; height: 40px; min-width: 72px; padding: 0 16px; border: 1px solid var(--rule); border-radius: 20px; background: var(--bg); color: var(--ink); font: 500 16px var(--sans); cursor: pointer; }
+.stepbtn { flex: none; height: 40px; min-width: 72px; padding: 0 16px; border: 1px solid var(--wire); border-radius: 20px; background: var(--bg); color: var(--ink); font: 500 16px var(--sans); cursor: pointer; }
 .stepbtn:disabled { opacity: 0.35; cursor: default; }
 .stepbtn:not(:disabled):active { background: var(--fill); }
 .ev { flex: 1 1 auto; min-width: 0; margin: 0; text-align: center; }
@@ -115,14 +118,14 @@ h1 .v { font: 500 13px/1 var(--sans); color: var(--quiet); letter-spacing: 0; }
 form { display: grid; gap: 12px; }
 label { display: grid; gap: 6px; font: 500 13px/1.4 var(--sans); }
 .optional { color: var(--quiet); font-weight: 400; }
-input, textarea { width: 100%; min-width: 0; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); font: 400 16px var(--sans); }
+input, textarea { width: 100%; min-width: 0; padding: 12px 14px; border: 1px solid var(--wire); border-radius: 8px; background: var(--bg); color: var(--ink); font: 400 16px var(--sans); }
 textarea { min-height: 96px; resize: vertical; }
 input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--band); }
 .form button { height: 48px; padding: 0 22px; border: 0; border-radius: 8px; background: var(--accent); color: var(--onaccent); font: 600 16px var(--sans); cursor: pointer; }
 .form button:disabled { opacity: 0.5; cursor: default; }
 .cf-turnstile { min-height: 65px; }
 .error, .done { margin: 0 0 12px; padding: 12px 14px; border-radius: 8px; }
-.error { border: 1px solid var(--rule); }
+.error { border: 1px solid var(--wire); }
 .done { background: var(--band); margin: 0; }
 
 footer { margin: 8px 0 0; padding: 20px 0 0; border-top: 1px solid var(--rule); font: 400 13px/1.6 var(--sans); color: var(--quiet); }
@@ -130,9 +133,9 @@ footer a { color: var(--quiet); text-decoration: none; }
 
 @media (min-width: 720px) {
   .wrap { padding: 0 40px 40px; }
-  .logo { margin-top: 20px; }
   .logo img { width: 180px; }
   .hero { max-width: 620px; margin: 0 auto; }
+  .pic { margin-top: 24px; }
   .ev .w { font-size: 17px; }
   .stepbtn, .alt, .only { font-size: 17px; }
   .plate p { font-size: 19px; }
@@ -143,12 +146,11 @@ footer a { color: var(--quiet); text-decoration: none; }
 }
 @media (min-width: 1100px) {
   /* Picture left, first in reading order as on the phone; the logo and the words right,
-     held in the middle rows so they sit centred against the picture column. */
-  .hero { display: grid; grid-template-columns: minmax(0, 620px) minmax(320px, 1fr); grid-template-rows: 1fr auto auto 1fr; grid-template-areas: "pic ." "pic logo" "pic plate" "pic ."; column-gap: 72px; max-width: none; margin: 32px 0 0; }
-  .logo { grid-area: logo; margin: 0; justify-self: start; }
+     centred against the picture column. */
+  .hero { display: grid; grid-template-columns: minmax(0, 620px) minmax(320px, 1fr); align-items: center; column-gap: 72px; max-width: none; margin: 32px 0 0; }
+  .logo { margin-bottom: 20px; }
   .logo img { width: 200px; }
-  .picture { grid-area: pic; }
-  .plate { grid-area: plate; margin-top: 20px; }
+  .plate { margin-top: 0; }
   .pic { margin: 0; }
   h1 { font-size: 44px; letter-spacing: -0.018em; }
   h1 .v { font-size: 15px; }
@@ -166,9 +168,8 @@ footer a { color: var(--quiet); text-decoration: none; }
 <div class="wrap">
 <main>
 <section class="hero">
-<a class="logo" href="https://alaskafamilysystems.com"><img src="{{ url_for('auth.logo') }}" alt="Alaska Family Systems" width="401" height="250" /></a>
 <div class="picture">
-<div class="pic"><svg class="draw" viewBox="-28 -31 309.4 295" preserveAspectRatio="xMidYMin meet" role="img" aria-labelledby="ev"><path class="tie" data-id="ar" d="M0 22V42H112V22"/><path class="tie" data-id="ol" d="M112 144.4V164.4H188V140"/><path class="kin" data-id="june" d="M0 96L0 42"/><path class="kin" data-id="owen" d="M112 91.6L112 42"/><path class="kin off" data-id="iris" d="M150 214L150 164.4"/><g class="p" data-id="arthur"><rect class="shape" x="-22" y="-22" width="44" height="44"/><path class="xd off" data-id="arthur" d="M-22 -22L22 22M22 -22L-22 22"/></g><g class="p" data-id="ruth"><circle class="shape" cx="112" cy="0" r="22"/></g><g class="p" data-id="june"><circle class="shape" cx="0" cy="118" r="22"/></g><g class="p on" data-id="owen"><rect class="you" x="85.6" y="91.6" width="52.8" height="52.8"/><rect class="shape" x="90" y="96" width="44" height="44"/></g><g class="p on" data-id="lena"><circle class="shape" cx="188" cy="118" r="22"/></g><g class="p off" data-id="iris"><circle class="shape" cx="150" cy="236" r="22"/></g><g class="pt" data-id="arthur"><text class="age" data-id="arthur" x="0" y="4.5">61</text><text class="lbn" x="30.8" y="-13" text-anchor="start">Arthur</text><text class="lbd" x="30.8" y="2" text-anchor="start">b. 1949</text><text class="lbd dl off" data-id="arthur" x="30.8" y="17" text-anchor="start">d. 2011</text></g><g class="pt" data-id="ruth"><text class="age" data-id="ruth" x="112" y="4.5">57</text><text class="lbn" x="142.8" y="-13" text-anchor="start">Ruth</text><text class="lbd" x="142.8" y="2" text-anchor="start">b. 1952</text></g><g class="pt" data-id="june"><text class="age" data-id="june" x="0" y="122.5">32</text><text class="lbn" x="30.8" y="105" text-anchor="start">June</text><text class="lbd" x="30.8" y="120" text-anchor="start">b. 1978</text></g><g class="pt" data-id="owen"><text class="age" data-id="owen" x="112" y="122.5">28</text><text class="lbn" x="117" y="68.2" text-anchor="start">Owen</text><text class="lbd" x="117" y="83.2" text-anchor="start">b. 1981</text></g><g class="pt" data-id="lena"><text class="age" data-id="lena" x="188" y="122.5">27</text><text class="lbn" x="218.8" y="105" text-anchor="start">Lena</text><text class="lbd" x="218.8" y="120" text-anchor="start">b. 1983</text></g><g class="pt off" data-id="iris"><text class="age off" data-id="iris" x="150" y="240.5"></text><text class="lbn" x="180.8" y="223" text-anchor="start">Iris</text><text class="lbd" x="180.8" y="238" text-anchor="start">b. 2014</text></g></svg></div>
+<div class="pic"><svg class="draw" viewBox="-28 -31 309.4 202.4" preserveAspectRatio="xMidYMin meet" role="img" aria-labelledby="ev"><path class="tie" data-id="ar" d="M0 22V42H112V22"/><path class="tie" data-id="ol" d="M112 144.4V164.4H188V140"/><path class="kin" data-id="june" d="M0 96L0 42"/><path class="kin" data-id="owen" d="M112 91.6L112 42"/><path class="kin off" data-id="iris" d="M150 214L150 164.4"/><g class="p" data-id="arthur"><rect class="shape" x="-22" y="-22" width="44" height="44"/><path class="xd off" data-id="arthur" d="M-22 -22L22 22M22 -22L-22 22"/></g><g class="p" data-id="ruth"><circle class="shape" cx="112" cy="0" r="22"/></g><g class="p" data-id="june"><circle class="shape" cx="0" cy="118" r="22"/></g><g class="p on" data-id="owen"><rect class="you" x="85.6" y="91.6" width="52.8" height="52.8"/><rect class="shape" x="90" y="96" width="44" height="44"/></g><g class="p on" data-id="lena"><circle class="shape" cx="188" cy="118" r="22"/></g><g class="p off" data-id="iris"><circle class="shape" cx="150" cy="236" r="22"/></g><g class="pt" data-id="arthur"><text class="age" data-id="arthur" x="0" y="4.5">61</text><text class="lbn" x="30.8" y="-13" text-anchor="start">Arthur</text><text class="lbd" x="30.8" y="2" text-anchor="start">b. 1949</text><text class="lbd dl off" data-id="arthur" x="30.8" y="17" text-anchor="start">d. 2011</text></g><g class="pt" data-id="ruth"><text class="age" data-id="ruth" x="112" y="4.5">57</text><text class="lbn" x="142.8" y="-13" text-anchor="start">Ruth</text><text class="lbd" x="142.8" y="2" text-anchor="start">b. 1952</text></g><g class="pt" data-id="june"><text class="age" data-id="june" x="0" y="122.5">32</text><text class="lbn" x="30.8" y="105" text-anchor="start">June</text><text class="lbd" x="30.8" y="120" text-anchor="start">b. 1978</text></g><g class="pt" data-id="owen"><text class="age" data-id="owen" x="112" y="122.5">28</text><text class="lbn" x="117" y="68.2" text-anchor="start">Owen</text><text class="lbd" x="117" y="83.2" text-anchor="start">b. 1981</text></g><g class="pt" data-id="lena"><text class="age" data-id="lena" x="188" y="122.5">27</text><text class="lbn" x="218.8" y="105" text-anchor="start">Lena</text><text class="lbd" x="218.8" y="120" text-anchor="start">b. 1983</text></g><g class="pt off" data-id="iris"><text class="age off" data-id="iris" x="150" y="240.5"></text><text class="lbn" x="180.8" y="223" text-anchor="start">Iris</text><text class="lbd" x="180.8" y="238" text-anchor="start">b. 2014</text></g></svg></div>
 <svg class="tl" width="100%" height="44" aria-hidden="true"><rect class="mk band" data-i="2" x="45.58%" y="5" width="19.79%" height="14" rx="3"/><line class="base" x1="6.0%" y1="12" x2="98%" y2="12"/><line class="tick" x1="6.00%" y1="6" x2="6.00%" y2="18"/><text class="yr" x="6.00%" y="38" text-anchor="middle">2010</text><line class="tick" x1="25.79%" y1="6" x2="25.79%" y2="18"/><text class="yr" x="25.79%" y="38" text-anchor="middle">2011</text><line class="tick" x1="45.58%" y1="6" x2="45.58%" y2="18"/><text class="yr" x="45.58%" y="38" text-anchor="middle">2012</text><line class="tick" x1="65.37%" y1="6" x2="65.37%" y2="18"/><text class="yr" x="65.37%" y="38" text-anchor="middle">2013</text><line class="tick" x1="85.16%" y1="6" x2="85.16%" y2="18"/><text class="yr" x="85.16%" y="38" text-anchor="middle">2014</text><circle class="mk dot cur" data-i="0" cx="15.16%" cy="12" r="5.5"/><circle class="mk dot" data-i="1" cx="42.33%" cy="12" r="4"/><circle class="mk dot" data-i="3" cx="60.43%" cy="12" r="4"/><circle class="mk dot" data-i="4" cx="86.24%" cy="12" r="4"/></svg>
 <div class="step">
 <button type="button" class="stepbtn" data-step="back">Back</button>
@@ -183,6 +184,7 @@ footer a { color: var(--quiet); text-decoration: none; }
 </ul>
 </div>
 <div class="plate">
+<a class="logo" href="https://alaskafamilysystems.com"><img src="{{ url_for('auth.logo') }}" alt="Alaska Family Systems" width="401" height="250" /></a>
 <h1>Family Diagram <span class="v">Version 3</span></h1>
 <p>An AI coach that keeps the story of your life. Tell it what happened, year by year; the record builds with every conversation, and it gets smarter at seeing patterns in the moments that matter.</p>
 <div class="act">
@@ -229,7 +231,7 @@ footer a { color: var(--quiet); text-decoration: none; }
 <label>Email
 <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" maxlength="255" value="{{ beta_email or '' }}" required />
 </label>
-<label>A few words about you and your interest <span class="optional">(optional)</span>
+<label>A few words about you <span class="optional">(optional)</span>
 <textarea name="words" maxlength="2000">{{ beta_words or '' }}</textarea>
 </label>
 {% if site_key %}<div class="cf-turnstile" data-sitekey="{{ site_key }}" data-size="flexible"></div>{% endif %}
@@ -243,7 +245,7 @@ footer a { color: var(--quiet); text-decoration: none; }
 <a href="https://alaskafamilysystems.com">© {{ year }} Alaska Family Systems</a>
 </footer>
 </div>
-<script type="application/json" id="steps">{% raw %}[{"d":"19 Jun 2010","w":"Owen and Lena married","who":["owen","lena"],"p":{"arthur":{"v":1,"age":61,"dead":0},"ruth":{"v":1,"age":57,"dead":0},"june":{"v":1,"age":32,"dead":0},"owen":{"v":1,"age":28,"dead":0},"lena":{"v":1,"age":27,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0}},{"d":"2 Nov 2011","w":"Arthur died","who":["arthur"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0}},{"d":"2012","w":"Ruth sold the house on Fell Street","who":["ruth"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0}},{"d":"Oct 2012","w":"Owen's back pain started","who":["owen"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":60,"dead":0},"june":{"v":1,"age":34,"dead":0},"owen":{"v":1,"age":31,"dead":0},"lena":{"v":1,"age":29,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0}},{"d":"21 Jan 2014","w":"Iris born","who":["iris"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":61,"dead":0},"june":{"v":1,"age":35,"dead":0},"owen":{"v":1,"age":32,"dead":0},"lena":{"v":1,"age":30,"dead":0},"iris":{"v":1,"age":0,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":1}}]{% endraw %}</script>
+<script type="application/json" id="steps">{% raw %}[{"d":"19 Jun 2010","w":"Owen and Lena married","who":["owen","lena"],"p":{"arthur":{"v":1,"age":61,"dead":0},"ruth":{"v":1,"age":57,"dead":0},"june":{"v":1,"age":32,"dead":0},"owen":{"v":1,"age":28,"dead":0},"lena":{"v":1,"age":27,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"2 Nov 2011","w":"Arthur died","who":["arthur"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"2012","w":"Ruth sold the house on Fell Street","who":["ruth"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"Oct 2012","w":"Owen's back pain started","who":["owen"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":60,"dead":0},"june":{"v":1,"age":34,"dead":0},"owen":{"v":1,"age":31,"dead":0},"lena":{"v":1,"age":29,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"21 Jan 2014","w":"Iris born","who":["iris"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":61,"dead":0},"june":{"v":1,"age":35,"dead":0},"owen":{"v":1,"age":32,"dead":0},"lena":{"v":1,"age":30,"dead":0},"iris":{"v":1,"age":0,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":1},"vb":[-28.0,-31.0,309.4,295.0]}]{% endraw %}</script>
 <script>{% raw %}
 (function () {
   var data = document.getElementById('steps');
@@ -262,6 +264,29 @@ footer a { color: var(--quiet); text-decoration: none; }
   var words = document.querySelector('.ev .w');
   var marks = document.querySelectorAll('svg.tl .mk');
   var setOff = function (el, on) { if (el) { el.classList.toggle('off', !on); } };
+  // Below 1100 px the box follows the frame; from 1100 px it is fixed at the last frame's size.
+  var wide = window.matchMedia('(min-width: 1100px)');
+  var FULL = S[last].vb;
+  var target = function (k) { return wide.matches ? FULL : S[k].vb; };
+  var box = target(0).slice();
+  var frame = null;
+  function setBox(b) { svg.setAttribute('viewBox', b.map(function (v) { return v.toFixed(1); }).join(' ')); }
+  function moveBox(to) {
+    if (frame) { window.cancelAnimationFrame(frame); frame = null; }
+    if (still) { box = to.slice(); setBox(box); return; }
+    var from = box.slice();
+    var t0 = null;
+    var step = function (now) {
+      if (t0 === null) { t0 = now; }
+      var u = Math.min(1, (now - t0) / 450);
+      var e = 1 - Math.pow(1 - u, 3);
+      box = from.map(function (v, k) { return v + (to[k] - v) * e; });
+      setBox(box);
+      if (u < 1) { frame = window.requestAnimationFrame(step); } else { frame = null; }
+    };
+    frame = window.requestAnimationFrame(step);
+  }
+  setBox(box);
   function show(k) {
     var s = S[k];
     Object.keys(s.p).forEach(function (id) {
@@ -284,6 +309,7 @@ footer a { color: var(--quiet); text-decoration: none; }
       m.classList.toggle('cur', on);
       if (m.tagName === 'circle') { m.setAttribute('r', on ? '5.5' : '4'); if (on) { m.parentNode.appendChild(m); } }
     });
+    moveBox(target(k));
     back.disabled = k === 0;
     next.disabled = k === last;
   }
@@ -300,6 +326,8 @@ footer a { color: var(--quiet); text-decoration: none; }
   }
   back.addEventListener('click', function () { stop(); if (i > 0) { i -= 1; show(i); } });
   next.addEventListener('click', function () { stop(); if (i < last) { i += 1; show(i); } });
+  var resized = function () { box = target(i).slice(); setBox(box); };
+  if (wide.addEventListener) { wide.addEventListener('change', resized); } else { wide.addListener(resized); }
   show(0);
   if (auto) { timer = window.setTimeout(tick, 2500); }
 })();
