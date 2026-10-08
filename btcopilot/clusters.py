@@ -51,7 +51,7 @@ _log = logging.getLogger(__name__)
 # Bumped whenever the candidate rules or the naming prompt change, so a record
 # grouped by the older rules re-groups on its next event-changing turn. 6: the
 # prompt lines the books contradict reworded and the ten-year check added, so
-# every record regroups on its next event change [Oracle: R-0833, R-0835].
+# every record regroups on its next event change [Oracle: R-0836, R-0838].
 DETECTION_VERSION = 6
 
 NODAL_KINDS = frozenset(
@@ -75,7 +75,7 @@ THINKING_ROOM = 4096
 PER_EVENT = 24
 CALM_GAP_DAYS = 730
 # A returned group whose dated events span more than this is refused and the
-# model is asked again with the reason [Oracle: R-0834]. A rule about kind, not
+# model is asked again with the reason [Oracle: R-0837]. A rule about kind, not
 # edges: a group that long is a stage of the household or the family's ordinary
 # level, not a disturbance of it. The sources bound the number on both sides.
 # Above: the longest run of dated events any of them draws as one period of
@@ -189,7 +189,7 @@ def _years_after(day: datetime.date, count: int) -> datetime.date:
 
 def too_long(dates: list[datetime.date]) -> bool:
     """Whether a group's dated events span more than MAX_SPAN_YEARS
-    [Oracle: R-0834]."""
+    [Oracle: R-0837]."""
     return bool(dates) and max(dates) > _years_after(min(dates), MAX_SPAN_YEARS)
 
 
@@ -524,7 +524,7 @@ def mine(data: DiagramData) -> dict[str, dict]:
     """The stored groupings the model made and may be handed back as existing.
     One that fails the check is left out: keeping what is there protects a
     reading, not a category error, so its events fall back to the proposal and
-    the record regroups on this run [Oracle: R-0835]."""
+    the record regroups on this run [Oracle: R-0838]."""
     when = {e.id: parse_date(e.dateTime) for e in joinable(data)}
     kept = {}
     for cluster in _stored(data):
@@ -860,7 +860,7 @@ def sync(
     except ClusterError as failed:
         # Both answers refused: the rules' groups go in under their years, unless
         # the model's own groups are already there to keep [Oracle: R-0780]. A
-        # stored group that fails the check is not one to keep [Oracle: R-0835].
+        # stored group that fails the check is not one to keep [Oracle: R-0838].
         fallback = not mine(data)
         observe(
             ObservationKind.ClusterFailed,

@@ -22,15 +22,15 @@ a symptom that became chronic; those are what clusters stand out against. A
 quiet span after a run of shifts is the ordinary sign that the family settled,
 with the caveat that families misremember. It is named for the event that
 opened it or the shift at its heart, with its time, in the person's own words
-[Oracle: R-0833]. The passages behind this sit behind the book button on the
+[Oracle: R-0836]. The passages behind this sit behind the book button on the
 page behind a cluster's small i (doc/SCREENS.md).
 
 The prompt carries that definition (the seven lines the books contradicted were
-reworded on 2026-10-08 [Oracle: R-0833]), and the model still judges every edge
+reworded on 2026-10-08 [Oracle: R-0836]), and the model still judges every edge
 [Oracle: R-0374]. One thing is a check in code, because it is about the kind of
 thing a cluster is and not about its edges:
 
-**The ten-year check [Oracle: R-0834].** A returned group whose first and last
+**The ten-year check [Oracle: R-0837].** A returned group whose first and last
 dated events are more than ten years apart (`MAX_SPAN_YEARS` in
 `btcopilot/clusters.py`) is refused with the reason, "a group of more than 10
 years is this family's ordinary level, not a disturbance of it; return the
@@ -53,7 +53,7 @@ R-0374 protects, and the two tests that encode that freedom (joining proposals
 same number to the proposal's cuts or to a group's internal gaps would be a rule
 about edges, which R-0374 rejects, and is not done.
 
-**A stored cluster that fails the check is not handed back [Oracle: R-0835].**
+**A stored cluster that fails the check is not handed back [Oracle: R-0838].**
 "Keep what is there" protects a reading, not a category error: a stored
 model-made cluster that fails the check is left out of the groups the model is
 told to keep, its id is offered nowhere in the answer's shape (an answer naming

@@ -640,7 +640,7 @@ def spans(result) -> list[tuple[str, str]]:
 
 
 def test_the_hale_record_proposes_three_groups_decades_apart_and_two_strays():
-    # R-0834, R-0215
+    # R-0837, R-0215
     proposed = candidates(HALE)
     assert [c.eventIds for c in proposed] == HALE_PROPOSALS
     assert [c.startDate for c in proposed] == ["1954-02-10", "1994-03-05", "1996-09-01"]
@@ -649,7 +649,7 @@ def test_the_hale_record_proposes_three_groups_decades_apart_and_two_strays():
 
 
 def test_a_group_spanning_more_than_ten_years_is_refused_both_times():
-    # R-0834, R-0780
+    # R-0837, R-0780
     """One group of all fourteen events, 1948 to 2001, with a change sentence:
     every other check passes it, and the ten-year check refuses it on both
     asks, naming its kind, so the refusal is counted by kind."""
@@ -664,7 +664,7 @@ def test_a_group_spanning_more_than_ten_years_is_refused_both_times():
 
 
 def test_without_the_ten_year_check_the_merged_answer_is_accepted():
-    # R-0834
+    # R-0837
     """What the code did before the check: the fifty-year group passed every
     check and was stored 1948 to 2001. Only the ceiling refuses it."""
     with patch.object(clusters, "MAX_SPAN_YEARS", 100):
@@ -674,7 +674,7 @@ def test_without_the_ten_year_check_the_merged_answer_is_accepted():
 
 
 def test_ten_years_to_the_day_passes_and_a_day_more_is_too_long():
-    # R-0834
+    # R-0837
     day = datetime.date(1990, 1, 1)
     assert not too_long([day, datetime.date(1990 + MAX_SPAN_YEARS, 1, 1)])
     assert too_long([day, datetime.date(1990 + MAX_SPAN_YEARS, 1, 2)])
@@ -683,7 +683,7 @@ def test_ten_years_to_the_day_passes_and_a_day_more_is_too_long():
 
 
 def test_the_three_proposals_as_given_pass():
-    # R-0834, R-0287
+    # R-0837, R-0287
     with replies(THREE) as ask:
         result = detect_clusters(HALE, ask)
     assert spans(result) == [("1954", "1955"), ("1994", "1994"), ("1996", "2001")]
@@ -691,7 +691,7 @@ def test_the_three_proposals_as_given_pass():
 
 
 def test_the_grandfathers_death_joins_the_run_it_fell_in_on_a_sentence():
-    # R-0834, R-0374
+    # R-0837, R-0374
     """The 1998 death is 258 days from the fights over money; the record holds
     the reaction, and 1996 to 2001 is under the ceiling."""
     joined = "Walter's death in early 1998 sits inside Nell and Theo's trouble: the fights over money came that autumn."
@@ -708,7 +708,7 @@ def test_the_grandfathers_death_joins_the_run_it_fell_in_on_a_sentence():
 
 
 def test_the_early_marriage_joined_to_the_first_run_passes_the_check():
-    # R-0834, R-0374
+    # R-0837, R-0374
     """1948 to 1955 is seven years, under the ceiling: whether the marriage
     belongs with the headaches six years on is the model's call, and the check
     does not make it."""
@@ -729,7 +729,7 @@ HALE_STORED = hale(FIFTY_YEARS)
 
 
 def test_a_stored_group_that_fails_the_check_is_not_handed_back_as_existing():
-    # R-0835, R-0374
+    # R-0838, R-0374
     """The fifty-year group is already stored as the model's. It is left out of
     the groups the model is told to keep, its id is offered nowhere in the
     answer's shape, the three proposals come back under new ids, and the record
@@ -758,7 +758,7 @@ def test_a_stored_group_that_fails_the_check_is_not_handed_back_as_existing():
 
 
 def test_the_model_handing_back_the_dropped_groups_id_is_refused_as_unknown():
-    # R-0835, R-0076
+    # R-0838, R-0076
     kept = answers(named(*ALL_HALE, cluster_id="c1", name="The women of this family"))
     with replies(kept, kept) as ask:
         with pytest.raises(ClusterError, match="not one of the groups") as refused:
@@ -767,7 +767,7 @@ def test_the_model_handing_back_the_dropped_groups_id_is_refused_as_unknown():
 
 
 def test_a_stored_group_within_ten_years_is_still_handed_back():
-    # R-0835, R-0374
+    # R-0838, R-0374
     """The rule protects a reading, not a category error: a stored group that
     passes the check is offered as before."""
     data = hale(already(6, 7, 8, cluster_id="c1", name="June's divorce"))
@@ -784,7 +784,7 @@ def test_a_stored_group_within_ten_years_is_still_handed_back():
 
 
 def test_the_prompt_states_the_silence_before_each_proposal_and_the_reworded_lines():
-    # R-0833
+    # R-0836
     """The model reads the gap before each proposed group as words instead of
     inferring it from two dates, and the lines the books contradicted are
     gone from the prompt it is given."""
@@ -816,7 +816,7 @@ def test_the_prompt_states_the_silence_before_each_proposal_and_the_reworded_lin
 
 
 def test_the_silence_is_said_in_years_months_or_days():
-    # R-0833
+    # R-0836
     assert silence(datetime.timedelta(days=38 * 365 + 123)) == "38 years and 4 months"
     assert silence(datetime.timedelta(days=365 + 310)) == "1 year and 10 months"
     assert silence(datetime.timedelta(days=200)) == "6 months"
@@ -825,7 +825,7 @@ def test_the_silence_is_said_in_years_months_or_days():
 
 
 def test_a_record_whose_first_proposal_has_nothing_before_it_says_so():
-    # R-0833
+    # R-0836
     with replies(
         answers(named(1, 2, 3), named(4, 5, 6, name="The winter after"))
     ) as ask:
@@ -853,7 +853,7 @@ def hale_diagram(test_user):
 
 
 def test_a_too_long_refusal_is_an_observation_row_and_the_record_regroups(hale_diagram):
-    # R-0834, R-0835, R-0780
+    # R-0837, R-0838, R-0780
     """Through the turn's own path: both answers refused by the ten-year check
     write two cluster_refused rows naming it, the failure row says so, and the
     stored fifty-year group is not one to keep, so the rules' groups go in

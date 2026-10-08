@@ -1,7 +1,7 @@
 """The grouping call on the fictional Hale record: three runs of events decades
 apart and two strays, the shape of the fault seen on production. The old
 prompt let the model fold them into one group of fifty years; the reworded
-prompt and the ten-year check keep them three (R-0833, R-0834, R-0835).
+prompt and the ten-year check keep them three (R-0836, R-0837, R-0838).
 Invented names only; no real record is involved.
 
 The app's grouping model is Gemini, and this suite's machine may have no key
@@ -119,7 +119,7 @@ def years_outside(cluster) -> list[int]:
 
 @passes(8, of=10)
 def test_three_runs_decades_apart_stay_three_groups():
-    # R-0833, R-0834
+    # R-0836, R-0837
     """The 1950s, 1994 and 1996 to 2001 come back as three groups; the 1948
     marriage joins none of them; no group spans 1955 and 1994; the grandfather's
     1998 death sits in the 1996 to 2001 group or in none; and no name or reason
@@ -148,7 +148,7 @@ def test_three_runs_decades_apart_stay_three_groups():
 
 @once
 def test_a_stored_fifty_year_group_is_not_handed_back_unchanged():
-    # R-0835
+    # R-0838
     """With the merged 1948 to 2001 group already stored as the model's, one
     real run either returns the groups inside it or is refused, which leads to
     the rules' groups under their years; the stored group never comes back as
@@ -157,7 +157,7 @@ def test_a_stored_fifty_year_group_is_not_handed_back_unchanged():
         result = detect_clusters(HALE_STORED, ask)
     except ClusterError as refused:
         # both answers refused: in the turn this leads to the rules' groups
-        # under their years, and the stored group is removed (R-0780, R-0835)
+        # under their years, and the stored group is removed (R-0780, R-0838)
         print(f"  refused twice, the last by {refused.check.value}: {refused}")
         return
     for cluster in result.clusters:

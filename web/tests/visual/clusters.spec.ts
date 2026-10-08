@@ -271,7 +271,7 @@ test.describe("one cluster open on the sparse record", () => {
   /** The chat screen's own passages sheet, up; the case page keeps one of its own, hidden. */
   const sheet = (page: Page) => page.locator(".fs-sheet.bk.in");
 
-  // Patrick, 2026-10-08, with R-0833 to R-0835: a cluster's info page carries the book button.
+  // Patrick, 2026-10-08, with R-0836 to R-0838: a cluster's info page carries the book button.
   // R-0213, R-0691
   test("the page behind the i carries the book button, and the book raises the passages behind what a cluster is", async ({ page }) => {
     await withPassages(page);

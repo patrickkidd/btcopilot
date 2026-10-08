@@ -388,7 +388,7 @@ it("names an event whose title starts with someone else in the family with a col
   expect(told("Ben Holt", "Marcus moved out of the flat in Oslo", family)).toEqual(["Ben: Marcus moved", "out of the flat in Oslo"]);
 });
 
-// Patrick, 2026-10-08, with R-0833 to R-0835: a cluster's info page carries the book button.
+// Patrick, 2026-10-08, with R-0836 to R-0838: a cluster's info page carries the book button.
 // R-0213, R-0691
 describe("the page behind a cluster's i", () => {
   const moments = [
