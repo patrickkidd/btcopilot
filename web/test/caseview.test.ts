@@ -384,7 +384,7 @@ it("shows a child's marked shifts and moves while at home, and a grown child's m
 });
 
 // R-0834
-it("always shows a death or serious illness of either partner's parent or sibling, named, wherever they live", () => {
+it("always names a parent's or sibling's death or serious illness for either partner, wherever they live", () => {
   const v = caseView(lenaOmar(), ONE, "");
   const all = faces(v).flat();
   expect(all).toContain("Sep 2001 · Harold · Heart attack");
@@ -395,7 +395,7 @@ it("always shows a death or serious illness of either partner's parent or siblin
 });
 
 // R-0834
-it("shows any other relative's event only when the record ties them to a partner and it falls within two years of an event of the couple's own", () => {
+it("shows another relative's event only if the record links them to one partner and it lies no more than two years from one of the couple's own events", () => {
   const v = caseView(lenaOmar(), ONE, "");
   const all = faces(v).flat();
   // tied by her distance aimed at Omar, on the wedding's own day

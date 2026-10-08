@@ -394,9 +394,9 @@ class Reader {
    * (R-0833): every event of either partner, aimed at anyone or no one; their
    * children's births, a child's marked shifts and moves while at home, and a
    * grown child's marriage; a parent's or sibling's death or serious illness
-   * always, and any other relative's event only when the record ties that
-   * relative to a partner and it falls within two years of an event of the
-   * couple's own (R-0834); where anyone lives is no filter, since the record
+   * always, and another relative's event only if the record links that
+   * relative to one partner and the event lies no more than two years from
+   * one of the couple's own events (R-0834); where anyone lives is no filter, since the record
    * does not hold it. An earlier marriage of either partner stands before, as
    * Kerr places it. All of it under Bowen's stage heads in date order (R-0835). */
   couple(b: PairBond): CaseView["couple"] {
