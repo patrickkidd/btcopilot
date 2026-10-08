@@ -6,170 +6,318 @@
     <link rel="icon" type="image/png" href="{{ url_for('auth.logo') }}" />
     <meta name="description" content="Family Diagram 3 from Alaska Family Systems. Beta access is by direct invitation only." />
     <title>Family Diagram</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
     {% if site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}
-    <style>
-      /* The page's own colours, matched to the Alaska Family Systems logo. */
-      :root {
-        --bg: #f6f6fb;
-        --panel: #fff;
-        --ink: #221f3d;
-        --faint: #5f5b7c;
-        --line: #dcdaea;
-        --accent: #675aa7;
-        --blue: #76b4cf;
-        --ring: rgba(103, 90, 167, 0.16);
-        --onaccent: #fff;
-        /* The purple words under the logo's mark need a light ground to be read. */
-        --logo-ground: #f6f6fb;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #16152a;
-          --panel: #1f1d38;
-          --ink: #e8e6f5;
-          --faint: #a09cc2;
-          --line: #37345c;
-          --accent: #9b8fd6;
-          --blue: #8fc8de;
-          --ring: rgba(155, 143, 214, 0.22);
-          --onaccent: #17142a;
-        }
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        background: linear-gradient(90deg, var(--blue), var(--accent)) top / 100% 4px no-repeat, var(--bg);
-        color: var(--ink);
-        font: 400 15px/1.55 var(--sans);
-        padding: 28px 16px 24px;
-      }
-      main { width: 100%; max-width: 420px; margin: 0 auto; overflow-wrap: anywhere; }
-      a { color: var(--accent); }
-      .logo { display: block; width: fit-content; margin: 0 auto 28px; border-radius: 14px; }
-      .logo img { display: block; width: 200px; height: auto; }
-      @media (min-width: 700px) { .logo img { width: 260px; } }
-      @media (prefers-color-scheme: dark) { .logo { background: var(--logo-ground); padding: 10px 14px; } }
-      .kicker { font: 500 12px var(--mono); letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin: 0 0 4px; }
-      h1 { font: 800 30px/1.15 var(--sans); margin: 0 0 16px; }
-      .only { font-weight: 600; margin: 0 0 24px; }
-      section {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 16px;
-        margin: 0 0 16px;
-      }
-      h2 { font: 600 17px var(--sans); margin: 0 0 4px; }
-      .lead { color: var(--faint); margin: 0 0 14px; }
-      form { display: grid; gap: 12px; }
-      label { display: grid; gap: 6px; font: 500 13px var(--sans); }
-      .optional { color: var(--faint); font-weight: 400; }
-      input, textarea {
-        font: 400 16px var(--sans);
-        color: var(--ink);
-        background: var(--bg);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 12px 14px;
-        width: 100%;
-      }
-      textarea { min-height: 96px; resize: vertical; }
-      input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
-      button {
-        font: 600 15px var(--sans);
-        color: var(--onaccent);
-        background: var(--accent);
-        border: none;
-        border-radius: 12px;
-        padding: 14px;
-        width: 100%;
-      }
-      button:active { opacity: 0.85; }
-      button:disabled { opacity: 0.5; }
-      .cf-turnstile { min-height: 65px; }
-      .error, .done { border-radius: 12px; padding: 12px 14px; margin: 0 0 14px; }
-      .error { border: 1px solid var(--line); background: var(--bg); }
-      .done { background: var(--ring); margin: 0; }
-      footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font: 400 13px var(--sans); color: var(--faint); margin-top: 24px; }
-      footer a { color: var(--accent); text-decoration: none; }
-    </style>
+    {# The page's own colours come from the Alaska Family Systems logo: its purple is the one
+       strong colour, its sky blue a tint. Words in IBM Plex Sans, every number and date in
+       IBM Plex Mono (the app's own face for data). #}
+    <style>{% raw %}
+:root {
+  --bg: #f6f6fb;
+  --ink: #221f3d;
+  --quiet: #4a4669;
+  --rule: #cbc8dd;
+  --wire: #8d87b1;
+  --fill: #e8f1f6;
+  --accent: #655aa6;
+  --onaccent: #fff;
+  --band: rgba(120, 196, 214, 0.45);
+  --plate: #f6f6fb;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16152a;
+    --ink: #e8e6f5;
+    --quiet: #b3afd2;
+    --rule: #3b3860;
+    --wire: #6f6b9a;
+    --fill: #1d2638;
+    --accent: #a69bdc;
+    --onaccent: #17142a;
+    --band: rgba(143, 200, 222, 0.3);
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px 32px; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.logo { display: inline-block; margin: 8px 0 0; border-radius: 8px; line-height: 0; }
+.logo img { display: block; width: 128px; height: auto; }
+@media (prefers-color-scheme: dark) { .logo { background: var(--plate); padding: 6px 8px; } }
+
+/* The picture: a fixed box the size of its last frame, anchored at the top, so the
+   third row stands empty until Iris is born and nothing under the picture ever moves. */
+.pic { margin: 4px 0 0; }
+.draw { display: block; width: 100%; height: auto; }
+.draw text { font: 500 13px var(--sans); }
+.draw .age, .draw .lbd { font: 400 13px var(--mono); }
+.draw .age { font-weight: 500; fill: var(--quiet); text-anchor: middle; }
+.draw .shape { fill: var(--fill); stroke: var(--ink); stroke-width: 1.6; }
+.draw .on .shape { stroke: var(--accent); stroke-width: 2.8; }
+.draw .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
+.draw .tie, .draw .kin { stroke: var(--quiet); stroke-width: 1.3; fill: none; }
+.draw .lbn { fill: var(--ink); }
+.draw .lbd { fill: var(--quiet); }
+.draw .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.draw .off { opacity: 0; }
+.draw .shape, .draw g, .draw path, .draw text { transition: opacity 0.4s, stroke 0.4s, stroke-width 0.4s; }
+
+.tl { display: block; overflow: visible; margin: 2px 0 0; }
+.tl .base, .tl .tick { stroke: var(--wire); stroke-width: 1.5; }
+.tl .band { fill: var(--band); }
+.tl .band.cur { fill: var(--accent); }
+.tl .dot { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
+.tl .dot.cur { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+.tl .yr { font: 400 13px var(--mono); fill: var(--quiet); }
+.tl .band, .tl .dot { transition: fill 0.3s; }
+
+/* Tall enough for two lines of event words, so a long event never moves the key. */
+.step { display: flex; align-items: center; gap: 10px; margin: 0; min-height: 60px; }
+.stepbtn { flex: none; height: 40px; min-width: 72px; padding: 0 16px; border: 1px solid var(--rule); border-radius: 20px; background: var(--bg); color: var(--ink); font: 500 16px var(--sans); cursor: pointer; }
+.stepbtn:disabled { opacity: 0.35; cursor: default; }
+.stepbtn:not(:disabled):active { background: var(--fill); }
+.ev { flex: 1 1 auto; min-width: 0; margin: 0; text-align: center; }
+.ev .d { display: block; font: 500 13px/1.4 var(--mono); color: var(--accent); }
+.ev .w { display: block; font: 500 16px/1.3 var(--sans); color: var(--ink); text-wrap: balance; }
+
+/* The key: glyph and words, wrapping to two lines at most on a phone. */
+.key { display: flex; flex-wrap: wrap; gap: 2px 16px; margin: 6px 0 0; padding: 0; list-style: none; font: 400 13px/1.4 var(--sans); color: var(--quiet); }
+.key li { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.key svg { flex: none; width: 16px; height: 16px; overflow: visible; }
+.key .g { fill: var(--fill); stroke: var(--ink); stroke-width: 1.4; }
+.key .x { fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-linecap: round; }
+.key .o { fill: none; stroke: var(--ink); stroke-width: 1; }
+.key .b { fill: var(--band); }
+
+/* The title plate under (or beside) the picture: the name, Patrick's paragraph, the actions. */
+.plate { margin: 18px 0 0; }
+h1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; margin: 0; font: 600 30px/1.15 var(--sans); letter-spacing: -0.012em; }
+h1 .v { font: 500 13px/1 var(--sans); color: var(--quiet); letter-spacing: 0; }
+.plate p { margin: 8px 0 0; max-width: 36em; font-size: 16px; line-height: 1.5; text-wrap: pretty; }
+.act { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; margin: 12px 0 0; }
+.go { display: inline-flex; align-items: center; justify-content: center; flex: 1 1 100%; height: 48px; padding: 0 22px; border-radius: 8px; background: var(--accent); color: var(--onaccent); font: 600 16px var(--sans); text-decoration: none; }
+.go:active, .form button:active { filter: brightness(0.92); }
+.alt { flex: 1 1 100%; font: 500 16px var(--sans); color: var(--accent); }
+.only { margin: 12px 0 0; font: 500 16px/1.5 var(--sans); color: var(--quiet); }
+
+/* The two forms, uncarded. */
+.forms { margin: 56px 0 0; }
+.form { margin: 0 0 40px; scroll-margin-top: 16px; }
+.form h2 { margin: 0; font: 600 20px/1.3 var(--sans); letter-spacing: -0.008em; }
+.lead { margin: 4px 0 14px; color: var(--quiet); text-wrap: pretty; }
+form { display: grid; gap: 12px; }
+label { display: grid; gap: 6px; font: 500 13px/1.4 var(--sans); }
+.optional { color: var(--quiet); font-weight: 400; }
+input, textarea { width: 100%; min-width: 0; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); font: 400 16px var(--sans); }
+textarea { min-height: 96px; resize: vertical; }
+input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--band); }
+.form button { height: 48px; padding: 0 22px; border: 0; border-radius: 8px; background: var(--accent); color: var(--onaccent); font: 600 16px var(--sans); cursor: pointer; }
+.form button:disabled { opacity: 0.5; cursor: default; }
+.cf-turnstile { min-height: 65px; }
+.error, .done { margin: 0 0 12px; padding: 12px 14px; border-radius: 8px; }
+.error { border: 1px solid var(--rule); }
+.done { background: var(--band); margin: 0; }
+
+footer { margin: 8px 0 0; padding: 20px 0 0; border-top: 1px solid var(--rule); font: 400 13px/1.6 var(--sans); color: var(--quiet); }
+footer a { color: var(--quiet); text-decoration: none; }
+
+@media (min-width: 720px) {
+  .wrap { padding: 0 40px 40px; }
+  .logo { margin-top: 20px; }
+  .logo img { width: 180px; }
+  .hero { max-width: 620px; margin: 0 auto; }
+  .ev .w { font-size: 17px; }
+  .stepbtn, .alt, .only { font-size: 17px; }
+  .plate p { font-size: 19px; }
+  .go { flex: none; font-size: 17px; }
+  .alt { flex: none; }
+  .forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 48px; max-width: 900px; margin-top: 72px; }
+  footer { padding-top: 24px; }
+}
+@media (min-width: 1100px) {
+  /* Picture left, first in reading order as on the phone; the logo and the words right,
+     held in the middle rows so they sit centred against the picture column. */
+  .hero { display: grid; grid-template-columns: minmax(0, 620px) minmax(320px, 1fr); grid-template-rows: 1fr auto auto 1fr; grid-template-areas: "pic ." "pic logo" "pic plate" "pic ."; column-gap: 72px; max-width: none; margin: 32px 0 0; }
+  .logo { grid-area: logo; margin: 0; justify-self: start; }
+  .logo img { width: 200px; }
+  .picture { grid-area: pic; }
+  .plate { grid-area: plate; margin-top: 20px; }
+  .pic { margin: 0; }
+  h1 { font-size: 44px; letter-spacing: -0.018em; }
+  h1 .v { font-size: 15px; }
+  .plate p { margin-top: 16px; }
+  .act { margin-top: 24px; }
+  .only { margin-top: 16px; }
+  .forms { margin-top: 88px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .draw .shape, .draw g, .draw path, .draw text, .tl .band, .tl .dot { transition: none; }
+}
+{% endraw %}</style>
   </head>
   <body>
-    <main>
-      <a class="logo" href="https://alaskafamilysystems.com"><img src="{{ url_for('auth.logo') }}" alt="Alaska Family Systems" width="401" height="250" /></a>
-      <p class="kicker">Version 3</p>
-      <h1>Family Diagram</h1>
-      <p>
-        An AI coach that keeps the story of your life. Tell it what happened, year by year;
-        the record builds with every conversation, and it gets smarter at seeing patterns in
-        the moments that matter.
-      </p>
-      <p class="only">Beta access is by direct invitation only.</p>
+<div class="wrap">
+<main>
+<section class="hero">
+<a class="logo" href="https://alaskafamilysystems.com"><img src="{{ url_for('auth.logo') }}" alt="Alaska Family Systems" width="401" height="250" /></a>
+<div class="picture">
+<div class="pic"><svg class="draw" viewBox="-28 -31 309.4 295" preserveAspectRatio="xMidYMin meet" role="img" aria-labelledby="ev"><path class="tie" data-id="ar" d="M0 22V42H112V22"/><path class="tie" data-id="ol" d="M112 144.4V164.4H188V140"/><path class="kin" data-id="june" d="M0 96L0 42"/><path class="kin" data-id="owen" d="M112 91.6L112 42"/><path class="kin off" data-id="iris" d="M150 214L150 164.4"/><g class="p" data-id="arthur"><rect class="shape" x="-22" y="-22" width="44" height="44"/><path class="xd off" data-id="arthur" d="M-22 -22L22 22M22 -22L-22 22"/></g><g class="p" data-id="ruth"><circle class="shape" cx="112" cy="0" r="22"/></g><g class="p" data-id="june"><circle class="shape" cx="0" cy="118" r="22"/></g><g class="p on" data-id="owen"><rect class="you" x="85.6" y="91.6" width="52.8" height="52.8"/><rect class="shape" x="90" y="96" width="44" height="44"/></g><g class="p on" data-id="lena"><circle class="shape" cx="188" cy="118" r="22"/></g><g class="p off" data-id="iris"><circle class="shape" cx="150" cy="236" r="22"/></g><g class="pt" data-id="arthur"><text class="age" data-id="arthur" x="0" y="4.5">61</text><text class="lbn" x="30.8" y="-13" text-anchor="start">Arthur</text><text class="lbd" x="30.8" y="2" text-anchor="start">b. 1949</text><text class="lbd dl off" data-id="arthur" x="30.8" y="17" text-anchor="start">d. 2011</text></g><g class="pt" data-id="ruth"><text class="age" data-id="ruth" x="112" y="4.5">57</text><text class="lbn" x="142.8" y="-13" text-anchor="start">Ruth</text><text class="lbd" x="142.8" y="2" text-anchor="start">b. 1952</text></g><g class="pt" data-id="june"><text class="age" data-id="june" x="0" y="122.5">32</text><text class="lbn" x="30.8" y="105" text-anchor="start">June</text><text class="lbd" x="30.8" y="120" text-anchor="start">b. 1978</text></g><g class="pt" data-id="owen"><text class="age" data-id="owen" x="112" y="122.5">28</text><text class="lbn" x="117" y="68.2" text-anchor="start">Owen</text><text class="lbd" x="117" y="83.2" text-anchor="start">b. 1981</text></g><g class="pt" data-id="lena"><text class="age" data-id="lena" x="188" y="122.5">27</text><text class="lbn" x="218.8" y="105" text-anchor="start">Lena</text><text class="lbd" x="218.8" y="120" text-anchor="start">b. 1983</text></g><g class="pt off" data-id="iris"><text class="age off" data-id="iris" x="150" y="240.5"></text><text class="lbn" x="180.8" y="223" text-anchor="start">Iris</text><text class="lbd" x="180.8" y="238" text-anchor="start">b. 2014</text></g></svg></div>
+<svg class="tl" width="100%" height="44" aria-hidden="true"><rect class="mk band" data-i="2" x="45.58%" y="5" width="19.79%" height="14" rx="3"/><line class="base" x1="6.0%" y1="12" x2="98%" y2="12"/><line class="tick" x1="6.00%" y1="6" x2="6.00%" y2="18"/><text class="yr" x="6.00%" y="38" text-anchor="middle">2010</text><line class="tick" x1="25.79%" y1="6" x2="25.79%" y2="18"/><text class="yr" x="25.79%" y="38" text-anchor="middle">2011</text><line class="tick" x1="45.58%" y1="6" x2="45.58%" y2="18"/><text class="yr" x="45.58%" y="38" text-anchor="middle">2012</text><line class="tick" x1="65.37%" y1="6" x2="65.37%" y2="18"/><text class="yr" x="65.37%" y="38" text-anchor="middle">2013</text><line class="tick" x1="85.16%" y1="6" x2="85.16%" y2="18"/><text class="yr" x="85.16%" y="38" text-anchor="middle">2014</text><circle class="mk dot cur" data-i="0" cx="15.16%" cy="12" r="5.5"/><circle class="mk dot" data-i="1" cx="42.33%" cy="12" r="4"/><circle class="mk dot" data-i="3" cx="60.43%" cy="12" r="4"/><circle class="mk dot" data-i="4" cx="86.24%" cy="12" r="4"/></svg>
+<div class="step">
+<button type="button" class="stepbtn" data-step="back">Back</button>
+<p class="ev" id="ev"><span class="d">19 Jun 2010</span><span class="w">Owen and Lena married</span></p>
+<button type="button" class="stepbtn" data-step="next">Next</button>
+</div>
+<ul class="key">
+<li>Numbers are ages on that date</li>
+<li><svg viewBox="0 0 16 16" aria-hidden="true"><rect class="g" x="1.5" y="1.5" width="13" height="13"/><path class="x" d="M1.5 1.5L14.5 14.5M14.5 1.5L1.5 14.5"/></svg>died</li>
+<li><svg viewBox="0 0 16 16" aria-hidden="true"><rect class="o" x="0.5" y="0.5" width="15" height="15"/><rect class="g" x="3" y="3" width="10" height="10"/></svg>Owen, whose family this is</li>
+<li><svg viewBox="0 0 16 16" aria-hidden="true"><rect class="b" x="0" y="3" width="16" height="10" rx="2.5"/><line x1="0" y1="8" x2="16" y2="8" stroke="var(--wire)" stroke-width="1.5"/></svg>dated to the year</li>
+</ul>
+</div>
+<div class="plate">
+<h1>Family Diagram <span class="v">Version 3</span></h1>
+<p>An AI coach that keeps the story of your life. Tell it what happened, year by year; the record builds with every conversation, and it gets smarter at seeing patterns in the moments that matter.</p>
+<div class="act">
+<a class="go" href="#beta">Ask to join</a>
+<a class="alt" href="#link">Already invited?</a>
+</div>
+<p class="only">Beta access is by direct invitation only.</p>
+</div>
+</section>
 
-      <section id="link">
-        <h2>Already invited?</h2>
-        {% if link_sent %}
-          <p class="done">If that address has been invited, a sign-in link is on its way. It lasts one day.</p>
-        {% else %}
-          <p class="lead">Enter your email to receive your sign-in link.</p>
-          {% if unavailable %}<p class="error">{{ unavailable }}</p>
-          {% elif where == "link" and error %}<p class="error">{{ error }}</p>{% endif %}
-          <form method="post" action="{{ url_for('auth.signin_link') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <label>Email
-              <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" maxlength="255" value="{{ link_email or '' }}" required />
-            </label>
-            {% if site_key %}<div class="cf-turnstile" data-sitekey="{{ site_key }}" data-size="flexible"></div>{% endif %}
-            <button type="submit"{% if unavailable %} disabled{% endif %}>Send my link</button>
-          </form>
-        {% endif %}
-      </section>
+<div class="forms">
+<section class="form" id="link">
+<h2>Already invited?</h2>
+{% if link_sent %}
+<p class="done">If that address has been invited, a sign-in link is on its way. It lasts one day.</p>
+{% else %}
+<p class="lead">Enter your email to receive your sign-in link.</p>
+{% if unavailable %}<p class="error">{{ unavailable }}</p>
+{% elif where == "link" and error %}<p class="error">{{ error }}</p>{% endif %}
+<form method="post" action="{{ url_for('auth.signin_link') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+<label>Email
+<input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" maxlength="255" value="{{ link_email or '' }}" required />
+</label>
+{% if site_key %}<div class="cf-turnstile" data-sitekey="{{ site_key }}" data-size="flexible"></div>{% endif %}
+<button type="submit"{% if unavailable %} disabled{% endif %}>Send my link</button>
+</form>
+{% endif %}
+</section>
 
-      <section id="beta">
-        <h2>Not invited yet?</h2>
-        {% if beta_sent %}
-          <p class="done">Thanks. You are on the list and will hear from us when a spot opens.</p>
-        {% else %}
-          <p class="lead">Ask to be added to the early beta list.</p>
-          {% if unavailable %}<p class="error">{{ unavailable }}</p>
-          {% elif where == "beta" and error %}<p class="error">{{ error }}</p>{% endif %}
-          <form method="post" action="{{ url_for('auth.beta_request') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <label>Name
-              <input name="name" autocomplete="name" maxlength="200" value="{{ beta_name or '' }}" required />
-            </label>
-            <label>Email
-              <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" maxlength="255" value="{{ beta_email or '' }}" required />
-            </label>
-            <label>A few words about you and your interest <span class="optional">(optional)</span>
-              <textarea name="words" maxlength="2000">{{ beta_words or '' }}</textarea>
-            </label>
-            {% if site_key %}<div class="cf-turnstile" data-sitekey="{{ site_key }}" data-size="flexible"></div>{% endif %}
-            <button type="submit"{% if unavailable %} disabled{% endif %}>Ask to join</button>
-          </form>
-        {% endif %}
-      </section>
+<section class="form" id="beta">
+<h2>Not invited yet?</h2>
+{% if beta_sent %}
+<p class="done">Thanks. You are on the list and will hear from us when a spot opens.</p>
+{% else %}
+<p class="lead">Ask to be added to the early beta list.</p>
+{% if unavailable %}<p class="error">{{ unavailable }}</p>
+{% elif where == "beta" and error %}<p class="error">{{ error }}</p>{% endif %}
+<form method="post" action="{{ url_for('auth.beta_request') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+<label>Name
+<input name="name" autocomplete="name" maxlength="200" value="{{ beta_name or '' }}" required />
+</label>
+<label>Email
+<input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" maxlength="255" value="{{ beta_email or '' }}" required />
+</label>
+<label>A few words about you and your interest <span class="optional">(optional)</span>
+<textarea name="words" maxlength="2000">{{ beta_words or '' }}</textarea>
+</label>
+{% if site_key %}<div class="cf-turnstile" data-sitekey="{{ site_key }}" data-size="flexible"></div>{% endif %}
+<button type="submit"{% if unavailable %} disabled{% endif %}>Ask to join</button>
+</form>
+{% endif %}
+</section>
+</div>
+</main>
+<footer>
+<a href="https://alaskafamilysystems.com">© {{ year }} Alaska Family Systems</a>
+</footer>
+</div>
+<script type="application/json" id="steps">{% raw %}[{"d":"19 Jun 2010","w":"Owen and Lena married","who":["owen","lena"],"p":{"arthur":{"v":1,"age":61,"dead":0},"ruth":{"v":1,"age":57,"dead":0},"june":{"v":1,"age":32,"dead":0},"owen":{"v":1,"age":28,"dead":0},"lena":{"v":1,"age":27,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0}},{"d":"2 Nov 2011","w":"Arthur died","who":["arthur"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0}},{"d":"2012","w":"Ruth sold the house on Fell Street","who":["ruth"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0}},{"d":"Oct 2012","w":"Owen's back pain started","who":["owen"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":60,"dead":0},"june":{"v":1,"age":34,"dead":0},"owen":{"v":1,"age":31,"dead":0},"lena":{"v":1,"age":29,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0}},{"d":"21 Jan 2014","w":"Iris born","who":["iris"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":61,"dead":0},"june":{"v":1,"age":35,"dead":0},"owen":{"v":1,"age":32,"dead":0},"lena":{"v":1,"age":30,"dead":0},"iris":{"v":1,"age":0,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":1}}]{% endraw %}</script>
+<script>{% raw %}
+(function () {
+  var data = document.getElementById('steps');
+  if (data === null) { return; }
+  var S = JSON.parse(data.textContent);
+  var last = S.length - 1;
+  var i = 0;
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var auto = !still;
+  var timer = null;
+  var svg = document.querySelector('svg.draw');
+  var q = function (sel) { return svg.querySelector(sel); };
+  var back = document.querySelector('[data-step="back"]');
+  var next = document.querySelector('[data-step="next"]');
+  var date = document.querySelector('.ev .d');
+  var words = document.querySelector('.ev .w');
+  var marks = document.querySelectorAll('svg.tl .mk');
+  var setOff = function (el, on) { if (el) { el.classList.toggle('off', !on); } };
+  function show(k) {
+    var s = S[k];
+    Object.keys(s.p).forEach(function (id) {
+      var st = s.p[id];
+      var g = q('g.p[data-id="' + id + '"]');
+      setOff(g, st.v);
+      setOff(q('g.pt[data-id="' + id + '"]'), st.v);
+      if (g) { g.classList.toggle('on', s.who.indexOf(id) !== -1); }
+      var age = q('text.age[data-id="' + id + '"]');
+      if (age) { age.textContent = st.age === null ? '' : String(st.age); setOff(age, st.age !== null); }
+      setOff(q('path.xd[data-id="' + id + '"]'), st.dead);
+      setOff(q('text.dl[data-id="' + id + '"]'), st.dead);
+    });
+    Object.keys(s.t).forEach(function (id) { setOff(q('path.tie[data-id="' + id + '"]'), s.t[id]); });
+    Object.keys(s.k).forEach(function (id) { setOff(q('path.kin[data-id="' + id + '"]'), s.k[id]); });
+    date.textContent = s.d;
+    words.textContent = s.w;
+    marks.forEach(function (m) {
+      var on = Number(m.getAttribute('data-i')) === k;
+      m.classList.toggle('cur', on);
+      if (m.tagName === 'circle') { m.setAttribute('r', on ? '5.5' : '4'); if (on) { m.parentNode.appendChild(m); } }
+    });
+    back.disabled = k === 0;
+    next.disabled = k === last;
+  }
+  function stop() {
+    auto = false;
+    if (timer !== null) { window.clearTimeout(timer); timer = null; }
+  }
+  function tick() {
+    timer = null;
+    if (!auto || i >= last) { return; }
+    i += 1;
+    show(i);
+    timer = window.setTimeout(tick, 2500);
+  }
+  back.addEventListener('click', function () { stop(); if (i > 0) { i -= 1; show(i); } });
+  next.addEventListener('click', function () { stop(); if (i < last) { i += 1; show(i); } });
+  show(0);
+  if (auto) { timer = window.setTimeout(tick, 2500); }
+})();
 
-      <footer>
-        <a href="https://alaskafamilysystems.com">© {{ year }} Alaska Family Systems</a>
-      </footer>
-    </main>
-    <script>
-      // A sent form is finished: a second tap would send a second email.
-      (function () {
-        for (var i = 0; i < document.forms.length; i++) {
-          document.forms[i].addEventListener("submit", function (sent) {
-            if (this.dataset.sent) {
-              sent.preventDefault();
-              return;
-            }
-            this.dataset.sent = "1";
-            var go = this.querySelector('button[type="submit"]');
-            if (go) window.setTimeout(function () { go.disabled = true; }, 0);
-          });
-        }
-      })();
-    </script>
+// A sent form is finished: a second tap would send a second email.
+(function () {
+  for (var i = 0; i < document.forms.length; i++) {
+    document.forms[i].addEventListener("submit", function (sent) {
+      if (this.dataset.sent) {
+        sent.preventDefault();
+        return;
+      }
+      this.dataset.sent = "1";
+      var go = this.querySelector('button[type="submit"]');
+      if (go) window.setTimeout(function () { go.disabled = true; }, 0);
+    });
+  }
+})();
+{% endraw %}</script>
   </body>
 </html>
