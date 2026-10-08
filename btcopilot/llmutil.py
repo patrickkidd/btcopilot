@@ -706,12 +706,14 @@ async def claude_structured(prompt, response_format, model, schema, limit):
     full_prompt = prompt + CLAUDE_JSON_INSTRUCTION.format(schema=json.dumps(schema))
 
     client = _extraction_anthropic_client()
-    async with client.messages.stream(
-        model=wire_model(model),
+    resolved_model = wire_model(model)
+    async with client.beta.messages.stream(
+        model=resolved_model,
         max_tokens=limit,
         thinking={"type": "adaptive"},
         output_config={"effort": STRUCTURED_EFFORT},
         messages=[{"role": "user", "content": full_prompt}],
+        **fallback_args(resolved_model),
     ) as stream:
         response = await stream.get_final_message()
 
