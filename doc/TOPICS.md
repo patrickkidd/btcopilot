@@ -488,6 +488,8 @@ their pages https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.a
 so the picture can say it.
 **Updated:** 2026-09-22.
 
+**2026-10-08 (FD-375):** the reading is settled: a cluster is a loose hypothesis of a broader family process, none spans more than ten years, none is named by its years, one reading per family so none overlap, and the coach asks about the wider family around its years [R-0841 to R-0846]; DETECTION_VERSION 9. Details in doc/CLUSTERS.md; clusters also show as hypothesis chips on the case report's guess card (T-19).
+
 ## T-7 · The drawn family and auto-arrange
 
 **Status:** off the path, on the list [R-0240].
@@ -1038,11 +1040,13 @@ report.ts, gallery5.ts, main5.ts, the whole-record case data read at build time)
 the real screen for the seminar, in a new session started from these notes.
 **Updated:** 2026-10-02.
 
+**2026-10-08 (FD-375):** card six, the coach's guess, now shows clusters as hypothesis chips beside its one to three chosen guesses; clusters are settled in T-6 and doc/CLUSTERS.md.
+
 ## T-20 · FD-375 fast-follow: what is built, what Patrick must rule on
 
-**Status:** built on branch FD-375 (draft PR 155), not deployed; the deploy for Patrick to test is waiting on the independent verifier. The branch carries FD-371-dates and FD-372 (merged at c1ff3af9). Production runs FD-372; the deploy lock is still on FD-372.
+**Status:** deployed 2026-10-09 as fd-375-gf73d6d8 (branch FD-375, draft PR 155 awaiting his merge). The clusters reading was settled 2026-10-08 [R-0841 to R-0846, see T-6]. The branch carries FD-371-dates and FD-372 (merged at c1ff3af9). Production runs FD-372; the deploy lock is still on FD-372.
 **Decided:** the Executive Summary card and what a good summary reads like [R-0820, R-0821]; one family-history opening in the case report; the out-of-date sheet, "Refresh the report" and "Show the last report" [R-0825, R-0826, R-0827]; attachments, 20 MB, a PDF read 25 pages a call, a part cut off at the output limit fails the read [R-0828, R-0829, R-0830]; a person's corrections are tuning signals and a submitted report is emailed [R-0822, R-0823, R-0824]; "Better replies" removed [R-0831]; the notifications card and Account row [R-0832]; CI runs unit tests only [R-0800].
 **Open:** (1) [ruling] the limit on how far apart two events in one cluster may be, against R-0375: on his diagram one cluster spans decades and the model merged three groups into it. (2) [ruling] which couple the couple card shows when a person has several. (3) [ruling] card nine (what to work on): it stays empty when no guess cites the event where he said what he is working on; whether the catch-up fills it. (4) [ruling] the father's siblings: where they sit in the coverage order, and a check that the count said in the thread matches the people in the diagram. (5) [ruling] facts to find: a question closed as unknown when he says he will find out, and held questions not shown. (6) [ruling] local browser tests scoped to the change, and the target browsers (phone Safari, phone Chrome, desktop Chrome, Safari, Firefox, Edge) [R-0800 direction]. (7) [ruling] the blank space in the play-by-play drawer. (8) [ruling] the animation when someone's functioning goes down. (9) [ruling] reading a long PDF: it is read inside the send request, and a long one exceeds the 120 second web timeout; reading it on the worker is an architecture choice for him. (10) [build] a study of his hypothesis that hard stretches follow hits to the grandparents' generation, as a worker job, on his confirmation. (11) [verify] attachments on his own diagram and in WebKit; notifications on a real iPhone and Mac. (12) [build] after the deploy, `flask admin case-report rewrite` on diagrams 1 (subscription, $0), 11, 79, 2 and 13 (paid, about $0.50 to $0.80 together, needs his yes), backup first. (13) [verify] the verifier's pass on the branch before the deploy.
 **Lives in:** branch FD-375, draft PR 155; doc/API.md (case report rewrites, attachments); doc/SCREENS.md; btcopilot/casereport.py, btcopilot/admin/casereport.py; web/src/attachment.ts, outdated.ts, casereport.ts; evals tests/live/test_executivesummary.py, test_casereportrewrite.py, test_casereportcards.py; box commands in the casereport handover under ~/.claude/jobs/6dcb6777/tmp/.
-**Next action:** the verifier walks the branch; then the deploy lock moves to FD-375 on his word, the release is dispatched from FD-375, and he tests.
+**Next action:** he tests the deployed build and answers the five open threads in STATE.md; the case-report rewrite catch-up waits on his spend yes.
 **Updated:** 2026-10-07.

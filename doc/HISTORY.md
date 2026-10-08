@@ -2217,3 +2217,14 @@ designed after; a feature is regrounded in the review that made it (FD-367 for t
 Left with Patrick, not built: see T-20. The FD-375 deploy for him to test waits on the independent
 verifier. After that deploy the catch-up runs on diagrams 1 (subscription, $0), 11, 79, 2 and 13
 (paid, about $0.50 to $0.80 together), backup first.
+
+## 2026-10-08 and 09 — FD-375: the clusters reading settled, the branch deployed as fd-375-gf73d6d8 [T-20, T-6, T-19]
+
+Patrick settled the clusters reading on 2026-10-08: a cluster is held as a guess about a larger family
+process, the coach asks about the wider family around it, and a cluster named by its years is never
+stored or handed back [Oracle: R-0841, R-0846] (DETECTION_VERSION 9). The couple card now starts at the Bonded
+event and follows Bowen's household stages. The guess card shows clusters as hypothesis chips. FD-375
+was deployed to production on 2026-10-09 as fd-375-gf73d6d8 (HEAD f73d6d87); PR 155 stays a draft
+awaiting his merge. Left: five Greptile threads for his rulings, the case-report rewrite catch-up (needs
+his spend yes), the command to reopen find-out questions, and whether one writer should produce both
+clusters and the coach's guess.
