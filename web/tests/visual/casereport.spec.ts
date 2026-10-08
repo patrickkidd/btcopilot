@@ -9,6 +9,8 @@ import { stateFor, type Key } from "./setup";
  * and its taps: a strip item glides to its card, a chip lights the timeline,
  * a book raises its passages. Geometry and words only, no golden pictures. */
 
+// The app draws names at 13px; WebKit reports the scaled size as 12.999, so allow 0.01px.
+const NAME_PX = 13 - 0.01;
 const FIXTURES: Key[] = ["case-report", "case-report-thin", "case-report-dense"];
 const SIZES = [
   { width: 393, height: 852 },
@@ -329,7 +331,7 @@ test.describe("the case report's family pictures of a family many phones wide", 
   test("draw names at 13px or more and pan in their own frames, every word inside what the frame scrolls to", async ({ page }) => {
     const errors = await open(page);
     const pictures = "#case-body .fam svg";
-    expect(await leastName(page, pictures)).toBeGreaterThanOrEqual(13);
+    expect(await leastName(page, pictures)).toBeGreaterThanOrEqual(NAME_PX);
     expect(await wordsOutside(page, pictures)).toEqual([]);
     expect(await page.locator("#case-body .fam").evaluateAll((f) => f.some((d) => d.scrollWidth > d.clientWidth))).toBe(true);
     await page.locator("#case-family").click();
@@ -339,7 +341,7 @@ test.describe("the case report's family pictures of a family many phones wide", 
     const own = await page.locator("#case-famout .fam[data-who]").first().getAttribute("data-who");
     expect(await page.locator(`#case-famout .fam .pt[data-id="${own}"]`).first().textContent()).toContain("Margaret-Anne");
     expect(await cutInFrame(page, "#case-famout .fam[data-who]", [own!])).toEqual({ fits: true, cut: {} });
-    expect(await leastName(page, slid)).toBeGreaterThanOrEqual(13);
+    expect(await leastName(page, slid)).toBeGreaterThanOrEqual(NAME_PX);
     expect(await wordsOutside(page, slid)).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect(errors).toEqual([]);

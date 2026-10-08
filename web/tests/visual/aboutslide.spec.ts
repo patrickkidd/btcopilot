@@ -98,8 +98,8 @@ test("scrolling up the chat slides the about page out at its full height before 
   expect(full).toBeGreaterThan(100);
 
   const seen = await frames(page, async () => {
-    await page.locator("#chat").hover();
-    await page.mouse.wheel(0, -400);
+    // mobile WebKit has no mouse.wheel; the page listens for the chat's own scroll event
+    await page.locator("#chat").evaluate((el) => el.scrollBy(0, -400));
   });
   expect(seen.some((s) => s.sliding)).toBe(true);
   // it goes back up, over several frames
