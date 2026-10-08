@@ -224,7 +224,7 @@ it("keeps every date inside a chip: no lead line names a year or a month", () =>
   const v = caseView(tl, [{ kind: SessionKind.Chat, last_activity: "2026-10-01T10:00:00" } as Session], "");
   const parted = halloran();
   parted.events.push(event(300, EventKind.Separated, "2020-01-01", { person: 1, spouse: 10 }));
-  const leads = [v.brought.lead, v.brought.asked, v.couple.lead, v.effort, ...v.sides.map((s) => s.lead), ...caseView(parted, ONE, "").stages.map((r) => r.label)];
+  const leads = [v.brought.lead, v.brought.asked, v.couple.lead, v.couple.needs, v.effort, ...v.sides.map((s) => s.lead), ...caseView(parted, ONE, "").stages.map((r) => r.label)];
   for (const line of leads) expect(line).not.toMatch(/\b(1[89]|20)\d\d\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/);
   expect(v.brought.lead).toBe("Nora's symptoms appear in 2 events in the diagram.");
 });
@@ -247,4 +247,211 @@ it("counts only chats as the person talking with the coach, never a note or a re
   expect([v.brought.asked, v.effort]).toEqual(["", ""]);
   const chatted = caseView(halloran(), [...notes, { kind: SessionKind.Chat } as Session], "");
   expect(chatted.effort).toBe("Nora has talked with the coach in one session.");
+});
+
+/** Lena and Omar, invented, since their courtship: Lena's parents Harold and
+ * Ruth and her sister Dana; Omar's parents Samir and Farida and his brother
+ * Karim; their children Noor and Eli; Noor's husband Jonah; Omar's earlier
+ * wife Celia and their son Milo. */
+function lenaOmar(): Timeline {
+  const shift = (id: number, date: string, who: number, title: string, fields: Partial<TimelineEvent> = {}) =>
+    event(id, EventKind.Shift, date, { person: who, title, ...fields });
+  const noted = (id: number, date: string | null, who: number, title: string, fields: Partial<TimelineEvent> = {}) =>
+    event(id, EventKind.Noted, date, { person: who, title, ...fields });
+  return {
+    ...emptyTimeline(),
+    people: [
+      person(1, "Lena", "female", 40, true),
+      person(2, "Omar", "male", 41),
+      person(3, "Ruth", "female"),
+      person(4, "Harold", "male"),
+      person(5, "Dana", "female", 40),
+      person(6, "Farida", "female"),
+      person(7, "Samir", "male"),
+      person(8, "Karim", "male", 41),
+      person(9, "Noor", "female", 42),
+      person(10, "Eli", "male", 42),
+      person(11, "Celia", "female"),
+      person(12, "Milo", "male", 43),
+      person(13, "Jonah", "male"),
+    ],
+    pair_bonds: [
+      { id: 40, person_a: 4, person_b: 3, married: true },
+      { id: 41, person_a: 7, person_b: 6, married: true },
+      { id: 42, person_a: 1, person_b: 2, married: true },
+      { id: 43, person_a: 2, person_b: 11, married: true },
+      { id: 44, person_a: 9, person_b: 13, married: true },
+    ],
+    events: [
+      // Omar's earlier marriage, and his drinking before he met Lena
+      event(330, EventKind.Married, "1989-05-01", { person: 2, spouse: 11 }),
+      event(331, EventKind.Birth, "1991-03-01", { person: 2, spouse: 11, child: 12, person_name: "Milo" }),
+      shift(333, "1993-01-01", 2, "Drank heavily", { symptom: "up" }),
+      event(332, EventKind.Divorced, "1994-02-01", { person: 2, spouse: 11 }),
+      // the couple
+      noted(300, "1995-05-01", 1, "First date with Omar", { relationshipTargets: [2] }),
+      event(301, EventKind.Bonded, "1996-08-01", { person: 1, spouse: 2 }),
+      shift(303, "1997-04-01", 1, "Anxious before the wedding", { anxiety: "up" }),
+      noted(302, "1997-12-01", 1, "Engaged"),
+      event(304, EventKind.Married, "1998-06-01", { person: 1, spouse: 2, location: "Portland" }),
+      shift(305, "1998-06-01", 6, "Did not come to the wedding", { relationship: "distance", relationshipTargets: [2] }),
+      noted(306, "1999-03-01", 2, "Moved to Tucson for Omar's job", { location: "Tucson" }),
+      shift(307, "1999-09-01", 1, "Anxious", { anxiety: "up" }),
+      event(308, EventKind.Birth, "2000-02-01", { person: 1, spouse: 2, child: 9, person_name: "Noor" }),
+      shift(309, "2000-05-01", 2, "Working late every night", { functioning: "down" }),
+      shift(310, "2001-09-01", 4, "Heart attack", { symptom: "up" }),
+      noted(311, "2002-01-01", 1, "Lost her job at the clinic"),
+      event(312, EventKind.Birth, "2003-07-01", { person: 1, spouse: 2, child: 10, person_name: "Eli" }),
+      noted(325, "2004-01-01", 2, "Worked in another state for six months"),
+      event(313, EventKind.Death, "2005-03-01", { person: 3, person_name: "Ruth" }),
+      shift(314, "2005-06-01", 1, "Migraines back", { symptom: "up" }),
+      shift(315, "2005-08-01", 2, "Distant", { relationship: "distance", relationshipTargets: [1] }),
+      shift(316, "2005-09-01", 9, "Refused school for a month", { symptom: "up" }),
+      event(321, EventKind.Married, "2006-05-01", { person: 5 }),
+      event(319, EventKind.Divorced, "2008-06-01", { person: 8 }),
+      event(317, EventKind.Death, "2009-01-01", { person: 7, person_name: "Samir" }),
+      shift(318, "2012-04-01", 2, "Closer to his mother", { relationship: "toward", relationshipTargets: [6] }),
+      shift(322, "2013-05-01", 6, "Stroke", { symptom: "up" }),
+      noted(323, "2013-06-01", 6, "Moved into the spare room", { location: "Tucson" }),
+      shift(324, "2014-03-01", 1, "Conflict with Farida", { relationship: "conflict", relationshipTargets: [6] }),
+      shift(334, "2016-01-01", 2, "Lent Karim money", { relationship: "toward", relationshipTargets: [8] }),
+      noted(328, "2018-08-01", 9, "Left for college", { location: "Eugene" }),
+      event(326, EventKind.Married, "2024-06-01", { person: 9, spouse: 13 }),
+      shift(327, "2025-02-01", 9, "Burned out at work", { functioning: "down" }),
+      noted(335, null, 1, "Moved without telling anyone"),
+    ],
+  };
+}
+
+const faces = (v: ReturnType<typeof caseView>) => v.couple.stages.map((st) => [st.head.face, ...st.facts.map((f) => f.face)]);
+const under = (v: ReturnType<typeof caseView>, head: string) => faces(v).find((row) => row[0].endsWith(` · ${head}`))!.slice(1);
+
+// R-0833
+it("begins the couple card at the Bonded event, the courtship, and holds everything of theirs from then on", () => {
+  const v = caseView(lenaOmar(), ONE, "");
+  expect(v.married).toBe(true);
+  expect(v.couple.lead).toBe("Lena and Omar are married.");
+  const all = faces(v).flat().join("\n");
+  expect(all).not.toContain("First date with Omar");
+  expect(all).not.toContain("Drank heavily");
+  // every event of either partner from the courtship to the wedding, aimed at no one or anyone
+  expect(under(v, "got together")).toEqual(["Apr 1997 · Anxious before the wedding", "Dec 1997 · Engaged"]);
+});
+
+// R-0833
+it("shows an earlier marriage of either partner and its children before the couple, as Kerr places them", () => {
+  const v = caseView(lenaOmar(), ONE, "");
+  expect(faces(v)[0]).toEqual(["May 1989 · Omar and Celia married", "Mar 1991 · Milo · birth", "Feb 1994 · Omar · divorced"]);
+  expect(faces(v)[1][0]).toBe("Aug 1996 · got together");
+});
+
+// R-0833
+it("puts every shift of either partner on the card, aimed at the other, at a relative or at no one", () => {
+  const v = caseView(lenaOmar(), ONE, "");
+  const all = faces(v).flat();
+  expect(all).toContain("Sep 1999 · Anxious");
+  expect(all).toContain("May 2000 · Omar · Working late every night");
+  expect(all).toContain("Aug 2005 · Omar · Distant");
+  expect(all).toContain("Jun 2005 · Migraines back");
+  // a partner's event aimed at their own parent or an in-law is the couple's own
+  expect(all).toContain("Apr 2012 · Omar · Closer to his mother");
+  expect(all).toContain("Mar 2014 · Conflict with Farida");
+});
+
+// R-0835
+it("opens a stage at each child's birth and keeps the shifts around it under it, with moves, work and time apart as chips", () => {
+  const v = caseView(lenaOmar(), ONE, "");
+  expect(under(v, "Noor born")).toEqual([
+    "May 2000 · Omar · Working late every night",
+    "Sep 2001 · Harold · Heart attack",
+    "Jan 2002 · Lost her job at the clinic",
+  ]);
+  expect(under(v, "married").slice(0, 2)).toEqual(["Jun 1998 · Farida · Did not come to the wedding", "Mar 1999 · Omar · Moved to Tucson for Omar's job"]);
+  expect(under(v, "Eli born")[0]).toBe("Jan 2004 · Omar · Worked in another state for six months");
+});
+
+// R-0833
+it("shows a child's marked shifts and moves while at home, and a grown child's marriage as a stage of its own", () => {
+  const v = caseView(lenaOmar(), ONE, "");
+  const all = faces(v).flat();
+  expect(all).toContain("Sep 2005 · Noor · Refused school for a month");
+  expect(all).toContain("Aug 2018 · Noor · Left for college");
+  expect(faces(v).map((row) => row[0])).toContain("Jun 2024 · Noor married");
+  // once married, Noor's own life is her own card
+  expect(all).not.toContain("Burned out at work");
+});
+
+// R-0834
+it("always shows a death or serious illness of either partner's parent or sibling, named, wherever they live", () => {
+  const v = caseView(lenaOmar(), ONE, "");
+  const all = faces(v).flat();
+  expect(all).toContain("Sep 2001 · Harold · Heart attack");
+  expect(all).toContain("Mar 2005 · Ruth · death");
+  expect(all).toContain("May 2013 · Farida · Stroke");
+  // Samir's death falls more than two years from any event of the couple's own, and is shown all the same
+  expect(all).toContain("Jan 2009 · Samir · death");
+});
+
+// R-0834
+it("shows any other relative's event only when the record ties them to a partner and it falls within two years of an event of the couple's own", () => {
+  const v = caseView(lenaOmar(), ONE, "");
+  const all = faces(v).flat();
+  // tied by her distance aimed at Omar, on the wedding's own day
+  expect(all).toContain("Jun 1998 · Farida · Did not come to the wedding");
+  // tied, within two years of Omar drawing closer to her
+  expect(all).toContain("Jun 2013 · Farida · Moved into the spare room");
+  // tied by Omar's loan, but no event of the couple's own within two years of his divorce
+  expect(all.join("\n")).not.toContain("Karim · ");
+  // within two years of Noor's school refusal, but nothing in the record ties Dana to either partner
+  expect(all.join("\n")).not.toContain("Dana · ");
+});
+
+// R-0835
+it("groups the couple card under Bowen's stage heads in date order, the same heads the unmarried card uses", () => {
+  const tl = lenaOmar();
+  const heads = caseView(tl, ONE, "").couple.stages.map((st) => st.head.face);
+  expect(heads).toEqual([
+    "May 1989 · Omar and Celia married",
+    "Aug 1996 · got together",
+    "Jun 1998 · married",
+    "Feb 2000 · Noor born",
+    "Jul 2003 · Eli born",
+    "Jun 2024 · Noor married",
+  ]);
+  const dates = (ids: number[]) => ids.map((id) => tl.events.find((e) => e.id === id)!.dateTime!);
+  for (const st of caseView(tl, ONE, "").couple.stages) expect(dates(st.facts.map((f) => f.id))).toEqual([...dates(st.facts.map((f) => f.id))].sort());
+  // the same words the unmarried card gives its stages
+  tl.events.push(event(400, EventKind.Separated, "2026-01-01", { person: 1, spouse: 2 }));
+  const unmarried = caseView(tl, ONE, "").stages.find((r) => r.label === "Lena and Omar")!;
+  expect(unmarried.stages.map((st) => st.head.face).slice(0, 4)).toEqual(heads.slice(1, 5));
+  const html = cards(caseView(lenaOmar(), ONE, ""), false).split(`data-card="${Card.Couple}"`)[1].split("</section>")[0];
+  expect(html.match(/<div class="chips">/g)).toHaveLength(6);
+  expect(html).toContain(`data-book="3"`);
+});
+
+// R-0835
+it("says what the couple card still needs of the floor: the marriage date, each partner's place among brothers and sisters, the children in order", () => {
+  const full = caseView(lenaOmar(), ONE, "");
+  expect(full.couple.needs).toBe("");
+  // Daniel's parents are not in the record
+  expect(caseView(halloran(), ONE, "").couple.needs).toBe("This card still needs where Daniel stands among his brothers and sisters.");
+  const thin: Timeline = {
+    ...emptyTimeline(),
+    people: [person(1, "Ines", "female", null, true), person(2, "Theo", "male")],
+    pair_bonds: [{ id: 50, person_a: 1, person_b: 2, married: true }],
+  };
+  const v = caseView(thin, ONE, "");
+  expect(v.married).toBe(true);
+  expect(v.couple.stages).toEqual([]);
+  expect(v.couple.needs).toBe("This card still needs when Ines and Theo married, where each of them stands among their brothers and sisters, and the children, in order.");
+  const html = cards(v, false).split(`data-card="${Card.Couple}"`)[1].split("</section>")[0];
+  expect(html).toContain("This card still needs");
+  expect(html).not.toContain("not in the record");
+});
+
+// R-0696
+it("never puts an undated event on the couple card", () => {
+  const all = faces(caseView(lenaOmar(), ONE, "")).flat().join("\n");
+  expect(all).not.toContain("Moved without telling anyone");
+  expect(all).not.toMatch(/NaN|undefined|null/);
 });

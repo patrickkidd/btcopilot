@@ -176,7 +176,13 @@ function body(card: Card, v: CaseView): string {
       return lead(b.lead) + (course.length ? sublabel("The trouble's course, dated") + chips(course) : "") + lead(b.asked);
     }
     case Card.Couple:
-      if (v.married) return lead(v.couple.lead) + chips(v.couple.facts.map(factChip));
+      // married: Bowen's stages, each head a chip with its events under it (R-0835), then what the card still needs
+      if (v.married)
+        return (
+          lead(v.couple.lead) +
+          (v.couple.stages.length ? `<div class="stage">${v.couple.stages.map((st) => chips([factChip(st.head), ...st.facts.map(factChip)])).join("")}</div>` : "") +
+          lead(v.couple.needs)
+        );
       return v.stages
         .map((row) => `<div class="stage">${sublabel(row.label)}${row.stages.map((st) => chips([factChip(st.head), ...st.facts.map(factChip)])).join("")}</div>`)
         .join("");

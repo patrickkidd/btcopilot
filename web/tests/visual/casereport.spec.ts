@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "./fixtures";
 import { cutInFrame, leastName, wordsOutside } from "./gate";
 import { stateFor, type Key } from "./setup";
@@ -16,11 +17,14 @@ const SIZES = [
 const SCHEMES = ["light", "dark"] as const;
 
 /** The passages are private and CI has no key to the corpus, so the page is
- * answered with made-up ones for every book, keyed as the corpus keys them;
- * `fail` refuses that many reads first. */
-const PASSAGES = Object.fromEntries(
-  ["why", "1", "2", "3", "3s", "4", "6", "7a", "9a", "10", "order"].map((book) => [book, [{ text: `A made-up passage for ${book}.`, by: "A made-up author" }]]),
-);
+ * answered with made-up ones for every book, keyed as the corpus keys them,
+ * or with the corpus's own file when PASSAGES_FILE names it; `fail` refuses
+ * that many reads first. */
+const PASSAGES: Record<string, { text: string; by: string }[]> = process.env.PASSAGES_FILE
+  ? JSON.parse(readFileSync(process.env.PASSAGES_FILE, "utf8"))
+  : Object.fromEntries(
+      ["why", "1", "2", "3", "3s", "4", "6", "7a", "9a", "10", "order"].map((book) => [book, [{ text: `A made-up passage for ${book}.`, by: "A made-up author" }]]),
+    );
 
 async function answer(page: Page, fail = 0): Promise<void> {
   await page.route("**/case-report-passages*", (route) =>
@@ -341,3 +345,61 @@ test.describe("the case report's family pictures of a family many phones wide", 
     expect(errors).toEqual([]);
   });
 });
+
+/** The couple card on the Halloran fixture (Nora and Daniel, married, one
+ * daughter, Nora's parents in the record and Daniel's not), at a phone's and a
+ * desktop's size. */
+for (const size of [SIZES[0], { width: 1440, height: 900 }])
+  test.describe(`the couple card at ${size.width}`, () => {
+    test.use({ storageState: stateFor("case-report"), viewport: size });
+
+    // R-0833, R-0834, R-0835
+    test("groups the couple's events under Bowen's stage heads in date order, each head a chip, and says what it still needs", async ({ page }) => {
+      const errors = await open(page);
+      const card = page.locator('#case-body .level[data-card="couple"]');
+      await card.scrollIntoViewIfNeeded();
+      await expect(card.locator("p.label")).toHaveText("4 · The couple since they met");
+      await expect(card.locator("p.lead").first()).toHaveText("Nora and Daniel are married.");
+      const rows = card.locator(".stage .chips");
+      await expect(rows).toHaveCount(2);
+      expect(await rows.locator(".chip:first-child").allTextContents()).toEqual(["Jun 2009 · married", "May 2012 · Lily born"]);
+      // under married: Nora's fights with Daniel; under Lily born: Daniel's job, named; and her mother's illness, always
+      await expect(rows.nth(0)).toContainText("Jun 2011 · Fights over money");
+      await expect(rows.nth(1)).toContainText("Feb 2014 · Daniel · Lost his job");
+      await expect(rows.nth(1)).toContainText("Apr 2018 · Elaine · Hospitalized with pneumonia");
+      await expect(rows.nth(1)).toContainText("Jan 2019 · Stopped visiting her mother");
+      // nothing of hers from before the marriage
+      await expect(card).not.toContainText("Stopped sleeping well");
+      await expect(card.locator("p.lead").last()).toHaveText("This card still needs where Daniel stands among his brothers and sisters.");
+      // every chip whole and inside the card, nothing sideways
+      const geometry = await card.evaluate((level) => {
+        const box = level.getBoundingClientRect();
+        const chips = [...level.querySelectorAll<HTMLElement>(".chips .chip")];
+        return {
+          outside: chips.filter((c) => c.getBoundingClientRect().right > box.right + 0.5 || c.getBoundingClientRect().left < box.left - 0.5).length,
+          sideways: document.documentElement.scrollWidth > window.innerWidth,
+        };
+      });
+      expect(geometry).toEqual({ outside: 0, sideways: false });
+      expect(errors).toEqual([]);
+    });
+
+    // R-0835, R-0691
+    test("its book raises the passages behind the stages and the selection rule, each with its book and chapter", async ({ page }) => {
+      await open(page);
+      const card = page.locator('#case-body .level[data-card="couple"]');
+      await card.scrollIntoViewIfNeeded();
+      await card.locator(".book").click();
+      const sheet = page.locator("#case-screen .fs-sheet.bk");
+      await expect(sheet).toHaveClass(/in/);
+      await expect(sheet.locator(".cf-t")).toHaveText("The couple since they met");
+      const want = PASSAGES["3"];
+      await expect(sheet.locator("blockquote")).toHaveCount(want.length);
+      expect(await sheet.locator("blockquote").allTextContents()).toEqual(want.map((p) => p.text));
+      expect(await sheet.locator(".bk-by").allTextContents()).toEqual(want.map((p) => p.by));
+      // every passage names its book and where in it
+      for (const by of want.map((p) => p.by)) expect(by).toMatch(/(ch\. \d|p\. \d|lines \d|Basic Series \d)/);
+      await sheet.locator(".cardx").click();
+      await expect(sheet).not.toHaveClass(/in/);
+    });
+  });
