@@ -1016,7 +1016,7 @@ def test_the_fallback_joins_two_runs_that_share_years():
     """Two people's runs over the same years stay two proposals for the model;
     the fallback, which stores what it is given, joins them into one."""
     assert grouped(INSIDE) == [INSIDE_ONE, INSIDE_TWO]
-    result = by_years(INSIDE, "key")
+    result, _ = by_years(INSIDE, "key")
     assert [c.eventIds for c in result.clusters] == [
         [40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 47]
     ]
@@ -1135,7 +1135,7 @@ STRADDLED = record(
 def test_the_fallback_cuts_its_groups_around_the_persons_own():
     # R-0839, R-0780
     assert grouped(STRADDLED) == [[30, 31, 34, 20, 21, 22, 35, 36, 37]]
-    result = by_years(STRADDLED, "key")
+    result, _ = by_years(STRADDLED, "key")
     assert [c.eventIds for c in result.clusters] == [[30, 31, 34], [35, 36, 37]]
     assert spans(result) == [("2008", "2008"), ("2010", "2011")]
 
@@ -1222,3 +1222,35 @@ def test_refused_twice_removes_nothing_when_every_stored_group_passes(test_user)
     assert done is None
     assert removed == []
     assert kept == ["u1", "c2"]
+
+
+def test_the_fallback_stores_no_joined_group_over_ten_years(test_user):
+    # R-0837, R-0840
+    """Her eight years and his five share years, so the fallback joins them;
+    the joined group runs twelve years and is not stored."""
+    data = record(
+        moment(80, "2010-01-01", person=1, anxiety=VariableShift.Up),
+        moment(81, "2011-05-01", person=1, anxiety=VariableShift.Up),
+        moment(82, "2012-09-01", person=1, anxiety=VariableShift.Up),
+        moment(83, "2014-01-01", person=1, anxiety=VariableShift.Up),
+        moment(84, "2015-05-01", person=1, anxiety=VariableShift.Up),
+        moment(85, "2016-09-01", person=1, anxiety=VariableShift.Up),
+        moment(86, "2018-01-01", person=1, anxiety=VariableShift.Up),
+        moment(90, "2017-06-01", person=2, symptom=VariableShift.Up),
+        moment(91, "2018-10-01", person=2, symptom=VariableShift.Up),
+        moment(92, "2020-02-01", person=2, symptom=VariableShift.Up),
+        moment(93, "2021-06-01", person=2, symptom=VariableShift.Up),
+        moment(94, "2022-01-01", person=2, symptom=VariableShift.Up),
+    )
+    assert grouped(data) == [[80, 81, 82, 83, 84, 85, 86], [90, 91, 92, 93, 94]]
+    regrouped(test_user, data)
+    assert test_user.free_diagram.get_diagram_data().clusters == []
+    failed = [
+        o.detail["detail"]
+        for o in Observation.query.filter_by(kind=ObservationKind.ClusterFailed)
+        if o.detail["check"] == ClusterCheck.TooLong.value
+    ]
+    assert failed == [
+        "Fallback grouping '2010–2022' (2010-01-01 to 2022-01-01) fails the "
+        "10-year check"
+    ]

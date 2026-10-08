@@ -74,7 +74,10 @@ fallback (`by_years`), which stores what it is given, joins proposals whose
 years overlap into one, whatever their people (`_one_axis`), leaves out the
 person's own events and any dated inside their clusters' years, and cuts a
 proposal wherever one of their clusters falls (`_apart`), so the fallback never
-stores an overlap either; groups that only touch stay two.
+stores an overlap either; groups that only touch stay two. A joined group running past ten years is
+dropped rather than split, logged and written as a `cluster_failed`
+observation, and its events wait for the next accepted regroup
+[Oracle: R-0837, R-0840].
 
 **A stored cluster that fails the check is not handed back [Oracle: R-0838].**
 "Keep what is there" protects a reading, not a category error: a stored

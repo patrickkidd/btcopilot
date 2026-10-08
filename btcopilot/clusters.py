@@ -830,26 +830,34 @@ def _apart(
     return pieces
 
 
-def by_years(data: DiagramData, cache_key: str) -> ClusterResult:
+def by_years(data: DiagramData, cache_key: str) -> tuple[ClusterResult, list[str]]:
     """The rules' groups, each titled with the years it spans, for a turn whose
     grouping answers were all refused. Proposals sharing years are joined, and
     cut around the groups the person made, as the write would otherwise store
-    them across each other or across theirs."""
+    them across each other or across theirs. A joined group running more than
+    MAX_SPAN_YEARS is not stored; a sentence naming its years and the check is
+    returned for it instead [Oracle: R-0837, R-0840]."""
     taken = {str(cluster["id"]) for cluster in _stored(data)}
     held, fixed = _theirs(data)
     spans = [span for _, span in fixed]
     when = {e.id: parse_date(e.dateTime) for e in joinable(data)}
     cands = candidates(data)
     marked = {i for candidate in cands for i in candidate.nodalOrShiftIds}
-    made = []
+    made, dropped = [], []
     for group in _one_axis(cands, when):
         for ids in _apart(group, when, held, spans):
             if len(ids) < MIN_CLUSTER_EVENTS or not marked & set(ids):
                 continue
-            cluster_id = next_id(taken)
-            taken.add(cluster_id)
             start, end = when[ids[0]].isoformat(), when[ids[-1]].isoformat()
             title = years(start, end)
+            if too_long([when[i] for i in ids]):
+                name = _said(repr(title), (when[ids[0]], when[ids[-1]]))
+                dropped.append(
+                    f"Fallback grouping {name} fails the {MAX_SPAN_YEARS}-year check"
+                )
+                continue
+            cluster_id = next_id(taken)
+            taken.add(cluster_id)
             made.append(
                 Cluster(
                     id=cluster_id,
@@ -862,7 +870,7 @@ def by_years(data: DiagramData, cache_key: str) -> ClusterResult:
                     source=ClusterSource.Model,
                 )
             )
-    return ClusterResult(clusters=made, cacheKey=cache_key)
+    return ClusterResult(clusters=made, cacheKey=cache_key), dropped
 
 
 STORED_FIELDS = (
@@ -1096,7 +1104,20 @@ def sync(
                 session_id=session_id,
             )
             return Regroup(change=change, sentences=[])
-        result = by_years(data, cache_key)
+        result, dropped = by_years(data, cache_key)
+        # A fallback group over ten years is not stored; its events stay dots
+        # until a regroup passes [Oracle: R-0837, R-0840].
+        for why in dropped:
+            _log.warning(f"Turn {turn_id} removes: {why}")
+            observe(
+                ObservationKind.ClusterFailed,
+                {
+                    "check": ClusterCheck.TooLong.value,
+                    "detail": why,
+                    "fallback": True,
+                    "reason": ClusterCheck.TooLong.value,
+                },
+            )
     deltas = _deltas(data.clusters, result.clusters, dates)
     deltas.append(
         {
