@@ -395,6 +395,31 @@ def test_a_long_pdf_is_read_on_the_worker_and_the_coach_starts_once_the_text_is_
     assert TokenMeter.query.filter_by(user_id=test_user.id).one().input_tokens >= 3600
 
 
+def test_a_turn_stopped_while_its_file_is_read_reads_no_further_part_and_ends_stopped(
+    web, token, monkeypatch, held
+):
+    # R-0829, R-0636
+    calls = []
+
+    def read(content, **kwargs):
+        calls.append(content)
+        turnlog.halt(turn_id)
+        return Text(READ, Spent(input=1200, output=40), Served("claude-opus-5-5"))
+
+    monkeypatch.setattr("btcopilot.metered.claude_text_sync", read)
+    model = coach(monkeypatch, Model(said("Thank you.")))
+    with patch("btcopilot.turns.enqueue"):
+        body = send(web, token, "diary.pdf", pdf(60)).get_json()
+    turn_id = body["turn_id"]
+    turns.run(turn_id, body["discussion_id"], body["statement_id"])
+    assert (len(calls), model.histories) == (1, [])
+    assert stored().attachment_text is None
+    done = events(turn_id)[-1]
+    assert (done["type"], done["stopped"]) == (TurnEventKind.Done.value, True)
+    assert turnlog.running(body["discussion_id"]) is None
+    assert ModelCall.query.filter_by(purpose=Purpose.Transcribe).count() == 1
+
+
 def test_a_text_file_is_stored_in_the_request_and_never_waits_for_the_worker(
     web, token, monkeypatch, reader, held
 ):

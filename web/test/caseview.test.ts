@@ -348,6 +348,23 @@ it("shows an earlier marriage of either partner and its children before the coup
   expect(faces(v)[1][0]).toBe("Aug 1996 · got together");
 });
 
+// R-0833, R-0834
+it("ends an earlier marriage at the former spouse's death when that is how it ended", () => {
+  const tl = lenaOmar();
+  tl.events = tl.events.filter((e) => e.id !== 332);
+  tl.events.push(event(338, EventKind.Death, "1994-02-01", { person: 11, person_name: "Celia" }));
+  const v = caseView(tl, ONE, "");
+  expect(faces(v)[0]).toEqual(["May 1989 · Omar and Celia married", "Mar 1991 · Milo · birth", "Feb 1994 · Celia · death"]);
+});
+
+// R-0833
+it("leaves a former spouse's death after the divorce off the earlier marriage", () => {
+  const tl = lenaOmar();
+  tl.events.push(event(338, EventKind.Death, "2010-02-01", { person: 11, person_name: "Celia" }));
+  const v = caseView(tl, ONE, "");
+  expect(faces(v)[0]).toEqual(["May 1989 · Omar and Celia married", "Mar 1991 · Milo · birth", "Feb 1994 · Omar · divorced"]);
+});
+
 // R-0833
 it("puts every shift of either partner on the card, aimed at the other, at a relative or at no one", () => {
   const v = caseView(lenaOmar(), ONE, "");

@@ -23,9 +23,14 @@ TICK = 1.0
 # that is still working never lets go.
 RUNNING_TTL = 180
 # How long a family's case report stays held for the rewrite writing it without
-# a word from it: the rewrite holds it again before each model call, which may
-# take the model's whole limit, so a worker that dies lets go within minutes.
+# a word from it: the rewrite holds it again on every piece the model sends, so
+# a worker that dies lets go within minutes.
 REPORT_TTL = 180
+# Compare and set in one step, so a rewrite whose hold ran out touches no other.
+HOLD = """if redis.call('get', KEYS[1]) == ARGV[1] then
+  return redis.call('expire', KEYS[1], ARGV[2]) end return 0"""
+RELEASE = """if redis.call('get', KEYS[1]) == ARGV[1] then
+  return redis.call('del', KEYS[1]) end return 0"""
 
 
 class TurnLogBackend(enum.StrEnum):
@@ -160,11 +165,11 @@ class RedisLog:
         self.redis.set(f"turn:{turn_id}:diagram", diagram_id, ex=TTL)
         return True
 
-    def hold(self, diagram_id: int) -> None:
-        self.redis.expire(f"diagram:{diagram_id}:report", REPORT_TTL)
+    def hold(self, diagram_id: int, turn_id: str) -> None:
+        self.redis.eval(HOLD, 1, f"diagram:{diagram_id}:report", turn_id, REPORT_TTL)
 
-    def release(self, diagram_id: int) -> None:
-        self.redis.delete(f"diagram:{diagram_id}:report")
+    def release(self, diagram_id: int, turn_id: str) -> None:
+        self.redis.eval(RELEASE, 1, f"diagram:{diagram_id}:report", turn_id)
 
 
 class MemoryLog:
@@ -269,13 +274,13 @@ class MemoryLog:
             self.reported[turn_id] = diagram_id
         return True
 
-    def hold(self, diagram_id: int) -> None:
-        held = self.reports.get(diagram_id)
-        if held:
-            self.reports[diagram_id] = (held[0], time.time() + REPORT_TTL)
+    def hold(self, diagram_id: int, turn_id: str) -> None:
+        if self.rewriting(diagram_id) == turn_id:
+            self.reports[diagram_id] = (turn_id, time.time() + REPORT_TTL)
 
-    def release(self, diagram_id: int) -> None:
-        self.reports.pop(diagram_id, None)
+    def release(self, diagram_id: int, turn_id: str) -> None:
+        if self.rewriting(diagram_id) == turn_id:
+            self.reports.pop(diagram_id)
 
 
 _store = None
@@ -357,9 +362,12 @@ def claim(diagram_id: int, turn_id: str) -> bool:
     return store().claim(diagram_id, turn_id)
 
 
-def hold(diagram_id: int) -> None:
-    store().hold(diagram_id)
+def hold(diagram_id: int, turn_id: str) -> None:
+    """Keeps the family's report held, only while this rewrite holds it."""
+    store().hold(diagram_id, turn_id)
 
 
-def release(diagram_id: int) -> None:
-    store().release(diagram_id)
+def release(diagram_id: int, turn_id: str) -> None:
+    """Lets the report go, only if this rewrite holds it: one whose hold ran
+    out never lets go of the next one's."""
+    store().release(diagram_id, turn_id)

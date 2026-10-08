@@ -663,7 +663,11 @@ function entitle(title: string | Title | null): void {
  * one line that says the diagram is someone else's with the way back to the
  * admin's own (the page hides whatever writes), and the product events. */
 store.watch({
-  reset: () => selecting.stop(),
+  // a file picked for one family never goes with a message to another
+  reset: () => {
+    selecting.stop();
+    attachment.clear();
+  },
   draw: (opened) => {
     const diagram = opened.diagram;
     $("menu-title").textContent = familyTitle();

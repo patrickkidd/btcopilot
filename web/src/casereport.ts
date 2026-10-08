@@ -73,9 +73,10 @@ export class CaseReport implements View {
   private playing: string | null = null;
   /** The question on opening a report that is out of date; the scrim does not put it away. */
   private readonly sheet: Sheet;
-  private rewriting = false;
-  /** The change "Refresh the report" was tapped for this time the app is open, so a failed rewrite does not ask again at once. */
-  private refreshed: number | null = null;
+  /** The diagrams whose report the coach is rewriting now. */
+  private readonly rewriting = new Set<number>();
+  /** Per diagram, the change "Refresh the report" was tapped for this time the app is open, so a failed rewrite does not ask again at once. */
+  private readonly refreshed = new Map<number, number>();
 
   constructor(
     private readonly root: HTMLElement,
@@ -209,8 +210,8 @@ export class CaseReport implements View {
     const opened = this.opened!;
     const out = opened.record.report_out_of_date ?? null;
     const id = opened.diagram?.id ?? null;
-    const shown = [id === null ? null : dismissed(id), this.refreshed].filter((n): n is number => n !== null);
-    const now = phase(out, shown.length ? Math.max(...shown) : null, this.rewriting);
+    const shown = id === null ? [] : [dismissed(id), this.refreshed.get(id) ?? null].filter((n): n is number => n !== null);
+    const now = phase(out, shown.length ? Math.max(...shown) : null, id !== null && this.rewriting.has(id));
     this.body.querySelectorAll<HTMLElement>(".level[data-card]").forEach((l) =>
       l.classList.toggle("dim", now === Phase.Rewriting && WRITTEN.has(l.dataset.card as Card)),
     );
@@ -231,21 +232,22 @@ export class CaseReport implements View {
     const out = this.opened?.record.report_out_of_date;
     if (!act || !out) return;
     this.sheet.lower();
+    const id = this.opened!.diagram!.id;
     if (act === "refresh") {
-      this.refreshed = out.change_id;
-      void this.rewrite();
+      this.refreshed.set(id, out.change_id);
+      void this.rewrite(id);
       return;
     }
-    const id = this.opened!.diagram?.id;
-    if (id !== undefined) dismiss(id, out.change_id);
+    dismiss(id, out.change_id);
     this.render();
   }
 
   /** The coach rewrites its five cards (R-0825); the report is read again
    * when it is done. One the server will not start now (already running, or
    * no session yet) says so; a failed one, or one the server no longer knows,
-   * says so and puts the cards back as they were. */
-  private async rewrite(): Promise<void> {
+   * says so and puts the cards back as they were. Kept per diagram, so
+   * another family opened meanwhile is neither dimmed nor reloaded. */
+  private async rewrite(id: number): Promise<void> {
     let job: Rewrite | null;
     try {
       job = await this.hooks.fetch(api.rewriteReport);
@@ -254,7 +256,7 @@ export class CaseReport implements View {
       toast("The report is already being rewritten, or this family has no session yet");
       return;
     }
-    this.rewriting = true;
+    this.rewriting.add(id);
     this.render();
     try {
       while (job?.state === RewriteState.Running) {
@@ -269,10 +271,11 @@ export class CaseReport implements View {
       toast("The coach could not rewrite the report. Try again.");
       throw error;
     } finally {
-      this.rewriting = false;
+      this.rewriting.delete(id);
       this.render();
     }
-    await this.hooks.reload();
+    // a family opened since the tap is not the one rewritten
+    if (this.opened?.diagram?.id === id) await this.hooks.reload();
   }
 
   /** A chip on the report: an event lights on the timeline as in the chat; a

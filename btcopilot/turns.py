@@ -188,6 +188,8 @@ def run(
         zone=zone,
     )
     try:
+        if turnlog.halted(turn_id):
+            raise Stopped(f"turn {turn_id} was stopped while its file was read")
         reply = turn.run()
     except Stopped:
         db.session.rollback()
@@ -243,6 +245,13 @@ def run(
     return reply
 
 
+def _held(turn_id: str, discussion_id: int) -> None:
+    """Before each part of a file: a stopped turn reads no further part."""
+    if turnlog.halted(turn_id):
+        raise Stopped(f"turn {turn_id} was stopped while its file was read")
+    turnlog.keep(discussion_id)
+
+
 def _read(turn_id: str, discussion: Discussion, said: Statement) -> dict | None:
     """The file left for this turn, read into the statement's text with the
     same calls, ledger rows and charge as the request once made, holding the
@@ -250,7 +259,8 @@ def _read(turn_id: str, discussion: Discussion, said: Statement) -> dict | None:
     the coach: nothing is kept as text, the thread is told why in the same
     words a refused read always had, and the session takes the next message.
     The file stays held for the hour, so trying the turn again reads it again.
-    None when the text is in; else the event that ended the turn. A read the
+    None when the text is in or the person stopped the turn, which the coach
+    then ends as stopped; else the event that ended the turn. A read the
     model declined, cut off, or could not find is its own ending; anything
     else goes on to be logged like a turn that broke."""
     try:
@@ -259,8 +269,11 @@ def _read(turn_id: str, discussion: Discussion, said: Statement) -> dict | None:
             said.attachment_name,
             discussion.user_id,
             discussion.diagram_id,
-            keep=lambda: turnlog.keep(discussion.id),
+            keep=lambda: _held(turn_id, discussion.id),
         )
+    except Stopped:
+        # the parts already read are charged; the coach ends it as stopped
+        return None
     except Exception as error:
         # no rollback: the parts already read are charged whatever came after
         _log.warning(f"coach_turn {turn_id} could not read its file: {error}")
