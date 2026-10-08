@@ -75,6 +75,9 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    removed, and nothing is ever named after its years; with nothing stored, the
    line shows the events alone [Oracle: R-0840, R-0844]. A stored model period
    over ten years is never handed back to the model as existing [Oracle: R-0838].
+   Nor is a stored model period named only by its years ("1996–2001"): it is
+   dropped with a warning and a cluster_failed row (check years_name), the
+   person's own untouched [Oracle: R-0844, R-0840].
 6. Every stored period the answer did not return is removed, the person's own
    included. A period returned exactly as stored keeps its source; any other is
    the model's.
@@ -82,7 +85,7 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
 ## When it runs
 
 After any coach turn that adds or changes an event, when the cache key (the
-events' dates and shifts plus `DETECTION_VERSION`, now 8) differs from the
+events' dates and shifts plus `DETECTION_VERSION`, now 9) differs from the
 stored one; `flask admin diagrams regroup` reruns diagrams that are behind. A running
 server keeps the module it started with, so restart a sandbox after a change
 here. The floor of three events is enforced again at the write.

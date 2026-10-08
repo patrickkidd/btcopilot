@@ -14,6 +14,7 @@ import datetime
 import enum
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 
 from btcopilot.extensions import db
@@ -57,7 +58,9 @@ _log = logging.getLogger(__name__)
 # counted, so every record regroups on its next event change [Oracle: R-0839].
 # 8: periods as hypotheses of a family process, the person's own free to
 # reshape, overlaps merged, no fallback [Oracle: R-0841 to R-0846].
-DETECTION_VERSION = 8
+# 9: a stored model period named only by its years is not handed back, so every
+# record regroups on its next event change [Oracle: R-0844, R-0840].
+DETECTION_VERSION = 9
 
 NODAL_KINDS = frozenset(
     {EventKind.Death, EventKind.Married, EventKind.Divorced, EventKind.Separated}
@@ -133,6 +136,7 @@ class ClusterCheck(enum.StrEnum):
     GroupTwice = "group_twice"
     OutsideWords = "outside_words"
     TooLong = "too_long"
+    YearsName = "years_name"
     Merged = "merged"
     CutOff = "cut_off"
     Unreadable = "unreadable"
@@ -201,6 +205,12 @@ def too_long(dates: list[datetime.date]) -> bool:
 
 
 Span = tuple[datetime.date, datetime.date]
+
+
+def years_name(name: str) -> bool:
+    """Whether a name is only a year or a run of years, a length rather than
+    a hypothesis [Oracle: R-0844, R-0841]."""
+    return re.fullmatch(r"[\d\s\u2013\u2014-]*\d[\d\s\u2013\u2014-]*", name) is not None
 
 
 def span_of(dates: list[datetime.date]) -> Span | None:
@@ -609,32 +619,45 @@ def _judged(
     data: DiagramData,
 ) -> tuple[dict[str, dict], list[tuple[dict, ClusterCheck, str]]]:
     """The stored clusters handed back to the model, by id, and each stored
-    model cluster that fails the ten-year backstop with a sentence naming its
-    years. The person's own are always handed back, as hypotheses the model
-    may reshape [Oracle: R-0843]."""
+    model cluster that fails the ten-year backstop or is named only by its
+    years, with a sentence naming it and its years. The person's own are
+    always handed back, as hypotheses the model may reshape [Oracle: R-0843,
+    R-0844]."""
     when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
     kept, failing = {}, []
     for cluster in _stored(data):
         dates = [when[i] for i in cluster.get("eventIds") or [] if i in when]
-        if not _regroupable(cluster) or not too_long(dates):
+        span = span_of(dates)
+        name = _said(_title(cluster), span) if span else repr(_title(cluster))
+        if not _regroupable(cluster):
             kept[str(cluster["id"])] = cluster
-            continue
-        name = _said(_title(cluster), span_of(dates))
-        failing.append(
-            (
-                cluster,
-                ClusterCheck.TooLong,
-                f"Stored grouping {cluster['id']} {name} fails the "
-                f"{MAX_SPAN_YEARS}-year check",
+        elif too_long(dates):
+            failing.append(
+                (
+                    cluster,
+                    ClusterCheck.TooLong,
+                    f"Stored grouping {cluster['id']} {name} fails the "
+                    f"{MAX_SPAN_YEARS}-year check",
+                )
             )
-        )
+        elif years_name(_title(cluster)):
+            failing.append(
+                (
+                    cluster,
+                    ClusterCheck.YearsName,
+                    f"Stored grouping {cluster['id']} {name} is named only by "
+                    "its years",
+                )
+            )
+        else:
+            kept[str(cluster["id"])] = cluster
     return kept, failing
 
 
 def mine(data: DiagramData) -> dict[str, dict]:
     """The stored clusters handed to the model as existing. A model cluster
-    over ten years is left out, its events back to the hint, and the diagram
-    regroups on this run [Oracle: R-0838]."""
+    over ten years or named only by its years is left out, its events back to
+    the hint, and the diagram regroups on this run [Oracle: R-0838, R-0844]."""
     kept, failing = _judged(data)
     for _, _, why in failing:
         _log.info(f"{why} and is not handed back")
@@ -642,7 +665,7 @@ def mine(data: DiagramData) -> dict[str, dict]:
 
 
 def broken(data: DiagramData) -> list[tuple[dict, ClusterCheck, str]]:
-    """The stored model clusters that fail the backstop, each with the check
+    """The stored model clusters that fail a backstop, each with the check
     and a sentence naming its years."""
     return _judged(data)[1]
 
@@ -940,6 +963,20 @@ def sync(
             },
         )
 
+    failing = broken(data)
+    for cluster, check, why in failing:
+        _log.warning(f"Turn {turn_id} removes: {why}")
+        observe(
+            ObservationKind.ClusterFailed,
+            {
+                "check": check.value,
+                "detail": why,
+                "fallback": False,
+                "reason": check.value,
+                "removed": str(cluster["id"]),
+            },
+        )
+
     try:
         result = detect_clusters(
             data,
@@ -950,9 +987,8 @@ def sync(
         )
     except ClusterError as failed:
         # No usable answer: the clusters that pass stay, a stored model cluster
-        # over ten years is removed, its events dots until a regroup passes;
-        # nothing is ever named after its years [Oracle: R-0840, R-0844].
-        kept, failing = _judged(data)
+        # over ten years or named only by its years is removed, its events dots
+        # until a regroup passes [Oracle: R-0840, R-0844].
         observe(
             ObservationKind.ClusterFailed,
             {
@@ -963,18 +999,6 @@ def sync(
             },
         )
         _log.warning(f"Turn {turn_id} grouping refused twice: {failed}")
-        for cluster, check, why in failing:
-            _log.warning(f"Turn {turn_id} removes: {why}")
-            observe(
-                ObservationKind.ClusterFailed,
-                {
-                    "check": check.value,
-                    "detail": why,
-                    "fallback": False,
-                    "reason": check.value,
-                    "removed": str(cluster["id"]),
-                },
-            )
         if not failing:
             return None
         change = record.apply(

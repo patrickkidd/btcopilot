@@ -1099,3 +1099,27 @@ def test_refused_twice_with_nothing_stored_names_nothing_after_its_years(test_us
     assert done is None
     assert kept == []
     assert not test_user.free_diagram.get_diagram_data().clusterCacheKey
+
+
+def test_a_stored_model_group_named_by_its_years_is_not_handed_back(test_user):
+    # R-0844, R-0840
+    data = hale(
+        already(2, 3, 4, 5, cluster_id="c2", name="Edith's headaches"),
+        own(6, 7, 8, cluster_id="u1", name="1985 - 1987"),
+        already(9, 10, 12, 13, 14, cluster_id="c1", name="1996–2001"),
+    )
+    assert list(clusters.mine(data)) == ["c2", "u1"]
+
+    diagram = test_user.free_diagram
+    diagram.set_diagram_data(data)
+    db.session.commit()
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", side_effect=[parsed(THREE)]
+    ):
+        sync(diagram.id, turn_id="t1", user_id=diagram.user_id, force=True)
+    failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).all()
+    assert [(o.detail["removed"], o.detail["check"]) for o in failed] == [
+        ("c1", "years_name")
+    ]
+    assert "1996–2001 (1996-" in failed[0].detail["detail"]
+    assert "c1" not in [c["id"] for c in diagram.get_diagram_data().clusters]
