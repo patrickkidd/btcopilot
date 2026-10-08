@@ -8,7 +8,7 @@ import datetime
 
 from btcopilot import profile
 from btcopilot.prompts import Role
-from btcopilot.record import PLACEHOLDERS, ROLE_WORDS, generic_key
+from btcopilot.record import GENERIC, PLACEHOLDERS, ROLE_WORDS, generic_key
 from btcopilot.recordtext import event_line, note_line, person_line
 from btcopilot.schema import (
     DECLINED,
@@ -114,6 +114,21 @@ WORDS = {
 # The items the checklist places on a couple; every other one is a person's.
 COUPLE_FACTS = (Fact.Children, Fact.Met)
 
+# The items that draw the family's structure, in the order Patrick gave them
+# (2026-10-07: "the basic family structure should be mapped out at least
+# earlier than later. Definitely before any Coach driven rabbit holes on
+# stories"; the person's parents, each parent's parents, each person's
+# siblings and their count, pair-bonds and their dates): first who each person
+# is, whose parents are whose and how many children each couple had, then the
+# bonds with their dates. When the next question is the coach's own to choose,
+# these lead the list for every diagram until they are closed, and the story
+# items follow. A topic the person brings is followed first; that is the
+# prompt's rule, not the list's. The times the most was going on keep their
+# place ahead of everything [R-0735].
+LEADING = (Fact.MostGoingOn,)
+TIERS = (LEADING, (Fact.Name, Fact.Parents, Fact.Children), (Fact.Marriages, Fact.Met))
+STRUCTURE = (*TIERS[1], *TIERS[2])
+
 # The everyday words the chat is searched for before a fact question is asked,
 # each matched at the start of a word, so "child" finds "children" and "die"
 # finds "died". The tool searches with these, not the coach, which may not know
@@ -207,6 +222,19 @@ PLATEAU_TURNS = 5
 HEAD = "WHAT IS STILL UNKNOWN"
 
 UNNAMED = ("", profile.PLACEHOLDER_NAME, DEFAULT_SUBJECT_NAME)
+# A child counted but not named is added as "<the couple>'s child", the way an
+# unnamed parent or partner is added (R-0325; Patrick, 2026-10-07: "sounds like
+# you should at least add the person with no name"). Such a name is no name,
+# so the child's own name is an open item.
+CHILD_ROLE = "child"
+
+
+def unnamed(name: str | None) -> bool:
+    """Whether a person's name is no name: empty, a placeholder, or the generic
+    name of a child nobody named."""
+    name = (name or "").strip()
+    match = GENERIC.match(name)
+    return name in UNNAMED or bool(match and match.group(2).lower() == CHILD_ROLE)
 ANSWERS = {
     QuestionOutcome.Fact: FactState.Known,
     QuestionOutcome.Answered: FactState.Known,
@@ -392,7 +420,7 @@ def spoken_as(data: DiagramData, kind: ItemKind, iid: int) -> list[str] | None:
     words = []
     for pid in people:
         name = _person(data, pid).get("name") or ""
-        if name not in UNNAMED and generic_key({"name": name}) is None:
+        if not unnamed(name) and generic_key({"name": name}) is None:
             words.append(name)
         role = _role_of(data, ItemKind.Person, pid)
         if role is not None:
@@ -438,15 +466,16 @@ def _last(
 
 
 def block(data: DiagramData, plateau: int | None = None) -> str:
-    """The next unasked items in Kerr's loose order, grouped by whom they are
-    about, the items said unknown, and coverage and resolution as fractions.
-    `plateau` is the turn of the coach's plateau note still in force, which
-    cuts the list to the nearest few. Empty when nothing is required."""
+    """The next unasked items, the structure items first and then the rest,
+    each in Kerr's loose order, grouped by whom they are about, the items said
+    unknown, and coverage and resolution as fractions. `plateau` is the turn of
+    the coach's plateau note still in force, which cuts the list to the nearest
+    few. Empty when nothing is required."""
     roles = _walk(data)
     if not roles:
         return ""
     found = states(data)
-    gaps = [i for i in roles if found[i] is FactState.NotAsked]
+    gaps = structure_first([i for i in roles if found[i] is FactState.NotAsked])
     lead = LEAD if plateau is None else PLATEAU_LEAD
     unknown = [i for i in roles if found[i] is FactState.SaidUnknown]
     tally = list(found.values())
@@ -468,6 +497,15 @@ def block(data: DiagramData, plateau: int | None = None) -> str:
         f"{resolved} of {len(found)} known, said unknown or declined."
     )
     return "\n".join(lines)
+
+
+def structure_first(items: list[Item]) -> list[Item]:
+    """The items with the times the most was going on first, then each tier of
+    the structure items, then the rest, each part keeping the order given. The
+    same rule for every diagram: the order comes from the record's shape, and
+    no diagram is edited to get it."""
+    rank = {fact: tier for tier, facts in enumerate(TIERS) for fact in facts}
+    return sorted(items, key=lambda item: rank.get(item[0], len(TIERS)))
 
 
 def _nearest(gaps: list[Item], lead: int) -> list[Item]:
@@ -532,7 +570,7 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
     fact, _, iid = item
     match fact:
         case Fact.Name:
-            return (_person(data, iid).get("name") or "") not in UNNAMED
+            return not unnamed(_person(data, iid).get("name"))
         case Fact.Alive:
             own = profile.own(data)
             if own is not None and iid == own["id"]:
