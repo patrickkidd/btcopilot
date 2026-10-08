@@ -339,8 +339,9 @@ const MODE: Partial<Record<Level, string>> = {
 
 type Named = { title: string; start: string; end: string };
 
-/** The open cluster as the path names it: its name and its years, "Every mark ·
- * 1972–99", the years alone for a cluster with no name (R-0767). */
+/** The open cluster as the path names it: its name alone, "Every mark", the
+ * years alone for a cluster with no name (R-0767, R-0841); the years go under
+ * the line, so neither is on the screen twice. */
 export const clusterStep = (c: Named) => c.title || spanYears(c.start, c.end);
 
 /** The words under the line with a cluster open and nothing picked: its years
@@ -350,7 +351,7 @@ export const clusterLabel = (c: { start: string; end: string; count: number }) =
   `${fullYears(c.start, c.end)} \u00b7 ${c.count} event${c.count === 1 ? "" : "s"}`;
 
 /** The path over the line, from the whole timeline down to where the reader
- * is: the cluster open by its name, then the mode it is in or the moment
+ * is: the cluster open by its name, then the mode it is in or the event
  * picked (R-0540, R-0767). */
 export function trail(level: Level, cluster: Named | null, picked: string | null): string[] {
   const last = MODE[level] ?? picked;
