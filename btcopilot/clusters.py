@@ -292,25 +292,6 @@ def _split(ids: list[int], when: dict, marked: set[int]) -> list[list[int]]:
     return pieces
 
 
-def _one_axis(groups: list[set[int]], when: dict) -> list[set[int]]:
-    """Two proposed groups whose years overlap are one proposal, whatever their
-    people: the timeline is one line and cannot draw them side by side, and the
-    fallback stores the proposal as it stands [Oracle: R-0839]. Groups that
-    only touch on a day stay two, as the page draws them; a group too small to
-    be a cluster stays as it was, since it is dropped below anyway."""
-    bounds = lambda group: (min(when[i] for i in group), max(when[i] for i in group))
-    big = sorted(
-        (g for g in groups if len(g) >= MIN_CLUSTER_EVENTS), key=lambda g: bounds(g)[0]
-    )
-    joined: list[set[int]] = []
-    for group in big:
-        if joined and overlapping(bounds(joined[-1]), bounds(group)):
-            joined[-1] |= group
-        else:
-            joined.append(set(group))
-    return joined + [g for g in groups if len(g) < MIN_CLUSTER_EVENTS]
-
-
 @dataclass
 class Candidate:
     eventIds: list[int]
@@ -351,7 +332,6 @@ def candidates(data: DiagramData) -> list[Candidate]:
             groups.remove(group)
             near |= group
         groups.append(near)
-    groups = _one_axis(groups, when)
 
     marked_ids = {e.id for e in marked}
     kept = [
@@ -790,6 +770,22 @@ def years(start: str, end: str) -> str:
     return str(first) if first == last else f"{first}–{last}"
 
 
+def _one_axis(cands: list[Candidate], when: dict) -> list[list[int]]:
+    """Proposals whose years overlap as one fallback group, whatever their
+    people: the fallback stores what it is given, and the timeline is one line
+    [Oracle: R-0839]. Proposals that only touch on a day stay two."""
+    joined: list[list[int]] = []
+    for candidate in cands:
+        ids = candidate.eventIds
+        if joined and overlapping(
+            (when[joined[-1][0]], when[joined[-1][-1]]), (when[ids[0]], when[ids[-1]])
+        ):
+            joined[-1] = sorted(joined[-1] + ids, key=lambda i: (when[i], i))
+        else:
+            joined.append(list(ids))
+    return joined
+
+
 def _apart(
     ids: list[int], when: dict, held: set[int], spans: list[Span]
 ) -> list[list[int]]:
@@ -811,18 +807,19 @@ def _apart(
 
 def by_years(data: DiagramData, cache_key: str) -> ClusterResult:
     """The rules' groups, each titled with the years it spans, for a turn whose
-    grouping answers were all refused. A proposal is cut around the groups the
-    person made, as the write would otherwise store it across them."""
+    grouping answers were all refused. Proposals sharing years are joined, and
+    cut around the groups the person made, as the write would otherwise store
+    them across each other or across theirs."""
     taken = {str(cluster["id"]) for cluster in _stored(data)}
     held, fixed = _theirs(data)
     spans = [span for _, span in fixed]
     when = {e.id: parse_date(e.dateTime) for e in joinable(data)}
+    cands = candidates(data)
+    marked = {i for candidate in cands for i in candidate.nodalOrShiftIds}
     made = []
-    for candidate in candidates(data):
-        for ids in _apart(candidate.eventIds, when, held, spans):
-            if len(ids) < MIN_CLUSTER_EVENTS or not set(ids) & set(
-                candidate.nodalOrShiftIds
-            ):
+    for group in _one_axis(cands, when):
+        for ids in _apart(group, when, held, spans):
+            if len(ids) < MIN_CLUSTER_EVENTS or not marked & set(ids):
                 continue
             cluster_id = next_id(taken)
             taken.add(cluster_id)

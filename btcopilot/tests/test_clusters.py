@@ -1011,13 +1011,15 @@ def test_without_the_overlap_check_the_nested_groups_are_accepted():
     assert spans(result) == [("2017", "2026"), ("2025", "2026")]
 
 
-def test_the_proposal_joins_two_runs_that_share_years():
+def test_the_fallback_joins_two_runs_that_share_years():
     # R-0839
-    """Two people's runs over the same years are one proposal, so the fallback
-    never stores an overlap; without the joining they are the two runs."""
-    assert grouped(INSIDE) == [[40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 47]]
-    with patch.object(clusters, "overlapping", return_value=False):
-        assert grouped(INSIDE) == [INSIDE_ONE, INSIDE_TWO]
+    """Two people's runs over the same years stay two proposals for the model;
+    the fallback, which stores what it is given, joins them into one."""
+    assert grouped(INSIDE) == [INSIDE_ONE, INSIDE_TWO]
+    result = by_years(INSIDE, "key")
+    assert [c.eventIds for c in result.clusters] == [
+        [40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 47]
+    ]
 
 
 TOUCHING = record(

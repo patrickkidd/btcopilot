@@ -69,11 +69,12 @@ before its first answer. Two clusters that only touch on one day
 are not overlapping (`overlapping` in `btcopilot/clusters.py` is strict on both
 ends), because the page draws neighbouring pills apart at a seam
 (`web/src/picture.ts`, `edges`), so touching is a closeness it can still draw as
-two. The rules' own proposal joins two groups whose years overlap into one
-proposal, whatever their people (`_one_axis`), and the fallback (`by_years`)
-leaves out the person's own events and any dated inside their clusters' years
-and cuts a proposal wherever one of their clusters falls (`_apart`), so the
-fallback never stores an overlap either; groups that only touch stay two.
+two. The proposal shown to the model is left as the rules make it; the
+fallback (`by_years`), which stores what it is given, joins proposals whose
+years overlap into one, whatever their people (`_one_axis`), leaves out the
+person's own events and any dated inside their clusters' years, and cuts a
+proposal wherever one of their clusters falls (`_apart`), so the fallback never
+stores an overlap either; groups that only touch stay two.
 
 **A stored cluster that fails the check is not handed back [Oracle: R-0838].**
 "Keep what is there" protects a reading, not a category error: a stored
