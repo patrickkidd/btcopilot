@@ -75,8 +75,9 @@ def test_a_visitor_sees_the_landing_page(flask_app, browser, keyed):
     assert "!" not in text
     assert '<link rel="icon" type="image/png" href="/app/afs-logo.png"' in html
     assert "/app/theory" not in html
-    assert '<meta name="theme-color" content="#f7f6f2"' in html
-    assert '<meta name="theme-color" content="#171d1c"' in html
+    # Job 029, option N (2026-10-07): the page's own paper and ink, not the app's palette.
+    assert '<meta name="theme-color" content="#f4f4f1"' in html
+    assert '<meta name="theme-color" content="#141a24"' in html
 
 
 # Job 026 (2026-10-07): the page was rebuilt around the stepping family diagram, so

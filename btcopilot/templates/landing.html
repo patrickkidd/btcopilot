@@ -1,99 +1,115 @@
 <!doctype html>
 <html lang="en">
   <head>
+    {% set theme_colors = ('#f4f4f1', '#141a24') %}
     {% include "head.html" %}
     <link rel="icon" type="image/png" href="{{ url_for('auth.logo') }}" />
     <meta name="description" content="Your family as dated facts you can check. A coach asks about your family; each fact becomes a dated event; your family diagram is drawn from them as it stood on any date." />
     <title>Family Diagram</title>
     {% if site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}
-    {# The page's colours and fonts are the app's own, from head.html. #}
+    {# The page's own colours and typeface: paper and blue-black ink, one red for the current event, Barlow throughout. #}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&display=swap" />
     <style>{% raw %}
+:root {
+  --bg: #f4f4f1; --ink: #1c2331; --faint: #475262; --line: #c9ccd0; --edge: #7f8792;
+  --accent: #ad2a21; --onink: #f4f4f1;
+  --sans: "Barlow", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #141a24; --ink: #ebe9e3; --faint: #a7adb6; --line: #333c4a; --edge: #6b7382; --accent: #ff8d7c; --onink: #141a24; }
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.5 var(--sans); -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
 .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
 header { padding: 14px 0 0; }
-.mark { font: 600 16px/1.25 var(--sans); color: var(--ink); }
-h1 { margin: 18px 0 14px; font: 600 30px/1.12 var(--sans); letter-spacing: -0.018em; text-wrap: balance; }
-.panel { padding: 0; }
+.mark { font: 500 16px/1.25 var(--sans); color: var(--ink); }
+h1 { margin: 18px 0 14px; font: 600 31px/1.1 var(--sans); letter-spacing: -0.01em; text-wrap: balance; }
 .pic { width: 100%; }
 .draw { display: block; width: 100%; height: auto; }
-.draw text { font-family: var(--mono); font-size: 13px; }
-.draw .shape { fill: var(--bg); stroke: var(--ink); stroke-width: 1.6; transition: stroke-width 0.4s; }
-.draw .on .shape { stroke-width: 3; }
+.draw text { font-family: var(--sans); font-size: 13px; }
+.draw .shape { fill: var(--bg); stroke: var(--ink); stroke-width: 1.6; transition: stroke-width 0.4s, stroke 0.4s; }
+.draw .on .shape { stroke: var(--accent); stroke-width: 3; }
 .draw .you { fill: none; stroke: var(--ink); stroke-width: 1.1; }
 .draw .age { fill: var(--faint); text-anchor: middle; }
-.draw .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; }
+.draw .tie { stroke: var(--faint); stroke-width: 1.4; fill: none; transition: stroke-width 0.4s, stroke 0.4s; }
+.draw .tie.on { stroke: var(--accent); stroke-width: 2.6; }
 .draw .kin { stroke: var(--faint); stroke-width: 1.3; fill: none; }
-.draw .lbn { fill: var(--ink); }
+.draw .lbn { fill: var(--ink); font-weight: 500; }
 .draw .lbd { fill: var(--faint); }
 .draw .xd { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.draw .on .xd { stroke: var(--accent); }
 .draw .off { opacity: 0; }
 .draw g, .draw path, .draw text { transition: opacity 0.4s; }
 .tl { display: block; overflow: visible; margin: 10px 0 0; }
 .tl .base, .tl .tick { stroke: var(--line); stroke-width: 1.5; }
-.tl .dot { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
-.tl .dot.cur { fill: var(--ink); stroke: var(--bg); stroke-width: 2; }
-.tl .yr { font: 400 13px var(--mono); fill: var(--faint); }
+.tl .mk { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
+.tl .mk.cur { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+.tl .yr { font: 400 13px var(--sans); fill: var(--faint); }
 .step { display: flex; align-items: center; gap: 10px; margin: 6px 0 0; min-height: 60px; }
-.stepbtn { flex: none; height: 44px; min-width: 76px; padding: 0 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--panel); color: var(--ink); font: 500 15px var(--sans); cursor: pointer; white-space: nowrap; }
+.stepbtn { flex: none; height: 44px; min-width: 76px; padding: 0 14px; border: 1px solid var(--edge); border-radius: 22px; background: var(--bg); color: var(--ink); font: 500 15px var(--sans); cursor: pointer; white-space: nowrap; }
 .stepbtn:disabled { opacity: 0.35; cursor: default; }
-.stepbtn:not(:disabled):active { background: var(--bg); }
+.stepbtn:not(:disabled):active { background: var(--line); }
 .ev { flex: 1 1 auto; min-width: 0; margin: 0; text-align: center; }
-.ev .d { display: block; font: 400 13px/1.4 var(--mono); color: var(--faint); }
-.ev .w { display: block; font: 500 16px/1.3 var(--sans); color: var(--ink); text-wrap: balance; }
-.key { margin: 8px 0 0; font: 400 13px/1.4 var(--sans); color: var(--faint); text-wrap: pretty; }
-.act { margin: 18px 0 0; }
-.why { margin: 0; font-size: 16px; line-height: 1.4; text-wrap: pretty; }
-.go { display: flex; align-items: center; justify-content: center; height: 48px; margin: 14px 0 0; padding: 0 22px; border-radius: 10px; background: var(--data); color: var(--onaccent); font: 600 16px var(--sans); text-decoration: none; }
-.go:active, .form button:active { filter: brightness(0.92); }
-:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
-.facts { margin: 56px 0 0; }
-.facts ul { list-style: none; margin: 0; padding: 0; }
-.facts li { padding: 12px 0; border-top: 1px solid var(--line); font-size: 16px; line-height: 1.45; text-wrap: pretty; }
-.facts li:last-child { border-bottom: 1px solid var(--line); }
+.ev .d { display: block; font: 500 14px/1.4 var(--sans); color: var(--accent); }
+.ev .w { display: block; font: 500 17px/1.3 var(--sans); color: var(--ink); text-wrap: balance; }
+.key { margin: 8px 0 0; font: 400 14px/1.4 var(--sans); color: var(--faint); text-wrap: pretty; }
+.why { margin: 18px 0 0; font-size: 17px; line-height: 1.4; }
+.whole { white-space: nowrap; }
+.go { display: flex; align-items: center; justify-content: center; height: 48px; margin: 14px 0 0; padding: 0 22px; border-radius: 3px; background: var(--ink); color: var(--onink); font: 600 16px var(--sans); text-decoration: none; }
+.go:active, .form button:active { opacity: 0.85; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.facts { margin: 48px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+.facts ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.facts li { font-size: 17px; line-height: 1.45; text-wrap: pretty; }
+.forms { margin: 56px 0 0; }
 .form { margin: 40px 0 0; scroll-margin-top: 16px; }
-.form h2 { margin: 0; font: 600 16px/1.3 var(--sans); }
+.form:first-child { margin-top: 0; }
+.form h2 { margin: 0; font: 600 20px/1.3 var(--sans); }
 .lead { margin: 4px 0 14px; color: var(--faint); text-wrap: pretty; }
 form { display: grid; gap: 12px; }
-label { display: grid; gap: 6px; font: 500 13px/1.4 var(--sans); }
+label { display: grid; gap: 6px; font: 500 14px/1.4 var(--sans); }
 .optional { color: var(--faint); font-weight: 400; }
-input, textarea { width: 100%; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); font: 400 16px var(--sans); }
+input, textarea { width: 100%; min-width: 0; padding: 12px 14px; border: 1px solid var(--edge); border-radius: 3px; background: var(--bg); color: var(--ink); font: 400 17px var(--sans); }
 textarea { min-height: 96px; resize: vertical; }
-.form button { height: 48px; padding: 0 22px; border: 0; border-radius: 10px; background: var(--data); color: var(--onaccent); font: 600 16px var(--sans); cursor: pointer; }
+.form button { height: 48px; padding: 0 22px; border: 0; border-radius: 3px; background: var(--ink); color: var(--onink); font: 600 16px var(--sans); cursor: pointer; }
 .form button:disabled { opacity: 0.5; cursor: default; }
 .cf-turnstile { min-height: 65px; }
-.error, .done { margin: 0 0 12px; padding: 12px 14px; border-radius: 10px; }
-.error { border: 1px solid var(--line); background: var(--panel); }
-.done { background: var(--tint); margin: 0; }
-footer { padding: 48px 0 32px; font: 400 13px/1.6 var(--mono); color: var(--faint); }
+.error, .done { margin: 0 0 12px; padding: 4px 0 4px 12px; border-left: 3px solid var(--accent); }
+.done { margin: 0; }
+footer { padding: 48px 0 32px; font: 400 14px/1.6 var(--sans); color: var(--faint); }
 footer a { color: var(--faint); text-decoration: none; }
+@media (prefers-reduced-motion: reduce) {
+  .draw *, .draw .shape, .draw .tie { transition: none; }
+  html { scroll-behavior: auto; }
+}
 @media (min-width: 720px) {
   .wrap { padding: 0 40px; }
   header { padding-top: 12px; }
   .mark { font-size: 17px; }
-  h1 { margin: 14px auto 16px; font-size: 44px; letter-spacing: -0.022em; text-align: center; max-width: 22ch; }
-  .panel { max-width: 600px; margin: 0 auto; }
-  .ev .w { font-size: 17px; }
-  .act { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 18px; }
-  .why { font-size: 17px; }
-  .go { margin: 0; flex: none; font-size: 17px; }
-  .facts { margin-top: 72px; }
-  .facts ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 28px; }
-  .facts li { border-bottom: 1px solid var(--line); }
-  .forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; max-width: 900px; }
-  .form { margin-top: 56px; }
+  .hero { max-width: 640px; margin: 0 auto; }
+  h1 { margin: 16px 0; font-size: 40px; }
+  .why { font-size: 18px; }
+  .go { display: inline-flex; }
+  .forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; max-width: 900px; margin-top: 72px; }
+  .form { margin-top: 0; }
   footer { padding: 72px 0 40px; }
 }
 @media (min-width: 1100px) {
   .wrap { max-width: 1280px; }
-  .hero { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(0, 680px); grid-template-rows: auto 1fr; grid-template-areas: "head pic" "act pic"; column-gap: 56px; align-content: start; margin-top: 24px; }
-  h1 { grid-area: head; margin: 8px 0 24px; text-align: left; max-width: none; }
-  .panel { grid-area: pic; max-width: none; margin: 0; }
-  .act { grid-area: act; align-self: start; display: block; margin: 0; }
-  .why { max-width: 24em; }
-  .go { display: inline-flex; margin: 22px 0 0; }
-  .facts { margin-top: 64px; }
+  .hero { display: grid; max-width: none; margin: 24px 0 0; grid-template-columns: minmax(380px, 1fr) minmax(0, 680px); grid-template-rows: auto auto auto auto auto auto 1fr; grid-template-areas: "head pic" "tl pic" "step pic" "key pic" "why pic" "go pic" "facts pic"; column-gap: 56px; align-items: start; }
+  h1 { grid-area: head; margin: 0 0 22px; font-size: 42px; letter-spacing: -0.012em; }
+  .pic { grid-area: pic; }
+  .tl { grid-area: tl; margin: 0; }
+  .step { grid-area: step; gap: 8px; }
+  .ev { order: 3; text-align: left; margin-left: 10px; }
+  .ev .w { font-size: 18px; }
+  .key { grid-area: key; max-width: 32em; }
+  .why { grid-area: why; margin-top: 28px; max-width: 24em; }
+  .go { grid-area: go; justify-self: start; margin-top: 16px; font-size: 17px; }
+  .facts { grid-area: facts; margin-top: 40px; max-width: 32em; }
+  .forms { margin-top: 64px; }
 }
 {% endraw %}</style>
   </head>
@@ -103,25 +119,21 @@ footer a { color: var(--faint); text-decoration: none; }
 <main>
 <section class="hero">
 <h1>Your family, as dated facts you can check.</h1>
-<div class="panel">
 <div class="pic"><svg class="draw" viewBox="-28 -31 309.4 202.4" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="ev"><path class="tie" data-id="ar" d="M0 22V42H112V22"/><path class="tie" data-id="ol" d="M112 144.4V164.4H188V140"/><path class="kin" data-id="june" d="M0 96L0 42"/><path class="kin" data-id="owen" d="M112 91.6L112 42"/><path class="kin off" data-id="iris" d="M150 214L150 164.4"/><g class="p" data-id="arthur"><rect class="shape" x="-22" y="-22" width="44" height="44"/><path class="xd off" data-id="arthur" d="M-22 -22L22 22M22 -22L-22 22"/></g><g class="p" data-id="ruth"><circle class="shape" cx="112" cy="0" r="22"/></g><g class="p" data-id="june"><circle class="shape" cx="0" cy="118" r="22"/></g><g class="p on" data-id="owen"><rect class="you" x="85.6" y="91.6" width="52.8" height="52.8"/><rect class="shape" x="90" y="96" width="44" height="44"/></g><g class="p on" data-id="lena"><circle class="shape" cx="188" cy="118" r="22"/></g><g class="p off" data-id="iris"><circle class="shape" cx="150" cy="236" r="22"/></g><g class="pt" data-id="arthur"><text class="age" data-id="arthur" x="0" y="4.5">61</text><text class="lbn" x="30.8" y="-13" text-anchor="start">Arthur</text><text class="lbd" x="30.8" y="2" text-anchor="start">b. 1949</text><text class="lbd dl off" data-id="arthur" x="30.8" y="17" text-anchor="start">d. 2011</text></g><g class="pt" data-id="ruth"><text class="age" data-id="ruth" x="112" y="4.5">57</text><text class="lbn" x="142.8" y="-13" text-anchor="start">Ruth</text><text class="lbd" x="142.8" y="2" text-anchor="start">b. 1952</text></g><g class="pt" data-id="june"><text class="age" data-id="june" x="0" y="122.5">32</text><text class="lbn" x="30.8" y="105" text-anchor="start">June</text><text class="lbd" x="30.8" y="120" text-anchor="start">b. 1978</text></g><g class="pt" data-id="owen"><text class="age" data-id="owen" x="112" y="122.5">28</text><text class="lbn" x="117" y="68.2" text-anchor="start">Owen</text><text class="lbd" x="117" y="83.2" text-anchor="start">b. 1981</text></g><g class="pt" data-id="lena"><text class="age" data-id="lena" x="188" y="122.5">27</text><text class="lbn" x="218.8" y="105" text-anchor="start">Lena</text><text class="lbd" x="218.8" y="120" text-anchor="start">b. 1983</text></g><g class="pt off" data-id="iris"><text class="age off" data-id="iris" x="150" y="240.5"></text><text class="lbn" x="180.8" y="223" text-anchor="start">Iris</text><text class="lbd" x="180.8" y="238" text-anchor="start">b. 2014</text></g></svg></div>
-<svg class="tl" width="100%" height="44" aria-hidden="true"><line class="base" x1="6.0%" y1="12" x2="98%" y2="12"/><line class="tick" x1="6.00%" y1="6" x2="6.00%" y2="18"/><text class="yr" x="6.00%" y="38" text-anchor="middle">2010</text><line class="tick" x1="25.79%" y1="6" x2="25.79%" y2="18"/><text class="yr" x="25.79%" y="38" text-anchor="middle">2011</text><line class="tick" x1="45.58%" y1="6" x2="45.58%" y2="18"/><text class="yr" x="45.58%" y="38" text-anchor="middle">2012</text><line class="tick" x1="65.37%" y1="6" x2="65.37%" y2="18"/><text class="yr" x="65.37%" y="38" text-anchor="middle">2013</text><line class="tick" x1="85.16%" y1="6" x2="85.16%" y2="18"/><text class="yr" x="85.16%" y="38" text-anchor="middle">2014</text><circle class="dot cur" data-i="0" cx="15.16%" cy="12" r="5.5"/><circle class="dot" data-i="1" cx="42.33%" cy="12" r="4"/><circle class="dot" data-i="2" cx="45.58%" cy="12" r="4"/><circle class="dot" data-i="3" cx="60.43%" cy="12" r="4"/><circle class="dot" data-i="4" cx="86.24%" cy="12" r="4"/></svg>
+<svg class="tl" width="100%" height="44" aria-hidden="true"></svg>
 <div class="step">
-<button type="button" class="stepbtn" data-step="back">‹ Back</button>
+<button type="button" class="stepbtn" data-step="back">Back</button>
 <p class="ev" id="ev"><span class="d">19 Jun 2010</span><span class="w">Owen and Lena married</span></p>
-<button type="button" class="stepbtn" data-step="next">Next ›</button>
+<button type="button" class="stepbtn" data-step="next">Next</button>
 </div>
-<p class="key">Numbers are ages on that date. Crossed box: died. Double outline: Owen, who is telling it. Heavier outline: who the event is about.</p>
-</div>
-<div class="act">
-<p class="why">A fact with a date can be found wrong. An opinion cannot.</p>
+<p class="key">Numbers are ages on that date. Crossed box: died. Double outline: Owen, whose family this is.</p>
+<p class="why">A fact with a date can be found wrong. <span class="whole">An opinion cannot.</span></p>
 <a class="go" href="#join">Ask to join</a>
-</div>
-</section>
 <section class="facts">
 <ul>
 <li>A coach that asks about your family.</li><li>Each fact you state becomes a dated event you can correct.</li><li>Your family diagram, drawn from those facts, on any date.</li>
 </ul>
+</section>
 </section>
 <div class="forms">
 <section class="form" id="join">
@@ -140,7 +152,7 @@ footer a { color: var(--faint); text-decoration: none; }
 <label>Email
 <input name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" maxlength="255" value="{{ beta_email or '' }}" required />
 </label>
-<label>A few words about you and your interest <span class="optional">(optional)</span>
+<label><span>A few words about you <span class="optional">(optional)</span></span>
 <textarea name="words" maxlength="2000">{{ beta_words or '' }}</textarea>
 </label>
 {% if site_key %}<div class="cf-turnstile" data-sitekey="{{ site_key }}" data-size="flexible"></div>{% endif %}
@@ -170,7 +182,7 @@ footer a { color: var(--faint); text-decoration: none; }
 </main>
 <footer><a href="https://alaskafamilysystems.com">© {{ year }} Alaska Family Systems</a></footer>
 </div>
-<script type="application/json" id="steps">{% raw %}[{"d":"19 Jun 2010","w":"Owen and Lena married","who":["owen","lena"],"p":{"arthur":{"v":1,"age":61,"dead":0},"ruth":{"v":1,"age":57,"dead":0},"june":{"v":1,"age":32,"dead":0},"owen":{"v":1,"age":28,"dead":0},"lena":{"v":1,"age":27,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"2 Nov 2011","w":"Arthur died","who":["arthur"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"2012","w":"Ruth sold the house on Fell Street","who":["ruth"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"Oct 2012","w":"Owen's back pain started","who":["owen"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":60,"dead":0},"june":{"v":1,"age":34,"dead":0},"owen":{"v":1,"age":31,"dead":0},"lena":{"v":1,"age":29,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"21 Jan 2014","w":"Iris born","who":["iris"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":61,"dead":0},"june":{"v":1,"age":35,"dead":0},"owen":{"v":1,"age":32,"dead":0},"lena":{"v":1,"age":30,"dead":0},"iris":{"v":1,"age":0,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":1},"vb":[-28.0,-31.0,309.4,295.0]}]{% endraw %}</script>
+<script type="application/json" id="steps">{% raw %}[{"d":"19 Jun 2010","iso":"2010-06-19","span":"day","w":"Owen and Lena married","who":["owen","lena"],"p":{"arthur":{"v":1,"age":61,"dead":0},"ruth":{"v":1,"age":57,"dead":0},"june":{"v":1,"age":32,"dead":0},"owen":{"v":1,"age":28,"dead":0},"lena":{"v":1,"age":27,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"2 Nov 2011","iso":"2011-11-02","span":"day","w":"Arthur died","who":["arthur"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"2012","iso":"2012-01-01","span":"year","w":"Ruth sold the house on Fell Street","who":["ruth"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":59,"dead":0},"june":{"v":1,"age":33,"dead":0},"owen":{"v":1,"age":30,"dead":0},"lena":{"v":1,"age":28,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"Oct 2012","iso":"2012-10-01","span":"month","w":"Owen's back pain started","who":["owen"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":60,"dead":0},"june":{"v":1,"age":34,"dead":0},"owen":{"v":1,"age":31,"dead":0},"lena":{"v":1,"age":29,"dead":0},"iris":{"v":0,"age":null,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":0},"vb":[-28.0,-31.0,309.4,202.4]},{"d":"21 Jan 2014","iso":"2014-01-21","span":"day","w":"Iris born","who":["iris"],"p":{"arthur":{"v":1,"age":null,"dead":1},"ruth":{"v":1,"age":61,"dead":0},"june":{"v":1,"age":35,"dead":0},"owen":{"v":1,"age":32,"dead":0},"lena":{"v":1,"age":30,"dead":0},"iris":{"v":1,"age":0,"dead":0}},"t":{"ar":1,"ol":1},"k":{"june":1,"owen":1,"iris":1},"vb":[-28.0,-31.0,309.4,295.0]}]{% endraw %}</script>
 <script>{% raw %}
 (function () {
   var data = document.getElementById('steps');
@@ -182,15 +194,53 @@ footer a { color: var(--faint); text-decoration: none; }
   var timer = null;
   var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var svg = document.querySelector('svg.draw');
+  var line = document.querySelector('svg.tl');
   var q = function (sel) { return svg.querySelector(sel); };
   var back = document.querySelector('[data-step="back"]');
   var next = document.querySelector('[data-step="next"]');
   var date = document.querySelector('.ev .d');
   var words = document.querySelector('.ev .w');
-  var dots = document.querySelectorAll('svg.tl .dot');
+  var TIES = { ar: ['arthur', 'ruth'], ol: ['owen', 'lena'] };
   var box = S[0].vb.slice();
   var frame = null;
   var setOff = function (el, on) { if (el) { el.classList.toggle('off', !on); } };
+
+  // The years line: a tick and a year at each 1 January, a dot at each event dated to a day
+  // or a month (at its first day), and a band across the whole year for a date given only as
+  // a year, as the app draws a date it is not sure of (height 14, rounded 3, never narrower
+  // than 12 px). Bands go under the dots; the current mark goes on top of everything.
+  var T0 = Date.UTC(2010, 0, 1);
+  var T1 = Date.UTC(2014, 0, 1) + 0.65 * 365.25 * 86400000;
+  var WIRE = 12;
+  function utc(iso) { var p = iso.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]); }
+  function drawLine(k) {
+    var W = line.getBoundingClientRect().width;
+    if (!W) { return; }
+    var left = 16, right = W - 16;
+    var x = function (ms) { return left + (ms - T0) / (T1 - T0) * (right - left); };
+    var f = function (v) { return v.toFixed(1); };
+    var out = '<line class="base" x1="' + f(left) + '" y1="' + WIRE + '" x2="' + f(right) + '" y2="' + WIRE + '"/>';
+    for (var y = 2010; y <= 2014; y++) {
+      var tx = f(x(Date.UTC(y, 0, 1)));
+      out += '<line class="tick" x1="' + tx + '" y1="6" x2="' + tx + '" y2="18"/>';
+      out += '<text class="yr" x="' + tx + '" y="38" text-anchor="middle">' + y + '</text>';
+    }
+    var marks = S.map(function (s, n) {
+      var cls = 'mk' + (n === k ? ' cur' : '');
+      var t = utc(s.iso);
+      if (s.span !== 'year') {
+        return '<circle class="' + cls + '" data-i="' + n + '" cx="' + f(x(t)) + '" cy="' + WIRE + '" r="' + (n === k ? 5.5 : 4) + '"/>';
+      }
+      var a = x(t), b = x(Date.UTC(Number(s.iso.slice(0, 4)) + 1, 0, 1));
+      var w = Math.max(b - a, 12);
+      return '<rect class="' + cls + ' band" data-i="' + n + '" x="' + f((a + b) / 2 - w / 2) + '" y="' + (WIRE - 7) + '" width="' + f(w) + '" height="14" rx="3"/>';
+    });
+    var order = S.map(function (s, n) { return n; }).filter(function (n) { return n !== k; });
+    order.sort(function (a, b) { return (S[a].span === 'year' ? 0 : 1) - (S[b].span === 'year' ? 0 : 1); });
+    out += order.map(function (n) { return marks[n]; }).join('') + marks[k];
+    line.innerHTML = out;
+  }
+
   function setBox(b) { svg.setAttribute('viewBox', b.map(function (v) { return v.toFixed(1); }).join(' ')); }
   function moveBox(to) {
     if (frame) { window.cancelAnimationFrame(frame); frame = null; }
@@ -220,16 +270,15 @@ footer a { color: var(--faint); text-decoration: none; }
       setOff(q('path.xd[data-id="' + id + '"]'), st.dead);
       setOff(q('text.dl[data-id="' + id + '"]'), st.dead);
     });
-    Object.keys(s.t).forEach(function (id) { setOff(q('path.tie[data-id="' + id + '"]'), s.t[id]); });
+    Object.keys(s.t).forEach(function (id) {
+      var tie = q('path.tie[data-id="' + id + '"]');
+      setOff(tie, s.t[id]);
+      if (tie) { tie.classList.toggle('on', TIES[id].every(function (who) { return s.who.indexOf(who) !== -1; })); }
+    });
     Object.keys(s.k).forEach(function (id) { setOff(q('path.kin[data-id="' + id + '"]'), s.k[id]); });
     date.textContent = s.d;
     words.textContent = s.w;
-    dots.forEach(function (c) {
-      var on = Number(c.getAttribute('data-i')) === k;
-      c.classList.toggle('cur', on);
-      c.setAttribute('r', on ? '5.5' : '4');
-      if (on) { c.parentNode.appendChild(c); }
-    });
+    drawLine(k);
     moveBox(s.vb);
     back.disabled = k === 0;
     next.disabled = k === last;
@@ -247,6 +296,7 @@ footer a { color: var(--faint); text-decoration: none; }
   }
   back.addEventListener('click', function () { stop(); if (i > 0) { i -= 1; show(i); } });
   next.addEventListener('click', function () { stop(); if (i < last) { i += 1; show(i); } });
+  window.addEventListener('resize', function () { drawLine(i); });
   show(0);
   timer = window.setTimeout(tick, 2500);
 })();
