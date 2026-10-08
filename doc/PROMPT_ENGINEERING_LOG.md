@@ -1472,6 +1472,13 @@ both a target and a third person. Not yet measured live: no model calls were mad
 **Measured**: no live run (no model calls); the no-model tests in `btcopilot/tests/test_clusters.py` check the section is in the prompt and that the fallback cuts around the person's cluster, the second failing on the code before the change.
 [R-0839, R-0780]
 
+### October 2026: The cluster prompt is a clinician's survey, judged cluster by cluster (job 033)
+
+**Change** (2026-10-08): the grouping prompt, private and public copies alike, is rewritten in a few plain lines: survey the record the way a clinician does and point to the periods when the family was stirred up, naming each for what the family was going through, with a one-sentence reason; most events sit outside any period and an event that belongs to none is left out; a period runs from months to a few years and holds at least three events, never most of the history; the model's own earlier groups are shown with their ids to keep, rename or reshape freely; the person's own groups are fixed and never run over; two periods never share years; the rules' proposal is only a hint. The lines demanding every proposed event be placed, a reason for every change and a kept shape are gone, and the terms fragment's "kept, not rebuilt" paragraph now says the earlier reading is the model's to revise. In code the answer is judged cluster by cluster (ten years, the person's own, a kept larger cluster), one call per regroup, no re-ask, no fallback, `DETECTION_VERSION` 8. Both goldens re-captured.
+**Reason**: per R-0841 to R-0844. On Patrick's diagram one doubtful group refused seven sound ones twice over, and the fallback then stored eight clusters named by their years.
+**Measured**: no live run here (the brief); the no-model tests in `btcopilot/tests/test_clusters.py` cover each judgement and its absence. The Hale live case is updated to the new judgement for the coordinator's run.
+[R-0841, R-0842, R-0843, R-0844]
+
 ### October 2026: Two groups never overlap in time (job 030)
 
 **Change** (2026-10-08): one line in the grouping prompt, private and public copies alike: never return two groups whose years overlap, the person's own groups included; the timeline is one line, and a group's years run from its first event to its last. In code, a returned grouping with two overlapping clusters is refused with the two named by their dates and asked again (`overlap`, an observations row), a stored model cluster overlapping another stored cluster is not handed back as existing, the by-years fallback joins overlapping proposals into one (the proposal the model sees is unchanged), and `DETECTION_VERSION` is 7. Both prompt goldens re-captured. doc/CLUSTERS.md carries the check beside the ten-year one.

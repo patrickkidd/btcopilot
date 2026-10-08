@@ -35,9 +35,7 @@ def regroup(flask_app, *args) -> list[dict]:
 def grouped_now(diagram) -> None:
     """The record as it stands after a grouping that found nothing to keep."""
     data = diagram.get_diagram_data()
-    data.clusterCacheKey = compute_cache_key(
-        [from_dict(Event, e) for e in data.events]
-    )
+    data.clusterCacheKey = compute_cache_key([from_dict(Event, e) for e in data.events])
     diagram.set_diagram_data(data)
     db.session.commit()
 
@@ -83,13 +81,15 @@ def test_apply_regroups_as_one_change_that_undo_takes_back(flask_app, family):
     assert clusters_of(family) == {}
 
 
-def test_apply_says_which_records_fell_back_to_their_years(flask_app, family):
-    # R-0517, R-0780
+def test_apply_says_which_records_got_no_answer_and_names_nothing_for_them(
+    flask_app, family
+):
+    # R-0517, R-0843
     with patch(
         "btcopilot.metered.gemini_structured_sync",
         side_effect=[TimeoutError(), TimeoutError()],
     ):
         rows = regroup(flask_app, "--apply", "--diagram", str(family.id))
-    assert [(r["regrouped"], r["failed"]) for r in rows] == [(1, True)]
-    assert [c["title"] for c in clusters_of(family).values()] == ["1994"]
+    assert [(r["regrouped"], r["failed"]) for r in rows] == [(0, True)]
+    assert clusters_of(family) == {}
     assert Observation.query.filter_by(kind=ObservationKind.ClusterFailed).count() == 1

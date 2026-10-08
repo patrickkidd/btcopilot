@@ -16,7 +16,7 @@ from btcopilot.clusters import (
     sync,
 )
 from btcopilot.coachturn import CoachTurn
-from btcopilot.llmutil import OutputTruncatedError, Parsed, Served, Spent
+from btcopilot.llmutil import OutputTruncatedError, Parsed, Served, Spent, Unreadable
 from btcopilot.models import (
     Author,
     Change,
@@ -152,7 +152,8 @@ def test_a_turn_that_adds_an_event_stores_the_grouping(discussion, family):
                     title="Got sick",
                     description="got sick",
                     person=1,
-                    symptom="up", date_certainty="certain",
+                    symptom="up",
+                    date_certainty="certain",
                 ),
                 said("I put that down."),
             ),
@@ -196,7 +197,8 @@ def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, famil
                     title="Got sick",
                     description="got sick",
                     person=1,
-                    symptom="up", date_certainty="certain",
+                    symptom="up",
+                    date_certainty="certain",
                 ),
                 said("Noted."),
             ),
@@ -380,7 +382,11 @@ def test_a_grouping_stuck_under_the_floor_can_still_be_removed(family):
 
     tools.call(
         ToolName.Remove.value,
-        {"item_kind": ItemKind.Cluster.value, "item_id": "c1", "version": version(family)},
+        {
+            "item_kind": ItemKind.Cluster.value,
+            "item_id": "c1",
+            "version": version(family),
+        },
     )
     assert clusters_of(family) == {}
 
@@ -392,7 +398,11 @@ def test_undoing_the_removal_of_such_a_grouping_reads_as_words_too(family):
     _grandfathered(family)
     Toolbox(family.id, turn_id="t1").call(
         ToolName.Remove.value,
-        {"item_kind": ItemKind.Cluster.value, "item_id": "c1", "version": version(family)},
+        {
+            "item_kind": ItemKind.Cluster.value,
+            "item_id": "c1",
+            "version": version(family),
+        },
     )
 
     with pytest.raises(ToolError, match="Putting that back would leave"):
@@ -484,9 +494,7 @@ def test_the_play_endpoint_resolves_a_stored_cluster(web, test_user, family):
     cluster_id = next(iter(clusters_of(family)))
     token = csrf_token(web)
 
-    with patch(
-        "btcopilot.playturn.PlayTurn.run", return_value={"steps": []}
-    ) as play:
+    with patch("btcopilot.playturn.PlayTurn.run", return_value={"steps": []}) as play:
         response = web.post(
             "/app/play",
             json={"cluster_id": cluster_id},
@@ -515,7 +523,8 @@ def test_what_changed_is_in_the_tool_answer_before_the_coach_answers(
                 title="Got sick",
                 description="got sick",
                 person=1,
-                symptom="up", date_certainty="certain",
+                symptom="up",
+                date_certainty="certain",
             ),
             said("Those look like one story to me now, not two."),
         )
@@ -543,7 +552,8 @@ def test_a_regroup_leaves_the_prompt_and_the_turn_so_far_untouched(discussion, f
                 title="Caught pneumonia",
                 description="caught pneumonia",
                 person=1,
-                symptom="up", date_certainty="certain",
+                symptom="up",
+                date_certainty="certain",
             ),
             said("Those look like one story to me now, not two."),
         )
@@ -574,7 +584,8 @@ def test_what_changed_goes_out_on_the_turn_for_nobody_to_draw(discussion, family
                     title="Got sick",
                     description="got sick",
                     person=1,
-                    symptom="up", date_certainty="certain",
+                    symptom="up",
+                    date_certainty="certain",
                 ),
                 said("Those look like one story to me now, not two."),
             ),
@@ -591,7 +602,7 @@ def test_the_coach_is_told_never_to_name_the_grouping_out_loud():
     assert "was regrouped, recalculated, or updated" in system
 
 
-def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_replies(
+def test_a_grouping_answer_unreadable_twice_keeps_the_groups_and_the_turn_replies(
     discussion, family
 ):
     # R-0410, R-0371, R-0517, R-0780
@@ -613,19 +624,12 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
     kept = clusters_of(family)
     assert len(kept) == 1
 
-    invents = ClusterListResponse(
-        clusters=[
-            ModelCluster(
-                id="c8", eventIds=[10, 11, 12, 13, 14, 15, 16], name="New", reason="r"
-            )
-        ]
-    )
-    drops = ClusterListResponse(
-        clusters=[ModelCluster(eventIds=[10, 11, 12], name="Part", reason="r")]
+    garbled = Unreadable(
+        "not the JSON asked for", Served("gemini-3.1-flash-lite"), Spent()
     )
     with patch(
         "btcopilot.metered.gemini_structured_sync",
-        side_effect=[parsed(invents), parsed(drops)],
+        side_effect=[garbled, garbled],
     ):
         reply = CoachTurn(
             discussion,
@@ -639,7 +643,8 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
                     title="Got sick",
                     description="got sick",
                     person=1,
-                    symptom="up", date_certainty="certain",
+                    symptom="up",
+                    date_certainty="certain",
                 ),
                 said("I put that down."),
             ),
@@ -648,12 +653,12 @@ def test_a_grouping_that_fails_its_checks_twice_keeps_the_groups_and_the_turn_re
     assert reply["statement"] == "I put that down."
     assert clusters_of(family) == kept
     assert noted(ObservationKind.ClusterRefused) == [
-        (1, "unknown_group", 1, 7),
-        (2, "no_change_reason", 1, 3),
+        (1, "unreadable", 0, 0),
+        (2, "unreadable", 0, 0),
     ]
     failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
     assert (failed.detail["check"], failed.detail["fallback"]) == (
-        "no_change_reason",
+        "unreadable",
         False,
     )
 
@@ -682,24 +687,29 @@ GROUPED = ClusterListResponse(
         ModelCluster(eventIds=[10, 11, 12, 13, 14, 15], name="A hard year", reason="r")
     ]
 )
-LEFT_OUT = ClusterListResponse(
+A_PAIR_AND_A_RUN = ClusterListResponse(
     clusters=[
-        ModelCluster(eventIds=[10, 11, 12], name="Part", reason="r", change="split")
+        ModelCluster(eventIds=[10, 11], name="A pair", reason="r"),
+        ModelCluster(eventIds=[12, 13, 14, 15], name="The rest", reason="r"),
     ]
 )
+GARBLED = Unreadable("not the JSON asked for", Served("gemini-3.1-flash-lite"), Spent())
 
 
-def test_a_refused_grouping_answer_is_written_down_with_its_check(family):
-    # R-0517, R-0780
+def test_a_dropped_cluster_is_written_down_with_its_check_and_the_models_answer(family):
+    # R-0517, R-0780, R-0841
     with patch(
         "btcopilot.metered.gemini_structured_sync",
-        side_effect=[parsed(LEFT_OUT), parsed(GROUPED)],
-    ):
+        return_value=parsed(A_PAIR_AND_A_RUN),
+    ) as asked:
         sync(family.id, turn_id="t1", user_id=family.user_id)
-    assert noted(ObservationKind.ClusterRefused) == [(1, "left_out", 1, 3)]
+    assert asked.call_count == 1
+    assert noted(ObservationKind.ClusterRefused) == [(1, "too_small", 1, 2)]
     row = Observation.query.filter_by(kind=ObservationKind.ClusterRefused).one()
     assert (row.turn_id, row.diagram_id) == ("t1", family.id)
-    assert "[13, 14, 15] were left out" in row.detail["detail"]
+    assert (row.detail["name"], row.detail["eventIds"]) == ("A pair", [10, 11])
+    assert (row.detail["start"], row.detail["end"]) == ("1994-01-01", "1994-02-01")
+    assert [c["title"] for c in clusters_of(family).values()] == ["The rest"]
     assert not Observation.query.filter_by(kind=ObservationKind.ClusterFailed).count()
 
 
@@ -712,22 +722,21 @@ def test_an_accepted_grouping_answer_writes_no_observation(family):
     assert Observation.query.count() == 0
 
 
-def test_twice_refused_with_no_groups_stores_the_rules_groups_under_their_years(
-    family,
-):
-    # R-0517, R-0780
+def test_two_answers_that_cannot_be_read_store_nothing_and_name_nothing(family):
+    # R-0517, R-0843
     with patch(
         "btcopilot.metered.gemini_structured_sync",
-        side_effect=[parsed(LEFT_OUT), parsed(LEFT_OUT)],
+        side_effect=[GARBLED, GARBLED],
     ):
         sync(family.id, turn_id="t1", user_id=family.user_id)
-    stored = list(clusters_of(family).values())
-    assert [(c["title"], c["eventIds"]) for c in stored] == [
-        ("1994", [10, 11, 12, 13, 14, 15])
+    assert clusters_of(family) == {}
+    assert noted(ObservationKind.ClusterRefused) == [
+        (1, "unreadable", 0, 0),
+        (2, "unreadable", 0, 0),
     ]
     failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
-    assert (failed.detail["check"], failed.detail["fallback"]) == ("left_out", True)
-    assert family.get_diagram_data().clusterCacheKey
+    assert (failed.detail["check"], failed.detail["fallback"]) == ("unreadable", False)
+    assert not family.get_diagram_data().clusterCacheKey
 
 
 def test_a_model_that_fills_every_offered_field_still_groups_a_new_record(family):
@@ -790,5 +799,6 @@ def test_a_grouping_call_that_fails_twice_never_fails_the_turn(discussion, famil
         (2, "call_failed", 0, 0),
     ]
     failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
-    assert (failed.detail["check"], failed.detail["fallback"]) == ("call_failed", True)
-    assert [c["title"] for c in clusters_of(family).values()] == ["1994"]
+    assert (failed.detail["check"], failed.detail["fallback"]) == ("call_failed", False)
+    # nothing is named after its years when the model gives no answer (R-0843)
+    assert clusters_of(family) == {}

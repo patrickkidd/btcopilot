@@ -1,8 +1,8 @@
 """The grouping call on the fictional Hale record: three runs of events decades
-apart and two strays, the shape of the fault seen on production. The old
-prompt let the model fold them into one group of fifty years; the reworded
-prompt and the ten-year check keep them three (R-0836, R-0837, R-0838).
-Invented names only; no real record is involved.
+apart and two strays, the shape of a fault seen on production. The survey
+prompt names the three periods and leaves the strays out, and the code keeps
+every cluster it returns except one over ten years or one overlapping another
+(R-0841, R-0837, R-0839). Invented names only; no real record is involved.
 
 The app's grouping model is Gemini, and this suite's machine may have no key
 for it, so the call goes through Claude Code (`claude -p` with the answer's
@@ -19,12 +19,7 @@ import subprocess
 import tempfile
 from decimal import Decimal
 
-from btcopilot.clusters import (
-    ClusterError,
-    ClusterListResponse,
-    ModelCluster,
-    detect_clusters,
-)
+from btcopilot.clusters import ClusterListResponse, ModelCluster, detect_clusters
 from btcopilot.tests.live.criterion import once, passes
 from btcopilot.tests.test_clusters import ALL_HALE, HALE, HALE_NAMES, HALE_STORED
 
@@ -119,12 +114,13 @@ def years_outside(cluster) -> list[int]:
 
 @passes(8, of=10)
 def test_three_runs_decades_apart_stay_three_groups():
-    # R-0836, R-0837
-    """The 1950s, 1994 and 1996 to 2001 come back as three groups; the 1948
-    marriage joins none of them; no group spans 1955 and 1994; the grandfather's
-    1998 death sits in the 1996 to 2001 group or in none; and no name or reason
-    reaches outside its own events."""
-    result = detect_clusters(HALE, ask)
+    # R-0841, R-0837
+    """The 1950s, 1994 and 1996 to 2001 are kept as three periods; the 1948
+    marriage joins none of them; no kept cluster spans 1955 and 1994; the
+    grandfather's 1998 death sits in the 1996 to 2001 period or in none; and no
+    name or reason reaches outside its own events. A cluster the judgement
+    dropped is printed, since the kept ones alone decide the case."""
+    result = detect_clusters(HALE, ask, lambda d: print(f"  dropped: {d.why}"))
     for cluster in result.clusters:
         print(
             f"  {span(cluster)} {cluster.eventIds} {cluster.name!r}: {cluster.reason}"
@@ -148,20 +144,14 @@ def test_three_runs_decades_apart_stay_three_groups():
 
 @once
 def test_a_stored_fifty_year_group_is_not_handed_back_unchanged():
-    # R-0838
-    """With the merged 1948 to 2001 group already stored as the model's, one
-    real run either returns the groups inside it or is refused, which leads to
-    the rules' groups under their years; the stored group never comes back as
-    it was."""
-    try:
-        result = detect_clusters(HALE_STORED, ask)
-    except ClusterError as refused:
-        # both answers refused: in the turn this leads to the rules' groups
-        # under their years, and the stored group is removed (R-0780, R-0838)
-        print(f"  refused twice, the last by {refused.check.value}: {refused}")
-        return
+    # R-0840, R-0838
+    """With the merged 1948 to 2001 group already stored as the model's, it is
+    not shown to the model as its own, and whatever the model names, nothing
+    kept spans 1955 and 1994: the stored group never comes back as it was."""
+    result = detect_clusters(HALE_STORED, ask, lambda d: print(f"  dropped: {d.why}"))
     for cluster in result.clusters:
         print(f"  {cluster.id} {span(cluster)} {cluster.eventIds} {cluster.name!r}")
+    assert not [c for c in result.clusters if c.id == "c1"], "the stored id came back"
     whole = [c for c in result.clusters if set(c.eventIds) == set(ALL_HALE)]
     assert not whole, "the fifty-year group came back as it was"
     assert not [

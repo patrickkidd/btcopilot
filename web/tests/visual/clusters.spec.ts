@@ -51,29 +51,34 @@ test.describe("the three levels on the moves record", () => {
     await toRest(page);
     await expect(path(page)).toHaveText("Timeline");
     await openCluster(page);
-    await expect(name(page)).toHaveText("The walk (17)");
+    await expect(path(page)).toHaveText("Timeline \u203a The walk");
+    await expect(name(page)).toContainText("17 events");
     await page.locator("#cap-play").click();
     await expect(page.locator("#pbp")).toBeVisible();
     await expect(page.locator("#view .ss.board")).toHaveCount(0);
   });
 
-  // R-0213, R-0538, R-0583, R-0767
-  test("an open cluster's title ends with how many events it holds, and the path above names it with its years", async ({ page }) => {
+  // R-0213, R-0538, R-0583, R-0767, R-0841
+  test("an open cluster's name is in the path once, and its years and count sit under the line once", async ({ page }) => {
     await tellWithoutModel(page);
     await settle(page);
     await toRest(page);
     const { clusters } = await (await page.request.get("/app/timeline")).json();
     const walk = clusters.find((c: { title: string; label: string }) => (c.title || c.label) === "The walk");
     await openCluster(page);
-    await expect(name(page)).toHaveText(`The walk (${walk.count})`);
     const years = (iso: string) => iso.slice(0, 4);
     const [a, b] = [years(walk.start), years(walk.end)];
-    const span = a === b ? a : `${a}\u2013${a.slice(0, 2) === b.slice(0, 2) ? b.slice(2) : b}`;
-    await expect(path(page)).toHaveText(`Timeline \u203a The walk \u00b7 ${span}`);
+    const span = a === b ? a : `${a}\u2013${b}`;
+    await expect(name(page)).toHaveText(`${span} \u00b7 ${walk.count} events`);
+    await expect(path(page)).toHaveText("Timeline \u203a The walk");
+    // the name once, the years once, on the whole screen
+    const header = `${await path(page).textContent()} ${await name(page).textContent()}`;
+    expect(header.split("The walk").length - 1).toBe(1);
+    expect(header.split(span).length - 1).toBe(1);
   });
 
-  // R-0767
-  test("an open cluster's name too long for the phone gives way to an ellipsis, never its count", async ({ page }, info) => {
+  // R-0767, R-0841
+  test("an open cluster's name too long for the phone is cut in the path, and the years and count under the line stay whole", async ({ page }, info) => {
     test.skip(info.project.name !== "phone", "only the phone is too narrow for the name");
     const long = "Pursuit of psychology and emotional regulation";
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
@@ -84,13 +89,13 @@ test.describe("the three levels on the moves record", () => {
     await settle(page);
     await toRest(page);
     await openCluster(page);
-    await expect(name(page)).toContainText(long);
-    const seen = await name(page).evaluate((el) => {
-      const [nm, ct] = [...el.children].map((c) => c.getBoundingClientRect());
-      const box = el.getBoundingClientRect();
-      return { cut: el.firstElementChild!.scrollWidth > el.firstElementChild!.clientWidth, count: ct.right <= box.right + 0.5 && ct.width > 0, after: ct.left >= nm.right };
+    await expect(path(page)).toContainText(long);
+    await expect(name(page)).toHaveText(/^\d{4}(\u2013\d{4})? \u00b7 \d+ events$/);
+    const whole = await name(page).evaluate((el) => {
+      const span = el.firstElementChild as HTMLElement;
+      return span.scrollWidth <= span.clientWidth + 0.5;
     });
-    expect(seen).toEqual({ cut: true, count: true, after: true });
+    expect(whole).toBe(true);
   });
 
   // R-0376
@@ -157,7 +162,8 @@ test.describe("the boxes at rest", () => {
       const box = await boxOf(page.locator("#view rect.pill"));
       for (const x of [box.x + 4, box.x + box.width - 4]) {
         await page.mouse.click(x, box.y + box.height / 2);
-        await expect(name(page)).toHaveText("Leaving and losing (3)");
+        await expect(path(page)).toHaveText("Timeline › Leaving and losing");
+        await expect(name(page)).toHaveText("1981–2003 · 3 events");
         await step(page, 0).click();
         await expect(path(page)).toHaveText("Timeline");
         await page.waitForTimeout(400);
@@ -202,7 +208,7 @@ test.describe("one cluster open on the sparse record", () => {
     const zone = await boxOf(zones(page).first());
     expect(zone.x).toBeGreaterThanOrEqual(pill.x + pill.width - 1);
     await expect(step(page, 0)).toBeVisible();
-    await expect(path(page)).toHaveText("Timeline \u203a Leaving and losing \u00b7 1981\u20132003");
+    await expect(path(page)).toHaveText("Timeline \u203a Leaving and losing");
   });
 
 
@@ -211,7 +217,7 @@ test.describe("one cluster open on the sparse record", () => {
     await settle(page);
     await openCluster(page);
     await page.locator("#info").click();
-    await expect(path(page)).toHaveText("Timeline \u203a Leaving and losing \u00b7 1981\u20132003 \u203a about");
+    await expect(path(page)).toHaveText("Timeline \u203a Leaving and losing \u203a about");
     await expect(page.locator("#view")).toContainText(
       "Ada lost her grandmother, and then moved away from everyone she knew.",
     );
@@ -306,7 +312,7 @@ test.describe("one cluster open on the sparse record", () => {
     await expect(sheet(page).locator(".bk-list .bk-by")).toHaveText(["A made-up author, ch. 1", "A made-up author, ch. 2"]);
     // the about page is still there under the sheet, and the picture was not put down
     await expect(page.locator("#view .card")).toHaveCount(1);
-    await expect(path(page)).toHaveText("Timeline › Leaving and losing · 1981–2003 › about");
+    await expect(path(page)).toHaveText("Timeline › Leaving and losing › about");
   });
 
   // R-0691, R-0317
@@ -324,7 +330,7 @@ test.describe("one cluster open on the sparse record", () => {
     await expect(sheet(page)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(sheet(page)).toHaveCount(0);
-    await expect(path(page)).toHaveText("Timeline › Leaving and losing · 1981–2003 › about");
+    await expect(path(page)).toHaveText("Timeline › Leaving and losing › about");
   });
 
   // R-0688
@@ -411,9 +417,10 @@ test.describe("a chip in the coach's words that names a cluster", () => {
     await settle(page);
     await expect(path(page)).toHaveText("Timeline");
     await page.locator(".bub.coach .chip.data").first().click();
-    await expect(name(page)).toHaveText(
-      "the cluster when everybody stopped speaking about the house and the money (3)",
+    await expect(path(page)).toHaveText(
+      "Timeline › the cluster when everybody stopped speaking about the house and the money",
     );
+    await expect(name(page)).toContainText("3 events");
     await expect(step(page, 0)).toBeVisible();
   });
 });
