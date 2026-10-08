@@ -464,15 +464,18 @@ function plain(control: Element): HTMLElement {
   return span;
 }
 
-function snapshot(region: HTMLElement, ...skip: Element[]): HTMLElement {
+function snapshot(region: HTMLElement): HTMLElement {
   const lay = document.createElement("div");
   lay.className = "slide-lay";
+  // the region's own height: the copy travels in a clipping box taller than
+  // the region (theme.css .slide-clip), so it cannot take its height from that
+  lay.style.height = `${region.offsetHeight}px`;
   // a picture of the level, not the level: nothing in it can be found, read
   // out or pressed, so the live controls are the only ones on the page
   lay.inert = true;
   lay.setAttribute("aria-hidden", "true");
   for (const child of [...region.children]) {
-    if (skip.includes(child) || child.classList.contains("slide-lay")) continue;
+    if (child.classList.contains("slide-clip")) continue;
     const copy = child.cloneNode(true) as HTMLElement;
     for (const el of [copy, ...copy.querySelectorAll("[id]")]) el.removeAttribute("id");
     for (const el of copy.querySelectorAll("[data-target]")) el.removeAttribute("data-target");
@@ -1296,16 +1299,22 @@ export class Picture {
     // of chips — not the drawing alone (owner, 2026-09-09). The level that is
     // leaving is photographed now; the one arriving is photographed once the
     // page has written its title and chips, a frame later; the two pictures
-    // travel over the live region, which is already showing the new level.
+    // travel over the live region, which is already showing the new level, in
+    // a clipping box of their own that is cut at the region's top and sides
+    // and reaches well below it (theme.css .slide-clip), so the about page
+    // hangs over the chat whole on every frame.
     const region = this.host.parentElement as HTMLElement;
     const leaving = snapshot(region);
     this.draw();
     region.classList.add("sliding");
-    region.append(leaving);
+    const clip = document.createElement("div");
+    clip.className = "slide-clip";
+    clip.append(leaving);
+    region.append(clip);
     keepScroll(leaving);
     requestAnimationFrame(() => {
-      const arriving = snapshot(region, leaving);
-      region.append(dir === 1 ? arriving : leaving);
+      const arriving = snapshot(region);
+      clip.append(dir === 1 ? arriving : leaving);
       keepScroll(arriving);
       const mover = dir === 1 ? arriving : leaving;
       // the about page hangs below the region, so it starts as far up as its own foot
@@ -1318,8 +1327,7 @@ export class Picture {
         easing: "ease",
       });
       this.landing = () => {
-        leaving.remove();
-        arriving.remove();
+        clip.remove();
         region.classList.remove("sliding");
       };
       this.flight.finished.then(

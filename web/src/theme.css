@@ -37,6 +37,9 @@
   /* Libre Franklin for words, IBM Plex Mono for data and chips. */
   /* what a scroll bar takes on the right of a list */
   --gutter: 12px;
+  /* how far a card's corner button stands in from its two edges: the cross at
+     the top right, the about page's book at the bottom right (Patrick, 2026-10-08) */
+  --corner: 4px;
   --sans: "Libre Franklin", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: light dark;
@@ -241,8 +244,9 @@ button { font-family: inherit; }
 }
 .pl-btn:active { color: var(--data); }
 .pl-btn svg { display: block; }
-/* the about page: words, at the height they need, clear of its close button */
-.ss.about { padding: 4px 52px 10px 16px; box-sizing: border-box; }
+/* the about page: words, at the height they need, clear of its close button on
+   the right and of its book, which stands in the bottom corner, below */
+.ss.about { padding: 4px 52px calc(44px + var(--corner)) 16px; box-sizing: border-box; }
 /* The about page: a card over the chat, from the top of the
    picture down, on ground of its own (R-0230), so opening one resizes nothing
    and the bubbles stay where they are under it (R-0460). */
@@ -261,8 +265,9 @@ button { font-family: inherit; }
 .ab-list li { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font: 400 13px/1.35 var(--mono); }
 .ab-yr { flex: none; width: 44px; color: var(--data); }
 .ab-what { color: var(--ink); }
-/* the about page's book: the Family view's book button, at the foot of the page (R-0691) */
-.ss.about .book { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 2px -12px -8px auto; padding: 0; border: 0; background: none; color: var(--data); cursor: pointer; }
+/* the about page's book: the Family view's book button, in the page's bottom-right
+   corner as far in as the cross is in the top-right (.cardx), the same size (R-0691) */
+.ss.about .book { position: absolute; right: var(--corner); bottom: var(--corner); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0; padding: 0; border: 0; background: none; color: var(--data); cursor: pointer; }
 /* the icon keeps the Family view's size: inside .ss an svg is otherwise the picture's own full-width drawing */
 .ss.about .book svg { position: static; width: 20px; height: 20px; }
 .ss.about .book:active { color: var(--data-press); }
@@ -358,18 +363,36 @@ button { font-family: inherit; }
    place. The two stand side by side for the length of the slide, so nothing
    under the picture moves while they travel; the about page hangs over the
    chat at its full height the whole way, never cut to the region's and then
-   let out (Patrick, 2026-10-02), so the region clips the slide at its top and
-   sides only, and the live page waits under the copy. The chat comes later in
-   the page, so the sliding region stands above it, or its bubbles would show
-   through the about page on its way down. */
-.pic.sliding { overflow-x: clip; overflow-y: visible; clip-path: inset(0 0 -100vh 0); z-index: 6; }
+   let out (Patrick, 2026-10-02), and the live page waits under the copy. The
+   chat comes later in the page, so the sliding region stands above it, or its
+   bubbles would show through the about page on its way down. */
+.pic.sliding { z-index: 6; }
 .pic.sliding .view { transition: none; }
 .pic.sliding > .view .card { visibility: hidden; }
-/* a level arrives as a card over the one it came from: the whole region, on
-   the picture's own ground, so its words never cross the other level's words */
+/* The slide's own clipping box. It ends where the region does at the top and
+   the sides, so a copy on its way in or out is cut under the title row and
+   nothing else, and it reaches a whole screen below the region, so the about
+   page is painted whole over the chat on every frame. Plain overflow: hidden:
+   the region itself used to clip with overflow-x: clip beside overflow-y:
+   visible and a clip-path reaching below it, and Safari cut the moving copy at
+   the region's bottom under them until the last frame (Patrick, 2026-10-08). */
+.pic .slide-clip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(100% + 100vh);
+  overflow: hidden;
+  pointer-events: none;
+}
+/* a level arrives as a card over the one it came from: the whole region (its
+   height is set from the region when it is taken), on the picture's own
+   ground, so its words never cross the other level's words */
 .pic .slide-lay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 5;
   background: var(--panel);
   will-change: transform;
@@ -3288,8 +3311,8 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .drow.hasx { padding-right: 52px; }
 .cardx {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: var(--corner);
+  right: var(--corner);
   width: 44px;
   height: 44px;
   border: none;
