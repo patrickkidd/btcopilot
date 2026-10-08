@@ -7,21 +7,32 @@ record refuses to store, and that a grouping already there is kept rather than
 rebuilt.
 """
 
+import datetime
 from contextlib import contextmanager
 
 import pytest
-from mock import Mock
+from mock import Mock, patch
 
+from btcopilot import clusters
 from btcopilot.clusters import (
+    MAX_SPAN_YEARS,
+    ClusterCheck,
     ClusterError,
     ClusterListResponse,
     ModelCluster,
+    _deltas,
     answer_schema,
     candidates,
     detect_clusters,
+    joinable,
+    silence,
+    sync,
+    too_long,
     years,
 )
-from btcopilot.llmutil import gemini_structured_sync
+from btcopilot.extensions import db
+from btcopilot.llmutil import Parsed, Served, Spent, gemini_structured_sync
+from btcopilot.models import Observation, ObservationKind
 from btcopilot.seed import seed_diagram_data
 from btcopilot.schema import (
     Cluster,
@@ -51,6 +62,123 @@ def record(
         pair_bonds=[asdict(b) for b in bonds],
         clusters=[asdict(c) for c in clusters],
     )
+
+
+# The fictional Hale family, shaped like the fault seen on production: three
+# runs of events decades apart and two strays, a grandparent on the 1948
+# marriage and on the 1998 death the only bridge between the 1950s and the
+# 1990s. Nobody real. 1 Walter and 2 Edith (the grandparents), 3 June and 4 Ray
+# (the parents), 5 Nell (the person), 6 Mae (her aunt), 7 Theo (her husband).
+HALE_NAMES = ("Walter", "Edith", "June", "Ray", "Nell", "Mae", "Theo")
+HALE_BONDS = (
+    PairBond(id=1, person_a=1, person_b=2),
+    PairBond(id=2, person_a=3, person_b=4),
+    PairBond(id=3, person_a=5, person_b=7),
+)
+HALE_EVENTS = (
+    asdict(
+        Event(id=1, kind=EventKind.Married, person=1, spouse=2, dateTime="1948-06-12")
+    ),
+    moment(
+        2,
+        "1954-02-10",
+        person=2,
+        symptom=VariableShift.Up,
+        description="Edith's headaches began",
+    ),
+    moment(
+        3,
+        "1954-09-01",
+        person=1,
+        relationship=RelationshipKind.Distance,
+        relationshipTargets=[2],
+        description="Walter away at the mill most nights",
+    ),
+    moment(
+        4,
+        "1955-04-20",
+        person=2,
+        functioning=VariableShift.Down,
+        description="Edith stopped keeping the books",
+    ),
+    asdict(
+        Event(
+            id=5,
+            kind=EventKind.Birth,
+            child=6,
+            person=1,
+            spouse=2,
+            dateTime="1955-11-02",
+        )
+    ),
+    asdict(
+        Event(id=6, kind=EventKind.Divorced, person=3, spouse=4, dateTime="1994-03-05")
+    ),
+    moment(
+        7,
+        "1994-06-10",
+        person=5,
+        relationship=RelationshipKind.Distance,
+        relationshipTargets=[3],
+        description="Nell stopped calling her mother",
+    ),
+    moment(
+        8,
+        "1994-10-20",
+        person=3,
+        symptom=VariableShift.Up,
+        description="June's drinking",
+    ),
+    asdict(
+        Event(id=9, kind=EventKind.Married, person=5, spouse=7, dateTime="1996-09-01")
+    ),
+    moment(
+        10,
+        "1997-04-12",
+        person=5,
+        symptom=VariableShift.Up,
+        description="Nell's panic attacks",
+    ),
+    asdict(Event(id=11, kind=EventKind.Death, person=1, dateTime="1998-01-15")),
+    moment(
+        12,
+        "1998-09-30",
+        person=5,
+        relationship=RelationshipKind.Conflict,
+        relationshipTargets=[7],
+        description="fights over money",
+    ),
+    moment(
+        13,
+        "2000-02-14",
+        person=7,
+        functioning=VariableShift.Down,
+        description="Theo lost his job",
+    ),
+    asdict(
+        Event(
+            id=14, kind=EventKind.Separated, person=5, spouse=7, dateTime="2001-06-30"
+        )
+    ),
+)
+# The three proposals the rules make of it, and the two events in none.
+HALE_PROPOSALS = [[2, 3, 4, 5], [6, 7, 8], [9, 10, 12, 13, 14]]
+HALE_STRAYS = [1, 11]
+ALL_HALE = list(range(1, 15))
+
+
+def hale(*clusters: Cluster) -> DiagramData:
+    return DiagramData(
+        people=[
+            asdict(Person(id=n, name=name)) for n, name in enumerate(HALE_NAMES, 1)
+        ],
+        events=list(HALE_EVENTS),
+        pair_bonds=[asdict(b) for b in HALE_BONDS],
+        clusters=[asdict(c) for c in clusters],
+    )
+
+
+HALE = hale()
 
 
 def grouped(data: DiagramData) -> list[list[int]]:
@@ -490,3 +618,270 @@ def test_a_fallback_title_is_the_years_the_group_spans():
     # R-0780
     assert years("2024-03-01", "2026-01-09") == "2024\u20132026"
     assert years("1994-01-01", "1994-06-01") == "1994"
+
+
+# The Hale record: the rules' proposal, the scripted answers the check refuses
+# and passes, and the prompt it is given.
+
+MERGED_WHY = (
+    "Edith's headaches after the marriage, June's divorce and Nell's own marriage "
+    "breaking up while her grandfather died are one story of the women in this family"
+)
+MERGED = answers(named(*ALL_HALE, name="The women of this family", change=MERGED_WHY))
+THREE = answers(
+    named(2, 3, 4, 5, name="Edith's headaches"),
+    named(6, 7, 8, name="June's divorce"),
+    named(9, 10, 12, 13, 14, name="Nell and Theo"),
+)
+
+
+def spans(result) -> list[tuple[str, str]]:
+    return [(c.startDate[:4], c.endDate[:4]) for c in result.clusters]
+
+
+def test_the_hale_record_proposes_three_groups_decades_apart_and_two_strays():
+    # R-0834, R-0215
+    proposed = candidates(HALE)
+    assert [c.eventIds for c in proposed] == HALE_PROPOSALS
+    assert [c.startDate for c in proposed] == ["1954-02-10", "1994-03-05", "1996-09-01"]
+    grouped = {i for c in proposed for i in c.eventIds}
+    assert [e.id for e in joinable(HALE) if e.id not in grouped] == HALE_STRAYS
+
+
+def test_a_group_spanning_more_than_ten_years_is_refused_both_times():
+    # R-0834, R-0780
+    """One group of all fourteen events, 1948 to 2001, with a change sentence:
+    every other check passes it, and the ten-year check refuses it on both
+    asks, naming its kind, so the refusal is counted by kind."""
+    seen = []
+    with replies(MERGED, MERGED) as ask:
+        with pytest.raises(ClusterError, match="ordinary level") as refused:
+            detect_clusters(HALE, ask, lambda n, err, _: seen.append((n, err.check)))
+    assert refused.value.check is ClusterCheck.TooLong
+    assert seen == [(1, ClusterCheck.TooLong), (2, ClusterCheck.TooLong)]
+    second = ask.call_args_list[1].args[0]
+    assert "thrown out" in second and "1948 to 2001" in second
+
+
+def test_without_the_ten_year_check_the_merged_answer_is_accepted():
+    # R-0834
+    """What the code did before the check: the fifty-year group passed every
+    check and was stored 1948 to 2001. Only the ceiling refuses it."""
+    with patch.object(clusters, "MAX_SPAN_YEARS", 100):
+        with replies(MERGED) as ask:
+            result = detect_clusters(HALE, ask)
+    assert spans(result) == [("1948", "2001")]
+
+
+def test_ten_years_to_the_day_passes_and_a_day_more_is_too_long():
+    # R-0834
+    day = datetime.date(1990, 1, 1)
+    assert not too_long([day, datetime.date(1990 + MAX_SPAN_YEARS, 1, 1)])
+    assert too_long([day, datetime.date(1990 + MAX_SPAN_YEARS, 1, 2)])
+    assert not too_long([])
+    assert not too_long([datetime.date(1996, 2, 29), datetime.date(2006, 2, 28)])
+
+
+def test_the_three_proposals_as_given_pass():
+    # R-0834, R-0287
+    with replies(THREE) as ask:
+        result = detect_clusters(HALE, ask)
+    assert spans(result) == [("1954", "1955"), ("1994", "1994"), ("1996", "2001")]
+    assert all(1 not in c.eventIds for c in result.clusters)
+
+
+def test_the_grandfathers_death_joins_the_run_it_fell_in_on_a_sentence():
+    # R-0834, R-0374
+    """The 1998 death is 258 days from the fights over money; the record holds
+    the reaction, and 1996 to 2001 is under the ceiling."""
+    joined = "Walter's death in early 1998 sits inside Nell and Theo's trouble: the fights over money came that autumn."
+    with replies(
+        answers(
+            named(2, 3, 4, 5, name="Edith's headaches"),
+            named(6, 7, 8, name="June's divorce"),
+            named(9, 10, 11, 12, 13, 14, name="Nell and Theo", change=joined),
+        )
+    ) as ask:
+        result = detect_clusters(HALE, ask)
+    assert spans(result)[2] == ("1996", "2001")
+    assert result.changes == [joined]
+
+
+def test_the_early_marriage_joined_to_the_first_run_passes_the_check():
+    # R-0834, R-0374
+    """1948 to 1955 is seven years, under the ceiling: whether the marriage
+    belongs with the headaches six years on is the model's call, and the check
+    does not make it."""
+    joined = "Edith's headaches began in the marriage's first years."
+    with replies(
+        answers(
+            named(1, 2, 3, 4, 5, name="The marriage", change=joined),
+            named(6, 7, 8, name="June's divorce"),
+            named(9, 10, 12, 13, 14, name="Nell and Theo"),
+        )
+    ) as ask:
+        result = detect_clusters(HALE, ask)
+    assert spans(result)[0] == ("1948", "1955")
+
+
+FIFTY_YEARS = already(*ALL_HALE, cluster_id="c1", name="The women of this family")
+HALE_STORED = hale(FIFTY_YEARS)
+
+
+def test_a_stored_group_that_fails_the_check_is_not_handed_back_as_existing():
+    # R-0835, R-0374
+    """The fifty-year group is already stored as the model's. It is left out of
+    the groups the model is told to keep, its id is offered nowhere in the
+    answer's shape, the three proposals come back under new ids, and the record
+    change removes it."""
+    with replies(THREE) as ask:
+        result = detect_clusters(HALE_STORED, ask)
+    asked = ask.call_args_list[0].args[0]
+    assert "EXISTING GROUPS\n\n[]" in asked
+    assert "The women of this family" not in asked
+    assert (
+        "id"
+        not in ask.call_args_list[0].args[1]["properties"]["clusters"]["items"][
+            "properties"
+        ]
+    )
+    assert [c.id for c in result.clusters] == ["c2", "c3", "c4"]
+    dates = {e["id"]: e["dateTime"] for e in HALE_EVENTS}
+    removed = [
+        d
+        for d in _deltas(HALE_STORED.clusters, result.clusters, dates)
+        if d["item_id"] == "c1"
+    ]
+    assert removed == [
+        {"item_kind": "cluster", "item_id": "c1", "field": None, "after": None}
+    ]
+
+
+def test_the_model_handing_back_the_dropped_groups_id_is_refused_as_unknown():
+    # R-0835, R-0076
+    kept = answers(named(*ALL_HALE, cluster_id="c1", name="The women of this family"))
+    with replies(kept, kept) as ask:
+        with pytest.raises(ClusterError, match="not one of the groups") as refused:
+            detect_clusters(HALE_STORED, ask)
+    assert refused.value.check is ClusterCheck.UnknownGroup
+
+
+def test_a_stored_group_within_ten_years_is_still_handed_back():
+    # R-0835, R-0374
+    """The rule protects a reading, not a category error: a stored group that
+    passes the check is offered as before."""
+    data = hale(already(6, 7, 8, cluster_id="c1", name="June's divorce"))
+    with replies(
+        answers(
+            named(2, 3, 4, 5, name="Edith's headaches"),
+            named(6, 7, 8, cluster_id="c1", name="June's divorce"),
+            named(9, 10, 12, 13, 14, name="Nell and Theo"),
+        )
+    ) as ask:
+        result = detect_clusters(data, ask)
+    assert '"id": "c1"' in ask.call_args_list[0].args[0]
+    assert [c.id for c in result.clusters] == ["c2", "c1", "c3"]
+
+
+def test_the_prompt_states_the_silence_before_each_proposal_and_the_reworded_lines():
+    # R-0833
+    """The model reads the gap before each proposed group as words instead of
+    inferring it from two dates, and the lines the books contradicted are
+    gone from the prompt it is given."""
+    with replies(THREE) as ask:
+        detect_clusters(HALE, ask)
+    # the prompt's lines wrap, so phrases are matched on its words alone
+    asked = " ".join(ask.call_args_list[0].args[0].split())
+    assert "5 years and 8 months with nothing recorded before this group" in asked
+    assert "38 years and 4 months with nothing recorded before this group" in asked
+    assert "1 year and 10 months with nothing recorded before this group" in asked
+    for sentence in (
+        "with the silence before it stated",
+        "separate is the ordinary case",
+        "The same people alone is never a reason",
+        "with nothing settled in between",
+        "It ends where the record shows the family settled",
+        "never a stage of the family's life",
+        "is not protected when it covers most of the record's years",
+        "never a name for one part of a group that spans more",
+    ):
+        assert sentence in asked, sentence
+    for gone in (
+        "about the same people, or the later consequence",
+        "Events months or years later can still belong",
+        "It ends where anxiety comes back to the level it sat at before",
+        "a quiet stretch is not evidence of calm",
+    ):
+        assert gone not in asked, gone
+
+
+def test_the_silence_is_said_in_years_months_or_days():
+    # R-0833
+    assert silence(datetime.timedelta(days=38 * 365 + 123)) == "38 years and 4 months"
+    assert silence(datetime.timedelta(days=365 + 310)) == "1 year and 10 months"
+    assert silence(datetime.timedelta(days=200)) == "6 months"
+    assert silence(datetime.timedelta(days=366)) == "1 year"
+    assert silence(datetime.timedelta(days=12)) == "12 days"
+
+
+def test_a_record_whose_first_proposal_has_nothing_before_it_says_so():
+    # R-0833
+    with replies(
+        answers(named(1, 2, 3), named(4, 5, 6, name="The winter after"))
+    ) as ask:
+        detect_clusters(RECORD, ask)
+    asked = ask.call_args_list[0].args[0]
+    assert '"before": "first group in the record"' in asked
+    assert (
+        '"before": "2 years and 2 months with nothing recorded before this group"'
+        in asked
+    )
+
+
+def parsed(response: ClusterListResponse) -> Parsed:
+    return Parsed(
+        response, Spent(input=900, output=60), Served("gemini-3.1-flash-lite")
+    )
+
+
+@pytest.fixture
+def hale_diagram(test_user):
+    diagram = test_user.free_diagram
+    diagram.set_diagram_data(HALE_STORED)
+    db.session.commit()
+    return diagram
+
+
+def test_a_too_long_refusal_is_an_observation_row_and_the_record_regroups(hale_diagram):
+    # R-0834, R-0835, R-0780
+    """Through the turn's own path: both answers refused by the ten-year check
+    write two cluster_refused rows naming it, the failure row says so, and the
+    stored fifty-year group is not one to keep, so the rules' groups go in
+    under their years and the fifty-year group is removed."""
+    with patch("btcopilot.clusters.sync", new=sync):
+        with patch(
+            "btcopilot.metered.gemini_structured_sync",
+            side_effect=[parsed(MERGED), parsed(MERGED)],
+        ):
+            sync(hale_diagram.id, turn_id="t1", user_id=hale_diagram.user_id)
+    refused = (
+        Observation.query.filter_by(kind=ObservationKind.ClusterRefused)
+        .order_by(Observation.id)
+        .all()
+    )
+    assert [
+        (o.detail["attempt"], o.detail["check"], o.detail["reason"]) for o in refused
+    ] == [
+        (1, "too_long", "too_long"),
+        (2, "too_long", "too_long"),
+    ]
+    assert "1948 to 2001" in refused[0].detail["detail"]
+    failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
+    assert (failed.detail["check"], failed.detail["fallback"]) == ("too_long", True)
+    stored = hale_diagram.get_diagram_data().clusters
+    assert sorted(c["title"] for c in stored) == [
+        "1954\u20131955",
+        "1994",
+        "1996\u20132001",
+    ]
+    assert "c1" not in {c["id"] for c in stored}

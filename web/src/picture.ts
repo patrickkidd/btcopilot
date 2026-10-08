@@ -1,3 +1,4 @@
+import { book } from "./case";
 import { DateCertainty } from "./certainty";
 import { closeX, esc, pan, still } from "./dom";
 // this line draws pills, dots and the wire
@@ -508,6 +509,33 @@ export interface Tap {
 
 export interface PictureHandlers {
   onTap(tap: Tap): void;
+  /** A tap on the book button of the page behind a cluster's i, which raises
+   * the passages behind what a cluster is (R-0691; Patrick, 2026-10-08). */
+  onBook?(button: HTMLElement): void;
+}
+
+/** The key the cluster's book raises in the passages file, and the sheet's title. */
+export const CLUSTER_BOOK = "cluster";
+export const CLUSTER_BOOK_TITLE = "What a cluster is";
+
+/** The page behind a cluster's i, as markup: the coach's reason, the years and
+ * the count, each moment with its year, and the app's book button, which
+ * opens the passages behind what a cluster is (R-0213, R-0691; Patrick,
+ * 2026-10-08: the info button for a cluster has the book button). The passages
+ * live only behind the book, never in the coach's words (R-0688). */
+export function aboutMarkup(why: string, span: string, moments: { year: string; label: string }[]): string {
+  const rows = moments
+    .map((m) => `<li><span class="ab-yr">${esc(m.year)}</span><span class="ab-what">${esc(m.label)}</span></li>`)
+    .join("");
+  return (
+    `<div class="ss about">` +
+    (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
+    `<p class="ab-span">${esc(span)} · ${moments.length} event${moments.length === 1 ? "" : "s"}</p>` +
+    `<ul class="ab-list">${rows}</ul>` +
+    book(CLUSTER_BOOK, CLUSTER_BOOK_TITLE) +
+    `</div>` +
+    closeX(` data-target="${Target.Close}"`)
+  );
 }
 
 const YEAR = 365.25 * 24 * 3600 * 1000;
@@ -633,6 +661,14 @@ export class Picture {
   ) {
     window.addEventListener("resize", () => this.render());
     this.host.addEventListener("click", (e) => {
+      // The book on the page behind the i raises its passages and touches
+      // nothing on the picture.
+      const bookButton = (e.target as Element).closest<HTMLElement>(".book[data-book]");
+      if (bookButton) {
+        e.preventDefault();
+        this.handlers.onBook?.(bookButton);
+        return;
+      }
       const hit = (e.target as Element).closest<HTMLElement>("[data-target]");
       // Empty ground. Nothing on the picture is under the thumb, so the tap is
       // the reader putting the picture down.
@@ -991,22 +1027,9 @@ export class Picture {
     const why = (cluster.reason ?? cluster.summary ?? "").trim();
     const moments = (this.data?.events ?? [])
       .filter((e) => cluster.event_ids.includes(e.id))
-      .sort((a, b) => (a.dateTime ?? "").localeCompare(b.dateTime ?? ""));
-    const rows = moments
-      .map(
-        (e) =>
-          `<li><span class="ab-yr">${esc(this.yearOf(e))}</span>` +
-          `<span class="ab-what">${esc(e.label)}</span></li>`,
-      )
-      .join("");
-    this.card(
-      `<div class="ss about">` +
-        (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
-        `<p class="ab-span">${esc(fullYears(cluster.start, cluster.end))} · ` +
-        `${moments.length} event${moments.length === 1 ? "" : "s"}</p>` +
-        `<ul class="ab-list">${rows}</ul></div>` +
-        closeX(` data-target="${Target.Close}"`),
-    );
+      .sort((a, b) => (a.dateTime ?? "").localeCompare(b.dateTime ?? ""))
+      .map((e) => ({ year: this.yearOf(e), label: e.label }));
+    this.card(aboutMarkup(why, fullYears(cluster.start, cluster.end), moments));
   }
 
   /** The line: one drawing for the whole timeline and a cluster open on it

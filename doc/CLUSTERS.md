@@ -2,6 +2,83 @@
 
 How the record's events become clusters. Rules first, model second.
 
+## What a cluster is (ruled 2026-10-08, from job 021's reading of the sources)
+
+A cluster is a run of events in the record during which the family's anxiety
+stood higher than it did before and after: a period of stress against the
+family's calm, in the books' own sense. It opens where something disturbs the
+family's balance (a person added, a person lost, a person's position changed,
+or several weighty events falling close together) and the disturbance, not the
+opening event, is the cluster: the family's reactions carry it through specific
+people and the people in a pair-bond with them. It closes where the record
+shows the family settled: a symptom lifting, functioning coming back, a
+settlement, or a span with no recorded shift long enough for that family to have
+adjusted, judged against how close together the cluster's own events fall. Two
+runs are two clusters when the record shows the family settled between them,
+even when the same people, the same pair-bond and the same trouble recur: the
+same people alone never joins two runs. A cluster is never a stage of the
+household's life, never the family's ordinary level, and never the whole span of
+a symptom that became chronic; those are what clusters stand out against. A
+quiet span after a run of shifts is the ordinary sign that the family settled,
+with the caveat that families misremember. It is named for the event that
+opened it or the shift at its heart, with its time, in the person's own words
+[Oracle: R-0833]. The passages behind this sit behind the book button on the
+page behind a cluster's small i (doc/SCREENS.md).
+
+The prompt carries that definition (the seven lines the books contradicted were
+reworded on 2026-10-08 [Oracle: R-0833]), and the model still judges every edge
+[Oracle: R-0374]. One thing is a check in code, because it is about the kind of
+thing a cluster is and not about its edges:
+
+**The ten-year check [Oracle: R-0834].** A returned group whose first and last
+dated events are more than ten years apart (`MAX_SPAN_YEARS` in
+`btcopilot/clusters.py`) is refused with the reason, "a group of more than 10
+years is this family's ordinary level, not a disturbance of it; return the
+groups inside it", and the model is asked again as every refusal is; after two
+refusals the by-years fallback applies. The refusal is written to the
+observations table as `cluster_refused` with check `too_long`, so the quality
+dashboard counts it [Oracle: R-0780]. The rationale for the number, so it can be
+judged rather than taken: the sources bound it on both sides. Above, the longest
+run of dated events any source draws as one period of stress is five years, the
+longest named family period a six-year plateau of illness, and the one decade
+accepted as a single tag was events leading up to a death held together by one
+man's long illness. Below, Bowen's typical stage of the household is "ten
+years", and his own ten-year narrative chapter is explicitly several periods of
+stress with calm between. Ten is the smallest whole number no wave on record
+reaches and the first a stage does; five would refuse runs the books call one,
+twenty would pass two stages. The check binds nothing inside the range the
+sources place waves (hours to six years), so it does not touch the judgment
+R-0374 protects, and the two tests that encode that freedom (joining proposals
+792 days apart; a loose event joining 1581 days on) pass unchanged. Applying the
+same number to the proposal's cuts or to a group's internal gaps would be a rule
+about edges, which R-0374 rejects, and is not done.
+
+**A stored cluster that fails the check is not handed back [Oracle: R-0835].**
+"Keep what is there" protects a reading, not a category error: a stored
+model-made cluster that fails the check is left out of the groups the model is
+told to keep, its id is offered nowhere in the answer's shape (an answer naming
+it is refused as an unknown group), its events fall back to the proposal, and
+the record change removes it, so a diagram holding one regroups on its next run.
+Such a cluster also does not count as "the model's own groups already there"
+when both answers are refused, so the by-years fallback replaces it.
+`DETECTION_VERSION` was bumped to 6 so every diagram regroups on its next event
+change; the production catch-up is `flask admin diagrams regroup --apply`
+[Oracle: R-0772]. Not changed on this pass: `--apply` still hands the stored
+groups that pass the check to the model as existing.
+
+**Data shown, not a rule.** Each proposed group the model is shown carries one
+plain line before its events, "38 years and 4 months with nothing recorded
+before this group" (or "first group in the record"), so the model reads the
+silence instead of inferring it from two date strings; Kerr weighs "the time
+spacing between events".
+
+The fictional Hale record (`btcopilot/tests/test_clusters.py`: three runs in
+1954 to 1955, 1994 and 1996 to 2001, a 1948 marriage and a 1998 death in none)
+is the shape of the fault this fixes: on the old prompt and code one group of
+all fourteen events, 1948 to 2001, passed every check and was stored. The live
+case `btcopilot/tests/live/test_clusters.py` runs it k of n against the real
+grouping call; the counts are in `doc/PROMPT_ENGINEERING_LOG.md`.
+
 ## The rules propose the candidates (revised 2026-09-22)
 
 The rules no longer decide the clusters. They compute a **proposal** the model is

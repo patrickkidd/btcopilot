@@ -45,6 +45,10 @@ export interface LensHooks {
   changed?(): void;
   /** Before a chip aims the picture, for whatever must show it first (the folded picture). */
   aiming?(): void;
+  /** A tap on the book button of the page behind a cluster's i: the screen's
+   * books raise the passages behind what a cluster is (R-0691). Absent on a
+   * screen with no books. */
+  book?(button: HTMLElement): void;
 }
 
 // Hidden for now (Patrick, 2026-09-29: "the design is too busy and I'm not sure what value that brings yet").
@@ -60,7 +64,11 @@ export class Lens {
     private readonly hooks: LensHooks,
     spot: Spotlight = Spotlight.Unified,
   ) {
-    this.picture = new Picture(hosts.view, { onTap: (tap: Tap) => this.onTap(tap) }, spot);
+    this.picture = new Picture(
+      hosts.view,
+      { onTap: (tap: Tap) => this.onTap(tap), onBook: (button) => hooks.book?.(button) },
+      spot,
+    );
     hosts.path.addEventListener("click", (e) => {
       const step = (e.target as Element).closest<HTMLElement>("[data-step]");
       if (step) this.climb(Number(step.dataset.step));

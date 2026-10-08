@@ -256,6 +256,87 @@ test.describe("one cluster open on the sparse record", () => {
     expect(await shown(page)).toEqual(byYears);
   });
 
+  /** The passages are private and CI has no key to the corpus, so the page is
+   * answered with made-up ones under the cluster's key, as the case report's
+   * specs do. */
+  const MADE_UP = {
+    cluster: [
+      { text: "A made-up passage on what a cluster is.", by: "A made-up author, ch. 1" },
+      { text: "A second made-up passage.", by: "A made-up author, ch. 2" },
+    ],
+  };
+  const withPassages = (page: Page) =>
+    page.route("**/case-report-passages*", (route) => route.fulfill({ json: MADE_UP }));
+  const bookOf = (page: Page) => page.locator('#view .card .about .book[data-book="cluster"]');
+  /** The chat screen's own passages sheet, up; the case page keeps one of its own, hidden. */
+  const sheet = (page: Page) => page.locator(".fs-sheet.bk.in");
+
+  // Patrick, 2026-10-08, with R-0833 to R-0835: a cluster's info page carries the book button.
+  // R-0213, R-0691
+  test("the page behind the i carries the book button, and the book raises the passages behind what a cluster is", async ({ page }) => {
+    await withPassages(page);
+    await settle(page);
+    await openCluster(page);
+    await page.locator("#info").click();
+    await expect(page.locator("#view")).toContainText("Ada lost her grandmother");
+    const book = bookOf(page);
+    await expect(book).toHaveCount(1);
+    await expect(book).toHaveAttribute("aria-label", "the passages behind this");
+    // the book is inside the page and a thumb can land on it; its icon is the
+    // Family view's small book, not the picture's full-width drawing
+    const [b, card, icon] = [await boxOf(book), await boxOf(page.locator("#view .card")), await boxOf(book.locator("svg"))];
+    expect(b.width).toBeGreaterThanOrEqual(40);
+    expect(b.height).toBeGreaterThanOrEqual(40);
+    expect(b.x).toBeGreaterThanOrEqual(card.x);
+    expect(b.x + b.width).toBeLessThanOrEqual(card.x + card.width + 1);
+    expect(b.y + b.height).toBeLessThanOrEqual(card.y + card.height + 1);
+    expect(icon.width).toBeLessThanOrEqual(24);
+    expect(icon.height).toBeLessThanOrEqual(24);
+    expect(icon.x).toBeGreaterThanOrEqual(b.x);
+    expect(icon.y).toBeGreaterThanOrEqual(b.y);
+    await book.click();
+    await expect(sheet(page)).toBeVisible();
+    await expect(sheet(page).locator(".cf-t")).toHaveText("What a cluster is");
+    await expect(sheet(page).locator(".bk-sub")).toHaveText("The passages behind this");
+    // each passage is the passage itself with its reference under it, never the reference alone (R-0691)
+    await expect(sheet(page).locator(".bk-list blockquote")).toHaveText([
+      "A made-up passage on what a cluster is.",
+      "A second made-up passage.",
+    ]);
+    await expect(sheet(page).locator(".bk-list .bk-by")).toHaveText(["A made-up author, ch. 1", "A made-up author, ch. 2"]);
+    // the about page is still there under the sheet, and the picture was not put down
+    await expect(page.locator("#view .card")).toHaveCount(1);
+    await expect(path(page)).toHaveText("Timeline › Leaving and losing · 1981–2003 › about");
+  });
+
+  // R-0691, R-0317
+  test("the book's passages go away on their cross and on Escape, leaving the page behind the i as it was", async ({ page }) => {
+    await withPassages(page);
+    await settle(page);
+    await openCluster(page);
+    await page.locator("#info").click();
+    await bookOf(page).click();
+    await expect(sheet(page)).toBeVisible();
+    await sheet(page).locator(".cardx").click();
+    await expect(sheet(page)).toHaveCount(0);
+    await expect(page.locator("#view .card .about")).toBeVisible();
+    await bookOf(page).click();
+    await expect(sheet(page)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(sheet(page)).toHaveCount(0);
+    await expect(path(page)).toHaveText("Timeline › Leaving and losing · 1981–2003 › about");
+  });
+
+  // R-0688
+  test("the passages are nowhere on the page until the book is tapped", async ({ page }) => {
+    await withPassages(page);
+    await settle(page);
+    await openCluster(page);
+    await page.locator("#info").click();
+    await expect(page.locator("#view")).toContainText("Ada lost her grandmother");
+    await expect(page.locator("body")).not.toContainText("A made-up passage on what a cluster is.");
+  });
+
   // R-0213
   test("the i writes out no list of the cluster's moments", async ({ page }) => {
     test.skip(true, "unbuilt ruling, needs a design: what the picture spot draws behind a cluster's i, with no list and no count");

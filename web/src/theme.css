@@ -261,6 +261,11 @@ button { font-family: inherit; }
 .ab-list li { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font: 400 13px/1.35 var(--mono); }
 .ab-yr { flex: none; width: 44px; color: var(--data); }
 .ab-what { color: var(--ink); }
+/* the about page's book: the Family view's book button, at the foot of the page (R-0691) */
+.ss.about .book { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 2px -12px -8px auto; padding: 0; border: 0; background: none; color: var(--data); cursor: pointer; }
+/* the icon keeps the Family view's size: inside .ss an svg is otherwise the picture's own full-width drawing */
+.ss.about .book svg { position: static; width: 20px; height: 20px; }
+.ss.about .book:active { color: var(--data-press); }
 .pin-label {
   display: flex;
   align-items: center;

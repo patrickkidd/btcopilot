@@ -164,6 +164,9 @@ const lens = new Lens(
     },
     changed: sync,
     aiming: () => chat.unfold(),
+    // the book on the page behind a cluster's i: the same passages sheet as
+    // the Family view's books (R-0691)
+    book: (button) => void books.tap(button),
   },
   window.BOOTSTRAP.user?.prefs.spotlight ?? Spotlight.Unified,
 );
@@ -1480,7 +1483,8 @@ track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 // break is a plain newline so the draft keeps it.
 // Escape puts the cluster's about page away, as its cross does
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && picture.aboutOpen() && $("chat-screen").offsetParent) lens.climb(CLUSTER);
+  // not while the book's passages are up over it: that Escape is theirs (books.ts)
+  if (e.key === "Escape" && picture.aboutOpen() && !books.up && $("chat-screen").offsetParent) lens.climb(CLUSTER);
 });
 
 $("composer").addEventListener("keydown", (e) => {

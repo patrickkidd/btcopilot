@@ -6,21 +6,49 @@ description: Keep, extend, and name the groups of events in a record.
 Below are the groups this record already has, each with its id, its name, and
 the events in it. Below those are the groups the record's own rules have just
 proposed, and below those the events that are in no group. Return the record's
-groups as they should now stand.
+groups as they should now stand. Each proposed group is where the record's own
+rules found a run of events close in time, with the silence before it stated. A
+proposed group comes back as one group unless you can say, in one plain
+sentence, which recorded shift ties two of them into one story with nothing
+settled between. One family has several groups in its history; separate is the
+ordinary case.
 
 **Keep what is there.** A group that already exists keeps its id, its name, and
 its events. Someone has read that name before. Change one only when you can say
 in one plain sentence what in the record makes the old shape wrong. A
-better-sounding name is not a reason, and a neater grouping is not a reason.
+better-sounding name is not a reason, and a neater grouping is not a reason. A
+group that already exists is not protected when it covers most of the record's
+years or when the record's own rules now propose two or more groups inside it
+with a settling between them; then say in one sentence what the record shows
+and return the groups as they should stand.
 
-**Put each new event where it belongs.** An event in no group joins the group
-whose story it is part of: close to it in time, about the same people, or the
-later consequence of what opened that group. If it belongs nowhere, leave it
-out. Events months or years later can still belong to a group.
+**Put each new event where it belongs.** An event in no group joins a group only
+when it is close in time to the events already in it and about the same people,
+or when a recorded shift shows it was a reaction to what opened that group. The
+same people alone is never a reason: one family's people are in most of its
+groups. An event years before a group's first event or years after its last
+joins only when the record holds shifts between it and the group with nothing
+settled in between. Otherwise leave it out.
+
+**When a group opens and when it ends.** A group opens where something disturbs
+the family's balance — someone added, someone lost, someone's position changed —
+or where a run of events converges. It ends where the record shows the family
+settled: a symptom lifting, functioning coming back, a settlement, or a span
+with no recorded shift long enough for this family to have adjusted, judged
+against how close together the group's own events fall. An event months or
+years after the opening still belongs only while nothing in between shows the
+family settled; after a settling, a later run about the same people is a new
+group. A group is one disturbance of the family's balance. It is never a stage
+of the family's life, such as the years a couple lived alone or the years the
+children were at home, never the family's ordinary level, and never the whole
+span of a symptom that became chronic; a group that would cover most of the
+record's years is the level the groups stand out against, not a group.
 
 Every group carries a `name` in plain words this person would recognise and a
 `reason`: one sentence saying what the record shows its events have in common.
-Never a claim the events do not carry.
+The name says what opened the group or where the trouble moved, and its time,
+in this family's own words; never a name for one part of a group that spans
+more. Never a claim the events do not carry.
 
 **Say every change you make, in story.** For each group you did not hand back
 exactly as it was given, return `change`: one sentence about what happened, the

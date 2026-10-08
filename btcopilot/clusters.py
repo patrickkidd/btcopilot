@@ -4,8 +4,9 @@ The candidates are computed from the record with no model call at all, and are
 a proposal rather than a boundary. The grouping the record already has is handed
 to the model with its ids and kept unless the record now says otherwise; the
 model may merge, split, or reach for a further event whenever it says in one
-sentence what made the old shape wrong. Spec and ruling ids:
-doc/CLUSTERS.md.
+sentence what made the old shape wrong. One check is about kind rather than
+edges: a group spanning more than ten years is refused, and a stored group that
+fails it is not handed back as existing. Spec and ruling ids: doc/CLUSTERS.md.
 """
 
 import datetime
@@ -48,8 +49,10 @@ from btcopilot.schema import (
 _log = logging.getLogger(__name__)
 
 # Bumped whenever the candidate rules or the naming prompt change, so a record
-# grouped by the older rules re-groups on its next event-changing turn.
-DETECTION_VERSION = 5
+# grouped by the older rules re-groups on its next event-changing turn. 6: the
+# prompt lines the books contradict reworded and the ten-year check added, so
+# every record regroups on its next event change [Oracle: R-0833, R-0835].
+DETECTION_VERSION = 6
 
 NODAL_KINDS = frozenset(
     {EventKind.Death, EventKind.Married, EventKind.Divorced, EventKind.Separated}
@@ -71,6 +74,22 @@ SPAN_DAYS = 548
 THINKING_ROOM = 4096
 PER_EVENT = 24
 CALM_GAP_DAYS = 730
+# A returned group whose dated events span more than this is refused and the
+# model is asked again with the reason [Oracle: R-0834]. A rule about kind, not
+# edges: a group that long is a stage of the household or the family's ordinary
+# level, not a disturbance of it. The sources bound the number on both sides.
+# Above: the longest run of dated events any of them draws as one period of
+# stress is five years, the longest named family period a six-year plateau of
+# illness, and the one decade accepted as a single tag was events leading up to
+# a death held together by one man's long illness (Family Therapy in Clinical
+# Practice ch. 21 and ch. 3; the seminar; theory.md T105 to T108 in the corpus
+# research). Below: Bowen's typical stage of the household is "ten years"
+# (Basic Series 3, T1), and his own ten-year narrative chapter is several
+# periods of stress with calm between (ch. 21, T81). Ten is the smallest whole
+# number no wave on record reaches and the first a stage does. It binds nothing
+# inside the range the sources place waves, so the model still judges every
+# edge [Oracle: R-0374].
+MAX_SPAN_YEARS = 10
 
 # Diagnostic and popular-psychology words the definitions the model is given do
 # not contain. The prompt forbids vocabulary from outside those definitions;
@@ -108,6 +127,7 @@ class ClusterCheck(enum.StrEnum):
     GroupTwice = "group_twice"
     NoChangeReason = "no_change_reason"
     OutsideWords = "outside_words"
+    TooLong = "too_long"
     LeftOut = "left_out"
     CutOff = "cut_off"
     Unreadable = "unreadable"
@@ -158,6 +178,36 @@ def _bonds(people: set[int], bonds: list[PairBond]) -> set[int]:
         for bond in bonds
         if bond.id is not None and (bond.person_a in people or bond.person_b in people)
     }
+
+
+def _years_after(day: datetime.date, count: int) -> datetime.date:
+    try:
+        return day.replace(year=day.year + count)
+    except ValueError:  # the 29th of February
+        return day.replace(year=day.year + count, day=28)
+
+
+def too_long(dates: list[datetime.date]) -> bool:
+    """Whether a group's dated events span more than MAX_SPAN_YEARS
+    [Oracle: R-0834]."""
+    return bool(dates) and max(dates) > _years_after(min(dates), MAX_SPAN_YEARS)
+
+
+def silence(gap: datetime.timedelta) -> str:
+    """The stretch with nothing recorded before a proposed group, in the plain
+    words the model is shown: "38 years and 4 months", "7 months", "12 days"."""
+    years, rest = divmod(gap.days, 365)
+    months = rest // 30
+    parts = [
+        f"{n} {word}{'' if n == 1 else 's'}"
+        for n, word in ((years, "year"), (months, "month"))
+        if n
+    ]
+    return (
+        " and ".join(parts)
+        if parts
+        else f"{gap.days} day{'' if gap.days == 1 else 's'}"
+    )
 
 
 def _dated(data: DiagramData) -> list[Event]:
@@ -314,11 +364,24 @@ def _event_json(event: Event) -> dict:
     return chunk
 
 
+def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
+    """One plain line on the silence before a proposed group, so the model
+    reads the gap instead of inferring it from two date strings: Kerr weighs
+    "the time spacing between events" (Family Evaluation, line 3355)."""
+    first = parse_date(candidate.startDate)
+    earlier = [day for day in when.values() if day < first]
+    if not earlier:
+        return "first group in the record"
+    return f"{silence(first - max(earlier))} with nothing recorded before this group"
+
+
 def _prompt(cands: list[Candidate], free: list[Event], stored: dict[str, dict]) -> str:
     by_id = {e.id: e for e in free}
+    when = {e.id: parse_date(e.dateTime) for e in free}
     blocks = [
         {
             "candidate": n + 1,
+            "before": _before(candidate, when),
             "nodalOrShiftIds": candidate.nodalOrShiftIds,
             "events": [_event_json(by_id[i]) for i in candidate.eventIds],
         }
@@ -366,6 +429,7 @@ def _check(
         raise ClusterError("No grouping came back.", ClusterCheck.Missing)
 
     known = {e.id for e in free}
+    when = {e.id: parse_date(e.dateTime) for e in free}
     shapes = {frozenset(candidate.eventIds) for candidate in cands}
     marked = {i for candidate in cands for i in candidate.nodalOrShiftIds}
     seen: set[int] = set()
@@ -418,6 +482,15 @@ def _check(
                 "and says no reason for the change.",
                 ClusterCheck.NoChangeReason,
             )
+        spanned = [when[event_id] for event_id in cluster.eventIds]
+        if too_long(spanned):
+            raise ClusterError(
+                f"Cluster {cluster.name!r} runs from {min(spanned).year} to "
+                f"{max(spanned).year}: a group of more than {MAX_SPAN_YEARS} years "
+                "is this family's ordinary level, not a disturbance of it. Return "
+                "the groups inside it.",
+                ClusterCheck.TooLong,
+            )
         spoken = " ".join([cluster.name, cluster.reason, cluster.change or ""]).lower()
         outside = [word for word in OUTSIDE_WORDS if word in spoken]
         if outside:
@@ -440,6 +513,31 @@ def _stored(data: DiagramData) -> list[dict]:
         for cluster in data.clusters
         if isinstance(cluster, dict) and cluster.get("id") is not None
     ]
+
+
+def _holds(cluster: dict, when: dict[int, datetime.date]) -> bool:
+    """Whether a stored grouping still passes the definitional check."""
+    return not too_long([when[i] for i in cluster.get("eventIds") or [] if i in when])
+
+
+def mine(data: DiagramData) -> dict[str, dict]:
+    """The stored groupings the model made and may be handed back as existing.
+    One that fails the check is left out: keeping what is there protects a
+    reading, not a category error, so its events fall back to the proposal and
+    the record regroups on this run [Oracle: R-0835]."""
+    when = {e.id: parse_date(e.dateTime) for e in joinable(data)}
+    kept = {}
+    for cluster in _stored(data):
+        if not _regroupable(cluster):
+            continue
+        if _holds(cluster, when):
+            kept[str(cluster["id"])] = cluster
+        else:
+            _log.info(
+                f"Stored grouping {cluster['id']} {_title(cluster)!r} fails the "
+                f"{MAX_SPAN_YEARS}-year check and is not handed back"
+            )
+    return kept
 
 
 def answer_schema(stored: dict[str, dict]) -> dict:
@@ -494,22 +592,18 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
 
     free = joinable(data)
     taken = {str(cluster["id"]) for cluster in _stored(data)}
-    mine = {
-        str(cluster["id"]): cluster
-        for cluster in _stored(data)
-        if _regroupable(cluster)
-    }
-    prompt = _prompt(cands, free, mine)
-    schema = answer_schema(mine)
+    existing = mine(data)
+    prompt = _prompt(cands, free, existing)
+    schema = answer_schema(existing)
     limit = THINKING_ROOM + PER_EVENT * len(free)
     _log.info(
-        f"Grouping {len(free)} events: {len(mine)} groups already there, "
+        f"Grouping {len(free)} events: {len(existing)} groups already there, "
         f"{len(cands)} proposed"
     )
     answer = None
     try:
         answer = _answered(ask, prompt, schema, limit)
-        named = _check(answer, cands, free, mine)
+        named = _check(answer, cands, free, existing)
     except ClusterError as rejected:
         _log.warning(f"Grouping sent back: {rejected}")
         if refused:
@@ -522,7 +616,7 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
                 schema,
                 limit,
             )
-            named = _check(answer, cands, free, mine)
+            named = _check(answer, cands, free, existing)
         except ClusterError as again:
             if refused:
                 refused(2, again, answer)
@@ -654,7 +748,7 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
 
 def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[dict]:
     stored = [c for c in stored if isinstance(c, dict) and c.get("id") is not None]
-    mine = {str(c["id"]): c for c in stored if _regroupable(c)}
+    held = {str(c["id"]): c for c in stored if _regroupable(c)}
     kept = _detected(stored, detected, dates)
 
     deltas = [
@@ -664,11 +758,11 @@ def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[di
             "field": None,
             "after": None,
         }
-        for cluster_id in mine
+        for cluster_id in held
         if cluster_id not in kept
     ]
     for cluster_id, cluster in kept.items():
-        was = mine.get(cluster_id, {})
+        was = held.get(cluster_id, {})
         now = asdict(cluster)
         deltas += [
             {
@@ -765,8 +859,9 @@ def sync(
         )
     except ClusterError as failed:
         # Both answers refused: the rules' groups go in under their years, unless
-        # the model's own groups are already there to keep [Oracle: R-0780].
-        fallback = not any(_regroupable(c) for c in _stored(data))
+        # the model's own groups are already there to keep [Oracle: R-0780]. A
+        # stored group that fails the check is not one to keep [Oracle: R-0835].
+        fallback = not mine(data)
         observe(
             ObservationKind.ClusterFailed,
             {
