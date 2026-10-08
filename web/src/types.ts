@@ -231,6 +231,8 @@ export interface Evidence {
   label: string;
   discussion_id?: number | null;
   at?: string | null;
+  /** A message's own words, so the person's words can stand on the case report (R-0707). */
+  text?: string | null;
 }
 
 /** A question the coach has asked, with where it was asked. Only the open ones

@@ -2,9 +2,39 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-08 (structure before stories; a fact to find stays open)
+**Last Updated**: 2026-10-08 (the card on what to work on starts from the person's own words)
 
 ---
+
+## Worker job 024 — the work-on card is filed the turn the person says it (2026-10-08)
+
+**Change**: the impressions fragment, private and public alike (`fragments/impressions.md`), says
+under `work_on`: the turn the person says what they are working on, raise an impression on it and
+put it on `work_on` right then, resting on their message that said it, given as `statement`
+evidence with id `now` when it is the message being replied to, and on the event when one is
+written for it; its first evidence is that message, which the case report shows first. The
+`case_report_card` meaning in the public `tool_meanings.prompty` says the same in a clause (the
+private file has no entry for that parameter, so the public wording is the one in use). The tool
+learns `now`: `add_impression` evidence `{"kind": "statement", "id": "now"}` is the message being
+replied to, since the coach is never given that message's number; the toolbox cites it with its
+real id and label, and the thread names it "You said, just now" before the call runs. The page
+sends each statement evidence's words (`text`) with its day, and card nine shows, under the coach's
+line for each guess on it, the person's own words dated, oldest first, under their name, or the
+event's title and date when the guess rests on an event alone; the "you haven't said yet" text
+stays only while no open guess is on the card. Old threads get theirs through the existing
+`flask admin impressions backfill` command (preview by default, `--yes` to write; it goes through
+every session not yet gone through and logs to the model-calls ledger), whose prompt includes the
+same fragment. No new stored value [R-0707, R-0709, R-0740].
+
+**Why**: Patrick, 2026-10-07, "sounds good to me" to the plan in the storage facts: card nine read
+only a guess stored for it, so a thread where the person had said what they are working on before
+the card existed read "you haven't said yet". R-0707 says the card starts from what the person said
+they are working on. Measured on `btcopilot/tests/live/test_workon.py` (2 of 3; same machine and
+model as the entry below): the person says "What I'm really working on is staying in the room when
+my mother criticizes me, instead of going quiet and leaving the way I always have." The old prompt
+filed no `work_on` impression in 0 of 3 runs; the new one filed a raised `work_on` impression in
+3 of 3, first citing the event it wrote for the message rather than the message (0 of 3 passed
+with the message required), then, once the fragment named `now`, citing the message in 3 of 3.
 
 ## Worker job 024 — structure before stories; a fact to find stays open (2026-10-08)
 

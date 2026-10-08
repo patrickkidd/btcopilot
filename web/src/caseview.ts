@@ -69,12 +69,21 @@ export interface Who {
   name: string;
 }
 
-/** A coach's guess: its stored words whole, the dated facts it rests on, and
- * the people it names. */
+/** What the person said, in their own words, on a day: a message a guess rests
+ * on; or, when a guess rests on no message, an event's title on its date. */
+export interface Said {
+  words: string;
+  when: string;
+}
+
+/** A coach's guess: its stored words whole, the dated facts it rests on, the
+ * people it names, and what the person said that it rests on, oldest first
+ * (R-0707: the card on what to work on starts from what the person said). */
 export interface Guess {
   text: string;
   facts: Fact[];
   people: Who[];
+  said: Said[];
 }
 
 /** A family standing still at today's date, as the app lays it out, or the
@@ -431,7 +440,25 @@ class Reader {
       text: q.text,
       facts: this.facts(events),
       people: [...new Set(named)].map((id) => ({ id, name: this.name(id) })),
+      said: this.said(q, events),
     };
+  }
+
+  /** The person's own words a guess rests on, each on the day it was said,
+   * oldest first; a message whose words are gone with its session is left out.
+   * A guess resting on no message gives its dated events' titles instead. */
+  said(q: AskedQuestion, events: TimelineEvent[]): Said[] {
+    const messages = q.evidence.filter((one) => one.kind === EvidenceKind.Statement && one.text);
+    if (messages.length) {
+      return messages
+        .slice()
+        .sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""))
+        .map((one) => ({ words: one.text!, when: one.at ? dateText(one.at, null) : "" }));
+    }
+    return events
+      .filter((e) => e.dateTime)
+      .sort(byDate)
+      .map((e) => ({ words: e.title ?? e.label, when: dateText(e.dateTime!, e.dateCertainty) }));
   }
 }
 

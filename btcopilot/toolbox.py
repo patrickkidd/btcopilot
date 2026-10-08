@@ -195,6 +195,10 @@ COUNT = {
     ),
 }
 NO_COUNT = "It did not say how many children were counted."
+# The evidence id that names the message being replied to, whose number the
+# coach is never given: so an impression on what the person is working on can
+# rest on the message that said it, in that turn (R-0707).
+NOW = "now"
 ASKED_IN = {
     "type": "integer",
     "description": (
@@ -624,7 +628,14 @@ def schemas(coder: bool = False) -> list[dict]:
                             "type": "object",
                             "properties": {
                                 "kind": {"type": "string", "enum": _values(EvidenceKind)},
-                                "id": {"type": "string"},
+                                "id": {
+                                    "type": "string",
+                                    "description": (
+                                        f"The item's id; for a statement, the message's number "
+                                        f"as search_chat gives it, or {NOW} for the message you "
+                                        "are replying to."
+                                    ),
+                                },
                             },
                             "required": ["kind", "id"],
                         },
@@ -1966,6 +1977,14 @@ class Toolbox:
         kind = choice(EvidenceKind, one["kind"], "evidence kinds")
         if kind is not EvidenceKind.Statement:
             return {"kind": kind.value, "id": one["id"]}
+        if str(one["id"]) == NOW:
+            if self.said is None:
+                raise ToolError(
+                    f"statement {NOW} is the message being replied to, and no message is "
+                    "being answered now: give the message's number",
+                    "It rested on a message that is not there.",
+                )
+            return self._cited(self.said)
         statement = (
             Statement.query.join(Discussion)
             .filter(Statement.id == int(one["id"]), Discussion.diagram_id == self.diagram_id)

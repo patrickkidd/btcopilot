@@ -13,6 +13,7 @@ from mock import patch
 
 from btcopilot import questions, record
 from btcopilot.admin import admin
+from btcopilot.coachturn import MAX_STEPS
 from btcopilot.extensions import db
 from btcopilot.models import Change, ModelCall, Statement
 from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, version
@@ -163,6 +164,64 @@ def test_the_backfill_can_read_the_whole_record_and_write_only_questions(
     assert model.histories[1][-1]["content"][0]["is_error"] is True
     db.session.expire_all()
     assert [p["name"] for p in family.get_diagram_data().people] == ["Wren"]
+
+
+WORKING_ON = "What I'm working on is staying in the room when my mother criticizes me."
+
+
+def test_a_past_thread_saying_what_they_work_on_gains_a_work_on_impression_only_when_applied(
+    flask_app, web, family, monkeypatch
+):
+    # R-0707, R-0709
+    # Patrick, 2026-10-07: "sounds good to me" to filing the work-on impression from the
+    # person's message, and backfilling old threads through the impression backfill.
+    coach(monkeypatch, Model(said("What would staying look like?")))
+    body = post(web, csrf_token(web), WORKING_ON).get_json()
+    said_ = statements(web, body["discussion_id"])
+    filing = calling(
+        (
+            ToolName.AddImpression,
+            {
+                "text": "You could try staying in the room and saying one thing.",
+                "state": "raised",
+                "asked_in": said_[1]["id"],
+                "evidence": [{"kind": "statement", "id": str(said_[0]["id"])}],
+                "case_report_card": "work_on",
+            },
+        )
+    )
+    flagged = lambda: [
+        q
+        for q in stored_data(family).questions
+        if q["kind"] == "impression" and q.get("case_report_card") == "work_on"
+    ]
+
+    # the preview goes through nothing and writes nothing
+    preview, model = backfill(flask_app, filing, said(""), args=(), group="impressions")
+    assert preview == [
+        {
+            "diagram": family.id,
+            "sessions_to_do": 1,
+            "sessions_done": 0,
+            "estimated_model_calls": questions.CALLS_PER_SESSION,
+            "most_model_calls": MAX_STEPS,
+        }
+    ]
+    assert (model.systems, flagged()) == ([], [])
+
+    done, _ = backfill(flask_app, filing, said(""), group="impressions")
+    assert done == [{"diagram": family.id, "session": body["discussion_id"], "model_calls": 2}]
+    found = flagged()
+    assert len(found) == 1
+    assert (found[0]["state"], found[0]["evidence"][0]["id"]) == ("raised", said_[0]["id"])
+    turn_id = f"impression-backfill:{body['discussion_id']}"
+    assert ModelCall.query.filter_by(turn_id=turn_id).count() == 2
+    assert [q["kind"] for q in stored_data(family).questions] == ["impression"]
+
+
+def stored_data(diagram):
+    db.session.expire_all()
+    return diagram.get_diagram_data()
 
 
 def test_impressions_are_backfilled_apart_from_questions_on_what_the_session_holds(

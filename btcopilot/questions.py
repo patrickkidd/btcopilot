@@ -76,12 +76,15 @@ def asked(diagram_id: int, data: DiagramData) -> list[dict]:
 
 def _shown(data: DiagramData, one: dict) -> dict:
     """One piece of evidence with its label; a message also says which session
-    it is in and on which day, or nothing once its session is gone."""
+    it is in, on which day, and its words, so what the person said they are
+    working on stands on the case report in their own words (R-0707), or
+    nothing once its session is gone."""
     out = {"kind": one["kind"], "id": one["id"], "label": evidence_label(data, one)}
     if one["kind"] == EvidenceKind.Statement:
         statement = db.session.get(Statement, one["id"])
         out["discussion_id"] = statement and statement.discussion_id
         out["at"] = statement and statement.created_at.date().isoformat()
+        out["text"] = statement and statement.text
     return out
 
 

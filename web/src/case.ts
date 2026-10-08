@@ -137,6 +137,14 @@ const guessBlock = (g: Guess, ask: string | null = null) =>
 
 const notEnough = (words = NOT_ENOUGH) => `<div class="gbub">${bubble(words)}</div>`;
 
+/** What the person said, under the coach's line it rests on: their own words
+ * in their own bubble, each dated, oldest first (R-0707). Nothing when the
+ * guess rests on no message and no dated event. */
+const saidBlock = (v: CaseView, g: Guess) =>
+  g.said.length
+    ? sublabel(`${v.name}'s own words`) + g.said.map((s) => `<div class="bub user">${esc(s.words)}</div>${s.when ? faint(s.when) : ""}`).join("")
+    : "";
+
 /** The top padding of a family's frame on the report, as casereport.css gives it. */
 const FAM_PAD = 4;
 
@@ -195,8 +203,9 @@ function body(card: Card, v: CaseView): string {
     case Card.Choice:
       return v.choice.guess ? guessBlock(v.choice.guess, v.choice.ask) : v.choice.ask ? `<div class="gbub">${bubble("", [], v.choice.ask)}</div>` : notEnough();
     case Card.WorkOn:
+      // under each guess, what the person said they are working on, in their own words (R-0707)
       return v.work.guesses.length
-        ? chips(v.work.aim ? [factChip(v.work.aim)] : []) + `<div class="glist">${v.work.guesses.map((g) => guessBlock(g)).join("")}</div>`
+        ? chips(v.work.aim ? [factChip(v.work.aim)] : []) + `<div class="glist">${v.work.guesses.map((g) => guessBlock(g) + saidBlock(v, g)).join("")}</div>`
         : notEnough(NOT_SAID);
     case Card.Effort:
       return lead(v.effort);

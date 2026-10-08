@@ -16,7 +16,7 @@ from btcopilot.schema import (
     enum_val,
 )
 from btcopilot.timeline import KIND_WORDS, _person_label, _who, event_label
-from btcopilot.toolbox import REMOVABLE, ToolName, said_label
+from btcopilot.toolbox import NOW, REMOVABLE, ToolName, said_label
 from btcopilot.turnlog import TurnEventKind
 
 # An event with no words and nothing that moved, by its kind.
@@ -106,6 +106,7 @@ def label(data: DiagramData, kind: ItemKind, item_id) -> str:
 
 
 MESSAGE_GONE = "a message no longer in the diagram"
+JUST_NOW = "You said, just now"
 
 
 def evidence_label(data: DiagramData, one: dict) -> str:
@@ -117,6 +118,9 @@ def evidence_label(data: DiagramData, one: dict) -> str:
         return label(data, ItemKind(one["kind"]), one["id"])
     if "label" in one:
         return one["label"]
+    if str(one["id"]) == NOW:
+        # the message being replied to, named before the call runs (R-0707)
+        return JUST_NOW
     statement = db.session.get(Statement, int(one["id"]))
     return MESSAGE_GONE if statement is None else said_label(statement)
 

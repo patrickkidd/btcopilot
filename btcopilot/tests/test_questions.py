@@ -566,6 +566,90 @@ def test_the_page_gets_asked_questions_only_each_with_where_it_was_asked(web, fa
     ]
 
 
+def test_a_message_an_impression_rests_on_reaches_the_page_with_its_words_and_day(family, test_user):
+    # R-0707, R-0709
+    # Patrick, 2026-10-07: "sounds good to me" to the card showing the person's own words
+    # from the impression's message.
+    toolbox, said_ = speaking(family, test_user, "What I'm working on is staying in the room.")
+    toolbox.call(
+        ToolName.AddImpression,
+        {
+            "text": "You could try staying put and saying one thing.",
+            "state": "raised",
+            "evidence": [{"kind": "statement", "id": str(said_.id)}],
+            "case_report_card": "work_on",
+        },
+    )
+
+    # the message being replied to is cited as "now", since the coach is never
+    # given its number; outside a turn that answers a message it is refused
+    toolbox.call(
+        ToolName.AddImpression,
+        {"text": "You could also say so to her.", "state": "raised", "evidence": [{"kind": "statement", "id": "now"}]},
+    )
+    with pytest.raises(ToolError) as refused:
+        box(family).call(
+            ToolName.AddImpression,
+            {"text": "Another.", "state": "raised", "evidence": [{"kind": "statement", "id": "now"}]},
+        )
+    assert refused.value.plain == "It rested on a message that is not there."
+    assert stored(family)["i2"]["evidence"] == stored(family)["i1"]["evidence"]
+
+    page = questions.asked(family.id, stored_data(family))
+    assert [(q["id"], q["case_report_card"], q["evidence"]) for q in page][:1] == [
+        (
+            "i1",
+            "work_on",
+            [
+                {
+                    "kind": "statement",
+                    "id": said_.id,
+                    "label": said_label(said_),
+                    "discussion_id": said_.discussion_id,
+                    "at": "2026-09-27",
+                    "text": "What I'm working on is staying in the room.",
+                }
+            ],
+        )
+    ]
+
+
+def test_a_turn_citing_the_message_being_answered_as_now_is_named_and_kept(
+    web, family, monkeypatch
+):
+    # R-0707, R-0709
+    # Patrick, 2026-10-07: "sounds good to me" to filing the work-on impression the turn the
+    # person says what they are working on, resting on their message.
+    coach(
+        monkeypatch,
+        Model(
+            calling(
+                (
+                    ToolName.AddImpression,
+                    {
+                        "text": "You could try staying put and saying one thing.",
+                        "state": "raised",
+                        "evidence": [{"kind": "statement", "id": "now"}],
+                        "case_report_card": "work_on",
+                    },
+                )
+            ),
+            said("You could try staying put and saying one thing."),
+        ),
+    )
+    body = post(web, csrf_token(web), "What I'm working on is staying in the room.").get_json()
+
+    said_ = statements(web, body["discussion_id"])
+    assert said_[1]["tools"][0]["names"]["evidence"] == ["You said, just now"]
+    kept = stored(family)["i1"]
+    assert (kept["case_report_card"], kept["evidence"][0]["id"]) == ("work_on", said_[0]["id"])
+    shown = web.get("/app/timeline").get_json()["asked_questions"][0]["evidence"][0]
+    assert (shown["id"], shown["text"]) == (
+        said_[0]["id"],
+        "What I'm working on is staying in the room.",
+    )
+
+
 def test_the_user_dismisses_a_question_and_the_coach_sees_it_declined(web, family, monkeypatch):
     # R-0077
     asking_turn(web, monkeypatch)

@@ -163,6 +163,52 @@ it("says on what to work on that the person has not said yet what they are worki
   expect(work).not.toContain(NOT_ENOUGH);
 });
 
+const SAID = "What I'm working on is staying in the room when my mother criticizes me.";
+const message = (id: number, text: string | null, at: string | null) => ({ kind: EvidenceKind.Statement, id, label: "You said", at, text });
+const workCard = (tl: Timeline) => cards(caseView(tl, ONE, ""), false).split(`data-card="${Card.WorkOn}"`)[1].split("</section>")[0];
+
+// R-0707, R-0709
+// Patrick, 2026-10-07: "sounds good to me" to the card showing the person's own words from the impression's message.
+it("shows under each work-on guess the person's own words from its messages, dated, oldest first", () => {
+  const tl = halloran();
+  tl.asked_questions = [
+    {
+      ...guess("w1", "You could try staying put when she criticizes you.", CaseReportCard.WorkOn),
+      evidence: [message(9, "Later I said I want to stop leaving the room.", "2026-10-05"), message(7, SAID, "2026-09-20"), message(8, null, "2026-09-30")],
+    },
+  ];
+  const v = caseView(tl, ONE, "");
+  expect(v.work.guesses[0].said).toEqual([
+    { words: SAID, when: "Sep 2026" },
+    { words: "Later I said I want to stop leaving the room.", when: "Oct 2026" },
+  ]);
+  const html = workCard(tl);
+  expect(html).toContain("Nora&#39;s own words");
+  expect(html.indexOf(esc(SAID))).toBeLessThan(html.indexOf("Later I said"));
+  expect(html).toContain(`<div class="bub user">${esc(SAID)}</div><p class="faint">Sep 2026</p>`);
+  expect(html).not.toContain(NOT_SAID);
+});
+
+// R-0707
+// Patrick, 2026-10-07: "sounds good to me".
+it("shows the event's title and date under a work-on guess that rests on an event alone", () => {
+  const tl = halloran();
+  tl.asked_questions = [guess("w1", "You could work on the visits.", CaseReportCard.WorkOn, [209, 211])];
+  const v = caseView(tl, ONE, "");
+  expect(v.work.guesses[0].said).toEqual([{ words: "Stopped visiting her mother", when: "Jan 2019" }]);
+  expect(workCard(tl)).toContain(`<div class="bub user">Stopped visiting her mother</div><p class="faint">Jan 2019</p>`);
+});
+
+// R-0707, R-0740
+// Patrick, 2026-10-07: "sounds good to me".
+it("keeps the empty text on what to work on only while no open work-on guess exists", () => {
+  const tl = halloran();
+  tl.asked_questions = [guess("w1", "Closed.", CaseReportCard.WorkOn, [209], false), guess("i2", "Elsewhere.", CaseReportCard.MainGuess, [209])];
+  expect(workCard(tl)).toContain(esc(NOT_SAID));
+  tl.asked_questions.push({ ...guess("w2", "Open.", CaseReportCard.WorkOn), evidence: [message(7, SAID, "2026-09-20")] });
+  expect(workCard(tl)).not.toContain(esc(NOT_SAID));
+});
+
 // R-0709
 it("shows the coach's newest guess on a card, and at most three on what to work on", () => {
   const tl = halloran();
