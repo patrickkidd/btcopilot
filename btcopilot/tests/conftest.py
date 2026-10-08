@@ -269,7 +269,9 @@ def logged(monkeypatch):
 
 
 def csrf_token(web) -> str:
-    page = web.get("/app/").get_data(as_text=True)
+    response = web.get("/app/")
+    assert response.status_code == 200
+    page = response.get_data(as_text=True)
     return re.search(r'name="csrf-token" content="([^"]+)"', page).group(1)
 
 
