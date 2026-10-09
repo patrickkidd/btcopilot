@@ -38,7 +38,7 @@ What it is for: getting into the app without a password.
 - After the first sign-in the app offers to let you use Face ID or a fingerprint instead, and asks only once per phone. [built]
 - If you say no to Face ID it waits a month before offering again. [built]
 - On a phone the app offers, once, to add itself to your home screen, and shows the exact button to tap. [built]
-- Opened from the home screen or the dock, the app asks once on that device, in the same kind of card, whether to turn on notifications: one sentence on what they are for, a Turn on notifications button that brings up the system's own question, and Not now, after which it does not ask again on that device. A device that allowed notifications before but lost its subscription is subscribed again as the app opens, with no question. [built] {R-0832}
+- Opened from the home screen or the dock, the app asks once on that device, in the same kind of card, whether to turn on notifications: one sentence on what they are for, a Turn on notifications button that brings up the system's own question, and Not now. Either answer spends the one ask on that device, so the card does not come back when the system's own question is dismissed or never shown. A device that allowed notifications before but lost its subscription is subscribed again as the app opens, with no question. [built] {R-0832}
 - If you dismiss the home-screen card it comes back no sooner than a week later. [built]
 - The card never blocks the conversation; you can ignore it and keep typing. [built]
 - Signed out, you see the app name, who you are signing in as, and one button to sign in. [drawn]

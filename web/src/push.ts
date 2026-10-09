@@ -70,8 +70,8 @@ export interface Device {
   permission: NotificationPermission;
   /** This browser's subscription is one the server holds. */
   saved: boolean;
-  /** "Not now" was tapped on the card on this device. */
-  declined: boolean;
+  /** The card was answered on this device, either way. */
+  asked: boolean;
 }
 
 export function reach(d: Device): Reach {
@@ -83,11 +83,11 @@ export function reach(d: Device): Reach {
 export function plan(d: Device): Plan {
   if (!d.supported) return Plan.Nothing;
   if (d.permission === "granted") return d.saved ? Plan.Nothing : Plan.Quiet;
-  if (d.permission === "default" && d.installed && !d.declined) return Plan.Card;
+  if (d.permission === "default" && d.installed && !d.asked) return Plan.Card;
   return Plan.Nothing;
 }
 
-const DECLINED = "fd-notifications-declined";
+const ASKED = "fd-notifications-asked";
 
 function supported(): boolean {
   return "PushManager" in window && "Notification" in window && "serviceWorker" in navigator;
@@ -100,17 +100,17 @@ export function installed(): boolean {
   );
 }
 
-function declined(): boolean {
+function asked(): boolean {
   try {
-    return window.localStorage.getItem(DECLINED) !== null;
+    return window.localStorage.getItem(ASKED) !== null;
   } catch {
     return false;
   }
 }
 
-function decline(): void {
+function remember(): void {
   try {
-    window.localStorage.setItem(DECLINED, String(Date.now()));
+    window.localStorage.setItem(ASKED, String(Date.now()));
   } catch {
     // a device that refuses to remember asks again next time it opens
   }
@@ -133,8 +133,18 @@ export async function device(): Promise<Device> {
     installed: installed(),
     permission,
     saved: permission === "granted" ? await saved() : false,
-    declined: declined(),
+    asked: asked(),
   };
+}
+
+/** Either button on the card spends the one ask on this device, so a system
+ * question dismissed, or held back unseen by the browser, never brings the
+ * card back (R-0832). Run inside the tap: iOS asks only from one. */
+export function answer(on: boolean): void {
+  remember();
+  if (!on) return;
+  tap(Feature.NotificationsOn);
+  void subscribe();
 }
 
 /** The card that asks, once per device, in the home-screen card's own look. */
@@ -148,15 +158,14 @@ function card(): HTMLElement {
   const later = el("button", "hs-later", "Not now");
   later.type = "button";
   later.addEventListener("click", () => {
-    decline();
     scrim.remove();
+    answer(false);
   });
   const on = el("button", "hs-go", "Turn on notifications");
   on.type = "button";
   on.addEventListener("click", () => {
-    tap(Feature.NotificationsOn);
     scrim.remove();
-    void subscribe();
+    answer(true);
   });
   const acts = el("div", "hs-acts");
   acts.append(later, on);
