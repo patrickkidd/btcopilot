@@ -6,7 +6,7 @@ import { CLUSTER, closeX, el, esc, fitPath, flash, pan, pathRow, slideOver, step
 import { fitScale, leastScale, people, type Layout } from "./diagram";
 import { clusterStep, dateOf, Picture, Target, type Tap } from "./picture";
 import { kindForms, withKind } from "./rows";
-import { BIRTHS, family, familyStart, said, when, Told } from "./snapshots";
+import { BIRTHS, family, familyStart, familyToday, said, when, Told } from "./snapshots";
 import { Spotlight, type Case, type Chip, type Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
@@ -20,6 +20,8 @@ enum Act {
   Back = "back",
   Next = "next",
   Jump = "jump",
+  /** The Family view's first meaningful date (R-0851). */
+  First = "first",
 }
 
 /** A phone turned on its side: a touch screen, wider than tall and shorter
@@ -43,7 +45,8 @@ export function yearsLine(tl: Timeline, told: Told, i: number, w = 390): string 
   });
   const ts = dated.map((e) => e.t);
   const t0 = Math.min(...ts);
-  const t1 = Math.max(...ts, t0 + 1 / 12);
+  // the line reaches every step, the current day among them (R-0850)
+  const t1 = Math.max(...ts, ...told.steps.map((st) => st.t), t0 + 1 / 12);
   const X = (t: number) => x0 + ((x1 - x0) * (t - t0)) / (t1 - t0);
   const own = new Map<number, number>();
   told.told.snapshots.forEach((s, j) => s.event_ids.forEach((id) => own.set(id, j)));
@@ -116,13 +119,17 @@ const FULL =
 
 /** The controls and the caption under the picture for snapshot `i`. The
  * question of a play kept as a message is the amber chip that answers it
- * (R-0587); a play kept nowhere has no message to point at. */
-export function below(told: Told, i: number, statement: number | null): string {
+ * (R-0587); a play kept nowhere has no message to point at. `first` is the
+ * Family view's first meaningful date, which ‹‹ First goes to (R-0851). */
+export function below(told: Told, i: number, statement: number | null, first = 0): string {
   const n = told.length;
   const back = stepBtn("‹ Back", `data-act="${Act.Back}"`, i === 0);
   const next = stepBtn("Next ›", `data-act="${Act.Next}"`, i === n - 1);
-  // the whole family's top line says where the reader is, so it has no dots (R-0742)
-  if (told.whole) return `<div class="step">${back}${FULL}${next}</div>`;
+  // the whole family's top line says where the reader is, so it has no dots
+  // (R-0742); ‹‹ First stands at Back's left, in the same place on every
+  // step, and is off once the reader is there (R-0782, R-0851)
+  if (told.whole)
+    return `<div class="step"><div class="left">${stepBtn("‹‹ First", `data-act="${Act.First}"`, i === first)}${back}</div>${FULL}${next}</div>`;
   const shot = told.shot(i);
   const dots = Array.from(
     { length: n },
@@ -303,8 +310,6 @@ export class Drawer {
   /** The frame was just put on a new person: it opens on them and their
    * parents and partners, sliding from where the tapped person stood. */
   private moved: { id: string; x: number; y: number } | null = null;
-  /** The Family view has just opened: it moves to the frame's own first date. */
-  private opening = false;
   /** The Family view's timeline: the chat's own, its clusters and events, the
    * step's event picked on it (R-0796; Patrick, 2026-10-07). */
   private readonly strip = el("div", "view");
@@ -351,16 +356,27 @@ export class Drawer {
   }
 
   /** Slide the drawer in on the three generations around the record's own
-   * person, at the first date holding more than births; Back and Next step
-   * through the dates on that one frame (R-0742, R-0775, R-0783). */
+   * person, on the current day; Back and Next step through the dates on that
+   * one frame, ‹‹ First to the first holding more than births (R-0742,
+   * R-0783, R-0850, R-0851). */
   openFamily(tl: Timeline): void {
     const c = family(tl);
     const whole = new Told(tl, c, true);
     this.centre = whole.cast.index;
     this.frame = null;
     this.moved = null;
-    this.opening = true;
-    this.show(whole, null, familyStart(tl, c));
+    this.show(whole, null, familyToday(c));
+  }
+
+  /** Where ‹‹ First goes, which is where the Family view used to open: the
+   * first date with more than births among the people the frame draws, never
+   * a date touching no one in it; failing that, the record's own first such
+   * date (R-0851, R-0783). */
+  private first(): number {
+    const told = this.told!;
+    const view = (told.whole && this.frame) || told;
+    const i = view.steps.findIndex((st, i) => st.marks.length && told.told.snapshots[i].event_ids.some((id) => !BIRTHS.has(told.tl.events.find((e) => e.id === id)?.kind ?? "")));
+    return i >= 0 ? i : familyStart(told.tl, told.told);
   }
 
   /** The four generations around `id` when they fit the drawer's width with
@@ -548,22 +564,14 @@ export class Drawer {
     // the Family view draws one frame over every date (R-0783)
     if (told.whole) this.frame ??= this.framed(this.centre);
     const view = told.whole ? this.frame! : told;
-    // it opens on the first date holding more than births among the frame's
-    // own people, not on a date that touches no one in it (R-0775, R-0783)
-    if (this.opening) {
-      this.opening = false;
-      const first = view.steps.findIndex((st, i) => st.marks.length && told.told.snapshots[i].event_ids.some((id) => !BIRTHS.has(told.tl.events.find((e) => e.id === id)?.kind ?? "")));
-      if (first >= 0 && first !== this.i) {
-        this.i = first;
-        this.line();
-      }
-    }
     const shot = view.shot(this.i);
     if (told.whole) {
-      // the picture and the words around it call everyone by one rule (R-0548)
+      // the picture and the words around it call everyone by one rule (R-0548);
+      // the current day, with no event, says itself (R-0850)
       const away = told.outside(this.i, view);
       this.names = view.calledAt(this.i, away);
-      q(".when").innerHTML = topLine(told, this.i, said(told.tl, told.told.snapshots[this.i].event_ids, this.names));
+      const ids = told.told.snapshots[this.i].event_ids;
+      q(".when").innerHTML = topLine(told, this.i, ids.length ? said(told.tl, ids, this.names) : undefined);
       this.also(away);
       q(".path").innerHTML = familyPath(this.names[this.centre]);
       fitPath(q(".path"));
@@ -572,7 +580,7 @@ export class Drawer {
     // the new drawing is the same width, so the frame sets off from where it stood
     const was = draw.scrollLeft;
     draw.innerHTML = shot.svg;
-    q(told.whole ? ".foot" : ".scroll").innerHTML = below(told, this.i, this.statement);
+    q(told.whole ? ".foot" : ".scroll").innerHTML = below(told, this.i, this.statement, told.whole ? this.first() : 0);
     this.fit(view.layout);
     draw.scrollLeft = was;
     const lit = [...draw.querySelectorAll<SVGElement>('.hl.now[data-mark^="hl:"]')].map((m) => m.dataset.mark!.slice(3));
@@ -791,6 +799,7 @@ export class Drawer {
     if (act === Act.Next) this.i = Math.min(this.i + 1, n - 1);
     else if (act === Act.Back) this.i = Math.max(this.i - 1, 0);
     else if (act === Act.Jump) this.i = Number(b.dataset.i);
+    else if (act === Act.First) this.i = this.first();
     this.render();
     // a keyboard tap keeps its place
     if ((e as MouseEvent).detail === 0)

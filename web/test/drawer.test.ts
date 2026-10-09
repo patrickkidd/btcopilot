@@ -1,8 +1,9 @@
+import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { closeX, PAN, pathRow } from "../src/dom";
 import { FIT, fitScale, leastScale, NAME } from "../src/diagram";
 import { below, head, pointLine, shownBy, stepOf, topLine, yearsLine } from "../src/drawer";
-import { family, Told, untold, when } from "../src/snapshots";
+import { family, familyStart, Told, untold, when } from "../src/snapshots";
 import { DateCertainty } from "../src/certainty";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
@@ -138,6 +139,25 @@ it("steps the whole family with Back and Next only, says where in its top line, 
   expect(topLine(whole, toward)).toBe('<span class="words">Delphine started calling Corinne every night</span>');
 });
 
+// R-0851, R-0782
+it("puts ‹‹ First at Back's left in the Family view's row, off on the first meaningful date, and not in the play-by-play", () => {
+  const whole = new Told(tl, family(tl), true);
+  const first = familyStart(tl, whole.told);
+  expect(first).toBeGreaterThan(-1);
+  const row = below(whole, whole.length - 1, null, first);
+  expect(row).toMatch(/<div class="left"><button class="stepbtn" type="button" data-act="first">‹‹ First<\/button><button class="stepbtn" type="button" data-act="back">/);
+  expect(below(whole, first, null, first)).toMatch(/data-act="first" disabled/);
+  expect(below(told, 2, null)).not.toContain('data-act="first"');
+});
+
+// R-0853
+it("fades the not yet born and the marks carried from earlier dates to one value, 0.2, fainter than the 0.3 they had", () => {
+  const css = readFileSync(new URL("../src/drawer.css", import.meta.url), "utf8");
+  expect(css).toMatch(/\.pbp \{ --faded: 0\.2; \}/);
+  expect(css).toContain(".pbp.whole .yet { opacity: var(--faded); }");
+  expect(css).toContain(".pbp .draw .was { opacity: var(--faded); }");
+});
+
 // "Yes, build that change to reuse the main timeline in the full Diagram view. But we still need to be stepping through the timeline event by event just like we are right now." (Patrick, 2026-10-07)
 // R-0796
 it("steps the Family view to a tapped cluster's first step, to a tapped event's own step, and to the nearest by date for an event no step holds", () => {
@@ -152,16 +172,19 @@ it("steps the Family view to a tapped cluster's first step, to a tapped event's 
   expect(shownBy(whole, j)).toBe(id);
 });
 
-// R-0742
-it("spans the whole family's years line over every dated event, this step ringed, earlier solid, later hollow", () => {
+// R-0742, R-0850
+it("spans the whole family's years line over every dated event, this step ringed, earlier solid, later hollow, the current day with no dot of its own", () => {
   const whole = new Told(tl, family(tl), true);
   const line = yearsLine(tl, whole, 3);
+  const dated = whole.told.snapshots.filter((s) => s.event_ids.length).length;
+  expect(dated).toBe(whole.length - 1);
   expect([...line.matchAll(/class="wnow"/g)]).toHaveLength(1);
   expect([...line.matchAll(/class="wd"/g)]).toHaveLength(3);
-  expect([...line.matchAll(/class="wahead"/g)]).toHaveLength(whole.length - 4);
-  expect([...line.matchAll(/class="wd dim"/g)]).toHaveLength(tl.events.length - whole.length);
+  expect([...line.matchAll(/class="wahead"/g)]).toHaveLength(dated - 4);
+  expect([...line.matchAll(/class="wd dim"/g)]).toHaveLength(tl.events.length - dated);
   expect(line).toContain(">1948</text>");
-  expect(line).toContain(">1999</text>");
+  // the line reaches the current day, the last step, past the newest event's 1999
+  expect(line).toContain(`>${new Date().getFullYear()}</text>`);
 });
 
 // R-0742

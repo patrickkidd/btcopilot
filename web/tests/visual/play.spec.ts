@@ -610,9 +610,9 @@ test.describe("a move between two people further apart than the screen is wide",
       return Math.abs(x(a) - x(b)) > d.clientWidth;
     }, [mover, target]);
     expect(far).toBe(true);
-    // the view opens on the record's own person; every step is then reached
-    // with Back and Next, from the first
-    await drawer(page).locator('[data-act="next"]').click();
+    // the view opens on the record's own person, today; every step is then
+    // reached with Back and Next, from the first
+    await drawer(page).locator('[data-act="first"]').click();
     const back = drawer(page).locator('[data-act="back"]:not([disabled])');
     while (await back.count()) await back.click();
     let moved = 0;
@@ -657,6 +657,8 @@ test.describe("the Family view's three generations", () => {
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
     await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
+    // the view opens on today (R-0850); these walks start from the first date with a move (R-0851)
+    await drawer(page).locator('[data-act="first"]').click();
     await page.waitForTimeout(300);
     const drawn = () => drawer(page).locator(".draw svg .p").evaluateAll((gs) => gs.map((g) => (g as SVGGElement).dataset.id!).sort());
     const of = (...names: string[]) => names.map((n) => String(ids[n])).sort();
@@ -685,8 +687,8 @@ test.describe("the Family view's three generations", () => {
     expect(errors).toEqual([]);
   });
 
-  // R-0783, R-0775
-  test("opens on the first date that touches the reader's own frame, not on dates about people outside it", async ({ page }) => {
+  // R-0783, R-0851
+  test("‹‹ First goes to the first date that touches the reader's own frame, not to dates about people outside it", async ({ page }) => {
     let ids: Record<string, number> = {};
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
@@ -700,6 +702,7 @@ test.describe("the Family view's three generations", () => {
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
+    await drawer(page).locator('[data-act="first"]').click();
     await expect(drawer(page).locator(".when")).toContainText("Hugo called Wanda every night");
     await expect(drawer(page).locator(".also")).toHaveText("");
   });
@@ -765,6 +768,8 @@ test.describe("the Family view's three generations", () => {
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
+    // the first date with more than births is their wedding
+    await drawer(page).locator('[data-act="first"]').click();
     await expect(drawer(page).locator(".when")).toContainText("Hugo and Wanda married");
     await page.waitForTimeout(1500);
     // under their own parents the couple stand further apart than the phone is
@@ -915,6 +920,8 @@ const familyOf = async (page: Page, sibs: number, tweak: (tl: Record<string, any
   await page.locator("#cap-family").click();
   await expect(drawer(page)).toBeVisible();
   await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
+  // the view opens on today (R-0850); these walks start from the first date with a move (R-0851)
+  await drawer(page).locator('[data-act="first"]').click();
   await page.waitForTimeout(300);
   return () => ids;
 };
@@ -1076,7 +1083,8 @@ test.describe("the Family view's frame wider than a phone turned sideways", () =
     const frame = drawer(page).locator(".draw");
     expect(await frame.evaluate((d) => d.scrollWidth > d.clientWidth)).toBe(true);
     expect(await sideways(page)).toBe(false);
-    await drawer(page).locator('[data-act="next"]').click();
+    // opened on today, the step before it is reached with Back
+    await drawer(page).locator('[data-act="back"]').click();
     expect(await sideways(page)).toBe(false);
     expect(errors).toEqual([]);
   });
@@ -1435,6 +1443,22 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
     expect(new Set(seen.ties)).toEqual(new Set([1]));
   });
 
+  // R-0853
+  test("in the Family view, draws the not yet born and the marks from earlier dates at 0.2, fainter than before, one shared value", async ({ page }) => {
+    await familyOf(page, 2, (tl, ids) => {
+      moving(false)(tl, ids);
+      tl.people.find((p: Record<string, unknown>) => p.id === ids.Hope).birth = "2090-01-01";
+    });
+    const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+    while (await back.count()) await back.click();
+    for (let i = 0; i < 3; i++) await drawer(page).locator('[data-act="next"]').click();
+    await page.waitForTimeout(800);
+    const family = await faded(page);
+    expect(family.was.length).toBeGreaterThan(0);
+    expect(family.yet.length).toBeGreaterThan(0);
+    expect(new Set([...family.was, ...family.yet])).toEqual(new Set([0.2]));
+  });
+
   // R-0793
   test("in the play-by-play, gives the first step's move, carried to the second, the same see-through look, the second's own move solid", async ({ page }) => {
     await settle(page);
@@ -1570,7 +1594,8 @@ test.describe("the Family view on a phone, turned", () => {
     expect(await drawer(page).boundingBox()).toEqual({ x: 0, y: 0, width: 852, height: 393 });
     for (const [x, y] of [[20, 20], [200, 150], [830, 200]]) expect(await covers(page, x, y)).toBe(true);
     await tapPerson(page, ids.Hugo);
-    await drawer(page).locator('[data-act="next"]').click();
+    // opened on today, the step before it is reached with Back
+    await drawer(page).locator('[data-act="back"]').click();
     const at = await placeOf(page);
     expect(at[1]).toContain("Hugo's family");
     await page.setViewportSize({ width: 393, height: 852 });
@@ -1656,6 +1681,8 @@ test.describe("the Family view on a desktop window", () => {
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
+    // on today nothing is picked on the line; the first date with more than births has its dot
+    await drawer(page).locator('[data-act="first"]').click();
     const before = await filled(page);
     expect(before.scale).toBeGreaterThan(1);
     expect(before.whole).toBe(true);
@@ -1684,6 +1711,8 @@ for (const [what, viewport] of [
       await settle(page);
       await page.locator("#cap-family").click();
       await expect(drawer(page)).toBeVisible();
+      // on today nothing is picked on the line; the first date with more than births has its dot
+      await drawer(page).locator('[data-act="first"]').click();
       const seen = await filled(page);
       expect(seen.line).toBeCloseTo(seen.room, 0);
       if (seen.whole) expect(seen.scale).toBeGreaterThanOrEqual(1);
@@ -1746,6 +1775,8 @@ for (const [what, viewport] of [
       let far = 0;
       while (await next.isEnabled()) {
         await next.click();
+        // the last step, the current day, picks nothing on the line (R-0850)
+        if ((await drawer(page).locator(".when").innerText()) === "Today") break;
         await expect.poll(async () => (await sight()).inside).toBe(true);
         far = Math.max(far, (await sight()).left);
       }
@@ -1778,12 +1809,29 @@ for (const [what, viewport] of [
             left: p.querySelector<HTMLElement>(".wire .ss-scroll")!.scrollLeft,
           };
         });
+      // opened on today, which picks nothing on the line (R-0850): the walk starts from the first date
+      const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+      while (await back.count()) await back.click();
       await expect.poll(async () => (await seen()).inside).toBe(true);
+      // where the line rests once its travel to the step's dot is over
+      const rested = async () => {
+        let last = -1;
+        await expect
+          .poll(async () => {
+            const at = (await seen()).left;
+            const same = at === last;
+            last = at;
+            return same;
+          }, { intervals: [300] })
+          .toBe(true);
+        return last;
+      };
       const next = drawer(page).locator('[data-act="next"]');
       let held = 0;
       while (await next.isEnabled()) {
-        const was = (await seen()).left;
+        const was = await rested();
         await next.click();
+        if ((await drawer(page).locator(".when").innerText()) === "Today") break;
         if ((await seen()).lit) {
           await expect.poll(async () => (await seen()).inside).toBe(true);
           continue;
@@ -1945,8 +1993,8 @@ test.describe("the whole family stepped through dates", () => {
     expect(errors).toEqual([]);
   });
 
-  // R-0742, R-0755, R-0756, R-0775
-  test("steps on to the record today and back through its history, the not yet born faded, and browser back returns to the timeline", async ({ page }) => {
+  // R-0742, R-0755, R-0756, R-0850
+  test("opens on the record today and steps back through its history, the not yet born faded, and browser back returns to the timeline", async ({ page }) => {
     const errors = watched(page);
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
     await settle(page);
@@ -1955,11 +2003,13 @@ test.describe("the whole family stepped through dates", () => {
     await expect(page).toHaveURL(/\/app\/family$/);
     await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family › Ada's family");
     await expect(drawer(page).locator(".dots")).toHaveCount(0);
-    const next = drawer(page).locator('[data-act="next"]');
-    while (await next.isEnabled()) await next.click();
+    // the current day: nothing happened on it, so the top line says the day,
+    // Next is off, and the strip has no event picked (R-0850)
     const top = drawer(page).locator(".when");
-    await expect(top).toHaveText("Ben died");
-    await expect(stamp(page)).toHaveText(/^Feb 2010/);
+    await expect(top).toHaveText("Today");
+    await expect(drawer(page).locator('[data-act="next"]')).toBeDisabled();
+    await expect(drawer(page).locator('[data-act="back"]')).toBeEnabled();
+    await expect(drawer(page).locator(".wire .dot.on")).toHaveCount(0);
     const picture = () => drawer(page).locator(".draw").innerHTML();
     const dot = drawer(page).locator('.draw .p[data-id="9100"]');
     let was = await picture();
@@ -1972,6 +2022,9 @@ test.describe("the whole family stepped through dates", () => {
       expect(now).not.toBe(was);
       was = now;
     };
+    // Back from today goes to the newest dated event
+    await tap("back", "Ben died");
+    await expect(stamp(page)).toHaveText(/^Feb 2010/);
     await tap("back", "Dot was born");
     // Dot, who is no one's daughter in this record, stands outside the
     // reader's frame and is named under the title on her own date (R-0783)
@@ -2078,14 +2131,17 @@ test.describe("the whole family wider than the phone", () => {
 test.describe("the whole family of a family many phones wide", () => {
   test.use({ storageState: stateFor("case-report-dense"), viewport: { width: 393, height: 852 } });
 
-  // R-0759, R-0744, R-0749, R-0766, R-0775, R-0779, R-0787
-  test("opens on the first date holding more than births, its person in the frame, names at 9px or more and short, every word inside what the frame scrolls to", async ({ page }) => {
+  // R-0759, R-0744, R-0749, R-0766, R-0850, R-0851, R-0779, R-0787
+  test("opens on today; ‹‹ First goes to the first date holding more than births, its person in the frame, names at 9px or more and short, every word inside what the frame scrolls to", async ({ page }) => {
     const errors = watched(page);
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
-    // her grandparents' wedding is not hers: it opens on a date among her own three generations
+    await expect(drawer(page).locator(".when")).toHaveText("Today");
+    await drawer(page).locator('[data-act="first"]').click();
+    // her grandparents' wedding is not hers: First goes to a date among her own three generations
     await expect(drawer(page).locator(".when")).not.toHaveText("Harold and Ruth married");
+    await expect(drawer(page).locator(".when")).not.toHaveText("Today");
     await expect(drawer(page).locator(".also")).toHaveText("");
     // opened, not glided: the frame is already on the step's person
     const at = await drawer(page).evaluate((p) => {
@@ -2209,14 +2265,15 @@ for (const viewport of [{ width: 393, height: 852 }, { width: 1440, height: 900 
   test.describe(`the whole family of a wide record at ${viewport.width} wide`, () => {
     test.use({ storageState: stateFor("case-report-dense"), viewport });
 
-    // R-0759, R-0766, R-0775, R-0783
-    test("opens on the first date holding more than births, on the record's own person whole in the frame, and no name touches another", async ({ page }, info) => {
+    // R-0759, R-0766, R-0851, R-0783
+    test("‹‹ First goes to the first date holding more than births, on the record's own person whole in the frame, and no name touches another", async ({ page }, info) => {
       test.skip(info.project.name !== "phone", "the size is the describe's own");
       await settle(page);
       await page.locator("#cap-family").click();
       await expect(drawer(page)).toBeVisible();
       await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
-      // it opens on a date among her own generations: on a phone her
+      await drawer(page).locator('[data-act="first"]').click();
+      // First goes to a date among her own generations: on a phone her
       // grandparents' wedding is outside her frame, on a wide screen inside it (R-0784)
       if (viewport.width < 700) await expect(drawer(page).locator(".when")).not.toHaveText("Harold and Ruth married");
       else await expect(drawer(page).locator('.draw .pt:has(text:text-is("Harold"))')).toHaveCount(1);
@@ -2251,6 +2308,12 @@ test.describe("stepped by hand on a phone", () => {
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
   };
+  /** The Family view opened and taken to its first date with more than births, where it used to open. */
+  const familyFirst = async (page: Page) => {
+    await family(page);
+    await drawer(page).locator('[data-act="first"]').click();
+    await expect(drawer(page).locator(".when")).not.toHaveText("Today");
+  };
   const played = async (page: Page) => {
     await settle(page);
     await stored(page).click();
@@ -2264,11 +2327,96 @@ test.describe("stepped by hand on a phone", () => {
     await expect(drawer(page)).toContainText(words);
   };
 
-  // R-0775
-  test("the Family button opens on the first date holding more than births, Harold and June's marriage", async ({ page }) => {
+  // R-0850, R-0851
+  test("the Family button opens on today, and ‹‹ First goes to the first date holding more than births, Harold and June's marriage", async ({ page }) => {
     await family(page);
+    await expect(drawer(page).locator(".when")).toHaveText("Today");
+    await expect(drawer(page).locator('[data-act="next"]')).toBeDisabled();
+    await expect(drawer(page).locator('[data-act="first"]')).toBeEnabled();
+    await drawer(page).locator('[data-act="first"]').click();
     await expect(drawer(page).locator(".when")).toHaveText("Harold and June married");
     await expect(stamp(page)).toHaveText(/^Jun 1946/);
+    await expect(drawer(page).locator('[data-act="first"]')).toBeDisabled();
+  });
+
+  // R-0851, R-0782
+  test("‹‹ First stands at Back's left, the row whole inside the phone's width, and Back and Next keep their places from today to the first date", async ({ page }) => {
+    await family(page);
+    // the drawer comes down from the top (R-0768): read the row once it has landed
+    await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
+    const boxes = async () => {
+      const out: Record<string, number[]> = {};
+      for (const act of ["first", "back", "next"]) {
+        const b = (await drawer(page).locator(`[data-act="${act}"]`).boundingBox())!;
+        out[act] = [Math.round(b.x), Math.round(b.y), Math.round(b.width)];
+      }
+      return out;
+    };
+    const today = await boxes();
+    const [fx, , fw] = today.first;
+    expect(fx + fw).toBeLessThanOrEqual(today.back[0]);
+    expect(today.back[0] - (fx + fw)).toBeLessThan(12);
+    expect(fx).toBeGreaterThanOrEqual(0);
+    expect(today.next[0] + today.next[2]).toBeLessThanOrEqual(393);
+    expect(await drawer(page).locator(".foot .step").evaluate((r) => r.scrollWidth <= r.clientWidth + 1)).toBe(true);
+    // a tap target 44px tall: a touch 2px above or below the pill still lands on it
+    const first = (await drawer(page).locator('[data-act="first"]').boundingBox())!;
+    expect(first.height).toBeGreaterThanOrEqual(40);
+    const hit = await page.evaluate(
+      ([x, top, bottom]) => [top, bottom].map((y) => document.elementFromPoint(x, y)?.closest("[data-act]")?.getAttribute("data-act")),
+      [first.x + first.width / 2, first.y - 1.5, first.y + first.height + 1.5],
+    );
+    expect(hit).toEqual(["first", "first"]);
+    await drawer(page).locator('[data-act="first"]').click();
+    await expect(drawer(page).locator(".when")).toHaveText("Harold and June married");
+    expect(await boxes()).toEqual(today);
+  });
+
+  /** Where the strip's picked dot stands against the strip's own box, once the line has stopped moving. */
+  const dotAt = async (page: Page) => {
+    const sc = drawer(page).locator(".wire .ss-scroll");
+    let last = -1;
+    await expect
+      .poll(async () => {
+        const at = await sc.evaluate((s) => s.scrollLeft);
+        const still = at === last;
+        last = at;
+        return still;
+      }, { intervals: [300] })
+      .toBe(true);
+    return sc.evaluate((s) => {
+      const dot = s.querySelector(".dot.on")!.getBoundingClientRect();
+      const box = s.getBoundingClientRect();
+      return { left: dot.left - box.left, right: dot.right - box.left, screen: box.width, scroll: s.scrollLeft, end: s.querySelector<HTMLElement>(".ss-line")!.offsetWidth - box.width };
+    });
+  };
+
+  // R-0852
+  test("puts the step's dot in the middle of the strip after each Next and Back, as near as the line's ends allow, so it is in sight, after a burst of taps too", async ({ page }) => {
+    await family(page);
+    await drawer(page).locator('[data-act="first"]').click();
+    await nextTo(page, "Walter and Rosa married");
+    const check = async (what: string) => {
+      const d = await dotAt(page);
+      expect(d.left, what).toBeGreaterThanOrEqual(0);
+      expect(d.right, what).toBeLessThanOrEqual(d.screen);
+      // where the dot stands on the line, and the line put on it
+      const x = (d.left + d.right) / 2 + d.scroll;
+      expect(Math.abs(d.scroll - Math.max(0, Math.min(d.end, x - d.screen / 2))), what).toBeLessThan(2);
+    };
+    // the marriage is a screen away from the births before it on this line
+    const first = await dotAt(page);
+    expect(first.end).toBeGreaterThan(100);
+    await check("Walter and Rosa married");
+    await drawer(page).locator('[data-act="back"]').click();
+    await check("back from it");
+    await drawer(page).locator('[data-act="next"]').click();
+    await check("next to it again");
+    for (let i = 0; i < 4; i++) {
+      await drawer(page).locator('[data-act="next"]:not([disabled])').click();
+      await page.waitForTimeout(120);
+    }
+    await check("after four taps in a burst");
   });
 
   /** Where each moved person stands in the drawing, sampled over seven seconds. */
@@ -2285,8 +2433,8 @@ test.describe("stepped by hand on a phone", () => {
     });
 
   for (const [view, open, words] of [
-    ["the Family view", family, "Leo sided with Rosa"],
-    ["the Family view", family, "Leo stayed out of their fight"],
+    ["the Family view", familyFirst, "Leo sided with Rosa"],
+    ["the Family view", familyFirst, "Leo stayed out of their fight"],
     ["the play-by-play", played, "Inside: Leo sided with Rosa"],
     ["the play-by-play", played, "Outside: Leo stayed out of it"],
   ] as const)
@@ -2321,7 +2469,7 @@ test.describe("stepped by hand on a phone", () => {
     await played(page);
     await nextTo(page, "Cutoff:");
     const told = await reach(page);
-    await family(page);
+    await familyFirst(page);
     // the frame walked up to Walter, whose father the cutoff is about
     await tapPerson(page, 3);
     await nextTo(page, "Walter stopped calling his father");

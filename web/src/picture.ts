@@ -568,6 +568,24 @@ export const centredOn = (x: number, width: number, screen: number) =>
 export const inSight = (x: number, left: number, screen: number) =>
   x >= left + X_PAD && x <= left + screen - X_PAD;
 
+/** Where the line settles after a swipe: at a cluster's near edge, so a
+ * cluster is never cut in half, and at both ends, so the first moment is
+ * reachable as the last is; whole pixels, or a redraw lands the line a pixel
+ * off where it stood (R-0542). Stepping event by event, as the Family view
+ * does, the line is put on the step's dot, and a browser snapping it on to a
+ * stop could carry the dot out of sight again: so it has none (R-0852). */
+export function stops(edges: { left: number; right: number }[], width: number, screen: number, stepping: boolean): number[] {
+  if (stepping) return [];
+  const at = new Set<number>();
+  for (const edge of edges) {
+    at.add(Math.max(0, edge.left - X_PAD));
+    at.add(Math.max(0, edge.right + X_PAD - screen));
+  }
+  at.add(0);
+  at.add(Math.max(0, width - screen));
+  return [...new Set([...at].map(Math.round))];
+}
+
 /** The calendar year a point on the line falls in. years() counts from 1970,
  * so the way back to a year is through the date that point stands for. */
 export function yearAt(at: number): number {
@@ -1200,18 +1218,7 @@ export class Picture {
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
     const targets = restLayers(boxes, dotLayers(zoned)).map(hitButton).join("");
-    // Where the line settles after a swipe: at a box's near edge, so a cluster
-    // is never cut in half.
-    const stops = new Set<number>();
-    for (const edge of edges(clusters, at)) {
-      stops.add(Math.max(0, edge.left - X_PAD));
-      stops.add(Math.max(0, edge.right + X_PAD - screen));
-    }
-    // and at both ends, so the first moment is reachable as the last is
-    stops.add(0);
-    stops.add(Math.max(0, width - screen));
-    // whole pixels, or a redraw lands the line a pixel off where it stood (R-0542)
-    const snaps = [...new Set([...stops].map(Math.round))]
+    const snaps = stops(edges(clusters, at), width, screen, this.stepping)
       .map((left) => `<i class="ss-snap" style="left:${left}px"></i>`)
       .join("");
 
