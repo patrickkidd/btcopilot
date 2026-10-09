@@ -5,6 +5,7 @@ import contextlib
 import datetime
 import logging
 import re
+import socket
 import flask.testing
 import pytest
 from mock import patch
@@ -324,3 +325,24 @@ def discussion(test_user):
     db.session.commit()
 
     return discussion
+
+
+_connect = socket.socket.connect
+
+
+@pytest.fixture(autouse=True)
+def hermetic(request, monkeypatch):
+    if any(
+        request.node.get_closest_marker(m)
+        for m in ("integration", "e2e", "live", "conventions")
+    ):
+        yield
+        return
+
+    def connect(self, address):
+        if self.family == socket.AF_UNIX:
+            return _connect(self, address)
+        raise ConnectionRefusedError(f"unit tests may not open sockets: {address}")
+
+    monkeypatch.setattr(socket.socket, "connect", connect)
+    yield

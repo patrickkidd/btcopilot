@@ -135,7 +135,7 @@ prints every command. Port 8888 is Patrick's own server: never use it.
 ## 7. Tests
 
 ```bash
-uv run pytest -m "not conventions" btcopilot/tests -q   # the Python suite, no key needed
+uv run pytest -n auto -m "not conventions" btcopilot/tests -q   # the Python suite in parallel, no key needed; -n 0 only to locate a hang or a collision
 npm --prefix web test                                    # the page's unit tests
 . $(bin/sandbox/sandbox env <name>); npm --prefix web run test:visual   # Playwright, against a sandbox
 uv run pytest -m conventions btcopilot/tests             # the oracle guards, key needed (CI runs them)
