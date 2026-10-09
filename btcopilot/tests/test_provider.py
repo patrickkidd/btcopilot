@@ -233,13 +233,13 @@ def test_a_bedrock_answer_is_priced_at_anthropics_rates(bedrock_machine):
 
 
 def test_a_gemini_coach_fails_plainly_on_bedrock(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-09, Gemini coach back on the Anthropic path
+    # R-0803
     with pytest.raises(ValueError, match="not on Bedrock"):
         model_for("gemini-flash")
 
 
 def test_a_gemini_coach_is_offered_off_bedrock(anthropic_machine):
-    # R-0000 ruling pending: Patrick 2026-10-09, Gemini coach back on the Anthropic path
+    # R-0803
     assert isinstance(model_for("gemini-pro"), GeminiModel)
 
 
@@ -400,7 +400,7 @@ print("built")
 
 
 def test_the_default_path_runs_without_boto3(anthropic_machine):
-    # R-0000 ruling pending: Patrick 2026-10-09, Gemini coach back on the Anthropic path
+    # R-0802
     done = subprocess.run(
         [sys.executable, "-c", NO_BOTO3], capture_output=True, text=True
     )
@@ -408,7 +408,7 @@ def test_the_default_path_runs_without_boto3(anthropic_machine):
 
 
 def test_bedrock_without_boto3_raises_the_import_error(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-09, Gemini coach back on the Anthropic path
+    # R-0802
     bedrock_machine.setitem(sys.modules, "boto3", None)
     with pytest.raises(ImportError, match="boto3"):
         provider.credentials()
