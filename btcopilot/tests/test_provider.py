@@ -166,7 +166,7 @@ def test_on_bedrock_haiku_answers_a_call_that_names_gemini(bedrock_machine):
     # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
     asked = []
 
-    async def claude_structured(prompt, response_format, model):
+    async def claude_structured(prompt, response_format, model, schema, limit):
         asked.append(model)
 
     async def claude_text(prompt=None, **kwargs):
@@ -280,7 +280,7 @@ def test_haiku_is_sent_no_thinking_and_no_effort(bedrock_machine, model, reasons
     with pytest.raises(Asked):
         llmutil.claude_text_sync("prompt", model=model)
     with pytest.raises(Asked):
-        asyncio.run(llmutil.claude_structured("prompt", Named, model))
+        asyncio.run(llmutil.claude_structured("prompt", Named, model, None, 32000))
     for call in sent:
         assert ("thinking" in call) is reasons
         assert ("output_config" in call) is reasons
