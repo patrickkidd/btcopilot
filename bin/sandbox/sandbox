@@ -143,8 +143,8 @@ keys() {
     return 0
   fi
   [ -f "$DOTENV" ] || die "--real reads its keys from $DOTENV, which is missing"
-  ANTHROPIC_API_KEY=$(grep '^ANTHROPIC_TESTING_KEY=' "$DOTENV" | cut -d= -f2-)
-  GOOGLE_GEMINI_API_KEY=$(grep '^GOOGLE_GEMINI_API_KEY=' "$DOTENV" | cut -d= -f2-)
+  ANTHROPIC_API_KEY=$(grep '^ANTHROPIC_TESTING_KEY=' "$DOTENV" | cut -d= -f2- || true)
+  GOOGLE_GEMINI_API_KEY=$(grep '^GOOGLE_GEMINI_API_KEY=' "$DOTENV" | cut -d= -f2- || true)
   [ -n "$ANTHROPIC_API_KEY" ] || die "no ANTHROPIC_TESTING_KEY in $DOTENV"
   export ANTHROPIC_API_KEY GOOGLE_GEMINI_API_KEY
 }

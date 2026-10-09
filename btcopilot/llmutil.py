@@ -77,6 +77,18 @@ def _is_claude_model(model: str) -> bool:
     return model.startswith("claude-")
 
 
+# Models that reject adaptive thinking and the effort setting with HTTP 400
+# (both start at Opus 4.6 and Sonnet 4.6; Haiku 4.5 takes neither).
+NO_ADAPTIVE_THINKING = {"claude-haiku-4-5-20251001"}
+
+
+def reasoning_args(model: str, effort: str) -> dict:
+    """Adaptive thinking and effort, for the models that take them (app names)."""
+    if model in NO_ADAPTIVE_THINKING:
+        return {}
+    return {"thinking": {"type": "adaptive"}, "output_config": {"effort": effort}}
+
+
 def bedrock_models() -> set[str]:
     """Every Claude model the app may name, each of which Bedrock must serve."""
     named = {*MODEL_ALIASES.values(), RESPONSE_MODEL, GEMINI_STAND_IN}
@@ -561,8 +573,7 @@ async def claude_text(prompt=None, **kwargs):
         "model": resolved_model,
         "max_tokens": max_output_tokens,
         "messages": messages,
-        "thinking": {"type": "adaptive"},
-        "output_config": {"effort": TEXT_EFFORT},
+        **reasoning_args(kwargs.get("model", RESPONSE_MODEL), TEXT_EFFORT),
     }
     if system_instruction:
         api_kwargs["system"] = system_instruction
@@ -722,8 +733,7 @@ async def claude_structured(prompt, response_format, model, schema, limit):
     async with client.beta.messages.stream(
         model=resolved_model,
         max_tokens=limit,
-        thinking={"type": "adaptive"},
-        output_config={"effort": STRUCTURED_EFFORT},
+        **reasoning_args(model, STRUCTURED_EFFORT),
         messages=[{"role": "user", "content": full_prompt}],
         **fallback_args(resolved_model),
     ) as stream:

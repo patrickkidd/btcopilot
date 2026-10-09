@@ -1,6 +1,8 @@
 """Which service answers the app's Claude calls, and how a Bedrock machine names
 its models. No network: the SDK clients are built, never called."""
 
+import asyncio
+
 import anthropic
 import pytest
 from botocore.exceptions import UnauthorizedSSOTokenError
@@ -225,3 +227,47 @@ def test_no_alias_names_gemini_any_more(anthropic_machine):
     assert not [alias for alias in llmutil.MODEL_ALIASES if "gemini" in alias]
     with pytest.raises(KeyError):
         model_for("gemini-flash")
+
+
+class Asked(Exception):
+    pass
+
+
+class Claude:
+    """An Anthropic client that records what a call sends, then stops it."""
+
+    def __init__(self, sent):
+        self.beta = self
+        self.messages = self
+        self.sent = sent
+
+    async def create(self, **kwargs):
+        self.sent.append(kwargs)
+        raise Asked()
+
+    def stream(self, **kwargs):
+        self.sent.append(kwargs)
+        raise Asked()
+
+    async def close(self):
+        pass
+
+
+@pytest.mark.parametrize(
+    "model, reasons",
+    [(llmutil.GEMINI_STAND_IN, False), (llmutil.RESPONSE_MODEL, True)],
+)
+def test_haiku_is_sent_no_thinking_and_no_effort(bedrock_machine, model, reasons):
+    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    sent = []
+    bedrock_machine.setattr(llmutil, "_anthropic_client", lambda: Claude(sent))
+    bedrock_machine.setattr(
+        llmutil, "_extraction_anthropic_client", lambda: Claude(sent)
+    )
+    with pytest.raises(Asked):
+        llmutil.claude_text_sync("prompt", model=model)
+    with pytest.raises(Asked):
+        asyncio.run(llmutil.claude_structured("prompt", Named, model))
+    for call in sent:
+        assert ("thinking" in call) is reasons
+        assert ("output_config" in call) is reasons
