@@ -2,7 +2,7 @@
 default), or Amazon Bedrock with the machine's AWS sign-in, chosen only by
 BTCOPILOT_MODEL_PROVIDER=bedrock. The SDK reads ANTHROPIC_BEDROCK_BASE_URL itself.
 Gemini is not on Bedrock, so on Bedrock every Gemini call is answered by Claude
-Sonnet (llmutil.GEMINI_STAND_IN)."""
+Haiku (llmutil.GEMINI_STAND_IN)."""
 
 import enum
 import os

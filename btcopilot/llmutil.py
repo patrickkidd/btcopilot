@@ -39,10 +39,9 @@ CALIBRATION_MODEL = "gemini-3-flash-preview"
 RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-5-5")
 GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
 
-# Gemini Flash and Sonnet are near-identical in performance and cost (Patrick,
-# 2026-10-01), so on Bedrock, where Google is unreachable, Sonnet answers every
-# call that names a Gemini model.
-GEMINI_STAND_IN = "claude-sonnet-5-5"
+# Gemini does only cheap-tier work, so on Bedrock, where Google is unreachable,
+# Haiku, the matching tier, answers every call that names a Gemini model.
+GEMINI_STAND_IN = "claude-haiku-4-5-20251001"
 
 TEXT_EFFORT = "medium"
 STRUCTURED_EFFORT = "high"

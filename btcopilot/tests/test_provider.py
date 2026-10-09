@@ -14,6 +14,7 @@ from btcopilot.push import keypair
 from btcopilot.tests.test_llmutil import Named
 
 SONNET = "us.anthropic.claude-sonnet-5-5"
+HAIKU = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 
 @pytest.fixture
@@ -150,7 +151,7 @@ def test_an_expired_aws_sign_in_stops_the_app_plainly(bedrock_machine):
     llmutil.check_provider()
 
 
-def test_on_bedrock_sonnet_answers_a_call_that_names_gemini(bedrock_machine):
+def test_on_bedrock_haiku_answers_a_call_that_names_gemini(bedrock_machine):
     # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
     asked = []
 
@@ -167,6 +168,8 @@ def test_on_bedrock_sonnet_answers_a_call_that_names_gemini(bedrock_machine):
     assert llmutil.gemini_text_sync("prompt", model="gemini-2.5-flash") == "words"
     assert llmutil.gemini_calibration_sync("prompt") == "words"
     assert llmutil.response_text_sync("prompt") == "words"
+    assert llmutil.GEMINI_STAND_IN == "claude-haiku-4-5-20251001"
+    assert llmutil.wire_model(llmutil.GEMINI_STAND_IN) == HAIKU
     assert asked == [llmutil.GEMINI_STAND_IN] * 3 + [llmutil.RESPONSE_MODEL]
 
 

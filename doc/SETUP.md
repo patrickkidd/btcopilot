@@ -134,7 +134,7 @@ prints every command. Port 8888 is Patrick's own server: never use it.
 
 **Bedrock.** The app calls Anthropic's API with the key by default. `BTCOPILOT_MODEL_PROVIDER=bedrock`
 is the only switch to Amazon Bedrock: every model call then goes through Bedrock with the shell's
-AWS sign-in, no Anthropic or Google key is read, and a Gemini-named call is answered by Sonnet
+AWS sign-in, no Anthropic or Google key is read, and a Gemini-named call is answered by Haiku
 (Gemini is not on Bedrock). Bedrock needs `AWS_REGION`; the SDK reads `ANTHROPIC_BEDROCK_BASE_URL`
 and `AWS_CA_BUNDLE` itself. Without a usable sign-in the app stops at startup and says so.
 
