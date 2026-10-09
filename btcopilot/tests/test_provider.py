@@ -12,6 +12,7 @@ from btcopilot import llmutil, provider
 from btcopilot.app import create_app
 from btcopilot.coachmodel import CoachModel, model_for
 from btcopilot.pricing import price
+from btcopilot.models import Discussion
 from btcopilot.models.modelcall import ModelCall
 from btcopilot.provider import Provider
 from btcopilot.push import keypair
@@ -300,3 +301,77 @@ def test_served_reads_a_usage_without_iterations():
     answered = llmutil.served(message, "claude_structured")
     assert answered.model == "claude-haiku-4-5-20251001"
     assert answered.hops == []
+
+
+class Built(Claude):
+    """anthropic.Anthropic, recording what it was built with."""
+
+    built = []
+
+    def __init__(self, **kwargs):
+        super().__init__([])
+        Built.built.append(kwargs)
+
+    def stream(self, **kwargs):
+        raise Asked()
+
+    def close(self):
+        pass
+
+
+class Discussed:
+    """A meter that sends a Gemini call straight to llmutil."""
+
+    def gemini(self, **kwargs):
+        return llmutil.gemini_text_sync(**kwargs)
+
+
+def test_with_no_flag_the_title_and_summary_call_gemini_flash_lite_unthinking(
+    anthropic_machine,
+):
+    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    asked = []
+
+    class Recorded(Gemini):
+        async def generate_content(self, model, contents, config):
+            asked.append((model, config.thinking_config.thinking_budget))
+            raise Asked()
+
+    anthropic_machine.setattr(llmutil, "_client", lambda: Recorded([]))
+    discussion = Discussion(statements=[])
+    with pytest.raises(Asked):
+        discussion.update_summary(Discussed())
+    with pytest.raises(Asked):
+        discussion.update_title(Discussed())
+    assert asked == [("gemini-3.1-flash-lite", 0)] * 2
+
+
+def test_with_no_flag_the_coach_builds_anthropic_with_the_api_key(anthropic_machine):
+    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    Built.built = []
+    anthropic_machine.setattr(llmutil.anthropic, "Anthropic", Built)
+    with pytest.raises(Asked):
+        list(CoachModel().turn("system", [{"role": "user", "content": "hi"}], []))
+    assert len(Built.built) == 1
+    assert Built.built[0]["api_key"] == "anthropic-key"
+    assert "base_url" not in Built.built[0] and "aws_region" not in Built.built[0]
+
+
+def test_with_no_flag_startup_does_not_touch_aws(anthropic_machine):
+    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    def touched(**kwargs):
+        raise AssertionError("startup asked AWS for a sign-in")
+
+    anthropic_machine.setattr(provider.boto3, "Session", touched)
+    public, private = keypair()
+    create_app(
+        config={
+            "CONFIG": "testing",
+            "TESTING": True,
+            "SECRET_KEY": "test_secret_key",
+            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+            "VAPID_PUBLIC_KEY": public,
+            "VAPID_PRIVATE_KEY": private,
+            "VAPID_SUBJECT": "mailto:test@example.com",
+        }
+    )
