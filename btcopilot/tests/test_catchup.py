@@ -162,6 +162,24 @@ def test_apply_writes_exactly_the_plan_one_row_each_with_no_model_call(
     assert ModelCall.query.filter_by(purpose=Purpose.Backfill).count() == 1
 
 
+def test_an_old_answer_of_how_many_children_adds_the_unnamed_children_as_a_live_answer_does(
+    flask_app, tmp_path, kin, past
+):
+    # R-0325, R-0618
+    children = fact(past, iid="3", name="children", kind="pair_bond")
+    children[1]["count"] = 2
+    plan = dry(flask_app, tmp_path, calling(children))
+
+    assert (plan["counts"]["facts"], plan["counts"]["dropped"]) == (1, 0)
+    assert plan["facts"][0]["args"]["count"] == 2
+    rows = apply(flask_app, plan)
+
+    assert [(r["entry"], r["refused"]) for r in rows] == [("q1", None)]
+    db.session.expire_all()
+    added = [p for p in kin.get_diagram_data().people if p.get("parents") == 3]
+    assert [p["name"] for p in added] == ["Wren and Ash's child"] * 2
+
+
 def test_a_second_pass_proposes_nothing_already_written(flask_app, tmp_path, kin, past):
     # R-0760, R-0770, R-0772
     filed(kin, "q9", "met", "person", "1", state="asked")

@@ -469,10 +469,21 @@ it("groups the couple card under Bowen's stage heads in date order, the same hea
 
 // R-0835
 it("says what the couple card still needs of the floor: the marriage date, each partner's place among brothers and sisters, the children in order", () => {
-  const full = caseView(lenaOmar(), ONE, "");
-  expect(full.couple.needs).toBe("");
-  // Daniel's parents are not in the record
-  expect(caseView(halloran(), ONE, "").couple.needs).toBe("This card still needs where Daniel stands among his brothers and sisters.");
+  // brothers and sisters only in the record, no births dated: neither place is known
+  expect(caseView(lenaOmar(), ONE, "").couple.needs).toBe("This card still needs where each of them stands among their brothers and sisters.");
+  const dated = lenaOmar();
+  dated.events.push(
+    event(500, EventKind.Birth, "1960-01-01", { person: 4, spouse: 3, child: 1 }),
+    event(501, EventKind.Birth, "1962-01-01", { person: 4, spouse: 3, child: 5 }),
+    event(502, EventKind.Birth, "1958-01-01", { person: 7, spouse: 6, child: 2 }),
+    event(503, EventKind.Birth, "1961-01-01", { person: 7, spouse: 6, child: 8 }),
+  );
+  expect(caseView(dated, ONE, "").couple.needs).toBe("");
+  // a child with no dated birth leaves the children's order unknown
+  dated.events = dated.events.filter((e) => e.id !== 312);
+  expect(caseView(dated, ONE, "").couple.needs).toBe("This card still needs the children, in order.");
+  // Daniel's parents are not in the record, and his partner's brothers and sisters have no dated births
+  expect(caseView(halloran(), ONE, "").couple.needs).toBe("This card still needs where each of them stands among their brothers and sisters.");
   const thin: Timeline = {
     ...emptyTimeline(),
     people: [person(1, "Ines", "female", null, true), person(2, "Theo", "male")],

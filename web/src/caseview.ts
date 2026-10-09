@@ -387,17 +387,24 @@ class Reader {
     return { head: this.head(first, what), facts: rest.map((e) => this.named(e)) };
   }
 
+  born = (id: number) => this.tl.events.some((e) => e.dateTime && BIRTHS.has(e.kind ?? "") && e.child === id);
+
+  /** Whether the order of a couple's children is known: each one's birth is
+   * dated. Being in the record alone does not place anyone. */
+  ordered = (b: PairBond | undefined) => !!b && this.childrenOf(b).every((c) => this.born(c.id));
+
   /** What the couple card still needs, the floor of a couple's history: when
    * they married, where each stands among their brothers and sisters, the
-   * children in order (R-0835). Nothing when the record holds all three. */
+   * children in order (R-0835), each order known only from dated births. Nothing
+   * when the record holds all three. */
   needs(pair: number[], own: TimelineEvent[], children: number[]): string {
     const [a, b] = pair.map((id) => this.people.get(id)!);
     const bits: string[] = [];
     if (!own.some((e) => e.kind === EventKind.Married)) bits.push(`when ${a.name} and ${b.name} married`);
-    const placeless = pair.filter((id) => !this.parentsOf(id)).map((id) => this.people.get(id)!);
+    const placeless = pair.filter((id) => !this.ordered(this.parentsOf(id))).map((id) => this.people.get(id)!);
     if (placeless.length === 2) bits.push("where each of them stands among their brothers and sisters");
     else if (placeless.length === 1) bits.push(`where ${placeless[0].name} stands among ${pronouns(placeless[0]).his} brothers and sisters`);
-    if (!children.length) bits.push("the children, in order");
+    if (!children.length || !children.every((c) => this.born(c))) bits.push("the children, in order");
     return bits.length ? `This card still needs ${listed(bits)}.` : "";
   }
 

@@ -49,7 +49,7 @@ STORIES = 8
 TODOS = 3
 # What must still hold of a question for its move to be written.
 MATCHED = ("text", "state", "outcome", "fact", "item_kind", "item_id")
-FIELDS = ("text", "kind", "state", "outcome", "answer", "item_kind", "item_id", "fact")
+FIELDS = ("text", "kind", "state", "outcome", "answer", "item_kind", "item_id", "fact", "count")
 STATEMENT = {
     "type": "integer",
     "description": "The id of the person's message this rests on.",
@@ -252,6 +252,10 @@ class Proposed(Toolbox):
         return self.held
 
     def _write(self, kind, item_id, fields, statement_id=None):
+        if kind is ItemKind.Person:
+            pid = record.next_id(self.held)
+            self.held.people.append({"id": pid, **fields})
+            return "", {"deltas": [{"item_id": pid}]}
         taken = {q["id"] for q in self.held.questions if q["id"].startswith("q")}
         self.held.questions.append({"id": record.next_key("q", taken), **fields})
         return "", {}
