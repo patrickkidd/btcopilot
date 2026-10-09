@@ -9,13 +9,6 @@ import os
 import re
 from typing import Iterable
 
-# boto3 comes only with the optional bedrock extra; the default path never needs it
-try:
-    import boto3
-    from botocore.exceptions import BotoCoreError, ClientError
-except ImportError:
-    boto3 = None
-    BotoCoreError = ClientError = None
 
 
 class Provider(enum.StrEnum):
@@ -54,8 +47,10 @@ def region() -> str:
 
 def credentials() -> None:
     """Check AWS credentials for Bedrock; raise with fix instructions if missing."""
-    if boto3 is None:
-        raise RuntimeError("Bedrock needs the bedrock extra: uv sync --extra bedrock")
+    # Local: boto3 is the optional bedrock extra, absent from the production image
+    import boto3
+    from botocore.exceptions import BotoCoreError, ClientError
+
     try:
         found = boto3.Session(region_name=region()).get_credentials()
         if found:

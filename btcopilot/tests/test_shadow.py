@@ -262,7 +262,7 @@ def test_each_shadow_model_runs_the_turn_again_on_its_own(
 def test_a_stored_shadow_the_app_no_longer_offers_is_skipped(
     web, token, test_user, monkeypatch
 ):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
     coach(monkeypatch, "btcopilot.shadow.model_for", Model(said("Older by how much?")))
     setting.write(SettingKey.ShadowCandidates, ["gemini-1.0-gone", "sonnet"])

@@ -5,6 +5,7 @@ import asyncio
 from types import SimpleNamespace
 
 import anthropic
+import boto3
 import subprocess
 import sys
 
@@ -66,7 +67,7 @@ class Signed:
 
 
 def test_the_provider_is_anthropic_unless_the_flag_says_bedrock(anthropic_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     anthropic_machine.setenv("CLAUDE_CODE_USE_BEDROCK", "1")
     assert provider.provider() is Provider.Anthropic
     assert isinstance(llmutil.anthropic_client(), anthropic.Anthropic)
@@ -82,7 +83,7 @@ def test_the_provider_is_anthropic_unless_the_flag_says_bedrock(anthropic_machin
 
 
 def test_a_bedrock_machine_builds_bedrock_clients_and_reads_no_key(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     client = llmutil.anthropic_client(timeout=30)
     assert isinstance(client, anthropic.AnthropicBedrock)
     assert client.aws_region == "us-west-2"
@@ -93,14 +94,14 @@ def test_a_bedrock_machine_builds_bedrock_clients_and_reads_no_key(bedrock_machi
 
 
 def test_bedrock_without_a_region_fails_plainly(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     bedrock_machine.delenv(provider.REGION)
     with pytest.raises(RuntimeError, match=provider.REGION):
         llmutil.anthropic_client()
 
 
 def test_every_model_the_app_names_has_a_bedrock_profile(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     provider.require_bedrock_ids(llmutil.bedrock_models())
     assert llmutil.wire_model(llmutil.resolve_model("sonnet")) == SONNET
     assert CoachModel(model="sonnet").model == SONNET
@@ -111,7 +112,7 @@ def test_every_model_the_app_names_has_a_bedrock_profile(bedrock_machine):
 
 
 def test_a_model_without_a_bedrock_profile_is_named(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     with pytest.raises(RuntimeError, match="claude-opus-4-7"):
         provider.require_bedrock_ids([*llmutil.bedrock_models(), "claude-opus-4-7"])
     with pytest.raises(RuntimeError, match="claude-opus-4-7"):
@@ -119,13 +120,13 @@ def test_a_model_without_a_bedrock_profile_is_named(bedrock_machine):
 
 
 def test_bedrock_takes_no_fallbacks(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     assert llmutil.fallback_args("claude-opus-5-5") == {}
     assert llmutil.fallback_args(llmutil.wire_model("claude-opus-5-5")) == {}
 
 
 def test_the_local_server_comes_before_bedrock(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     bedrock_machine.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
     bedrock_machine.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
     assert isinstance(llmutil.anthropic_client(), anthropic.Anthropic)
@@ -134,8 +135,8 @@ def test_the_local_server_comes_before_bedrock(bedrock_machine):
 
 
 def test_bedrock_with_no_aws_sign_in_stops_the_app_at_startup(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
-    bedrock_machine.setattr(provider.boto3, "Session", lambda **k: Session(None))
+    # R-0801
+    bedrock_machine.setattr(boto3, "Session", lambda **k: Session(None))
     with pytest.raises(RuntimeError, match=provider.SIGN_IN):
         provider.credentials()
     public, private = keypair()
@@ -154,16 +155,16 @@ def test_bedrock_with_no_aws_sign_in_stops_the_app_at_startup(bedrock_machine):
 
 
 def test_an_expired_aws_sign_in_stops_the_app_plainly(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
-    bedrock_machine.setattr(provider.boto3, "Session", lambda **k: Session(Expired()))
+    # R-0801
+    bedrock_machine.setattr(boto3, "Session", lambda **k: Session(Expired()))
     with pytest.raises(RuntimeError, match=provider.SIGN_IN):
         llmutil.check_provider()
-    bedrock_machine.setattr(provider.boto3, "Session", lambda **k: Session(Signed()))
+    bedrock_machine.setattr(boto3, "Session", lambda **k: Session(Signed()))
     llmutil.check_provider()
 
 
 def test_on_bedrock_haiku_answers_a_call_that_names_gemini(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     asked = []
 
     async def claude_structured(prompt, response_format, model, schema, limit):
@@ -198,7 +199,7 @@ class Gemini:
 
 
 def test_without_the_flag_gemini_calls_go_to_gemini(anthropic_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     asked = []
 
     async def claude(*args, **kwargs):
@@ -223,7 +224,7 @@ def test_without_the_flag_gemini_calls_go_to_gemini(anthropic_machine):
 
 
 def test_a_bedrock_answer_is_priced_at_anthropics_rates(bedrock_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     assert price("us.anthropic.claude-opus-5-5") == price("claude-opus-5-5")
     assert price("us.anthropic.claude-haiku-4-5-20251001-v1:0") == price(
         "claude-haiku-4-5"
@@ -271,7 +272,7 @@ class Claude:
     [(llmutil.GEMINI_STAND_IN, False), (llmutil.RESPONSE_MODEL, True)],
 )
 def test_haiku_is_sent_no_thinking_and_no_effort(bedrock_machine, model, reasons):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     sent = []
     bedrock_machine.setattr(llmutil, "_anthropic_client", lambda: Claude(sent))
     bedrock_machine.setattr(
@@ -296,13 +297,13 @@ def test_haiku_is_sent_no_thinking_and_no_effort(bedrock_machine, model, reasons
     ],
 )
 def test_a_stored_model_name_is_the_app_name(wire):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     assert provider.app_model(wire) == "claude-haiku-4-5-20251001"
     assert ModelCall(model=wire).model == "claude-haiku-4-5-20251001"
 
 
 def test_served_reads_a_usage_without_iterations():
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     message = SimpleNamespace(
         usage=SimpleNamespace(input_tokens=1, output_tokens=1),
         content=[SimpleNamespace(type="text", text="words")],
@@ -339,7 +340,7 @@ class Discussed:
 def test_with_no_flag_the_title_and_summary_call_gemini_flash_lite_unthinking(
     anthropic_machine,
 ):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     asked = []
 
     class Recorded(Gemini):
@@ -357,7 +358,7 @@ def test_with_no_flag_the_title_and_summary_call_gemini_flash_lite_unthinking(
 
 
 def test_with_no_flag_the_coach_builds_anthropic_with_the_api_key(anthropic_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     Built.built = []
     anthropic_machine.setattr(llmutil.anthropic, "Anthropic", Built)
     with pytest.raises(Asked):
@@ -368,11 +369,11 @@ def test_with_no_flag_the_coach_builds_anthropic_with_the_api_key(anthropic_mach
 
 
 def test_with_no_flag_startup_does_not_touch_aws(anthropic_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     def touched(**kwargs):
         raise AssertionError("startup asked AWS for a sign-in")
 
-    anthropic_machine.setattr(provider.boto3, "Session", touched)
+    anthropic_machine.setattr(boto3, "Session", touched)
     public, private = keypair()
     create_app(
         config={
@@ -393,6 +394,7 @@ sys.modules["boto3"] = sys.modules["botocore"] = sys.modules["botocore.exception
 from btcopilot import llmutil, provider
 llmutil.anthropic_client()
 llmutil._anthropic_client()
+llmutil.check_provider()
 print("built")
 """
 
@@ -405,15 +407,15 @@ def test_the_default_path_runs_without_boto3(anthropic_machine):
     assert done.stdout.strip() == "built", done.stderr
 
 
-def test_bedrock_without_boto3_fails_plainly(bedrock_machine):
+def test_bedrock_without_boto3_raises_the_import_error(bedrock_machine):
     # R-0000 ruling pending: Patrick 2026-10-09, Gemini coach back on the Anthropic path
-    bedrock_machine.setattr(provider, "boto3", None)
-    with pytest.raises(RuntimeError, match="uv sync --extra bedrock"):
+    bedrock_machine.setitem(sys.modules, "boto3", None)
+    with pytest.raises(ImportError, match="boto3"):
         provider.credentials()
 
 
 def test_app_model_keeps_anthropic_and_gemini_names(anthropic_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    # R-0801
     for name in (
         "claude-sonnet-5",
         "claude-haiku-4-5-20251001",
