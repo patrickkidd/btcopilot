@@ -73,6 +73,7 @@ def test_the_provider_is_anthropic_unless_the_flag_says_bedrock(anthropic_machin
     anthropic_machine.setenv(provider.SETTING, "")
     assert provider.provider() is Provider.Anthropic
     anthropic_machine.setenv(provider.SETTING, Provider.Bedrock.value)
+    anthropic_machine.setenv(provider.REGION, "us-west-2")
     assert provider.provider() is Provider.Bedrock
     assert isinstance(llmutil.anthropic_client(), anthropic.AnthropicBedrock)
     anthropic_machine.setenv(provider.SETTING, "bedrok")
@@ -409,3 +410,13 @@ def test_bedrock_without_boto3_fails_plainly(bedrock_machine):
     bedrock_machine.setattr(provider, "boto3", None)
     with pytest.raises(RuntimeError, match="uv sync --extra bedrock"):
         provider.credentials()
+
+
+def test_app_model_keeps_anthropic_and_gemini_names(anthropic_machine):
+    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    for name in (
+        "claude-sonnet-5",
+        "claude-haiku-4-5-20251001",
+        llmutil.EXTRACTION_MODEL,
+    ):
+        assert provider.app_model(name) == name
