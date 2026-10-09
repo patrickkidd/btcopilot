@@ -9,7 +9,7 @@ from decimal import Decimal
 import pytest
 import yaml
 
-from btcopilot import flow, topics
+from btcopilot import bowen, flow, topics
 from btcopilot.pricing import PRICES
 from btcopilot.tests import grafanasql
 from btcopilot.tests.repo import REPO
@@ -87,7 +87,9 @@ def uids(node) -> set[str]:
 def test_every_dashboard_reads_a_data_source_the_laptop_provides():
     # R-0370
     provided = {s["uid"] for s in yaml.safe_load(SOURCES.read_text())["datasources"]}
-    used = set().union(*(uids(json.loads(p.read_text())) for p in GRAFANA.glob("*.json")))
+    used = set().union(
+        *(uids(json.loads(p.read_text())) for p in GRAFANA.glob("*.json"))
+    )
     assert used <= provided
 
 
@@ -164,6 +166,8 @@ FIRST_WAVE = {
         "Days between sittings",
         "Days between sittings by cohort month",
     ),
+    # One panel per question of btcopilot.bowen, the question as the title.
+    "fd-coachquality": tuple(f.title for f in bowen.FIGURES),
 }
 SOURCE = {"type": "grafana-postgresql-datasource", "uid": "ffz1wy7unkdfke"}
 # up to the "))" that closes the last row and the list
@@ -270,6 +274,96 @@ def test_the_shared_tables_carry_the_app_objection_phrases():
     assert phrases(OBJECTION.search(grafanasql.FRAGMENTS)) == flow.OBJECTION
 
 
-def test_the_first_wave_has_forty_panels():
+def test_the_first_wave_has_fifty_four_panels():
     # R-0814
-    assert sum(map(len, FIRST_WAVE.values())) == 40
+    assert sum(map(len, FIRST_WAVE.values())) == 54
+
+
+# The board "How the coach compares to Bowen" [R-0810]: every panel carries
+# Bowen's figure from btcopilot.bowen as its constant line, pastes each word
+# list exactly as the module renders it, and pastes no list the module does
+# not know.
+
+QUALITY = GRAFANA / "fd-coachquality.json"
+CONSTANT = re.compile(r"as metric, (\S+) as \"([^\"]+)\"")
+REGEX_LITERAL = "'(?<![a-z0-9''])"
+VALUES_TABLE = re.compile(r"\w+\(\w+\) as \(values ")
+
+
+def quality() -> list[tuple[bowen.Figure, dict]]:
+    board = json.loads(QUALITY.read_text())
+    by_title = {p["title"]: p for p in board["panels"]}
+    return [(f, by_title[f.title]) for f in bowen.FIGURES]
+
+
+def test_the_bowen_board_is_named_for_the_comparison_and_the_old_board_for_its_mechanics():
+    # R-0810, R-0814
+    assert json.loads(QUALITY.read_text())["title"] == "How the coach compares to Bowen"
+    assert (
+        json.loads((GRAFANA / "fd-coach.json").read_text())["title"]
+        == "The coach's mechanics"
+    )
+
+
+@pytest.mark.parametrize(
+    "figure, panel", quality(), ids=lambda x: label(x) if isinstance(x, dict) else x.key
+)
+def test_a_bowen_panel_carries_the_module_figure_as_its_constant_line(figure, panel):
+    # R-0810, R-0814
+    (constant,) = [t for t in panel["targets"] if t["refId"] == "B"]
+    found = CONSTANT.search(constant["rawSql"])
+    assert found and float(found.group(1)) == figure.value
+    assert found.group(2) == figure.unit
+    assert bowen.LEGEND in constant["rawSql"]
+    assert panel["description"].startswith(figure.rule)
+    assert re.search(r"\$__timeFrom\(\).*\$__timeTo\(\)", constant["rawSql"], re.S)
+
+
+@pytest.mark.parametrize(
+    "figure, panel", quality(), ids=lambda x: label(x) if isinstance(x, dict) else x.key
+)
+def test_a_bowen_panel_pastes_each_list_as_the_module_renders_it(figure, panel):
+    # R-0810, R-0814, R-0517
+    words = sql(panel)
+    for name in figure.lists:
+        assert bowen.LISTS[name] in words, name
+    # the shared tables' own objection list is held to flow.OBJECTION above
+    words = words.replace(grafanasql.FRAGMENTS.strip(), "")
+    known = tuple(bowen.LISTS.values())
+    at = words.find(REGEX_LITERAL)
+    while at >= 0:
+        # a bare boundary joined to a values table's phrase is the per-phrase form
+        if not words.startswith(REGEX_LITERAL + "' ||", at):
+            assert any(words.startswith(k, at) for k in known), words[at : at + 80]
+        at = words.find(REGEX_LITERAL, at + 1)
+    for found in VALUES_TABLE.finditer(words):
+        assert any(words.startswith(k, found.end()) for k in known), found.group()
+
+
+def test_the_module_renders_a_list_the_way_flow_matches_a_phrase():
+    # R-0810, R-0517
+    assert bowen.regex(("you're right", "no wonder")) == (
+        "(?<![a-z0-9'])(?:you're right|no wonder)(?![a-z0-9'])"
+    )
+    assert (
+        bowen.literal(("that's why",))
+        == "'(?<![a-z0-9''])(?:that''s why)(?![a-z0-9''])'"
+    )
+    assert bowen.values(("why", "how come")) == "('why'),('how come')"
+    assert "\\b" not in bowen.risk_regex() and "\\y" in bowen.risk_regex()
+    assert bowen.PLAIN == (
+        "died", "die", "dead", "death", "dying", "cancer", "tumor", "suicide",
+        "killed", "divorce", "divorced", "heart attack", "stroke",
+    )  # fmt: skip
+    assert set(bowen.EUPHEMISM_PHRASES) | set(bowen.GUARDED) == set(bowen.EUPHEMISM)
+
+
+@pytest.mark.parametrize(
+    "figure, panel", quality(), ids=lambda x: label(x) if isinstance(x, dict) else x.key
+)
+def test_a_bowen_panel_counts_words_and_questions_the_way_flow_does(figure, panel):
+    # R-0810, R-0814
+    words = sql(panel)
+    assert bowen.words("r.clean") in words
+    assert bowen.is_question("btrim(st.sentence)") in words
+    assert "regexp_matches(m.text" not in words
