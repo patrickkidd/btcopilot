@@ -56,6 +56,7 @@ jobs:
           chmod +x /usr/local/bin/sops
 
       - name: Run unit tests
+        timeout-minutes: 12
         # from the checkout, not the installed copy: the suite reads files that
         # live beside the package (alembic.ini, deploy, private, the docs)
         run: pytest -svv --disable-warnings -m "not conventions" btcopilot/tests
