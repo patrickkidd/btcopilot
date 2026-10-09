@@ -6,15 +6,16 @@ asked for. The agent loop owns the looping; this owns the wire.
 
 import logging
 
-import anthropic
 from opentelemetry import trace
 
 from btcopilot.geminimodel import GeminiModel
 from btcopilot.openaimodel import OpenAIModel
 from btcopilot.llmutil import (
-    anthropic_args,
+    anthropic_client,
     claude_spent,
     fallback_args,
+    NotOnBedrockError,
+    off_bedrock,
     is_gemini,
     is_openai,
     local_model,
@@ -108,9 +109,8 @@ class CoachModel:
             "coach.turn",
             attributes={"model": self.model, "turn_id": turn_id, "tools": len(tools)},
         ) as span:
-            client = anthropic.Anthropic(
-                **anthropic_args(),
-                **({"timeout": self.timeout} if self.timeout else {}),
+            client = anthropic_client(
+                **({"timeout": self.timeout} if self.timeout else {})
             )
             try:
                 with client.beta.messages.stream(
@@ -209,8 +209,14 @@ def model_for(
 ) -> CoachModel | GeminiModel | OpenAIModel:
     """The coach model an alias names: none is the default, an unknown one
     raises KeyError. Haiku 4.5 rejects the effort setting, so it gets none. The
-    local server answers every name, Gemini's and OpenAI's included."""
+    local server answers every name, Gemini's and OpenAI's included. Bedrock
+    has no Gemini or OpenAI, so such a coach there raises NotOnBedrockError."""
     model = resolve_model(name)
+    if off_bedrock(model):
+        raise NotOnBedrockError(
+            f"Model {name} is not on Bedrock; unset BTCOPILOT_MODEL_PROVIDER"
+            " or choose a Claude model"
+        )
     if is_gemini(model) and not local_model():
         return GeminiModel(model, effort, timeout)
     if is_openai(model) and not local_model():

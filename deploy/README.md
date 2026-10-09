@@ -13,6 +13,8 @@ from the Pro box on purpose. Nothing in it has run yet; the droplet does not exi
    with a new credential (none of the old compose file's values are reused),
    encrypt it: `sops -e secrets.env > secrets.env.enc`, delete the plain file,
    commit `secrets.env.enc`. The Gemini values are listed under "Gemini settings" below.
+   The box's Claude calls run on the Anthropic key (`BTCOPILOT_MODEL_PROVIDER=anthropic`);
+   Bedrock is for the testing machines only.
 2. **Keys.** On the new box: `age-keygen -o /etc/fd/age.key`, `chmod 600`. Its
    public key goes into `.sops.yaml` here beside the Mac's; the prompts, the
    rulings and the secrets file are re-encrypted with `sops updatekeys`. Claude
@@ -167,7 +169,9 @@ The desktop app's update feeds live on the legacy box and are forwarded because 
 ## Gemini settings
 
 Two kinds of call go to Gemini, and they do not read the same settings. All of them live in
-`/etc/fd/secrets.env`; `secrets.env.example` names each one.
+`/etc/fd/secrets.env`; `secrets.env.example` names each one. On a Bedrock machine
+(`BTCOPILOT_MODEL_PROVIDER=bedrock`) cluster sorting and titles run on Claude, a Gemini coach
+model fails plainly and a Gemini shadow model is skipped with a warning.
 
 | Setting | Read by | What it does |
 |---------|---------|--------------|

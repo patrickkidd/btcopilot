@@ -97,8 +97,8 @@ work; the file on Patrick's Mac also carries keys for his other projects.
 
 | Name | Needed for | Where it comes from |
 |---|---|---|
-| `ANTHROPIC_TESTING_KEY` | needed for `sandbox up --real` and the live evals; spends real money, ask Patrick first | Anthropic console, the testing workspace |
-| `GOOGLE_GEMINI_API_KEY` | needed for `pytest --e2e` and `--real` | Google AI Studio |
+| `ANTHROPIC_TESTING_KEY` | needed for `sandbox up --real` and the live evals, except on a Bedrock machine (section 6); spends real money, ask Patrick first | Anthropic console, the testing workspace |
+| `GOOGLE_GEMINI_API_KEY` | needed for `pytest --e2e` and `--real`, except on a Bedrock machine | Google AI Studio |
 | `ATLASSIAN_TOKEN` | needed for Jira reads and writes | Atlassian account, API tokens |
 | `GRAFANA_SA_TOKEN`, `GRAFANA_URL` | only `bin/cloudbackfill.py`, once, at the FD-374 cutover (doc/MONITORING.md) | the old Grafana Cloud service account |
 | `DIGITALOCEAN_ADMIN` | box administration, confirmed with Patrick each time | DigitalOcean API tokens |
@@ -131,6 +131,25 @@ It needs Docker, `redis-server`, Ollama with the model (or `--real`), and the ag
 lives in `~/btcopilot-sandbox/<name>/` (override with `SANDBOX_HOME`); `.env` is read from the
 main clone's root (override with `SANDBOX_DOTENV`). `bin/sandbox/sandbox` with no arguments
 prints every command. Port 8888 is Patrick's own server: never use it.
+
+**Bedrock.** The app calls Anthropic's API with the key by default. `BTCOPILOT_MODEL_PROVIDER=bedrock`
+is the only switch to Amazon Bedrock: every model call then goes through Bedrock with the shell's
+AWS sign-in, no Anthropic or Google key is read, and a Gemini-named title, summary or cluster call is answered by Haiku
+(Gemini is not on Bedrock); a Gemini coach model fails plainly and a Gemini side-by-side model is skipped. Bedrock needs `AWS_REGION`; the SDK reads `ANTHROPIC_BEDROCK_BASE_URL`
+and `AWS_CA_BUNDLE` itself. Without a usable sign-in the app stops at startup and says so. Bedrock needs the optional `bedrock` extra (`uv sync --extra bedrock`; the test extra includes it); the production image never installs it.
+
+```bash
+export AWS_PROFILE=default
+aws sso login
+export AWS_REGION=us-west-2
+export BTCOPILOT_MODEL_PROVIDER=bedrock
+bin/sandbox/sandbox up mine 8912 --real
+```
+
+The sandbox kit copies the flag into the instance's settings and passes `AWS_PROFILE`,
+`AWS_REGION`, `AWS_CA_BUNDLE` and `ANTHROPIC_BEDROCK_BASE_URL` to the server and workers. Without
+`--real` the coach stays on the local Ollama model. A Claude model with no Bedrock inference
+profile in `BEDROCK_MODELS` (`btcopilot/provider.py`) is named at startup.
 
 ## 7. Tests
 

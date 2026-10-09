@@ -5,6 +5,7 @@ from werkzeug.exceptions import Unauthorized, HTTPException
 import btcopilot
 
 from btcopilot import tracing
+from btcopilot.llmutil import check_provider
 from btcopilot.turnlog import TurnLogBackend
 
 
@@ -21,6 +22,7 @@ REQUEST_ID = "X-Request-Id"
 
 
 def create_app(config: dict = None, **kwargs):
+    # circular: admin.proimport imports create_app from this module
     from btcopilot import auth, extensions, routes
     from btcopilot.review import routes as review_routes
     from btcopilot import admin
@@ -99,6 +101,7 @@ def create_app(config: dict = None, **kwargs):
             f"{', '.join(missing)} must be set: python -m btcopilot.push makes"
             " the key pair, and the subject is mailto: and an address"
         )
+    check_provider()
 
     ## Instance
 

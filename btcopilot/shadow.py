@@ -17,7 +17,7 @@ from sqlalchemy.orm import aliased
 from btcopilot import diagramjson, extensions, record
 from btcopilot.admin.setting import shadow_candidates
 from btcopilot.coachmodel import model_for
-from btcopilot.llmutil import Spent, resolve_model
+from btcopilot.llmutil import MODEL_ALIASES, Spent, off_bedrock, resolve_model
 from btcopilot.pricing import cost, price
 from btcopilot.coachturn import RECENT_INTERACTIONS, CoachTurn, prompt_version
 from btcopilot.extensions import db
@@ -95,12 +95,21 @@ def expiry(
     user: User, now: datetime.datetime, before: int | None = None
 ) -> datetime.datetime | None:
     """When Conversation Feedback turns itself off, None once it is off; past
-    that time it is turned off here, and a model no longer a shadow candidate
-    is dropped. `before` counts only the coach's replies written before that
-    statement."""
-    models = user.pref(PrefKey.ShadowModels)
-    kept = [alias for alias in models if alias in shadow_candidates()]
-    if kept != list(models):
+    that time it is turned off here, and a model no longer a shadow candidate,
+    or one the app no longer offers, is dropped. `before` counts only the
+    coach's replies written before that statement."""
+    # read raw: a model the app has since dropped fails the setting's own check
+    stored = list((user.preferences or {}).get(PrefKey.ShadowModels.value) or ())
+    kept = [
+        alias
+        for alias in stored
+        if alias in MODEL_ALIASES and alias in shadow_candidates()
+    ]
+    if kept != stored:
+        for alias in stored:
+            if alias not in MODEL_ALIASES:
+                _log.warning(f"shadow model {alias} is no longer offered; skipped")
+        user.set_prefs(shadow_models=kept)
         switch(user, kept, now)
         db.session.commit()
     if not kept:
@@ -126,7 +135,10 @@ def start(turn: CoachTurn, statement_id: int, model: str, before: bytes | None):
 
 def _queue(
     turn_id: str, discussion: Discussion, statement_id: int, model: str, snapshot: bytes
-) -> None:
+) -> bool:
+    if off_bedrock(resolve_model(model)):
+        _log.warning(f"shadow model {model} is not on Bedrock; skipped")
+        return False
     row = ShadowTurn(
         turn_id=turn_id,
         user_id=discussion.user_id,
@@ -139,6 +151,7 @@ def _queue(
     db.session.add(row)
     db.session.commit()
     enqueue(row.id)
+    return True
 
 
 def rewound(said: Statement) -> list[Change]:
@@ -271,10 +284,10 @@ def spend(now: datetime.datetime) -> dict:
 def backfill(user: User, model: str) -> int:
     """Run each of this person's past turns again on the model, over the record
     as it stood before each one. Returns how many were handed over."""
-    turns = pending(user, model)
-    for said in turns:
+    return sum(
         _queue(said.turn_id, said.discussion, said.id, model, rebuilt(said))
-    return len(turns)
+        for said in pending(user, model)
+    )
 
 
 def enqueue(row_id: int) -> None:

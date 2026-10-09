@@ -2,9 +2,11 @@ import enum
 
 from sqlalchemy import JSON, Column, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import validates
 
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+from btcopilot.provider import app_model
 
 
 class Purpose(enum.StrEnum):
@@ -52,3 +54,8 @@ class ModelCall(db.Model, ModelMixin):
     cost_usd = Column(Numeric(10, 6), nullable=False)
     duration_ms = Column(Integer, nullable=False)
     tool_calls = Column(Integer, nullable=False)
+
+    @validates("model")
+    def _app_name(self, key, model):
+        """Bedrock ids are stored as the app's name, as coach rows are."""
+        return app_model(model)

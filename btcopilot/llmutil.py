@@ -7,12 +7,21 @@ import logging
 from dataclasses import dataclass, field, fields, MISSING
 from typing import get_origin, get_args, Union
 
+import anthropic
 import openai
 from google import genai
 from google.genai import types
 import aiohttp
 from google.genai.errors import APIError, ClientError, ServerError
 
+from btcopilot.provider import (
+    Provider,
+    bedrock_model,
+    credentials,
+    provider,
+    region,
+    require_bedrock_ids,
+)
 from btcopilot.schema import from_dict
 
 _log = logging.getLogger(__name__)
@@ -26,11 +35,13 @@ CALIBRATION_MODEL = "gemini-3-flash-preview"
 # Set BTCOPILOT_RESPONSE_MODEL to override. Supported values:
 #   "claude-opus-5-5" (default) — Anthropic Claude Opus 5.5
 #   "claude-opus-4-6" — Anthropic Claude Opus 4.6
-#   "gemini-3-flash-preview" — Google Gemini Flash (legacy)
-#   Any valid Anthropic or Gemini model identifier.
-# The backend is auto-detected from the model name prefix.
+#   Any valid Anthropic model identifier.
 RESPONSE_MODEL = os.environ.get("BTCOPILOT_RESPONSE_MODEL", "claude-opus-5-5")
 GEMINI_RESPONSE_MODEL = "gemini-3-flash-preview"
+
+# Gemini does only cheap-tier work, so on Bedrock, where Google is unreachable,
+# Haiku, the matching tier, answers every call that names a Gemini model.
+GEMINI_STAND_IN = "claude-haiku-4-5-20251001"
 
 TEXT_EFFORT = "medium"
 STRUCTURED_EFFORT = "high"
@@ -73,6 +84,28 @@ def is_openai(model: str) -> bool:
 def _is_claude_model(model: str) -> bool:
     """Return True if the model identifier is a Claude/Anthropic model."""
     return model.startswith("claude-")
+
+
+# Models that reject adaptive thinking and the effort setting with HTTP 400
+# (both start at Opus 4.6 and Sonnet 4.6; Haiku 4.5 takes neither).
+NO_ADAPTIVE_THINKING = {"claude-haiku-4-5-20251001"}
+
+
+def reasoning_args(model: str, effort: str) -> dict:
+    """Adaptive thinking and effort, for the models that take them (app names)."""
+    if model in NO_ADAPTIVE_THINKING:
+        return {}
+    return {"thinking": {"type": "adaptive"}, "output_config": {"effort": effort}}
+
+
+def bedrock_models() -> set[str]:
+    """Every Claude model the app may name, each of which Bedrock must serve."""
+    named = {*MODEL_ALIASES.values(), RESPONSE_MODEL, GEMINI_STAND_IN}
+    return {model for model in named if _is_claude_model(model)}
+
+
+if provider() is Provider.Bedrock:
+    require_bedrock_ids(bedrock_models())
 
 
 # --- JSON Schema generation for Gemini structured output ---
@@ -287,9 +320,10 @@ FALLBACKS = {
 
 
 def fallback_args(model: str) -> dict:
-    """The request arguments that ask for the fallbacks, on the beta client."""
+    """The request arguments that ask for the fallbacks, on the beta client.
+    Bedrock does not take the parameter."""
     chain = FALLBACKS.get(model)
-    if not chain:
+    if not chain or _bedrock():
         return {}
     return {
         "betas": [FALLBACK_BETA],
@@ -417,7 +451,8 @@ class Parsed:
 def served(message, label: str) -> Served:
     """Read the fallbacks off a response and log one line per hop. The SDK this
     app pins does not type the fallback block, so its ends arrive as dicts."""
-    iterations = message.usage.iterations or []
+    # The non-beta client's Usage has no iterations.
+    iterations = getattr(message.usage, "iterations", None) or []
     declined = {
         entry.model: getattr(entry, "stop_details", None)
         for entry in iterations
@@ -465,18 +500,52 @@ def local_model() -> str | None:
     return os.environ[LOCAL_MODEL] if os.environ.get(LOCAL_URL) else None
 
 
+class NotOnBedrockError(ValueError):
+    """A Gemini or OpenAI model was chosen where calls go to Bedrock, which serves neither."""
+
+
+def off_bedrock(model: str) -> bool:
+    return (is_gemini(model) or is_openai(model)) and _bedrock()
+
+
+def _bedrock() -> bool:
+    """Whether calls go to Bedrock: the local server, when set, comes first."""
+    return not os.environ.get(LOCAL_URL) and provider() is Provider.Bedrock
+
+
+def check_provider() -> None:
+    """Run when the app starts: Bedrock calls need the machine's AWS sign-in."""
+    if _bedrock():
+        credentials()
+
+
 def wire_model(model: str) -> str:
-    """The model a call names on the wire: the local one when it is set."""
-    return local_model() or model
+    """Model name on wire: local server > Bedrock > app name."""
+    if local_model():
+        return local_model()
+    if _bedrock():
+        return bedrock_model(model)
+    return model
+
+
+def anthropic_client(**options) -> anthropic.Anthropic | anthropic.AnthropicBedrock:
+    """A client for the local server, Bedrock or Anthropic, in that order."""
+    if _bedrock():
+        return anthropic.AnthropicBedrock(aws_region=region(), **options)
+    return anthropic.Anthropic(**anthropic_args(), **options)
+
+
+def async_anthropic_client(
+    key: str = "ANTHROPIC_API_KEY", **options
+) -> anthropic.AsyncAnthropic | anthropic.AsyncAnthropicBedrock:
+    if _bedrock():
+        return anthropic.AsyncAnthropicBedrock(aws_region=region(), **options)
+    return anthropic.AsyncAnthropic(**anthropic_args(key), **options)
 
 
 def _anthropic_client():
-    import anthropic
-
-    return anthropic.AsyncAnthropic(
-        **anthropic_args(),
-        timeout=ANTHROPIC_TIMEOUT,
-        max_retries=ANTHROPIC_MAX_RETRIES,
+    return async_anthropic_client(
+        timeout=ANTHROPIC_TIMEOUT, max_retries=ANTHROPIC_MAX_RETRIES
     )
 
 
@@ -484,10 +553,8 @@ ANTHROPIC_EXTRACTION_TIMEOUT = 600  # seconds
 
 
 def _extraction_anthropic_client():
-    import anthropic
-
-    return anthropic.AsyncAnthropic(
-        **anthropic_args("ANTHROPIC_EXTRACTION_API_KEY"),
+    return async_anthropic_client(
+        "ANTHROPIC_EXTRACTION_API_KEY",
         timeout=ANTHROPIC_EXTRACTION_TIMEOUT,
         max_retries=ANTHROPIC_MAX_RETRIES,
     )
@@ -553,8 +620,7 @@ async def claude_text(prompt=None, **kwargs):
         "model": resolved_model,
         "max_tokens": max_output_tokens,
         "messages": messages,
-        "thinking": {"type": "adaptive"},
-        "output_config": {"effort": TEXT_EFFORT},
+        **reasoning_args(kwargs.get("model", RESPONSE_MODEL), TEXT_EFFORT),
     }
     if system_instruction:
         api_kwargs["system"] = system_instruction
@@ -626,6 +692,10 @@ async def gemini_structured(
     if _is_claude_model(model) or local_model():
         return await claude_structured(
             prompt, response_format, model, response_schema, limit or 32000
+        )
+    if _bedrock():
+        return await claude_structured(
+            prompt, response_format, GEMINI_STAND_IN, response_schema, limit or 32000
         )
 
     start_time = time.time()
@@ -710,8 +780,7 @@ async def claude_structured(prompt, response_format, model, schema, limit):
     async with client.beta.messages.stream(
         model=resolved_model,
         max_tokens=limit,
-        thinking={"type": "adaptive"},
-        output_config={"effort": STRUCTURED_EFFORT},
+        **reasoning_args(model, STRUCTURED_EFFORT),
         messages=[{"role": "user", "content": full_prompt}],
         **fallback_args(resolved_model),
     ) as stream:
@@ -748,7 +817,8 @@ async def claude_structured(prompt, response_format, model, schema, limit):
 
 
 async def gemini_text(prompt=None, **kwargs):
-    from google.genai import types
+    if _bedrock():
+        return await claude_text(prompt, **dict(kwargs, model=GEMINI_STAND_IN))
 
     if local_model():
         return await claude_text(prompt, **kwargs)
@@ -809,9 +879,17 @@ def gemini_text_sync(prompt=None, **kwargs):
     return asyncio.run(gemini_text(prompt, **kwargs))
 
 
-async def gemini_calibration(prompt, system_instruction=None, deep=False, max_output_tokens=None):
-    from google.genai import types
-
+async def gemini_calibration(
+    prompt, system_instruction=None, deep=False, max_output_tokens=None
+):
+    if _bedrock():
+        answered = await claude_text(
+            prompt,
+            model=GEMINI_STAND_IN,
+            system_instruction=system_instruction,
+            max_output_tokens=max_output_tokens or (4096 if deep else 2048),
+        )
+        return answered.words
     start_time = time.time()
     if deep:
         config = types.GenerateContentConfig(
@@ -863,4 +941,8 @@ async def gemini_calibration(prompt, system_instruction=None, deep=False, max_ou
 
 
 def gemini_calibration_sync(prompt, system_instruction=None, max_output_tokens=None):
-    return asyncio.run(gemini_calibration(prompt, system_instruction, max_output_tokens=max_output_tokens))
+    return asyncio.run(
+        gemini_calibration(
+            prompt, system_instruction, max_output_tokens=max_output_tokens
+        )
+    )

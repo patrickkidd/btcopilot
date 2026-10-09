@@ -32,13 +32,13 @@ def test_set_writes_and_clears_a_persons_model_and_show_names_their_shadows(
 ):
     # R-0596
     invoke(flask_app, "set", test_user.username, "sonnet-5")
-    test_user.set_prefs(shadow_models=["gemini-pro", "sonnet"])
+    test_user.set_prefs(shadow_models=["haiku-4.5", "sonnet"])
     db.session.commit()
     shown = json.loads(invoke(flask_app, "show").output)
     assert shown[1] == {
         "email": test_user.username,
         "model": "sonnet-5",
-        "shadow": ["gemini-pro", "sonnet"],
+        "shadow": ["haiku-4.5", "sonnet"],
     }
     invoke(flask_app, "set", test_user.username, "default")
     test_user.set_prefs(shadow_models=[])

@@ -58,7 +58,10 @@ app = [
     "pypdf",
 ]
 
+bedrock = ["anthropic[bedrock]>=0.97,<1"]
+
 test = [
+    "anthropic[bedrock]>=0.97,<1",
     "black",
     "build",
     "freezegun",
