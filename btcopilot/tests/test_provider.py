@@ -19,7 +19,6 @@ SONNET = "us.anthropic.claude-sonnet-5-5"
 @pytest.fixture
 def anthropic_machine(monkeypatch):
     monkeypatch.delenv(provider.SETTING, raising=False)
-    monkeypatch.delenv(provider.BEDROCK_MACHINE, raising=False)
     monkeypatch.delenv(llmutil.LOCAL_URL, raising=False)
     monkeypatch.delenv(llmutil.LOCAL_MODEL, raising=False)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "anthropic-key")
@@ -28,7 +27,7 @@ def anthropic_machine(monkeypatch):
 
 @pytest.fixture
 def bedrock_machine(anthropic_machine):
-    anthropic_machine.setenv(provider.BEDROCK_MACHINE, "1")
+    anthropic_machine.setenv(provider.SETTING, Provider.Bedrock.value)
     anthropic_machine.setenv(provider.REGION, "us-west-2")
     anthropic_machine.delenv("ANTHROPIC_API_KEY")
     anthropic_machine.delenv("ANTHROPIC_EXTRACTION_API_KEY", raising=False)
@@ -55,17 +54,16 @@ class Signed:
         return self
 
 
-def test_the_provider_is_anthropic_unless_set_or_the_machine_is_on_bedrock(
-    anthropic_machine,
-):
+def test_the_provider_is_anthropic_unless_the_flag_says_bedrock(anthropic_machine):
     # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    anthropic_machine.setenv("CLAUDE_CODE_USE_BEDROCK", "1")
     assert provider.provider() is Provider.Anthropic
     assert isinstance(llmutil.anthropic_client(), anthropic.Anthropic)
+    anthropic_machine.setenv(provider.SETTING, "")
+    assert provider.provider() is Provider.Anthropic
     anthropic_machine.setenv(provider.SETTING, Provider.Bedrock.value)
     assert provider.provider() is Provider.Bedrock
-    anthropic_machine.setenv(provider.SETTING, Provider.Anthropic.value)
-    anthropic_machine.setenv(provider.BEDROCK_MACHINE, "1")
-    assert provider.provider() is Provider.Bedrock
+    assert isinstance(llmutil.anthropic_client(), anthropic.AnthropicBedrock)
     anthropic_machine.setenv(provider.SETTING, "bedrok")
     with pytest.raises(ValueError):
         provider.provider()
@@ -167,8 +165,47 @@ def test_on_bedrock_sonnet_answers_a_call_that_names_gemini(bedrock_machine):
     bedrock_machine.setattr(llmutil, "claude_text", claude_text)
     llmutil.gemini_structured_sync("prompt", Named)
     assert llmutil.gemini_text_sync("prompt", model="gemini-2.5-flash") == "words"
+    assert llmutil.gemini_calibration_sync("prompt") == "words"
     assert llmutil.response_text_sync("prompt") == "words"
-    assert asked == [llmutil.GEMINI_STAND_IN] * 2 + [llmutil.RESPONSE_MODEL]
+    assert asked == [llmutil.GEMINI_STAND_IN] * 3 + [llmutil.RESPONSE_MODEL]
+
+
+class Gemini:
+    """A Gemini client that records the model each call names."""
+
+    def __init__(self, asked):
+        self.aio = self
+        self.models = self
+        self.asked = asked
+
+    async def generate_content(self, model, **kwargs):
+        self.asked.append(model)
+        raise RuntimeError("asked")
+
+
+def test_without_the_flag_gemini_calls_go_to_gemini(anthropic_machine):
+    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    asked = []
+
+    async def claude(*args, **kwargs):
+        raise AssertionError("Claude answered a Gemini call")
+
+    anthropic_machine.setenv("CLAUDE_CODE_USE_BEDROCK", "1")
+    anthropic_machine.setattr(llmutil, "claude_structured", claude)
+    anthropic_machine.setattr(llmutil, "claude_text", claude)
+    anthropic_machine.setattr(llmutil, "_client", lambda: Gemini(asked))
+    for call in (
+        lambda: llmutil.gemini_structured_sync("prompt", Named),
+        lambda: llmutil.gemini_text_sync("prompt", model="gemini-2.5-flash"),
+        lambda: llmutil.gemini_calibration_sync("prompt"),
+    ):
+        with pytest.raises(RuntimeError, match="asked"):
+            call()
+    assert asked == [
+        llmutil.EXTRACTION_MODEL,
+        "gemini-2.5-flash",
+        llmutil.CALIBRATION_MODEL,
+    ]
 
 
 def test_a_bedrock_answer_is_priced_at_anthropics_rates(bedrock_machine):

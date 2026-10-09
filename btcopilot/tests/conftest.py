@@ -77,7 +77,6 @@ MACHINE = provider.provider()
 def anthropic_provider():
     """Pin provider to Anthropic; suite uses stand-in calls."""
     patched = pytest.MonkeyPatch()
-    patched.delenv(provider.BEDROCK_MACHINE, raising=False)
     patched.delenv(provider.SETTING, raising=False)
     yield
     patched.undo()

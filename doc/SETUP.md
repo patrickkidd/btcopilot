@@ -132,12 +132,11 @@ lives in `~/btcopilot-sandbox/<name>/` (override with `SANDBOX_HOME`); `.env` is
 main clone's root (override with `SANDBOX_DOTENV`). `bin/sandbox/sandbox` with no arguments
 prints every command. Port 8888 is Patrick's own server: never use it.
 
-**A Bedrock machine.** Where Anthropic's API is unreachable and Claude is reached through Amazon
-Bedrock (Claude Code sets `CLAUDE_CODE_USE_BEDROCK` there), every model call the app makes goes
-through Bedrock with the machine's own AWS sign-in; no Anthropic or Google key is read, and a
-Gemini-named call is answered by Sonnet. The app picks Bedrock when `CLAUDE_CODE_USE_BEDROCK` is
-set or `BTCOPILOT_MODEL_PROVIDER=bedrock`; production leaves both unset and runs on the Anthropic
-key. Without a usable sign-in the app stops at startup and says so. Sign in yourself, once a day:
+**Bedrock.** The app calls Anthropic's API with the key by default. `BTCOPILOT_MODEL_PROVIDER=bedrock`
+is the only switch to Amazon Bedrock: every model call then goes through Bedrock with the shell's
+AWS sign-in, no Anthropic or Google key is read, and a Gemini-named call is answered by Sonnet
+(Gemini is not on Bedrock). Bedrock needs `AWS_REGION`; the SDK reads `ANTHROPIC_BEDROCK_BASE_URL`
+and `AWS_CA_BUNDLE` itself. Without a usable sign-in the app stops at startup and says so.
 
 ```bash
 export AWS_PROFILE=default
@@ -147,11 +146,10 @@ export BTCOPILOT_MODEL_PROVIDER=bedrock
 bin/sandbox/sandbox up mine 8912 --real
 ```
 
-The sandbox kit copies `BTCOPILOT_MODEL_PROVIDER` from the shell into the instance's settings file
-(Bedrock whenever `CLAUDE_CODE_USE_BEDROCK` is set, as it is inside Claude Code; in a plain
-terminal export it yourself, as above) and, with `--real`, needs `AWS_REGION` in the shell and no key. Without `--real` the coach stays on the
-local Ollama model. Not every Claude model has a Bedrock inference profile: the table is
-`BEDROCK_MODELS` in `btcopilot/provider.py`, and a model missing from it is named at startup.
+The sandbox kit copies the flag into the instance's settings and passes `AWS_PROFILE`,
+`AWS_REGION`, `AWS_CA_BUNDLE` and `ANTHROPIC_BEDROCK_BASE_URL` to the server and workers. Without
+`--real` the coach stays on the local Ollama model. A Claude model with no Bedrock inference
+profile in `BEDROCK_MODELS` (`btcopilot/provider.py`) is named at startup.
 
 ## 7. Tests
 

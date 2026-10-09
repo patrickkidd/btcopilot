@@ -22,10 +22,10 @@
 # Tailscale name, with the certificate that name has in ~/btcopilot-sandbox/certs
 # (web/devcerts.sh makes it); one certificate serves every stack on that name.
 # --real puts the coach on Anthropic with the testing key from .env at
-# the main clone's root; ask Patrick before spending. On a Bedrock machine
-# (CLAUDE_CODE_USE_BEDROCK or BTCOPILOT_MODEL_PROVIDER=bedrock in the shell) --real
-# goes through Bedrock with the machine's AWS sign-in and AWS_REGION instead, and
-# needs no key. Without a sops key, up
+# the main clone's root; ask Patrick before spending. With
+# BTCOPILOT_MODEL_PROVIDER=bedrock in the shell, --real goes through Bedrock with
+# the shell's AWS sign-in and AWS_REGION instead and needs no key; AWS_PROFILE,
+# AWS_REGION, AWS_CA_BUNDLE and ANTHROPIC_BEDROCK_BASE_URL reach the server and workers. Without a sops key, up
 # refuses to start unless --open-prompts says the open-source prompts will do.
 # --autologin signs every visitor with no session in as that account, so a
 # home-screen app needs no code; without it the sign-in page lists every
@@ -130,12 +130,16 @@ SETTINGS
   fi
 }
 
-# The paid keys reach the server and the worker only, never a file. A Bedrock
-# machine has none: its calls are signed with the AWS sign-in of this shell.
+# The paid keys reach the server and the worker only, never a file. Bedrock
+# needs none: its calls are signed with the AWS sign-in of this shell.
 keys() {
   [ -n "$REAL" ] || return 0
   if [ "$PROVIDER" = bedrock ]; then
-    [ -n "${AWS_REGION:-}" ] || die "--real on a Bedrock machine needs AWS_REGION in this shell"
+    [ -n "${AWS_REGION:-}" ] || die "--real on Bedrock needs AWS_REGION in this shell"
+    (cd "$REPO" && "$PY" -c "from btcopilot.provider import credentials; credentials()") \
+      || die "--real on Bedrock needs a usable AWS sign-in in this shell"
+    export AWS_REGION ${AWS_PROFILE:+AWS_PROFILE} ${AWS_CA_BUNDLE:+AWS_CA_BUNDLE} \
+      ${ANTHROPIC_BEDROCK_BASE_URL:+ANTHROPIC_BEDROCK_BASE_URL}
     return 0
   fi
   [ -f "$DOTENV" ] || die "--real reads its keys from $DOTENV, which is missing"
@@ -296,7 +300,6 @@ cmd_up() {
   shift 2
   DEV= DEV_HOST=turin REAL= OPEN= AUTOLOGIN= MODEL=qwen3:8b
   PROVIDER=${BTCOPILOT_MODEL_PROVIDER:-anthropic}
-  [ -z "${CLAUDE_CODE_USE_BEDROCK:-}" ] || PROVIDER=bedrock
   local build=
   while [ $# -gt 0 ]; do
     case $1 in

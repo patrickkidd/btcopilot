@@ -826,8 +826,13 @@ def gemini_text_sync(prompt=None, **kwargs):
 async def gemini_calibration(
     prompt, system_instruction=None, deep=False, max_output_tokens=None
 ):
-    from google.genai import types
-
+    if _bedrock():
+        return await claude_text(
+            prompt,
+            model=GEMINI_STAND_IN,
+            system_instruction=system_instruction,
+            max_output_tokens=max_output_tokens or (4096 if deep else 2048),
+        )
     start_time = time.time()
     if deep:
         config = types.GenerateContentConfig(

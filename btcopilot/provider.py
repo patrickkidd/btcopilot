@@ -1,7 +1,8 @@
-"""Which service answers the app's Claude calls: Anthropic's API with a key, or
-Amazon Bedrock with the machine's AWS sign-in. Production is Anthropic. A
-machine signed in to Bedrock, where Anthropic's API is unreachable, is Bedrock
-(Patrick, 2026-10-01)."""
+"""Which service answers the app's model calls: Anthropic's API with a key (the
+default), or Amazon Bedrock with the machine's AWS sign-in, chosen only by
+BTCOPILOT_MODEL_PROVIDER=bedrock. The SDK reads ANTHROPIC_BEDROCK_BASE_URL itself.
+Gemini is not on Bedrock, so on Bedrock every Gemini call is answered by Claude
+Sonnet (llmutil.GEMINI_STAND_IN)."""
 
 import enum
 import os
@@ -17,8 +18,6 @@ class Provider(enum.StrEnum):
 
 
 SETTING = "BTCOPILOT_MODEL_PROVIDER"
-# Claude Code sets this on a machine that reaches Claude through Bedrock.
-BEDROCK_MACHINE = "CLAUDE_CODE_USE_BEDROCK"
 REGION = "AWS_REGION"
 SIGN_IN = "aws sso login"
 
@@ -37,10 +36,7 @@ BEDROCK_PREFIXES = ("us.anthropic.", "global.anthropic.", "anthropic.")
 
 
 def provider() -> Provider:
-    chosen = Provider(os.environ.get(SETTING, Provider.Anthropic))
-    if chosen is Provider.Bedrock or os.environ.get(BEDROCK_MACHINE):
-        return Provider.Bedrock
-    return Provider.Anthropic
+    return Provider(os.environ.get(SETTING) or Provider.Anthropic)
 
 
 def region() -> str:
