@@ -413,7 +413,8 @@ class Parsed:
 def served(message, label: str) -> Served:
     """Read the fallbacks off a response and log one line per hop. The SDK this
     app pins does not type the fallback block, so its ends arrive as dicts."""
-    iterations = message.usage.iterations or []
+    # The non-beta client's Usage has no iterations.
+    iterations = getattr(message.usage, "iterations", None) or []
     declined = {
         entry.model: getattr(entry, "stop_details", None)
         for entry in iterations

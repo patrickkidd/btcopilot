@@ -2,6 +2,7 @@
 its models. No network: the SDK clients are built, never called."""
 
 import asyncio
+from types import SimpleNamespace
 
 import anthropic
 import pytest
@@ -11,6 +12,7 @@ from btcopilot import llmutil, provider
 from btcopilot.app import create_app
 from btcopilot.coachmodel import CoachModel, model_for
 from btcopilot.pricing import price
+from btcopilot.models.modelcall import ModelCall
 from btcopilot.provider import Provider
 from btcopilot.push import keypair
 from btcopilot.tests.test_llmutil import Named
@@ -271,3 +273,30 @@ def test_haiku_is_sent_no_thinking_and_no_effort(bedrock_machine, model, reasons
     for call in sent:
         assert ("thinking" in call) is reasons
         assert ("output_config" in call) is reasons
+
+
+@pytest.mark.parametrize(
+    "wire",
+    [
+        "anthropic.claude-haiku-4-5-20251001-v1:0",
+        "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "global.anthropic.claude-haiku-4-5-20251001-v2:0",
+        "claude-haiku-4-5-20251001",
+    ],
+)
+def test_a_stored_model_name_is_the_app_name(wire):
+    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    assert provider.app_model(wire) == "claude-haiku-4-5-20251001"
+    assert ModelCall(model=wire).model == "claude-haiku-4-5-20251001"
+
+
+def test_served_reads_a_usage_without_iterations():
+    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
+    message = SimpleNamespace(
+        usage=SimpleNamespace(input_tokens=1, output_tokens=1),
+        content=[SimpleNamespace(type="text", text="words")],
+        model="claude-haiku-4-5-20251001",
+    )
+    answered = llmutil.served(message, "claude_structured")
+    assert answered.model == "claude-haiku-4-5-20251001"
+    assert answered.hops == []

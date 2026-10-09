@@ -6,6 +6,7 @@ Haiku (llmutil.GEMINI_STAND_IN)."""
 
 import enum
 import os
+import re
 from typing import Iterable
 
 import boto3
@@ -79,8 +80,13 @@ def bedrock_model(model: str) -> str:
 
 
 def app_model(wire: str) -> str:
-    """The app's name for a model a Bedrock call or answer named."""
+    """The app's name for a model a Bedrock call or answer named, with any
+    region prefix and version suffix ("-v1:0") taken off."""
     for prefix in BEDROCK_PREFIXES:
         if wire.startswith(prefix):
-            return wire[len(prefix) :]
+            bare = wire[len(prefix) :]
+            for app, profile in BEDROCK_MODELS.items():
+                if profile.split(".", 1)[1] in (bare, f"anthropic.{bare}"):
+                    return app
+            return re.sub(r"-v\d+(:\d+)?$", "", bare)
     return wire
