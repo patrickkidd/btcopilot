@@ -17,7 +17,7 @@ from sqlalchemy.orm import aliased
 from btcopilot import diagramjson, extensions, record
 from btcopilot.admin.setting import shadow_candidates
 from btcopilot.coachmodel import model_for
-from btcopilot.llmutil import MODEL_ALIASES, Spent, resolve_model
+from btcopilot.llmutil import MODEL_ALIASES, Spent, gemini_on_bedrock, resolve_model
 from btcopilot.pricing import cost, price
 from btcopilot.coachturn import RECENT_INTERACTIONS, CoachTurn, prompt_version
 from btcopilot.extensions import db
@@ -136,6 +136,9 @@ def start(turn: CoachTurn, statement_id: int, model: str, before: bytes | None):
 def _queue(
     turn_id: str, discussion: Discussion, statement_id: int, model: str, snapshot: bytes
 ) -> None:
+    if gemini_on_bedrock(resolve_model(model)):
+        _log.warning(f"shadow model {model} is Gemini, not on Bedrock; skipped")
+        return
     row = ShadowTurn(
         turn_id=turn_id,
         user_id=discussion.user_id,

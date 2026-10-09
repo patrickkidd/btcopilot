@@ -33,6 +33,12 @@ data nad have no interruption of data."):**
 or traces from the box, the cause is fixed before the cloudbackfill crontab line is removed.
 
 ---
+### 2026-10-09: FD-367 — Gemini back as a coach and side-by-side model
+
+Patrick restores Gemini (Flash, Pro) as a coach and side-by-side model on the Anthropic path, for
+simulations and new Gemini Pro releases. It was dropped 2026-10-01 by policy only (Bedrock machines
+cannot reach Google; "almost identical in performance and cost to sonnet"), no technical fault. On
+Bedrock a Gemini coach fails plainly; a Gemini side-by-side model is skipped with a warning.
 
 ## 2026-06
 

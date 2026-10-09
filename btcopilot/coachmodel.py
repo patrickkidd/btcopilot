@@ -8,11 +8,15 @@ import logging
 
 from opentelemetry import trace
 
+from btcopilot.geminimodel import GeminiModel
 from btcopilot.openaimodel import OpenAIModel
 from btcopilot.llmutil import (
     anthropic_client,
     claude_spent,
     fallback_args,
+    GeminiOnBedrockError,
+    gemini_on_bedrock,
+    is_gemini,
     is_openai,
     local_model,
     resolve_model,
@@ -202,11 +206,19 @@ def model_for(
     name: str | None = None,
     effort: str | None = COACH_EFFORT,
     timeout: float | None = None,
-) -> CoachModel | OpenAIModel:
+) -> CoachModel | GeminiModel | OpenAIModel:
     """The coach model an alias names: none is the default, an unknown one
     raises KeyError. Haiku 4.5 rejects the effort setting, so it gets none. The
-    local server answers every name, OpenAI's included."""
+    local server answers every name, Gemini's and OpenAI's included. Bedrock
+    has no Gemini, so a Gemini coach there raises GeminiOnBedrockError."""
     model = resolve_model(name)
+    if gemini_on_bedrock(model):
+        raise GeminiOnBedrockError(
+            f"Gemini model {name} is not on Bedrock; unset BTCOPILOT_MODEL_PROVIDER"
+            " or choose a Claude model"
+        )
+    if is_gemini(model) and not local_model():
+        return GeminiModel(model, effort, timeout)
     if is_openai(model) and not local_model():
         return OpenAIModel(model, effort, timeout)
     if model.startswith(HAIKU):

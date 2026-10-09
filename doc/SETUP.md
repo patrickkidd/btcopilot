@@ -134,9 +134,9 @@ prints every command. Port 8888 is Patrick's own server: never use it.
 
 **Bedrock.** The app calls Anthropic's API with the key by default. `BTCOPILOT_MODEL_PROVIDER=bedrock`
 is the only switch to Amazon Bedrock: every model call then goes through Bedrock with the shell's
-AWS sign-in, no Anthropic or Google key is read, and a Gemini-named call is answered by Haiku
-(Gemini is not on Bedrock). Bedrock needs `AWS_REGION`; the SDK reads `ANTHROPIC_BEDROCK_BASE_URL`
-and `AWS_CA_BUNDLE` itself. Without a usable sign-in the app stops at startup and says so.
+AWS sign-in, no Anthropic or Google key is read, and a Gemini-named title, summary or cluster call is answered by Haiku
+(Gemini is not on Bedrock); a Gemini coach model fails plainly and a Gemini side-by-side model is skipped. Bedrock needs `AWS_REGION`; the SDK reads `ANTHROPIC_BEDROCK_BASE_URL`
+and `AWS_CA_BUNDLE` itself. Without a usable sign-in the app stops at startup and says so. Bedrock needs the optional `bedrock` extra (`uv sync --extra bedrock`; the test extra includes it); the production image never installs it.
 
 ```bash
 export AWS_PROFILE=default

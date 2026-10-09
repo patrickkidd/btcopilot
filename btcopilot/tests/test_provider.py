@@ -5,7 +5,12 @@ import asyncio
 from types import SimpleNamespace
 
 import anthropic
+import subprocess
+import sys
+
 import pytest
+
+from btcopilot.geminimodel import GeminiModel
 from botocore.exceptions import UnauthorizedSSOTokenError
 
 from btcopilot import llmutil, provider
@@ -225,11 +230,15 @@ def test_a_bedrock_answer_is_priced_at_anthropics_rates(bedrock_machine):
     assert price("global.anthropic.claude-sonnet-5-5") == price("claude-sonnet-5-5")
 
 
-def test_no_alias_names_gemini_any_more(anthropic_machine):
-    # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
-    assert not [alias for alias in llmutil.MODEL_ALIASES if "gemini" in alias]
-    with pytest.raises(KeyError):
+def test_a_gemini_coach_fails_plainly_on_bedrock(bedrock_machine):
+    # R-0000 ruling pending: Patrick 2026-10-09, Gemini coach back on the Anthropic path
+    with pytest.raises(ValueError, match="not on Bedrock"):
         model_for("gemini-flash")
+
+
+def test_a_gemini_coach_is_offered_off_bedrock(anthropic_machine):
+    # R-0000 ruling pending: Patrick 2026-10-09, Gemini coach back on the Anthropic path
+    assert isinstance(model_for("gemini-pro"), GeminiModel)
 
 
 class Asked(Exception):
@@ -375,3 +384,28 @@ def test_with_no_flag_startup_does_not_touch_aws(anthropic_machine):
             "VAPID_SUBJECT": "mailto:test@example.com",
         }
     )
+
+
+NO_BOTO3 = """
+import sys
+sys.modules["boto3"] = sys.modules["botocore"] = sys.modules["botocore.exceptions"] = None
+from btcopilot import llmutil, provider
+llmutil.anthropic_client()
+llmutil._anthropic_client()
+print("built")
+"""
+
+
+def test_the_default_path_runs_without_boto3(anthropic_machine):
+    # R-0000 ruling pending: Patrick 2026-10-09, Gemini coach back on the Anthropic path
+    done = subprocess.run(
+        [sys.executable, "-c", NO_BOTO3], capture_output=True, text=True
+    )
+    assert done.stdout.strip() == "built", done.stderr
+
+
+def test_bedrock_without_boto3_fails_plainly(bedrock_machine):
+    # R-0000 ruling pending: Patrick 2026-10-09, Gemini coach back on the Anthropic path
+    bedrock_machine.setattr(provider, "boto3", None)
+    with pytest.raises(RuntimeError, match="uv sync --extra bedrock"):
+        provider.credentials()

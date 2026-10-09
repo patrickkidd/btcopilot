@@ -324,6 +324,9 @@ cmd_up() {
   PY=${SANDBOX_PYTHON:-$REPO/.venv/bin/python}
   for port in "$PORT" "$PG_PORT" "$REDIS_PORT" ${DEV:+"$DEV"}; do free "$port"; done
   [ -x "$PY" ] || (cd "$REPO" && uv sync --extra app --extra test)
+  if [ "$PROVIDER" = bedrock ] && ! "$PY" -c "import boto3" 2>/dev/null; then
+    (cd "$REPO" && uv sync --extra app --extra test --extra bedrock)
+  fi
   local keyless
   if ! keyless=$(cd "$REPO" && "$PY" -m btcopilot.promptdir); then
     echo "sandbox: $keyless" >&2

@@ -168,12 +168,28 @@ The desktop app's update feeds live on the legacy box and are forwarded because 
 
 ## Gemini settings
 
-One setting, in `/etc/fd/secrets.env`: `GOOGLE_GEMINI_API_KEY`, the Developer API key.
-Cluster sorting and session titles and summaries run on it; on a Bedrock machine
-(`BTCOPILOT_MODEL_PROVIDER=bedrock`) they run on Claude instead and the key is not read. The
-coach never runs on Gemini: the Gemini coach model and the Vertex settings it read
-(`BTCOPILOT_GEMINI_ENDPOINT`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GCP_SA_FILE` and
-the mounted service account file) were dropped on FD-367, so none of them is set on the box.
+Two kinds of call go to Gemini, and they do not read the same settings. All of them live in
+`/etc/fd/secrets.env`; `secrets.env.example` names each one. On a Bedrock machine
+(`BTCOPILOT_MODEL_PROVIDER=bedrock`) cluster sorting and titles run on Claude, a Gemini coach
+model fails plainly and a Gemini shadow model is skipped with a warning.
+
+| Setting | Read by | What it does |
+|---------|---------|--------------|
+| `GOOGLE_GEMINI_API_KEY` | cluster sorting, session titles and summaries, always; a coach model on Gemini when the endpoint is `developer` | the Developer API key |
+| `BTCOPILOT_GEMINI_ENDPOINT` | a coach model on Gemini (shadows and replays) | `vertex` or `developer`; unset means `vertex` |
+| `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` | a coach model on Gemini, `vertex` only | the Google Cloud project and region; a call fails with a missing-key error when either is unset |
+| `GCP_SA_FILE` | compose, not the app | the path on the box of the Vertex service account file (default `/etc/fd/gcp-sa.json`, root, 600), mounted read-only at `/run/secrets/gcp-sa.json` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Google's library, `vertex` only | set by the compose file to the mounted copy; never set in the secrets file |
+
+The file at `GCP_SA_FILE` must exist whichever endpoint is set, because compose mounts it
+either way; on `developer` nothing reads it and an empty file is enough. A box with no
+service account therefore needs exactly these two lines for every Gemini call to work:
+
+    GOOGLE_GEMINI_API_KEY=<the Developer API key>
+    BTCOPILOT_GEMINI_ENDPOINT=developer
+
+Vertex runs under the Google Cloud project, whose agreement covers health data; the Developer
+API runs on the key alone [Oracle: R-0598].
 
 ## What is not here yet
 

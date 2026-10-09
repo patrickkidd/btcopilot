@@ -265,11 +265,11 @@ def test_a_stored_shadow_the_app_no_longer_offers_is_skipped(
     # R-0000 ruling pending: Patrick 2026-10-01, Bedrock on Bedrock machines
     coach(monkeypatch, "btcopilot.turns.model_for", Model(said("Tell me about Nell.")))
     coach(monkeypatch, "btcopilot.shadow.model_for", Model(said("Older by how much?")))
-    setting.write(SettingKey.ShadowCandidates, ["gemini-flash", "sonnet"])
+    setting.write(SettingKey.ShadowCandidates, ["gemini-1.0-gone", "sonnet"])
     shadows(test_user, "sonnet")
     # stored before the app dropped the model, so it never met the setting's check
     test_user.preferences = dict(
-        test_user.preferences, shadow_models=["gemini-flash", "sonnet"]
+        test_user.preferences, shadow_models=["gemini-1.0-gone", "sonnet"]
     )
     db.session.commit()
     with patch("btcopilot.shadow.enqueue", shadow.run):

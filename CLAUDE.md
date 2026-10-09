@@ -62,7 +62,7 @@ The box is reached as `ssh familydiagram` (Patrick's ssh config; never the raw I
 - **The production deploy lock is one branch, set by the session Patrick names [Oracle: R-0530].** The lock is the production environment's allowed deployment branch on GitHub. A session holds it only when Patrick tells that session so; it then runs `uv run bin/deploy-lock set <its branch>`. Every deploy brief runs `uv run bin/deploy-lock show` first and refuses to dispatch unless the lock names its own branch. A merge to master never deploys. The lock never names master and never names a second branch. To change this policy, Patrick tells a session and it rewrites this rule and the tool.
 - **Prompt evals (Patrick, 2026-09-25): every prompt change ships with an eval in the prompt-engineering suite (btcopilot/tests/live), never in the CI unit suite. The oracle is human: the fault comes from a logged case, the expected behaviour is put to Patrick as a ruling candidate, the eval cites the ruling, is proven to fail on the old prompt and pass on the new, and its inputs are fictionalized. Never an LLM as the oracle. Each eval states its pass criterion (a deterministic check on the record, or k of n runs); pass rates are tracked per model version in the ledger.**
 - **Model spend, this project's specifics (the general rule is in the user-level CLAUDE.md).** While iterating, unit tests with mocks and a local Ollama model in the sandbox (the model does not matter for plumbing and walks). One real turn on production after a deploy proves the stack. Every spend is logged to the eval ledger.
-- **Bedrock machines (Patrick, 2026-10-01).** On a machine signed in to Bedrock (CLAUDE_CODE_USE_BEDROCK set), every model call the app makes in testing goes through Bedrock; the Anthropic, Gemini and OpenAI APIs are unreachable there. Until the model-call code can do that, say so and escalate; never test around it with a key. Being built on FD-367 (2026-10-01). Gemini is dropped, including side-by-side testing (Patrick, 2026-10-01: "almost identical in performance and cost to sonnet").
+- **Bedrock machines (Patrick, 2026-10-01).** On a machine signed in to Bedrock (CLAUDE_CODE_USE_BEDROCK set), every model call the app makes in testing goes through Bedrock; the Anthropic, Gemini and OpenAI APIs are unreachable there. Until the model-call code can do that, say so and escalate; never test around it with a key. Being built on FD-367 (2026-10-01). Gemini is a coach and side-by-side model again off Bedrock (Patrick, 2026-10-09); on Bedrock a Gemini coach fails plainly and a Gemini side-by-side model is skipped.
 
 ## Jira
 
@@ -302,7 +302,7 @@ btcopilot provides:
 
 ### External Services
 
-- **AI/ML**: Anthropic, direct with a key or through Amazon Bedrock on a Bedrock machine (`llmutil.py`, `provider.py`); Gemini only groups events into clusters (`GOOGLE_GEMINI_API_KEY`)
+- **AI/ML**: Anthropic, direct with a key or through Amazon Bedrock on a Bedrock machine (`llmutil.py`, `provider.py`); Gemini groups events into clusters and is a coach and side-by-side option off Bedrock (`geminimodel.py`)
 - **Payments**: Stripe licensing
 - **Database**: PostgreSQL + SQLAlchemy (`postgresql://familydiagram:pks@localhost:5432/familydiagram`)
 - **Config**: Environment-based (`FLASK_CONFIG=development/production`)
