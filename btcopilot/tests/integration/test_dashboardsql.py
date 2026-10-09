@@ -529,3 +529,30 @@ def test_i1_from_invitation_to_second_sitting(ids):
     # a first message 3, a first write 2 (Ann, Bo), a second sitting 1 (Ann)
     found = sorted((n for r in rows for n in numbers(r)), reverse=True)
     assert found[:4] == [3, 3, 2, 1]
+
+
+SAMPLES = (
+    "you’re doing great",
+    "I don’t know 'why' anymore.",
+    "How did that feel for you",
+    "Well, so Rose, was she there",
+    "That was hard.",
+    "Okay. What happened next?",
+)
+
+
+def test_the_bowen_sql_counts_words_and_questions_the_way_flow_does(ids):
+    # R-0810, R-0814
+    for text in SAMPLES:
+        literal = bowen.sql(text)
+        (r,) = run(
+            f"select {bowen.words(literal)} as words, {bowen.is_question(literal)} as q"
+        )
+        assert (r["words"], r["q"]) == (
+            len(flow.words(text)),
+            flow.is_question(text),
+        ), text
+    (r,) = run(
+        f"select {bowen.words(bowen.unchip(bowen.sql('[[person:2|Rose]] left')))} as n"
+    )
+    assert r["n"] == 2

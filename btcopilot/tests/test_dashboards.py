@@ -356,3 +356,14 @@ def test_the_module_renders_a_list_the_way_flow_matches_a_phrase():
         "killed", "divorce", "divorced", "heart attack", "stroke",
     )  # fmt: skip
     assert set(bowen.EUPHEMISM_PHRASES) | set(bowen.GUARDED) == set(bowen.EUPHEMISM)
+
+
+@pytest.mark.parametrize(
+    "figure, panel", quality(), ids=lambda x: label(x) if isinstance(x, dict) else x.key
+)
+def test_a_bowen_panel_counts_words_and_questions_the_way_flow_does(figure, panel):
+    # R-0810, R-0814
+    words = sql(panel)
+    assert bowen.words("r.clean") in words
+    assert bowen.is_question("btrim(st.sentence)") in words
+    assert "regexp_matches(m.text" not in words

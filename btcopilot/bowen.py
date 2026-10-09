@@ -200,6 +200,40 @@ def sql(pattern: str) -> str:
     return "'" + pattern.replace("'", "''") + "'"
 
 
+CHIP_SQL = sql(r"\[\[[a-z_]+:[^|\]]+(\|([^\]]*))?\]\]")
+FILLERS_SQL = "|".join("".join(f"[{c.upper()}{c}]" for c in f) for f in flow.FILLERS)
+LEAD_SQL = rf"^\W*(?:(?:{FILLERS_SQL})\y[\s,]*)*(?:[A-Z][a-z]+,\s*)?"
+QUESTION_WORD_SQL = rf"^[^a-z0-9']*(?:{'|'.join(flow.QUESTION_WORDS)})(?![a-z0-9'])"
+
+
+def unchip(text: str) -> str:
+    """A message with each chip reduced to its label."""
+    return f"regexp_replace({text}, {CHIP_SQL}, '\\2', 'g')"
+
+
+def norm(text: str) -> str:
+    """flow.norm in SQL."""
+    folded = sql(r"(?<![A-Za-z])'|'(?![A-Za-z])")
+    return (
+        f"replace(lower(regexp_replace(translate({text}, '‘’', ''''''), {folded}, ' ', 'g')),"
+        " 'anymore', 'any more')"
+    )
+
+
+def words(text: str) -> str:
+    """len(flow.words) in SQL."""
+    return f"(select count(*) from regexp_matches({norm(text)}, '[a-z0-9'']+', 'g'))"
+
+
+def is_question(sentence: str) -> str:
+    """flow.is_question in SQL."""
+    rest = norm(f"regexp_replace({sentence}, {sql(LEAD_SQL)}, '')")
+    return (
+        f"(rtrim({sentence}, ' *_\"'')”') like '%?'"
+        f" or {rest} ~ {sql(QUESTION_WORD_SQL)})"
+    )
+
+
 # Every list a panel pastes, by the name its figure cites: the regex or values
 # literal the board must carry, so a test can hold the JSON to the lists.
 LISTS = {
