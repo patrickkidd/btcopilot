@@ -2010,6 +2010,9 @@ test.describe("the whole family stepped through dates", () => {
     await expect(drawer(page).locator('[data-act="next"]')).toBeDisabled();
     await expect(drawer(page).locator('[data-act="back"]')).toBeEnabled();
     await expect(drawer(page).locator(".wire .dot.on")).toHaveCount(0);
+    // the strip rests at its present end, the right
+    const strip = drawer(page).locator(".wire .ss-scroll");
+    await expect.poll(() => strip.evaluate((s) => s.scrollWidth - s.clientWidth - s.scrollLeft)).toBeLessThan(1);
     const picture = () => drawer(page).locator(".draw").innerHTML();
     const dot = drawer(page).locator('.draw .p[data-id="9100"]');
     let was = await picture();
