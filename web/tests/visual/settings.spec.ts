@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { EXACT, flask, placeCut, shell, stateFor, toTheirDiagram, backToMine, username, boxOf, inside } from "./setup";
 
 /** The settings stack: the avatar in the title row, and the pages it pushes.
@@ -17,6 +17,10 @@ const openSettings = async (page: Page) => {
   await page.waitForTimeout(300);
 };
 
+/** Headless Chromium answers every notification request with a refusal; a
+ * phone that has never been asked says "default". */
+const undecided = () => Object.defineProperty(Notification, "permission", { get: () => "default" });
+
 test.describe("the settings stack", () => {
   test.use({ storageState: stateFor("moves") });
 
@@ -31,10 +35,11 @@ test.describe("the settings stack", () => {
     expect(Math.round(box.height)).toBe(44);
   });
 
-  // R-0098, R-0631
+  // R-0098, R-0631, R-0832
   test("it opens on Account with the ruled rows in the ruled order", async ({
     page,
   }) => {
+    await page.addInitScript(undecided);
     await settle(page);
     await openSettings(page);
     await expect(page.locator("#title")).toHaveText("Account");
@@ -51,6 +56,38 @@ test.describe("the settings stack", () => {
       "settings-root.png",
       EXACT,
     );
+  });
+
+  // R-0832
+  test("every account has a Notifications row saying this device's state, with a way to turn them on, whatever the coach's messages first says", async ({
+    page,
+  }) => {
+    await page.addInitScript(undecided);
+    await settle(page);
+    await openSettings(page);
+    const row = page.locator(".sn-pane.in #notifications");
+    await expect(row.locator(".sn-t")).toHaveText("Notifications");
+    await expect(row.locator(".sn-s")).toHaveText("Off on this device");
+    await expect(row.locator("button.sn-manage")).toHaveText("Turn on");
+  });
+
+  // R-0832
+  test("the installed app asks once to turn on notifications, and Not now keeps it from asking again on this device", async ({
+    page,
+  }) => {
+    await page.addInitScript(undecided);
+    await page.addInitScript(() => {
+      localStorage.setItem("fd-passkey-asked", String(Date.now()));
+      Object.defineProperty(navigator, "standalone", { value: true });
+    });
+    await settle(page);
+    const card = page.locator(".hs-card", { hasText: "Turn on notifications" });
+    await expect(card).toBeVisible();
+    await expect(card.locator(".hs-go")).toHaveText("Turn on notifications");
+    await card.locator(".hs-later").click();
+    await expect(card).toHaveCount(0);
+    await settle(page);
+    await expect(page.locator(".hs-card")).toHaveCount(0);
   });
 
   // R-0004
@@ -585,8 +622,8 @@ test.describe("the coding and quality sections", () => {
   };
   test.afterAll(() => roles("subscriber"));
 
-  // R-0259, R-0265, R-0599, R-0631
-  test("a subscriber sees neither, an auditor sees Coding, and an admin sees Coding with the meeting and Quality", async ({
+  // R-0259, R-0265, R-0631, R-0831
+  test("a subscriber sees neither, an auditor sees Coding, and an admin sees Coding with the meeting and no Better replies", async ({
     page,
   }) => {
     await as(page);
@@ -598,27 +635,23 @@ test.describe("the coding and quality sections", () => {
     await expect(row(page, "Next meeting")).toHaveCount(0);
 
     await as(page, "admin");
-    expect(await heads(page)).toEqual(["Data", "Coding", "Quality"]);
+    expect(await heads(page)).toEqual(["Data", "Coding"]);
     await expect(row(page, "Next meeting")).toHaveCount(1);
-    await expect(row(page, "Better replies")).toHaveCount(1);
-    await expect(page.locator(".sn-pane.in .sn-hint")).toHaveText(
-      "Pick the better of two coach replies",
-    );
+    await expect(row(page, "Better replies")).toHaveCount(0);
     await row(page, "Your coding task").click();
     await expect(page.locator(".sn-pane.in #task-screen")).toBeVisible();
     await page.locator("#settings-back").click();
     await expect(page.locator(".sn-pane.in")).toHaveAttribute("data-page", "root");
   });
 
-  // R-0259, R-0265, R-0599
-  test("the task, the meeting and the better replies each open on the account view's stack, and back returns to the account view", async ({
+  // R-0259, R-0265
+  test("the task and the meeting each open on the account view's stack, and back returns to the account view", async ({
     page,
   }) => {
     await as(page, "admin");
     for (const [label, screen, title] of [
       ["Your coding task", "task-screen", null],
       ["Next meeting", "agenda-screen", "Next meeting"],
-      ["Better replies", "pairs-screen", "Better replies"],
     ] as const) {
       await row(page, label).click();
       const top = page.locator(".sn-pane.in:not(.under)");

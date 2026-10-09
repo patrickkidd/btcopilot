@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  CLUSTER_BOOK,
+  CLUSTER_BOOK_TITLE,
   Level,
   Target,
+  aboutMarkup,
+  centredOn,
+  clusterLabel,
+  clusterStep,
   dotLayers,
+  inSight,
   pills,
   reach,
   restLayers,
@@ -321,10 +328,20 @@ describe("the path row over the line", () => {
   const cluster = { title: "", start: "2009-03-01", end: "2010-11-20" };
 
   // R-0767
-  it("names an open cluster by its name and its years in one step", () => {
+  it("names an open cluster by its name alone, its years going under the line", () => {
     const named = { title: "Every mark", start: "1972-06-10", end: "1999-02-01" };
-    expect(trail(Level.Wire, named, null)).toEqual(["Timeline", "Every mark · 1972–99"]);
-    expect(trail(Level.About, named, null)).toEqual(["Timeline", "Every mark · 1972–99", "about"]);
+    expect(trail(Level.Wire, named, null)).toEqual(["Timeline", "Every mark"]);
+    expect(trail(Level.About, named, null)).toEqual(["Timeline", "Every mark", "about"]);
+  });
+
+  // R-0583, R-0767
+  it("writes the years and the count once under the line, the name once above it", () => {
+    const open = { title: "Every mark", start: "1972-06-10", end: "1999-02-01", count: 12 };
+    expect(clusterLabel(open)).toBe("1972–1999 · 12 events");
+    expect(clusterLabel({ ...open, end: "1972-12-01", count: 1 })).toBe("1972 · 1 event");
+    expect(clusterLabel(open)).not.toContain("Every mark");
+    expect(clusterStep(open)).toBe("Every mark");
+    expect(clusterStep(open)).not.toMatch(/\d{4}/);
   });
 
   // R-0540
@@ -360,6 +377,11 @@ describe("the path row over the line", () => {
   });
 
   // R-0540
+  it("drops the words' own separator where they are cut, so the date's separator before the rest is never doubled", () => {
+    expect(told("Harold Bell", "died · of lung cancer")).toEqual(["Harold died", "of lung cancer"]);
+  });
+
+  // R-0540
   it("writes a cluster's years short, and in full across a century", () => {
     expect(spanYears("2009-03-01", "2009-11-20")).toBe("2009");
     expect(spanYears("1998-03-01", "2003-11-20")).toBe("1998–2003");
@@ -376,4 +398,51 @@ it("names an event whose title starts with someone else in the family with a col
   expect(told("Ben Holt", "Christmas at home", family)[0]).toBe("Ben christmas");
   // the 20-letter cut still applies
   expect(told("Ben Holt", "Marcus moved out of the flat in Oslo", family)).toEqual(["Ben: Marcus moved", "out of the flat in Oslo"]);
+});
+
+// Patrick, 2026-10-08, with R-0836 to R-0838: a cluster's info page carries the book button.
+// R-0213, R-0691
+describe("the page behind a cluster's i", () => {
+  const moments = [
+    { year: "1981", label: "Grandmother died" },
+    { year: "2003", label: "Moved away" },
+  ];
+  const page = aboutMarkup("Ada lost her grandmother, then moved away.", "1981–2003", moments);
+
+  // R-0213
+  it("says the reason, the years and the count, then each moment with its year", () => {
+    expect(page).toContain('<p class="ab-why">Ada lost her grandmother, then moved away.</p>');
+    expect(page).toContain('<p class="ab-span">1981–2003 · 2 events</p>');
+    expect(page).toContain('<span class="ab-yr">1981</span><span class="ab-what">Grandmother died</span>');
+    expect(aboutMarkup("", "1981", moments.slice(0, 1))).toContain("1981 · 1 event</p>");
+    expect(aboutMarkup("", "1981", [])).not.toContain("ab-why");
+  });
+
+  // R-0691, R-0688
+  it("carries the app's book button, keyed to the passages behind what a cluster is", () => {
+    expect(page).toContain(`class="book" data-book="${CLUSTER_BOOK}" data-title="${CLUSTER_BOOK_TITLE}"`);
+    expect(CLUSTER_BOOK).toBe("cluster");
+    expect(CLUSTER_BOOK_TITLE).toBe("What a cluster is");
+    // the book sits inside the page, before its close button
+    expect(page.indexOf('class="book"')).toBeLessThan(page.indexOf('class="cardx"'));
+    expect(page).toContain(`data-target="${Target.Close}"`);
+  });
+
+  // R-0213
+  it("escapes the record's words", () => {
+    expect(aboutMarkup("<b>why</b>", "1981", [{ year: "1981", label: "a & b" }])).not.toContain("<b>");
+    expect(aboutMarkup("", "1981", [{ year: "1981", label: "a & b" }])).toContain("a &amp; b");
+  });
+});
+
+// "the timeline needs to scroll to the right in the full family diagram view." (Patrick, 2026-10-07)
+// R-0796
+it("slides the line to put the step's dot in the middle, as near as its ends allow, and knows when a dot is out of sight", () => {
+  expect(centredOn(2000, 2880, 1440)).toBe(1280);
+  expect(centredOn(100, 2880, 1440)).toBe(0);
+  expect(centredOn(2850, 2880, 1440)).toBe(1440);
+  expect(centredOn(200, 300, 393)).toBe(0);
+  expect(inSight(2000, 0, 1440)).toBe(false);
+  expect(inSight(2000, 1280, 1440)).toBe(true);
+  expect(inSight(10, 0, 1440)).toBe(false);
 });

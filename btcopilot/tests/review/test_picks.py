@@ -2,32 +2,22 @@ import json
 import random
 from decimal import Decimal
 
-import pytest
-
-from btcopilot import ledger
 from btcopilot.extensions import db
 from btcopilot.models import (
     Discussion,
     ModelCall,
     Purpose,
-    ReplayPass,
     ShadowTurn,
     Speaker,
     SpeakerType,
     Statement,
 )
-from btcopilot.models.qualityrun import Source
 from btcopilot.review.models import Pick, PickChoice, PickSource
 from btcopilot.review.models.pick import NOTE_CAP
 
 REAL = "claude-opus-5-5"
 SHADOW = "gemini-3-flash"
 REPLY = "Your aunt Zoë moved to Tromsø the spring your father fell ill, yes?"
-
-
-@pytest.fixture(autouse=True)
-def no_ledger(tmp_path, monkeypatch):
-    monkeypatch.setattr(ledger, "PATH", tmp_path / "ledger.jsonl")
 
 
 def chat(user, diagram, lines: list[str]) -> Discussion:
@@ -91,180 +81,6 @@ def shadow(
     db.session.add(row)
     db.session.commit()
     return row
-
-
-def shadowed(user, diagram, text=REPLY) -> ShadowTurn:
-    discussion = chat(user, diagram, ["My aunt moved away.", "When was that?"])
-    return shadow(user, diagram, discussion, text=text)
-
-
-def test_a_pair_names_no_model_and_its_sides_vary(patrick, test_user, case):
-    # R-0599
-    for _ in range(8):
-        shadowed(test_user, case)
-    random.seed(3)
-    pairs = patrick.get("/review/pairs").json
-    assert len(pairs) == 8
-    served = json.dumps(pairs)
-    assert REAL not in served and SHADOW not in served
-    assert {pair["left"] for pair in pairs} == {"When was that?", REPLY}
-    assert pairs[0]["context"] == [{"who": "user", "text": "My aunt moved away."}]
-
-
-def test_each_shadow_of_a_turn_pairs_with_the_real_reply(patrick, test_user, case):
-    # R-0596, R-0599
-    discussion = chat(test_user, case, ["My aunt moved away.", "When was that?"])
-    shadow(test_user, case, discussion)
-    shadow(test_user, case, discussion, text="Which spring?", model="sonnet")
-    pairs = patrick.get("/review/pairs").json
-    assert len(pairs) == 2
-    assert {frozenset((pair["left"], pair["right"])) for pair in pairs} == {
-        frozenset(("When was that?", REPLY)),
-        frozenset(("When was that?", "Which spring?")),
-    }
-
-
-def test_a_pair_keeps_its_sides_once_served(patrick, test_user, case):
-    # R-0599
-    shadowed(test_user, case)
-    first = patrick.get("/review/pairs").json
-    for seed in range(6):
-        random.seed(seed)
-        assert patrick.get("/review/pairs").json == first
-
-
-def test_a_pick_reveals_the_models_and_counts_in_the_summary(patrick, test_user, case):
-    # R-0599
-    shadowed(test_user, case)
-    pair = patrick.get("/review/pairs").json[0]
-    shadow_side = PickChoice.Left if pair["left"] == REPLY else PickChoice.Right
-    seen = patrick.put(
-        f"/review/picks/{pair['id']}", json={"choice": shadow_side, "note": "warmer"}
-    ).json
-    assert seen[shadow_side] == SHADOW
-    assert Pick.query.one().choice is shadow_side
-    assert Pick.query.one().updated_at is not None
-    assert patrick.get("/review/pairs").json == []
-    assert patrick.get("/review/picks").json == [
-        {"model": REAL, "won": 0, "lost": 1, "tied": 0},
-        {"model": SHADOW, "won": 1, "lost": 0, "tied": 0},
-    ]
-
-
-def test_pairs_come_a_conversation_at_a_time_in_the_order_said(
-    patrick, test_user, case
-):
-    # R-0599
-    first = chat(test_user, case, ["a one", "coach", "a two", "coach"])
-    second = chat(test_user, case, ["b one", "coach", "b two", "coach"])
-    for discussion, turn in ((second, 1), (first, 1), (second, 0), (first, 0)):
-        shadow(test_user, case, discussion, turn)
-    pairs = patrick.get("/review/pairs").json
-    assert [pair["context"][-1]["text"] for pair in pairs] == [
-        "a one",
-        "a two",
-        "b one",
-        "b two",
-    ]
-
-
-def test_a_pick_keeps_what_was_judged_once_the_shadow_row_is_gone(
-    patrick, test_user, case
-):
-    # R-0599
-    row = shadowed(test_user, case)
-    served = patrick.get("/review/pairs").json
-    db.session.delete(row)
-    db.session.commit()
-    assert patrick.get("/review/pairs").json == served
-    patrick.put(f"/review/picks/{served[0]['id']}", json={"choice": PickChoice.Tie})
-    pick = Pick.query.one()
-    assert {pick.left_text, pick.right_text} == {"When was that?", REPLY}
-    assert patrick.get("/review/picks").json == [
-        {"model": REAL, "won": 0, "lost": 0, "tied": 1},
-        {"model": SHADOW, "won": 0, "lost": 0, "tied": 1},
-    ]
-
-
-def test_a_long_note_is_refused(patrick, test_user, case):
-    # R-0599
-    shadowed(test_user, case)
-    pair = patrick.get("/review/pairs").json[0]
-    response = patrick.put(
-        f"/review/picks/{pair['id']}",
-        json={"choice": PickChoice.Tie, "note": "x" * (NOTE_CAP + 1)},
-    )
-    assert response.status_code == 400
-
-
-TOKENS = {"input": 40, "output": 9, "cache_creation": 0, "cache_read": 0}
-
-
-def replayed(real: Discussion, scratch: Discussion, model: str, kept: bool = True):
-    """A replay's ledger line, and the pass the database keeps of it; one not
-    kept ran on another database, where the same ids were another replay."""
-    row = dict.fromkeys(ledger.FIELDS)
-    row.update(
-        kind=ledger.LedgerKind.Replay,
-        model=model,
-        discussion_id=real.id,
-        scratch_diagram_id=scratch.diagram_id,
-        scratch_discussion_id=scratch.id,
-        turns=2,
-        tokens=TOKENS if kept else dict(TOKENS, input=41),
-    )
-    ledger.append(row, ledger.PATH)
-    if not kept:
-        return
-    db.session.add(
-        ReplayPass(
-            model=model,
-            thinking="medium",
-            prompt="p",
-            turns=2,
-            calls=2,
-            input_tokens=TOKENS["input"],
-            output_tokens=TOKENS["output"],
-            cache_creation_tokens=0,
-            cache_read_tokens=0,
-            cost_usd=Decimal(0),
-            source=Source.Api,
-            scratch_diagram_id=scratch.diagram_id,
-        )
-    )
-    db.session.commit()
-
-
-def test_replays_of_one_discussion_pair_turn_by_turn(patrick, test_user, case):
-    # R-0599
-    real = chat(test_user, case, ["one", "real a", "two", "real b"])
-    first = chat(test_user, case, ["one", "opus a", "two", "opus b"])
-    second = chat(test_user, case, ["one", "flash a", "two", "flash b"])
-    replayed(real, first, REAL)
-    replayed(real, second, SHADOW)
-    pairs = patrick.get("/review/pairs").json
-    assert [sorted([p["left"], p["right"]]) for p in pairs] == [
-        ["flash a", "opus a"],
-        ["flash b", "opus b"],
-    ]
-    assert [line["text"] for line in pairs[1]["context"]] == ["one", "real a", "two"]
-
-
-def test_a_replay_line_from_another_database_is_not_paired(patrick, test_user, case):
-    # R-0599
-    real = chat(test_user, case, ["one", "real a"])
-    first = chat(test_user, case, ["one", "opus a"])
-    second = chat(test_user, case, ["one", "flash a"])
-    replayed(real, first, REAL)
-    replayed(real, second, SHADOW, kept=False)
-    assert patrick.get("/review/pairs").json == []
-
-
-def test_only_patrick_sees_the_pairs(coder, test_user, case):
-    # R-0599
-    shadowed(test_user, case)
-    assert coder.get("/review/pairs").status_code in (302, 403)
-    assert coder.get("/review/picks").status_code in (302, 403)
 
 
 def turn_of(user, diagram) -> str:
@@ -376,3 +192,21 @@ def test_a_turn_is_voted_only_by_a_coder(subscriber, test_user_2, case):
     # R-0636
     turn = turn_of(test_user_2, case)
     assert subscriber.get(f"/review/picks?turn={turn}").status_code in (302, 403)
+
+
+def test_a_long_note_is_refused(patrick, test_user, case):
+    # R-0636
+    pick = patrick.get(f"/review/picks?turn={turn_of(test_user, case)}").json["picks"][0]
+    response = patrick.put(
+        f"/review/picks/{pick['id']}",
+        json={"choice": PickChoice.Tie, "note": "x" * (NOTE_CAP + 1)},
+    )
+    assert response.status_code == 400
+    assert db.session.get(Pick, pick["id"]).choice is None
+
+
+def test_the_better_replies_screen_is_gone(patrick, test_user, case):
+    # R-0831
+    turn_of(test_user, case)
+    assert patrick.get("/review/pairs").status_code == 404
+    assert patrick.get("/review/picks").status_code == 400

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, step } from "./setup";
 
 /** Every mark the play-by-play draws, one step each, on the Pemberton stand-in

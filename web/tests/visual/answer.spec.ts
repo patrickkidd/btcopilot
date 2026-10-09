@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, boxOf, openList } from "./setup";
 import { mockTurn, SEND } from "./turn";
 

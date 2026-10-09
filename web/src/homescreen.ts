@@ -1,4 +1,5 @@
 import { el } from "./dom";
+import { installed } from "./push";
 
 /** Putting the app on the home screen is the one thing the reader has to do
  * for themselves, and nobody is there to tell them how. The card says it once
@@ -24,13 +25,6 @@ interface BeforeInstallPromptEvent extends Event {
  * window gets neither. */
 function handheld(): boolean {
   return navigator.maxTouchPoints > 0 && window.matchMedia("(max-width: 1024px)").matches;
-}
-
-function installed(): boolean {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as { standalone?: boolean }).standalone === true
-  );
 }
 
 function asked(): number {

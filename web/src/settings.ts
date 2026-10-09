@@ -10,7 +10,7 @@ import { shortDate } from "./when";
 import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
 import { IDLE_MS } from "./vote";
-import { subscribe } from "./push";
+import { device, reach, Reach, subscribe } from "./push";
 import { PRO, RECORD, RECORDS, Records } from "./pro";
 import { address, beyond, NAMES, Place } from "./place";
 import {
@@ -114,8 +114,6 @@ export interface SettingsHandlers {
   onTask(): void;
   /** The agenda, which is Patrick's whole administration (R-0259). */
   onAgenda(): void;
-  /** Two replies to the same words, picked blind (R-0599). */
-  onPairs(): void;
   /** Every notice sent to this person, newest first (R-0613). */
   notices(): Delivery[];
   /** A notice tapped in the list: counted opened, then where it points when
@@ -160,6 +158,14 @@ function tick(host: HTMLElement): void {
   }
 }
 
+const REACH: Record<Reach, string> = {
+  [Reach.On]: "On on this device",
+  [Reach.Off]: "Off on this device",
+  [Reach.Blocked]: "Blocked in this device's system settings",
+  [Reach.Unavailable]: "Not available here. Open the app from your home screen",
+  [Reach.Failed]: "Could not start on this device. Close the app and open it again",
+};
+
 /** Asked for inside the tap that lets the coach message first. A browser that
  * cannot be reached by push gets email instead, and the reader is told so. */
 async function offerPush(): Promise<void> {
@@ -173,6 +179,8 @@ export class Settings {
   private account: Account | null = null;
   private passkeys: Passkey[] = [];
   private canPasskey = false;
+  /** Null until the worker answers; the page never waits for it. */
+  private reach: Reach | null = null;
   private host = el("div", "sn-stack");
   /** The question before the shadows are switched on. */
   private ask: Sheet;
@@ -213,6 +221,7 @@ export class Settings {
 
   /** The avatar carries the initial of whatever name the account has. */
   async load(): Promise<void> {
+    void this.check();
     [this.prefs, this.account, this.passkeys, this.canPasskey] = await Promise.all([
       api.preferences(),
       api.account(),
@@ -551,6 +560,7 @@ export class Settings {
         this.pushRow("Coach", `speak ${prefs.speak ? "on" : "off"}`, Page.Coach),
         this.pushRow("Appearance", prefs.theme, Page.Appearance),
       ]),
+      this.group([this.notificationsRow()]),
       this.group([
         this.pushRow(
           PRO ? Records : "Diagrams",
@@ -565,9 +575,9 @@ export class Settings {
       ], "Data"),
     );
 
-    // Coding and its meeting are for coders, and the meeting and the replies
-    // picked blind are Patrick's; none of it hangs on the family the app is
-    // on. Each opens on this stack, the coding guide too (R-0567).
+    // Coding and its meeting are for coders, and the meeting is Patrick's;
+    // none of it hangs on the family the app is on. Each opens on this stack,
+    // the coding guide too (R-0567).
     const admin = isAdmin();
     if (isCoder())
       pane.append(
@@ -581,14 +591,6 @@ export class Settings {
           ],
           "Coding",
         ),
-      );
-    if (admin)
-      pane.append(
-        this.group(
-          [this.screenRow("Better replies", Feature.PairsOpen, () => this.handlers.onPairs())],
-          "Quality",
-        ),
-        el("div", "sn-hint", "Pick the better of two coach replies"),
       );
 
     const out = document.createElement("button");
@@ -676,6 +678,41 @@ export class Settings {
 
   /** The keys that sign this account in without an emailed code, and the way to
    * make one when there are none. */
+  /** This device's notifications, for everyone, whatever the coach's
+   * "messages first" says (R-0832). */
+  private notificationsRow(): HTMLElement {
+    const row = el("div", "sn-row");
+    row.id = "notifications";
+    const main = el("div", "sn-m");
+    const state = this.reach === null ? "Checking this device" : REACH[this.reach];
+    main.append(el("div", "sn-t", "Notifications"), el("div", "sn-s sn-wrap", esc(state)));
+    row.append(main);
+    if (this.reach === Reach.Off) {
+      const on = document.createElement("button");
+      on.type = "button";
+      on.className = "sn-manage";
+      on.textContent = "Turn on";
+      on.addEventListener("click", () => {
+        tap(Feature.NotificationsOn);
+        void subscribe().then(() => this.load());
+      });
+      row.append(on);
+    }
+    return row;
+  }
+
+  /** This device's notifications, read apart from the page, which is drawn
+   * at once; the row is drawn again when they are known. */
+  private async check(): Promise<void> {
+    this.reach = await device()
+      .then(reach)
+      .catch((error: unknown) => {
+        console.error(error);
+        return Reach.Failed;
+      });
+    this.host.querySelector("#notifications")?.replaceWith(this.notificationsRow());
+  }
+
   private passkeyRows(): HTMLElement[] {
     const rows = this.passkeys.map((passkey) => {
       const row = el("div", "sn-row");
@@ -867,7 +904,7 @@ export class Settings {
           PRO
             ? "Each case has its own sessions and its own picture."
             : account.diagrams.length
-              ? "One family, one record — it grows as you talk."
+              ? "One family, one diagram — it grows as you talk."
               : "No diagrams yet.",
         ),
       );

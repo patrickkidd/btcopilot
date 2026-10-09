@@ -1,4 +1,6 @@
 import { call, openNotification } from "./api";
+import { el } from "./dom";
+import { Feature, tap } from "./track";
 import type { Delivery } from "./types";
 
 /** The server's public key arrives base64url; the browser takes raw bytes. */
@@ -8,23 +10,177 @@ function bytes(key: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array([...atob(padded)].map((c) => c.charCodeAt(0)));
 }
 
-/** Run inside the tap that asks the coach to message first: a browser asks
- * for permission only on a tap. iOS offers web push only to the app added to
- * the home screen; wherever push is refused or missing, the coach emails
- * instead. Says whether this browser can now be reached by push. */
+/** The worker as registered and running; a registration that fails rejects
+ * here rather than leaving `navigator.serviceWorker.ready` waiting forever. */
+let running: Promise<ServiceWorkerRegistration> | null = null;
+
+export function register(url: string): void {
+  running = navigator.serviceWorker
+    .register(url, { scope: "/app/" })
+    .then(() => navigator.serviceWorker.ready);
+}
+
+function worker(): Promise<ServiceWorkerRegistration> {
+  return running ?? Promise.reject(new Error("the service worker was never registered"));
+}
+
+/** Run inside a tap: a browser asks for permission only on one, and iOS only
+ * when the request is the tap's first wait. iOS offers web push only to the
+ * app added to the home screen. Says whether this browser can now be reached
+ * by push. With permission already given it asks nothing and only subscribes
+ * again. */
 export async function subscribe(): Promise<boolean> {
-  if (!("PushManager" in window)) return false;
+  if (!supported()) return false;
   if ((await Notification.requestPermission()) !== "granted") return false;
-  const [{ key }, worker] = await Promise.all([
+  const [{ key }, registration] = await Promise.all([
     call<{ key: string }>("GET", "/push-subscriptions"),
-    navigator.serviceWorker.ready,
+    worker(),
   ]);
-  const subscription = await worker.pushManager.subscribe({
+  const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: bytes(key),
   });
   await call("POST", "/push-subscriptions", subscription.toJSON());
   return true;
+}
+
+/** Whether this device can be reached by notifications, in the words the
+ * account view says it in (R-0832). */
+export enum Reach {
+  On = "on",
+  Off = "off",
+  Blocked = "blocked",
+  Unavailable = "unavailable",
+  /** The worker that receives them could not start on this device. */
+  Failed = "failed",
+}
+
+/** What the app does about notifications as it opens on this device. */
+export enum Plan {
+  /** Installed and never asked: the card that asks. */
+  Card = "card",
+  /** Allowed before but no subscription saved: subscribe again, asking nothing. */
+  Quiet = "quiet",
+  Nothing = "nothing",
+}
+
+export interface Device {
+  supported: boolean;
+  installed: boolean;
+  permission: NotificationPermission;
+  /** This browser's subscription is one the server holds. */
+  saved: boolean;
+  /** The card was answered on this device, either way. */
+  asked: boolean;
+}
+
+export function reach(d: Device): Reach {
+  if (!d.supported) return Reach.Unavailable;
+  if (d.permission === "denied") return Reach.Blocked;
+  return d.permission === "granted" && d.saved ? Reach.On : Reach.Off;
+}
+
+export function plan(d: Device): Plan {
+  if (!d.supported) return Plan.Nothing;
+  if (d.permission === "granted") return d.saved ? Plan.Nothing : Plan.Quiet;
+  if (d.permission === "default" && d.installed && !d.asked) return Plan.Card;
+  return Plan.Nothing;
+}
+
+const ASKED = "fd-notifications-asked";
+
+function supported(): boolean {
+  return "PushManager" in window && "Notification" in window && "serviceWorker" in navigator;
+}
+
+export function installed(): boolean {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as { standalone?: boolean }).standalone === true
+  );
+}
+
+function asked(): boolean {
+  try {
+    return window.localStorage.getItem(ASKED) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function remember(): void {
+  try {
+    window.localStorage.setItem(ASKED, String(Date.now()));
+  } catch {
+    // a device that refuses to remember asks again next time it opens
+  }
+}
+
+async function saved(): Promise<boolean> {
+  const [{ subscriptions }, registration] = await Promise.all([
+    call<{ subscriptions: { endpoint: string }[] }>("GET", "/push-subscriptions"),
+    worker(),
+  ]);
+  const mine = await registration.pushManager.getSubscription();
+  return !!mine && subscriptions.some((s) => s.endpoint === mine.endpoint);
+}
+
+export async function device(): Promise<Device> {
+  const can = supported();
+  const permission = can ? Notification.permission : "denied";
+  return {
+    supported: can,
+    installed: installed(),
+    permission,
+    saved: permission === "granted" ? await saved() : false,
+    asked: asked(),
+  };
+}
+
+/** Either button on the card spends the one ask on this device, so a system
+ * question dismissed, or held back unseen by the browser, never brings the
+ * card back (R-0832). Run inside the tap: iOS asks only from one. */
+export function answer(on: boolean): void {
+  remember();
+  if (!on) return;
+  tap(Feature.NotificationsOn);
+  void subscribe();
+}
+
+/** The card that asks, once per device, in the home-screen card's own look. */
+function card(): HTMLElement {
+  const scrim = el("div", "hs-scrim");
+  const box = el("div", "hs-card");
+  box.append(
+    el("div", "hs-ttl", "Turn on notifications"),
+    el("div", "hs-say", "So the app can tell you when something is waiting for you, like a message from the coach."),
+  );
+  const later = el("button", "hs-later", "Not now");
+  later.type = "button";
+  later.addEventListener("click", () => {
+    scrim.remove();
+    answer(false);
+  });
+  const on = el("button", "hs-go", "Turn on notifications");
+  on.type = "button";
+  on.addEventListener("click", () => {
+    scrim.remove();
+    answer(true);
+  });
+  const acts = el("div", "hs-acts");
+  acts.append(later, on);
+  box.append(acts);
+  scrim.append(box);
+  return scrim;
+}
+
+/** As the app opens: subscribe again where permission was given and the
+ * subscription was lost, or ask with the card where the app is installed and
+ * nobody has been asked (R-0832). */
+export async function offerNotifications(): Promise<void> {
+  const next = plan(await device());
+  if (next === Plan.Quiet) await subscribe();
+  if (next === Plan.Card) document.body.append(card());
 }
 
 /** A tap on a notification, or on the link in its email, is counted opened

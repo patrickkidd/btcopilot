@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor } from "./setup";
 
 /** In every picture view below the whole line, the first step of the path at

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { flask, flaskRunning } from "./setup";
 
 // The coach's offer to send the person's words, raised by hand: the admin

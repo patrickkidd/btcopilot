@@ -15,7 +15,6 @@ export enum Screen {
   Agenda = "agenda",
   Meeting = "meeting",
   Result = "result",
-  Pairs = "pairs",
   CaseReport = "case_report",
 }
 
@@ -70,6 +69,7 @@ export enum Feature {
   PasskeyAdd = "passkey_add",
   PasskeyRemove = "passkey_remove",
   SignOut = "sign_out",
+  NotificationsOn = "notifications_on",
   CodingDone = "coding_done",
   RulesOpen = "rules_open",
   Back = "back",
@@ -88,8 +88,6 @@ export enum Feature {
   MeetingKeep = "meeting_keep",
   MeetingChange = "meeting_change",
   MeetingUnresolved = "meeting_unresolved",
-  PairsOpen = "pairs_open",
-  PairPick = "pair_pick",
 }
 
 const FLUSH_MS = 5_000;

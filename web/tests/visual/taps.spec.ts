@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, type Key, boxOf } from "./setup";
 
 /** A thumb on a phone, on the line: a tap on a loose event's dot picks that

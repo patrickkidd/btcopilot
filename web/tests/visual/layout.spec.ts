@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { PIC_H } from "../../src/spotlight";
 import { NO_LIST, pinned, stateFor, boxOf } from "./setup";
 
@@ -155,8 +155,8 @@ test.describe("nothing moves when a chip is tapped", () => {
         ),
         fits: node.scrollWidth <= node.clientWidth,
       }));
-      // explain and in chat, and the list button where one is drawn
-      const chips = [26, 26];
+      // explain, in chat and Family, and the list button where one is drawn
+      const chips = [26, 26, 26];
       expect(strip.heights).toEqual((await pinned(page)) ? chips : [...chips, 44]);
       expect(strip.height).toBe(44);
       expect(strip.rows).toBe(1);
@@ -450,8 +450,8 @@ test.describe("the row under the picture from one view to the next", () => {
 
     // what can be pressed follows what is on the picture
     expect(rest.live).toEqual(["cap-family"]);
-    expect(open.live).toEqual(["cap-play"]);
-    expect(picked.live).toEqual(["cap-trace"]);
+    expect(open.live).toEqual(["cap-play", "cap-family"]);
+    expect(picked.live).toEqual(["cap-trace", "cap-family"]);
     // and nothing above or around the row moves for it
     for (const now of [open.at, picked.at]) {
       expect(now.picture).toEqual(rest.at.picture);
@@ -498,7 +498,7 @@ test.describe("the button that opens the lists", () => {
     await page.locator('#view .ss-hit[data-target="zone"]').first().click();
     await expect(page.locator("#cap-play")).toBeVisible();
     const at = await place(page);
-    expect(at.order).toEqual(["cap-play", "cap-trace", "menu-open"]);
+    expect(at.order).toEqual(["cap-play", "cap-trace", "cap-family", "menu-open"]);
     expect(at.inRow).toBe(true);
     expect(at.fromRight).toBeGreaterThanOrEqual(0);
     expect(at.fromRight).toBeLessThanOrEqual(16);

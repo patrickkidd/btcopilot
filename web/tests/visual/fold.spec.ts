@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, boxOf } from "./setup";
 
 /** The picture folds to a 40-tall strip under the title row while a phone's

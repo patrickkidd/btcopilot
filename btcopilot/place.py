@@ -28,7 +28,6 @@ class Place(enum.StrEnum):
     Agenda = "account/meeting"
     MeetingDay = "account/meeting/:day"
     MeetingCut = "account/meeting/:day/:n"
-    Pairs = "account/better-replies"
     Literature = "account/literature-review"
     Cluster = "cluster/:key"
     NewEvent = "event/new"
@@ -93,7 +92,6 @@ WORDS = {
     Place.Agenda: "the next meeting",
     Place.MeetingDay: "the meeting",
     Place.MeetingCut: "the meeting",
-    Place.Pairs: "better replies",
     Place.Literature: "the Auditor's Coding Guide",
     Place.NewEvent: "a new event",
     Place.NewPerson: "a new person",

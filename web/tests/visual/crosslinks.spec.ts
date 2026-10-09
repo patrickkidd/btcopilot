@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { lists, openList, PARKED, stateFor } from "./setup";
 
 /** One record, reached from either side. A person's editor offers the events

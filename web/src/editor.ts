@@ -577,7 +577,7 @@ function partnerRows(person: Person, family: Family): string {
     .join("");
   return (
     `<div class="lab">Partners</div>` +
-    (rows || `<div class="hint">Nobody on the record yet.</div>`) +
+    (rows || `<div class="hint">Nobody in the diagram yet.</div>`) +
     `<button class="btn bondrow" type="button" data-bond="new">add a partner</button>`
   );
 }
@@ -589,7 +589,7 @@ function bornTo(person: Person | null, family: Family, canWrite: boolean): strin
   // nobody can be made from there, so it is a choice and not a picker.
   if (!canWrite) {
     const options: Option[] = [
-      { value: "", label: "nobody on the record" },
+      { value: "", label: "nobody in the diagram" },
       ...family.pair_bonds
         .filter(
           (bond) =>
@@ -611,7 +611,7 @@ function bornTo(person: Person | null, family: Family, canWrite: boolean): strin
   const names = person ? bornToNames(person, family) : null;
   const say = names
     ? `<button class="btn parents" type="button">${esc(names)}</button>`
-    : `<div class="hint">Not on the record yet.</div>` +
+    : `<div class="hint">Not in the diagram yet.</div>` +
       (person && canWrite
         ? `<button class="btn parents" type="button">add parents</button>`
         : "");

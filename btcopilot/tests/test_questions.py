@@ -180,13 +180,13 @@ REFUSED = [
     (ToolName.AddQuestion, {"text": ASK, "kind": "fact", "state": "asked", "item_kind": "person"},
      "It named what the question is about only halfway."),
     (ToolName.AddQuestion, {"text": ASK, "kind": "fact", "state": "asked", "item_kind": "person", "item_id": "99"},
-     "That is not in the record."),
+     "That is not in the diagram."),
     (ToolName.SetQuestion, {"id": "q1", "state": "resolved"}, "It did not say how the question ended."),
     (ToolName.SetQuestion, {"id": "q1", "state": "asked", "outcome": "fact"}, "It did not say how the question ended."),
     (ToolName.SetQuestion, {"id": "q1", "state": "resolved", "outcome": "declined_by_user"},
      "Only you can dismiss a question."),
     (ToolName.SetQuestion, {"id": "q2", "state": "resolved", "outcome": "answered"}, "That question is already closed."),
-    (ToolName.SetQuestion, {"id": "q9", "state": "asked"}, "That is not in the record."),
+    (ToolName.SetQuestion, {"id": "q9", "state": "asked"}, "That is not in the diagram."),
 ]
 
 
@@ -615,7 +615,7 @@ HUGH, SAM, ADA = 2, 3, 4
 COUPLE, HOME = 7, 10
 CHILDREN = "Do you and Sam have children?"
 ALIVE = "Is your father still alive?"
-HOLDS = "It was about to ask something the record already holds."
+HOLDS = "It was about to ask something the diagram already holds."
 
 
 def grown(diagram):
@@ -755,11 +755,15 @@ def test_a_fact_question_can_be_added_already_answered_in_one_call(family, test_
         CHILDREN,
         state="resolved",
         outcome="answered",
+        count=0,
         fact="children",
         item_kind="pair_bond",
         item_id=str(COUPLE),
     )
-    assert text == "Added question q1."
+    assert text == (
+        "Added question q1.\n\nThe record already holds 0 children of couple 7, Wren and "
+        "Sam (the person and partner); the count 0 adds no one, and no one is removed"
+    )
     kept = stored(family)["q1"]
     assert (kept["state"], kept["outcome"], kept["session_id"], kept["asked_at"]) == (
         "resolved",
@@ -800,6 +804,199 @@ def test_a_fact_question_can_be_added_already_said_unknown_citing_an_older_messa
     data = stored_data(family)
     assert coverage.state_of(data, Fact.BirthDate, ItemKind.Person, HUGH) is FactState.SaidUnknown
     assert coverage.state_of(data, Fact.Alive, ItemKind.Person, HUGH) is FactState.Known
+
+
+FIND_OUT = "I honestly don't know when Dad was born. I'll ask my mom next time I see her."
+NOBODY = "Nobody knows when Dad was born; his papers were lost in the fire."
+STAYS = "It was about to close a question the person said they would find the answer to."
+
+
+def test_a_fact_the_person_will_find_out_stays_asked_and_is_not_closed_unknown(family, test_user):
+    # R-0803
+    # Patrick, 2026-10-07: "Yes" to keeping a question open when the person says they
+    # will find out, instead of closing it as unknown.
+    grown(family)
+    toolbox, _ = speaking(family, test_user, FIND_OUT)
+    add(toolbox, "When was your father born?", fact="birth_date", item_kind="person", item_id=str(HUGH))
+
+    with pytest.raises(ToolError) as refused:
+        settle(toolbox, family, "q1", state="resolved", outcome="unknown")
+    assert refused.value.plain == STAYS
+    assert str(refused.value) == (
+        "The person said they will find out, so question q1 is not settled: leave it "
+        "asked, and keep what they said they would do as a todo in their words"
+    )
+    with pytest.raises(ToolError) as refused:
+        add(toolbox, "Where was your father born?", state="resolved", outcome="unknown", fact="places", item_kind="person", item_id=str(HUGH))
+    assert refused.value.plain == STAYS
+    # their todo is kept beside it, and closes as it always did
+    add(toolbox, "ask my mom when Dad was born", kind="todo", state="held")
+    settle(toolbox, family, "q2", state="resolved", outcome="unknown")
+    kept = stored(family)
+    assert [(q["id"], q["kind"], q["state"], q["outcome"]) for q in kept.values()] == [
+        ("q1", "fact", "asked", None),
+        ("q2", "todo", "resolved", "unknown"),
+    ]
+    assert coverage.state_of(stored_data(family), Fact.BirthDate, ItemKind.Person, HUGH) is FactState.Asked
+    assert [(q["id"], q["open"]) for q in questions.asked(family.id, stored_data(family))] == [
+        ("q1", True)
+    ]
+    # a fact nobody can tell them is still said unknown, and so is one closed
+    # outside a turn that answers a message
+    toolbox, _ = speaking(family, test_user, NOBODY)
+    settle(toolbox, family, "q1", state="resolved", outcome="unknown")
+    assert stored(family)["q1"]["outcome"] == "unknown"
+    add(box(family), "Where did your father grow up?", fact="places", item_kind="person", item_id=str(HUGH))
+    settle(box(family), family, "q3", state="resolved", outcome="unknown")
+    assert stored(family)["q3"]["outcome"] == "unknown"
+
+
+@pytest.mark.parametrize(
+    "said,finding",
+    [
+        ("I'll ask my uncle at Thanksgiving.", True),
+        ("I’d have to look it up.", True),
+        ("Let me find out and get back to you.", True),
+        ("I can check with my sister.", True),
+        ("I'm going to try to find out.", True),
+        ("Honestly, no idea. I never asked. I suppose I could ask my mom sometime.", True),
+        ("I don't know, nobody does.", False),
+        ("I asked my mom once and she didn't know either.", False),
+        ("I'll look after the kids this weekend.", False),
+    ],
+)
+def test_the_words_that_say_a_fact_is_theirs_to_find(said, finding):
+    # R-0803
+    from btcopilot.toolbox import FIND_OUT as WORDS
+
+    assert bool(WORDS.search(said)) is finding, said
+
+
+NELL = 11
+HOW_MANY = "How many children did your parents have?"
+PATRICK = (
+    "Patrick, 2026-10-07: \"sounds like you should at least add the person with no name\"."
+)
+
+
+def with_sister(diagram):
+    """Wren's family with her sister Nell: two children of the parents' couple."""
+    grown(diagram)
+    data = diagram.get_diagram_data()
+    data.people.append(asdict(Person(id=NELL, name="Nell", gender=PersonKind.Female, parents=HOME)))
+    data.lastItemId = NELL
+    diagram.set_diagram_data(data)
+    db.session.commit()
+    return diagram
+
+
+def children_of(diagram, bond) -> list[dict]:
+    db.session.expire_all()
+    return [p for p in diagram.get_diagram_data().people if p.get("parents") == bond]
+
+
+def counting(family, user, said):
+    """The parents' number of children asked, and the person's answer being replied to."""
+    toolbox, _ = speaking(family, user, said)
+    add(toolbox, HOW_MANY, fact="children", item_kind="pair_bond", item_id=str(HOME))
+    return toolbox
+
+
+def test_a_count_above_the_children_held_adds_one_unnamed_child_of_that_couple(family, test_user):
+    # R-0325, R-0618
+    # Patrick, 2026-10-07: "sounds like you should at least add the person with no name".
+    with_sister(family)
+    toolbox = counting(family, test_user, "There were three of us.")
+
+    text, _ = settle(toolbox, family, "q1", state="resolved", outcome="answered", count=3)
+    assert text == (
+        "Changed question q1.\n\n"
+        "Added 1 child of couple 10, Ada and Hugh (parents) with no name of their own, "
+        "person 12, so the record holds the 3 counted; each one's name is now on the "
+        "list of what is still unknown, so ask who they are"
+    )
+    kids = children_of(family, HOME)
+    assert [(p["id"], p["name"]) for p in kids] == [(1, "Wren"), (NELL, "Nell"), (12, "Ada and Hugh's child")]
+    assert kids[-1].get("gender") is None
+    data = stored_data(family)
+    assert coverage.state_of(data, Fact.Name, ItemKind.Person, 12) is FactState.NotAsked
+    assert coverage.state_of(data, Fact.Children, ItemKind.PairBond, HOME) is FactState.Known
+    # the added child is one of the people, so the added rows are one per person
+    assert Change.query.filter_by(diagram_id=family.id).count() == 3
+
+
+def test_a_count_equal_to_the_children_held_adds_none(family, test_user):
+    # R-0325, R-0618
+    # Patrick, 2026-10-07: "sounds like you should at least add the person with no name".
+    with_sister(family)
+    toolbox = counting(family, test_user, "Two, me and Nell.")
+
+    text, _ = settle(toolbox, family, "q1", state="resolved", outcome="answered", count=2)
+    assert text == (
+        "Changed question q1.\n\n"
+        "The record already holds 2 children of couple 10, Ada and Hugh (parents); the "
+        "count 2 adds no one, and no one is removed"
+    )
+    assert [p["id"] for p in children_of(family, HOME)] == [1, NELL]
+
+
+def test_a_count_below_the_children_held_adds_none_and_removes_none(family, test_user):
+    # R-0325, R-0618
+    # Patrick, 2026-10-07: "sounds like you should at least add the person with no name".
+    with_sister(family)
+    toolbox = counting(family, test_user, "Just one, as far as I know.")
+
+    text, _ = settle(toolbox, family, "q1", state="resolved", outcome="answered", count=1)
+    assert text.endswith("the count 1 adds no one, and no one is removed")
+    assert [p["id"] for p in children_of(family, HOME)] == [1, NELL]
+    assert [p["name"] for p in stored_data(family).people] == ["Wren", "Hugh", "Sam", "Ada", "Nell"]
+
+
+def test_the_unnamed_childs_name_is_an_open_structure_item(family, test_user):
+    # R-0325, R-0618, R-0006
+    # Patrick, 2026-10-07: "sounds like you should at least add the person with no name".
+    with_sister(family)
+    toolbox = counting(family, test_user, "Four of us.")
+    settle(toolbox, family, "q1", state="resolved", outcome="answered", count=4)
+
+    data = stored_data(family)
+    added = [p["id"] for p in data.people if coverage.unnamed(p.get("name"))]
+    assert added == [12, 13]
+    names = [(Fact.Name, ItemKind.Person, pid) for pid in added]
+    for item in names:
+        assert coverage.states(data)[item] is FactState.NotAsked
+    first = coverage.structure_first(coverage.required(data))
+    tier = {fact: n for n, facts in enumerate(coverage.TIERS) for fact in facts}
+    stories = next(i for i, (fact, _, _) in enumerate(first) if tier.get(fact, 9) > 2)
+    assert all(item in first[:stories] for item in names)
+    assert "12 Ada and Hugh's child (sibling): name" in coverage.block(data)
+    # the generic child name is no name to search the chat by either
+    assert coverage.spoken_as(data, ItemKind.Person, 12) == ["sibling"]
+
+
+def test_closing_how_many_children_as_answered_needs_the_count(family, test_user):
+    # R-0325, R-0618
+    # Patrick, 2026-10-07: "sounds like you should at least add the person with no name".
+    grown(family)
+    toolbox = counting(family, test_user, "There were three of us.")
+
+    for args in ({}, {"count": -1}, {"count": "three"}):
+        with pytest.raises(ToolError) as refused:
+            settle(toolbox, family, "q1", state="resolved", outcome="answered", **args)
+        assert refused.value.plain == "It did not say how many children were counted."
+    with pytest.raises(ToolError) as refused:
+        add(
+            toolbox,
+            "Do you and Sam have children?",
+            state="resolved",
+            outcome="answered",
+            fact="children",
+            item_kind="pair_bond",
+            item_id=str(COUPLE),
+        )
+    assert refused.value.plain == "It did not say how many children were counted."
+    assert stored(family)["q1"]["state"] == "asked"
+    assert [p["id"] for p in children_of(family, HOME)] == [1]
 
 
 BORN_CLOSED = [

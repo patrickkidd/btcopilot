@@ -54,6 +54,8 @@ export async function mockTurn(page: Page, turn: MockedTurn): Promise<void> {
         discussion_id: discussion,
         // the user's own words, stored before the turn was handed over
         statement_id: turn.statement_id - 1,
+        attachment_name: null,
+        attachment_text: null,
       }),
     });
   });

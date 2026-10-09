@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { stateFor } from "./setup";
 
 test.use({ storageState: stateFor("moves") });

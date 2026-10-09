@@ -33,6 +33,9 @@ class ObservationKind(enum.StrEnum):
     # A grouping answer the checks refused, and a turn whose two answers both were.
     ClusterRefused = "cluster_refused"
     ClusterFailed = "cluster_failed"
+    # The coach's notes say the person corrected it: it assumed, misheard or
+    # read into what they said.
+    PersonCorrected = "person_corrected"
 
 
 class Observation(db.Model, ModelMixin):

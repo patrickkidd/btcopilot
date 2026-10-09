@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import subprocess
@@ -6,6 +7,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 import pytest
+from anthropic.types import Message, Usage
+from anthropic.types.beta import BetaMessage, BetaUsage
 
 from btcopilot import llmutil
 from btcopilot.coachmodel import CoachModel, Spent
@@ -121,6 +124,56 @@ def test_a_local_url_sends_gemini_text_to_the_local_model(anthropic_env):
     anthropic_env.setattr(llmutil, "claude_text", claude_text)
     llmutil.gemini_text_sync("Name this session", model=llmutil.EXTRACTION_MODEL)
     assert asked == [llmutil.EXTRACTION_MODEL]
+
+
+class Stream:
+    def __init__(self, message):
+        self.message = message
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+    async def get_final_message(self):
+        return self.message
+
+
+class Messages:
+    def __init__(self, message):
+        self.message = message
+
+    def stream(self, **kwargs):
+        return Stream(self.message)
+
+
+class Client:
+    def __init__(self):
+        said = {
+            "id": "msg_1",
+            "role": "assistant",
+            "model": "qwen3:8b",
+            "content": [{"type": "text", "text": '{"name": "Harold"}'}],
+            "stop_reason": "end_turn",
+            "type": "message",
+        }
+        self.messages = Messages(
+            Message(**said, usage=Usage(input_tokens=10, output_tokens=5))
+        )
+        self.beta = type("Beta", (), {})()
+        self.beta.messages = Messages(
+            BetaMessage(**said, usage=BetaUsage(input_tokens=10, output_tokens=5))
+        )
+
+
+def test_structured_calls_read_the_local_models_answer(anthropic_env):
+    # R-0507
+    anthropic_env.setattr(llmutil, "_extraction_anthropic_client", Client)
+    parsed = asyncio.run(
+        llmutil.claude_structured("prompt", Named, "qwen3:8b", {}, 100)
+    )
+    assert parsed.value == Named(name="Harold")
 
 
 def test_sonnet_5_5_costs_what_sonnet_5_costs():

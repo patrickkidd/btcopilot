@@ -1,47 +1,56 @@
 ---
 name: cluster
-description: Keep, extend, and name the groups of events in a record.
+description: Notice the periods of heightened difficulty in a family's events and hold each as a hypothesis.
 ---
+**Your task.** Read this family's events the way a clinician reads a family
+history. Notice the periods when things were heightened for someone: shifts and
+events piling up close together. A shift can be a fall as well as a rise:
+functioning going down counts as much as a symptom or anxiety going up. Anxiety
+is never written down for you; infer it from what piles up.
 
-Below are the groups this record already has, each with its id, its name, and
-the events in it. Below those are the groups the record's own rules have just
-proposed, and below those the events that are in no group. Return the record's
-groups as they should now stand.
+**Each period is a loose hypothesis.** Hold each one as a guess that some bigger
+shift happened in the family around then: someone added, someone lost, someone's
+position changed, even when nothing like that is recorded yet. A period needs no
+visible opening event and no definite end; it ends where things look settled. A
+family often has not connected its own troubles to what else was going on, so a
+period drawn around one person's own problems is the usual place to start. You
+do not have the whole story; do not hold a period tighter than the events allow.
 
-**Keep what is there.** A group that already exists keeps its id, its name, and
-its events. Someone has read that name before. Change one only when you can say
-in one plain sentence what in the record makes the old shape wrong. A
-better-sounding name is not a reason, and a neater grouping is not a reason.
+**One reading per family.** The family is one emotional unit, so two periods
+never cover the same days. Most events stay outside any period.
 
-**Put each new event where it belongs.** An event in no group joins the group
-whose story it is part of: close to it in time, about the same people, or the
-later consequence of what opened that group. If it belongs nowhere, leave it
-out. Events months or years later can still belong to a group.
+**What you are given.** First, the periods this diagram already has, each with
+its id, name, reason and events; one marked "the person drew this period" is the
+person's own. Every one of them is a hypothesis like yours: keep it, rename it,
+reshape it, merge it or drop it as the events now read, the person's own
+included. Return a period under the id of the one it grew out of. A period you
+leave out is removed. Second, runs of events the app's rules found close in
+time, each with the silence before it: a hint only, never a period by itself.
+Third, every event.
 
-Every group carries a `name` in plain words this person would recognise and a
-`reason`: one sentence saying what the record shows its events have in common.
-Never a claim the events do not carry.
+**Name and reason.** Name each period for the hypothesis: what seems to have
+shifted in the family, or the event that dominates it, and when, in words this
+person would recognise; never its length, and never its years alone. The
+`reason` is one sentence: which events pile up and what you suspect shifted.
+When a period is not exactly as you were given it, `change` says in one
+sentence, the way you would say it aloud about this person's story, what in the
+events made you see it so.
 
-**Say every change you make, in story.** For each group you did not hand back
-exactly as it was given, return `change`: one sentence about what happened, the
-way you would say it aloud about this person's history. Not "merged two groups".
-Not "added event 41". A change without that sentence is thrown out and you are
-asked again.
+Every period holds at least three events. A period covering the whole history is
+the family's ordinary level, not a period. Never write an id that is not listed
+below, and never add a detail that is not on the events you were given.
 
-Never write an id that is not listed below, never put one event in two groups,
-and never leave out an event listed under `nodalOrShiftIds`.
-
-Every group you return holds at least three events. One or two events on their
-own are never a group, so never break a group into pieces smaller than that.
-
-Return one entry per final group: `id` when it is an existing group, `eventIds`,
+Return one entry per period: `id` when it grew out of a listed one, `eventIds`,
 `name`, `reason`, and `change` when it is not exactly as given.
 
-EXISTING GROUPS
+PERIODS THIS DIAGRAM HAS
+
 {existing}
 
-PROPOSED GROUPS
+RUNS THE APP'S RULES FOUND (A HINT ONLY)
+
 {candidates}
 
-EVENTS IN NO GROUP
-{unclustered}
+EVERY EVENT
+
+{events}

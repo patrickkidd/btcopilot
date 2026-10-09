@@ -88,9 +88,9 @@ describe("what a tool call says in plain words", () => {
       line(
         ToolName.EditPerson,
         { id: 9, version: 4, name: "Wren" },
-        { it: "a person no longer in the record" },
+        { it: "a person no longer in the diagram" },
       ),
-    ).toBe("Changed a person no longer in the record: name Wren");
+    ).toBe("Changed a person no longer in the diagram: name Wren");
   });
 
   // R-0478
@@ -152,10 +152,10 @@ describe("what a tool call says in plain words", () => {
         ToolName.EditPerson,
         { id: 3, name: "Nel", version: 4 },
         { it: "Nell" },
-        "The record had changed since it was read; read it again.",
+        "The diagram had changed since it was read; read it again.",
       ),
     ).toBe(
-      "Tried to change Nell: name Nel. The record had changed since it was read; read it again.",
+      "Tried to change Nell: name Nel. The diagram had changed since it was read; read it again.",
     );
   });
 });

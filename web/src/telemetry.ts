@@ -8,6 +8,10 @@ export enum Source {
 
 export const ERRORS_URL = "/app/browser-errors";
 
+/** The browser's notice that a resize was put off to the next frame: no error
+ * object and no fault, so it is not sent. */
+export const RESIZE_NOTICE = "ResizeObserver loop completed with undelivered notifications.";
+
 function send(source: Source, reason: unknown): void {
   const error = reason instanceof Error ? reason : undefined;
   void fetch(ERRORS_URL, {
@@ -24,5 +28,8 @@ function send(source: Source, reason: unknown): void {
   }).catch((failed: unknown) => console.warn("The page's error was not sent", failed));
 }
 
-addEventListener("error", (e) => send(Source.Error, e.error ?? e.message));
+addEventListener("error", (e) => {
+  if (!e.error && e.message === RESIZE_NOTICE) return;
+  send(Source.Error, e.error ?? e.message);
+});
 addEventListener("unhandledrejection", (e) => send(Source.Rejection, e.reason));

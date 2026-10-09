@@ -28,9 +28,9 @@ class Unshowable(Exception):
         self.plain = plain
 
 
-NO_PERSON = "Someone it named is not in the record."
-NO_EVENT = "An event it named is not in the record."
-NO_CLUSTER = "The cluster it named is not in the record."
+NO_PERSON = "Someone it named is not in the diagram."
+NO_EVENT = "An event it named is not in the diagram."
+NO_CLUSTER = "The cluster it named is not in the diagram."
 
 PARAMS = {
     ViewKind.Triangle: ["persons"],

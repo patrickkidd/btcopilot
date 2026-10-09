@@ -1,17 +1,20 @@
-"""Grouping the record's events into clusters: the rules propose, the model rules.
+"""Noticing the periods of heightened difficulty in a family's events, each held
+as a loose hypothesis that something bigger shifted in the family around then.
 
-The candidates are computed from the record with no model call at all, and are
-a proposal rather than a boundary. The grouping the record already has is handed
-to the model with its ids and kept unless the record now says otherwise; the
-model may merge, split, or reach for a further event whenever it says in one
-sentence what made the old shape wrong. Spec and ruling ids:
-doc/CLUSTERS.md.
+The rules' runs of events are computed with no model call and go to the model
+as a hint only, never stored. The model reads every event, with the periods the
+diagram already has (the person's own marked as theirs), and returns the
+periods as they should now stand: it may rename, reshape, merge or drop any of
+them. The code only backstops: three events at least, nothing over ten years,
+and two periods sharing days become one, since the family is one unit. Spec
+and ruling ids: doc/CLUSTERS.md.
 """
 
 import datetime
 import enum
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 
 from btcopilot.extensions import db
@@ -48,8 +51,16 @@ from btcopilot.schema import (
 _log = logging.getLogger(__name__)
 
 # Bumped whenever the candidate rules or the naming prompt change, so a record
-# grouped by the older rules re-groups on its next event-changing turn.
-DETECTION_VERSION = 5
+# grouped by the older rules re-groups on its next event-changing turn. 6: the
+# prompt lines the books contradict reworded and the ten-year check added, so
+# every record regroups on its next event change [Oracle: R-0836, R-0838].
+# 7: two groups never share years, the person's own shown to the model and
+# counted, so every record regroups on its next event change [Oracle: R-0839].
+# 8: periods as hypotheses of a family process, the person's own free to
+# reshape, overlaps merged, no fallback [Oracle: R-0841 to R-0846].
+# 9: a stored model period named only by its years is not handed back, so every
+# record regroups on its next event change [Oracle: R-0844, R-0840].
+DETECTION_VERSION = 9
 
 NODAL_KINDS = frozenset(
     {EventKind.Death, EventKind.Married, EventKind.Divorced, EventKind.Separated}
@@ -71,6 +82,24 @@ SPAN_DAYS = 548
 THINKING_ROOM = 4096
 PER_EVENT = 24
 CALM_GAP_DAYS = 730
+# A returned group whose dated events span more than this is refused and the
+# model is asked again with the reason; on the second answer it is dropped and
+# the rest kept [Oracle: R-0837, R-0846]. It only catches an answer that draws
+# the family's whole span as one period; edges stay the model's call. A group
+# that long is a stage of the household or the family's ordinary level, not a
+# disturbance of it. The sources bound the number on both sides.
+# Above: the longest run of dated events any of them draws as one period of
+# stress is five years, the longest named family period a six-year plateau of
+# illness, and the one decade accepted as a single tag was events leading up to
+# a death held together by one man's long illness (Family Therapy in Clinical
+# Practice ch. 21 and ch. 3; the seminar; theory.md T105 to T108 in the corpus
+# research). Below: Bowen's typical stage of the household is "ten years"
+# (Basic Series 3, T1), and his own ten-year narrative chapter is several
+# periods of stress with calm between (ch. 21, T81). Ten is the smallest whole
+# number no wave on record reaches and the first a stage does. It binds nothing
+# inside the range the sources place waves, so the model still judges every
+# edge [Oracle: R-0842].
+MAX_SPAN_YEARS = 10
 
 # Diagnostic and popular-psychology words the definitions the model is given do
 # not contain. The prompt forbids vocabulary from outside those definitions;
@@ -101,25 +130,27 @@ class ClusterCheck(enum.StrEnum):
     Missing = "missing"
     UnknownEvent = "unknown_event"
     TooSmall = "too_small"
-    InTwoGroups = "in_two_groups"
     NoName = "no_name"
     NoReason = "no_reason"
     UnknownGroup = "unknown_group"
     GroupTwice = "group_twice"
-    NoChangeReason = "no_change_reason"
     OutsideWords = "outside_words"
-    LeftOut = "left_out"
+    TooLong = "too_long"
+    YearsName = "years_name"
+    Merged = "merged"
     CutOff = "cut_off"
     Unreadable = "unreadable"
     CallFailed = "call_failed"
 
 
 class ClusterError(Exception):
-    """The model's grouping is not a legal reworking of the candidates."""
+    """The model's answer, or one cluster in it, fails a check. `said` is the
+    model's own answer for that cluster, for the observations row."""
 
-    def __init__(self, message: str, check: ClusterCheck):
+    def __init__(self, message: str, check: ClusterCheck, said: dict | None = None):
         super().__init__(message)
         self.check = check
+        self.said = said
 
 
 def _enum_value(val):
@@ -158,6 +189,63 @@ def _bonds(people: set[int], bonds: list[PairBond]) -> set[int]:
         for bond in bonds
         if bond.id is not None and (bond.person_a in people or bond.person_b in people)
     }
+
+
+def _years_after(day: datetime.date, count: int) -> datetime.date:
+    try:
+        return day.replace(year=day.year + count)
+    except ValueError:  # the 29th of February
+        return day.replace(year=day.year + count, day=28)
+
+
+def too_long(dates: list[datetime.date]) -> bool:
+    """Whether a group's dated events span more than MAX_SPAN_YEARS
+    [Oracle: R-0837]."""
+    return bool(dates) and max(dates) > _years_after(min(dates), MAX_SPAN_YEARS)
+
+
+Span = tuple[datetime.date, datetime.date]
+
+
+def years_name(name: str) -> bool:
+    """Whether a name is only a year or a run of years, a length rather than
+    a hypothesis [Oracle: R-0844, R-0841]."""
+    return re.fullmatch(r"[\d\s\u2013\u2014-]*\d[\d\s\u2013\u2014-]*", name) is not None
+
+
+def span_of(dates: list[datetime.date]) -> Span | None:
+    """The years the timeline draws for a group: its first dated event to its
+    last; nothing for a group with no dated event of its own."""
+    return (min(dates), max(dates)) if dates else None
+
+
+def overlapping(a: Span, b: Span) -> bool:
+    """Whether two groups would share a day on the timeline [Oracle: R-0845].
+    Two groups that only touch on one day do not: the page draws neighbouring
+    pills apart at a seam (web/src/picture.ts, `edges`), so touching is the
+    one closeness it can still draw as two."""
+    return a[0] < b[1] and b[0] < a[1]
+
+
+def _said(label: str, span: Span) -> str:
+    return f"{label} ({span[0].isoformat()} to {span[1].isoformat()})"
+
+
+def silence(gap: datetime.timedelta) -> str:
+    """The stretch with nothing recorded before a proposed group, in the plain
+    words the model is shown: "38 years and 4 months", "7 months", "12 days"."""
+    years, rest = divmod(gap.days, 365)
+    months = rest // 30
+    parts = [
+        f"{n} {word}{'' if n == 1 else 's'}"
+        for n, word in ((years, "year"), (months, "month"))
+        if n
+    ]
+    return (
+        " and ".join(parts)
+        if parts
+        else f"{gap.days} day{'' if gap.days == 1 else 's'}"
+    )
 
 
 def _dated(data: DiagramData) -> list[Event]:
@@ -242,8 +330,8 @@ def candidates(data: DiagramData) -> list[Candidate]:
                 or reach[e.id][1] & reach[seed.id][1]
             )
         }
-        overlapping = [group for group in groups if group & near]
-        for group in overlapping:
+        touching = [group for group in groups if group & near]
+        for group in touching:
             groups.remove(group)
             near |= group
         groups.append(near)
@@ -314,34 +402,43 @@ def _event_json(event: Event) -> dict:
     return chunk
 
 
+def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
+    """One plain line on the silence before a proposed group, so the model
+    reads the gap instead of inferring it from two date strings: Kerr weighs
+    "the time spacing between events" (Family Evaluation, line 3355)."""
+    first = parse_date(candidate.startDate)
+    earlier = [day for day in when.values() if day < first]
+    if not earlier:
+        return "first group in the record"
+    return f"{silence(first - max(earlier))} with nothing recorded before this group"
+
+
+THEIRS = "the person drew this period"
+
+
 def _prompt(cands: list[Candidate], free: list[Event], stored: dict[str, dict]) -> str:
-    by_id = {e.id: e for e in free}
-    blocks = [
-        {
-            "candidate": n + 1,
-            "nodalOrShiftIds": candidate.nodalOrShiftIds,
-            "events": [_event_json(by_id[i]) for i in candidate.eventIds],
+    when = {e.id: parse_date(e.dateTime) for e in free}
+    existing = []
+    for cluster_id, cluster in stored.items():
+        shown = {
+            "id": cluster_id,
+            "name": _title(cluster),
+            "reason": cluster.get("reason") or cluster.get("summary") or "",
+            "eventIds": cluster.get("eventIds") or [],
         }
-        for n, candidate in enumerate(cands)
-    ]
-    grouped = {i for candidate in cands for i in candidate.eventIds}
+        if not _regroupable(cluster):
+            shown["note"] = THEIRS
+        existing.append(shown)
     return prompts.CLUSTER_PROMPT.format(
-        existing=json.dumps(
+        existing=json.dumps(existing, indent=2),
+        candidates=json.dumps(
             [
-                {
-                    "id": cluster_id,
-                    "name": _title(cluster),
-                    "reason": cluster.get("reason") or cluster.get("summary") or "",
-                    "eventIds": cluster.get("eventIds") or [],
-                }
-                for cluster_id, cluster in stored.items()
+                {"before": _before(candidate, when), "eventIds": candidate.eventIds}
+                for candidate in cands
             ],
             indent=2,
         ),
-        candidates=json.dumps(blocks, indent=2),
-        unclustered=json.dumps(
-            [_event_json(e) for e in free if e.id not in grouped], indent=2
-        ),
+        events=json.dumps([_event_json(e) for e in free], indent=2),
     )
 
 
@@ -356,82 +453,158 @@ def _sculpted(cluster: ModelCluster, was: dict) -> bool:
     )
 
 
-def _check(
+def _said_of(cluster: ModelCluster, when: dict[int, datetime.date]) -> dict:
+    """The model's own answer for one cluster, as an observations row keeps it."""
+    dates = [when[i] for i in cluster.eventIds if i in when]
+    return {
+        "name": cluster.name,
+        "eventIds": list(cluster.eventIds),
+        "start": min(dates).isoformat() if dates else None,
+        "end": max(dates).isoformat() if dates else None,
+    }
+
+
+def _fault(
+    cluster: ModelCluster,
+    known: set[int],
+    stored: dict[str, dict],
+    claimed: set[str],
+) -> tuple[str, ClusterCheck] | None:
+    """What makes one returned cluster unusable before any merge, or nothing."""
+    unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
+    if unknown:
+        return f"Events {unknown} are not among the events you were given.", (
+            ClusterCheck.UnknownEvent
+        )
+    if not cluster.name.strip():
+        return "Every period needs a name.", ClusterCheck.NoName
+    if not cluster.reason.strip():
+        return "Every period needs a reason.", ClusterCheck.NoReason
+    if cluster.id is not None and cluster.id not in stored:
+        return (
+            f"Period {cluster.id!r} is not one this diagram already has.",
+            ClusterCheck.UnknownGroup,
+        )
+    if cluster.id is not None and cluster.id in claimed:
+        return f"Period {cluster.id!r} came back twice.", ClusterCheck.GroupTwice
+    spoken = " ".join([cluster.name, cluster.reason, cluster.change or ""]).lower()
+    outside = [word for word in OUTSIDE_WORDS if word in spoken]
+    if outside:
+        return (
+            f"Period {cluster.name!r} uses {outside}, which the definitions you "
+            "were given do not contain.",
+            ClusterCheck.OutsideWords,
+        )
+    return None
+
+
+def _merged(
+    clusters: list[ModelCluster], when: dict[int, datetime.date]
+) -> tuple[list[ModelCluster], list[tuple[ModelCluster, ModelCluster]]]:
+    """Periods sharing a day or an event made one: the family is one emotional
+    unit, so one reading of it never draws two periods over the same days
+    [Oracle: R-0845]. The one holding more events carries the name and id, the
+    earlier on a tie. Returns the periods and each one absorbed with the period
+    it went into."""
+
+    def span(cluster: ModelCluster) -> Span:
+        return span_of([when[i] for i in cluster.eventIds])
+
+    out: list[ModelCluster] = []
+    absorbed: list[tuple[ModelCluster, ModelCluster]] = []
+    for cluster in sorted(clusters, key=lambda c: (span(c)[0], span(c)[1])):
+        last = out[-1] if out else None
+        if last is None or not (
+            overlapping(span(last), span(cluster))
+            or set(last.eventIds) & set(cluster.eventIds)
+        ):
+            out.append(cluster)
+            continue
+        keep, lose = (
+            (last, cluster)
+            if len(last.eventIds) >= len(cluster.eventIds)
+            else (cluster, last)
+        )
+        events = sorted(
+            set(last.eventIds) | set(cluster.eventIds), key=lambda i: (when[i], i)
+        )
+        out[-1] = ModelCluster(
+            id=keep.id,
+            eventIds=events,
+            name=keep.name,
+            reason=keep.reason,
+            change=keep.change,
+        )
+        absorbed.append((lose, out[-1]))
+    return out, absorbed
+
+
+@dataclass
+class Screened:
+    """One answer read against the checks: the periods that pass, each period
+    that fails with why, and each period merged into another."""
+
+    kept: list[ModelCluster]
+    faults: list[ClusterError]
+    absorbed: list[tuple[ModelCluster, ModelCluster]]
+
+
+def _screen(
     response: ClusterListResponse | None,
-    cands: list[Candidate],
     free: list[Event],
     stored: dict[str, dict],
-) -> list[ModelCluster]:
+) -> Screened:
     if response is None:
         raise ClusterError("No grouping came back.", ClusterCheck.Missing)
-
     known = {e.id for e in free}
-    shapes = {frozenset(candidate.eventIds) for candidate in cands}
-    marked = {i for candidate in cands for i in candidate.nodalOrShiftIds}
-    seen: set[int] = set()
+    when = {e.id: parse_date(e.dateTime) for e in free}
+    faults: list[ClusterError] = []
+    usable: list[ModelCluster] = []
     claimed: set[str] = set()
     for cluster in response.clusters:
-        unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
-        if unknown:
-            raise ClusterError(
-                f"Events {unknown} are not among the events you were given.",
-                ClusterCheck.UnknownEvent,
+        fault = _fault(cluster, known, stored, claimed)
+        if fault:
+            faults.append(ClusterError(*fault, said=_said_of(cluster, when)))
+            continue
+        if not cluster.eventIds:
+            faults.append(
+                ClusterError(
+                    f"Period {cluster.name!r} holds no events.",
+                    ClusterCheck.TooSmall,
+                    _said_of(cluster, when),
+                )
             )
-        if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
-            raise ClusterError(
-                f"Group {cluster.eventIds} holds fewer than {MIN_CLUSTER_EVENTS} events; "
-                "anything smaller is never a cluster.",
-                ClusterCheck.TooSmall,
-            )
-        repeated = seen & set(cluster.eventIds)
-        if repeated:
-            raise ClusterError(
-                f"Events {sorted(repeated)} are in two clusters.",
-                ClusterCheck.InTwoGroups,
-            )
-        seen.update(cluster.eventIds)
-        if not cluster.name.strip():
-            raise ClusterError("Every cluster needs a name.", ClusterCheck.NoName)
-        if not cluster.reason.strip():
-            raise ClusterError("Every cluster needs a reason.", ClusterCheck.NoReason)
+            continue
         if cluster.id is not None:
-            if cluster.id not in stored:
-                raise ClusterError(
-                    f"Group {cluster.id!r} is not one of the groups this record "
-                    "already has.",
-                    ClusterCheck.UnknownGroup,
-                )
-            if cluster.id in claimed:
-                raise ClusterError(
-                    f"Group {cluster.id!r} came back twice.", ClusterCheck.GroupTwice
-                )
             claimed.add(cluster.id)
-        was = stored.get(cluster.id) if cluster.id is not None else None
-        changed = (
-            _sculpted(cluster, was)
-            if was is not None
-            else frozenset(cluster.eventIds) not in shapes
-        )
-        if changed and not (cluster.change or "").strip():
-            raise ClusterError(
-                f"Cluster {cluster.name!r} is not the grouping you were given "
-                "and says no reason for the change.",
-                ClusterCheck.NoChangeReason,
+        usable.append(cluster)
+    merged, absorbed = _merged(usable, when)
+    kept = []
+    for cluster in merged:
+        said = _said_of(cluster, when)
+        if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
+            faults.append(
+                ClusterError(
+                    f"Period {cluster.name!r} holds {len(cluster.eventIds)} events; "
+                    f"anything under {MIN_CLUSTER_EVENTS} is never a period.",
+                    ClusterCheck.TooSmall,
+                    said,
+                )
             )
-        spoken = " ".join([cluster.name, cluster.reason, cluster.change or ""]).lower()
-        outside = [word for word in OUTSIDE_WORDS if word in spoken]
-        if outside:
-            raise ClusterError(
-                f"Cluster {cluster.name!r} uses {outside}, which the definitions "
-                "you were given do not contain.",
-                ClusterCheck.OutsideWords,
+        elif too_long([when[i] for i in cluster.eventIds]):
+            faults.append(
+                ClusterError(
+                    f"Period {cluster.name!r} runs from {said['start'][:4]} to "
+                    f"{said['end'][:4]}: more than {MAX_SPAN_YEARS} years is this "
+                    "family's ordinary level, not a period. Return the periods "
+                    "inside it.",
+                    ClusterCheck.TooLong,
+                    said,
+                )
             )
-    dropped = marked - seen
-    if dropped:
-        raise ClusterError(
-            f"Events {sorted(dropped)} were left out.", ClusterCheck.LeftOut
-        )
-    return response.clusters
+        else:
+            kept.append(cluster)
+    return Screened(kept=kept, faults=faults, absorbed=absorbed)
 
 
 def _stored(data: DiagramData) -> list[dict]:
@@ -440,6 +613,61 @@ def _stored(data: DiagramData) -> list[dict]:
         for cluster in data.clusters
         if isinstance(cluster, dict) and cluster.get("id") is not None
     ]
+
+
+def _judged(
+    data: DiagramData,
+) -> tuple[dict[str, dict], list[tuple[dict, ClusterCheck, str]]]:
+    """The stored clusters handed back to the model, by id, and each stored
+    model cluster that fails the ten-year backstop or is named only by its
+    years, with a sentence naming it and its years. The person's own are
+    always handed back, as hypotheses the model may reshape [Oracle: R-0843,
+    R-0844]."""
+    when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
+    kept, failing = {}, []
+    for cluster in _stored(data):
+        dates = [when[i] for i in cluster.get("eventIds") or [] if i in when]
+        span = span_of(dates)
+        name = _said(_title(cluster), span) if span else repr(_title(cluster))
+        if not _regroupable(cluster):
+            kept[str(cluster["id"])] = cluster
+        elif too_long(dates):
+            failing.append(
+                (
+                    cluster,
+                    ClusterCheck.TooLong,
+                    f"Stored grouping {cluster['id']} {name} fails the "
+                    f"{MAX_SPAN_YEARS}-year check",
+                )
+            )
+        elif years_name(_title(cluster)):
+            failing.append(
+                (
+                    cluster,
+                    ClusterCheck.YearsName,
+                    f"Stored grouping {cluster['id']} {name} is named only by "
+                    "its years",
+                )
+            )
+        else:
+            kept[str(cluster["id"])] = cluster
+    return kept, failing
+
+
+def mine(data: DiagramData) -> dict[str, dict]:
+    """The stored clusters handed to the model as existing. A model cluster
+    over ten years or named only by its years is left out, its events back to
+    the hint, and the diagram regroups on this run [Oracle: R-0838, R-0844]."""
+    kept, failing = _judged(data)
+    for _, _, why in failing:
+        _log.info(f"{why} and is not handed back")
+    return kept
+
+
+def broken(data: DiagramData) -> list[tuple[dict, ClusterCheck, str]]:
+    """The stored model clusters that fail a backstop, each with the check
+    and a sentence naming its years."""
+    return _judged(data)[1]
 
 
 def answer_schema(stored: dict[str, dict]) -> dict:
@@ -486,7 +714,13 @@ def _answered(ask, prompt: str, schema: dict, limit: int) -> "ClusterListRespons
 def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
     """`ask` takes the prompt, the answer's schema and its token limit and
     returns the model's ClusterListResponse; `refused`, when given, hears each
-    refused answer with its attempt number."""
+    refused answer, dropped cluster and merged cluster with its attempt number
+    and the answer it came in.
+
+    A first answer with any fault is asked for once more with the reasons. On
+    the second, a cluster that still fails is dropped and the rest kept; an
+    answer that cannot be read, or keeps nothing out of what it returned,
+    raises [Oracle: R-0846, R-0844]."""
     cache_key = compute_cache_key(_dated(data))
     cands = candidates(data)
     if not cands:
@@ -494,46 +728,61 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
 
     free = joinable(data)
     taken = {str(cluster["id"]) for cluster in _stored(data)}
-    mine = {
-        str(cluster["id"]): cluster
-        for cluster in _stored(data)
-        if _regroupable(cluster)
-    }
-    prompt = _prompt(cands, free, mine)
-    schema = answer_schema(mine)
+    existing = mine(data)
+    prompt = _prompt(cands, free, existing)
+    schema = answer_schema(existing)
     limit = THINKING_ROOM + PER_EVENT * len(free)
     _log.info(
-        f"Grouping {len(free)} events: {len(mine)} groups already there, "
-        f"{len(cands)} proposed"
+        f"Grouping {len(free)} events: {len(existing)} groups already there, "
+        f"{len(cands)} proposed as a hint"
     )
-    answer = None
-    try:
-        answer = _answered(ask, prompt, schema, limit)
-        named = _check(answer, cands, free, mine)
-    except ClusterError as rejected:
-        _log.warning(f"Grouping sent back: {rejected}")
+
+    def heard(attempt: int, error: ClusterError, answer) -> None:
+        _log.warning(f"Grouping answer {attempt}: {error}")
         if refused:
-            refused(1, rejected, answer)
+            refused(attempt, error, answer)
+
+    def attempt(n: int, words: str) -> Screened:
         answer = None
         try:
-            answer = _answered(
-                ask,
-                prompt + prompts.CLUSTER_REJECTED.format(why=rejected),
-                schema,
-                limit,
-            )
-            named = _check(answer, cands, free, mine)
-        except ClusterError as again:
-            if refused:
-                refused(2, again, answer)
+            answer = _answered(ask, words, schema, limit)
+            screened = _screen(answer, free, existing)
+        except ClusterError as failed:
+            heard(n, failed, answer)
             raise
+        for fault in screened.faults:
+            heard(n, fault, answer)
+        for lost, into in screened.absorbed:
+            heard(
+                n,
+                ClusterError(
+                    f"Period {lost.name!r} shares days with {into.name!r} and is "
+                    "merged into it.",
+                    ClusterCheck.Merged,
+                    _said_of(lost, {e.id: parse_date(e.dateTime) for e in free}),
+                ),
+                answer,
+            )
+        if n == 2 and screened.faults and not screened.kept and answer.clusters:
+            raise screened.faults[0]
+        return screened
+
+    try:
+        screened = attempt(1, prompt)
+        retry = bool(screened.faults)
+        why = " ".join(str(fault) for fault in screened.faults)
+    except ClusterError as failed:
+        retry, why = True, str(failed)
+    if retry:
+        screened = attempt(2, prompt + prompts.CLUSTER_REJECTED.format(why=why))
 
     when = {e.id: e.dateTime for e in free}
     clusters, changes = [], []
-    for cluster in named:
+    for cluster in screened.kept:
         spanned = sorted(when[event_id] for event_id in cluster.eventIds)
         cluster_id = cluster.id or next_id(taken)
         taken.add(cluster_id)
+        was = existing.get(cluster.id) if cluster.id else None
         clusters.append(
             Cluster(
                 id=cluster_id,
@@ -544,42 +793,17 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
                 eventIds=list(cluster.eventIds),
                 startDate=spanned[0],
                 endDate=spanned[-1],
-                source=ClusterSource.Model,
+                source=(
+                    _source(was)
+                    if was is not None and not _sculpted(cluster, was)
+                    else ClusterSource.Model
+                ),
             )
         )
         if cluster.change:
             changes.append(cluster.change)
             _log.info(f"Regrouped {cluster.name!r}: {cluster.change}")
     return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=changes)
-
-
-def years(start: str, end: str) -> str:
-    first, last = parse_date(start).year, parse_date(end).year
-    return str(first) if first == last else f"{first}–{last}"
-
-
-def by_years(data: DiagramData, cache_key: str) -> ClusterResult:
-    """The rules' groups, each titled with the years it spans, for a turn whose
-    grouping answers were all refused."""
-    taken = {str(cluster["id"]) for cluster in _stored(data)}
-    made = []
-    for candidate in candidates(data):
-        cluster_id = next_id(taken)
-        taken.add(cluster_id)
-        title = years(candidate.startDate, candidate.endDate)
-        made.append(
-            Cluster(
-                id=cluster_id,
-                title=title,
-                name=title,
-                summary="",
-                eventIds=list(candidate.eventIds),
-                startDate=candidate.startDate,
-                endDate=candidate.endDate,
-                source=ClusterSource.Model,
-            )
-        )
-    return ClusterResult(clusters=made, cacheKey=cache_key)
 
 
 STORED_FIELDS = (
@@ -612,49 +836,35 @@ def _regroupable(cluster: dict) -> bool:
 
 
 def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
-    """The model's grouping, with every event a grouping it may not touch owns
-    held out. Each group already carries its own id, the model's own statement
-    of which stored grouping it is, so what the coach said about it last turn
-    still points at something the record holds. A grouping that arrives under
-    the minimum is a bug in whatever produced it and raises; one that only falls
-    under it once the held-out events are taken out stays dots on the line."""
-    theirs = {
-        event_id
-        for c in stored
-        if not _regroupable(c)
-        for event_id in c.get("eventIds") or []
-    }
-    others = {str(c["id"]) for c in stored if not _regroupable(c)}
+    """The model's grouping, each cluster under its own id: the model's own
+    statement of which stored cluster it is, so what the coach said about it
+    last turn still points at something the diagram holds. A grouping under the
+    minimum is a bug in whatever produced it and raises."""
     taken = {str(c["id"]) for c in stored}
     kept: dict[str, Cluster] = {}
     for cluster in detected:
-        if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
+        event_ids = [e for e in cluster.eventIds if e in dates]
+        if len(event_ids) < MIN_CLUSTER_EVENTS:
             raise ClusterError(
                 f"Grouping {cluster.eventIds} arrived holding fewer than "
                 f"{MIN_CLUSTER_EVENTS} events.",
                 ClusterCheck.TooSmall,
             )
-        event_ids = [e for e in cluster.eventIds if e in dates and e not in theirs]
-        if len(event_ids) < MIN_CLUSTER_EVENTS:
-            continue
         cluster.eventIds = event_ids
-        cluster.source = ClusterSource.Model
         cluster.name = cluster.name or cluster.title
         spanned = sorted(dates[e] for e in event_ids)
         cluster.startDate, cluster.endDate = spanned[0], spanned[-1]
         cluster.id = str(cluster.id) if cluster.id else next_id(taken | set(kept))
-        if cluster.id in others:
-            raise ClusterError(
-                f"Grouping {cluster.id} is not one the model may write over.",
-                ClusterCheck.UnknownGroup,
-            )
         kept[cluster.id] = cluster
     return kept
 
 
 def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[dict]:
+    """Every stored cluster the answer did not return is removed, the person's
+    own included: the model was shown each one and may reshape, merge or drop
+    it [Oracle: R-0843]."""
     stored = [c for c in stored if isinstance(c, dict) and c.get("id") is not None]
-    mine = {str(c["id"]): c for c in stored if _regroupable(c)}
+    held = {str(c["id"]): c for c in stored}
     kept = _detected(stored, detected, dates)
 
     deltas = [
@@ -664,11 +874,11 @@ def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[di
             "field": None,
             "after": None,
         }
-        for cluster_id in mine
+        for cluster_id in held
         if cluster_id not in kept
     ]
     for cluster_id, cluster in kept.items():
-        was = mine.get(cluster_id, {})
+        was = held.get(cluster_id, {})
         now = asdict(cluster)
         deltas += [
             {
@@ -718,11 +928,8 @@ def sync(
     record whose events are as they were at its last grouping.
 
     Clusters are stored, not derived on read, so the coach can point at one and
-    have it still be there next turn. The rules propose the groups; the model
-    decides them, keeping what is already there unless the record now says
-    otherwise. It never invents a member, and it never touches a cluster the
-    user made — those events are held out of the detection and a model grouping
-    that overlaps one yields the overlap to it.
+    have it still be there next turn. The rules' runs are a hint; the model
+    decides the periods, the person's own included, and never invents a member.
     """
     diagram = db.session.get(Diagram, diagram_id)
     data = diagram.get_diagram_data()
@@ -752,6 +959,21 @@ def sync(
                 "groups": len(groups),
                 "events": sum(len(g.eventIds) for g in groups),
                 "reason": error.check.value,
+                **(error.said or {}),
+            },
+        )
+
+    failing = broken(data)
+    for cluster, check, why in failing:
+        _log.warning(f"Turn {turn_id} removes: {why}")
+        observe(
+            ObservationKind.ClusterFailed,
+            {
+                "check": check.value,
+                "detail": why,
+                "fallback": False,
+                "reason": check.value,
+                "removed": str(cluster["id"]),
             },
         )
 
@@ -764,22 +986,38 @@ def sync(
             refused,
         )
     except ClusterError as failed:
-        # Both answers refused: the rules' groups go in under their years, unless
-        # the model's own groups are already there to keep [Oracle: R-0780].
-        fallback = not any(_regroupable(c) for c in _stored(data))
+        # No usable answer: the clusters that pass stay, a stored model cluster
+        # over ten years or named only by its years is removed, its events dots
+        # until a regroup passes [Oracle: R-0840, R-0844].
         observe(
             ObservationKind.ClusterFailed,
             {
                 "check": failed.check.value,
                 "detail": str(failed),
-                "fallback": fallback,
+                "fallback": False,
                 "reason": failed.check.value,
             },
         )
         _log.warning(f"Turn {turn_id} grouping refused twice: {failed}")
-        if not fallback:
+        if not failing:
             return None
-        result = by_years(data, cache_key)
+        change = record.apply(
+            diagram_id,
+            [
+                {
+                    "item_kind": ItemKind.Cluster.value,
+                    "item_id": str(cluster["id"]),
+                    "field": None,
+                    "after": None,
+                }
+                for cluster, _, _ in failing
+            ],
+            author=Author.Coach,
+            turn_id=turn_id,
+            user_id=user_id,
+            session_id=session_id,
+        )
+        return Regroup(change=change, sentences=[])
     deltas = _deltas(data.clusters, result.clusters, dates)
     deltas.append(
         {

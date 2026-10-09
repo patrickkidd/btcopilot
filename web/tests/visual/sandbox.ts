@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "./fixtures";
 
 /** The review walks: whole journeys through the coding, ballot and meeting
  * screens, driven against a running review sandbox rather than the fixture

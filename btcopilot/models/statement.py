@@ -56,6 +56,10 @@ class Statement(db.Model, ModelMixin):
     # turn events with the same id.
     turn_id = Column(String(64), index=True)
     prompt_version = Column(String(16), nullable=True)
+    # A file attached to the words: its name, and the text a model read from it
+    # once. The file itself is not kept; the coach sees only this text.
+    attachment_name = Column(String(255))
+    attachment_text = Column(Text)
 
     # Approval fields for test case generation
     approved = Column(Boolean, default=False)
@@ -65,6 +69,18 @@ class Statement(db.Model, ModelMixin):
 
     discussion = relationship("Discussion", back_populates="statements")
     speaker = relationship("Speaker", back_populates="statements")
+
+    @property
+    def spoken(self) -> str:
+        """The words as the coach reads them: what was typed, then what the
+        attached file holds [Oracle: R-0828, R-0829]."""
+        if self.attachment_name is None:
+            return self.text
+        attached = (
+            f"From the file {self.attachment_name} (enter every person and every "
+            f"dated event in it, births too, before you reply):\n{self.attachment_text}"
+        )
+        return f"{self.text}\n\n{attached}" if self.text else attached
 
     @property
     def is_approved(self):

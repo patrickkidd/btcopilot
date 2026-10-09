@@ -14,8 +14,9 @@ names; a proxy's own error page has none.
 | | |
 |---|---|
 | `POST /chat` | `{statement, time_zone?}` into the family's current sitting: the session last spoken in, or a new one once its last statement is 12 hours old. `time_zone` is the browser's IANA zone name (`America/Anchorage`); the coach's "today", the follow-up date check and the day a question was asked on are worked out in it, so an evening in Alaska is not already tomorrow. A known zone is kept on the user's row whenever it changes, and that kept zone is the day for a turn with none (a resumed one), the coach's agreed follow-ups and when they are sent. Left out with none kept, or a name the server does not know, the day is UTC; stored times stay UTC (R-0760) |
-| `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started, previous_started}`, the last being when the sitting before it started, or null for the first. Each also carries `feedback`, the number of shadow replies its turn has on a coach reply, 0 on the user's words and on a reply made with Conversation Feedback off, and `stopped`, true on the user's words whose turn was ended with Stop, with `conflict`, why that turn's edits stayed in the record, or null when they were taken back (R-0636) |
+| `GET /statements` | the family's one thread across its sessions, 50 statements at a time, oldest first; `?before=<statement id>` reads the page just older. Each carries `session_id`; a session's first statement carries `sitting: {id, started, previous_started}`, the last being when the sitting before it started, or null for the first. Each also carries `attachment_name` and `attachment_text`, the file attached to the person's words and the text read from it, or null (R-0830), and `feedback`, the number of shadow replies its turn has on a coach reply, 0 on the user's words and on a reply made with Conversation Feedback off, and `stopped`, true on the user's words whose turn was ended with Stop, with `conflict`, why that turn's edits stayed in the record, or null when they were taken back (R-0636) |
 | `POST /sessions/<id>/statements` | `{statement, time_zone?}` into a named session |
+| `POST /chat` and `POST /sessions/<id>/statements` with a file | the same, sent as `multipart/form-data` with the fields `statement`, `time_zone` (optional) and `file` (optional, one file). Read kinds, by the file name's ending: PDF (`.pdf`), JPEG (`.jpg`, `.jpeg`), PNG (`.png`), HEIC (`.heic`, `.heif`), text (`.txt`, `.text`), Markdown (`.md`, `.markdown`). Text and Markdown must be UTF-8 and are their own text, stored with the words before the 202. A photo or a PDF is read on the worker, where the coach's turns run, after the 202: the request checks the file, stores the statement with `attachment_name` and `attachment_text: null`, leaves the file's bytes in the queue's Redis under the turn's key for one hour at most, and queues the turn; the worker reads the file first (a photo by one model call, a PDF by one call per 25 pages with the texts joined, charged to the person), writes `attachment_text`, deletes the bytes, and only then runs the coach's turn, so the coach never answers without the text. The file is not kept: the person's statement keeps `attachment_name` and `attachment_text`, and the coach reads the text after the words, marked "From the file <name> (enter every person and every dated event in it, births too, before you reply):" (R-0828, R-0829, R-0830). Refusals, each with the words as the body: 415 "The app reads PDF, JPEG, PNG, HEIC, text and Markdown files; this file is none of those."; 415 "The app could not open that file." (a broken PDF or photo, or text that is not UTF-8); 413 "That file is over 20 MB; the app reads files up to 20 MB." (the model's 32 MB request limit, once the file is encoded); 413 "That PDF has more than 100 pages; the app reads up to 100." Nothing is stored or spent on a refusal. The 202 answer carries `attachment_name` and `attachment_text` beside `turn_id`, `discussion_id` and `statement_id` (null with no file; `attachment_text` null for a photo or PDF until the worker has read it, when `GET /statements` carries it). A file may go with no words: `statement` is then empty and the coach reads the file alone. A read that fails on the worker stores no text and runs no coach turn: the turn's stream ends in a `failed` event whose `message` is why, the statement reads `unfinished: true` with the same words as `failure`, the session takes the next message, and the words are: "That file holds more than the app can read in one go; send it in parts." for a part of a PDF whose text runs past one call's output limit (no cut text is kept); "The app could not read that file." for a read the model declines, answers with nothing, or breaks on; "The app no longer has that file; send it again." when the hour took the bytes before the worker read them. `POST /turns/<id>/resume` on such a turn reads the file again while its bytes are still held, then runs the turn |
 | `GET /sessions` | the user's sessions on the family the app is on (`?diagram_id=` another readable one, or the one an admin is viewing, whose sessions are its owner's), most recently active first; `?all=true`, admins only (403 otherwise), is every session on every family, whoever had it, each with `family`, its family's name (every row carries `diagram_id`), which is what the meeting page puts one on the agenda from; `?words=` keeps those where something said carries every word, the coach's chat search, each with `match`, the newest line that does, chips shown as their words |
 | `POST /sessions` | new empty session, 201 |
 | `GET /sessions/<id>` | one session plus `statements: [{id, role, text}]`, role is `user` or `coach` |
@@ -61,7 +62,22 @@ coach put it on (R-0709, R-0732). One guess is on each card, the newest;
 `{kind: "statement", id, label, discussion_id, at, text}`, with `text` their
 words (null once the session is gone); on the `own_part` question it is the
 person's view of their own part (R-0708). The case report reads this same
-`/timeline`; there is no case report endpoint.
+`/timeline`.
+
+`report_out_of_date`: null, or the newest change to a person, an event or a
+pair-bond made after a case report card was last written:
+`{change_id, at, sentence}`, the `diagram_changes` row id, its UTC time (ISO),
+and one sentence naming it, such as "Ada's death in 2019 was added after the
+coach wrote this report." or "The date of Ada's death in 2019 changed after the
+coach wrote this report.", or "3 changes to the diagram since the coach wrote
+this report." when there are several. One item in one turn is one change, and a
+pair-bond written with an event is part of that event. A new guess or question
+is no change. Each card keeps its own last write, so the coach writing one card
+again leaves the report out of date while another card is older than the
+change; the rewrite writes every card and clears it (R-0825, R-0826). A change
+taken back counts for nothing, and a report the coach never wrote is never out of date (R-0827). The page keeps the
+`change_id` the person last chose "Show the last report" on and offers the
+sheet again only for a newer one (R-0826, R-0827).
 
 ## Case report
 
@@ -70,6 +86,25 @@ button, `{key: [{text, by}]}`, read from `case-report/passages.json` in the
 private corpus the way the theory pages are, and given only to a signed-in user
 who may open the diagram; any other is a 404 (R-0692, R-0715). The keys are the
 mockup's: `why`, `1` to `6`, `7a`, `9a`, `10`, `3s` and `order`.
+
+`POST /case-report-rewrites?diagram_id=` — write every card the coach writes
+again from the diagram as it stands: Executive Summary (`main_guess`), the
+coach's guess, own part, the choice and what to work on, in one model call in
+the worker, given every event's words and notes (R-0825). 202 `{id, state: "running"}`; 409 while a rewrite of that
+family's report is running, or when the family has no session yet; a read-only
+diagram is refused as every write is.
+
+`GET /case-report-rewrites/<id>` — `{id, state}`, `state` one of `running`,
+`done`, `failed`. The rewrite is one model call, bounded by the model's own
+time limit; one whose worker stopped reads `failed` within three minutes, so
+polling always ends. A rewrite of a family the reader may not open,
+or one older than an hour, is a 404. After `done`, read `/timeline` again: the
+new guesses are on their cards, the guesses they replaced are on none, and
+`report_out_of_date` is null. A card the coach could not fill keeps what it
+had; the questions on the own part and choice cards and the person's own answer
+stay. The model calls are charged to the person's monthly tokens like a coach
+turn, and a refused tool call or a failed or refused rewrite is written to the
+observations table.
 
 ## Preferences
 
@@ -175,9 +210,7 @@ shift to a death clears its shift values.
 
 | | |
 |---|---|
-| `GET /review/pairs` | admins only: every pick not yet made, each `{id, source, context, left, right}`; a pair seen for the first time gets its pick row and its random side order here; replay pairs come from the eval ledger file, and a line is used only when the replay passes table of this database holds that replay (same scratch record, turns and token counts) |
-| `GET /review/picks` | admins only: each model's `{model, won, lost, tied}` over the picks made |
-| `GET /review/picks?turn=<turn id>` | the owner of that turn's session, admin or auditor (403 otherwise): `{replies: [{key, text}], real_key, picks: [{id, left_key, right_key, choice, left_acceptable, right_acceptable, note, shown}], pending, expected}`, a pick's last five null until it is voted, the real reply and each finished shadow reply keyed `a`, `b`, `c` in a random order, and one pick per shadow against the real reply, made here if missing as `GET /review/pairs` makes it; a shadow with an error is left out and no model is named; `expected` counts the shadow replies started for the turn and `pending` those with neither text nor error yet |
+| `GET /review/picks?turn=<turn id>` | the owner of that turn's session, admin or auditor (403 otherwise): `{replies: [{key, text}], real_key, picks: [{id, left_key, right_key, choice, left_acceptable, right_acceptable, note, shown}], pending, expected}`, a pick's last five null until it is voted, the real reply and each finished shadow reply keyed `a`, `b`, `c` in a random order, and one pick per shadow against the real reply, made here if missing, its side order fixed at random when it is made; a shadow with an error is left out and no model is named; `expected` counts the shadow replies started for the turn and `pending` those with neither text nor error yet |
 | `PUT /review/picks/<id>` | `{choice, note, left_acceptable, right_acceptable, source, shown}`, `shown` (`left` or `right`, optional) the side shown first on screen, kept as `shown_first` in that side's ref [Oracle: R-0640]; an admin, or an auditor on their own session's pick; answers the pick with both model names |
 
 `choice` is `left`, `right` or `tie`; the client sends it already resolved. A

@@ -8,7 +8,9 @@ from btcopilot.admin.casereport import case_report_group
 from btcopilot.admin.catchup import catch_up
 from btcopilot.admin.coachmodels import coach_model
 from btcopilot.admin.database import database
+from btcopilot.admin.dates import dates
 from btcopilot.admin.diagrams import diagrams
+from btcopilot.admin.flow import flow_group
 from btcopilot.admin.guard import run
 from btcopilot.admin.imports import imports
 from btcopilot.admin.licences import licences
@@ -40,6 +42,7 @@ for group in (
     notice_group,
     proactive_group,
     quality,
+    flow_group,
     questions_group,
     impressions_group,
     titles_group,
@@ -58,6 +61,7 @@ for group in (
 
 questions_group.add_command(catch_up)
 diagrams.add_command(regroup)
+diagrams.add_command(dates)
 
 
 def init_app(app):

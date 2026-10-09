@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "./fixtures";
 import { need, sandboxOnly, walker } from "./sandbox";
 
 // An independent walk of the meeting and the result screen on the FD-362

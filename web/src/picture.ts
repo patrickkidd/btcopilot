@@ -1,5 +1,6 @@
+import { book } from "./case";
 import { DateCertainty } from "./certainty";
-import { closeX, esc, still } from "./dom";
+import { closeX, esc, pan, still } from "./dom";
 // this line draws pills, dots and the wire
 import {
   CH,
@@ -303,6 +304,8 @@ export enum Level {
 
 /** How many characters of a moment the path gives its last step. */
 const TOLD_CH = 20;
+/** What stands between the parts of a moment's words. */
+const SEP = "·";
 
 /** A moment picked, as the path names it: the first name and what happened,
  * "Delphine died" or, from the title "Stopped calling", "Ben stopped calling",
@@ -321,7 +324,11 @@ export function told(who: string, label: string, family: string[] = []): [string
   let n = 1;
   while (n < all.length && all.slice(0, n + 1).join(" ").length <= TOLD_CH) n += 1;
   while (n > 1 && n < all.length && all[n - 1].length <= 2) n -= 1;
-  return [all.slice(0, n).join(" "), all.slice(n).join(" ")];
+  // a separator in the words is dropped where they are cut, so the line's
+  // own separator before the rest is never doubled: "2011 · of lung cancer"
+  const rest = all.slice(n);
+  while (rest[0] === SEP) rest.shift();
+  return [all.slice(0, n).join(" "), rest.join(" ")];
 }
 
 /** What each mode inside a cluster is called in the path. */
@@ -332,13 +339,20 @@ const MODE: Partial<Record<Level, string>> = {
 
 type Named = { title: string; start: string; end: string };
 
-/** The open cluster as the path names it: its name and its years, "Every mark ·
- * 1972–99", the years alone for a cluster with no name (R-0767). */
-export const clusterStep = (c: Named) => (c.title ? `${c.title} \u00b7 ${spanYears(c.start, c.end)}` : spanYears(c.start, c.end));
+/** The open cluster as the path names it: its name alone, "Every mark", the
+ * years alone for a cluster with no name (R-0767); the years go under
+ * the line, so neither is on the screen twice. */
+export const clusterStep = (c: Named) => c.title || spanYears(c.start, c.end);
+
+/** The words under the line with a cluster open and nothing picked: its years
+ * and how many events it holds, "1981\u20132003 \u00b7 3 events" (R-0583, R-0767);
+ * the name is in the path above. */
+export const clusterLabel = (c: { start: string; end: string; count: number }) =>
+  `${fullYears(c.start, c.end)} \u00b7 ${c.count} event${c.count === 1 ? "" : "s"}`;
 
 /** The path over the line, from the whole timeline down to where the reader
- * is: the cluster open by its name and years, then the mode it is in or the
- * moment picked (R-0540, R-0767). */
+ * is: the cluster open by its name, then the mode it is in or the event
+ * picked (R-0540, R-0767). */
 export function trail(level: Level, cluster: Named | null, picked: string | null): string[] {
   const last = MODE[level] ?? picked;
   return [
@@ -457,15 +471,18 @@ function plain(control: Element): HTMLElement {
   return span;
 }
 
-function snapshot(region: HTMLElement, ...skip: Element[]): HTMLElement {
+function snapshot(region: HTMLElement): HTMLElement {
   const lay = document.createElement("div");
   lay.className = "slide-lay";
+  // the region's own height: the copy travels in a clipping box taller than
+  // the region (theme.css .slide-clip), so it cannot take its height from that
+  lay.style.height = `${region.offsetHeight}px`;
   // a picture of the level, not the level: nothing in it can be found, read
   // out or pressed, so the live controls are the only ones on the page
   lay.inert = true;
   lay.setAttribute("aria-hidden", "true");
   for (const child of [...region.children]) {
-    if (skip.includes(child) || child.classList.contains("slide-lay")) continue;
+    if (child.classList.contains("slide-clip")) continue;
     const copy = child.cloneNode(true) as HTMLElement;
     for (const el of [copy, ...copy.querySelectorAll("[id]")]) el.removeAttribute("id");
     for (const el of copy.querySelectorAll("[data-target]")) el.removeAttribute("data-target");
@@ -502,17 +519,54 @@ export interface Tap {
 
 export interface PictureHandlers {
   onTap(tap: Tap): void;
+  /** A tap on the book button of the page behind a cluster's i, which raises
+   * the passages behind what a cluster is (R-0691; Patrick, 2026-10-08). */
+  onBook?(button: HTMLElement): void;
+}
+
+/** The key the cluster's book raises in the passages file, and the sheet's title. */
+export const CLUSTER_BOOK = "cluster";
+export const CLUSTER_BOOK_TITLE = "What a cluster is";
+
+/** The page behind a cluster's i, as markup: the coach's reason, the years and
+ * the count, each moment with its year, and the app's book button, which
+ * opens the passages behind what a cluster is (R-0213, R-0691; Patrick,
+ * 2026-10-08: the info button for a cluster has the book button). The passages
+ * live only behind the book, never in the coach's words (R-0688). */
+export function aboutMarkup(why: string, span: string, moments: { year: string; label: string }[]): string {
+  const rows = moments
+    .map((m) => `<li><span class="ab-yr">${esc(m.year)}</span><span class="ab-what">${esc(m.label)}</span></li>`)
+    .join("");
+  return (
+    `<div class="ss about">` +
+    (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
+    `<p class="ab-span">${esc(span)} · ${moments.length} event${moments.length === 1 ? "" : "s"}</p>` +
+    `<ul class="ab-list">${rows}</ul>` +
+    book(CLUSTER_BOOK, CLUSTER_BOOK_TITLE) +
+    `</div>` +
+    closeX(` data-target="${Target.Close}"`)
+  );
 }
 
 const YEAR = 365.25 * 24 * 3600 * 1000;
 
 /** When a moment happened, or nothing when the record cannot say. */
-const dateOf = (event: TimelineEvent) =>
+export const dateOf = (event: TimelineEvent) =>
   event.dateCertainty === DateCertainty.Unknown ? null : event.dateTime;
 
 export function years(iso: string): number {
   return new Date(iso + "T00:00:00Z").getTime() / YEAR;
 }
+
+/** Where a line `width` wide slides to so a point `x` on it stands in the
+ * middle of a `screen`, as near as its ends allow. */
+export const centredOn = (x: number, width: number, screen: number) =>
+  Math.max(0, Math.min(width - screen, x - screen / 2));
+
+/** Whether a point `x` on the line is in sight, the line slid to `left`,
+ * clear of the picture's side margins. */
+export const inSight = (x: number, left: number, screen: number) =>
+  x >= left + X_PAD && x <= left + screen - X_PAD;
 
 /** The calendar year a point on the line falls in. years() counts from 1970,
  * so the way back to a year is through the date that point stands for. */
@@ -611,9 +665,20 @@ export class Picture {
     private host: HTMLElement,
     private handlers: PictureHandlers,
     private spot = Spotlight.Unified,
+    /** The Family view steps through events one by one, so the event picked
+     * inside a cluster is drawn on it too (R-0796). */
+    private stepping = false,
   ) {
     window.addEventListener("resize", () => this.render());
     this.host.addEventListener("click", (e) => {
+      // The book on the page behind the i raises its passages and touches
+      // nothing on the picture.
+      const bookButton = (e.target as Element).closest<HTMLElement>(".book[data-book]");
+      if (bookButton) {
+        e.preventDefault();
+        this.handlers.onBook?.(bookButton);
+        return;
+      }
       const hit = (e.target as Element).closest<HTMLElement>("[data-target]");
       // Empty ground. Nothing on the picture is under the thumb, so the tap is
       // the reader putting the picture down.
@@ -799,9 +864,19 @@ export class Picture {
     return best;
   }
 
-  step(eventId: number): void {
-    this.selected = eventId;
-    this.aim(eventId);
+  /** The Family view's step: its event picked as a chip picks it, or, for a
+   * step the line draws nothing of, nothing picked and the line left where it
+   * stands, never sent to the present. */
+  step(eventId: number | null): void {
+    if (eventId !== null) {
+      this.pick(eventId, [], Via.Chip);
+      return;
+    }
+    this.named = [];
+    this.selected = null;
+    this.focus = null;
+    this.level = Level.Rest;
+    this.aim(null);
     this.render();
   }
 
@@ -962,22 +1037,9 @@ export class Picture {
     const why = (cluster.reason ?? cluster.summary ?? "").trim();
     const moments = (this.data?.events ?? [])
       .filter((e) => cluster.event_ids.includes(e.id))
-      .sort((a, b) => (a.dateTime ?? "").localeCompare(b.dateTime ?? ""));
-    const rows = moments
-      .map(
-        (e) =>
-          `<li><span class="ab-yr">${esc(this.yearOf(e))}</span>` +
-          `<span class="ab-what">${esc(e.label)}</span></li>`,
-      )
-      .join("");
-    this.card(
-      `<div class="ss about">` +
-        (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
-        `<p class="ab-span">${esc(fullYears(cluster.start, cluster.end))} · ` +
-        `${moments.length} event${moments.length === 1 ? "" : "s"}</p>` +
-        `<ul class="ab-list">${rows}</ul></div>` +
-        closeX(` data-target="${Target.Close}"`),
-    );
+      .sort((a, b) => (a.dateTime ?? "").localeCompare(b.dateTime ?? ""))
+      .map((e) => ({ year: this.yearOf(e), label: e.label }));
+    this.card(aboutMarkup(why, fullYears(cluster.start, cluster.end), moments));
   }
 
   /** The line: one drawing for the whole timeline and a cluster open on it
@@ -1098,6 +1160,14 @@ export class Picture {
     for (const event of this.gone)
       if (!kept.has(event.id) && !claimed.has(event.id) && dateOf(event))
         dot(event.id, at(event.dateTime as string));
+    // stepping event by event, the step's event is drawn and named over its
+    // cluster's pill as well (Patrick, 2026-10-07)
+    const inside = this.stepping ? dated.find((e) => e.id === this.selected && claimed.has(e.id)) : undefined;
+    if (inside) {
+      const x = at(inside.dateTime as string);
+      dot(inside.id, x);
+      marks.push({ event: inside, x });
+    }
     for (const tick of ruler(yearAt(first), yearAt(last), at, x0, x1))
       svg +=
         `<text class="ep-yrs" x="${tick.x.toFixed(1)}" y="${RULER_Y}" ` +
@@ -1108,7 +1178,11 @@ export class Picture {
     this.laid.zones = zoned.map((zone) => zone.marks);
 
     const aimed = marks.find((m) => m.event.id === this.aimed);
-    const onX = aimed?.x ?? null;
+    // stepping event by event, a draw that would leave the step's dot out of
+    // sight, as one that lands mid-travel does, goes to it again (Patrick, 2026-10-07)
+    const step = this.stepping && !aimed ? marks.find((m) => m.event.id === this.selected) : undefined;
+    if (step && !inSight(step.x, held ?? Math.max(0, width - screen), screen)) this.park = Park.Named;
+    const onX = (aimed ?? step)?.x ?? null;
     // where the line comes to rest, so the words of a picked event are
     // written across the stretch the reader will be looking at
     const shows = this.stands({ width, screen }, held, onX);
@@ -1116,12 +1190,12 @@ export class Picture {
     this.laid.rows = said.rowsLaid;
     const chosen = marks.find((m) => m.event.id === this.selected);
     // With a cluster open and nothing picked, the words over the line are the
-    // cluster's own name and how many events it holds, so the reader can find
-    // what is open (R-0538, R-0583); the path above names it too (R-0767).
+    // cluster's years and how many events it holds (R-0538, R-0583); its name
+    // is in the path above, so neither is on the screen twice (R-0767).
     const title =
       !said.text && open && !chosen
         ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
-          `width:${screen - 2 * X_PAD}px"><span>${esc(open.title || open.label)}</span> <span class="ct">(${open.count})</span></div>`
+          `width:${screen - 2 * X_PAD}px"><span>${esc(clusterLabel(open))}</span></div>`
         : "";
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
@@ -1155,8 +1229,7 @@ export class Picture {
     onX: number | null,
   ): number {
     const end = Math.max(0, view.width - view.screen);
-    if (this.park === Park.Named && onX !== null)
-      return Math.max(0, Math.min(end, onX - view.screen / 2));
+    if (this.park === Park.Named && onX !== null) return centredOn(onX, view.width, view.screen);
     if (this.park === Park.Held && held !== null) return Math.min(end, held);
     return end;
   }
@@ -1177,11 +1250,11 @@ export class Picture {
     // the line travelling to what was named is the picture answering the
     // coach's words; every other draw puts it down where it belongs at once.
     // The line is drawn anew at its left end, so a travel sets out from where
-    // the reader left it.
-    if (named && held !== null && !still()) {
-      scroll.scrollLeft = held;
-      scroll.scrollTo({ left: to, behavior: "smooth" });
-    } else scroll.scrollLeft = to;
+    // the reader left it. It travels frame by frame: Safari leaves the
+    // browser's own smooth scroll, set out on a line just drawn, where it began.
+    const glide = named && held !== null && !still();
+    if (glide) scroll.scrollLeft = held;
+    pan(scroll, to, glide);
   }
 
   /** The clusters the resting level draws, in time order. They are the ones
@@ -1233,16 +1306,22 @@ export class Picture {
     // of chips — not the drawing alone (owner, 2026-09-09). The level that is
     // leaving is photographed now; the one arriving is photographed once the
     // page has written its title and chips, a frame later; the two pictures
-    // travel over the live region, which is already showing the new level.
+    // travel over the live region, which is already showing the new level, in
+    // a clipping box of their own that is cut at the region's top and sides
+    // and reaches well below it (theme.css .slide-clip), so the about page
+    // hangs over the chat whole on every frame.
     const region = this.host.parentElement as HTMLElement;
     const leaving = snapshot(region);
     this.draw();
     region.classList.add("sliding");
-    region.append(leaving);
+    const clip = document.createElement("div");
+    clip.className = "slide-clip";
+    clip.append(leaving);
+    region.append(clip);
     keepScroll(leaving);
     requestAnimationFrame(() => {
-      const arriving = snapshot(region, leaving);
-      region.append(dir === 1 ? arriving : leaving);
+      const arriving = snapshot(region);
+      clip.append(dir === 1 ? arriving : leaving);
       keepScroll(arriving);
       const mover = dir === 1 ? arriving : leaving;
       // the about page hangs below the region, so it starts as far up as its own foot
@@ -1255,8 +1334,7 @@ export class Picture {
         easing: "ease",
       });
       this.landing = () => {
-        leaving.remove();
-        arriving.remove();
+        clip.remove();
         region.classList.remove("sliding");
       };
       this.flight.finished.then(
@@ -1312,25 +1390,31 @@ export class Picture {
         told(event.person_name, event.label, this.firstNames())[1],
       ]
         .filter(Boolean)
-        .join(" \u00b7 ");
+        .join(` ${SEP} `);
       const lines = wrap2(
         clip(said, Math.min(88, wide * ROWS.length)),
         wide,
       );
+      // stepping event by event, the words stand over their dot, kept inside
+      // the line, so the step's dot is the one they name (Patrick, 2026-10-07)
+      const at = (line: string) => {
+        if (!this.stepping) return { left: x0, width: x1 - x0 };
+        const width = Math.min(x1 - x0, Math.ceil(line.length * CH) + 2);
+        return { left: Math.min(Math.max(chosen.x - width / 2, x0), x1 - width), width };
+      };
       const text = lines
-        .map((line, i) =>
-          line
-            ? `<div class="ss-t on" ` +
-              `style="left:${x0}px;top:${ROWS[i]}px;width:${x1 - x0}px">${esc(line)}</div>`
-            : "",
-        )
+        .map((line, i) => {
+          if (!line) return "";
+          const { left, width } = at(line);
+          return `<div class="ss-t on" style="left:${left.toFixed(1)}px;top:${ROWS[i]}px;width:${width.toFixed(1)}px">${esc(line)}</div>`;
+        })
         .join("");
       // the words of the moment already picked are its label, so a tap on them
       // is a tap on it and picks it again rather than putting the picture down
       return {
         text,
         rowsLaid: lines
-          .map((line, row) => ({ id: event.id, row, left: x0, width: x1 - x0, line }))
+          .map((line, row) => ({ id: event.id, row, ...at(line), line }))
           .filter((r) => r.line)
           .map(({ id, row, left, width }) => ({ id, row, left, width })),
       };

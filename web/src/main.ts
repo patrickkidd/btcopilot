@@ -12,7 +12,6 @@ import { Ballot } from "./ballot";
 import { Coding } from "./coding";
 import { CutSelect } from "./cut";
 import { Agenda } from "./agenda";
-import { Pairs } from "./pairs";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
 import { CODER, OneTask, beforeMeeting, coder } from "./task";
@@ -39,6 +38,7 @@ import { among, family, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
+import { Attachment } from "./attachment";
 import { BACK } from "./tokens";
 import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
 import { offerPasskey } from "./passkey";
@@ -47,7 +47,7 @@ import { WIDE } from "./viewport";
 import { shortDate } from "./when";
 import * as speech from "./speech";
 import { NOTES_TOOL, type Notes } from "./notes";
-import { landing } from "./push";
+import { landing, offerNotifications, register } from "./push";
 import * as track from "./track";
 import { Feature, Screen } from "./track";
 import {
@@ -164,6 +164,9 @@ const lens = new Lens(
     },
     changed: sync,
     aiming: () => chat.unfold(),
+    // the book on the page behind a cluster's i: the same passages sheet as
+    // the Family view's books (R-0691)
+    book: (button) => void books.tap(button),
   },
   window.BOOTSTRAP.user?.prefs.spotlight ?? Spotlight.Unified,
 );
@@ -270,6 +273,8 @@ const chat = new Chat($("chat"), $("composer"), {
     return picture.settled;
   },
 });
+
+const attachment = new Attachment($("attach"), $("composer").parentElement!, $("chat-screen"), $("chat"));
 
 /** An event or a person carried from its detail card into the message box:
  * the chat comes up with it as a lit chip at the caret and nothing sent
@@ -386,15 +391,9 @@ const caseReport = new CaseReport($("case-screen"), {
   track: (feature) => track.tap(feature),
   wide: () => pinned(),
   fetch: (ask) => store.fetch(ask),
+  reload: () => store.refresh(Part.Record),
 });
 store.watch(caseReport);
-const PAIRS: Sub = {
-  title: "Better replies",
-  screen: $("pairs-screen"),
-  name: Screen.Pairs,
-  wide: true,
-  at: address(Place.Pairs),
-};
 
 const oneTask = new OneTask($("task-body"), {
   onStart: (task) => void startTask(task),
@@ -593,9 +592,6 @@ async function toMeeting(day: string | null): Promise<void> {
   await settings.show(AGENDA, MEET);
 }
 
-/** Two replies to the same words, picked blind (R-0599). Patrick's. */
-const pairs = new Pairs($("pairs-body"));
-
 /** Where the guidelines go back to when closed: the coding screen mid-task,
  * the one task card between meetings. */
 let rulesBack: () => void;
@@ -667,7 +663,11 @@ function entitle(title: string | Title | null): void {
  * one line that says the diagram is someone else's with the way back to the
  * admin's own (the page hides whatever writes), and the product events. */
 store.watch({
-  reset: () => selecting.stop(),
+  // a file picked for one family never goes with a message to another
+  reset: () => {
+    selecting.stop();
+    attachment.clear();
+  },
   draw: (opened) => {
     const diagram = opened.diagram;
     $("menu-title").textContent = familyTitle();
@@ -727,7 +727,6 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
   onOpen: openDiagram,
   onTask: () => void readTask().then(() => settings.push(TASK)),
   onAgenda: () => void agenda.load().then(() => settings.push(AGENDA)),
-  onPairs: () => void pairs.load().then(() => settings.push(PAIRS)),
   notices: () => notices.list,
   // one with nothing more to see is only counted read, which its row then shows
   onNotice: (one) => notices.open(one, beyond(one.link) !== null),
@@ -807,6 +806,8 @@ function addStatements(statements: api.Said[], newest = false): void {
       coach ? lines : [],
       coach && notes ? (notes.args as unknown as Notes) : null,
     );
+    if (statement.attachment_name !== null)
+      attachment.show(bubble, statement.attachment_name, statement.attachment_text);
     if (statement.feedback)
       chat.kept(bubble, statement.turn_id!, statement.feedback, newest && statement === statements.at(-1));
     if (statement.stopped) chat.halted(statement.conflict ? STOPPED_KEPT : STOPPED);
@@ -844,7 +845,7 @@ function showPrompt(kind?: SessionKind): void {
   if (kind === SessionKind.Note)
     chat.prompt("Write up the session", [
       `Tell the coach what happened in the session you just had with the ${familyTitle()} family: who was there, what came up, what changed.`,
-      "The coach puts it into the record the way a session's own words would be.",
+      "The coach puts it into the diagram the way a session's own words would be.",
     ]);
   else if (PRO)
     chat.prompt("Start the session", [
@@ -1057,13 +1058,13 @@ let inFlight = false;
 
 async function send(): Promise<void> {
   const statement = chat.draft();
-  if (!statement) return;
+  if (!statement && !attachment.picked.file) return;
   // sent while the coach replies, it waits in the box for the reply to end,
   // and never changes the reply under way (R-0636)
   if (inFlight) return chat.keep();
   await questions.sending(statement);
   chat.resetDraft();
-  post(statement);
+  post(statement, attachment.take());
 }
 
 /** A message held while the coach replied goes once the reply has ended and
@@ -1090,22 +1091,39 @@ function flying(on: boolean): void {
   chat.running(on);
 }
 
-/** The reader's words go into the thread as theirs and on to the coach. */
-function post(statement: string): void {
-  if (!statement || inFlight || looking()) return;
+/** The reader's words go into the thread as theirs and on to the coach, with
+ * the file's name on them while the server reads it. */
+function post(statement: string, file: File | null = null): void {
+  if ((!statement && !file) || inFlight || looking()) return;
   track.tap(Feature.SendMessage);
-  chat.add(Role.User, statement);
+  const bubble = chat.add(Role.User, statement);
+  if (file) attachment.show(bubble, file.name);
   const lapsed = chat.sent();
   feedback();
-  void deliver(statement, lapsed);
+  void deliver(statement, file, bubble, lapsed);
 }
 
-async function deliver(statement: string, lapsed = false): Promise<void> {
+async function deliver(statement: string, file: File | null, bubble: HTMLElement, lapsed = false): Promise<void> {
   // read before this message is stored, which would count as the last one
   if (lapsed) await settings.refresh();
-  const started = await begin(() => api.say(store.id(), statement), () => void deliver(statement));
+  const started = await begin(
+    () => api.say(store.id(), statement, file),
+    () => void deliver(statement, file, bubble),
+    // a file the server will not take is said in its words, and the message
+    // goes back in the box to send without it
+    file
+      ? (failed) => {
+          toast(api.whatFailed(failed, (words) => words), true);
+          chat.takeBack(bubble);
+        }
+      : null,
+  );
   if (!started) return;
-  sat(started.discussion_id, [...$("chat").querySelectorAll(".bub.user")].at(-1) ?? null);
+  // the bubble carries its statement, so a file still being read on the worker
+  // is read back to it once the turn has ended
+  bubble.dataset.statement = String(started.statement_id);
+  if (started.attachment_name !== null) attachment.show(bubble, started.attachment_name, started.attachment_text);
+  sat(started.discussion_id, bubble);
   follow(started.turn_id);
 }
 
@@ -1115,10 +1133,11 @@ async function resume(turnId: string): Promise<void> {
   if (await begin(() => api.resume(turnId), () => void resume(turnId))) follow(turnId);
 }
 
-async function begin(
-  ask: () => Promise<Started>,
+async function begin<T extends Started>(
+  ask: () => Promise<T>,
   again: () => void,
-): Promise<Started | null> {
+  refused: ((failed: api.Failed) => void) | null = null,
+): Promise<T | null> {
   // One turn at a time: a second send while the coach is answering would store
   // the words again.
   flying(true);
@@ -1134,7 +1153,8 @@ async function begin(
     if (!live()) return null;
     flying(false);
     chat.busy(false);
-    chat.warn(whatFailed(error), again);
+    if (refused && error instanceof api.Failed && error.status >= 400 && error.status < 500) refused(error);
+    else chat.warn(whatFailed(error), again);
     return null;
   }
   if (!live()) return null;
@@ -1206,9 +1226,11 @@ function follow(turnId: string): void {
       });
   };
 
-  // a message held while the coach replied goes once the reply is drawn
+  // a message held while the coach replied goes once the reply is drawn; a file
+  // chip still reading is filled in from the thread once the turn has ended
   const last = (work: () => Promise<void> | void) => {
     step(work);
+    step(readBack);
     step(flush);
   };
 
@@ -1297,6 +1319,32 @@ function stopFollowing(): void {
   store.release();
   onTurn = null;
   flying(false);
+}
+
+/** A file chip still dimmed "reading" once its turn has ended: a PDF or a
+ * photo is read on the worker after the send has answered, so the thread's
+ * newest page is read back and the chip filled in with what the coach read. A
+ * chip whose read failed stays dimmed, under the thread's warning saying why
+ * (R-0830). */
+async function readBack(): Promise<void> {
+  const reading = [...$("chat").querySelectorAll<HTMLElement>(".bub[data-statement] > .file > .chip.reading")];
+  if (!reading.length) return;
+  const live = store.live();
+  let page: api.Said[];
+  try {
+    page = await api.thread(store.id());
+  } catch (error) {
+    if (!(error instanceof api.Failed)) throw error;
+    console.warn(error.message);
+    return;
+  }
+  if (!live()) return;
+  for (const chip of reading) {
+    const bubble = chip.closest<HTMLElement>(".bub")!;
+    const said = page.find((one) => one.id === Number(bubble.dataset.statement));
+    if (said?.attachment_name != null && said.attachment_text !== null)
+      attachment.show(bubble, said.attachment_name, said.attachment_text);
+  }
 }
 
 /** A page that has just loaded, or come back to the front, or a diagram just
@@ -1439,7 +1487,8 @@ track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 // break is a plain newline so the draft keeps it.
 // Escape puts the cluster's about page away, as its cross does
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && picture.aboutOpen() && $("chat-screen").offsetParent) lens.climb(CLUSTER);
+  // not while the book's passages are up over it: that Escape is theirs (books.ts)
+  if (e.key === "Escape" && picture.aboutOpen() && !books.up && $("chat-screen").offsetParent) lens.climb(CLUSTER);
 });
 
 $("composer").addEventListener("keydown", (e) => {
@@ -1667,7 +1716,7 @@ function toCluster(id: string): void {
   uncover();
   lens.putDown();
   const cluster = record().clusters.find((c) => c.id === id || c.cluster_ids.includes(id));
-  if (!cluster) return toast("That cluster is no longer in the record");
+  if (!cluster) return toast("That cluster is no longer in the diagram");
   picture.spotlight(cluster.event_ids);
   lens.actions();
 }
@@ -1677,7 +1726,7 @@ function toEvent(id: number): void {
   uncover();
   lens.putDown();
   if (!record().events.some((e) => e.id === id))
-    return toast("That event is no longer in the record");
+    return toast("That event is no longer in the diagram");
   lens.state = { sel: { kind: SelKind.Event, id: String(id) }, playing: null };
   picture.pick(id, [id], Via.Chip);
   lens.actions();
@@ -1756,10 +1805,6 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     await GO[Place.MeetingDay]([day]);
     if (!(await settings.light(`[data-cut="${cut}"]`)))
       toast("That session is not on this meeting");
-  },
-  [Place.Pairs]: async () => {
-    await pairs.load();
-    await toAccount(PAIRS);
   },
   [Place.Literature]: () => toAccount(settings.literature),
   [Place.Cluster]: ([id]) => toCluster(id),
@@ -1943,10 +1988,7 @@ matchMedia(SIDEWAYS).addEventListener("change", (e) => {
 // The dev server too: push needs the worker, and the worker asks the network
 // first, so a saved edit still reaches the page.
 if ("serviceWorker" in navigator)
-  void navigator.serviceWorker.register(
-    `/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`,
-    { scope: "/app/" },
-  );
+  register(`/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`);
 
 // A coder opens on their one task rather than on the chat (R-0265, frame f1),
 // and still does between meetings, when the card carries what they finished
@@ -1967,7 +2009,10 @@ if (CODER && parse(location.pathname)?.place === Place.Chat) {
 }
 
 // The page is only served to a signed-in reader, so this is the moment to ask
-// about a key on this device, and then about the home screen — one card at a
-// time, never both at once.
-void offerPasskey(offerHomeScreen);
+// about a key on this device, and then about the home screen or, once on it,
+// about notifications — one card at a time, never two at once (R-0832).
+void offerPasskey(() => {
+  offerHomeScreen();
+  void offerNotifications();
+});
 homeScreenBadge($("homescreen"), showHomeScreen);

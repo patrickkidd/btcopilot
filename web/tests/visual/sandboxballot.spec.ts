@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "./fixtures";
 import { need, sandboxOnly, walker } from "./sandbox";
 
 // An independent walk of the ballot on the FD-362 review sandbox: the card

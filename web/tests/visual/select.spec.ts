@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, tellWithoutModel, boxOf } from "./setup";
 
 /** Every word the app says can be selected and copied. Dragging a scroll area

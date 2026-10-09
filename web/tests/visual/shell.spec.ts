@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { pinned, stateFor } from "./setup";
 
 /** The frame the app lives in: the title row at the top, the picture straight

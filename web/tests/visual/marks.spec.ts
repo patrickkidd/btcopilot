@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { stateFor, tellWithoutModel } from "./setup";
 
 /** The up and down marks beside a person in the play-by-play. They used to fade out

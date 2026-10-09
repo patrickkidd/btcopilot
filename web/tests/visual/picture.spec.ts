@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { addForm, boxOf, inside, openList, pinned, stateFor, steady, type Key } from "./setup";
 
 /** What the resting picture looks like on each shape of record, and what a tap

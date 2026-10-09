@@ -11,7 +11,7 @@ from btcopilot.routes import asked_diagram, bp, current_session, diagram
 from btcopilot.routes.diagrams import diagram_payload
 from btcopilot.discussions import session_payload
 from btcopilot.routes.sessions import thread
-from btcopilot import place, playturn, questions, record
+from btcopilot import casereport, place, playturn, questions, record
 from btcopilot.licence import professional
 from btcopilot.timeline import build_timeline
 from btcopilot.schema import DiagramData
@@ -139,6 +139,8 @@ def timeline():
             **{str(k): v for k, v in payload["coded_in"].items()},
         }
     payload["asked_questions"] = questions.asked(in_use.id, data) if in_use else []
+    # what changed since the coach wrote the case report (R-0827)
+    payload["report_out_of_date"] = casereport.stale(in_use.id, data) if in_use else None
     return jsonify(payload)
 
 

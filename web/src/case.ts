@@ -11,11 +11,11 @@ import { ChipKind, ChipTone, type Passages } from "./types";
  * (R-0702). Every word comes from the CaseView; this module writes none of its
  * own about the record. */
 
-/** The card titles, as Patrick reviewed them (R-0716). */
+/** The card titles, as Patrick reviewed them (R-0716), card one's renamed (R-0821). */
 export function title(card: Card, v: CaseView): string {
   switch (card) {
     case Card.Main:
-      return "The coach's main guess";
+      return "Executive Summary";
     case Card.Family:
       return "Who is in the family";
     case Card.Brought:
@@ -41,7 +41,7 @@ export function title(card: Card, v: CaseView): string {
 function short(card: Card, v: CaseView): string {
   switch (card) {
     case Card.Main:
-      return "The coach's main guess";
+      return "Executive Summary";
     case Card.Family:
       return "The family";
     case Card.Brought:
@@ -93,7 +93,7 @@ export const ORDER_BOOK = "order";
 export const ORDER_TITLE = "Why these cards, in this order";
 
 /** What a guess card says when the coach has put nothing on it (R-0699, Patrick, 2026-10-04). */
-export const NOT_ENOUGH = "Not enough in the record to make a guess yet. Chat more with me so I have more to go on.";
+export const NOT_ENOUGH = "Not enough in the diagram to make a guess yet. Chat more with me so I have more to go on.";
 /** What the work card says when the person has not said what they are working on (R-0740). */
 export const NOT_SAID = "You haven't said yet what you're working on. Chat more with me about it.";
 
@@ -176,7 +176,13 @@ function body(card: Card, v: CaseView): string {
       return lead(b.lead) + (course.length ? sublabel("The trouble's course, dated") + chips(course) : "") + lead(b.asked);
     }
     case Card.Couple:
-      if (v.married) return lead(v.couple.lead) + chips(v.couple.facts.map(factChip));
+      // married: Bowen's stages, each head a chip with its events under it (R-0835), then what the card still needs
+      if (v.married)
+        return (
+          lead(v.couple.lead) +
+          (v.couple.stages.length ? `<div class="stage">${v.couple.stages.map((st) => chips([factChip(st.head), ...st.facts.map(factChip)])).join("")}</div>` : "") +
+          lead(v.couple.needs)
+        );
       return v.stages
         .map((row) => `<div class="stage">${sublabel(row.label)}${row.stages.map((st) => chips([factChip(st.head), ...st.facts.map(factChip)])).join("")}</div>`)
         .join("");
@@ -184,7 +190,9 @@ function body(card: Card, v: CaseView): string {
       return v.sides.map((s) => fold(s.label, lead(s.lead) + picture(v, s.still, s.label))).join("");
     case Card.Guesses: {
       const ask = v.ask ? `<div class="gbub">${bubble("", [], v.ask)}</div>` : "";
-      return `<div class="glist">${v.guesses.length ? v.guesses.map((g) => guessBlock(g)).join("") : notEnough()}${ask}</div>`;
+      // the clusters as hypotheses, under the coach's own chips, each opening its cluster (R-0698, R-0201)
+      const held = chips(v.hypotheses.map((c) => chip(ChipKind.Cluster, c.id, c.label)));
+      return `<div class="glist">${v.guesses.length ? v.guesses.map((g) => guessBlock(g)).join("") : notEnough()}${held}${ask}</div>`;
     }
     case Card.OwnPart: {
       const o = v.ownPart;

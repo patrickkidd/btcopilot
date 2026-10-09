@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page, type Route } from "./fixtures";
 import { shell, stateFor, username } from "./setup";
 import { mockTurn, STREAM } from "./turn";
 
@@ -48,6 +48,8 @@ const line = (id: number, text: string) => ({
   unfinished: false,
   failure: null,
   sitting: null,
+  attachment_name: null,
+  attachment_text: null,
 });
 
 /** The account lists the stand-ins beside the fixture's own diagram, and

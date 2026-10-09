@@ -37,6 +37,9 @@
   /* Libre Franklin for words, IBM Plex Mono for data and chips. */
   /* what a scroll bar takes on the right of a list */
   --gutter: 12px;
+  /* how far a card's corner button stands in from its two edges: the cross at
+     the top right, the about page's book at the bottom right (Patrick, 2026-10-08) */
+  --corner: 4px;
   --sans: "Libre Franklin", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: light dark;
@@ -241,8 +244,9 @@ button { font-family: inherit; }
 }
 .pl-btn:active { color: var(--data); }
 .pl-btn svg { display: block; }
-/* the about page: words, at the height they need, clear of its close button */
-.ss.about { padding: 4px 52px 10px 16px; box-sizing: border-box; }
+/* the about page: words, at the height they need, clear of its close button on
+   the right and of its book, which stands in the bottom corner, below */
+.ss.about { padding: 4px 52px calc(44px + var(--corner)) 16px; box-sizing: border-box; }
 /* The about page: a card over the chat, from the top of the
    picture down, on ground of its own (R-0230), so opening one resizes nothing
    and the bubbles stay where they are under it (R-0460). */
@@ -261,6 +265,12 @@ button { font-family: inherit; }
 .ab-list li { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font: 400 13px/1.35 var(--mono); }
 .ab-yr { flex: none; width: 44px; color: var(--data); }
 .ab-what { color: var(--ink); }
+/* the about page's book: the Family view's book button, in the page's bottom-right
+   corner as far in as the cross is in the top-right (.cardx), the same size (R-0691) */
+.ss.about .book { position: absolute; right: var(--corner); bottom: var(--corner); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0; padding: 0; border: 0; background: none; color: var(--data); cursor: pointer; }
+/* the icon keeps the Family view's size: inside .ss an svg is otherwise the picture's own full-width drawing */
+.ss.about .book svg { position: static; width: 20px; height: 20px; }
+.ss.about .book:active { color: var(--data-press); }
 .pin-label {
   display: flex;
   align-items: center;
@@ -353,18 +363,36 @@ button { font-family: inherit; }
    place. The two stand side by side for the length of the slide, so nothing
    under the picture moves while they travel; the about page hangs over the
    chat at its full height the whole way, never cut to the region's and then
-   let out (Patrick, 2026-10-02), so the region clips the slide at its top and
-   sides only, and the live page waits under the copy. The chat comes later in
-   the page, so the sliding region stands above it, or its bubbles would show
-   through the about page on its way down. */
-.pic.sliding { overflow-x: clip; overflow-y: visible; clip-path: inset(0 0 -100vh 0); z-index: 6; }
+   let out (Patrick, 2026-10-02), and the live page waits under the copy. The
+   chat comes later in the page, so the sliding region stands above it, or its
+   bubbles would show through the about page on its way down. */
+.pic.sliding { z-index: 6; }
 .pic.sliding .view { transition: none; }
 .pic.sliding > .view .card { visibility: hidden; }
-/* a level arrives as a card over the one it came from: the whole region, on
-   the picture's own ground, so its words never cross the other level's words */
+/* The slide's own clipping box. It ends where the region does at the top and
+   the sides, so a copy on its way in or out is cut under the title row and
+   nothing else, and it reaches a whole screen below the region, so the about
+   page is painted whole over the chat on every frame. Plain overflow: hidden:
+   the region itself used to clip with overflow-x: clip beside overflow-y:
+   visible and a clip-path reaching below it, and Safari cut the moving copy at
+   the region's bottom under them until the last frame (Patrick, 2026-10-08). */
+.pic .slide-clip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(100% + 100vh);
+  overflow: hidden;
+  pointer-events: none;
+}
+/* a level arrives as a card over the one it came from: the whole region (its
+   height is set from the region when it is taken), on the picture's own
+   ground, so its words never cross the other level's words */
 .pic .slide-lay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 5;
   background: var(--panel);
   will-change: transform;
@@ -1225,6 +1253,37 @@ button { font-family: inherit; }
 .chip.merge::before { inset: 0; }
 .chip.merge .half { padding: 8px 8px 6px; min-width: 0; }
 .chip.merge .half + .half { border-left: 1px solid var(--ask); }
+
+/* The file a message carries, on its own line above its words; dimmed and
+   still while the server reads it, a tap once read shows what the coach read. */
+.bub > .file { margin-bottom: 4px; }
+.bub > .file:only-child { margin-bottom: 0; }
+.chip.file.reading { opacity: 0.6; cursor: default; }
+.chip.file.reading::after { content: " · reading"; }
+/* the file picked for the next message, in the box with its cross */
+.field > .attached { grid-area: slot; display: flex; align-items: center; padding-top: 4px; }
+.field > .attached[hidden] { display: none; }
+.field > .attached .chip { max-width: calc(100% - 44px); cursor: default; }
+.field > .attached .cardx { position: static; flex: none; }
+/* The paperclip sits inside the message box at its left edge, so the
+   sessions button stays beside the box (R-0090); its 44px target spills over
+   the box's hairline rather than making the box taller than 44px. */
+#inbar > .field {
+  display: grid;
+  grid-template: "clip slot" auto "clip words" auto "clip held" auto / 44px minmax(0, 1fr);
+  align-items: end;
+}
+#inbar > .field > [contenteditable] { grid-area: words; padding-left: 0; }
+#inbar > .field > .held { grid-area: held; padding-left: 0; }
+.fs-glyph.clip { grid-area: clip; margin: -1px 0 -1px -1px; border-radius: 22px; }
+.fs-glyph.clip::before { content: none; }
+.fs-glyph.clip:active { background: var(--tint); }
+.fs-glyph.clip svg { width: 18px; height: 18px; }
+/* a file dragged over the chat on a computer lands on it */
+#chat-screen.dropping .chat { outline: 2px dashed var(--data); outline-offset: -6px; }
+.fs-sheet.fl { max-height: min(85%, 85dvh); }
+.fs-sheet.fl .cf-t { padding-right: 44px; overflow-wrap: anywhere; }
+.fl-text { min-height: 0; overflow-y: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 15px/1.45 var(--sans); color: var(--ink); }
 .chip.merge .nm { display: block; font-weight: 500; }
 .chip.merge .facts { color: var(--faint); }
 .chip.merge .differ { color: var(--ask-text); }
@@ -2891,7 +2950,7 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* the question before a cut comes off the agenda, over the account view */
 .fs-scrim.ag, .fs-sheet.ag { z-index: 60; }
 /* on a wide screen a card at the bottom, not a band across the whole window */
-.fs-sheet.rp, .fs-sheet.ag, .fs-sheet.sh { max-height: 92%; max-width: 480px; margin: 0 auto; }
+.fs-sheet.rp, .fs-sheet.ag, .fs-sheet.sh, .fs-sheet.rc { max-height: 92%; max-width: 480px; margin: 0 auto; }
 /* the dim covers the whole window, so a tap in the margin beside the app
    column lands on it too */
 .fs-scrim.rp, .fs-scrim.ag, .fs-scrim.sh { position: fixed; }
@@ -3252,8 +3311,8 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .drow.hasx { padding-right: 52px; }
 .cardx {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: var(--corner);
+  right: var(--corner);
   width: 44px;
   height: 44px;
   border: none;
@@ -3419,68 +3478,6 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .slideover { transition: none !important; }
-}
-
-/* Blind pairs (R-0599): the conversation once, then the two replies, side by
-   side where the app widens and stacked on a phone. */
-.pr-ctx {
-  max-height: 40vh;
-  overflow-y: auto;
-  margin: 0 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
-.pr-line {
-  padding: 8px 12px;
-  border-top: 1px solid var(--line);
-  font: 400 15px/1.4 var(--sans);
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-.pr-line:first-child { border-top: none; }
-.pr-line.coach { background: var(--tint); }
-.pr-who {
-  margin-bottom: 2px;
-  font: 500 12px var(--mono);
-  color: var(--faint);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.pr-two { display: grid; gap: 10px; margin: 0 16px; }
-.pr-card {
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
-.pr-text {
-  font: 400 16px/1.45 var(--sans);
-  color: var(--ink);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.pr-note {
-  display: block;
-  box-sizing: border-box;
-  width: calc(100% - 32px);
-  min-height: 44px;
-  margin: 14px 16px 0;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--ink);
-  font: 400 15px var(--sans);
-}
-.pr-picks { display: flex; gap: 8px; margin: 0 16px 14px; }
-.pr-picks .nudge { flex: 1; width: auto; margin: 14px 0 0; }
-.pr-wide { display: none; }
-@media (min-width: 840px) {
-  .pr-two { grid-template-columns: 1fr 1fr; }
-  .pr-wide { display: inline; }
-  .pr-narrow { display: none; }
 }
 
 /* The picture folds to a strip under the title row while a phone's keyboard is

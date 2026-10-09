@@ -182,6 +182,19 @@ CERTAINTY = (
     'for "sometime around" or any hedge'
 )
 
+# The number of children the person said, given when how many children a couple
+# had is closed as answered; the tool adds a child named only as the couple's
+# child for each one counted but not yet in the record (R-0325; Patrick, 2026-10-07).
+COUNT = {
+    "type": "integer",
+    "description": (
+        "Required with answered on how many children: the number the person said, "
+        "0 when none or when they cannot have any. A child counted but not yet in the "
+        "record is added as the couple's child with no name of their own; nobody is "
+        "removed."
+    ),
+}
+NO_COUNT = "It did not say how many children were counted."
 ASKED_IN = {
     "type": "integer",
     "description": (
@@ -465,7 +478,10 @@ def schemas(coder: bool = False) -> list[dict]:
             "description": (
                 "Keep a question in the record: asked when you ask it in this "
                 "reply, held when you keep it to ask later, resolved when the "
-                "person has just answered it unasked, so it is never asked."
+                "person has just answered it unasked, so it is never asked. A todo "
+                "is kept only when the person says they will find something out or "
+                "do something themselves, held, in their words, resting on the "
+                "message you are answering."
             ),
             "input_schema": {
                 "type": "object",
@@ -476,8 +492,14 @@ def schemas(coder: bool = False) -> list[dict]:
                     },
                     "kind": {
                         "type": "string",
-                        "enum": [QuestionKind.Thought.value, QuestionKind.Fact.value],
-                        "description": "Food for thought, or a fact to find.",
+                        "enum": [
+                            QuestionKind.Thought.value,
+                            QuestionKind.Fact.value,
+                            QuestionKind.Todo.value,
+                        ],
+                        "description": (
+                            "Food for thought, a fact to find, or the person's own todo."
+                        ),
                     },
                     "state": {
                         "type": "string",
@@ -496,13 +518,15 @@ def schemas(coder: bool = False) -> list[dict]:
                         "enum": [QuestionOutcome.Answered.value, QuestionOutcome.Unknown.value],
                         "description": (
                             "With resolved: answered when the person said it, unknown "
-                            "when they said they do not know."
+                            "when they said nobody can tell them. A fact they say they "
+                            "will find out or ask someone for is kept asked, not closed."
                         ),
                     },
                     "answer": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Answer],
                     },
+                    "count": COUNT,
                     "item_kind": {
                         "type": "string",
                         "enum": [kind.value for kind in record.QUESTION_LINKS],
@@ -540,12 +564,17 @@ def schemas(coder: bool = False) -> list[dict]:
                     "outcome": {
                         "type": "string",
                         "enum": [o.value for o in record.QUESTION.ours],
-                        "description": "How it ended; only with resolved.",
+                        "description": (
+                            "How it ended; only with resolved. unknown is for a fact "
+                            "nobody can tell the person; one they say they will find out "
+                            "or ask someone for stays asked."
+                        ),
                     },
                     "answer": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Answer],
                     },
+                    "count": COUNT,
                     "case_report_card": _card_param(
                         record.QUESTION_CARDS,
                         means[prompts.ToolText.CaseReportCard],
@@ -828,6 +857,15 @@ def schemas(coder: bool = False) -> list[dict]:
                     },
                     "person": {"type": "string", "description": "How the person seems."},
                     "variable": _enum_param(Variable, "The variable this turn is on."),
+                    "corrected": {
+                        "type": "string",
+                        "description": (
+                            "Only when the person's newest message tells you that you "
+                            "got them wrong: you assumed, misheard, or put words or "
+                            "feelings into what they said. What they corrected, in a "
+                            "short phrase. Leave it out otherwise."
+                        ),
+                    },
                 },
                 "required": [
                     "register",
@@ -947,6 +985,20 @@ def _hit(statement: Statement, terms: list[str]) -> str:
     return f"{statement.id} {day} {who}: {excerpt(statement.text, terms)}"
 
 
+# The person saying a fact is theirs to find, not unknown: "I'll ask my mom",
+# "let me find out", "I'd have to look it up". A fact question closed as unknown
+# while the message being answered says so is refused and stays asked, and
+# what they said they would do is their todo (Patrick, 2026-10-07; R-0803).
+FIND_OUT = re.compile(
+    r"\b(?:i(?:['’]ll|['’]d|['’]m going to| will| can| could| should| need to|"
+    r" have to| ought to|['’]ll have to|['’]d have to| am going to| plan to| want to)"
+    r"|let me|gonna)\s+(?:try (?:to|and)\s+)?(?:ask|find out|look(?: it| that| this)? (?:up|into)|"
+    r"look through|check|dig|go through)\b",
+    re.I,
+)
+FINDING_OUT = "It was about to close a question the person said they would find the answer to."
+
+
 class ToolError(Exception):
     """A tool call the record refused. The model reads the reason and retries;
     `plain` says why to the person reading the thread, with no ids."""
@@ -1044,7 +1096,7 @@ class Toolbox:
             raise ToolError(
                 "Say which record version you are changing: the number at the end "
                 "of your last read, or on the map",
-                "It did not say which version of the record it had read.",
+                "It did not say which version of the diagram it had read.",
             )
         now = self.diagram.version
         own = self.versions | {
@@ -1060,7 +1112,7 @@ class Toolbox:
                 f"The record has changed since version {version}; it is at {now} "
                 "now. Read what you are changing again, then change it with the "
                 "new version",
-                "The record had changed since it was read; read it again.",
+                "The diagram had changed since it was read; read it again.",
             )
 
     def _coach_notes(self, args: dict) -> tuple[str, None]:
@@ -1187,19 +1239,19 @@ class Toolbox:
         return {event: said[turn] for event, turn in turns.items() if turn in said}
 
     def _read_questions(self, args: dict) -> tuple[str, None]:
-        return self._read_notes_of(record.QUESTION, args), None
+        return self._read_notes_of((record.QUESTION, record.TODO), args), None
 
     def _read_impressions(self, args: dict) -> tuple[str, None]:
-        return self._read_notes_of(record.IMPRESSION, args), None
+        return self._read_notes_of((record.IMPRESSION,), args), None
 
     def _read_notes_of(self, rules, args: dict) -> str:
         shown = [
             q
             for q in self.data.questions
-            if record.note(q) is rules and (args.get("closed") or on_map(q))
+            if record.note(q) in rules and (args.get("closed") or on_map(q))
         ]
         lines = [note_line(q) for q in sorted(shown, key=question_order)]
-        return "\n".join(lines) or f"No {rules.noun}s."
+        return "\n".join(lines) or f"No {rules[0].noun}s."
 
     def _read_changes(self, args: dict) -> tuple[str, None]:
         rows = (
@@ -1560,6 +1612,8 @@ class Toolbox:
     # ── QUESTIONS ───────────────────────────────────────────────────────────
 
     def _add_question(self, args: dict) -> tuple[str, dict]:
+        if args["kind"] == QuestionKind.Todo:
+            return self._add_todo(args)
         return self._add_note(
             args,
             record.QUESTION,
@@ -1568,6 +1622,27 @@ class Toolbox:
                 "item_kind": args.get("item_kind"),
                 "item_id": args.get("item_id"),
                 "fact": args.get("fact") and choice(Fact, args["fact"], "facts").value,
+            },
+        )
+
+    def _add_todo(self, args: dict) -> tuple[str, dict]:
+        """Something the person just said they will find out or do themselves,
+        in their words, resting on their message (R-0803)."""
+        if self.said is None:
+            raise ToolError(
+                "A todo rests on the person's message that said it: no message is "
+                "being answered now",
+                "A todo is only ever something the person said.",
+            )
+        return self._add_note(
+            args,
+            record.TODO,
+            {
+                "kind": QuestionKind.Todo.value,
+                "item_kind": None,
+                "item_id": None,
+                "fact": args.get("fact") and choice(Fact, args["fact"], "facts").value,
+                "evidence": [self._cited(self._mine(self.said.id))],
             },
         )
 
@@ -1619,6 +1694,12 @@ class Toolbox:
         if args.get(record.CARD) is not None:
             fields[record.CARD] = choice(CaseReportCard, args[record.CARD], "cards").value
         text, patch = self._write(ItemKind.Question, None, fields, said and said.id)
+        counted = (
+            fields.get("outcome") == QuestionOutcome.Answered
+            and fields.get("fact") == Fact.Children
+        )
+        if counted:
+            text = f"{text}\n\n{self._counted(int(fields['item_id']), args['count'])}"
         if heard:
             where, lines = heard
             text = (
@@ -1681,7 +1762,7 @@ class Toolbox:
             raise ToolError(
                 f"The record already answers {coverage.WORDS[fact]} for {where}: "
                 f"{coverage.evidence(data, fact, kind, iid)}. Do not ask it; use the answer",
-                "It was about to ask something the record already holds.",
+                "It was about to ask something the diagram already holds.",
             )
         if self.said is None:
             return None
@@ -1702,7 +1783,7 @@ class Toolbox:
         if args.get("outcome") is None:
             raise ToolError(
                 "Say how it ended: answered when the person said it, unknown when they "
-                "said they do not know",
+                "said nobody can tell them",
                 "It did not say how the question ended.",
             )
         outcome = choice(QuestionOutcome, args["outcome"], "outcomes")
@@ -1711,6 +1792,13 @@ class Toolbox:
                 f"A question added already closed ends as answered or unknown, not "
                 f"{outcome.value}",
                 "That is not how a question added closed ends.",
+            )
+        if outcome is QuestionOutcome.Unknown and self._finding_out():
+            raise ToolError(
+                "The person said they will find out, so this is not unknown: keep the "
+                "question asked instead, and keep what they said they would do as a todo "
+                "in their words",
+                FINDING_OUT,
             )
         fields["outcome"] = outcome.value
         if outcome is QuestionOutcome.Answered:
@@ -1725,10 +1813,14 @@ class Toolbox:
                     "It kept an answer with no message behind it.",
                 )
             fields["answer"] = self._cited(answer)
+            if fields.get("fact") == Fact.Children:
+                self._count(args)
         fields.update(self._asked(None))
 
     def _set_question(self, args: dict) -> tuple[str, dict]:
-        return self._set_note(args, record.QUESTION)
+        found = next((q for q in self.data.questions if q["id"] == str(args["id"])), None)
+        todo = found is not None and record.note(found) is record.TODO
+        return self._set_note(args, record.TODO if todo else record.QUESTION)
 
     def _set_impression(self, args: dict) -> tuple[str, dict]:
         return self._set_note(args, record.IMPRESSION)
@@ -1757,18 +1849,90 @@ class Toolbox:
                 fields.update(self._asked(None))
         if args.get("outcome") is not None:
             fields["outcome"] = choice(QuestionOutcome, args["outcome"], "outcomes").value
+        if (
+            rules is record.QUESTION
+            and fields.get("outcome") == QuestionOutcome.Unknown
+            and self._finding_out()
+        ):
+            raise ToolError(
+                f"The person said they will find out, so question {found['id']} is not "
+                "settled: leave it asked, and keep what they said they would do as a todo "
+                "in their words",
+                FINDING_OUT,
+            )
         if args.get("answer") is not None:
             fields["answer"] = self._cited(self._mine(args["answer"]))
-        elif (
-            fields.get("outcome") == QuestionOutcome.Answered
-            and found.get(record.CARD)
-            and self.said is not None
-        ):
+        elif fields.get("outcome") == QuestionOutcome.Answered and self.said is not None:
             fields["answer"] = self._cited(self._mine(self.said.id))
         if record.CARD in args:
             card = args[record.CARD]
             fields[record.CARD] = card and choice(CaseReportCard, card, "cards").value
-        return self._write(ItemKind.Question, args["id"], fields, raised)
+        counted = (
+            fields.get("outcome") == QuestionOutcome.Answered
+            and found.get("fact") == Fact.Children
+        )
+        if counted:
+            self._count(args)
+        text, patch = self._write(ItemKind.Question, args["id"], fields, raised)
+        if counted:
+            text = f"{text}\n\n{self._counted(int(found['item_id']), args['count'])}"
+        return text, patch
+
+    def _finding_out(self) -> bool:
+        """Whether the message being answered says the person will find the
+        fact out or ask someone for it, which leaves its question asked."""
+        return self.said is not None and bool(FIND_OUT.search(self.said.text or ""))
+
+    @staticmethod
+    def _count(args: dict) -> int:
+        """The number of children the person said, required when how many
+        children a couple had is closed as answered."""
+        count = args.get("count")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            raise ToolError(
+                "Say how many children the person counted: count, a whole number, 0 "
+                "when none or when they cannot have any",
+                NO_COUNT,
+            )
+        return count
+
+    def _counted(self, bid: int, count: int) -> str:
+        """A child for each one the person counted that the record does not
+        hold, added as the couple's child with no name of their own, the way an
+        unnamed parent or partner is added (R-0325; Patrick, 2026-10-07); nobody
+        is removed when the count is lower. Says what it did, and that each
+        added child's name is now on the list of what is still unknown."""
+        data = self.data
+        held = [p for p in data.people if str(p.get("parents")) == str(bid)]
+        where = coverage.label(data, ItemKind.PairBond, bid)
+        missing = count - len(held)
+        if missing <= 0:
+            return (
+                f"The record already holds {len(held)} "
+                f"{'child' if len(held) == 1 else 'children'} of {where}; the count "
+                f"{count} adds no one, and no one is removed"
+            )
+        bond = next(b for b in data.pair_bonds if b["id"] == bid)
+        names = [
+            self._find_person(pid).get("name")
+            for pid in (bond["person_a"], bond["person_b"])
+            if pid is not None
+        ]
+        whose = " and ".join(n for n in names if n and not coverage.unnamed(n)) or "someone"
+        added = []
+        for _ in range(missing):
+            _, patch = self._write(
+                ItemKind.Person,
+                None,
+                {"name": f"{whose}'s {coverage.CHILD_ROLE}", "parents": bid},
+            )
+            added.append(str(patch["deltas"][0]["item_id"]))
+        return (
+            f"Added {missing} {'child' if missing == 1 else 'children'} of {where} with no "
+            f"name of their own, person {' and '.join(added)}, so the record holds the "
+            f"{count} counted; each one's name is now on the list of what is still "
+            "unknown, so ask who they are"
+        )
 
     def _asked_again(self, found: dict, args: dict) -> tuple[list[str], int | None]:
         """The days a question was put to the person again, with today's added.

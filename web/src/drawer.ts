@@ -2,12 +2,12 @@ import "./drawer.css";
 import type { Books } from "./books";
 import { book } from "./case";
 import { askedChip, chipOf } from "./chips";
-import { CLUSTER, closeX, esc, fitPath, flash, pathRow, slideOver, stepBtn, still } from "./dom";
+import { CLUSTER, closeX, el, esc, fitPath, flash, pan, pathRow, slideOver, stepBtn, still } from "./dom";
 import { fitScale, leastScale, people, type Layout } from "./diagram";
-import { clusterStep } from "./picture";
+import { clusterStep, dateOf, Picture, Target, type Tap } from "./picture";
 import { kindForms, withKind } from "./rows";
 import { BIRTHS, family, familyStart, said, when, Told } from "./snapshots";
-import type { Case, Chip, Timeline } from "./types";
+import { Spotlight, type Case, type Chip, type Timeline } from "./types";
 
 /** The play-by-play drawer: a real drill-down that slides over the timeline and
  * the chat (R-0542). The path row with the close button at its right, the
@@ -33,9 +33,9 @@ const f = (v: number) => v.toFixed(1);
 /** The cluster's years on its own line: everything from those years dimmed,
  * this snapshot's events ringed, earlier ones solid, later ones hollow, and the
  * gap since the last snapshot drawn along the line. */
-export function yearsLine(tl: Timeline, told: Told, i: number): string {
+export function yearsLine(tl: Timeline, told: Told, i: number, w = 390): string {
   const x0 = 26;
-  const x1 = 364;
+  const x1 = w - 26;
   const y = 34;
   const dated = told.eventIds.flatMap((id) => {
     const e = tl.events.find((e) => e.id === id);
@@ -47,7 +47,7 @@ export function yearsLine(tl: Timeline, told: Told, i: number): string {
   const X = (t: number) => x0 + ((x1 - x0) * (t - t0)) / (t1 - t0);
   const own = new Map<number, number>();
   told.told.snapshots.forEach((s, j) => s.event_ids.forEach((id) => own.set(id, j)));
-  let s = `<svg viewBox="0 0 390 62" aria-hidden="true"><line class="wl" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`;
+  let s = `<svg viewBox="0 0 ${f(w)} 62" aria-hidden="true"><line class="wl" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`;
   if (i > 0)
     s += `<line class="wgap" x1="${f(X(told.steps[i - 1].t))}" y1="${y}" x2="${f(X(told.steps[i].t))}" y2="${y}"/>`;
   dated.forEach((e) => {
@@ -66,19 +66,42 @@ export function yearsLine(tl: Timeline, told: Told, i: number): string {
     .sort((a, b) => a.x - b.x);
   hits.forEach((h, k) => {
     const a = k ? (hits[k - 1].x + h.x) / 2 : 0;
-    const b = k < hits.length - 1 ? (h.x + hits[k + 1].x) / 2 : 390;
+    const b = k < hits.length - 1 ? (h.x + hits[k + 1].x) / 2 : w;
     s +=
       `<rect class="whit" x="${f(a)}" y="0" width="${f(b - a)}" height="62" data-act="${Act.Jump}" data-i="${h.j}"/>`;
   });
   // the date stays whole inside the frame: a mono character is about 0.6 of the 12px font wide
   const date = told.steps[i].date;
   const half = date.length * 3.6 + 4;
-  const cx = Math.min(Math.max(X(told.steps[i].t), half), 390 - half);
+  const cx = Math.min(Math.max(X(told.steps[i].t), half), w - half);
   s += `<text class="wlab" x="${f(cx)}" y="15" text-anchor="middle">${esc(date)}</text>`;
   s += `<text class="wyr" x="${x0}" y="57">${Math.floor(t0)}</text>`;
   s += `<text class="wyr" x="${x1}" y="57" text-anchor="end">${Math.floor(t1)}</text>`;
   return s + "</svg>";
 }
+
+/** The step a tap on the Family view's timeline goes to: the first holding
+ * one of `ids`, else the one nearest in time to `t`. */
+export function stepOf(told: Told, t: number, ids: number[] = []): number {
+  const held = told.told.snapshots.findIndex((s) => s.event_ids.some((id) => ids.includes(id)));
+  if (held >= 0) return held;
+  const far = told.steps.map((st) => Math.abs(st.t - t));
+  return far.indexOf(Math.min(...far));
+}
+
+/** The event a step is shown by on the timeline: its first the line draws,
+ * which an event whose date is unknown is not. */
+export function shownBy(told: Told, i: number): number | null {
+  return told.told.snapshots[i].event_ids.find((id) => {
+    const e = told.tl.events.find((e) => e.id === id);
+    return e && dateOf(e);
+  }) ?? null;
+}
+
+/** Where the Family view's years line stays the dots-only line between the
+ * title and who else a date touches: a screen too short for the timeline's
+ * own row. drawer.css says it again. */
+const SHORT = "(min-width: 700px) and (max-height: 500px), (pointer: coarse) and (orientation: landscape) and (max-height: 500px)";
 
 /** What can say the kind of each of snapshot `i`'s events (Patrick, 2026-10-03). */
 const saying = (told: Told, i: number) =>
@@ -253,35 +276,6 @@ export function between(frame: HTMLElement, left: number, whole: [number, number
     .reduce((best, l) => (cut(l) < cut(best) || (cut(l) === cut(best) && Math.abs(l - left) < Math.abs(best - left)) ? l : best));
 }
 
-/** How long the frame takes to travel to a step's people: about 1,200 px a
- * second, never under half a second nor over two, eased in and out, from where
- * it stood to exactly where it lands, never past it (R-0778). */
-export const PAN = {
-  ms: (px: number) => Math.min(Math.max(Math.abs(px) / 1.2, 500), 2000),
-  ease: (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (2 - 2 * t) ** 3 / 2),
-};
-const panning = new WeakMap<HTMLElement, number>();
-
-function pan(frame: HTMLElement, to: number, glide: boolean): void {
-  if (panning.has(frame)) cancelAnimationFrame(panning.get(frame)!);
-  const from = frame.scrollLeft;
-  if (!glide || from === to) {
-    frame.scrollLeft = to;
-    return;
-  }
-  // a reader who takes the frame in hand stops it
-  if (!panning.has(frame))
-    for (const kind of ["pointerdown", "touchstart", "wheel"])
-      frame.addEventListener(kind, () => cancelAnimationFrame(panning.get(frame)!), { passive: true });
-  const t0 = performance.now();
-  const ms = PAN.ms(to - from);
-  const tick = (now: number) => {
-    const t = Math.min((now - t0) / ms, 1);
-    frame.scrollLeft = from + (to - from) * PAN.ease(t);
-    if (t < 1) panning.set(frame, requestAnimationFrame(tick));
-  };
-  panning.set(frame, requestAnimationFrame(tick));
-}
 
 /** How tall the drawing is with its people in the middle of it (R-0797). */
 function tall(L: Layout): number {
@@ -311,6 +305,15 @@ export class Drawer {
   private moved: { id: string; x: number; y: number } | null = null;
   /** The Family view has just opened: it moves to the frame's own first date. */
   private opening = false;
+  /** The Family view's timeline: the chat's own, its clusters and events, the
+   * step's event picked on it (R-0796; Patrick, 2026-10-07). */
+  private readonly strip = el("div", "view");
+  private readonly timeline = new Picture(this.strip, { onTap: (tap) => this.jump(tap) }, Spotlight.Unified, true);
+  /** The telling the timeline was last given, so it is given each one once:
+   * every setData sends the line back to the present. */
+  private given: Told | null = null;
+  /** The event a tap on the timeline picked, shown in place of its step's first. */
+  private tapped: number | null = null;
 
   constructor(
     readonly panel: HTMLElement,
@@ -336,6 +339,8 @@ export class Drawer {
     };
     window.addEventListener("resize", again);
     window.visualViewport!.addEventListener("resize", again);
+    // full screen lifts the picture's ceiling, even where the size holds
+    document.addEventListener("fullscreenchange", again);
     document.addEventListener("keydown", (e) => e.key === "Escape" && this.panel.classList.contains("full") && this.unfull());
   }
 
@@ -379,16 +384,46 @@ export class Drawer {
     // on a phone, fitted whole, it always has them, and takes the
     // grandparents of someone with children only where they leave everyone
     // as large (R-0787, R-0791, R-0796)
-    if (this.phone()) return kids && this.fits(L) < this.fits(three.layout) ? three : four;
+    // as large at their own size: past it, fewer people would always be larger
+    if (this.phone()) return kids && this.fits(L, 1) < this.fits(three.layout, 1) ? three : four;
     return Math.min(kids ? lv.clientWidth / L.vw : Infinity, tall / L.h) >= leastScale(L, padding) ? four : three;
   }
 
   /** The scale that fits `L` whole in the room the drawer has under its
    * years line and over the longest caption, both ways (R-0796), as tall as
    * it is with its people in the middle, so there is room to centre them
-   * however far its marks reach on one side (R-0797). */
-  private fits(L: Layout): number {
-    return fitScale({ ...L, h: tall(L) }, this.panel.querySelector<HTMLElement>(".lv")!.clientWidth, this.room());
+   * however far its marks reach on one side (R-0797). The Family view's
+   * picture grows past its own size to fill it (R-0796; Patrick, 2026-10-07);
+   * `most` caps it at its own size. */
+  private fits(L: Layout, most = this.told!.whole ? Infinity : 1): number {
+    const lv = this.panel.querySelector<HTMLElement>(".lv")!;
+    return fitScale({ ...L, h: tall(L) }, lv.clientWidth, this.room(), most);
+  }
+
+  /** The years line as wide as the room it stands in, its marks kept round:
+   * drawn once to learn the height the stylesheet gives it, then again at
+   * the width that height leaves the whole room (R-0796; Patrick, 2026-10-07). */
+  private line(): void {
+    const told = this.told!;
+    const wire = this.panel.querySelector<HTMLElement>(".wire")!;
+    const chat = told.whole && !matchMedia(SHORT).matches;
+    wire.classList.toggle("pic", chat);
+    if (chat) {
+      if (this.strip.parentElement !== wire) wire.replaceChildren(this.strip);
+      if (this.given !== told) {
+        this.given = told;
+        this.timeline.setData(told.tl);
+      }
+      // the event tapped, where its step holds several, else the step's first
+      const id = this.tapped ?? shownBy(told, this.i);
+      this.tapped = null;
+      this.timeline.step(id);
+      return;
+    }
+    wire.innerHTML = yearsLine(told.tl, told, this.i);
+    const k = wire.firstElementChild!.getBoundingClientRect().height / 62;
+    // with no layout, as in a test page, it keeps its own width
+    if (k) wire.innerHTML = yearsLine(told.tl, told, this.i, wire.clientWidth / k);
   }
 
   /** The height the drawing has under the years line, over the longest
@@ -509,7 +544,7 @@ export class Drawer {
   private render(glide = true): void {
     const told = this.told!;
     const q = (sel: string) => this.panel.querySelector<HTMLElement>(sel)!;
-    q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
+    this.line();
     // the Family view draws one frame over every date (R-0783)
     if (told.whole) this.frame ??= this.framed(this.centre);
     const view = told.whole ? this.frame! : told;
@@ -520,7 +555,7 @@ export class Drawer {
       const first = view.steps.findIndex((st, i) => st.marks.length && told.told.snapshots[i].event_ids.some((id) => !BIRTHS.has(told.tl.events.find((e) => e.id === id)?.kind ?? "")));
       if (first >= 0 && first !== this.i) {
         this.i = first;
-        q(".wire").innerHTML = yearsLine(told.tl, told, this.i);
+        this.line();
       }
     }
     const shot = view.shot(this.i);
@@ -760,5 +795,28 @@ export class Drawer {
     // a keyboard tap keeps its place
     if ((e as MouseEvent).detail === 0)
       this.panel.querySelector<HTMLElement>(`[data-act="${act}"]:not([disabled])`)?.focus();
+  }
+
+  /** A tap on the Family view's timeline steps to what it touched: a
+   * cluster's first step, an event's own step, the words of the event
+   * picked its step again; anything else leaves the step where it is. */
+  private jump(tap: Tap): void {
+    const told = this.told!;
+    const line = this.timeline;
+    let to: number | null = null;
+    if (tap.target === Target.Cluster) {
+      const c = line.clusterAt(tap.index);
+      if (c) to = stepOf(told, when(c.start), c.event_ids);
+    } else if (tap.target === Target.Zone || tap.target === Target.Band) {
+      const id = tap.target === Target.Zone ? line.next(tap.index, line.selection()) : line.rowAt(tap.x, tap.y);
+      const e = told.tl.events.find((e) => e.id === id);
+      if (e?.dateTime) {
+        to = stepOf(told, when(e.dateTime), [e.id]);
+        if (told.told.snapshots[to].event_ids.includes(e.id)) this.tapped = e.id;
+      }
+    }
+    if (to === null) return;
+    this.i = to;
+    this.render();
   }
 }

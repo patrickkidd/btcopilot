@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { drawings, freeze } from "./drawings";
 
 /** How each move looks and moves over its loop, read off the real `moves.ts`

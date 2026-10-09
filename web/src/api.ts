@@ -1,5 +1,6 @@
 import type {
   Account,
+  Attached,
   NextMeeting,
   BallotItem,
   Vote,
@@ -23,12 +24,9 @@ import type {
   PairBond,
   Person,
   Passkey,
-  Pair,
   Picked,
   Cast,
   Shadows,
-  PickChoice,
-  ModelPicks,
   PasskeyCreationOptions,
   Preferences,
   Started,
@@ -41,6 +39,7 @@ import type {
   Tally,
   Statement,
   Passages,
+  Rewrite,
   Timeline,
   TimelineEvent,
   User,
@@ -146,11 +145,12 @@ async function send<T>(
     const response = await fetch(url, {
       method,
       keepalive,
-      headers: {
+      // a form sets its own type, with the boundary between its parts
+      headers: body instanceof FormData ? { "X-CSRFToken": csrf() } : {
         "Content-Type": "application/json",
         "X-CSRFToken": csrf(),
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined || body instanceof FormData ? body : JSON.stringify(body),
       signal: signal ? AbortSignal.any([signal, waited]) : waited,
     });
     keepToken(response);
@@ -187,6 +187,12 @@ export const timeline = (diagramId: number | null, signal?: AbortSignal) =>
   call<Timeline>("GET", onDiagram("/timeline", diagramId), undefined, undefined, signal);
 
 /** The passages behind the case report's book buttons (R-0692). */
+/** The coach rewrites every card it writes on the case report, and how far
+ * it has got (R-0825). */
+export const rewriteReport = (diagramId: number | null, signal?: AbortSignal) =>
+  call<Rewrite>("POST", onDiagram("/case-report-rewrites", diagramId), undefined, undefined, signal);
+export const reportRewrite = (id: string) => call<Rewrite>("GET", `/case-report-rewrites/${id}`);
+
 export const casePassages = (diagramId: number | null, signal?: AbortSignal) =>
   call<Passages>("GET", onDiagram("/case-report-passages", diagramId), undefined, undefined, signal);
 
@@ -197,11 +203,29 @@ export const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 /** One agent-loop turn. The send is short: it stores the words and hands the
  * turn to the coach, which answers on the turn's own stream. The server puts
  * them in the sitting they belong to. */
-export const say = (diagramId: number | null, statement: string) =>
-  call<Started>("POST", onDiagram("/chat", diagramId), {
-    statement,
-    time_zone: timeZone(),
-  });
+export const say = (diagramId: number | null, statement: string, file: File | null = null) =>
+  call<Started & Attached>(
+    "POST",
+    onDiagram("/chat", diagramId),
+    file ? said(statement, timeZone(), file) : { statement, time_zone: timeZone() },
+    file ? READ_MS : undefined,
+  );
+
+/** A message with a file goes as a form. The server checks the file and
+ * answers; a text file's words come back with the answer, a PDF or a photo is
+ * read on the worker before the coach's turn, and the thread carries the text
+ * once it is in. */
+export function said(statement: string, zone: string, file: File): FormData {
+  const form = new FormData();
+  form.append("statement", statement);
+  form.append("time_zone", zone);
+  form.append("file", file, file.name);
+  return form;
+}
+
+/** How long a send may take with a file of the largest size the server takes:
+ * the upload on a slow link, and the server's checks of it. */
+const READ_MS = 120_000;
 
 /** Where one sitting starts, carried by its first words, and when the
  * sitting before it started; the family's first sitting has none before it. */
@@ -587,14 +611,6 @@ export const rules = () => ask<Rule[]>("GET", "/rules");
  * Patrick alone may do either (R-0276, R-0346). */
 export const flagRule = (id: number, on: boolean) =>
   ask<Rule>("PATCH", `/rules/${id}`, { flag: on });
-
-/** The blind pairs not yet picked, and each model's picks so far (R-0599). */
-export const pairs = () => ask<Pair[]>("GET", "/pairs");
-export const modelPicks = () => ask<ModelPicks[]>("GET", "/picks");
-
-/** Patrick's pick, which is answered with the two model names. */
-export const pick = (id: number, choice: PickChoice, note: string) =>
-  ask<Picked>("PUT", `/picks/${id}`, { choice, note });
 
 /** One turn's replies to vote on in the chat (R-0636). */
 export const shadows = (turnId: string) =>

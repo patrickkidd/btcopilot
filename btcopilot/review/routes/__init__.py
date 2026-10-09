@@ -155,7 +155,7 @@ from btcopilot.review.routes import (  # noqa: E402  bp must exist first
     cuts,
     nudges,
     items,
-    pairs,
+    picks,
     records,
     result,
     rules,

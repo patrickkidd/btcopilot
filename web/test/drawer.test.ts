@@ -1,8 +1,9 @@
 import { expect, it } from "vitest";
-import { closeX, pathRow } from "../src/dom";
+import { closeX, PAN, pathRow } from "../src/dom";
 import { FIT, fitScale, leastScale, NAME } from "../src/diagram";
-import { below, head, PAN, pointLine, topLine, yearsLine } from "../src/drawer";
-import { family, Told, untold } from "../src/snapshots";
+import { below, head, pointLine, shownBy, stepOf, topLine, yearsLine } from "../src/drawer";
+import { family, Told, untold, when } from "../src/snapshots";
+import { DateCertainty } from "../src/certainty";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
 /** The play-by-play drawer's own words and controls, read off its markup. */
@@ -71,6 +72,26 @@ it("never grows a small picture past its own size, and never shrinks its names u
   expect(NAME * fitScale(L, 1, 1)).toBeCloseTo(FIT);
 });
 
+// "When showing the full Family Diagram view, I think it should just automatically scale to fill all available space." (Patrick, 2026-10-07)
+// R-0796
+it("grows a small picture to fill the space only when given no ceiling, as the Family view gives it; the play-by-play keeps its own size", () => {
+  const L = told.layout;
+  expect(fitScale(L, L.vw * 3, L.h * 2, Infinity)).toBeCloseTo(2);
+  expect(fitScale(L, L.vw * 3, L.h * 2)).toBe(1);
+});
+
+// "the timeline should really stretch out to fit available horizontal space" (Patrick, 2026-10-07)
+// R-0796
+it("draws the years line across the width it is given, its ends and the last tap reaching the far edge", () => {
+  const whole = new Told(tl, family(tl), true);
+  const line = yearsLine(tl, whole, whole.length - 1, 1000);
+  expect(line).toContain('viewBox="0 0 1000.0 62"');
+  expect(line).toContain('<line class="wl" x1="26" y1="34" x2="974"');
+  const last = [...line.matchAll(/<rect class="whit" x="([\d.]+)" y="0" width="([\d.]+)"/g)].at(-1)!;
+  expect(Number(last[1]) + Number(last[2])).toBeCloseTo(1000, 0);
+  expect(Number(line.match(/<text class="wlab" x="([\d.]+)"/)![1])).toBeGreaterThan(390);
+});
+
 // R-0744, R-0759
 it("stops shrinking where labels reach 13px, shapes 36px or the margin 20px", () => {
   const L = told.layout;
@@ -117,6 +138,20 @@ it("steps the whole family with Back and Next only, says where in its top line, 
   expect(topLine(whole, toward)).toBe('<span class="words">Delphine started calling Corinne every night</span>');
 });
 
+// "Yes, build that change to reuse the main timeline in the full Diagram view. But we still need to be stepping through the timeline event by event just like we are right now." (Patrick, 2026-10-07)
+// R-0796
+it("steps the Family view to a tapped cluster's first step, to a tapped event's own step, and to the nearest by date for an event no step holds", () => {
+  const whole = new Told(tl, family(tl), true);
+  const cluster = tl.clusters[0];
+  const first = whole.told.snapshots.findIndex((s) => s.event_ids.some((id) => cluster.event_ids.includes(id)));
+  expect(stepOf(whole, when(cluster.start), cluster.event_ids)).toBe(first);
+  const j = 3;
+  const id = whole.told.snapshots[j].event_ids[0];
+  expect(stepOf(whole, 0, [id])).toBe(j);
+  expect(stepOf(whole, whole.steps[j].t + 0.01, [-1])).toBe(j);
+  expect(shownBy(whole, j)).toBe(id);
+});
+
 // R-0742
 it("spans the whole family's years line over every dated event, this step ringed, earlier solid, later hollow", () => {
   const whole = new Told(tl, family(tl), true);
@@ -153,4 +188,15 @@ it("travels to a step's people at about 1,200 px a second, from half a second to
   expect(at.every((v, i) => v >= 0 && v <= 1 && (i === 0 || v >= at[i - 1]))).toBe(true);
   expect(at[5]).toBeLessThan(0.01);
   expect(1 - at[95]).toBeLessThan(0.01);
+});
+
+// "when I click next in the full family diagram view, the timeline sometimes jumps around to a destination with no selected event visible." (Patrick, 2026-10-07)
+// R-0796
+it("shows a step on the timeline by an event the line draws, and by none when every date it holds is unknown", () => {
+  const unknown = structuredClone(tl);
+  const whole = new Told(unknown, family(unknown), true);
+  const j = 3;
+  const id = whole.told.snapshots[j].event_ids[0];
+  unknown.events.find((e) => e.id === id)!.dateCertainty = DateCertainty.Unknown;
+  expect(shownBy(whole, j)).toBe(whole.told.snapshots[j].event_ids.find((other) => other !== id) ?? null);
 });

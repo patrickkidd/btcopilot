@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-10-02
+Updated: 2026-10-07
 
 ---
 
@@ -38,6 +38,7 @@ What it is for: getting into the app without a password.
 - After the first sign-in the app offers to let you use Face ID or a fingerprint instead, and asks only once per phone. [built]
 - If you say no to Face ID it waits a month before offering again. [built]
 - On a phone the app offers, once, to add itself to your home screen, and shows the exact button to tap. [built]
+- Opened from the home screen or the dock, the app asks once on that device, in the same kind of card, whether to turn on notifications: one sentence on what they are for, a Turn on notifications button that brings up the system's own question, and Not now. Either answer spends the one ask on that device, so the card does not come back when the system's own question is dismissed or never shown. A device that allowed notifications before but lost its subscription is subscribed again as the app opens, with no question. [built] {R-0832}
 - If you dismiss the home-screen card it comes back no sooner than a week later. [built]
 - The card never blocks the conversation; you can ignore it and keep typing. [built]
 - Signed out, you see the app name, who you are signing in as, and one button to sign in. [drawn]
@@ -89,6 +90,9 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - A coach message written while the app was open elsewhere, or away, appears in the thread when you come back to the app, when you tap its notification, and within a minute while the app is in front; the thread is only drawn again when something new is in it. [built] {R-0606}
 - Admins and auditors see a small circled (i) at the top right of a coach reply; tapping it opens the coach's own notes for that turn in a panel that grows out of the bubble and shrinks back into it. Nobody else sees the notes. [built] {R-0520, R-0522, R-0529}
 - While the coach replies the message box stays open and the Send button is a Stop button. A message you send meanwhile waits under the line "Sends when the coach finishes" and goes the moment the reply ends. [built] {R-0674}
+- A paperclip inside the message box, at its left edge (a 44 px target, so the sessions button still stands right beside the box), picks one file to send with the next message: a PDF, a photo (JPEG, PNG or HEIC), or text or markdown, up to 20 MB. On a computer a file can also be dropped on the chat. The file's name shows as a chip in the message box with a cross that takes it out; a second file takes the first one's place. [built] {R-0828, R-0830}
+- Once sent, the file's name is a chip on top of your message, greyed and marked "reading" while the server reads it. Once read, tapping the chip opens a sheet with what the coach read from the file. The file itself is not kept and is never shown again. [built] {R-0829, R-0830}
+- A file the server will not take (the wrong kind, or too big) is not sent: the server's own words say why in a short note at the foot of the screen, and your words go back in the message box to send without it. [built] {R-0830}
 - Stop ends the coach's turn at its next step. Anything that turn had added to or changed in the record is taken back, the picture and the lists show it gone, and a grey line "Stopped" stays under your words, after a reload too. [built] {R-0674}
 - Reloading the page never changes what you see: an open vote, a mode that is on and a selection all come back as they were. [built] {R-0652}
 - With Conversation Feedback on, a strip under the header says it is on, that replies will be slower, and to vote; a tap on the strip turns it off. [built] {R-0673}
@@ -157,6 +161,9 @@ What it is for: one group of related events, opened from the line.
 - The grey line above the picture becomes the name of what you are looking at, with a back arrow beside it. [built] {R-0223}
 - Tapping either the name or the back arrow goes up one level. [built] {R-0223}
 - An open cluster shows its name and the reason it is a cluster, never a list of its events, because a cluster can hold fifteen. [built] {R-0213}
+- The header says each fact once: the path over the line reads "Timeline › <name>" (the years alone for a cluster with no name), and the words under the line read "<years> · <count> events". [built] {R-0767, R-0583}
+- A cluster is a period of heightened difficulty held as a hypothesis of a broader family process and named for it; the model may rename or reshape any cluster, yours included; two periods never share days; nothing is named after its years. [built] {R-0841, R-0843, R-0845, R-0844}
+- The page behind the small i beside an open cluster's name carries the app's book button, the same one the Family view's cards have; it opens a sheet titled "What a cluster is" with the passages from the books that say what a cluster is: a period of stress against the family's calm, the longest waves on record, and a quiet stretch as the sign a period ended. Each passage is the passage itself with its book and chapter under it, never the reference alone, and the passages are nowhere else on the page. [built] {R-0691, R-0688} (Patrick, 2026-10-08, with R-0836 to R-0838)
 - The events inside stay as marks; tapping one shows its words. [built] {R-0213}
 - A cluster needs at least three events to exist. [built] {R-0215}
 - Grouping is the coach's judgement, made from what you say as you say it; every grouping carries a one-line reason that says what is in it and what is not; the automatic grouping is only a first draft the coach may overwrite. [drawn] {R-0287}
@@ -255,6 +262,7 @@ What it is for: seeing and editing everything in the record by hand.
 - A third tab, "Questions", holds what the coach is keeping for you: questions under "Food for thought" and "Facts to find", and its impressions under "Impressions". [built]
 - You only see questions the coach has actually asked and that are still open; ones you turned down or that led nowhere never show. [built]
 - The coach only keeps a fact to find it thinks matters to your family's story, and keeps it when in doubt. [built]
+- A fact you say you will find out or ask someone for stays under "Facts to find" until you come back with it; only a fact nobody can tell you is closed as unknown. [built] {R-0803}
 - Tapping a question or an impression puts it in the message box; nothing sends until you do. [built]
 - Swipe a question left to dismiss it, and the coach will not ask it again. [built]
 - Swipe an impression left for "Doesn't fit", which tells the coach in the chat, or "Partly", which starts a reply for you to finish. [built]
@@ -367,7 +375,7 @@ What it is for: your past conversations.
 - With no sessions at all it says past conversations collect here. [built]
 - The sheet holds only the sessions of the family the app is on; the family is chosen on the account page, never in the sheet, and a personal user never sees the word case at all. [built] {R-0285, R-0347}
 - The buttons at the foot, a professional's upload and new note, are spaced apart. [built] {R-0347}
-- The sheet holds no way to coding, the meeting or picking the better reply, and a session row neither opens nor goes on the agenda; those live on the account page, since none of them hangs on the family the app is on. [built] {R-0259, R-0267}
+- The sheet holds no way to coding or the meeting, and a session row neither opens nor goes on the agenda; those live on the account page, since none of them hangs on the family the app is on. [built] {R-0259, R-0267}
 - Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]
 - The history in the review database is kept across code changes rather than reset. [built] {R-0191}
 - Existing diagrams and conversations made before this app must open in it as sessions; old training transcripts are kept out of the list. [built]
@@ -390,6 +398,7 @@ What it is for: you, your families, your plan, and signing out.
 - The top of it shows your name, your email and your plan. [built]
 - While a notice is unread, the account mark carries a small amber dot, the amber of the coach's question; the dot goes when none is unread. [built] {R-0611}
 - Under your name, one row, Notices, with the number unread as its figure, opens the Notices page: every notice you have been sent, newest first, each with its day and its first line; an unread one has the same amber dot before it. Tapping one opens the screen it points to and counts it read; one that points to the account view, its Notices, or nowhere has no arrow and a tap only counts it read, in place. There is no row until a notice has been sent. [built] {R-0611}
+- Under Coach and Appearance, a Notifications row says what this device does: On on this device, Off on this device with a Turn on button, Blocked in this device's system settings, or Not available here with the advice to open the app from the home screen. It is there for everyone and does not depend on how often the coach messages first. [built] {R-0832}
 - Your profile page holds your first name, last name and birthdate. [built]
 - There is a row for whether the coach speaks its replies out loud. [built]
 - The same speaking switch appears once in the chat as a named shortcut, writing the same setting. [built]
@@ -406,8 +415,7 @@ What it is for: you, your families, your plan, and signing out.
 - Admins see a "Find a person" box at the top of that page: with the box empty the page shows only the admin's own diagrams; two or more letters show only the people whose email or name match, and the admin's own diagrams are hidden until the box is cleared; tapping a person slides in a page of its own titled with their name, listing their diagrams in the same rows, the way every page of the account view slides in; back slides it away to the search with the words and the people found as they were; tapping a diagram opens it read-only: one quiet line under the title row says "Viewing <name>'s diagram, read-only" with "Back to my diagram", which puts the app back on the admin's most recently used diagram. While it is open the record, the timeline, the chat history and the lists show, and the message box, Send, rename and delete, a question's actions, and a detail card's "Tap to comment…" are hidden; no tap is recorded and nothing is sent. It is never listed among the admin's own diagrams, and no sharing is granted. Nobody else sees the box. [built] (Patrick, 2026-10-01) {R-0630}
 - Licences and the plan are listed; nothing on that page implies a price yet. [built]
 - Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card; Next meeting, for admins only, which opens the agenda; and Auditor's Coding Guide, which opens the concept pages on a page of its own. [built] {R-0265, R-0259, R-0541, R-0567}
-- Admins also see a Quality section with one row, Better replies, over the line "Pick the better of two coach replies"; it opens the screen where two coach replies to the same words are picked blind, titled Better replies. [built] {R-0599}
-- Better replies serves the pairs a conversation at a time, in the order the words were said, so a session reads as it happened; the conversation up to the words both replies answer stays above the two replies. [built] {R-0599}
+- There is no Quality section and no screen of its own for comparing coach replies: replies are compared only by the vote in the chat, under the coach's reply. [built] {R-0831}
 - Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Your Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
 - A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
@@ -451,7 +459,6 @@ What it is for: every screen and everything on it has its own web address, so th
 | `/app/account/meeting` | Next meeting |
 | `/app/account/meeting/<day>` | the page of the meeting on that day (`undated` for the one with no day) |
 | `/app/account/meeting/<day>/<cut>` | that meeting's page, with that cut ringed |
-| `/app/account/better-replies` | Better replies |
 | `/app/account/literature-review` | Auditor's Coding Guide |
 | `/app/cluster/<cluster>` | that cluster opened on the picture |
 | `/app/event/<event>` | that event picked on the picture |
@@ -533,20 +540,27 @@ What it is for: one screen to present your own record from, in the order the Bow
 
 - It opens from an icon in the title row over the chat, and the coach opens it when asked; it is a full screen with a back arrow to the chat. [built] {R-0714}
 - Every user can show the case report of the family the app is on; letting other people see it is for later. [built] {R-0715}
-- Ten cards in the approved order: the coach's main guess, who is in the family, what brought the person, the couple since they met (or the person's parents and partners, stage by stage, when not married), each parent's own family, the coach's guess, the person's own part, where there was a choice, what to work on, the effort. The titles are the ones Patrick reviewed. [built] {R-0713, R-0716}
+- Ten cards in the approved order: the Executive Summary (the coach's short reading of the whole report), who is in the family, what brought the person, the couple since they met (or the person's parents and partners, stage by stage, when not married), each parent's own family, the coach's guess, the person's own part, where there was a choice, what to work on, the effort. The titles are the ones Patrick reviewed, the first renamed Executive Summary. [built] {R-0713, R-0716, R-0821}
 - A strip under the timeline has one item per card in the same order; a tap glides the cards to that card, rings it, and puts an open play-by-play away. [built] {R-0702}
 - Text never folds and cards never collapse; only each side of the family folds. [built] {R-0689, R-0690}
 - The timeline is pinned at the top; every chip lights what it names on it. A person's chip lights that person's events; a cluster's chip opens the cluster with explain offered, and explain opens the play-by-play of the cluster's own dated events. [built] {R-0696, R-0700}
 - A coach's guess is the chat's own coach bubble, straight on the white card, with the dated facts it rests on as one-line chips under it; its "Coach" label lights them all. [built] {R-0698}
+- Under the coach's guesses on the coach's guess card, every cluster in the diagram sits as one chip in date order, worded "Hypothesis: <name> · <years>"; a tap opens that cluster on the picture, as any cluster chip does. None when the diagram has none. [built] {R-0698, R-0201} (Patrick, 2026-10-08)
 - The main guess, the own part, the choice and what to work on (up to three) are the guesses the coach put on those cards; the newest replaces the one before. The screen never picks a guess itself. [built] {R-0709, R-0713}
 - A guess card the coach has put nothing on says in the coach's bubble that there is not enough in the record yet, and to chat more with the coach. A record card with nothing in it keeps its title and its book. [built] {R-0699, R-0710}
 - The own part card shows the coach's guess and, once the person has answered the coach's question, the person's own words under their name as their own view. [built] {R-0708}
 - The lines under the card titles are written by the app from the record: the person's place among brothers and sisters, how many events hold their symptoms, the couple, each parent, the sessions with the coach; dates stand only inside chips. [built] {R-0716}
 - The couple card shows only for a marriage the picture draws solid, with no later separation or divorce and both partners alive. [built] {R-0694}
+- The couple card starts at the Bonded event (the courtship) and from there holds everything after it: every event of either partner, aimed at anyone or no one (shifts, moves, schooling and work, time apart, an event aimed at their own parent, sibling or in-law); each child's birth with the shifts around it; a child's marked shifts and moves while at home; a grown child's marriage. An earlier marriage of either partner, with its children and its end, stands before the couple as Kerr places it. [built] {R-0833}
+- The couple card always names a parent's or sibling's death or serious illness, for either partner; another relative's event shows only if the record links that relative to one partner and the event lies no more than two years from one of the couple's own events. Where anyone lives is no filter, since the record does not hold it. [built] {R-0834}
+- The couple card's chips sit under Bowen's stage heads in date order, each head a chip in the same words the unmarried card uses (got together, married, a child born, a child married), and its book holds the passages for the stages and for the selection rule, word for word with book and chapter. When the record lacks the floor of a couple's history, the card says what it still needs: when they married, where each stands among their brothers and sisters, the children in order. A place among brothers and sisters, or the children's order, counts as known only when their births are dated; people merely in the record do not count (Patrick, 2026-10-09). [built] {R-0835}
 - The family picture opens from the family button on the phone and stands as a left column on a desktop: the person's family, then each parent's side, as the approved proposal draws it. No shading by coverage. [built] {R-0697, R-0705}
 - Every card has a book button at its foot that raises the passages behind the card, word for word, read from the private corpus by the server; the strip has one for the order of the cards. [built] {R-0691, R-0692}
 - No count line under a guess, no years band, no row of people squares, and no words of the screen's own about certainty. [built] {R-0693, R-0699, R-0703}
 - A record the report cannot be drawn from shows the reason on the screen and in the console, never a blank page. [built] {R-0711}
+- When something has changed in the diagram since the coach wrote its five cards (the Executive Summary, the coach's guess, the own part, the choice and what to work on), opening the report raises a sheet titled "This report is out of date": one sentence on what changed, the line "The coach can rewrite its five cards now. Or you can read the report as it was last written.", and two buttons, Refresh the report and Show the last report. It has no close button and a tap beside it does not put it away. There is no Refresh button anywhere else. [built] {R-0826, R-0827}
+- Show the last report puts the sheet away and leaves a grey line with the same sentence at the top of the cards; that device does not raise the sheet again until something newer changes. A tap on the grey line raises the sheet again. [built] {R-0827}
+- Refresh the report dims the coach's five cards, still readable, and the grey line says the coach is rewriting them; the other five cards stay as they are. When the coach is done the report is read again and the line is gone; if it fails or is refused, a short message says so and the cards come back as they were. A rewrite the server will not start now, because one is already running or the family has no session yet, says so in a short message. [built] {R-0825}
 
 ## Upload a recording (Pro)
 

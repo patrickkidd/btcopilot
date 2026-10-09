@@ -337,7 +337,7 @@ def test_navigate_to_a_coder_screen_opens_for_a_coder(discussion, family):
 
 
 def test_a_report_asks_the_page_and_keeps_no_observation(discussion, family):
-    # R-0056
+    # R-0056, R-0823
     words = "I wish the picture were bigger."
     reply = run(
         discussion,
@@ -981,7 +981,7 @@ def test_a_remove_of_a_kind_the_record_does_not_hold_is_refused(discussion, fami
     reply = run(discussion, "Remove the household.", model)
 
     asked = event(reply, EventKind.ToolCall)
-    assert asked["names"] == {"it": "something the record has no kind for"}
+    assert asked["names"] == {"it": "something the diagram has no kind for"}
     assert asked["refusal"] == "There is no such kind of thing to remove."
     refused = model.histories[-1][-1]["content"][0]
     assert refused["is_error"] is True

@@ -69,6 +69,12 @@
 /* the small labels and the quiet lines */
 .case p.label, .case p.sublabel { margin: 0; font: 400 13px/1.2 var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
 .case p.faint { margin: 0; font: 400 13px/1.4 var(--sans); color: var(--faint); }
+/* the report out of date: the quiet line at the top of the cards, which opens
+   the question again, and the coach's cards dimmed but readable while it
+   rewrites them (Patrick's approved mockup, 2026-10-07) */
+.case button.aged { display: block; margin: 0; padding: 0; border: 0; background: none; text-align: left; font: 400 13px/1.4 var(--sans); color: var(--faint); cursor: pointer; }
+.case button.aged:disabled { cursor: default; }
+.case .level.dim { opacity: 0.45; }
 
 /* the family slid out over the report on the phone */
 .famout .scroller { flex: 1; min-height: 0; overflow-y: auto; }

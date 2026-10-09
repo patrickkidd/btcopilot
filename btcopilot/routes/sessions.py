@@ -35,13 +35,15 @@ from btcopilot.discussions import (
     sync_chat_speakers,
     utc_iso,
 )
-from btcopilot import chips, clock, toolnames, turns, turnstore
+from btcopilot import attachments, chips, clock, toolnames, turns, turnstore
 from btcopilot.toolbox import excerpt, said_in, said_with
 from btcopilot.turnlog import TurnEventKind
 
 THREAD_PAGE = 50
 # About two lines of a session's row, so the words a search found stay in sight.
 MATCH_CUT = 90
+# A form carrying a file at its size limit, with room for the words beside it.
+FORM_BYTES = attachments.MAX_BYTES + 1024 * 1024
 
 
 def statements_payload(statements: list[Statement], user) -> list[dict]:
@@ -80,6 +82,8 @@ def statements_payload(statements: list[Statement], user) -> list[dict]:
                 "session_id": s.discussion_id,
                 "role": "coach" if coach else "user",
                 "text": s.text,
+                "attachment_name": s.attachment_name,
+                "attachment_text": s.attachment_text,
                 "kind": (s.kind or StatementKind.Turn).value,
                 "cluster_id": s.cluster_id,
                 "case": s.told_case,
@@ -169,7 +173,12 @@ def thread(user, dia: Diagram | None, before: int | None = None) -> list[dict]:
     return out
 
 
-def _start(discussion: Discussion, statement: str, zone: str | None):
+def _start(
+    discussion: Discussion,
+    statement: str,
+    zone: str | None,
+    attached: attachments.File | None,
+):
     """The words are stored and the turn is handed to the worker, which answers
     at its own pace. The page follows it on /turns/<id>/events; nothing waits
     here, because a turn takes longer than a request may."""
@@ -179,24 +188,41 @@ def _start(discussion: Discussion, statement: str, zone: str | None):
         discussion.user.timezone = zone
     db.session.commit()
     try:
-        return jsonify(turns.start(discussion, statement, zone=zone)), 202
+        return jsonify(turns.start(discussion, statement, zone, attached)), 202
     except turns.Busy as busy:
         abort(409, description=str(busy))
 
 
-def _statement_text() -> tuple[str, str | None]:
-    """The words, and the browser's IANA time zone sent beside them, so the
+def _statement_text() -> tuple[str, str | None, attachments.File | None]:
+    """The words, the browser's IANA time zone sent beside them, so the
     coach's day is the person's; a zone the server does not know is left out
-    and the day is UTC's [Oracle: R-0760]."""
-    if request.headers.get("Content-Type") != "application/json":
-        abort(415, description="Only 'Content-Type: application/json' is supported")
-    return request.json["statement"], clock.zone(request.json.get("time_zone"))
+    and the day is UTC's [Oracle: R-0760]. As a multipart form the words may
+    carry one file, checked here before anything is stored or spent
+    [Oracle: R-0830]."""
+    kind = request.headers.get("Content-Type", "")
+    if kind == "application/json":
+        body, attached = request.json, None
+    elif kind.startswith("multipart/form-data"):
+        if request.content_length and request.content_length > FORM_BYTES:
+            abort(413, description=attachments.TOO_BIG)
+        body = request.form
+        file = request.files.get("file")
+        attached = attachments.File(file.filename, file.read()) if file else None
+    else:
+        abort(
+            415,
+            description="Only 'Content-Type: application/json' or "
+            "'multipart/form-data' is supported",
+        )
+    return body["statement"], clock.zone(body.get("time_zone")), attached
 
 
 @bp.route("/chat", methods=["POST"])
 def chat():
-    statement, zone = _statement_text()
-    return _start(current_session(auth.current_user(), create=True), statement, zone)
+    statement, zone, attached = _statement_text()
+    return _start(
+        current_session(auth.current_user(), create=True), statement, zone, attached
+    )
 
 
 @bp.route("/statements")
@@ -318,5 +344,5 @@ def session_delete(session_id: int):
 
 @bp.route("/sessions/<int:session_id>/statements", methods=["POST"])
 def add_statement(session_id: int):
-    statement, zone = _statement_text()
-    return _start(owned_session(session_id), statement, zone)
+    statement, zone, attached = _statement_text()
+    return _start(owned_session(session_id), statement, zone, attached)

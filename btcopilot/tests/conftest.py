@@ -5,6 +5,7 @@ import contextlib
 import datetime
 import logging
 import re
+import socket
 import flask.testing
 import pytest
 from mock import patch
@@ -17,7 +18,7 @@ from btcopilot.coachturn import SPEAK, run_call
 from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
 from btcopilot.promptdir import missing
 from btcopilot.toolbox import ToolName
-from btcopilot import turnlog, turns
+from btcopilot import casereport, turnlog, turns
 from btcopilot.turnlog import TurnEventKind
 
 from btcopilot.tables import TABLES
@@ -178,7 +179,9 @@ def turn_log():
     """Turns run where the test can read them: one log in this process, and the
     worker's task run as the POST returns rather than on a broker."""
     turnlog.use(turnlog.MemoryLog())
-    with patch("btcopilot.turns.enqueue", new=turns.run):
+    with patch("btcopilot.turns.enqueue", new=turns.run), patch(
+        "btcopilot.casereport.enqueue", new=casereport.run
+    ):
         yield turnlog.store()
     turnlog.use(None)
 
@@ -267,7 +270,9 @@ def logged(monkeypatch):
 
 
 def csrf_token(web) -> str:
-    page = web.get("/app/").get_data(as_text=True)
+    response = web.get("/app/")
+    assert response.status_code == 200
+    page = response.get_data(as_text=True)
     return re.search(r'name="csrf-token" content="([^"]+)"', page).group(1)
 
 
@@ -320,3 +325,24 @@ def discussion(test_user):
     db.session.commit()
 
     return discussion
+
+
+_connect = socket.socket.connect
+
+
+@pytest.fixture(autouse=True)
+def hermetic(request, monkeypatch):
+    if any(
+        request.node.get_closest_marker(m)
+        for m in ("integration", "e2e", "live", "conventions")
+    ):
+        yield
+        return
+
+    def connect(self, address):
+        if self.family == socket.AF_UNIX:
+            return _connect(self, address)
+        raise ConnectionRefusedError(f"unit tests may not open sockets: {address}")
+
+    monkeypatch.setattr(socket.socket, "connect", connect)
+    yield

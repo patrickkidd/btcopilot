@@ -260,7 +260,7 @@ export class Menu {
       html += personRow(person, this.editing === person.id);
     if (!shown.length)
       html = `<div class="none">${
-        this.data.people.length ? "Nobody matches that search." : "Nobody on your record yet."
+        this.data.people.length ? "Nobody matches that search." : "Nobody in your diagram yet."
       }</div>`;
     const top = this.body.scrollTop;
     this.body.innerHTML = html;

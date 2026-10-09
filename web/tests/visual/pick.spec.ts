@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { flask, stateFor, username, boxOf } from "./setup";
 
 /** A chip naming an event and the event's own dot pick it the same way

@@ -211,3 +211,6 @@ doc/archive/2026-09-trace.json
 # the case page gallery: the critics' scratch builds (one folder per round) and the mockup bundle, never committed (both can hold a record's text)
 /web/mockup/.exact-*/
 /web/mockup/dist/
+
+# Saved model replies for the live cases: a local cache, never committed (R-0813)
+private/replays/

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor } from "./setup";
 
 /** Only something entirely new slides: the about page and the board arrive

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, boxOf, step } from "./setup";
 import { colours, cutInFrame, leastName, wordsOutside } from "./gate";
 import { mockTurn } from "./turn";
@@ -20,6 +20,27 @@ const settle = async (page: Page) => {
 };
 
 const drawer = (page: Page) => page.locator("#pbp");
+
+/** The date of the step on the drawer's timeline: the dots-only line's label
+ * in the play-by-play, the picked event's words, date first, on the Family
+ * view's timeline. */
+const stamp = (page: Page) => drawer(page).locator(".wire :is(.wlab, .ss-t.on)").first();
+
+/** The Family view's picture scale against its own size, whether it is whole
+ * in its box, and the years line's width against its room. */
+const filled = (page: Page) =>
+  drawer(page).evaluate((p) => {
+    const svg = p.querySelector<SVGSVGElement>(".draw svg")!;
+    const [d, wire] = [p.querySelector(".draw")!, p.querySelector(".wire")!];
+    const dot = wire.querySelector(".dot.on")!.getBoundingClientRect();
+    return {
+      scale: parseFloat(svg.style.width) / svg.viewBox.baseVal.width,
+      whole: d.scrollWidth <= d.clientWidth + 1 && d.scrollHeight <= d.clientHeight + 1,
+      line: wire.querySelector(".view")!.getBoundingClientRect().width,
+      room: wire.clientWidth,
+      round: Math.abs(dot.width - dot.height),
+    };
+  });
 
 /** The stored play message, the one the session already holds. */
 const stored = (page: Page) => page.locator(".bub.coach[data-play]").last();
@@ -651,7 +672,7 @@ test.describe("the Family view's three generations", () => {
     expect(await drawn()).toEqual(frame);
     const place = () => drawer(page).locator(`.draw svg .p[data-id="${ids().Hugo}"] .shape`).evaluate((s) => [s.getAttribute("x"), s.getAttribute("y")].join(","));
     const at = await place();
-    const date = drawer(page).locator(".wire .wlab");
+    const date = stamp(page);
     for (let i = 0; i < 2; i++) {
       const was = (await date.textContent())!;
       await drawer(page).locator('[data-act="next"]').click();
@@ -686,11 +707,11 @@ test.describe("the Family view's three generations", () => {
   // R-0783
   test("puts the frame on someone named outside it, at the same date", async ({ page }) => {
     const { ids, drawn, of } = await opened(page);
-    const date = (await drawer(page).locator(".wire .wlab").textContent())!;
+    const date = (await stamp(page).textContent())!;
     await drawer(page).locator(`.also [data-centre="${ids().Hs1}"]`).click();
     await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family › Hs1's family");
     await expect.poll(drawn).toEqual(of("Hs1", "Hal", "Hope", "Hugo", "Hs0"));
-    await expect(drawer(page).locator(".wire .wlab")).toHaveText(date);
+    await expect(stamp(page)).toHaveText(date);
     // Ws1 still moves toward Hs1 from outside his frame
     await expect(drawer(page).locator(".also")).toHaveText("Also on this date: Ws1");
   });
@@ -770,7 +791,7 @@ test.describe("the Family view's three generations", () => {
     while (await back.count()) await back.click();
     await expect(drawer(page).locator(".when")).toContainText("kept her distance");
     const title = await drawer(page).locator(".when").evaluate((w) => ({ height: w.clientHeight, bottom: w.getBoundingClientRect().bottom }));
-    const label = (await drawer(page).locator(".wire .wlab").boundingBox())!;
+    const label = (await stamp(page).boundingBox())!;
     // three lines of 18 and the padding under them
     expect(title.height).toBe(3 * 18 + 8);
     expect(title.bottom).toBeLessThanOrEqual(label.y + 1);
@@ -1233,7 +1254,8 @@ test.describe("the picture centred in the room it has", () => {
       for (;;) {
         seen.push(
           await drawer(page).evaluate((p) => {
-            const drawn = [...p.querySelectorAll(".draw svg :is(.p .shape, .pt text)")].map((g) => g.getBoundingClientRect()).filter((r) => r.height);
+            // the ring of the diagram's own person is part of their mark, as the layout counts it
+            const drawn = [...p.querySelectorAll(".draw svg :is(.p :is(.shape, .you), .pt text)")].map((g) => g.getBoundingClientRect()).filter((r) => r.height);
             const svg = p.querySelector(".draw svg")!.getBoundingClientRect();
             const draw = p.querySelector(".draw")!.getBoundingClientRect();
             const foot = p.querySelector(".foot")!.getBoundingClientRect();
@@ -1524,7 +1546,7 @@ test.describe("the Family view on a short phone held upright", () => {
 
 /** What stands at a point of the screen: inside the Family view or not. */
 const covers = (page: Page, x: number, y: number) => page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest("#pbp"), [x, y]);
-const placeOf = (page: Page) => page.evaluate(() => [document.querySelector("#pbp .wlab")!.textContent, document.querySelector("#pbp .path")!.textContent]);
+const placeOf = (page: Page) => page.evaluate(() => [document.querySelector("#pbp .when")!.textContent, document.querySelector("#pbp .path")!.textContent]);
 
 test.describe("the Family view on a phone, turned", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 393, height: 852 }, hasTouch: true, isMobile: true });
@@ -1626,7 +1648,154 @@ test.describe("the Family view on a desktop window", () => {
     await drawer(page).locator(".foot .full").click();
     await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(false);
   });
+
+  // "When showing the full Family Diagram view, I think it should just automatically scale to fill all available space. Not just when you click the full screen button." and "the timeline should really stretch out to fit available horizontal space." (Patrick, 2026-10-07)
+  // R-0796
+  test("grows the picture past its own size to fill the room, full screen or not, the years line spanning the width", async ({ page }, info) => {
+    test.skip(info.project.name !== "phone", "the size is the describe's own");
+    await settle(page);
+    await page.locator("#cap-family").click();
+    await expect(drawer(page)).toBeVisible();
+    const before = await filled(page);
+    expect(before.scale).toBeGreaterThan(1);
+    expect(before.whole).toBe(true);
+    expect(before.line).toBeCloseTo(before.room, 0);
+    expect(before.round).toBeLessThan(0.5);
+    await drawer(page).locator(".foot .full").click();
+    await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true);
+    const full = await filled(page);
+    expect(full.scale).toBeGreaterThanOrEqual(before.scale);
+    expect(full.whole).toBe(true);
+    expect(full.line).toBeCloseTo(full.room, 0);
+  });
 });
+
+for (const [what, viewport] of [
+  ["a desktop window", { width: 1440, height: 900 }],
+  ["a phone", { width: 393, height: 852 }],
+] as const)
+  test.describe(`the Whitlocks' Family view on ${what}`, () => {
+    test.use({ storageState: stateFor("whitlock"), viewport });
+
+    // "When showing the full Family Diagram view, I think it should just automatically scale to fill all available space." (Patrick, 2026-10-07)
+    // R-0796
+    test("draws the family as large as the room lets it, never under the size its names are read at", async ({ page }, info) => {
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      await settle(page);
+      await page.locator("#cap-family").click();
+      await expect(drawer(page)).toBeVisible();
+      const seen = await filled(page);
+      expect(seen.line).toBeCloseTo(seen.room, 0);
+      if (seen.whole) expect(seen.scale).toBeGreaterThanOrEqual(1);
+    });
+
+    // "Yes, build that change to reuse the main timeline in the full Diagram view. But we still need to be stepping through the timeline event by event just like we are right now." (Patrick, 2026-10-07)
+    // R-0796
+    test("shows the chat's timeline with its clusters; a tap on a cluster steps to its first date, and Back and Next still step one event", async ({ page }, info) => {
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      const errors = watched(page);
+      await settle(page);
+      await page.locator("#cap-family").click();
+      await expect(drawer(page)).toBeVisible();
+      const title = drawer(page).locator(".when");
+      const pill = drawer(page).locator('.wire .ss-hit[data-target="cluster"]').first();
+      await expect(pill).toHaveCount(1);
+      const opened = await title.innerText();
+      await pill.click();
+      await expect(title).not.toHaveText(opened);
+      const at = await title.innerText();
+      const date = (await stamp(page).textContent())!;
+      // the step's event is picked on the timeline, inside its cluster, opened
+      await expect(drawer(page).locator(".wire rect.pill.on")).toHaveCount(1);
+      // the step's words stand over its dot, inside the line's visible stretch
+      const over = await drawer(page).evaluate((p) => {
+        const [dot, words, line] = [".wire .dot.on", ".wire .ss-t.on", ".lv > .wire"].map((s) => p.querySelector(s)!.getBoundingClientRect());
+        const mid = dot.left + dot.width / 2;
+        return { inside: words.left >= line.left - 1 && words.right <= line.right + 1, off: Math.abs(words.left + words.width / 2 - mid), edge: Math.min(words.left - line.left, line.right - words.right) };
+      });
+      expect(over.inside).toBe(true);
+      // centred on the dot, or held at the line's edge
+      expect(over.off < 2 || over.edge < 24).toBe(true);
+      await drawer(page).locator('[data-act="next"]').click();
+      await expect(title).not.toHaveText(at);
+      await expect(stamp(page)).not.toHaveText(date);
+      await drawer(page).locator('[data-act="back"]').click();
+      await expect(title).toHaveText(at);
+      await expect(stamp(page)).toHaveText(date);
+      expect(errors).toEqual([]);
+    });
+
+    // "the timeline needs to scroll to the right in the full family diagram view." (Patrick, 2026-10-07)
+    // R-0796
+    test("scrolls its timeline with the steps, so the step's dot is always in sight", async ({ page }, info) => {
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      await settle(page);
+      await page.locator("#cap-family").click();
+      await expect(drawer(page)).toBeVisible();
+      const back = drawer(page).locator('[data-act="back"]:not([disabled])');
+      while (await back.count()) await back.click();
+      const sight = () =>
+        drawer(page).evaluate((p) => {
+          const [dot, line] = [".wire .dot.on", ".lv > .wire"].map((s) => p.querySelector(s)!.getBoundingClientRect());
+          const scroll = p.querySelector<HTMLElement>(".wire .ss-scroll")!;
+          return { inside: dot.left >= line.left && dot.right <= line.right, left: scroll.scrollLeft, wide: scroll.scrollWidth > scroll.clientWidth };
+        });
+      expect((await sight()).wide).toBe(true);
+      await expect.poll(async () => (await sight()).inside).toBe(true);
+      const next = drawer(page).locator('[data-act="next"]');
+      let far = 0;
+      while (await next.isEnabled()) {
+        await next.click();
+        await expect.poll(async () => (await sight()).inside).toBe(true);
+        far = Math.max(far, (await sight()).left);
+      }
+      // the line went past its first screen to follow the steps
+      expect(far).toBeGreaterThan(0);
+    });
+
+    // "when I click next in the full family diagram view, the timeline sometimes jumps around to a destination with no selected event visible." (Patrick, 2026-10-07)
+    // R-0796
+    test("keeps the step's dot or pill in sight on every step, and holds the line still on a step whose date is unknown", async ({ page }, info) => {
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      // Delphine's and Theo's births with their dates unknown: steps the
+      // timeline draws nothing of, as on Patrick's own diagram
+      await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+        const tl = await (await route.fetch()).json();
+        for (const e of tl.events) if (e.id === 105 || e.id === 108) e.dateCertainty = "unknown";
+        await route.fulfill({ json: tl });
+      });
+      await settle(page);
+      await page.locator("#cap-family").click();
+      await expect(drawer(page)).toBeVisible();
+      const seen = () =>
+        drawer(page).evaluate((p) => {
+          const line = p.querySelector(".lv > .wire")!.getBoundingClientRect();
+          const lit = (p.querySelector(".wire .dot.on") ?? p.querySelector(".wire rect.pill.on"))?.getBoundingClientRect();
+          const mid = lit && lit.left + lit.width / 2;
+          return {
+            lit: !!lit,
+            inside: mid !== undefined && mid >= line.left && mid <= line.right,
+            left: p.querySelector<HTMLElement>(".wire .ss-scroll")!.scrollLeft,
+          };
+        });
+      await expect.poll(async () => (await seen()).inside).toBe(true);
+      const next = drawer(page).locator('[data-act="next"]');
+      let held = 0;
+      while (await next.isEnabled()) {
+        const was = (await seen()).left;
+        await next.click();
+        if ((await seen()).lit) {
+          await expect.poll(async () => (await seen()).inside).toBe(true);
+          continue;
+        }
+        // nothing on the line stands for the step, so the line stays put
+        held++;
+        await page.waitForTimeout(600);
+        expect((await seen()).left).toBe(was);
+      }
+      expect(held).toBe(2);
+    });
+  });
 
 test.describe("the Family view's frame on a phone turned sideways", () => {
   test.use({ storageState: stateFor("play"), viewport: { width: 852, height: 393 } });
@@ -1732,6 +1901,24 @@ test.describe("the whole family stepped through dates", () => {
   });
 
   // R-0755
+  test("keeps its Family button with a cluster open and after the cluster is put down, and it opens the whole family", async ({ page }) => {
+    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
+    await settle(page);
+    const family = page.locator("#caption #cap-family");
+    await expect(family).toBeVisible();
+    await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
+    await expect(page.locator("#caption #cap-play")).toBeVisible();
+    await expect(family).toBeVisible();
+    await expect(family).toBeEnabled();
+    await page.locator("#path [data-step='0']").click();
+    await expect(page.locator("#caption .cta")).toHaveText("tap a cluster");
+    await expect(family).toBeVisible();
+    await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
+    await family.click();
+    await expect(page).toHaveURL(/\/app\/family$/);
+  });
+
+  // R-0755
   test("has no Family button on a record with no dated birth, couple, death or relationship shift", async ({ page }) => {
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
@@ -1772,7 +1959,7 @@ test.describe("the whole family stepped through dates", () => {
     while (await next.isEnabled()) await next.click();
     const top = drawer(page).locator(".when");
     await expect(top).toHaveText("Ben died");
-    await expect(drawer(page).locator(".wire .wlab")).toHaveText("February 2010");
+    await expect(stamp(page)).toHaveText(/^Feb 2010/);
     const picture = () => drawer(page).locator(".draw").innerHTML();
     const dot = drawer(page).locator('.draw .p[data-id="9100"]');
     let was = await picture();
@@ -1829,8 +2016,8 @@ test.describe("the whole family stepped through dates", () => {
       await expect(top).not.toHaveText(before);
       expect(await at()).toBe(still);
     }
-    await expect(drawer(page).locator(".wire .wlab")).toHaveText("February 1940");
-    const [label, wire] = [await boxOf(drawer(page).locator(".wire .wlab")), await boxOf(drawer(page).locator(".wire svg"))];
+    await expect(stamp(page)).toHaveText(/^Feb 1940/);
+    const [label, wire] = [await boxOf(stamp(page)), await boxOf(drawer(page).locator(".lv > .wire"))];
     expect(label!.x).toBeGreaterThanOrEqual(wire!.x);
     expect(label!.x + label!.width).toBeLessThanOrEqual(wire!.x + wire!.width);
     await drawer(page).locator('[data-act="next"]').click();
@@ -2081,7 +2268,7 @@ test.describe("stepped by hand on a phone", () => {
   test("the Family button opens on the first date holding more than births, Harold and June's marriage", async ({ page }) => {
     await family(page);
     await expect(drawer(page).locator(".when")).toHaveText("Harold and June married");
-    await expect(drawer(page).locator(".wire .wlab")).toHaveText("June 1946");
+    await expect(stamp(page)).toHaveText(/^Jun 1946/);
   });
 
   /** Where each moved person stands in the drawing, sampled over seven seconds. */

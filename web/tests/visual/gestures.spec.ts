@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, boxOf } from "./setup";
 
 /** The taps below pin two rulings: a first tap looks and costs nothing [Oracle: R-0073],

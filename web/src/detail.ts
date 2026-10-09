@@ -106,7 +106,7 @@ const chipFor = (kind: ChipKind, id: number, label: string): Chip => ({
 });
 
 const nameIn = (people: Person[]) => (id: number) =>
-  people.find((p) => p.id === id)?.name ?? "someone not in the record";
+  people.find((p) => p.id === id)?.name ?? "someone not in the diagram";
 
 export function eventDetail(
   event: TimelineEvent,

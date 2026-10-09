@@ -96,10 +96,11 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
         ),
     )
     first = post(web, token, "I want to talk about my family.").get_json()
+    # the times the most was going on lead, then the structure items
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            f"1 Wren (the person): birth date, {MOST}, schooling",
+            f"1 Wren (the person): {MOST}, who their parents are, marriages with dates",
             RESOLVED.format(known=2, resolved=2, required=14),
         ]
     )
@@ -161,7 +162,7 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            f"1 Wren (the person): {MOST}, schooling, work",
+            f"1 Wren (the person): {MOST}, who their parents are, marriages with dates",
             RESOLVED.format(known=2, resolved=2, required=14),
         ]
     )
@@ -208,14 +209,17 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
         ),
     )
     third = post(web, token, "I met Sam in 2012.").get_json()
-    # at most three on one person, so the list reaches the parents; the birth
+    # the structure items of everyone in the record come before anyone's
+    # schooling, so the list reaches the parents and the sister; the birth
     # date said unknown is listed apart
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            f"1 Wren (the person): {MOST}, schooling, work",
-            "2 Ada (mother): birth date, alive or not, schooling",
-            "3 Tom (father): birth date, alive or not",
+            f"1 Wren (the person): {MOST}, marriages with dates",
+            "2 Ada (mother): who their parents are, marriages with dates",
+            "3 Tom (father): who their parents are, marriages with dates",
+            "couple 4, Ada and Tom (parents): how many children",
+            "5 Nell (sister): marriages with dates",
             "Said unknown: 1 Wren (the person): birth date",
             RESOLVED.format(known=10, resolved=11, required=50),
         ]
@@ -342,11 +346,13 @@ def test_under_a_plateau_the_list_is_cut_to_the_nearest_few(family):
     # R-0006, R-0520
     data = parents(family.get_diagram_data())
     full = coverage.block(data).splitlines()
-    assert len(full) == 5
+    assert len(full) == 7
     assert coverage.block(data, plateau=2).splitlines() == [
         coverage.HEAD,
         "Your plateau note holds, turn 2 of 5: the nearest 3 only.",
-        f"1 Wren (the person): birth date, {MOST}, schooling",
+        f"1 Wren (the person): {MOST}",
+        "2 Ada (mother): who their parents are",
+        "3 Tom (father): who their parents are",
         full[-1],
     ]
 
@@ -373,7 +379,9 @@ def test_a_plateau_note_lapses_after_five_turns(web, token, family, monkeypatch)
         f"Your plateau note holds, turn {turn} of 5: the nearest 3 only."
         for turn in range(1, coverage.PLATEAU_TURNS + 1)
     ]
-    assert seen[0] == seen[-1] == f"1 Wren (the person): birth date, {MOST}, schooling"
+    assert seen[0] == seen[-1] == (
+        f"1 Wren (the person): {MOST}, who their parents are, marriages with dates"
+    )
 
 
 def test_a_new_person_ends_the_plateau(web, token, family, monkeypatch):
@@ -415,7 +423,7 @@ def test_the_times_the_most_was_going_on_lead_until_a_question_on_them_closes(fa
     ]
     most = (Fact.MostGoingOn, ItemKind.Person, ME)
     assert coverage.block(data).splitlines()[1] == (
-        f"1 Wren (the person): {MOST}, schooling, work"
+        f"1 Wren (the person): {MOST}, who their parents are, marriages with dates"
     )
     # the clusters make the periods of major stress known, never these times
     assert coverage.states(data)[most] is FactState.NotAsked
@@ -434,6 +442,69 @@ def test_the_times_the_most_was_going_on_lead_until_a_question_on_them_closes(fa
     ]
     assert coverage.states(data)[most] is FactState.Known
     assert MOST not in coverage.block(data)
+
+
+GRAN, GRAMPS, UP = 8, 9, 10
+
+
+def grandparents(data: DiagramData) -> DiagramData:
+    """Wren's family with her mother's parents, Joan and Ray, and nothing dated."""
+    data = parents(data)
+    data.people[1]["parents"] = UP
+    data.people += [
+        asdict(Person(id=GRAN, name="Joan", gender=PersonKind.Female)),
+        asdict(Person(id=GRAMPS, name="Ray", gender=PersonKind.Male)),
+    ]
+    data.pair_bonds.append(asdict(PairBond(id=UP, person_a=GRAN, person_b=GRAMPS)))
+    return data
+
+
+def test_the_structure_items_lead_the_list_for_every_diagram_until_closed(family):
+    # R-0618, R-0006
+    # Patrick, 2026-10-07: "the basic family structure should be mapped out at least
+    # earlier than later. Definitely before any Coach driven rabbit holes on stories".
+    data = grandparents(family.get_diagram_data())
+    lines = coverage.block(data).splitlines()
+    # the grandparents' number of children, which Kerr's order puts far down, is
+    # on the list before anyone's schooling and before anyone's marriage dates,
+    # and so is the father's parents; the eight nearest never reach a story
+    assert lines[1:-1] == [
+        f"1 Wren (the person): {MOST}, marriages with dates",
+        "3 Tom (father): who their parents are, marriages with dates",
+        "couple 4, Ada and Tom (parents): how many children",
+        "couple 10, Joan and Ray (grandparents): how many children",
+        "2 Ada (mother): marriages with dates",
+        "5 Nell (sister): marriages with dates",
+    ]
+    assert "schooling" not in coverage.block(data)
+    # the order is the required items re-sorted, nothing added or taken away
+    required = coverage.required(data)
+    first = coverage.structure_first(required)
+    assert sorted(map(str, first)) == sorted(map(str, required))
+    tier = {fact: n for n, facts in enumerate(coverage.TIERS) for fact in facts}
+    kinds = [tier.get(fact, len(coverage.TIERS)) for fact, _, _ in first]
+    assert kinds == sorted(kinds)
+    assert [fact for fact, _, _ in first][0] is Fact.MostGoingOn
+    assert (Fact.Children, ItemKind.PairBond, UP) in first[: kinds.index(2)]
+
+    # with every structure item closed, the story items come, in Kerr's order
+    data.questions = [
+        {
+            "id": f"q{n}",
+            "text": "?",
+            "kind": "fact",
+            "state": "resolved",
+            "outcome": "unknown",
+            "item_kind": kind.value,
+            "item_id": str(iid),
+            "fact": fact.value,
+        }
+        for n, (fact, kind, iid) in enumerate(required)
+        if fact in coverage.STRUCTURE or fact in coverage.LEADING
+    ]
+    assert coverage.block(data).splitlines()[1] == (
+        "1 Wren (the person): birth date, schooling, work"
+    )
 
 
 def test_a_job_told_unasked_and_noted_as_work_counts_as_known(family):

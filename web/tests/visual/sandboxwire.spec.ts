@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { need, sandboxOnly } from "./sandbox";
 
 // The meeting's agreement wire on its own: a tap on any dot, the journey the

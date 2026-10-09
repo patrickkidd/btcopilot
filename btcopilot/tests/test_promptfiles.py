@@ -46,6 +46,7 @@ def rendered(module, names) -> dict:
         map=RECORD, transcript=TRANSCRIPT
     )
     out["note_register"] = module.note_register()
+    out["case_report_rewrite"] = module.case_report_rewrite()
     out["scribe_prompt/empty"] = module.scribe_prompt()
     out["scribe_prompt/record"] = module.scribe_prompt(record=RECORD)
     out["tool_meanings"] = {str(k): v for k, v in module.tool_meanings().items()}

@@ -34,7 +34,7 @@ The case report's cards in each record.
 
 Put each family's raised guesses and its questions on the case report's cards, and add the question about the person's own part where the record has none, as the coach would have had the report been there from the start. The dry run makes one model call per family that has a raised guess or question on no card that came in after the newest card was set, goes to the model-calls ledger, prints each card before and after, and saves the plan to a file; --apply --plan writes exactly that plan, checked again, with no model call.
 
-Changes something: needs `--yes`.
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
 
 | Argument | What it is |
 |---|---|
@@ -42,6 +42,22 @@ Changes something: needs `--yes`.
 | `--apply` | Write saved plans; the default, --dry-run, makes the model call and saves the plan, writing nothing to the record. |
 | `--plan` | With --apply: a plan file the dry run printed. |
 | `--plans` | Where the dry run saves its plans. |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin case-report rewrite`
+
+Write every card the coach writes again on each record that holds one, the Executive Summary among them, as the page's Refresh does (R-0820, R-0825). The dry run prints each card's guess now and the one it would write, with the call's estimated input tokens, and saves the plan; the model calls go to the model-calls ledger as a backfill, never to the person's monthly tokens. --apply --plan writes exactly that plan, with no model call, and prints the change rows `flask admin diagrams undo` takes back.
+
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--apply` | Write saved plans; the default, --dry-run, makes the model call and saves the plan, writing nothing to the record. |
+| `--plan` | With --apply: a plan file the dry run printed. |
+| `--plans` | Where the dry run saves its plans. |
+| `--requests` | Save each record's request here instead of calling the model, for the Claude Code subscription to answer; nothing else is done. |
+| `--saved-answers` | Take each record's answer from case-report-<id>.json here instead of calling the model: the assistant message the subscription wrote for its saved request. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin coach-model`
@@ -122,6 +138,18 @@ Changes something: needs `--yes`.
 
 The family records.
 
+### `flask admin diagrams dates`
+
+List each event date stored as a Qt date object rather than text, with the text it becomes, and why the date rule would refuse the write when it would; nothing else in the event is checked or changed. --apply writes each record's dates the rule takes as one change row that `diagrams undo` takes back.
+
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--apply` | Write the text dates; the default, --dry-run, lists them and writes nothing. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin diagrams export <diagram_id>`
 
 Write one record out as JSON.
@@ -144,7 +172,7 @@ Every record, with how much is in it.
 
 Regroup each record whose events changed since its last grouping, or that has events to group and no groups. The dry run lists them and makes no model call; --apply makes the grouping calls a turn makes, one or two per record, each in the model-calls ledger, and writes each record's new grouping as one change row that `diagrams undo` takes back. A record whose answers are both refused gets the rules' groups under their years, and `failed` says so.
 
-Changes something: needs `--yes`.
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
 
 | Argument | What it is |
 |---|---|
@@ -172,6 +200,24 @@ Changes something: needs `--yes`.
 | `diagram_id` | required |
 | `change_ids` | required |
 | `--json` | Print JSON, not a table. |
+
+### `flask admin flow`
+
+The conversational-flow numbers per model and prompt version.
+
+### `flask admin flow track`
+
+Count the flow rules over every real thread, leaving out claude-test accounts, scratch records and plays, and add the counts per thread, model, prompt version and rules version to threads.jsonl and the return of each account to accounts.jsonl. No text is written.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--export` | A folder holding stmts.json and changes.json. |
+| `--database` | Read the configured database. |
+| `--out` | Where threads.jsonl and accounts.jsonl go; never inside a git work tree. |
+| `--again` | Recompute keys already written. |
+| `--production` | Read the production database: Patrick agreed. |
 
 ### `flask admin imports`
 
@@ -411,7 +457,7 @@ Changes something: needs `--yes`.
 
 Bring each record's questions to where they would stand had the coach's question rules been there from the first session: a fact question filed on the wrong kind of thing moves to the right person or pair-bond, a fact the person already said is kept as a question already answered, a story the talk moved past is kept to come back to, and each day the coach asked an open question again and the person passed over it is kept on that question. Chat messages are never changed. The dry run makes one model call per record with a session, goes to the model-calls ledger, and saves a plan a person can read; --apply --plan writes exactly that plan, each item one change row that `diagrams undo` takes back, with no model call.
 
-Changes something: needs `--yes`.
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
 
 | Argument | What it is |
 |---|---|

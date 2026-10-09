@@ -1,40 +1,26 @@
-"""Blind pairs: two replies to the same words, shown in a random order with no
-model named until Patrick has picked (R-0599). His pick is the only judgement;
-no model judges another.
+"""The chat's vote: a coach turn's replies, the real one and its shadows,
+shown in a random order with no model named until the reader has picked
+(R-0636). The reader's pick is the only judgement; no model judges another.
 
-A pair is a shadow turn against the real reply it shadowed, or the same reply
-of two replays of one discussion on different models, aligned by turn. Only a
-replay whose pass this database keeps is paired."""
+A pair is a shadow turn against the real reply it shadowed."""
 
 import enum
-import itertools
-import json
 import random
 import string
 
 from flask import abort, jsonify, request
 
 import btcopilot
-from btcopilot import ledger
 from btcopilot.extensions import db
 from btcopilot.review import adapter
 from btcopilot.review.models import Pick, PickChoice, PickSource
 from btcopilot.review.models.pick import NOTE_CAP
-from btcopilot.review.routes import admin, bp, coder
-
-
-class Who(enum.StrEnum):
-    User = "user"
-    Coach = "coach"
+from btcopilot.review.routes import bp, coder
 
 
 class Ref(enum.StrEnum):
     Shadow = "shadow"
     Statement = "statement"
-
-
-def _spoken(discussion, speaker_id: int) -> list:
-    return [s for s in adapter.sitting(discussion.id) if s.speaker_id == speaker_id]
 
 
 def _shadows(*where):
@@ -62,105 +48,10 @@ def _shadows(*where):
         )
 
 
-def _held(line: dict) -> bool:
-    """Whether this database holds the replay a ledger line describes. The
-    ledger is a file beside the code and outlives a database, so it can hold
-    replays run on another one, whose ids mean other rows here."""
-    tokens = line["tokens"]
-    kept = adapter.ReplayPass.query.filter_by(
-        scratch_diagram_id=line["scratch_diagram_id"],
-        turns=line["turns"],
-        input_tokens=tokens["input"],
-        output_tokens=tokens["output"],
-        cache_creation_tokens=tokens["cache_creation"],
-        cache_read_tokens=tokens["cache_read"],
-    ).first()
-    scratch = adapter.discussion_of(line["scratch_discussion_id"])
-    return (
-        kept is not None
-        and scratch is not None
-        and scratch.diagram_id == line["scratch_diagram_id"]
-    )
-
-
-def _replays():
-    path = ledger.PATH
-    lines = (
-        [json.loads(line) for line in path.read_text().splitlines()]
-        if path.exists()
-        else []
-    )
-    replays = sorted(
-        (
-            line
-            for line in lines
-            if line["kind"] == ledger.LedgerKind.Replay and _held(line)
-        ),
-        key=lambda line: line["discussion_id"],
-    )
-    for discussion_id, group in itertools.groupby(
-        replays, key=lambda line: line["discussion_id"]
-    ):
-        real = adapter.discussion_of(discussion_id)
-        said = _spoken(real, real.chat_user_speaker_id)
-        for one, other in itertools.combinations(list(group), 2):
-            if one["model"] == other["model"]:
-                continue
-            ones, others = (
-                _spoken(scratch, scratch.chat_ai_speaker_id)
-                for scratch in (
-                    adapter.discussion_of(one["scratch_discussion_id"]),
-                    adapter.discussion_of(other["scratch_discussion_id"]),
-                )
-            )
-            for words, mine, theirs in zip(said, ones, others):
-                yield (
-                    f"replay:{mine.id}:{theirs.id}",
-                    PickSource.Replay,
-                    {"model": one["model"], "statement_id": mine.id, "said": words.id},
-                    {
-                        "model": other["model"],
-                        "statement_id": theirs.id,
-                        "said": words.id,
-                    },
-                )
-
-
 def _text(ref: dict) -> str:
     if "shadow_id" in ref:
         return db.session.get(adapter.ShadowTurn, ref["shadow_id"]).text
     return adapter.statement(ref["statement_id"]).text
-
-
-def _context(said_id: int) -> list[dict]:
-    """The conversation up to and including the words both replies answer."""
-    said = adapter.statement(said_id)
-    discussion = adapter.discussion_of(said.discussion_id)
-    lines = adapter.sitting(discussion.id)
-    return [
-        {
-            "who": (
-                Who.Coach if s.speaker_id == discussion.chat_ai_speaker_id else Who.User
-            ),
-            "text": s.text,
-        }
-        for s in lines[: lines.index(said) + 1]
-    ]
-
-
-def blind(pick: Pick) -> dict:
-    return {
-        "id": pick.id,
-        "source": pick.source,
-        "context": _context(pick.left_ref["said"]),
-        "left": pick.left_text,
-        "right": pick.right_text,
-    }
-
-
-def _thread(pick: Pick) -> tuple:
-    said = adapter.statement(pick.left_ref["said"])
-    return (said.discussion_id, said.order or 0, said.id, pick.id)
 
 
 def _serve(pairs) -> list[Pick]:
@@ -185,16 +76,6 @@ def _serve(pairs) -> list[Pick]:
         picks.append(pick)
     db.session.commit()
     return picks
-
-
-@bp.route("/pairs")
-def pair_index():
-    """Every pair not yet picked, a conversation at a time in the order it was
-    said."""
-    admin()
-    _serve(itertools.chain(_shadows(), _replays()))
-    waiting = sorted(Pick.query.filter(Pick.choice.is_(None)), key=_thread)
-    return jsonify([blind(pick) for pick in waiting])
 
 
 def _owner(user, discussion):
@@ -324,24 +205,5 @@ def pick_put(pick_id: int):
 
 @bp.route("/picks")
 def pick_index():
-    """Each model's picks: how often its reply won, lost or tied; or, with
-    `?turn=`, one coach turn's replies to vote on blind."""
-    if "turn" in request.args:
-        return _turn(request.args["turn"])
-    admin()
-    tally: dict[str, dict] = {}
-    for pick in Pick.query.filter(Pick.choice.isnot(None)):
-        for side, ref in (
-            (PickChoice.Left, pick.left_ref),
-            (PickChoice.Right, pick.right_ref),
-        ):
-            row = tally.setdefault(
-                ref["model"], {"model": ref["model"], "won": 0, "lost": 0, "tied": 0}
-            )
-            if pick.choice is PickChoice.Tie:
-                row["tied"] += 1
-            elif pick.choice is side:
-                row["won"] += 1
-            else:
-                row["lost"] += 1
-    return jsonify(sorted(tally.values(), key=lambda row: row["model"]))
+    """One coach turn's replies to vote on blind, named by `?turn=`."""
+    return _turn(request.args["turn"])

@@ -1,11 +1,13 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
+import itertools
 import logging
 from logging.handlers import SMTPHandler
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonTracebackLexer
+from pathlib import Path
 import smtplib
 import sys
 
@@ -22,17 +24,29 @@ class ColorfulSMTPHandler(SMTPHandler):
 
     def source(self):
         if has_request_context():
-            return f"{request.host}{request.path}"
+            return f"Server: {request.host}{request.path}"
         if current_task:
-            return f"worker {current_task.name}"
-        args = " ".join(sys.argv[1:])
-        return f"command {args}" if args else "shell"
+            return f"Server: worker {current_task.name}"
+        program, args = sys.argv[0], sys.argv[1:]
+        name = Path(program).name
+        if name == "gunicorn":
+            return "Server: gunicorn"
+        if "celery" in Path(program).parts:
+            return " ".join(["Server: celery", *(a for a in args if a in ("worker", "beat"))])
+        if name in ("flask", "alembic"):
+            words = list(itertools.takewhile(lambda a: not a.startswith("-"), args))
+            return f"Script: {' '.join(words if name == 'flask' else [name, *words])}"
+        if program in ("", "-"):
+            return "Script: python"
+        if program == "-c":
+            return "Script: python -c"
+        return f"Script: {name}"
 
     def getSubject(self, record):
         return f"[{self.origin()}] " + record.getMessage()
 
     def format(self, record):
-        return f"Server: {self.origin()}\n" + super().format(record)
+        return f"{self.origin()}\n" + super().format(record)
 
     def emit(self, record):
         try:

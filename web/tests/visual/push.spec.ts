@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "./fixtures";
 import { flask, stateFor, username } from "./setup";
 
 /** A coach notification in a real browser, through the app's own service

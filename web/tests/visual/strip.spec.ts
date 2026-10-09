@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { stateFor, type Key } from "./setup";
 
 /** The pill strip on every shape of record, at phone and desktop sizes: one

@@ -80,7 +80,7 @@ class Invalid(Exception):
 # A question is closed, never removed (R-0006): what the user declined has to
 # stay where the coach can see it.
 NEVER_REMOVED = ("a question is never removed; close it", "A question is never removed.")
-GONE = "That is not in the record."
+GONE = "That is not in the diagram."
 
 
 class Conflict(Exception):
@@ -134,6 +134,15 @@ def apply(
             statement_id,
             refile=refile,
         )
+
+
+def preview(
+    diagram_id: int, deltas: list[dict], *, author: Author, turn_id: str = ""
+) -> None:
+    """Raise Invalid where `apply` would refuse these deltas; writes nothing."""
+    data = diagramjson.loads(db.session.get(Diagram, diagram_id).data)
+    applied = [d for delta in deltas for d in _apply(data, delta)]
+    _check(data, compress(applied), author, turn_id, False)
 
 
 def undo(
@@ -190,7 +199,10 @@ def rewind(data: dict, deltas: list[dict]):
     one for one: a removal's cascade is logged delta by delta, so nothing here
     cascades. A thing the row made comes off whole, whether it was logged as one
     add or, as rows written before adds were logged whole did, as field sets on
-    a new id, which once taken back leave it holding nothing but that id."""
+    a new id, which once taken back leave it holding nothing but that id. An
+    event taken back to no kind did not exist yet, since every write gives one
+    a kind, and comes off whole even where a field written without a change
+    row, such as a backfilled title, is still on it."""
     for delta in reversed(deltas):
         _back(data, delta)
     for kind, item_id in {
@@ -199,7 +211,9 @@ def rewind(data: dict, deltas: list[dict]):
         if d["field"] is not None and d["item_kind"] != ItemKind.Diagram.value
     }:
         item = _find(data, kind, item_id)
-        if all(value in (None, []) for field, value in item.items() if field != "id"):
+        if all(value in (None, []) for field, value in item.items() if field != "id") or (
+            kind is ItemKind.Event and item.get("kind") is None
+        ):
             _collection(data, kind).remove(item)
 
 
@@ -568,6 +582,28 @@ def _removes(delta: dict) -> bool:
     return delta["field"] is None and delta["after"] is None
 
 
+def _check(
+    data: dict,
+    deltas: list[dict],
+    author: Author,
+    turn_id: str,
+    undoing: bool,
+    refile: bool = False,
+):
+    """The stored-date repair turns a date into text and nothing else, so it
+    answers only to the date rule, and an older fault elsewhere in the same
+    event does not block it; taking it back puts the stored date back as it
+    was [Oracle: R-0084]."""
+    if not turn_id.removeprefix("undo:").startswith(DATE_REPAIR):
+        _validate(data, deltas, author, undoing, refile)
+        return
+    other = [d for d in deltas if d["item_kind"] != ItemKind.Event.value or d["field"] not in DATES]
+    if other:
+        raise ValueError(f"the date repair writes event dates only, not {other[0]}")
+    if not undoing:
+        _dates(data, deltas)
+
+
 def _validate(
     data: dict, deltas: list[dict], author: Author, undoing: bool, refile: bool = False
 ):
@@ -608,6 +644,7 @@ def _validate(
     _values(data, deltas)
     _words(data, deltas)
     _moves(data, deltas)
+    _dates(data, deltas)
     _twins(data, deltas)
     _people(data, deltas)
     _structure(data, deltas)
@@ -645,6 +682,8 @@ WORDED_KINDS = (EventKind.Noted.value, EventKind.Shift.value)
 PLACEHOLDERS = {"", "new event", "unknown"}
 TRIANGLES = (RelationshipKind.Inside.value, RelationshipKind.Outside.value)
 DATES = ("dateTime", "endDateTime")
+#: The turn id of the stored-date repair, `flask admin diagrams dates`.
+DATE_REPAIR = "dates:"
 #: Each closed field of an event, the values it may hold, and what they are called.
 EVENT_SETS = (
     ("kind", KINDS, "event kinds"),
@@ -763,8 +802,7 @@ def _moves(data: dict, deltas: list[dict]):
     """A noted event and a shift say in words what happened under a short
     title (R-0681), a shift says which way something moved, and only a shift
     carries a move: a birth, marriage or death is not itself a shift (R-0037,
-    R-0364, R-0375). Dates are dates, and an event ends after it begins.
-    Checked on the events this write touches, the way the cluster floor is."""
+    R-0364, R-0375). Checked on the events this write touches, the way the cluster floor is."""
     for event_id in _touched(deltas):
         event = _find(data, ItemKind.Event, event_id)
         if event is None:
@@ -811,12 +849,21 @@ def _moves(data: dict, deltas: list[dict]):
                 "Only a noted event says it records schooling, work, health or "
                 "where someone lived.",
             )
+
+
+def _dates(data: dict, deltas: list[dict]):
+    """Dates are YYYY-MM-DD text, and an event ends after it begins. Checked on
+    the events this write touches."""
+    for event_id in _touched(deltas):
+        event = _find(data, ItemKind.Event, event_id)
+        if event is None:
+            continue
         for field in DATES:
-            day = _day(event.get(field))
-            if day and parse_date(day) is None:
+            value = event.get(field)
+            if value and not (isinstance(value, str) and parse_date(value)):
                 raise Invalid(
-                    f"event {event_id}'s {field} {event.get(field)!r} is not a "
-                    "date: give it as YYYY-MM-DD, the first of the month or the "
+                    f"event {event_id}'s {field} {value!r} is not a date: give "
+                    "it as YYYY-MM-DD text, the first of the month or the "
                     "year when only those are known",
                     "That date could not be read.",
                 )
@@ -1285,10 +1332,25 @@ IMPRESSION = Note(
     (QuestionOutcome.Revised, QuestionOutcome.LetGo),
     ("state", "outcome", "pushback"),
 )
+# Something the person said they will find out or do themselves: kept held in
+# their words, citing their message, asked when picked up, never on the page
+# or a card, and nothing the person writes on (R-0803).
+TODO = Note(
+    "todo",
+    QuestionState.Asked,
+    (),
+    QuestionOutcome.DeclinedByUser,
+    "",
+    (QuestionOutcome.Answered, QuestionOutcome.LetGo, QuestionOutcome.Unknown),
+    (),
+)
 
 
 def note(item: dict) -> Note:
-    return IMPRESSION if item.get("kind") == QuestionKind.Impression else QUESTION
+    kind = item.get("kind")
+    if kind == QuestionKind.Impression:
+        return IMPRESSION
+    return TODO if kind == QuestionKind.Todo else QUESTION
 
 
 def normal(text: str) -> str:
@@ -1357,9 +1419,9 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
             raise Invalid(
                 f"only the user turns {noun} {question_id} down or pushes back on it, "
                 "and does nothing else to it",
-                "Only you can dismiss a question."
-                if rules is QUESTION
-                else f"Only you can push back on an {noun}.",
+                f"Only you can push back on an {noun}."
+                if rules is IMPRESSION
+                else "Only you can dismiss a question.",
             )
         if outcome and outcome not in (*rules.theirs, *rules.ours):
             raise Invalid(
@@ -1389,6 +1451,8 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
         else:
             _linked(data, question, question_id)
             _names(question, question_id)
+        if rules is TODO and added:
+            _theirs(question, question_id, state)
         for other in questions:
             if (
                 str(other.get("id")) == question_id
@@ -1406,6 +1470,22 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
                     f"that {noun} is already {other['id']}, {other['state']}: {_again(rules)}",
                     f"That {noun} is already there.",
                 )
+
+
+def _theirs(todo: dict, todo_id: str, state: QuestionState):
+    """A todo is only ever something the person said: kept held when they say
+    it, resting on their message (R-0803)."""
+    if state is not QuestionState.Held:
+        raise Invalid(
+            f"todo {todo_id} is kept held when the person says it; mark it asked "
+            "with set_question when you pick it up",
+            "A todo is kept for later when it is said.",
+        )
+    if [one.get("kind") for one in todo.get("evidence") or []] != [EvidenceKind.Statement]:
+        raise Invalid(
+            f"todo {todo_id} rests on the one message where the person said it",
+            "A todo is only ever something the person said.",
+        )
 
 
 def _refiled(data: dict, question: dict, question_id: str, added: bool, written: set):
@@ -1442,7 +1522,7 @@ def _asked_again(mine: list[dict], question_id: str, rules, was, state) -> None:
 def _again(rules) -> str:
     """How the coach comes back to a waiting one instead of keeping it twice (R-0771)."""
     shown = rules.shown.value
-    if rules is QUESTION:
+    if rules is not IMPRESSION:
         return (
             f"to ask it now, mark it {shown} with set_question, whether it is held or "
             f"already {shown}, and ask it in your reply"
@@ -1466,6 +1546,11 @@ def _card(question: dict, question_id: str, rules, state, written: set, author: 
     if question.get(CARD) is None:
         return
     card = CaseReportCard(question[CARD])
+    if rules is TODO:
+        raise Invalid(
+            f"todo {question_id} goes on no case report card",
+            "A todo cannot go on the case report.",
+        )
     if rules is QUESTION and card not in QUESTION_CARDS:
         raise Invalid(
             f"question {question_id} cannot be on the {card.value} card: a question "
@@ -1597,7 +1682,7 @@ def _commit(
     undoing=False,
     refile=False,
 ) -> Change:
-    _validate(data, deltas, author, undoing, refile)
+    _check(data, deltas, author, turn_id, undoing, refile)
     version = db.session.execute(
         sql_update(Diagram)
         .where(Diagram.id == diagram.id)

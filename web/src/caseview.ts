@@ -118,10 +118,15 @@ export interface CaseView {
   brought: { lead: string; first: Fact | null; latest: Fact | null; clusters: ClusterRef[]; asked: string };
   /** Married now: the picture's solid line with no later separation or divorce, both partners alive (R-0694). */
   married: boolean;
-  couple: { lead: string; facts: Fact[] };
+  /** The couple since they met, stage by stage (R-0833, R-0834, R-0835), and
+   * what the card still needs of the floor: the marriage date, each partner's
+   * place among their brothers and sisters, the children in order. */
+  couple: { lead: string; stages: Stage[]; needs: string };
   stages: StageRow[];
   sides: Side[];
   guesses: Guess[];
+  /** Every stored cluster in date order, worded as the hypothesis it is (R-0698, R-0841). */
+  hypotheses: ClusterRef[];
   /** The coach's first open question on no card, asked in its bubble. */
   ask: string | null;
   ownPart: { guess: Guess | null; ask: string | null; answer: string | null };
@@ -144,9 +149,33 @@ const SELF_DESCRIBING = new Set<string>([
   EventKind.Death,
 ]);
 const COUPLE = new Set<string>([EventKind.Married, EventKind.Bonded, EventKind.Separated, EventKind.Divorced]);
-const OPENERS = new Set<string>([...COUPLE, EventKind.Birth, EventKind.Adopted, EventKind.Death]);
+const BIRTHS = new Set<string>([EventKind.Birth, EventKind.Adopted]);
+const WEDDINGS = new Set<string>([EventKind.Bonded, EventKind.Married]);
+const OPENERS = new Set<string>([...COUPLE, ...BIRTHS, EventKind.Death]);
+
+/** The stage heads both couple cards share: a couple's own event in
+ * what-it-opened words, Bowen's stages (R-0835). */
+const WHAT: Record<string, string> = {
+  [EventKind.Bonded]: "got together",
+  [EventKind.Married]: "married",
+  [EventKind.Separated]: "separated",
+  [EventKind.Divorced]: "divorced",
+};
+
+/** How near, in years, another relative's event must fall to one of the
+ * couple's own to be on the couple card (R-0834). */
+const NEAR_YEARS = 2;
 
 const byDate = (a: TimelineEvent, b: TimelineEvent) => a.dateTime!.localeCompare(b.dateTime!);
+
+/** A shift that marks how someone was doing: a symptom, anxiety or functioning mark. */
+const marked = (e: TimelineEvent) => e.symptom != null || e.anxiety != null || e.functioning != null;
+
+/** Everyone an event is aimed at or stands in a triangle with. */
+const aimedAt = (e: TimelineEvent) => [...e.relationshipTargets, ...e.relationshipTriangles];
+
+/** "a", "a and b", "a, b, and c". */
+const listed = (bits: string[]) => (bits.length < 3 ? bits.join(" and ") : `${bits.slice(0, -1).join(", ")}, and ${bits[bits.length - 1]}`);
 
 /** "his", "her" or "their", and "him", "her" or "them", by the record's gender. */
 function pronouns(p: Person): { him: string; his: string } {
@@ -288,7 +317,7 @@ class Reader {
     const clusters = this.tl.clusters.filter((c) => c.event_ids.some((id) => ids.has(id)));
     // dates only inside chips: the lead counts, the chips date
     return {
-      lead: flares.length ? `${s.name}'s symptoms appear in ${flares.length === 1 ? "one event" : `${flares.length} events`} in the record.` : "",
+      lead: flares.length ? `${s.name}'s symptoms appear in ${flares.length === 1 ? "one event" : `${flares.length} events`} in the diagram.` : "",
       first: flares.length ? this.fact(flares[0]) : null,
       latest: flares.length > 1 ? this.fact(flares[flares.length - 1]) : null,
       clusters: clusters.map((c) => ({ id: c.id, label: `${c.label} · ${c.title}` })),
@@ -306,27 +335,143 @@ class Reader {
     });
   }
 
-  /** The couple since they met: their own dated events, their children's
-   * births, a noted event of either (a move is a noted event, R-0364), and an
-   * event of one aimed at the other. */
+  /** A couple's own event: between these two (the spouse unset or one of them). */
+  between = (e: TimelineEvent, pair: number[]) =>
+    COUPLE.has(e.kind ?? "") && e.person != null && pair.includes(e.person) && (e.spouse == null || pair.includes(e.spouse));
+
+  /** A stage head: the date, then what it opened. */
+  head = (e: TimelineEvent, what: string): Fact => ({ id: e.id, face: `${dateText(e.dateTime!, e.dateCertainty)} · ${what}` });
+
+  /** A chip on the couple card: whoever it is about is named unless it is the
+   * person, so a partner's, a child's or a relative's event says whose it is. */
+  named(e: TimelineEvent): Fact {
+    const about = aboutOf(e);
+    const who = about != null && about !== this.subject.id ? this.name(about) || e.person_name : "";
+    return { id: e.id, face: `${dateText(e.dateTime!, e.dateCertainty)} · ${who ? `${who} · ` : ""}${e.label}` };
+  }
+
+  /** The people either partner was born beside: their parents and their
+   * brothers and sisters, so the other partner's are the in-laws. */
+  kinOf(pair: number[]): Set<number> {
+    return new Set(
+      pair.flatMap((id) => {
+        const pb = this.parentsOf(id);
+        return pb ? [...this.pair(pb), ...this.childrenOf(pb).map((c) => c.id).filter((c) => c !== id)] : [];
+      }),
+    );
+  }
+
+  /** An earlier marriage of a partner, shown as Kerr places it, before they met
+   * (R-0833): one stage opened by its first dated event, holding the children
+   * born to it and how it ended, a divorce or the former spouse's death before
+   * any divorce (R-0834),
+   * dated as they are. */
+  earlier(ob: PairBond, partner: number): Stage | null {
+    const two = this.pair(ob);
+    const former = this.other(ob, partner);
+    const kids = this.childrenOf(ob).map((c) => c.id);
+    const divorced = this.tl.events.find((e) => e.dateTime && e.kind === EventKind.Divorced && this.between(e, two))?.dateTime;
+    const events = this.tl.events
+      .filter(
+        (e) =>
+          e.dateTime &&
+          (this.between(e, two) ||
+            (BIRTHS.has(e.kind ?? "") && e.child != null && kids.includes(e.child)) ||
+            (e.kind === EventKind.Death && e.person === former && !(divorced && divorced < e.dateTime))),
+      )
+      .sort(byDate);
+    if (!events.length) return null;
+    const [first, ...rest] = events;
+    const names = two.map(this.name).join(" and ");
+    const what = WHAT[first.kind ?? ""] ? `${names} ${WHAT[first.kind!]}` : `${this.name(first.child!)} born, to ${names}`;
+    return { head: this.head(first, what), facts: rest.map((e) => this.named(e)) };
+  }
+
+  born = (id: number) => this.tl.events.some((e) => e.dateTime && BIRTHS.has(e.kind ?? "") && e.child === id);
+
+  /** Whether the order of a couple's children is known: each one's birth is
+   * dated. Being in the record alone does not place anyone. */
+  ordered = (b: PairBond | undefined) => !!b && this.childrenOf(b).every((c) => this.born(c.id));
+
+  /** What the couple card still needs, the floor of a couple's history: when
+   * they married, where each stands among their brothers and sisters, the
+   * children in order (R-0835), each order known only from dated births. Nothing
+   * when the record holds all three. */
+  needs(pair: number[], own: TimelineEvent[], children: number[]): string {
+    const [a, b] = pair.map((id) => this.people.get(id)!);
+    const bits: string[] = [];
+    if (!own.some((e) => e.kind === EventKind.Married)) bits.push(`when ${a.name} and ${b.name} married`);
+    const placeless = pair.filter((id) => !this.ordered(this.parentsOf(id))).map((id) => this.people.get(id)!);
+    if (placeless.length === 2) bits.push("where each of them stands among their brothers and sisters");
+    else if (placeless.length === 1) bits.push(`where ${placeless[0].name} stands among ${pronouns(placeless[0]).his} brothers and sisters`);
+    if (!children.length || !children.every((c) => this.born(c))) bits.push("the children, in order");
+    return bits.length ? `This card still needs ${listed(bits)}.` : "";
+  }
+
+  /** The couple since they met. The card begins at their Bonded event, the
+   * courtship, else their first event, and holds everything from then on
+   * (R-0833): every event of either partner, aimed at anyone or no one; their
+   * children's births, a child's marked shifts and moves while at home, and a
+   * grown child's marriage; a parent's or sibling's death or serious illness
+   * always, and another relative's event only if the record links that
+   * relative to one partner and the event lies no more than two years from
+   * one of the couple's own events (R-0834); where anyone lives is no filter, since the record
+   * does not hold it. An earlier marriage of either partner stands before, as
+   * Kerr places it. All of it under Bowen's stage heads in date order (R-0835). */
   couple(b: PairBond): CaseView["couple"] {
     const s = this.subject.id;
     const partner = this.other(b, s)!;
-    const pair = new Set([s, partner]);
-    const children = new Set(this.childrenOf(b).map((c) => c.id));
-    const own = this.tl.events.filter(
-      (e) => COUPLE.has(e.kind ?? "") && pair.has(e.person!) && (e.spouse == null || pair.has(e.spouse)),
-    );
-    const start = own.filter((e) => e.dateTime).sort(byDate)[0]?.dateTime ?? null;
-    const big = this.tl.events.filter((e) => {
-      if (!e.dateTime || (start && e.dateTime < start)) return false;
-      if (own.includes(e)) return true;
-      if (e.kind === EventKind.Birth || e.kind === EventKind.Adopted) return e.child != null && children.has(e.child);
-      if (e.person == null || !pair.has(e.person)) return false;
-      return e.kind === EventKind.Noted || e.relationshipTargets.some((t) => pair.has(t) && t !== e.person);
+    const pair = [s, partner];
+    const inPair = (id: number | null) => id != null && pair.includes(id);
+    const children = this.childrenOf(b).map((c) => c.id);
+    const lead = `${this.subject.name} and ${this.name(partner)} are married.`;
+    const dated = this.tl.events.filter((e) => e.dateTime).sort(byDate);
+    const own = dated.filter((e) => this.between(e, pair));
+    const births = dated.filter((e) => BIRTHS.has(e.kind ?? "") && e.child != null && children.includes(e.child));
+    // a grown child's own couple: the record's nearest fact for leaving home
+    const weddings = dated.filter((e) => WEDDINGS.has(e.kind ?? "") && (children.includes(e.person!) || (e.spouse != null && children.includes(e.spouse))));
+    const grown = (child: number) => children.includes(child) && weddings.find((e) => e.person === child || e.spouse === child)?.dateTime;
+    const start = (own.find((e) => e.kind === EventKind.Bonded) ?? own[0] ?? births[0])?.dateTime ?? null;
+    const needs = this.needs(pair, own, children);
+    const before = pair.flatMap((id) => this.bondsOf(id).filter((ob) => ob.id !== b.id && this.other(ob, id) != null).map((ob) => this.earlier(ob, id)));
+    const at = (st: Stage) => this.event(st.head.id)!.dateTime!;
+    const sorted = (stages: Stage[]) => stages.sort((p, q) => at(p).localeCompare(at(q)));
+    if (!start) return { lead, stages: sorted(before.filter((st): st is Stage => !!st)), needs };
+    const since = (e: TimelineEvent) => e.dateTime! >= start;
+    const kin = this.kinOf(pair);
+    const theirs = dated.filter((e) => since(e) && inPair(e.person) && !COUPLE.has(e.kind ?? "") && !BIRTHS.has(e.kind ?? ""));
+    const kids = dated.filter((e) => {
+      const who = e.person;
+      if (!since(e) || who == null || !children.includes(who) || WEDDINGS.has(e.kind ?? "")) return false;
+      const left = grown(who);
+      if (left && e.dateTime! >= left) return false;
+      return (e.kind === EventKind.Shift && marked(e)) || (e.kind === EventKind.Noted && !!e.location) || e.kind === EventKind.Death;
     });
-    // the date and the children are on the chips under it, never twice
-    return { lead: `${this.subject.name} and ${this.name(partner)} are married.`, facts: this.facts(big) };
+    // the couple's own events, which the two-year window is measured from (R-0834): got together,
+    // married, separated or divorced, each child's birth, each child's marriage; never a partner's or
+    // a child's own shifts and moves
+    const couples = [...own, ...births, ...weddings];
+    const taken = new Set([...couples, ...theirs, ...kids]);
+    const near = (e: TimelineEvent) => couples.some((o) => Math.abs(when(o.dateTime!) - when(e.dateTime!)) <= NEAR_YEARS);
+    const tied = (id: number) => this.tl.events.some((x) => (x.person === id && aimedAt(x).some(inPair)) || (inPair(x.person) && aimedAt(x).includes(id)));
+    const others = dated.filter((e) => {
+      const who = e.person;
+      if (!since(e) || who == null || inPair(who) || children.includes(who) || taken.has(e)) return false;
+      if (kin.has(who) && (e.kind === EventKind.Death || (e.kind === EventKind.Shift && e.symptom != null))) return true;
+      return tied(who) && near(e);
+    });
+    const heads = [
+      ...own.map((e) => ({ e, what: WHAT[e.kind!] })),
+      ...births.map((e) => ({ e, what: `${this.name(e.child!)} born` })),
+      ...weddings.map((e) => ({ e, what: `${this.name(children.includes(e.person!) ? e.person! : e.spouse!)} ${WHAT[e.kind!]}` })),
+    ].sort((p, q) => byDate(p.e, q.e));
+    const chips = [...theirs, ...kids, ...others].sort(byDate);
+    const stages = heads.map(({ e, what }, i) => {
+      const next = heads[i + 1]?.e.dateTime;
+      const under = chips.filter((c) => (i === 0 || c.dateTime! >= e.dateTime!) && (!next || c.dateTime! < next));
+      return { head: this.head(e, what), facts: under.map((c) => this.named(c)) };
+    });
+    return { lead, stages: sorted([...before.filter((st): st is Stage => !!st), ...stages]), needs };
   }
 
   /** A couple's stages, each opened by a date the record holds: got together,
@@ -334,12 +479,6 @@ class Reader {
   stagesOf(b: PairBond): Stage[] {
     const pair = this.pair(b);
     const children = new Set(this.childrenOf(b).map((c) => c.id));
-    const WHAT: Record<string, string> = {
-      [EventKind.Bonded]: "got together",
-      [EventKind.Married]: "married",
-      [EventKind.Separated]: "separated",
-      [EventKind.Divorced]: "divorced",
-    };
     const openers = this.tl.events
       .filter((e) => e.dateTime)
       .flatMap((e): { e: TimelineEvent; what: string }[] => {
@@ -384,7 +523,7 @@ class Reader {
   personLine(p: Person, side: number[]): string {
     const bits = this.died(p) ? ["who has died"] : [];
     const told = this.tl.events.filter((e) => e.dateTime && !OPENERS.has(e.kind ?? "") && e.person != null && side.includes(e.person));
-    const held = told.length ? ` The record holds ${told.length === 1 ? "one event" : `${told.length} events`} about this side of the family.` : "";
+    const held = told.length ? ` The diagram holds ${told.length === 1 ? "one event" : `${told.length} events`} about this side of the family.` : "";
     return bits.length || held ? `${p.name}${bits.length ? `, ${bits.join(", ")}` : ""}.${held}` : "";
   }
 
@@ -474,11 +613,14 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     main: main && r.guess(main),
     brought: r.brought(chats),
     married: !!wed,
-    couple: wed ? r.couple(wed) : { lead: "", facts: [] },
+    couple: wed ? r.couple(wed) : { lead: "", stages: [], needs: "" },
     stages: wed ? [] : r.stages(),
     sides: r.sides(),
     // only what the coach chose for this card, never every guess it holds (Patrick, 2026-10-04)
     guesses: guesses.filter(onCard(CaseReportCard.CoachGuess)).slice(-COACH_GUESS_MAX).map((q) => r.guess(q)),
+    hypotheses: [...tl.clusters]
+      .sort((a, b) => a.start.localeCompare(b.start))
+      .map((c) => ({ id: c.id, label: `Hypothesis: ${c.title ? `${c.title} \u00b7 ` : ""}${c.label}` })),
     ask: questions.find((q) => open(q) && onCard(null)(q))?.text ?? null,
     ownPart: { guess: own && r.guess(own), ask: answered ? null : askOn(CaseReportCard.OwnPart), answer: answered?.answer?.text ?? null },
     choice: { guess: choice && r.guess(choice), ask: askOn(CaseReportCard.Choice) },

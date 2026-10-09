@@ -563,24 +563,21 @@ export function castOf(r: Family, steps: Step[], events: TimelineEvent[], everyo
       if (m.k === Mark.Event) words[m.who] = Math.max(words[m.who] ?? 0, m.word!.length);
     }),
   );
-  // someone with no family tie stands on the row of whoever they move with
+  // someone with no family tie stands on the row of whoever drawn they move with
   const assoc: Record<string, string> = {};
+  const pair = (a: string, b: string) => {
+    if (a === b || !cast.has(a) || !cast.has(b)) return;
+    assoc[a] ??= b;
+    assoc[b] ??= a;
+  };
   steps
     .flatMap((s) => s.marks)
     .filter((m): m is Arrow | Kin => isArrow(m) || isKin(m))
-    .forEach((m) => {
-      if (!m.to) return;
-      assoc[m.to] ??= m.from;
-      assoc[m.from] ??= m.to;
-    });
-  // and failing a move, of whoever their events name them with
+    .forEach((m) => m.to && pair(m.to, m.from));
+  // and failing a move, of whoever drawn their events name them with
   events.forEach((e) => {
     const [head, ...rest] = r.named(e);
-    rest.forEach((o) => {
-      if (o === head) return;
-      assoc[o] ??= head;
-      assoc[head] ??= o;
-    });
+    rest.forEach((o) => pair(o, head));
   });
   return {
     people,

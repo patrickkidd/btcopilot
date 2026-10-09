@@ -124,6 +124,19 @@ def onboarding(missing: list[str], person_id: int) -> str:
     return files().text("onboarding", missing=", ".join(missing), person_id=person_id)
 
 
+def back(days: int, todos: str) -> str:
+    """What the coach picks up first when the person comes back after a
+    sitting's gap: their own todos, oldest first (R-0803)."""
+    return files().text("back", days=days, todos=todos)
+
+
+def crisis(reply: str = "", said: str = "", line: str = "", emergency: str = "") -> str:
+    """The approved crisis reply in the person's own words with the line for
+    their country; with no reply, only the rules for the turn after one
+    (R-0810, R-0811)."""
+    return files().text("crisis", reply=reply, said=said, line=line, emergency=emergency)
+
+
 def proactive(events: str, speaker: str) -> str:
     """The coach's first words when two of the family's events just came to
     sit close together in the record."""
@@ -193,6 +206,12 @@ def impression_backfill(map: str, transcript: str) -> str:
     """The system prompt for going back once over a past session to fill in the
     impressions given in it, numbered the same way as the question backfill's."""
     return files().text("impression_backfill", map=map, transcript=transcript)
+
+
+def case_report_rewrite() -> str:
+    """The opening message of a rewrite of the case report: every card the
+    coach writes, written again at once from the diagram (R-0825)."""
+    return files().text("case_report_rewrite")
 
 
 def event_title(kind: str, description: str, notes: str) -> str:

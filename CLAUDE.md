@@ -225,6 +225,7 @@ rulings and the oracle SPEC. The encrypted rulings store and prompts in this rep
 | Clusters | [doc/CLUSTERS.md](doc/CLUSTERS.md) |
 | Coverage of the basic data: required items, their states, the metrics | [doc/COVERAGE.md](doc/COVERAGE.md) |
 | Drawability — when the timeline picture may draw vs must ask | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
+| Crisis protocol | [doc/CRISIS_PROTOCOL.md](doc/CRISIS_PROTOCOL.md) |
 | Diagram rendering | [doc/FAMILY_DIAGRAM_VISUAL_SPEC.md](doc/FAMILY_DIAGRAM_VISUAL_SPEC.md), [doc/FRAGMENT_CONVENTIONS.md](doc/FRAGMENT_CONVENTIONS.md) |
 | Tests and known defects | [doc/TEST_STRATEGY.md](doc/TEST_STRATEGY.md), [doc/KNOWN_DEFECTS.md](doc/KNOWN_DEFECTS.md) |
 | Feedback loops | [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) — every signal, what closes it, the number that proves it; checked on demand by `/product-owner` |
@@ -387,7 +388,8 @@ package is incompatible (symptom: `create_app() takes 0 to 1 positional argument
 - **Everything a fresh machine needs**: [doc/SETUP.md](doc/SETUP.md).
 
 ### Testing
-- **Local run**: `uv run pytest -m "not conventions" btcopilot/tests -q`
+- **CI is fast and hermetic** (Patrick, 2026-10-09): unit tests use mocks so I/O is minimal or none, and run the same on any machine with the right Python; a unit test that reaches the network, a model, Redis, Postgres, Docker or the filesystem beyond a temp dir is a defect, mocked or moved to the integration or live suite. The unit suite blocks sockets to enforce it.
+- **Local run**: `uv run pytest -n auto -m "not conventions" btcopilot/tests -q`; single-process (`-n 0`) only to locate a hang or a collision. CI runs it the same way.
 - **Oracle guards** (`btcopilot/tests/conventions/`, marker `conventions`) read the sops-encrypted rulings store and run on CI only, where the key is; locally run `uv run pytest -m "not conventions" ...`. Without a key they fail, never skip.
 - **Integration suite** (`btcopilot/tests/integration/`, marker `integration`): tests that need a real Postgres; skipped in the local run; run with `uv run pytest --integration btcopilot/tests/integration`, which starts a Postgres container with Docker; CI runs it as its own step.
 - **E2e tests** (real LLM calls): `uv run pytest --e2e -m e2e` — requires `GOOGLE_GEMINI_API_KEY` from `.env` at the clone root

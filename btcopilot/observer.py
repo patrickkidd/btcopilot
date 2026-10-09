@@ -22,6 +22,7 @@ from btcopilot.turnlog import TurnEventKind
 # written down as possibly different questions.
 QUESTION_OVERLAP = 0.5
 WORDS = re.compile(r"[\w']+")
+CORRECTED = "the person corrected the coach"
 
 # What this watcher writes, so a resumed turn replaces only these. How the turn
 # ended is written where it ended, and stays.
@@ -33,6 +34,7 @@ WATCHED = (
     ObservationKind.ToolRefused,
     ObservationKind.StepCap,
     ObservationKind.EarlierEdit,
+    ObservationKind.PersonCorrected,
 )
 
 ADDS = (
@@ -75,6 +77,7 @@ def observe(diagram_id: int, turn_id: str, data: DiagramData) -> None:
         *_refused(kept),
         *_capped(kept),
         *_earlier(diagram_id, turn_id, kept),
+        *_corrected(turn_id, kept),
     ]
     for kind, detail in found:
         db.session.add(
@@ -141,7 +144,9 @@ def _unsaid(diagram_id: int, turn_id: str, data: DiagramData) -> list:
             {"question": q["id"], "overlap": round(overlap(q["text"], reply.text), 2)},
         )
         for q in data.questions
-        if q["id"] in asked and overlap(q["text"], reply.text) < QUESTION_OVERLAP
+        if q["id"] in asked
+        and record.note(q) is not record.TODO
+        and overlap(q["text"], reply.text) < QUESTION_OVERLAP
     ]
 
 
@@ -222,6 +227,35 @@ def _earlier(diagram_id: int, turn_id: str, kept: list[dict]) -> list:
     if not calls:
         return []
     return [(ObservationKind.EarlierEdit, {"count": len(calls), "calls": calls})]
+
+
+def _corrected(turn_id: str, kept: list[dict]) -> list:
+    """The coach's notes say the person's words corrected it, so the
+    correction reaches the tuning queue with no call of its own [Oracle: R-0822]."""
+    what = [
+        e["args"]["corrected"]
+        for e in kept
+        if e["type"] == TurnEventKind.ToolCall.value
+        and e["name"] == ToolName.CoachNotes
+        and not e.get("refusal")
+        and e["args"].get("corrected")
+    ]
+    if not what:
+        return []
+    said = (
+        Statement.query.join(Discussion)
+        .filter(
+            Statement.turn_id == turn_id,
+            Statement.speaker_id == Discussion.chat_user_speaker_id,
+        )
+        .one()
+    )
+    return [
+        (
+            ObservationKind.PersonCorrected,
+            {"statement": said.id, "what": what[-1], "reason": CORRECTED},
+        )
+    ]
 
 
 def _item(call: dict) -> tuple | None:

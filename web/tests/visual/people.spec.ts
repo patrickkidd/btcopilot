@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { NO_LIST, PARKED, addForm, lists, openList, pinned, stateFor } from "./setup";
 
 /** The list behind the picture, and the button that opens it.

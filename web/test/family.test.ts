@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { arrange, bar, crosses, draw, Mark, Sex, Tie, VIEW, type Box, type Cast, type Frame, type Layout } from "../src/diagram";
-import { Move } from "../src/moves";
+import { FIELD, Move } from "../src/moves";
 import { family as wholeFamily, Told } from "../src/snapshots";
-import { DELPHINE, MARCUS, timeline } from "./whitlock";
+import { CORINNE, DELPHINE, event, MARCUS, THEO, timeline } from "./whitlock";
 
 /** The whole family stepped through dates: lines before their date. */
 
@@ -72,6 +72,59 @@ it("shows a separation's slash only from its own date in the whole family", () =
   expect(slashes(at(109))).toBe(0);
   expect(slashes(at(201))).toBe(1);
   expect(slashes(at(204))).toBe(2);
+});
+
+// a friend with no family tie, first named with Theo, who is left out, then with Marcus
+const befriended = (couple: boolean) => {
+  const tl = timeline();
+  const theo = tl.people.find((p) => p.id === THEO)!;
+  const stranger = (id: number, name: string) => ({ ...theo, id, name, parents: null, birth: null });
+  tl.people.push(stranger(8, "Ines"));
+  tl.events.push(
+    event(301, "1990-06-01", "noted", THEO, { relationshipTargets: [8], title: "Met Ines" }),
+    event(302, "1995-06-01", "noted", MARCUS, { relationshipTargets: [8], title: "Hired Ines" }),
+  );
+  const keep = [CORINNE, MARCUS, DELPHINE, 8];
+  if (couple) {
+    // a couple with no tie to the family, which the strict layout cannot place
+    tl.people.push(stranger(9, "Xan"), stranger(10, "Yva"));
+    tl.pair_bonds.push({ id: 23, person_a: 9, person_b: 10, married: true });
+    keep.push(9, 10);
+  }
+  return new Told(tl, wholeFamily(tl), true, keep.map(String)).layout;
+};
+
+// R-0783
+it("draws someone with no family tie beside a person drawn with them, though first named with someone left out", () => {
+  const L = befriended(false);
+  expect(L.loose).toBe(false);
+  expect(L.y["8"]).toBe(L.y[String(MARCUS)]);
+});
+
+// R-0783
+it("draws them beside that person when the family can only be laid out generation by generation", () => {
+  const L = befriended(true);
+  expect(L.loose).toBe(true);
+  expect(L.y["8"]).toBe(L.y[String(MARCUS)]);
+});
+
+// R-0798
+it("runs a move's rings in the whole family out to their full reach, and neither shrinks the picture nor moves anyone to keep them inside it", () => {
+  const at = (kind: string) => {
+    const tl = timeline();
+    Object.assign(tl.events.find((e) => e.id === 131)!, { relationship: kind, relationshipTargets: [CORINNE] });
+    const t = new Told(tl, wholeFamily(tl), true);
+    return t.shot(t.told.snapshots.findIndex((s) => s.event_ids.includes(131))).svg;
+  };
+  const [rings, none] = [at(Move.Distance), at(Move.Conflict)];
+  const reaches = [...rings.matchAll(/<circle class="fld[^"]*"[^>]*><animate attributeName="r" values="[\d.]+;([\d.]+)"/g)].map((m) => Number(m[1]));
+  expect(reaches.length).toBeGreaterThan(0);
+  expect(reaches.filter((r) => r !== FIELD)).toEqual([]);
+  const box = (svg: string) => svg.match(/viewBox="([^"]*)"/)![1];
+  expect(box(rings)).toBe(box(none));
+  const places = (svg: string) => [...svg.matchAll(/<g class="p[^"]*" data-id="[^"]*">(<[^>]*>)/g)].map((m) => m[0]);
+  expect(places(none).length).toBeGreaterThan(3);
+  expect(places(rings)).toEqual(places(none));
 });
 
 // R-0756

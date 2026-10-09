@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { addForm, openList, stateFor } from "./setup";
 
 /** Words with no place to break, longer than any phone is wide. */
