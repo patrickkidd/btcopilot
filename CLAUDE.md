@@ -104,8 +104,8 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   ```
 
   `--real` puts the coach on Anthropic with the testing key from `.env` at the main clone's root; ask Patrick
-  before spending. On a Bedrock machine (`CLAUDE_CODE_USE_BEDROCK` set) `--real` goes through Bedrock with
-  the machine's AWS sign-in and `AWS_REGION`, needs no key, and answers Gemini-named calls with Sonnet
+  before spending. With `BTCOPILOT_MODEL_PROVIDER=bedrock` set, `--real` goes through Bedrock with
+  the machine's AWS sign-in and `AWS_REGION`, needs no key, and answers Gemini-named calls with Haiku
   (doc/SETUP.md section 6). `--build` rebuilds the page first; without it the page already built in the
   worktree is served, so rebuilding under another agent's running sandbox is a choice, not a
   side effect. A turn on the local model takes one to several minutes.

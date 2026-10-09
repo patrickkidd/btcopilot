@@ -14,8 +14,8 @@ from btcopilot.llmutil import (
     anthropic_client,
     claude_spent,
     fallback_args,
-    GeminiOnBedrockError,
-    gemini_on_bedrock,
+    NotOnBedrockError,
+    off_bedrock,
     is_gemini,
     is_openai,
     local_model,
@@ -210,11 +210,11 @@ def model_for(
     """The coach model an alias names: none is the default, an unknown one
     raises KeyError. Haiku 4.5 rejects the effort setting, so it gets none. The
     local server answers every name, Gemini's and OpenAI's included. Bedrock
-    has no Gemini, so a Gemini coach there raises GeminiOnBedrockError."""
+    has no Gemini or OpenAI, so such a coach there raises NotOnBedrockError."""
     model = resolve_model(name)
-    if gemini_on_bedrock(model):
-        raise GeminiOnBedrockError(
-            f"Gemini model {name} is not on Bedrock; unset BTCOPILOT_MODEL_PROVIDER"
+    if off_bedrock(model):
+        raise NotOnBedrockError(
+            f"Model {name} is not on Bedrock; unset BTCOPILOT_MODEL_PROVIDER"
             " or choose a Claude model"
         )
     if is_gemini(model) and not local_model():

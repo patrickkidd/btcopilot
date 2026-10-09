@@ -166,20 +166,21 @@ def test_an_expired_aws_sign_in_stops_the_app_plainly(bedrock_machine):
 def test_on_bedrock_haiku_answers_a_call_that_names_gemini(bedrock_machine):
     # R-0801
     asked = []
+    text = llmutil.Text("words", None, None)
 
     async def claude_structured(prompt, response_format, model, schema, limit):
         asked.append(model)
 
     async def claude_text(prompt=None, **kwargs):
         asked.append(kwargs["model"])
-        return "words"
+        return text
 
     bedrock_machine.setattr(llmutil, "claude_structured", claude_structured)
     bedrock_machine.setattr(llmutil, "claude_text", claude_text)
     llmutil.gemini_structured_sync("prompt", Named)
-    assert llmutil.gemini_text_sync("prompt", model="gemini-2.5-flash") == "words"
+    assert llmutil.gemini_text_sync("prompt", model="gemini-2.5-flash") == text
     assert llmutil.gemini_calibration_sync("prompt") == "words"
-    assert llmutil.response_text_sync("prompt") == "words"
+    assert llmutil.response_text_sync("prompt") == text
     assert llmutil.GEMINI_STAND_IN == "claude-haiku-4-5-20251001"
     assert llmutil.wire_model(llmutil.GEMINI_STAND_IN) == HAIKU
     assert asked == [llmutil.GEMINI_STAND_IN] * 3 + [llmutil.RESPONSE_MODEL]
@@ -236,6 +237,8 @@ def test_a_gemini_coach_fails_plainly_on_bedrock(bedrock_machine):
     # R-0803
     with pytest.raises(ValueError, match="not on Bedrock"):
         model_for("gemini-flash")
+    with pytest.raises(ValueError, match="not on Bedrock"):
+        model_for("gpt")
 
 
 def test_a_gemini_coach_is_offered_off_bedrock(anthropic_machine):

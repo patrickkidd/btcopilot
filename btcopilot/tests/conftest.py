@@ -74,8 +74,12 @@ MACHINE = provider.provider()
 
 
 @pytest.fixture(scope="session", autouse=True)
-def anthropic_provider():
-    """Pin provider to Anthropic; suite uses stand-in calls."""
+def anthropic_provider(request):
+    """Pin provider to Anthropic for stand-in calls; an --e2e run makes real
+    calls, so it keeps the machine's provider."""
+    if request.config.getoption("--e2e"):
+        yield
+        return
     patched = pytest.MonkeyPatch()
     patched.delenv(provider.SETTING, raising=False)
     yield

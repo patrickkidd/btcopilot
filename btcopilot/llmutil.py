@@ -500,12 +500,12 @@ def local_model() -> str | None:
     return os.environ[LOCAL_MODEL] if os.environ.get(LOCAL_URL) else None
 
 
-class GeminiOnBedrockError(ValueError):
-    """A Gemini coach was chosen where calls go to Bedrock, which has no Gemini."""
+class NotOnBedrockError(ValueError):
+    """A Gemini or OpenAI model was chosen where calls go to Bedrock, which serves neither."""
 
 
-def gemini_on_bedrock(model: str) -> bool:
-    return is_gemini(model) and _bedrock()
+def off_bedrock(model: str) -> bool:
+    return (is_gemini(model) or is_openai(model)) and _bedrock()
 
 
 def _bedrock() -> bool:
@@ -883,12 +883,13 @@ async def gemini_calibration(
     prompt, system_instruction=None, deep=False, max_output_tokens=None
 ):
     if _bedrock():
-        return await claude_text(
+        answered = await claude_text(
             prompt,
             model=GEMINI_STAND_IN,
             system_instruction=system_instruction,
             max_output_tokens=max_output_tokens or (4096 if deep else 2048),
         )
+        return answered.words
     start_time = time.time()
     if deep:
         config = types.GenerateContentConfig(
