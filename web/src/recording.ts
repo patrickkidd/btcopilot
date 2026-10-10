@@ -201,7 +201,7 @@ export class Recording {
     }
     const voices: Record<string, { type: string }> = {};
     for (const [label, role] of this.roles) voices[label] = { type: role };
-    const made = await api.newRecording(store.id(), {
+    const made = await api.newRecording(store.key(), {
       utterances: this.utterances,
       voices,
       title: this.title.trim(),

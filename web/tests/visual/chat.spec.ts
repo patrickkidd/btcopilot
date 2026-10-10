@@ -331,7 +331,7 @@ test.describe("an empty session", () => {
     };
     // once made, the note heads the family's sessions, as the server lists it
     let made = false;
-    await page.route(/\/app\/sessions(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/sessions(\?diagram=[a-z0-9]+)?$/, async (route) => {
       if (route.request().method() === "POST") {
         made = true;
         return route.fulfill({ status: 201, json: note });
@@ -567,7 +567,7 @@ test.describe("the message box while the coach replies", () => {
         },
       });
     `);
-    await page.route(/\/app\/statements\?diagram_id=\d+$/, async (route) => {
+    await page.route(/\/app\/statements\?diagram=[a-z0-9]+$/, async (route) => {
       if (route.request().method() !== "GET") return route.fallback();
       const response = await route.fetch();
       const json = await response.json();
@@ -578,7 +578,7 @@ test.describe("the message box while the coach replies", () => {
     await expect(page.locator("#view .ss")).toBeVisible();
     // the page reads the thread again as it comes to the front; a load alone
     // does not always make that read, so the page is brought to the front
-    const read = page.waitForResponse(/\/app\/statements\?diagram_id=\d+$/);
+    const read = page.waitForResponse(/\/app\/statements\?diagram=[a-z0-9]+$/);
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
     await read;
 

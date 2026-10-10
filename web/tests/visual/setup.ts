@@ -158,7 +158,7 @@ export async function tellWithoutModel(
   page: Page,
   only: (e: Record<string, unknown>) => boolean = () => true,
 ): Promise<void> {
-  await page.route(/\/app\/play(\?diagram_id=\d+)?$/, async (route) => {
+  await page.route(/\/app\/play(\?diagram=[a-z0-9]+)?$/, async (route) => {
     const cluster_id = (route.request().postDataJSON() as { cluster_id: string }).cluster_id;
     const timeline = await (await page.request.get("/app/timeline")).json();
     const cluster = timeline.clusters.find((c: { id: string }) => c.id === cluster_id);
@@ -212,6 +212,26 @@ export async function addForm(page: Page, what: "event" | "person"): Promise<voi
 
 /** A fixture's account, as the server's fixtures name it. */
 export const username = (key: Key) => `${key}@fd362-fixture.invalid`;
+
+/** The address of a place on whichever diagram the app is on: every address
+ * carries the diagram's public id, `/app/diagram/<public id>/<place>`; the
+ * chat is `at("")`. */
+export const at = (place: string) =>
+  new RegExp(`/app/diagram/[a-z0-9]+/${place.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+
+/** The public id of a fixture's own diagram, as the server made it. */
+export function publicId(key: Key): string {
+  const said = shell(
+    [
+      "from btcopilot.models import User",
+      `print("key=" + User.query.filter_by(username="${username(key)}").one().free_diagram.public_id)`,
+      "",
+    ].join("\n"),
+  );
+  const found = /key=([a-z0-9]+)/.exec(said);
+  if (!found) throw new Error(`no public id for the ${key} fixture in: ${said}`);
+  return found[1];
+}
 
 /** From Next meeting, its button to the Diagrams page, a person found with
  * the admin's Find a person box (focused and blank on arrival), their diagrams

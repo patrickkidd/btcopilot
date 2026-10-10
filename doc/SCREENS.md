@@ -443,11 +443,18 @@ What it is for: every screen and everything on it has its own web address, so th
 - Opening the app at any address, or signing in from one, lands there; an address that names something to light (a message, a session, a notice, a cut, a snapshot) scrolls it into the middle of its list and rings it the way a message is ringed when a moment traces back to it. [built] {R-0055}
 - An address whose thing is gone says so in a short note and leaves the app where it could get to. [built] {R-0055}
 - A notice may point at any address in the app as well as at the four screens it named before. [built] {R-0055, R-0611}
+- Every address names the diagram the app is on by its public id, a short random id, never its row number: `/app/diagram/k7m2x9pq4w/account/coach`. An admin looking at another person's diagram sees that diagram's id in the address, and their own again on the way back. [built] {R-0NNN}
+- The same address without the diagram, `/app/account/coach`, is that place on the diagram the app is on, so the home-screen icon's `/app/`, a push link and an old link still open: the app lands on the person's own diagram and the address bar fills in its id. The coach, a notice and a push link always name places this way. [built] {R-0NNN}
+- A link to a diagram you cannot open, or to no diagram, shows one plain page: "You do not have access to this diagram." with a button to your own. [built] {R-0NNN}
 - When you ask the coach for help with the app, or ask to see something, it can take the app there while it answers; its reply then carries a line such as "Opened *the coach settings*" whose name is a chip that goes there again. It never moves the app during coaching otherwise. [built] {R-0055}
+
+Each address below is written under the diagram the app is on,
+`/app/diagram/<public id>` and then the rest; written bare, it is that place on
+the diagram the app is on.
 
 | address | what it opens |
 |---|---|
-| `/app/` | the chat, with the picture put down |
+| `/app/diagram/<public id>/`, `/app/` | the chat, with the picture put down |
 | `/app/chat/<message>` | the chat, scrolled to that message and ringed |
 | `/app/sessions` | the sessions drawer |
 | `/app/sessions/<session>` | the sessions drawer, with that session's row ringed |

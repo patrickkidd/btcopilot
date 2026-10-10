@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { address, APP, beyond, linked, parse, Place, settled, UNDATED } from "../src/place";
+import { address, APP, beyond, linked, on, parse, Place, settled, split, UNDATED } from "../src/place";
 import { Link } from "../src/types";
 
 /** A value for each kind of slot, so every place can be written out. */
@@ -8,6 +8,9 @@ const SAMPLE: Record<string, string[]> = {
   ":key": ["c-3f9a"],
   ":day": ["2026-10-06", UNDATED],
 };
+
+/** A diagram's public id, as the server makes them. */
+const KEY = "k7m2x9pq4w";
 
 /** Every address one place can have, with its slots filled each way. */
 function addresses(place: Place): string[][] {
@@ -24,8 +27,8 @@ describe("the addresses of the app", () => {
     for (const place of Object.values(Place))
       for (const args of addresses(place)) {
         const at = address(place, ...args);
-        expect(parse(at)).toEqual({ place, args });
-        expect(parse(`${at}/`)).toEqual({ place, args });
+        expect(parse(at)).toEqual({ place, args, diagram: null });
+        expect(parse(`${at}/`)).toEqual({ place, args, diagram: null });
       }
   });
 
@@ -71,5 +74,56 @@ describe("the addresses of the app", () => {
     expect(beyond(address(Place.Literature))).toBe("Auditor's Coding Guide");
     for (const link of [null, Link.Account, address(Place.Notices), address(Place.Notice, 4)])
       expect(beyond(link)).toBeNull();
+  });
+});
+
+describe("the diagram every address is on", () => {
+  // R-0NNN
+  it("writes every place under the diagram the app is on, by its public id, never its number", () => {
+    expect(on(KEY, address(Place.Chat))).toBe(`/app/diagram/${KEY}/`);
+    expect(on(KEY, address(Place.Coach))).toBe(`/app/diagram/${KEY}/account/coach`);
+    expect(on(KEY, address(Place.FamilyStep, 3))).toBe(`/app/diagram/${KEY}/family/3`);
+    for (const place of Object.values(Place))
+      for (const args of addresses(place)) {
+        const at = on(KEY, address(place, ...args));
+        expect(at.startsWith(`/app/diagram/${KEY}`)).toBe(true);
+        expect(parse(at)).toEqual({ place, args, diagram: KEY });
+      }
+  });
+
+  // R-0NNN
+  it("reads a diagram's address back as its public id and the place under it", () => {
+    expect(split(`/app/diagram/${KEY}/account/coach`)).toEqual({ diagram: KEY, under: "/app/account/coach" });
+    expect(split(`/app/diagram/${KEY}`)).toEqual({ diagram: KEY, under: "/app" });
+    expect(split(`/app/diagram/${KEY}/?notification=4`)).toEqual({ diagram: KEY, under: "/app/" });
+    expect(parse(`/app/diagram/${KEY}`)).toEqual({ place: Place.Chat, args: [], diagram: KEY });
+    expect(parse(`/app/diagram/${KEY}/`)).toEqual({ place: Place.Chat, args: [], diagram: KEY });
+    expect(parse(`/app/diagram/${KEY}/cluster/c-3f9a`)).toEqual({
+      place: Place.Cluster,
+      args: ["c-3f9a"],
+      diagram: KEY,
+    });
+    // the word alone, or a key of a shape the server never makes, is no address
+    for (const path of ["/app/diagram", "/app/diagram/", "/app/diagram/K7/account", "/app/diagrams/3"])
+      expect(parse(path)).toBeNull();
+  });
+
+  // R-0NNN
+  it("reads an address without a diagram as that place on the diagram the app is on", () => {
+    expect(split("/app/account/coach")).toEqual({ diagram: null, under: "/app/account/coach" });
+    expect(parse("/app/")).toEqual({ place: Place.Chat, args: [], diagram: null });
+    expect(parse("/app/?notification=4")).toEqual({ place: Place.Chat, args: [], diagram: null });
+    expect(on(KEY, "/app/account/coach")).toBe(`/app/diagram/${KEY}/account/coach`);
+    // an address already on a diagram is moved to the one the app is on
+    expect(on(KEY, "/app/diagram/zzzz2222zz/account")).toBe(`/app/diagram/${KEY}/account`);
+    // with no diagram open yet there is nothing to be under
+    expect(on(null, `/app/diagram/${KEY}/account`)).toBe("/app/account");
+  });
+
+  // R-0NNN
+  it("keeps the diagram when a lit item settles into its view", () => {
+    expect(settled(on(KEY, address(Place.Session, 5)))).toBe(on(KEY, address(Place.Sessions)));
+    expect(settled(on(KEY, address(Place.Message, 9)))).toBe(`/app/diagram/${KEY}/`);
+    expect(settled(on(KEY, address(Place.Coach)))).toBe(on(KEY, address(Place.Coach)));
   });
 });

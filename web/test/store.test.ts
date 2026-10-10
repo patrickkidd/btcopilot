@@ -7,6 +7,7 @@ import { Access } from "../src/types";
 interface Asked {
   url: string;
   answer: (body: unknown) => void;
+  refuse: (status: number) => void;
   aborted: boolean;
 }
 
@@ -23,6 +24,7 @@ beforeEach(() => {
           url,
           answer: (body) =>
             resolve(new Response(JSON.stringify(body), { status: 200 })),
+          refuse: (status) => resolve(new Response("", { status })),
           aborted: false,
         };
         init.signal?.addEventListener("abort", () => {
@@ -36,9 +38,14 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
-const diagram = (id: number, access = Access.Own) => ({
-  id,
-  name: `Family ${id}`,
+/** A diagram's public id, as the server makes them: the address and every
+ * read name the diagram by it, and its row number stays on the server. */
+const key = (n: number) => `fam${n}xxxxxx`.slice(0, 10);
+
+const diagram = (n: number, access = Access.Own) => ({
+  id: n,
+  public_id: key(n),
+  name: `Family ${n}`,
   session_count: 0,
   last_activity: null,
   free: false,
@@ -48,13 +55,13 @@ const diagram = (id: number, access = Access.Own) => ({
 });
 
 /** Answer every open request for one diagram by what it asks for. */
-function answer(id: number, access = Access.Own): void {
-  for (const one of asked.filter((a) => a.url.includes(`${id}`))) {
-    if (one.url.includes("/select")) one.answer(diagram(id, access));
-    else if (one.url.includes("/timeline")) one.answer({ people: [], events: [], id });
+function answer(n: number, access = Access.Own): void {
+  for (const one of asked.filter((a) => a.url.includes(key(n)))) {
+    if (one.url.includes("/select")) one.answer(diagram(n, access));
+    else if (one.url.includes("/timeline")) one.answer({ people: [], events: [], id: n });
     else one.answer([]);
   }
-  asked = asked.filter((a) => !a.url.includes(`${id}`));
+  asked = asked.filter((a) => !a.url.includes(key(n)));
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -70,30 +77,34 @@ function screens(store: Store): string[] {
   return told;
 }
 
-// R-0243
-it("opens a diagram by its id: every part read naming it, every screen emptied first and then drawn", async () => {
+// R-0243, R-0NNN
+it("opens a diagram by its public id: every part read naming it by that id, every screen emptied first and then drawn", async () => {
   const store = new Store();
   const told = screens(store);
-  const opening = store.open(7);
+  const opening = store.open(key(7));
   expect(told).toEqual(["reset"]);
   expect(asked.map((a) => a.url).sort()).toEqual([
-    "/app/diagrams/7/select",
-    "/app/sessions?diagram_id=7",
-    "/app/statements?diagram_id=7",
-    "/app/timeline?diagram_id=7",
+    `/app/diagrams/${key(7)}/select`,
+    `/app/sessions?diagram=${key(7)}`,
+    `/app/statements?diagram=${key(7)}`,
+    `/app/timeline?diagram=${key(7)}`,
   ]);
+  // the row number is in no request
+  expect(asked.some((a) => /diagram_id=|\/diagrams\/7\//.test(a.url))).toBe(false);
   answer(7);
   expect(await opening).toBe(true);
   expect(told).toEqual(["reset", "draw 7 record,thread,sittings"]);
   expect(store.current().diagram?.name).toBe("Family 7");
+  expect(store.key()).toBe(key(7));
+  expect(store.id()).toBe(7);
 });
 
 // R-0243
 it("draws only the last of two quick opens, and cancels what the first was still reading", async () => {
   const store = new Store();
   const told = screens(store);
-  const first = store.open(1);
-  const second = store.open(2);
+  const first = store.open(key(1));
+  const second = store.open(key(2));
   answer(2);
   expect(await second).toBe(true);
   expect(await first).toBe(false);
@@ -105,12 +116,12 @@ it("draws only the last of two quick opens, and cancels what the first was still
 it("drops a part read again for a diagram that is no longer open", async () => {
   const store = new Store();
   const told = screens(store);
-  const opening = store.open(1);
+  const opening = store.open(key(1));
   answer(1);
   await opening;
   const older = store.refresh(Part.Thread);
   await flush();
-  void store.open(2);
+  void store.open(key(2));
   expect(await older).toBe(false);
   answer(2);
   await flush();
@@ -123,7 +134,7 @@ it("closes the running turn's stream when another diagram opens", () => {
   const stream = { close: vi.fn() };
   store.hold(stream as unknown as EventSource);
   const still = store.live();
-  void store.open(2);
+  void store.open(key(2));
   expect(stream.close).toHaveBeenCalledOnce();
   expect(still()).toBe(false);
 });
@@ -131,10 +142,20 @@ it("closes the running turn's stream when another diagram opens", () => {
 // R-0243
 it("says a diagram an admin only looks at is read-only, from the diagram it opened", async () => {
   const store = new Store();
-  const opening = store.open(9);
+  const opening = store.open(key(9));
   answer(9, Access.AdminView);
   await opening;
   expect(store.readOnly()).toBe(true);
-  void store.open(3);
+  void store.open(key(3));
   expect(store.readOnly()).toBe(false);
+});
+
+// R-0NNN
+it("fails to open a diagram the server will not give, with the server's refusal, and holds no diagram", async () => {
+  const store = new Store();
+  const opening = store.open(key(5));
+  for (const one of asked) one.refuse(404);
+  await expect(opening).rejects.toMatchObject({ status: 404 });
+  expect(store.current().diagram).toBeNull();
+  expect(store.id()).toBeNull();
 });

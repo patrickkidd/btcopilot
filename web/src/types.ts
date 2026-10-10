@@ -555,6 +555,9 @@ export enum Access {
 
 export interface Diagram {
   id: number;
+  /** The short opaque id the address bar and the page's reads name it by;
+   * the row number never appears in an address. */
+  public_id: string;
   name: string;
   /** How many of this user's sessions sit on it. */
   session_count: number;
@@ -859,6 +862,8 @@ export interface Rule {
 export interface Cut {
   id: number;
   diagram_id: number;
+  /** The public id of the cut's diagram, which the app opens it by. */
+  diagram: string;
   /** The sitting its first line was said in, which the picker opens at. */
   sitting_id: number;
   start_statement_id: number;

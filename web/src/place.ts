@@ -7,7 +7,13 @@ import { Link } from "./types";
  * for an id of any shape, and `:day` for a meeting's day, or `undated` for the
  * meeting that has none. btcopilot/place.py mirrors this table and a test
  * keeps the two equal. Where two could read one address, the first written
- * wins. */
+ * wins.
+ *
+ * Every address sits under the diagram the app is on, named by its public id:
+ * `/app/diagram/<public id>/account/coach`. The same place written without
+ * that segment, `/app/account/coach`, is that place on the diagram the app is
+ * on, which is how the coach, a notice and the home-screen icon still say
+ * where to go. */
 export enum Place {
   Chat = "",
   Message = "chat/:n",
@@ -53,21 +59,29 @@ export const APP = "/app/";
 /** The meeting that has no day yet, in its address. */
 export const UNDATED = "undated";
 
+/** The word before a diagram's public id in an address; no place starts with it. */
+export const DIAGRAM = "diagram";
+
 const SLOT: Record<string, RegExp> = {
   ":n": /^\d+$/,
   ":key": /^[\w.-]+$/,
   ":day": new RegExp(`^(\\d{4}-\\d{2}-\\d{2}|${UNDATED})$`),
 };
 
-/** One place and what fills its slots, in order. */
+const UNDER = new RegExp(`^${APP}${DIAGRAM}/([a-z0-9]+)(?=/|$)`);
+
+/** One place and what fills its slots, in order, on the diagram the address
+ * names, or on the one the app is on when it names none. */
 export interface Spot {
   place: Place;
   args: string[];
+  diagram: string | null;
 }
 
 const parts = (place: Place) => (place ? place.split("/") : []);
 
-/** The address of one place with its slots filled. */
+/** The address of one place with its slots filled, on the diagram the app is
+ * on; `on` puts it under one diagram by name. */
 export function address(place: Place, ...args: (string | number)[]): string {
   const slots = parts(place).filter((part) => part in SLOT);
   if (slots.length !== args.length)
@@ -76,10 +90,30 @@ export function address(place: Place, ...args: (string | number)[]): string {
   return APP + parts(place).map((part) => (part in SLOT ? String(args[at++]) : part)).join("/");
 }
 
+/** The public id of the diagram an address names, and the address under it:
+ * `/app/diagram/k7m2x9pq4w/account` is `k7m2x9pq4w` and `/app/account`. An
+ * address without the segment names no diagram and is its own rest. */
+export function split(path: string): { diagram: string | null; under: string } {
+  const bare = path.split(/[?#]/)[0];
+  const found = UNDER.exec(bare);
+  if (!found) return { diagram: null, under: bare };
+  return { diagram: found[1], under: APP.slice(0, -1) + bare.slice(found[0].length) };
+}
+
+/** The same place under one diagram, by its public id: `/app/account` on
+ * `k7m2x9pq4w` is `/app/diagram/k7m2x9pq4w/account`. An address already under
+ * a diagram is moved; with no diagram to be on, it is left bare. */
+export function on(diagram: string | null, path: string): string {
+  const { under } = split(path);
+  if (diagram === null) return under;
+  return `${APP}${DIAGRAM}/${diagram}${under.slice(APP.length - 1)}`;
+}
+
 /** Which place an address names, or null for one the app does not have. A
  * trailing slash and anything after `?` or `#` are not part of it. */
 export function parse(path: string): Spot | null {
-  const bare = path.split(/[?#]/)[0].replace(/\/+$/, "");
+  const { diagram, under } = split(path);
+  const bare = under.replace(/\/+$/, "");
   const root = APP.slice(0, -1);
   if (bare !== root && !bare.startsWith(APP)) return null;
   const words = bare === root ? [] : bare.slice(APP.length).split("/");
@@ -87,14 +121,14 @@ export function parse(path: string): Spot | null {
     const want = parts(place);
     if (want.length !== words.length) continue;
     if (want.every((part, i) => (part in SLOT ? SLOT[part].test(words[i]) : part === words[i])))
-      return { place, args: words.filter((_, i) => want[i] in SLOT) };
+      return { place, args: words.filter((_, i) => want[i] in SLOT), diagram };
   }
   return null;
 }
 
 /** An address that lights something inside a view names that view once the
  * light has faded, which is how the app compares where it is with the bar. */
-const SETTLES: Partial<Record<Place, (args: string[]) => Spot>> = {
+const SETTLES: Partial<Record<Place, (args: string[]) => { place: Place; args: string[] }>> = {
   [Place.Message]: () => ({ place: Place.Chat, args: [] }),
   [Place.Session]: () => ({ place: Place.Sessions, args: [] }),
   [Place.Notice]: () => ({ place: Place.Notices, args: [] }),
@@ -103,11 +137,12 @@ const SETTLES: Partial<Record<Place, (args: string[]) => Spot>> = {
   [Place.FamilyStep]: () => ({ place: Place.Family, args: [] }),
 };
 
+/** Still on the diagram the address was on. */
 export function settled(path: string): string | null {
   const spot = parse(path);
   if (!spot) return null;
   const view = SETTLES[spot.place]?.(spot.args) ?? spot;
-  return address(view.place, ...view.args);
+  return on(spot.diagram, address(view.place, ...view.args));
 }
 
 /** The places that are the chat and its picture: moving between them changes

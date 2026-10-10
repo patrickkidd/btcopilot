@@ -3,9 +3,9 @@ import logging
 import re
 import uuid
 
-from flask import Blueprint, abort, request
+from flask import Blueprint, abort, render_template, request
 from flask_wtf.csrf import CSRFError, generate_csrf
-from werkzeug.exceptions import Forbidden
+from werkzeug.exceptions import Forbidden, NotFound
 
 import btcopilot
 from btcopilot import auth
@@ -88,6 +88,14 @@ class ReadOnly(Forbidden):
     description = "this diagram is open read-only"
 
 
+class NoAccess(NotFound):
+    """A page opened at the address of a diagram the person may not open, or
+    of none: one plain page for both, so the address of a diagram that exists
+    tells a stranger nothing."""
+
+    description = "You do not have access to this diagram."
+
+
 class FetchSite(enum.StrEnum):
     SameOrigin = "same-origin"
     Typed = "none"
@@ -139,6 +147,11 @@ def _csrf_error(e):
 def _read_only(e):
     """Said in words, where every other refusal is a bare Forbidden."""
     return e.description, 403
+
+
+@bp.errorhandler(NoAccess)
+def _no_access(e):
+    return render_template("noaccess.html", words=e.description), 404
 
 
 @bp.errorhandler(ValueError)
@@ -203,17 +216,38 @@ def diagram():
 
 
 def asked_diagram():
-    """The diagram a request names with `?diagram_id=`: the page names the one
-    it has open on every read and write, and the coding screen names the record
-    its coding is of. One the caller may not open is a 404, never a 403.
-    Without one it is the diagram the app is on."""
+    """The diagram a request names: the page names the one it has open on
+    every read and write by its public id, `?diagram=`, and the coding screen
+    names the record its coding is of by the row number its cut carries,
+    `?diagram_id=`. One the caller may not open is a 404, never a 403. Without
+    either it is the diagram the app is on."""
+    key = request.args.get("diagram")
     asked = request.args.get("diagram_id", type=int)
-    if asked is None:
+    if key is None and asked is None:
         return diagram()
-    found = db.session.get(Diagram, asked)
+    found = Diagram.by_public_id(key) if key is not None else db.session.get(Diagram, asked)
     if found is None or not opens(found, auth.current_user()):
         abort(404)
     return found
+
+
+def own_diagram(user):
+    """The diagram the app opens for a person who names none: the one they are
+    on when it is their own or shared with them, else their free one. Never
+    one an admin only looks at: a home-screen icon opens the admin's own."""
+    dia = user.current_diagram or user.free_diagram
+    if dia is not None and access(dia, user) is Access.AdminView:
+        return user.free_diagram
+    return dia
+
+
+def put_on(user, dia: Diagram) -> None:
+    """The page landing on a diagram puts the app on it, as selecting one
+    does, so the sitting it returns to and every read without a name agree
+    with the address."""
+    if user.diagram_in_use() != dia.id:
+        user.current_diagram_id = dia.id
+        db.session.commit()
 
 
 def require_write_access(dia):

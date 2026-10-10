@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    {% include "head.html" %}
+    <title>Family Diagram</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        padding: 24px;
+      }
+      main {
+        max-width: 28rem;
+        text-align: center;
+      }
+      p { font-size: 1.1rem; line-height: 1.5; margin: 0 0 1.5rem; }
+      a {
+        display: inline-block;
+        padding: 0.6rem 1.2rem;
+        border-radius: 999px;
+        background: var(--data);
+        color: var(--onaccent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>{{ words }}</p>
+      <a href="/app/">Open your own diagram</a>
+    </main>
+  </body>
+</html>

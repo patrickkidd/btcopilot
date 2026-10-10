@@ -2058,6 +2058,12 @@ class Toolbox:
                 f"{address!r} is no address in the app; the tool's description lists them",
                 "It tried to open a place the app does not have.",
             )
+        # the coach speaks on one diagram and never puts the app on another
+        if place.split(address)[0] is not None:
+            raise ToolError(
+                f"{address!r} names a diagram; an address is a place on this one",
+                "It tried to open another diagram.",
+            )
         where, slots = found
         if where in place.CODER and not self.coder:
             raise ToolError(

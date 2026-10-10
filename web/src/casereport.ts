@@ -33,7 +33,7 @@ export interface CaseHooks {
   /** Whether the window is wide enough for the family to stand beside the cards. */
   wide(): boolean;
   /** Read something about the open diagram, dropped if another is opened meanwhile. */
-  fetch<T>(ask: (id: number | null, signal: AbortSignal) => Promise<T>): Promise<T | null>;
+  fetch<T>(ask: (key: string | null, signal: AbortSignal) => Promise<T>): Promise<T | null>;
   /** Read the open diagram's record again, which redraws the report. */
   reload(): Promise<boolean>;
 }

@@ -45,8 +45,8 @@ const EMPTY: Opened = { diagram: null, record: emptyTimeline(), thread: [], sitt
 
 export class Store {
   private opened: Opened = EMPTY;
-  /** The diagram open or being opened. */
-  private at: number | null = null;
+  /** The diagram open or being opened, by the public id the address names. */
+  private at: string | null = null;
   private views: View[] = [];
   private control = new AbortController();
   /** The running turn's stream, which belongs to the diagram it was said on. */
@@ -62,9 +62,16 @@ export class Store {
     return this.opened;
   }
 
-  /** The diagram open, or the one being opened, by id. */
-  id(): number | null {
+  /** The diagram open, or the one being opened, by the public id every
+   * address and every read of the page names it by. */
+  key(): string | null {
     return this.at;
+  }
+
+  /** The open diagram's row number, which rows that point at a diagram carry
+   * (interactions, product events); null until it is in. */
+  id(): number | null {
+    return this.opened.diagram?.id ?? null;
   }
 
   /** An admin looking at another person's diagram: nothing is said, tapped
@@ -79,17 +86,18 @@ export class Store {
     return () => this.count === was;
   }
 
-  /** The one way a diagram is opened. False when another open overtook it. */
-  async open(id: number | null, seed?: Seed): Promise<boolean> {
-    const live = this.begin(id);
+  /** The one way a diagram is opened, by its public id. False when another
+   * open overtook it. */
+  async open(key: string | null, seed?: Seed): Promise<boolean> {
+    const live = this.begin(key);
     const signal = this.control.signal;
     let read;
     try {
       read = await Promise.all([
-        seed ? seed.diagram : api.selectDiagram(id!, signal),
-        api.timeline(id, signal),
-        seed ? seed.thread : api.thread(id, undefined, signal),
-        api.sessionIndex(id, signal),
+        seed ? seed.diagram : api.selectDiagram(key!, signal),
+        api.timeline(key, signal),
+        seed ? seed.thread : api.thread(key, undefined, signal),
+        api.sessionIndex(key, signal),
       ]);
     } catch (error) {
       if (error instanceof api.Dropped) return false;
@@ -119,7 +127,7 @@ export class Store {
 
   /** A request about the open diagram, cancelled if another is opened; null
    * when it was. */
-  async fetch<T>(ask: (id: number | null, signal: AbortSignal) => Promise<T>): Promise<T | null> {
+  async fetch<T>(ask: (key: string | null, signal: AbortSignal) => Promise<T>): Promise<T | null> {
     const live = this.live();
     try {
       const answer = await ask(this.at, this.control.signal);
@@ -140,9 +148,9 @@ export class Store {
     this.turn = null;
   }
 
-  private begin(id: number | null): () => boolean {
+  private begin(key: string | null): () => boolean {
     this.count += 1;
-    this.at = id;
+    this.at = key;
     this.control.abort();
     this.control = new AbortController();
     this.release();
@@ -162,10 +170,10 @@ const KEY: Record<Part, keyof Opened> = {
   [Part.Sittings]: "sittings",
 };
 
-const READ: Record<Part, (id: number | null, signal: AbortSignal) => Promise<unknown>> = {
-  [Part.Record]: (id, signal) => api.timeline(id, signal),
-  [Part.Thread]: (id, signal) => api.thread(id, undefined, signal),
-  [Part.Sittings]: (id, signal) => api.sessionIndex(id, signal),
+const READ: Record<Part, (key: string | null, signal: AbortSignal) => Promise<unknown>> = {
+  [Part.Record]: (key, signal) => api.timeline(key, signal),
+  [Part.Thread]: (key, signal) => api.thread(key, undefined, signal),
+  [Part.Sittings]: (key, signal) => api.sessionIndex(key, signal),
 };
 
 /** The page's one store. */

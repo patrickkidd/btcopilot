@@ -416,7 +416,7 @@ export class Sessions {
       $("composer").focus({ preventScroll: true });
       return;
     }
-    this.handlers.onMade(await api.newSession(store.id(), SessionKind.Note));
+    this.handlers.onMade(await api.newSession(store.key(), SessionKind.Note));
   }
 
   private rename(row: HTMLElement): void {

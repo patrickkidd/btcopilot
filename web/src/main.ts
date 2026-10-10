@@ -31,7 +31,7 @@ import { card } from "./merge";
 import { Part, store } from "./store";
 import { REST, SelKind } from "./caption";
 import { $, CLUSTER, el, flash, setTitle, slideOver, type Title } from "./dom";
-import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
+import { address, beyond, linked, on, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer, SIDEWAYS } from "./drawer";
 import { among, family, untold } from "./snapshots";
@@ -565,7 +565,7 @@ async function openResult(cutId: number, back: () => Promise<void>): Promise<voi
 async function openCut(cut: Cut): Promise<void> {
   uncover();
   screen(Screen.Chat);
-  await openDiagram(cut.diagram_id);
+  await openDiagram(cut.diagram);
   const first = await thread.reach(bubbleOf(cut.start_statement_id));
   await selecting.start(cut.diagram_id, cut.meeting_date, cut);
   first?.scrollIntoView({ block: "center" });
@@ -631,14 +631,28 @@ $("coding-back").addEventListener("click", () => {
 });
 
 /** Another family is another record and another set of sittings: the one
- * step that opens a diagram (FD-366). A turn already running on it is joined
- * once it is drawn. */
-async function openDiagram(id: number): Promise<void> {
+ * step that opens a diagram, by its public id (FD-366). A turn already running
+ * on it is joined once it is drawn, and the address bar names the diagram.
+ * False when another open overtook it, or when the person may not open it: the
+ * page then goes to that diagram's address, where the server says so. */
+async function openDiagram(publicId: string): Promise<boolean> {
   const armed = arming;
   arming = null;
-  if (!(await store.open(id))) return;
-  if (armed) await selecting.start(id, armed.day);
+  let opened: boolean;
+  try {
+    opened = await store.open(publicId);
+  } catch (error) {
+    if (error instanceof api.Failed && error.status === 404) {
+      location.assign(on(publicId, address(Place.Chat)));
+      return false;
+    }
+    throw error;
+  }
+  if (!opened) return false;
+  if (armed) await selecting.start(store.id()!, armed.day);
   await reattach();
+  sync();
+  return true;
 }
 
 /** What the title row says with no family open yet. */
@@ -690,7 +704,7 @@ $("viewing-cut").addEventListener("click", async () => {
 
 $("viewing-back").addEventListener("click", async () => {
   const [own] = await api.diagrams();
-  await openDiagram(own.id);
+  await openDiagram(own.public_id);
 });
 
 /** Speak replies is the one ruled duplicate: this row and the Coach settings
@@ -724,7 +738,9 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
     chat.expires = prefs.shadow_expires_at ? Date.parse(prefs.shadow_expires_at) : null;
     feedback();
   },
-  onOpen: openDiagram,
+  onOpen: async (publicId) => {
+    await openDiagram(publicId);
+  },
   onTask: () => void readTask().then(() => settings.push(TASK)),
   onAgenda: () => void agenda.load().then(() => settings.push(AGENDA)),
   notices: () => notices.list,
@@ -1107,7 +1123,7 @@ async function deliver(statement: string, file: File | null, bubble: HTMLElement
   // read before this message is stored, which would count as the last one
   if (lapsed) await settings.refresh();
   const started = await begin(
-    () => api.say(store.id(), statement, file),
+    () => api.say(store.key(), statement, file),
     () => void deliver(statement, file, bubble),
     // a file the server will not take is said in its words, and the message
     // goes back in the box to send without it
@@ -1332,7 +1348,7 @@ async function readBack(): Promise<void> {
   const live = store.live();
   let page: api.Said[];
   try {
-    page = await api.thread(store.id());
+    page = await api.thread(store.key());
   } catch (error) {
     if (!(error instanceof api.Failed)) throw error;
     console.warn(error.message);
@@ -1646,14 +1662,20 @@ function current(): string {
 }
 
 /** The bar follows the app: a new view is a step back undoes, and a move
- * within the chat and its picture changes the address in place. */
+ * within the chat and its picture changes the address in place. Every address
+ * written is under the diagram the app is on. */
 function sync(): void {
   if (going) return;
-  const now = current();
+  const now = on(store.key(), current());
   const was = location.pathname;
   if (now === settled(was)) return;
   const from = parse(was);
-  if (from && PICTURE.has(from.place) && PICTURE.has(parse(now)!.place))
+  if (
+    from &&
+    from.diagram === store.key() &&
+    PICTURE.has(from.place) &&
+    PICTURE.has(parse(now)!.place)
+  )
     history.replaceState(null, "", now);
   else history.pushState(null, "", now);
 }
@@ -1873,13 +1895,16 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
   },
 };
 
-/** Put the app at an address from wherever it is (R-0055). An address the
- * app does not have, or whose thing is gone, leaves the app where it could
- * get to, and the bar says that instead. */
+/** Put the app at an address from wherever it is (R-0055). An address on
+ * another diagram opens that diagram first; one without a diagram is on the
+ * diagram the app is on. An address the app does not have, or whose thing is
+ * gone, leaves the app where it could get to, and the bar says that instead. */
 async function navigate(where: string, step = Step.New): Promise<void> {
   const spot = parse(where);
   going = true;
   try {
+    if (spot?.diagram && spot.diagram !== store.key() && !(await openDiagram(spot.diagram)))
+      return;
     if (spot) await GO[spot.place](spot.args);
     else {
       toast("That place is not in the app");
@@ -1888,8 +1913,9 @@ async function navigate(where: string, step = Step.New): Promise<void> {
   } finally {
     going = false;
   }
-  const now = current();
-  const landed = spot && settled(where) === now ? address(spot.place, ...spot.args) : now;
+  const now = on(store.key(), current());
+  const asked = on(store.key(), where);
+  const landed = spot && settled(asked) === now ? asked : now;
   if (landed === location.pathname) return;
   if (step === Step.New) history.pushState(null, "", landed);
   else history.replaceState(null, "", landed);
@@ -1922,11 +1948,15 @@ function reveal(): void {
 }
 
 /** Opened at an address, the app goes there once the record is in; opened at
- * the chat it is there already. */
+ * the chat it is there already. An address without a diagram, the home-screen
+ * icon's `/app/` among them, becomes the address of the diagram the app opened
+ * on; the push link's `?notification=` stays, since it is read after this. */
 async function arrive(): Promise<void> {
   if (parse(location.pathname)?.place !== Place.Chat)
     return navigate(location.pathname, Step.Kept);
   going = false;
+  const full = on(store.key(), location.pathname);
+  if (full !== location.pathname) history.replaceState(null, "", full + location.search);
   sync();
 }
 
@@ -1962,7 +1992,7 @@ window.addEventListener("pageshow", (e) => {
 // nothing; coming back a week later, the picture is where the last message
 // left it.
 void store
-  .open(window.BOOTSTRAP.diagram?.id ?? null, {
+  .open(window.BOOTSTRAP.diagram?.public_id ?? null, {
     diagram: window.BOOTSTRAP.diagram,
     thread: window.BOOTSTRAP.statements,
   })
