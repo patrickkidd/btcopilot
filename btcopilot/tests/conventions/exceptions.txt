@@ -205,3 +205,19 @@ R-0743 | TEST OWED | not built: the coach calling out a connection across genera
 R-0748 | WAIVED | one test proves F18 is drawn with no line through a name; the rest is a judgement that marriages inside a family are rare
 R-0757 | WAIVED | deferred to how coverage is shown; nothing is built to assert
 R-0769 | TEST OWED | not built: functioning going down has no animation until its art direction is done
+R-0850 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0851 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0852 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0853 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0854 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0855 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0856 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0857 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0858 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0859 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0860 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0861 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0862 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0863 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0864 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0865 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
