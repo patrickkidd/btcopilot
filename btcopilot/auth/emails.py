@@ -21,9 +21,16 @@ AUDITOR = (
 )
 
 
-def _deliver(recipient: str, subject: str, body: str, reply_to: str | None = None):
+def deliver(
+    recipient: str,
+    subject: str,
+    body: str,
+    reply_to: str | None = None,
+    attachment: tuple[str, bytes, str] | None = None,
+):
     """A development server with no mail server configured writes the link or
-    the code to the log instead, so a sandbox can be driven without one."""
+    the code to the log instead, so a sandbox can be driven without one.
+    `attachment` is a file's name, its bytes and its mime type."""
     config = current_app.config
     if config["CONFIG"] == Config.Development and "MAIL_SERVER" not in config:
         _log.warning(f"[dev mail] {recipient} — {subject}\n{body}")
@@ -35,6 +42,9 @@ def _deliver(recipient: str, subject: str, body: str, reply_to: str | None = Non
         reply_to=reply_to,
     )
     message.body = body
+    if attachment:
+        name, data, mime = attachment
+        message.attach(name, mime, data)
     extensions.mail.send(message)
 
 
@@ -53,7 +63,7 @@ def _explained(email: str, body: str) -> str:
 
 
 def send_invitation(email: str, url: str):
-    _deliver(
+    deliver(
         email,
         "Your Family Diagram invitation",
         _explained(
@@ -65,7 +75,7 @@ def send_invitation(email: str, url: str):
 
 def send_nudge(email: str, sessions: list[str], meeting: str):
     what = "\n".join(f"- {one}" for one in sessions)
-    _deliver(
+    deliver(
         email,
         "Coding still open before the next meeting",
         f"The meeting on {meeting} is waiting on your coding of:\n\n{what}\n\n"
@@ -74,7 +84,7 @@ def send_nudge(email: str, sessions: list[str], meeting: str):
 
 
 def send_login_code(email: str, code: str, minutes: int):
-    _deliver(
+    deliver(
         email,
         "Your Family Diagram sign-in code",
         _explained(
@@ -84,11 +94,11 @@ def send_login_code(email: str, code: str, minutes: int):
 
 
 def send_notification(email: str, subject: str, words: str, url: str):
-    _deliver(email, subject, f"{words}\n\n{url}\n")
+    deliver(email, subject, f"{words}\n\n{url}\n")
 
 
 def send_signin_link(email: str, url: str):
-    _deliver(
+    deliver(
         email,
         "Your Family Diagram sign-in link",
         f"Open this link to sign in. It works once, lasts one day and needs no "
@@ -97,7 +107,7 @@ def send_signin_link(email: str, url: str):
 
 
 def send_beta_request(name: str, email: str, words: str):
-    _deliver(
+    deliver(
         current_app.config["ADMIN_EMAIL"],
         f"Family Diagram beta request from {name}",
         f"Name: {name}\nEmail: {email}\n\nA few words about them and their "
@@ -135,7 +145,7 @@ def send_report(report: Report, sender: str):
     lines.append(f"\nThe report:\n{report.words}")
     if user:
         lines.append(f"\nTheir diagrams: {site}/app/account/diagrams/{user.id}")
-    _deliver(
+    deliver(
         current_app.config["ADMIN_EMAIL"],
         f"Family Diagram {report.kind.value} report"
         + (f" from {user.username}" if user else ""),

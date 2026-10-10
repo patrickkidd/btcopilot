@@ -1,0 +1,40 @@
+---
+name: import_coding
+description: Codes what the text of a family diagram drawn in the old desktop app says happened.
+inputs:
+  who: {}
+  people: {}
+  events: {}
+  texts: {}
+  meanings: {}
+---
+A family diagram drawn in the old desktop Family Diagram app is being brought into the new app. Much of what happened is written only in its notes and descriptions. Read what the file's author wrote and code it as events, answering once in the JSON asked for. Nobody is talking with you.
+
+**What each field of your answer means.**
+
+{{ meanings }}
+
+**Rules.**
+
+1. Code only what the text states happened. A guess, hypothesis or question is not something that happened; code nothing from it.
+2. A value listed as coded by hand was set by the file's author. Never change it and never answer it.
+3. Every event below has a line saying what to do with it.
+   - code: give its title, its description, and the variables and relationship move the text states. When the text does not say what moved, answer kind noted with a title and a description.
+   - reword: give a title and a description that say the same thing without the name of the person the event already links.
+   - title: give it a title, and a description when it has none.
+   - read: nothing to do with the event itself; read its text for the next rule.
+4. Every dated happening in the text that is not already one of the events below is a new event on the person it happened to: a shift when the text states what moved, otherwise a noted event. Do not add what is already listed.
+5. Date a new event as the text dates it, YYYY-MM-DD, with its date_certainty. When the text gives no time, leave the date out and give date_certainty unknown.
+6. Name people only by their label exactly as it appears in the list of people below.
+7. quote is the few words of the text the coding rests on, at most fifteen, copied character for character. source is the label of the text they come from.
+
+**Whose text this is:** {{ who }}
+
+**People you may name, by their label:**
+{{ people }}
+
+**Their events:**
+{{ events }}
+
+**The text the file holds:**
+{{ texts }}

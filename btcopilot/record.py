@@ -595,7 +595,7 @@ def _check(
     event does not block it; taking it back puts the stored date back as it
     was [Oracle: R-0084]."""
     if not turn_id.removeprefix("undo:").startswith(DATE_REPAIR):
-        _validate(data, deltas, author, undoing, refile)
+        validate(data, deltas, author, undoing, refile)
         return
     other = [d for d in deltas if d["item_kind"] != ItemKind.Event.value or d["field"] not in DATES]
     if other:
@@ -604,7 +604,7 @@ def _check(
         _dates(data, deltas)
 
 
-def _validate(
+def validate(
     data: dict, deltas: list[dict], author: Author, undoing: bool, refile: bool = False
 ):
     """Every cluster this write leaves behind holds at least MIN_CLUSTER_EVENTS
