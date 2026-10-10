@@ -5,9 +5,9 @@ the file's author coded by hand stays as it is [Oracle: R-0859]; a shift that
 cannot be coded becomes a noted event, so nothing is lost and nothing is
 guessed [Oracle: R-0868].
 
-About one call per person: their events, the text on them, their bonds and
-their own notes, with the names of their relatives so a move can name whom it
-was aimed at. Each answer is checked by the record's own rules before any of it
+Each person's part is their events, the text on them, their bonds and their
+own notes, with the names of their relatives so a move can name whom it was
+aimed at; people share a call, in file order, up to PER_CALL items. Each answer is checked by the record's own rules before any of it
 is kept; a refused one is said by name in the decisions."""
 
 import collections
@@ -38,12 +38,14 @@ from btcopilot.schema import (
 )
 
 PROMPT = "import_coding"
-# What the importer leaves on an item for this pass, as the file held it.
-# fdimport imports this module, so the name is not taken from there.
+# On a person, pair-bond, event or the diagram: what the importer leaves for
+# this pass, as the file held it [Oracle: R-0869, R-0870].
 RAW = "fileValues"
 VARIABLES = ("symptom", "anxiety", "functioning")
 MOVES = ("relationshipTargets", "relationshipTriangles")
-HAND = (*VARIABLES, "relationship", *MOVES)
+# What makes a shift a shift; who a move was aimed at alone does not.
+CODED = (*VARIABLES, "relationship")
+HAND = (*CODED, *MOVES)
 WORDED = (EventKind.Shift.value, EventKind.Noted.value)
 BY_CHILD = (EventKind.Birth.value, EventKind.Adopted.value)
 LINKS = ("person", "spouse", "child", *MOVES)
@@ -65,6 +67,8 @@ UNCODED = "Not coded yet"
 WHOLE = "the whole diagram"
 ROOM = 4096
 PER_ITEM = 512
+# Events and texts in one call; a person with more has a call alone.
+PER_CALL = 24
 
 
 class Todo(enum.StrEnum):
@@ -115,6 +119,10 @@ class Batch:
     events: list[dict]
     todo: dict[str, Todo]
     texts: dict[str, str]
+
+    @property
+    def size(self) -> int:
+        return len(self.events) + len(self.texts)
 
 
 class Refused(Exception):
@@ -176,7 +184,7 @@ def _owner(event: dict):
 def _todo(data: dict, event: dict) -> Todo:
     kind = event["kind"]
     if kind == EventKind.Shift.value and (
-        not any(event.get(name) for name in (*VARIABLES, "relationship"))
+        not any(event.get(name) for name in CODED)
         or event.get(RAW)
         or (event.get("relationship") and not event.get("relationshipTargets"))
         or (
@@ -271,6 +279,33 @@ def batches(data: dict) -> list[Batch]:
     return [b for b in found if b is not None]
 
 
+def _joined(found: list[Batch]) -> Batch:
+    return Batch(
+        "; ".join(b.who for b in found),
+        list(dict.fromkeys(pid for b in found for pid in b.people)),
+        [e for b in found for e in b.events],
+        {eid: todo for b in found for eid, todo in b.todo.items()},
+        {source: text for b in found for source, text in b.texts.items()},
+    )
+
+
+def calls(data: dict) -> list[Batch]:
+    """The people's batches packed in file order into calls of at most
+    PER_CALL items, one person's never split; the diagram's own stays alone."""
+    found = batches(data)
+    people = [b for b in found if b.who != WHOLE]
+    whole = [b for b in found if b.who == WHOLE]
+    packed, current = [], []
+    for batch in people:
+        if current and sum(b.size for b in current) + batch.size > PER_CALL:
+            packed.append(_joined(current))
+            current = []
+        current.append(batch)
+    if current:
+        packed.append(_joined(current))
+    return packed + whole
+
+
 def answer_schema(batch: Batch, named: dict[int, str]) -> dict:
     schema = dataclass_to_json_schema(Answer)
     people = [named[pid] for pid in batch.people]
@@ -322,9 +357,7 @@ def _line(event: dict, todo: Todo, named: dict[int, str]) -> str:
     links = [
         f"{key}: {who(event[key])}" for key in LINKS if event.get(key) not in (None, [])
     ]
-    hand = [
-        f"{key} {event[key]}" for key in (*VARIABLES, "relationship") if event.get(key)
-    ]
+    hand = [f"{key} {event[key]}" for key in CODED if event.get(key)]
     lines = [head, f"  {'; '.join(links)}" if links else None]
     if event.get("title"):
         lines.append(f"  title: {event['title']}")
@@ -373,7 +406,7 @@ def _check(data: dict, event: dict, added: bool) -> None:
         "after": event,
     }
     try:
-        record._validate(trial, [delta], Author.Pro, undoing=True)
+        record.validate(trial, [delta], Author.Pro, undoing=True)
     except record.Invalid as invalid:
         raise Refused(invalid.plain) from invalid
 
@@ -389,7 +422,7 @@ def _coded(
     if kind in WORDED and answer.kind != kind:
         if answer.kind not in WORDED or todo is not Todo.Code:
             raise Refused(f"it called a {kind} event {answer.kind!r}.")
-        if hand:
+        if hand & set(CODED):
             raise Refused("it made a noted event of a shift the file coded by hand.")
         changes["kind"] = answer.kind
     title = event.get("title") or ""
@@ -424,7 +457,7 @@ def _fallback(data: dict, event: dict, todo: Todo) -> dict:
     if (
         todo is Todo.Code
         and event["kind"] == EventKind.Shift.value
-        and not any(event.get(name) for name in HAND)
+        and not any(event.get(name) for name in CODED)
     ):
         changes["kind"] = EventKind.Noted.value
     worded = changes.get("kind", event["kind"]) in WORDED
@@ -441,6 +474,27 @@ def _fallback(data: dict, event: dict, todo: Todo) -> dict:
     if description.strip().lower() in record.PLACEHOLDERS:
         changes["description"] = changes["title"] if "title" in changes else title
     return changes
+
+
+def _moveless(event: dict, named: dict[int, str], decisions: list) -> None:
+    """Whom a move nobody could complete was aimed at stays with the file's
+    values, by name: the record names them only on a relationship move."""
+    if event.get("relationship"):
+        return
+    for name in MOVES:
+        said = ", ".join(named[pid] for pid in event.pop(name, None) or [])
+        if not said:
+            continue
+        event.setdefault(RAW, {})[name] = said
+        decisions.append(
+            Decision(
+                f"event {event['id']}",
+                name,
+                said,
+                "",
+                "With no relationship move to aim it, the name stays with the file's values.",
+            )
+        )
 
 
 def _change(decisions: list, event: dict, changes: dict, reason: str) -> None:
@@ -501,7 +555,7 @@ def _answer(batch: Batch, named: dict[int, str], model) -> tuple[Answer | None, 
                 prompt(batch, named),
                 Answer,
                 answer_schema(batch, named),
-                ROOM + PER_ITEM * (len(batch.events) + len(batch.texts)),
+                ROOM + PER_ITEM * batch.size,
             ),
             "",
         )
@@ -566,14 +620,17 @@ def _batch(
             _change(decisions, event, changes, reason)
         else:
             decisions.append(Decision(f"event {eid}", "", "", "", reason))
+        _moveless(event, named, decisions)
     for addition in answer.additions if answer else []:
+        # Said on the item whose text it was read in, so the ledger shows it there.
+        item, _, name = addition.source.rpartition(" ")
         try:
             event = _added(data, batch, addition, ids, record.next_id(ids_of))
         except Refused as why:
             decisions.append(
                 Decision(
-                    addition.source,
-                    "",
+                    item,
+                    name,
                     "",
                     "",
                     f"An event the model read in {addition.source} was refused: {why}",
@@ -583,10 +640,10 @@ def _batch(
         data["events"].append(event)
         decisions.append(
             Decision(
-                f"event {event['id']}",
+                item,
+                name,
                 "",
-                "",
-                f"{event['kind']}: {event['title']}",
+                f"a new {event['kind']} event: {event['title']}",
                 f'Added from {addition.source}, which says "{addition.quote}".',
             )
         )
@@ -606,6 +663,6 @@ def code(data: dict, model=ask) -> tuple[dict, list[Decision]]:
         lastItemId=data.get("lastItemId") or 0,
     )
     decisions: list[Decision] = []
-    for batch in batches(data):
+    for batch in calls(data):
         _batch(data, batch, named, model, ids_of, decisions)
     return data, decisions

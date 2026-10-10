@@ -165,9 +165,9 @@ def test_a_dated_happening_in_notes_becomes_an_event_on_its_person_and_a_fact_a_
     )
     assert (work["person"], work["kind"], work["item"]) == (1, "noted", "work")
     assert "dateTime" not in work
-    assert [d.after for d in decisions] == [
-        "shift: Hospitalized for depression",
-        "noted: Worked as nurse",
+    assert [(d.item, d.field, d.after) for d in decisions] == [
+        ("person 1", "notes", "a new shift event: Hospitalized for depression"),
+        ("person 1", "notes", "a new noted event: Worked as nurse"),
     ]
 
 
@@ -294,3 +294,70 @@ def test_the_prompt_carries_the_coachs_rules_and_the_rule_against_guesses(monkey
         "A clinician's guess, hypothesis or question is not something that happened"
         in said
     )
+
+
+def test_a_move_nobody_could_complete_keeps_its_names_with_the_files_values():
+    # R-0868, R-0869
+    data = diagram(
+        [
+            shift(
+                35,
+                description="",
+                relationshipTargets=[3],
+                fileValues={"relationship": "inside"},
+            )
+        ]
+    )
+    coded, decisions = fdcoding.code(data, Model())
+    event = by_id(coded)[35]
+    assert (event["kind"], event.get("relationshipTargets")) == ("noted", None)
+    assert event["fileValues"] == {
+        "relationship": "inside",
+        "relationshipTargets": "Bo Lund",
+    }
+    assert ("relationshipTargets", "Bo Lund") in [
+        (d.field, d.before) for d in decisions
+    ]
+
+
+def test_people_share_a_call_up_to_its_size_in_file_order(monkeypatch):
+    # R-0860
+    data = diagram()
+    for person in data["people"][:3]:
+        person["notes"] = f"{person['name']} kept bees."
+    model = Model()
+    fdcoding.code(data, model)
+    assert [re.search(r"WHO: (.*)", p).group(1) for p in model.prompts] == [
+        "Ada Lund; Bo Lund; Cy Lund"
+    ]
+    monkeypatch.setattr(fdcoding, "PER_CALL", 2)
+    model = Model()
+    fdcoding.code(data, model)
+    assert [re.search(r"WHO: (.*)", p).group(1) for p in model.prompts] == [
+        "Ada Lund; Bo Lund",
+        "Cy Lund",
+    ]
+
+
+def test_without_the_sops_key_the_open_source_prompt_codes_the_import(
+    monkeypatch, tmp_path
+):
+    # R-0451
+    monkeypatch.setenv(prompts.OPEN, "1")
+    monkeypatch.delenv("FD_PRIVATE_PROMPTS")
+    monkeypatch.delenv("SOPS_AGE_KEY", raising=False)
+    monkeypatch.setenv("SOPS_AGE_KEY_FILE", str(tmp_path / "keys.txt"))
+    prompts.files.cache_clear()
+    said = []
+
+    def model(prompt, response_format, schema, limit):
+        said.append(prompt)
+        return response_format()
+
+    data = diagram([shift(36, description="Fought with Bo")])
+    coded, _ = fdcoding.code(data, model)
+    assert prompts.files().dirs == [prompts.PUBLIC]
+    [prompt] = said
+    assert "**Whose text this is:** Ada Lund" in prompt
+    assert "[event 36 description]\nFought with Bo" in prompt
+    assert by_id(coded)[36]["kind"] == "noted"

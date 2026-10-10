@@ -16,7 +16,7 @@ def coding(monkeypatch):
     """The coding pass, standing in: it hands the diagram back as it got it."""
     seen = []
 
-    def code(data):
+    def code(data, model):
         seen.append([p["id"] for p in data["people"]])
         return data, [Decision("event 20", "notes", "", "", "Nothing to code.")]
 
@@ -278,7 +278,7 @@ def test_unnamed_people_named_by_family_position():
         2: "Cy's father",
         3: "Cy",
         4: "Cy's mother's child",
-        5: "",
+        5: "Unnamed person 1",
     }
     assert reasons(out, "person 5") == ["name"]
 
@@ -300,6 +300,77 @@ def test_second_unnamed_partner_never_takes_the_same_name():
     )
     names = {p["id"]: p["name"] for p in out.data["people"]}
     assert (names[2], names[4]) == ("Cy's father", "Ada's partner")
+
+
+def test_a_shared_name_falls_back_to_the_full_name_then_a_count():
+    # R-0867
+    pairs = [(1, 2), (3, 4), (3, 5), (6, 7), (8, 9), (10, 11)]
+    bonds = [
+        {"kind": "Marriage", "id": 20 + n, "person_a": a, "person_b": b}
+        for n, (a, b) in enumerate(pairs)
+    ]
+    out = imported(
+        people=[
+            person(1, "Ada", "female", primary=True),
+            person(2, "", "male"),
+            person(3, "Ada", "female", lastName="Berg"),
+            person(4, "", "male"),
+            person(5, "", "male"),
+            person(6, "", "male"),
+            person(7, "", "female"),
+            person(8, "Ada", "female"),
+            person(9, "", "male"),
+            person(10, "Ada", "female"),
+            person(11, "", "male"),
+        ],
+        pair_bonds=bonds,
+        events=[],
+    )
+    names = {p["id"]: p["name"] for p in out.data["people"] if p["name"] != "Ada"}
+    assert names == {
+        2: "Ada's partner",
+        4: "Ada Berg's partner",
+        5: "Ada Berg's partner 2",
+        6: "Unnamed person 1",
+        7: "Unnamed person 2",
+        9: "Ada Lund's partner",
+        11: "Ada Lund 2's partner",
+    }
+
+
+def test_an_events_own_move_naming_no_one_left_for_the_coding_pass():
+    # R-0869
+    out = imported(
+        events=[
+            shift(23, relationship="inside", relationshipTargets=[2]),
+            shift(24, dynamicProperties={"relationship": "cutoff"}),
+        ]
+    )
+    events = by_id(out.data["events"])
+    assert "relationship" not in events[23] and "relationship" not in events[24]
+    assert events[23][fdimport.RAW] == {"relationship": "inside"}
+    assert events[24][fdimport.RAW] == {"relationship": "cutoff"}
+    assert reasons(out, "event 23") == ["relationship"]
+
+
+def test_events_the_record_counts_as_one_are_made_one_with_every_word_kept():
+    # R-0868, R-0873
+    day = when(2010, 5, 1)
+    out = built(
+        events=[
+            event(23, "noted", person=1, description="Graduated", dateTime=day),
+            event(
+                24, "noted", person=1, description="Rehab", notes="Weeks.", dateTime=day
+            ),
+        ]
+    )
+    [kept] = out.data["events"]
+    assert kept["notes"] == "Rehab\nWeeks."
+    assert (
+        fdimport.became(out)["event 24"]
+        == f"part of event {kept['id']}, noted: Graduated"
+    )
+    assert "the same event as event 23" in out.decisions[-1].reason
 
 
 def test_deceased_with_no_death_event_gets_one_with_the_cause():
@@ -441,4 +512,4 @@ def test_admin_import_previews_then_writes_and_mails_the_record(
     assert mail.recipients == [test_user.username]
     [attached] = mail.attachments
     assert attached.filename == "Lund family - import record.txt"
-    assert "Ada Lund (person 1)" in attached.data
+    assert "Ada Lund (person 1)" in attached.data.decode()

@@ -7,10 +7,8 @@ import datetime
 from dataclasses import dataclass
 
 from flask import current_app
-from flask_mail import Message
 
-from btcopilot import extensions
-from btcopilot.config import Config
+from btcopilot.auth.emails import deliver
 
 
 @dataclass
@@ -26,6 +24,67 @@ class Decision:
 SECRET = {"password", "masterKey"}
 # Given their own sections, so not repeated among the diagram's fields.
 SECTIONS = {"people", "events", "pair_bonds", "marriages", "emotions", "items"}
+# What only drew the old picture: where and how big, its colours, its layers,
+# a pair-bond's drawn parts, and the switches for what was shown.
+DRAWING = {
+    "itemPos",
+    "pos",
+    "size",
+    "color",
+    "pencilColor",
+    "layers",
+    "layerPos",
+    "nonLayerPos",
+    "itemProperties",
+    "detailsText",
+    "detailsItem",
+    "separationIndicator",
+    "childOf",
+    "includeOnDiagram",
+    "scale",
+    "scaleFactor",
+    "width",
+    "points",
+    "order",
+    "selected",
+    "storeGeometry",
+    "storePositionsInLayers",
+    "centerPoint",
+    "legendData",
+    "exclusiveLayerSelection",
+    "currentDateTime",
+    "bigFont",
+}
+SWITCHES = ("hide", "show", "search_")
+# Read first in each item; its other fields follow in the file's order.
+FIRST = (
+    "name",
+    "middleName",
+    "lastName",
+    "nickName",
+    "birthName",
+    "alias",
+    "kind",
+    "dateTime",
+    "endDateTime",
+    "dateCertainty",
+    "unsure",
+    "startDate",
+    "endDate",
+    "gender",
+    "deceased",
+    "deceasedReason",
+    "description",
+    "notes",
+    "diagramNotes",
+    "person",
+    "spouse",
+    "child",
+    "target",
+    "person_a",
+    "person_b",
+)
+DRAWN = "Drawing details from the desktop app"
 # Births and adoptions are about the child; every other event about its person.
 CHILD_KINDS = {"birth", "adopted"}
 RULE = "=" * 40
@@ -78,14 +137,42 @@ def fields(item: dict, prefix: str = "") -> list[str]:
     return lines
 
 
+def _drawing(key: str) -> bool:
+    return key in DRAWING or key.startswith(SWITCHES)
+
+
 def _block(title: str, item: dict, became: dict, decided: dict) -> list[str]:
-    lines = [f"-- {title} --", "In the file:", *(f"  {line}" for line in fields(item))]
+    said = {
+        key: item[key]
+        for key in sorted(
+            item, key=lambda k: FIRST.index(k) if k in FIRST else len(FIRST)
+        )
+        if not _drawing(key)
+    }
+    lines = [f"-- {title} --", "In the file:", *(f"  {line}" for line in fields(said))]
     lines.append(f"In the new diagram: {became.get(title, 'not an item of its own')}")
-    for one in decided.get(title, []):
+    for one in decided.pop(title, []):
         lines.append(
             f'Choice on {one.field}: the file said "{one.before}"; the new diagram has "{one.after}". {one.reason}'
         )
     return [*lines, ""]
+
+
+def _details(title: str, item: dict, whole: bool) -> list[str]:
+    drawn = {key: value for key, value in item.items() if whole or _drawing(key)}
+    lines = fields(drawn)
+    return [f"{title}:", *(f"  {line}" for line in lines)] if lines else []
+
+
+def _section(items: list[tuple[str, dict]], links: list[dict], became, decided):
+    """Each item's meaningful fields, then what only drew the old picture:
+    the items' drawing fields and the child-of links whole."""
+    out = [
+        line for title, item in items for line in _block(title, item, became, decided)
+    ]
+    drawn = [line for title, item in items for line in _details(title, item, False)]
+    drawn += [line for link in links for line in _details(_drawn(link), link, True)]
+    return out + ([DRAWN, *drawn, ""] if drawn else [])
 
 
 def _about(event: dict) -> int | None:
@@ -114,7 +201,8 @@ def text(
     today: datetime.date,
 ) -> str:
     """The ledger, one person at a time in the file's own order, then the
-    items tied to no one, then the diagram's own fields."""
+    items tied to no one, then the diagram's own fields, then any choice
+    about an item the file did not hold."""
     decided = collections.defaultdict(list)
     for one in decisions:
         decided[one.item].append(one)
@@ -122,20 +210,33 @@ def text(
     events = fd.get("events") or []
     rels = fd.get("emotions") or []
     bonds = fd.get("pair_bonds") or fd.get("marriages") or []
-    ids = {chunk["id"] for chunk in people}
+    order = {chunk["id"]: n for n, chunk in enumerate(people)}
     by_event = {event["id"]: event for event in events}
     events_of = collections.defaultdict(list)
     for event in events:
-        events_of[_about(event) if _about(event) in ids else None].append(event)
+        events_of[_about(event) if _about(event) in order else None].append(event)
     relsof = collections.defaultdict(list)
     for line in rels:
         owner = line.get("person")
         if owner is None and line.get("event") in by_event:
             owner = _about(by_event[line["event"]])
-        relsof[owner if owner in ids else None].append(line)
+        relsof[owner if owner in order else None].append(line)
+    bonds_of = collections.defaultdict(list)
+    for bond in bonds:
+        sides = [bond.get(side) for side in ("person_a", "person_b")]
+        bonds_of[
+            min((x for x in sides if x in order), key=order.get, default=None)
+        ].append(bond)
     links = collections.defaultdict(list)
     for item in fd.get("items") or []:
-        links[item.get("person") if item.get("person") in ids else None].append(item)
+        links[item.get("person") if item.get("person") in order else None].append(item)
+
+    def items(pid) -> list[tuple[str, dict]]:
+        return [
+            *((f"event {event['id']}", event) for event in events_of[pid]),
+            *((f"relationship line {one['id']}", one) for one in relsof[pid]),
+            *((f"pair-bond {bond['id']}", bond) for bond in bonds_of[pid]),
+        ]
 
     out = [
         "Family Diagram import record",
@@ -145,72 +246,48 @@ def text(
         f"In the file: {len(people)} people, {len(events)} events, {len(bonds)} pair-bonds, "
         f"{len(rels)} relationship lines",
         f"Choices made: {len(decisions)}",
+        "The file's password and master key are left out of this record, for security.",
         "",
         "Each person below lists every field the file held for them, what they "
-        "became in the new diagram, and any choice made; then their events and "
-        "relationship lines the same way.",
+        "became in the new diagram, and any choice made; then their events, "
+        "relationship lines and pair-bonds the same way. What only drew the old "
+        f'picture comes last in each section, under "{DRAWN}".',
         "",
     ]
     for chunk in people:
         out += [RULE, f"{_person(chunk)} (person {chunk['id']})", RULE]
-        out += _block(f"person {chunk['id']}", chunk, became, decided)
-        out += [
-            line
-            for event in events_of[chunk["id"]]
-            for line in _block(f"event {event['id']}", event, became, decided)
-        ]
-        out += [
-            line
-            for one in relsof[chunk["id"]]
-            for line in _block(f"relationship line {one['id']}", one, became, decided)
-        ]
-        out += [
-            line
-            for one in links[chunk["id"]]
-            for line in _block(_drawn(one), one, became, decided)
-        ]
+        out += _section(
+            [(f"person {chunk['id']}", chunk), *items(chunk["id"])],
+            links[chunk["id"]],
+            became,
+            decided,
+        )
     out += [RULE, "Tied to no one person", RULE]
-    out += [
-        line
-        for bond in bonds
-        for line in _block(f"pair-bond {bond['id']}", bond, became, decided)
-    ]
-    out += [
-        line
-        for event in events_of[None]
-        for line in _block(f"event {event['id']}", event, became, decided)
-    ]
-    out += [
-        line
-        for one in relsof[None]
-        for line in _block(f"relationship line {one['id']}", one, became, decided)
-    ]
-    out += [
-        line
-        for one in links[None]
-        for line in _block(_drawn(one), one, became, decided)
-    ]
+    out += _section(items(None), links[None], became, decided)
     out += [RULE, "The diagram", RULE]
-    out += _block(
-        "diagram", {k: v for k, v in fd.items() if k not in SECTIONS}, became, decided
+    out += _section(
+        [("diagram", {k: v for k, v in fd.items() if k not in SECTIONS})],
+        [],
+        became,
+        decided,
     )
+    rest = [one for ones in decided.values() for one in ones]
+    if rest:
+        out += [RULE, "Choices about items the file did not hold", RULE]
+        out += [
+            f'{one.item}, {one.field or "the item"}: was "{one.before}"; '
+            f'the new diagram has "{one.after}". {one.reason}'
+            for one in rest
+        ]
     return "\n".join(out)
 
 
 def send(email: str, file: str, name: str, ledger: str) -> None:
-    """One email to the person who imported the file, the ledger attached;
-    a development server with no mail server writes it to the log instead."""
-    config = current_app.config
-    body = BODY.format(file=file, name=name)
-    if config["CONFIG"] == Config.Development and "MAIL_SERVER" not in config:
-        current_app.logger.warning(f"[dev mail] {email} — {SUBJECT}\n{body}")
-        return
-    message = Message(
+    """One email to the person who imported the file, the ledger attached."""
+    deliver(
+        email,
         SUBJECT,
-        recipients=[email],
-        sender=config["MAIL_DEFAULT_SENDER"],
-        reply_to=config["ADMIN_EMAIL"],
+        BODY.format(file=file, name=name),
+        reply_to=current_app.config["ADMIN_EMAIL"],
+        attachment=(attachment(name), ledger.encode(), "text/plain; charset=utf-8"),
     )
-    message.body = body
-    message.attach(attachment(name), "text/plain", ledger)
-    extensions.mail.send(message)

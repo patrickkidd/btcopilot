@@ -8,11 +8,12 @@ Decision, for the ledger the person is sent [Oracle: R-0873]."""
 
 import collections
 import itertools
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from btcopilot import diagramjson, fdcoding, record
 from btcopilot.coverage import CHILD_ROLE
 from btcopilot.extensions import db
+from btcopilot.fdcoding import RAW
 from btcopilot.fdledger import Decision
 from btcopilot.models import Author, Diagram
 from btcopilot.prompts import Role
@@ -41,9 +42,6 @@ VALUES = {
     "relationship": {v.value for v in RelationshipKind},
 }
 TRIANGLES = (RelationshipKind.Inside.value, RelationshipKind.Outside.value)
-# On a person, pair-bond, event or the diagram: what the coding pass reads,
-# as the file held it [Oracle: R-0869, R-0870].
-RAW = "fileValues"
 PERSON = {
     "name": "name",
     "lastName": "last_name",
@@ -252,13 +250,19 @@ def _event(out: Imported, chunk: dict) -> dict:
     return event
 
 
+def _aimed(event: dict, kind: str) -> bool:
+    """The event names whom a move of this kind was aimed at, and for an
+    inside or outside move the third person."""
+    return bool(event.get("relationshipTargets")) and (
+        kind not in TRIANGLES or bool(event.get("relationshipTriangles"))
+    )
+
+
 def _relationship(out: Imported, event: dict, kind: str, label: str) -> None:
     """A line's kind goes on its event, unless the event names no other
     person, or an inside or outside no third person: then the coding pass
     reads it [Oracle: R-0869]."""
-    if event.get("relationshipTargets") and (
-        kind not in TRIANGLES or event.get("relationshipTriangles")
-    ):
+    if _aimed(event, kind):
         _value(out, event, "relationship", kind, label)
         return
     _raw(event, "relationship", kind)
@@ -269,6 +273,23 @@ def _relationship(out: Imported, event: dict, kind: str, label: str) -> None:
         "",
         "The line names no other person enough to code it, so the coding pass reads it.",
     )
+
+
+def _unaimed(out: Imported) -> None:
+    """An event's own hand-coded move that names no other person enough to
+    code it is read by the coding pass, as a line's is [Oracle: R-0869]."""
+    for event in out.data["events"]:
+        kind = event.get("relationship")
+        if kind is None or _aimed(event, kind):
+            continue
+        _raw(event, "relationship", event.pop("relationship"))
+        out.decide(
+            f"event {event['id']}",
+            "relationship",
+            kind,
+            "",
+            "The event names no other person enough to code it, so the coding pass reads it.",
+        )
 
 
 def _line(out: Imported, chunk: dict, events: dict) -> dict | None:
@@ -408,10 +429,32 @@ def _anchors(person: dict, bonds: dict, bonds_of: dict, children: dict):
         yield parents[side], CHILD_ROLE
 
 
+def _named(person: dict) -> bool:
+    return bool((person.get("name") or "").strip())
+
+
+def _forms(anchor: dict, word: str, counted: bool, taken: dict):
+    """The names an unnamed person may take after one relative: by first
+    name, by full name where someone else shares the first, then counted where
+    even that is taken: the relative's second partner, or a second relative
+    of the same name."""
+    full = " ".join(filter(None, (anchor["name"], anchor.get("last_name"))))
+    yield f"{anchor['name']}'s {word}"
+    yield f"{full}'s {word}"
+    if not counted:
+        return
+    same = taken.get(generic_key({"name": f"{full}'s {word}"})) == anchor["id"]
+    for n in itertools.count(2):
+        yield f"{full}'s {word} {n}" if same else f"{full} {n}'s {word}"
+
+
 def _names(out: Imported) -> None:
-    """People the file left unnamed are named by their family position, after
-    someone the file named first [Oracle: R-0867]."""
+    """People the file left unnamed are named by their family position after
+    their nearest named relative, each pass naming after the people the passes
+    before it named [Oracle: R-0867]. Nobody is left without a name: a person
+    with no named relative at all is numbered in file order."""
     people = out.data["people"]
+    by_id = {person["id"]: person for person in people}
     bonds = {bond["id"]: bond for bond in out.data["pair_bonds"]}
     bonds_of = collections.defaultdict(list)
     children = collections.defaultdict(list)
@@ -421,44 +464,51 @@ def _names(out: Imported) -> None:
     for person in people:
         if "parents" in person:
             children[person["parents"]].append(person["id"])
-    taken = {generic_key(p) for p in people} - {None}
-    unnamed = [p for p in people if not (p.get("name") or "").strip()]
+    # Each generic name in use, to the person it was given after.
+    taken = {key: None for key in map(generic_key, people) if key}
+
+    def name(person: dict, given: str, after, reason: str) -> None:
+        person["name"] = given
+        if key := generic_key(person):
+            taken[key] = after
+        out.decide(f"person {person['id']}", "name", "", given, reason)
+
+    unnamed = [p for p in people if not _named(p)]
+    counted = False
     while unnamed:
-        known = {p["id"]: p["name"] for p in people if (p.get("name") or "").strip()}
+        known = {p["id"] for p in people if _named(p)}
         left = []
         for person in unnamed:
-            name = next(
+            given = next(
                 (
-                    f"{known[anchor]}'s {word}"
+                    (form, anchor)
                     for anchor, word in _anchors(person, bonds, bonds_of, children)
                     if anchor in known
-                    and generic_key({"name": f"{known[anchor]}'s {word}"}) not in taken
+                    for form in _forms(by_id[anchor], word, counted, taken)
+                    if generic_key({"name": form}) not in taken
                 ),
                 None,
             )
-            if name is None:
+            if given is None:
                 left.append(person)
                 continue
-            person["name"] = name
-            taken |= {generic_key(person)} - {None}
-            out.decide(
-                f"person {person['id']}",
-                "name",
-                "",
-                name,
+            name(
+                person,
+                *given,
                 "The file gives no name, so they are named by their place in the family.",
             )
         if len(left) == len(unnamed):
-            for person in left:
-                out.decide(
-                    f"person {person['id']}",
-                    "name",
-                    "",
-                    "",
-                    "The file gives no name and no family tie to name them by.",
-                )
-            break
+            if counted:
+                break
+            counted = True
         unnamed = left
+    for n, person in enumerate(unnamed, 1):
+        name(
+            person,
+            f"Unnamed person {n}",
+            None,
+            "The file gives no name and nobody in their family has one to name them by.",
+        )
 
 
 def _notes(fd: dict) -> str:
@@ -482,6 +532,7 @@ def convert(fd: dict) -> Imported:
         made = _line(out, chunk, by_id)
         if made is not None:
             out.data["events"].append(made)
+    _unaimed(out)
     _raw(out.data, "notes", _notes(fd))
     used = [
         item["id"]
@@ -543,11 +594,60 @@ def renumber(out: Imported) -> None:
         item["id"] = new[item["id"]]
 
 
-def build(fd: dict) -> Imported:
+def _id(label: str) -> int | None:
+    kind, _, number = label.rpartition(" ")
+    return int(number) if kind == "event" and number.isdigit() else None
+
+
+def _twins(out: Imported) -> None:
+    """Events the record counts as one, the same kind, day, people and what
+    moved, are made one: the first in the file keeps its place and the words
+    of the others go into its notes."""
+    kept = {}
+    for event in list(out.data["events"]):
+        first = kept.setdefault(record.twin_key(event), event)
+        if first is event:
+            continue
+        words = [
+            event.get(key) for key in ("title", "description", "location", "notes")
+        ]
+        said = "\n".join(dict.fromkeys(w for w in words if _kept(w)))
+        first["notes"] = "\n\n".join(filter(None, (first.get("notes"), said)))
+        _set(
+            first,
+            "tags",
+            list(dict.fromkeys([*first.get("tags", []), *event.get("tags", [])])),
+        )
+        out.data["events"].remove(event)
+        label = out.labels.pop(event["id"])
+        out.joined[label] = first["id"]
+        out.joined.update(
+            {
+                name: first["id"]
+                for name, eid in out.joined.items()
+                if eid == event["id"]
+            }
+        )
+        out.decide(
+            label,
+            "notes",
+            said,
+            first["notes"],
+            f"The app counts it as the same event as {out.labels[first['id']]}: the "
+            "same kind, day, people and what moved. Its words go into that event's notes.",
+        )
+
+
+def build(fd: dict, model=fdcoding.ask) -> Imported:
     """Read the file's items, code what the mapping left, then renumber."""
     out = convert(fd)
-    out.data, coded = fdcoding.code(out.data)
-    out.decisions += coded
+    out.data, coded = fdcoding.code(out.data, model)
+    # The pass names an event by its id; a relationship line's own event is
+    # named in the ledger by the line it came from.
+    out.decisions += [
+        replace(one, item=out.labels.get(_id(one.item), one.item)) for one in coded
+    ]
+    _twins(out)
     renumber(out)
     return out
 
