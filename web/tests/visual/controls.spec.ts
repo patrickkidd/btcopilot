@@ -39,7 +39,7 @@ test.describe("explain", () => {
   // R-0166
   test("asks the coach to talk the cluster through", async ({ page }) => {
     const asked: unknown[] = [];
-    page.on("request", (r) => /\/app\/play(\?diagram_id=\d+)?$/.test(r.url()) && asked.push(r.postDataJSON()));
+    page.on("request", (r) => /\/app\/play(\?diagram=[a-z0-9]+)?$/.test(r.url()) && asked.push(r.postDataJSON()));
     await tellWithoutModel(page);
     await openCluster(page);
     await page.locator("#cap-play").click();

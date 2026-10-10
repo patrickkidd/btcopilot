@@ -1,13 +1,22 @@
 """Every view and object in the app has an address under /app/ (R-0055). The
 table lives in web/src/place.ts; this mirrors it and a test keeps the two
 equal. The server reads an address to serve the page at it, to take a notice's
-link, and to check where the coach's navigate call goes."""
+link, and to check where the coach's navigate call goes.
+
+Every address sits under the diagram the app is on, named by its public id:
+`/app/diagram/<public id>/account/coach`. The same place written without that
+segment, `/app/account/coach`, is that place on the diagram the app is on,
+which is how the coach, a notice and the home-screen icon still say where to
+go."""
 
 import enum
 import re
 
 APP = "/app/"
 UNDATED = "undated"
+# The word before a diagram's public id in an address; no place starts with it.
+DIAGRAM = "diagram"
+PUBLIC_ID = re.compile(r"[a-z0-9]+")
 
 
 class Place(enum.StrEnum):
@@ -111,11 +120,26 @@ WORDS = {
 }
 
 
+_UNDER = re.compile(rf"^{re.escape(APP)}{DIAGRAM}/({PUBLIC_ID.pattern})(?=/|$)")
+
+
+def split(path: str) -> tuple[str | None, str]:
+    """The public id of the diagram an address names, and the address under
+    it: `/app/diagram/k7m2x9pq4w/account` is (`k7m2x9pq4w`, `/app/account`).
+    An address without the segment names no diagram and is its own rest."""
+    bare = re.split(r"[?#]", path)[0]
+    found = _UNDER.match(bare)
+    if found is None:
+        return None, bare
+    return found.group(1), APP.rstrip("/") + bare[found.end() :]
+
+
 def parse(path: str) -> tuple[Place, list[str]] | None:
     """Which place an address names and what fills its slots, or None for one
     the app does not have. A trailing slash and anything after `?` or `#` are
-    not part of it."""
-    bare = re.split(r"[?#]", path)[0].rstrip("/")
+    not part of it, and nor is the diagram the address is on: `split` says."""
+    _, under = split(path)
+    bare = under.rstrip("/")
     root = APP.rstrip("/")
     if bare != root and not bare.startswith(APP):
         return None

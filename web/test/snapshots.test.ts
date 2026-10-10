@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { arrange, bar, crosses, draw, Mark, Side, VIEW, W, layout, Sex, Tie, type Cast, type Layout } from "../src/diagram";
 import { FIELD, Move } from "../src/moves";
-import { among, family as wholeFamily, familyStart, gapText, Told, untold } from "../src/snapshots";
+import { among, family as wholeFamily, familyStart, familyToday, gapText, TODAY, Told, untold } from "../src/snapshots";
 import type { Case, Timeline } from "../src/types";
 import {
   apart,
@@ -1540,11 +1540,36 @@ describe("the whole family stepped through dates", () => {
   const group = (svg: string, id: number) =>
     svg.match(new RegExp(`<g class="(p[^"]*)" data-id="${id}">(?:(?!</g>).)*?class="shape" (?:x|cx)="([\\d.]+)" (?:y|cy)="([\\d.]+)"`))!;
 
-  // R-0742
-  it("steps through every dated birth, couple, death and relationship shift in date order, and nothing else", () => {
+  // R-0742, R-0850
+  it("steps through every dated birth, couple, death and relationship shift in date order, and nothing else but the current day after them", () => {
     expect(wholeFamily(record()).snapshots.map((s) => s.event_ids)).toEqual([
-      [103], [109], [301], [302], [201], [204], [119], [130], [131], [132], [303],
+      [103], [109], [301], [302], [201], [204], [119], [130], [131], [132], [303], [],
     ]);
+  });
+
+  // R-0850
+  it("ends on the current day, a step with no event that says Today, in date order among the dates, and once; a record with no dated step has none", () => {
+    const tl = record();
+    const c = wholeFamily(tl, "2026-10-09");
+    const last = c.snapshots.length - 1;
+    expect(c.snapshots[last]).toEqual({ date: "2026-10-09", event_ids: [], fact: TODAY, guess: null });
+    expect(familyToday(c, "2026-10-09")).toBe(last);
+    // a day among the record's dates stands between them
+    const early = wholeFamily(tl, "2000-01-01");
+    const at = early.snapshots.findIndex((s) => !s.event_ids.length);
+    expect(at).toBeGreaterThan(0);
+    expect(early.snapshots[at - 1].date < "2000-01-01").toBe(true);
+    expect(early.snapshots[at + 1].date > "2000-01-01").toBe(true);
+    // a day the record already holds adds no step: that date is today's
+    const same = wholeFamily(tl, early.snapshots[0].date);
+    expect(same.snapshots.filter((s) => !s.event_ids.length)).toEqual([]);
+    expect(familyToday(same, early.snapshots[0].date)).toBe(0);
+    // drawn, the day takes its own date and is about the reader, with everything before it carried
+    const t = new Told(tl, c, true);
+    expect(t.steps[last].date).toBe("October 2026");
+    expect(t.shot(last).who).toBe(t.cast.index);
+    expect(t.shot(last).gap).toMatch(/years later$/);
+    expect(wholeFamily({ ...tl, events: [] }).snapshots).toEqual([]);
   });
 
   const fact = (tl: Timeline, id: number) => wholeFamily(tl).snapshots.find((s) => s.event_ids.includes(id))!.fact;
@@ -1597,8 +1622,8 @@ describe("the whole family stepped through dates", () => {
     expect(els(after, "path", "xd").filter((e) => !e.class.includes("now"))).toHaveLength(1);
   });
 
-  // R-0775
-  it("opens on the first date holding more than births, past the early births alone, and on today when every date is births", () => {
+  // R-0851
+  it("‹‹ First goes to the first date holding more than births, past the early births alone, and to the last date when every date is births", () => {
     const tl = record();
     tl.events.push(event(308, "1920-02-01", "birth", null, { child: ERROL }), event(309, "1922-02-01", "birth", null, { child: ODILE }));
     const c = wholeFamily(tl);

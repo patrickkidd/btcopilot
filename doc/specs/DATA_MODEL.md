@@ -332,12 +332,19 @@ ID collisions across entity types.
 ```python
 class Diagram(db.Model, ModelMixin):
     __tablename__ = "diagrams"
+    # the short random id the address bar and the page's reads name it by;
+    # the row number never leaves the server (unique, indexed, given on create)
+    public_id = Column(String(12), nullable=False, unique=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     name = Column(String)
     data = Column(LargeBinary)  # Pickled DiagramData dict
     version = Column(Integer)
     # ...
 ```
+
+`public_id` is ten letters and digits from an alphabet without 0/o and 1/l/i,
+so one can be read aloud; `new_public_id()` in `btcopilot/models/diagram.py`
+makes it, and revision `1b00000000c4` gave one to every diagram already stored.
 
 `get_diagram_data()` / `set_diagram_data()` handle pickle
 serialization/deserialization. Version tracking and transport mechanics are in

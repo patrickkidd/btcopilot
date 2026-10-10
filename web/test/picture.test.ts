@@ -12,10 +12,12 @@ import {
   inSight,
   pills,
   reach,
+  restingOn,
   restLayers,
   restWidth,
   ruler,
   spanYears,
+  stops,
   strongest,
   told,
   trail,
@@ -445,4 +447,26 @@ it("slides the line to put the step's dot in the middle, as near as its ends all
   expect(inSight(2000, 0, 1440)).toBe(false);
   expect(inSight(2000, 1280, 1440)).toBe(true);
   expect(inSight(10, 0, 1440)).toBe(false);
+});
+
+// R-0852
+it("gives the Family view's stepping line no stops, so nothing pulls it off the step's dot once put there; the chat's line keeps one at each cluster's edge and both ends", () => {
+  const edges = [{ left: 100, right: 300 }, { left: 500, right: 700 }];
+  expect(stops(edges, 780, 390, true)).toEqual([]);
+  expect(stops(edges, 780, 390, false).sort((a, b) => a - b)).toEqual([0, 84, 326, 390, 484]);
+  // wherever a dot stands on the line, the line put on it has it in sight
+  for (let x = PAD; x <= 780 - PAD; x += 7) expect(inSight(x, centredOn(x, 780, 390), 390), String(x)).toBe(true);
+});
+
+// R-0855, R-0852
+it("leaves the stepping line where it stands while the step's dot is in sight, and slides it to the middle of the dot only once it is off the screen", () => {
+  // the line stands at 100 of a two-screen line: dots from 116 to 474 are in sight
+  expect(restingOn(116, 100, 780, 390)).toBe(100);
+  expect(restingOn(300, 100, 780, 390)).toBe(100);
+  expect(restingOn(474, 100, 780, 390)).toBe(100);
+  expect(restingOn(475, 100, 780, 390)).toBe(280);
+  expect(restingOn(115, 100, 780, 390)).toBe(0);
+  expect(restingOn(700, 100, 780, 390)).toBe(390);
+  // put there, the dot is in sight from the new place
+  expect(inSight(475, restingOn(475, 100, 780, 390), 390)).toBe(true);
 });

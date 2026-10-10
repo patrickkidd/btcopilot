@@ -173,28 +173,34 @@ async function send<T>(
   }
 }
 
+/** How a request names its diagram: the page names the one it has open by its
+ * public id, the string the address bar carries, and the coder's screens name
+ * the record a cut is of by the row number the cut carries. */
+export type DiagramKey = string | number;
+
 /** Which diagram a request is about: the one the page has open, or the one a
  * coding is of. Every route that reads or writes a diagram takes the same
- * query; a page that has no diagram yet names none, and the server uses the
- * one the account is on. */
-const onDiagram = (path: string, diagramId?: number | null) =>
-  diagramId === undefined || diagramId === null
+ * query, `?diagram=` for a public id and `?diagram_id=` for a row number; a
+ * page that has no diagram yet names none, and the server uses the one the
+ * account is on. */
+const onDiagram = (path: string, diagram?: DiagramKey | null) =>
+  diagram === undefined || diagram === null
     ? path
-    : `${path}${path.includes("?") ? "&" : "?"}diagram_id=${diagramId}`;
+    : `${path}${path.includes("?") ? "&" : "?"}${typeof diagram === "string" ? "diagram" : "diagram_id"}=${diagram}`;
 
 /** The record of the diagram open, or of the one a coding is of. */
-export const timeline = (diagramId: number | null, signal?: AbortSignal) =>
-  call<Timeline>("GET", onDiagram("/timeline", diagramId), undefined, undefined, signal);
+export const timeline = (diagram: DiagramKey | null, signal?: AbortSignal) =>
+  call<Timeline>("GET", onDiagram("/timeline", diagram), undefined, undefined, signal);
 
 /** The passages behind the case report's book buttons (R-0692). */
 /** The coach rewrites every card it writes on the case report, and how far
  * it has got (R-0825). */
-export const rewriteReport = (diagramId: number | null, signal?: AbortSignal) =>
-  call<Rewrite>("POST", onDiagram("/case-report-rewrites", diagramId), undefined, undefined, signal);
+export const rewriteReport = (diagram: DiagramKey | null, signal?: AbortSignal) =>
+  call<Rewrite>("POST", onDiagram("/case-report-rewrites", diagram), undefined, undefined, signal);
 export const reportRewrite = (id: string) => call<Rewrite>("GET", `/case-report-rewrites/${id}`);
 
-export const casePassages = (diagramId: number | null, signal?: AbortSignal) =>
-  call<Passages>("GET", onDiagram("/case-report-passages", diagramId), undefined, undefined, signal);
+export const casePassages = (diagram: DiagramKey | null, signal?: AbortSignal) =>
+  call<Passages>("GET", onDiagram("/case-report-passages", diagram), undefined, undefined, signal);
 
 /** The browser's IANA time zone, sent with each message so the coach's
  * "today" is the person's day, not the server's (R-0760). */
@@ -203,10 +209,10 @@ export const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 /** One agent-loop turn. The send is short: it stores the words and hands the
  * turn to the coach, which answers on the turn's own stream. The server puts
  * them in the sitting they belong to. */
-export const say = (diagramId: number | null, statement: string, file: File | null = null) =>
+export const say = (diagram: DiagramKey | null, statement: string, file: File | null = null) =>
   call<Started & Attached>(
     "POST",
-    onDiagram("/chat", diagramId),
+    onDiagram("/chat", diagram),
     file ? said(statement, timeZone(), file) : { statement, time_zone: timeZone() },
     file ? READ_MS : undefined,
   );
@@ -241,10 +247,10 @@ export type Said = Statement & { session_id: number; sitting: Sitting | null };
 
 /** The family's one thread, newest page first; `before` reads the page of
  * words just older than that statement. */
-export const thread = (diagramId: number | null, before?: number, signal?: AbortSignal) =>
+export const thread = (diagram: DiagramKey | null, before?: number, signal?: AbortSignal) =>
   call<Said[]>(
     "GET",
-    onDiagram(before === undefined ? "/statements" : `/statements?before=${before}`, diagramId),
+    onDiagram(before === undefined ? "/statements" : `/statements?before=${before}`, diagram),
     undefined,
     undefined,
     signal,
@@ -270,10 +276,10 @@ export const turnEvents = (turnId: string) =>
 export const version = () =>
   call<{ version: string }>("GET", "/version").then((answer) => answer.version);
 
-export const play = (diagramId: number | null, clusterId: string, signal?: AbortSignal) =>
+export const play = (diagram: DiagramKey | null, clusterId: string, signal?: AbortSignal) =>
   call<PlayReply>(
     "POST",
-    onDiagram("/play", diagramId),
+    onDiagram("/play", diagram),
     { cluster_id: clusterId },
     PLAY_WAIT_S * 1000,
     signal,
@@ -359,26 +365,26 @@ export const deletePairBond = (id: number, diagramId?: number) =>
 /** The reader's own change to a question or an impression: putting it away,
  * or pushing back on it. It stays in the record for the coach. */
 export const saveQuestion = (
-  diagramId: number | null,
+  diagram: DiagramKey | null,
   id: string,
   body: { state?: QuestionState; outcome?: QuestionOutcome; pushback?: Pushback },
-) => call<unknown>("PATCH", onDiagram(`/questions/${id}`, diagramId), body);
+) => call<unknown>("PATCH", onDiagram(`/questions/${id}`, diagram), body);
 
 /** Sessions, newest activity first. The server has no current-session pointer:
  * posting into a session is what makes it the one you come back to. */
-export const sessionIndex = (diagramId: number | null, signal?: AbortSignal) =>
-  call<Session[]>("GET", onDiagram("/sessions", diagramId), undefined, undefined, signal);
+export const sessionIndex = (diagram: DiagramKey | null, signal?: AbortSignal) =>
+  call<Session[]>("GET", onDiagram("/sessions", diagram), undefined, undefined, signal);
 
 /** One family's sessions where something said carries every word, searched
  * the way the coach searches the chat. */
-export const sessionSearch = (diagramId: number, words: string) =>
+export const sessionSearch = (diagram: DiagramKey, words: string) =>
   call<Session[]>(
     "GET",
-    `${onDiagram("/sessions", diagramId)}&words=${encodeURIComponent(words)}`,
+    `${onDiagram("/sessions", diagram)}&words=${encodeURIComponent(words)}`,
   );
 
-export const newSession = (diagramId: number | null, kind?: SessionKind) =>
-  call<Session>("POST", onDiagram("/sessions", diagramId), kind ? { kind } : {});
+export const newSession = (diagram: DiagramKey | null, kind?: SessionKind) =>
+  call<Session>("POST", onDiagram("/sessions", diagram), kind ? { kind } : {});
 
 export const deleteSession = (id: number) => call<void>("DELETE", `/sessions/${id}`);
 
@@ -413,10 +419,10 @@ export const diagrams = (userId?: number) =>
 export const users = (q: string) =>
   call<User[]>("GET", `/users?q=${encodeURIComponent(q)}`);
 
-/** Put the app on one of the user's diagrams. Which one is free of charge is a
- * billing fact and is never written by switching. */
-export const selectDiagram = (id: number, signal?: AbortSignal) =>
-  call<Diagram>("POST", `/diagrams/${id}/select`, undefined, undefined, signal);
+/** Put the app on one of the user's diagrams, named by its public id. Which
+ * one is free of charge is a billing fact and is never written by switching. */
+export const selectDiagram = (publicId: string, signal?: AbortSignal) =>
+  call<Diagram>("POST", `/diagrams/${publicId}/select`, undefined, undefined, signal);
 
 /** A new case: an empty record the app is put on straight away (R-0243). */
 export const newDiagram = (name: string) =>
@@ -450,12 +456,12 @@ export const recordingVoices = (utterances: Utterance[]) =>
 
 /** The point of no return: the thread exists after this and the coach can read
  * it, so the voices are named before it is called. */
-export const newRecording = (diagramId: number | null, body: {
+export const newRecording = (diagram: DiagramKey | null, body: {
   utterances: Utterance[];
   voices: Record<string, { type: string; name?: string; person_id?: number }>;
   title: string;
   date: string | null;
-}) => call<Session>("POST", onDiagram("/recordings", diagramId), body);
+}) => call<Session>("POST", onDiagram("/recordings", diagram), body);
 
 /** The devices this account can sign in from without an emailed code. */
 export const passkeys = () =>

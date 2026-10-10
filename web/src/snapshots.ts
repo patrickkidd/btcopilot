@@ -80,11 +80,21 @@ const key = (id: number) => String(id);
 const caption = (e: TimelineEvent) =>
   e.dateCertainty === DateCertainty.Unknown ? "date unknown" : dateText(e.dateTime!, e.dateCertainty);
 
+/** A date as the whole family says it: the month in full. */
+const spokenDate = (iso: string) => new Date(iso.slice(0, 10)).toLocaleString("en", { month: "long", year: "numeric", timeZone: "UTC" });
+
 /** The whole family's date, the month in full when the record is sure of it. */
 const spoken = (e: TimelineEvent) =>
-  e.dateCertainty === DateCertainty.Unknown || e.dateCertainty === DateCertainty.Approximate
-    ? caption(e)
-    : new Date(e.dateTime!.slice(0, 10)).toLocaleString("en", { month: "long", year: "numeric", timeZone: "UTC" });
+  e.dateCertainty === DateCertainty.Unknown || e.dateCertainty === DateCertainty.Approximate ? caption(e) : spokenDate(e.dateTime!);
+
+/** The current day, written as the record writes a date. */
+export const today = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+/** What the Family view's step for the current day says happened: nothing, so the day itself (R-0850). */
+export const TODAY = "Today";
 
 /** A date as a year with its fraction, so ages and gaps are arithmetic. */
 export function when(iso: string): number {
@@ -306,8 +316,10 @@ export class Told {
       const first = events[0];
       const marks = events.flatMap((e) => marksOf(r, e));
       return {
-        t: when(first.dateTime!),
-        date: whole ? spoken(first) : caption(first),
+        // the record today, the Family view's step with no event of its own,
+        // takes its date from the snapshot (R-0850)
+        t: first ? when(first.dateTime!) : when(s.date),
+        date: first ? (whole ? spoken(first) : caption(first)) : whole ? spokenDate(s.date) : dateText(s.date, null),
         marks: kept ? marks.filter((m) => peopleOf(m).every((id) => kept.has(id))) : marks,
       };
     });
@@ -458,7 +470,8 @@ export class Told {
     });
     return {
       svg,
-      who: lit[0] ?? this.about(snap.event_ids[0]),
+      // a step with no event, the record today, is about the reader (R-0850)
+      who: lit[0] ?? (snap.event_ids.length ? this.about(snap.event_ids[0]) : this.cast.index),
       mover: [...now.marks.filter(isArrow), ...now.marks.filter(isKin)][0]?.from ?? null,
       // a move away runs off the far side of its mover, not toward the other
       reach: [...now.marks.filter(isArrow), ...now.marks.filter(isKin)].flatMap((m) => (m.to && m.k !== Mark.Away ? [m.to] : [])),
@@ -691,12 +704,18 @@ function happened(people: Map<number, Person>, names: Record<string, string>, e:
   return `${name(e.person)} ${named || /^.[A-Z]/.test(words) ? words : words[0].toLowerCase() + words.slice(1)}`;
 }
 
-/** Where the family opens: the first date holding more than births, since
- * the early births alone show little, or today when every date is only
- * births (R-0742, R-0775). */
+/** The first meaningful date of the whole family, where ‹‹ First goes: the
+ * first date holding more than births, since the early births alone show
+ * little, or today when every date is only births (R-0742, R-0851). */
 export const familyStart = (tl: Timeline, c: Case): number => {
   const kinds = new Map(tl.events.map((e) => [e.id, e.kind ?? ""]));
   const i = c.snapshots.findIndex((s) => s.event_ids.some((id) => !BIRTHS.has(kinds.get(id)!)));
+  return i < 0 ? c.snapshots.length - 1 : i;
+};
+
+/** Where the Family view opens: the record on the current day (R-0850). */
+export const familyToday = (c: Case, now = today()): number => {
+  const i = c.snapshots.findIndex((s) => s.date === now);
   return i < 0 ? c.snapshots.length - 1 : i;
 };
 
@@ -708,23 +727,27 @@ export function said(tl: Timeline, ids: number[], names: Record<string, string>)
 
 /** The whole family stepped through dates (R-0742): one step per date that
  * has a birth, an adoption, a couple's start or end, a death or a relationship
- * shift, in date order, each said once with who did it. */
-export function family(tl: Timeline): Case {
+ * shift, in date order, each said once with who did it; and the current day,
+ * a step with no event of its own, among them in date order, so the family is
+ * seen as it stands today (R-0850). A record with no dated step has no today. */
+export function family(tl: Timeline, now = today()): Case {
   const people = new Map(tl.people.map((p) => [p.id, p]));
   const byId = new Map(tl.events.map((e) => [e.id, e]));
   const told = untold(
     tl,
     tl.events.filter((e) => TURNS.has(e.kind ?? "") || e.relationship).map((e) => e.id),
   );
-  return {
-    ...told,
-    snapshots: told.snapshots.map((s) => {
-      // an initial only for two people of one first name named on the one line (R-0548)
-      const events = s.event_ids.map((id) => byId.get(id)!);
-      const named = [...new Set(events.flatMap((e) => [e.person, e.spouse, e.child]).filter((id): id is number => id != null && people.has(id)))];
-      return { ...s, fact: said(tl, s.event_ids, called(Object.fromEntries(named.map((id) => [id, fullName(people.get(id)!)])))) };
-    }),
-  };
+  const snapshots = told.snapshots.map((s) => {
+    // an initial only for two people of one first name named on the one line (R-0548)
+    const events = s.event_ids.map((id) => byId.get(id)!);
+    const named = [...new Set(events.flatMap((e) => [e.person, e.spouse, e.child]).filter((id): id is number => id != null && people.has(id)))];
+    return { ...s, fact: said(tl, s.event_ids, called(Object.fromEntries(named.map((id) => [id, fullName(people.get(id)!)])))) };
+  });
+  if (snapshots.length && !snapshots.some((s) => s.date === now)) {
+    const at = snapshots.findIndex((s) => s.date > now);
+    snapshots.splice(at < 0 ? snapshots.length : at, 0, { date: now, event_ids: [], fact: TODAY, guess: null });
+  }
+  return { ...told, snapshots };
 }
 
 /** The events a triangle is about: those naming two or more of its people. */

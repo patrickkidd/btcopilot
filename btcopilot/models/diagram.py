@@ -1,3 +1,5 @@
+import secrets
+
 from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey, false
 from sqlalchemy import update as sql_update
 from sqlalchemy.orm import relationship
@@ -9,6 +11,17 @@ from btcopilot import diagramjson
 from btcopilot.schema import DiagramData, PDP, asdict, from_dict
 from btcopilot.extensions import db
 from btcopilot.modelmixin import ModelMixin
+
+# What a diagram's public id is made of: letters and digits that cannot be
+# mistaken for one another when read aloud (no 0 and o, no 1, l and i).
+PUBLIC_ID_LETTERS = "abcdefghjkmnpqrstuvwxyz23456789"
+PUBLIC_ID_LENGTH = 10
+
+
+def new_public_id() -> str:
+    """The id a diagram is named by in every address and every read of the
+    page: short, random and opaque, never its row number."""
+    return "".join(secrets.choice(PUBLIC_ID_LETTERS) for _ in range(PUBLIC_ID_LENGTH))
 
 
 def diagram_data(data: dict) -> DiagramData:
@@ -23,6 +36,12 @@ class Diagram(db.Model, ModelMixin):
     """A user's diagram file."""
 
     __tablename__ = "diagrams"
+
+    # the id the address bar and the page's reads name the diagram by; the row
+    # number never leaves the server
+    public_id = Column(
+        String(12), nullable=False, unique=True, index=True, default=new_public_id
+    )
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     user = relationship(
@@ -46,6 +65,14 @@ class Diagram(db.Model, ModelMixin):
     )
 
     discussions = relationship("Discussion", back_populates="diagram")
+
+    @classmethod
+    def by_public_id(cls, key: str | None) -> "Diagram | None":
+        """The diagram an address or a read names, or None for a key no
+        diagram has."""
+        if not key:
+            return None
+        return cls.query.filter_by(public_id=key).one_or_none()
 
     def get_diagram_data(self) -> DiagramData:
         return diagram_data(diagramjson.loads(self.data))

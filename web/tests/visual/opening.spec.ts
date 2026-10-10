@@ -14,6 +14,8 @@ const OWN = "FD-362 visual fixture";
 
 interface Stand {
   id: number;
+  /** The diagram's opaque id, the one every address and read names it by. */
+  public_id: string;
   name: string;
   /** The thread's newest page; the family's own record stands in for its record. */
   thread: Record<string, unknown>[];
@@ -24,6 +26,7 @@ interface Stand {
 
 const diagram = (one: Stand) => ({
   id: one.id,
+  public_id: one.public_id,
   name: one.name,
   session_count: 0,
   last_activity: null,
@@ -62,11 +65,11 @@ async function stand(page: Page, ...ones: Stand[]): Promise<void> {
     });
   });
   for (const one of ones) {
-    await page.route(new RegExp(`/app/diagrams/${one.id}/select$`), async (route) => {
+    await page.route(new RegExp(`/app/diagrams/${one.public_id}/select$`), async (route) => {
       await one.hold;
       await route.fulfill({ json: diagram(one) });
     });
-    await page.route(new RegExp(`/app/(statements|sessions|timeline)\\?diagram_id=${one.id}$`), async (route: Route) => {
+    await page.route(new RegExp(`/app/(statements|sessions|timeline)\\?diagram=${one.public_id}$`), async (route: Route) => {
       await one.hold;
       const path = new URL(route.request().url()).pathname;
       if (path.endsWith("/statements")) return route.fulfill({ json: one.thread });
@@ -124,7 +127,7 @@ const later = () => {
 test("a turn still streaming when the diagram switches never draws into the new chat", async ({ page }) => {
   const stream = later();
   await mockTurn(page, { statement: "Words for the family before.", statement_id: 9701, hold: stream.held });
-  await stand(page, { id: 987001, name: "Second family", thread: [line(987101, "Said in the second family.")] });
+  await stand(page, { id: 987001, public_id: "zz987001zz", name: "Second family", thread: [line(987101, "Said in the second family.")] });
   await settle(page);
   await page.locator("#composer").fill("Tell me more.");
   const following = page.waitForRequest(STREAM);
@@ -149,7 +152,7 @@ async function away(page: Page) {
     ended: [] as Record<string, unknown>[],
   };
   let sittings: Record<string, unknown>[] = [];
-  await page.route(/\/app\/sessions\?diagram_id=\d+$/, async (route) => {
+  await page.route(/\/app\/sessions\?diagram=[a-z0-9]+$/, async (route) => {
     sittings = await (await route.fetch()).json();
     await route.fulfill({ json: [{ ...sittings[0], turn: turn.running }, ...sittings.slice(1)] });
   });
@@ -160,7 +163,7 @@ async function away(page: Page) {
     const newest = id === sittings[0]?.id;
     await route.fulfill({ json: { id, statements: [], turn: newest ? turn.running : null } });
   });
-  await page.route(/\/app\/statements\?diagram_id=\d+$/, async (route) => {
+  await page.route(/\/app\/statements\?diagram=[a-z0-9]+$/, async (route) => {
     const real = await (await route.fetch()).json();
     await route.fulfill({ json: [...real, ...turn.ended] });
   });
@@ -180,7 +183,7 @@ async function sendAndLeave(page: Page, turn: { running: string | null }): Promi
   await expect(page.locator("#chat")).toContainText("Said in the second family.");
 }
 
-const SECOND: Stand = { id: 987001, name: "Second family", thread: [line(987101, "Said in the second family.")] };
+const SECOND: Stand = { id: 987001, public_id: "zz987001zz", name: "Second family", thread: [line(987101, "Said in the second family.")] };
 const BROKE = /did not finish that turn/;
 
 // R-0369
@@ -226,6 +229,8 @@ test("coming back after the coach finished shows the saved reply and what it did
   await expect(page.locator("#chat")).toContainText("Nell");
   await expect(page.locator("#chat")).not.toContainText(BROKE);
   await expect(page.locator("#chat .typing")).toHaveCount(0);
+  // the account is read again after the switch, still in flight
+  await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 // R-0182
@@ -242,14 +247,16 @@ test("coming back to a turn the server could not finish says so once", async ({ 
   await switchTo(page, OWN);
   await expect(page.locator("#chat")).toContainText("Tell me more.");
   await expect(page.locator("#chat .warn", { hasText: BROKE })).toHaveCount(1);
+  // the account is read again after the switch, still in flight
+  await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 // R-0243
 test("a page of older chat still loading when the diagram switches is dropped", async ({ page }) => {
   const older = later();
   const full = Array.from({ length: 50 }, (_, i) => line(988100 + i, `Line ${i} of the long thread.`));
-  await stand(page, { id: 987002, name: "Long family", thread: full });
-  await page.route(/\/app\/statements\?before=\d+&diagram_id=987002$/, async (route) => {
+  await stand(page, { id: 987002, public_id: "zz987002zz", name: "Long family", thread: full });
+  await page.route(/\/app\/statements\?before=\d+&diagram=zz987002zz$/, async (route) => {
     await older.held;
     await route.fulfill({ json: [line(988001, "An older line from the long family.")] });
   });
@@ -275,8 +282,8 @@ test("two switches close together draw only the diagram opened last", async ({ p
   const slow = later();
   await stand(
     page,
-    { id: 987003, name: "Slow family", thread: [line(987301, "Said in the slow family.")], hold: slow.held },
-    { id: 987004, name: "Quick family", thread: [line(987401, "Said in the quick family.")] },
+    { id: 987003, public_id: "zz987003zz", name: "Slow family", thread: [line(987301, "Said in the slow family.")], hold: slow.held },
+    { id: 987004, public_id: "zz987004zz", name: "Quick family", thread: [line(987401, "Said in the quick family.")] },
   );
   await settle(page);
   await openDiagrams(page);
@@ -316,7 +323,7 @@ test.describe("an admin's search results", () => {
 
   // R-0243, R-0630, R-0632
   test("carry the tick only on the diagram open, whichever diagram that is", async ({ page }) => {
-    const theirs: Stand = { id: 987005, name: "Their family", thread: [line(987501, "Said in their family.")], access: "admin-view" };
+    const theirs: Stand = { id: 987005, public_id: "zz987005zz", name: "Their family", thread: [line(987501, "Said in their family.")], access: "admin-view" };
     await stand(page, theirs);
     await page.route(/\/app\/users\?q=/, (route) =>
       route.fulfill({ json: [{ id: 987900, username: "new@fd362-fixture.invalid", name: "Someone Else" }] }),

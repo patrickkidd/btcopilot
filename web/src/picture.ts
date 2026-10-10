@@ -568,6 +568,30 @@ export const centredOn = (x: number, width: number, screen: number) =>
 export const inSight = (x: number, left: number, screen: number) =>
   x >= left + X_PAD && x <= left + screen - X_PAD;
 
+/** Where the stepping line rests for the step's dot at `x`: where it stands
+ * when the dot is already in sight, since the reader keeps their place, else
+ * slid to put the dot in the middle, as near as its ends allow (R-0852, R-0855). */
+export const restingOn = (x: number, held: number, width: number, screen: number) =>
+  inSight(x, held, screen) ? held : centredOn(x, width, screen);
+
+/** Where the line settles after a swipe: at a cluster's near edge, so a
+ * cluster is never cut in half, and at both ends, so the first moment is
+ * reachable as the last is; whole pixels, or a redraw lands the line a pixel
+ * off where it stood (R-0542). Stepping event by event, as the Family view
+ * does, the line is put on the step's dot, and a browser snapping it on to a
+ * stop could carry the dot out of sight again: so it has none (R-0852). */
+export function stops(edges: { left: number; right: number }[], width: number, screen: number, stepping: boolean): number[] {
+  if (stepping) return [];
+  const at = new Set<number>();
+  for (const edge of edges) {
+    at.add(Math.max(0, edge.left - X_PAD));
+    at.add(Math.max(0, edge.right + X_PAD - screen));
+  }
+  at.add(0);
+  at.add(Math.max(0, width - screen));
+  return [...new Set([...at].map(Math.round))];
+}
+
 /** The calendar year a point on the line falls in. years() counts from 1970,
  * so the way back to a year is through the date that point stands for. */
 export function yearAt(at: number): number {
@@ -864,12 +888,14 @@ export class Picture {
     return best;
   }
 
-  /** The Family view's step: its event picked as a chip picks it, or, for a
-   * step the line draws nothing of, nothing picked and the line left where it
-   * stands, never sent to the present. */
+  /** The Family view's step: its event picked as its dot picks it, the line
+   * left where it stands while the dot is in sight and slid to it only when
+   * it is off the screen (R-0855); for a step the line draws nothing of,
+   * nothing picked and the line left where it stands, never sent to the
+   * present. */
   step(eventId: number | null): void {
     if (eventId !== null) {
-      this.pick(eventId, [], Via.Chip);
+      this.pick(eventId, [], Via.Dot);
       return;
     }
     this.named = [];
@@ -1179,9 +1205,11 @@ export class Picture {
 
     const aimed = marks.find((m) => m.event.id === this.aimed);
     // stepping event by event, a draw that would leave the step's dot out of
-    // sight, as one that lands mid-travel does, goes to it again (Patrick, 2026-10-07)
+    // sight, as one that lands mid-travel does, travels to it; one with the
+    // dot in sight leaves the line where it stands (R-0852, R-0855)
     const step = this.stepping && !aimed ? marks.find((m) => m.event.id === this.selected) : undefined;
-    if (step && !inSight(step.x, held ?? Math.max(0, width - screen), screen)) this.park = Park.Named;
+    const standing = held ?? Math.max(0, width - screen);
+    if (step && restingOn(step.x, standing, width, screen) !== standing) this.park = Park.Named;
     const onX = (aimed ?? step)?.x ?? null;
     // where the line comes to rest, so the words of a picked event are
     // written across the stretch the reader will be looking at
@@ -1200,18 +1228,7 @@ export class Picture {
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
     const targets = restLayers(boxes, dotLayers(zoned)).map(hitButton).join("");
-    // Where the line settles after a swipe: at a box's near edge, so a cluster
-    // is never cut in half.
-    const stops = new Set<number>();
-    for (const edge of edges(clusters, at)) {
-      stops.add(Math.max(0, edge.left - X_PAD));
-      stops.add(Math.max(0, edge.right + X_PAD - screen));
-    }
-    // and at both ends, so the first moment is reachable as the last is
-    stops.add(0);
-    stops.add(Math.max(0, width - screen));
-    // whole pixels, or a redraw lands the line a pixel off where it stood (R-0542)
-    const snaps = [...new Set([...stops].map(Math.round))]
+    const snaps = stops(edges(clusters, at), width, screen, this.stepping)
       .map((left) => `<i class="ss-snap" style="left:${left}px"></i>`)
       .join("");
 

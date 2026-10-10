@@ -94,7 +94,7 @@ test.describe("a question on the list of what the coach asked", () => {
   });
 
   const tapFrom = async (page: Page, kind: string, text: string) => {
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       tl.asked_questions = [asked(kind, "q901", text)];
       await route.fulfill({ json: tl });

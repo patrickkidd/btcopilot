@@ -108,8 +108,8 @@ export interface SettingsHandlers {
   /** Every read or write of the preferences, so a value with a shortcut
    * elsewhere on screen shows the same thing. */
   onPrefs(prefs: Preferences): void;
-  /** Open a diagram: the page's one step for that (FD-366). */
-  onOpen(id: number): Promise<void>;
+  /** Open a diagram by its public id: the page's one step for that (FD-366). */
+  onOpen(publicId: string): Promise<void>;
   /** The coder's one task (R-0265). */
   onTask(): void;
   /** The agenda, which is Patrick's whole administration (R-0259). */
@@ -942,7 +942,7 @@ export class Settings {
         return void this.switchTo(diagram);
       }
       this.close();
-      void this.handlers.onOpen(diagram.id);
+      void this.handlers.onOpen(diagram.public_id);
     });
     return row;
   }
@@ -1029,7 +1029,7 @@ export class Settings {
     if (!name) return;
     const made = await api.newDiagram(name);
     this.close();
-    await this.handlers.onOpen(made.id);
+    await this.handlers.onOpen(made.public_id);
     void this.load();
     toast(`Now on ${made.name}`);
   }
@@ -1039,7 +1039,7 @@ export class Settings {
    * again after. */
   private async switchTo(diagram: Diagram): Promise<void> {
     this.close();
-    await this.handlers.onOpen(diagram.id);
+    await this.handlers.onOpen(diagram.public_id);
     void this.load();
     toast(`Now on ${diagram.name}`);
   }

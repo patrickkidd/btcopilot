@@ -205,3 +205,4 @@ R-0743 | TEST OWED | not built: the coach calling out a connection across genera
 R-0748 | WAIVED | one test proves F18 is drawn with no line through a name; the rest is a judgement that marriages inside a family are rare
 R-0757 | WAIVED | deferred to how coverage is shown; nothing is built to assert
 R-0769 | TEST OWED | not built: functioning going down has no animation until its art direction is done
+R-0856 | TEST OWED | not built: the next batch puts the word diagram where the app's words said record
