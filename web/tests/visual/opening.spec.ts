@@ -14,6 +14,8 @@ const OWN = "FD-362 visual fixture";
 
 interface Stand {
   id: number;
+  /** The diagram's opaque id, the one every address and read names it by. */
+  public_id: string;
   name: string;
   /** The thread's newest page; the family's own record stands in for its record. */
   thread: Record<string, unknown>[];
@@ -24,6 +26,7 @@ interface Stand {
 
 const diagram = (one: Stand) => ({
   id: one.id,
+  public_id: one.public_id,
   name: one.name,
   session_count: 0,
   last_activity: null,
@@ -226,6 +229,8 @@ test("coming back after the coach finished shows the saved reply and what it did
   await expect(page.locator("#chat")).toContainText("Nell");
   await expect(page.locator("#chat")).not.toContainText(BROKE);
   await expect(page.locator("#chat .typing")).toHaveCount(0);
+  // the account is read again after the switch, still in flight
+  await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 // R-0182
@@ -242,6 +247,8 @@ test("coming back to a turn the server could not finish says so once", async ({ 
   await switchTo(page, OWN);
   await expect(page.locator("#chat")).toContainText("Tell me more.");
   await expect(page.locator("#chat .warn", { hasText: BROKE })).toHaveCount(1);
+  // the account is read again after the switch, still in flight
+  await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 // R-0243

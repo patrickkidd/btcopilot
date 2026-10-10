@@ -2445,6 +2445,9 @@ test.describe("stepped by hand on a phone", () => {
     await family(page);
     await drawer(page).locator('[data-act="first"]').click();
     await expect(drawer(page).locator(".when")).toHaveText("Harold and June married");
+    // the slide to the first date lands before the steps start, so each step is
+    // judged from a strip standing still, the births in sight and the marriage off
+    await dotAt(page);
     await nextTo(page, "Rosa was born");
     const from = (await dotAt(page)).scroll;
     // the strip's offset watched over the travel to the marriage, a screen on

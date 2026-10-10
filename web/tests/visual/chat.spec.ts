@@ -396,6 +396,8 @@ test.describe("the coach's notes", () => {
     await inside(bubble.locator(":scope > .info"), bubble);
     await inside(bubble.locator(".did"), bubble);
     await bubble.locator(":scope > .info").click();
+    // the notes pop out over 0.2s; the boxes are read once they have landed
+    await page.locator(".notes-card").evaluate((card) => Promise.all(card.getAnimations().map((a) => a.finished)));
     await inside(page.locator(".notes-head > .cardx"), page.locator(".notes-head"));
   });
 });
