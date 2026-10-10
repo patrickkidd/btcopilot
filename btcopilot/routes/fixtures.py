@@ -481,10 +481,52 @@ def whitlock() -> DiagramData:
         event(207, EventKind.Noted, "1982-09-15", person=5, title="Started school", description="Started first grade"),
         event(208, EventKind.Shift, "1982-11-15", person=5, symptom=VariableShift.Up, title="Trouble at school", description="Her teacher called Delphine"),
     ]
+    # Shifts that pile up on one person on one date, every SARF variable among
+    # them, so the stacked marks can be looked at (Patrick, 2026-10-09)
+    up, down = VariableShift.Up, VariableShift.Down
+
+    def shift(id, date, person, title, description, **fields):
+        return event(id, EventKind.Shift, date, person=person, title=title, description=description, **fields)
+
+    stacked = [
+        # Marcus, the autumn after the separation: four on one date
+        shift(209, "1980-11-15", 3, "Fought about the children", "Fought with Delphine about the children", relationship="conflict", relationshipTargets=[4], anxiety=up),
+        shift(210, "1980-11-15", 3, "Drinking after work", "Drinking after work most nights", relationship="distance", relationshipTargets=[4], symptom=up),
+        shift(211, "1980-11-15", 3, "Missed shifts", "Missed shifts at the plant", relationship="away", relationshipTargets=[4], functioning=down),
+        shift(212, "1980-11-15", 3, "Left the bills", "Left the bills to Delphine", relationship="underfunctioning", relationshipTargets=[4]),
+        # Marcus, the spring of the divorce: four more on one date
+        shift(213, "1981-03-15", 3, "Took Corinne on weekends", "Took Corinne every other weekend", relationship="toward", relationshipTargets=[5], anxiety=down),
+        shift(214, "1981-03-15", 3, "Fought over the weekends", "Fought with Delphine over the weekends", relationship="conflict", relationshipTargets=[4], symptom=up),
+        shift(215, "1981-03-15", 3, "Stopped answering her calls", "Stopped answering Delphine's calls", relationship="cutoff", relationshipTargets=[4], functioning=down),
+        shift(216, "1981-03-15", 3, "Worried over Theo's speech", "Worried that Theo was not talking yet", relationship="projection", relationshipTargets=[6], anxiety=up),
+        # Delphine on Marcus's dates, so two people's marks stand together
+        shift(217, "1981-01-15", 4, "Covered his rent", "Covered Marcus's rent that winter", relationship="overfunctioning", relationshipTargets=[3], anxiety=up),
+        shift(218, "1982-04-15", 4, "Worried over Corinne's grades", "Worried over Corinne's grades", relationship="projection", relationshipTargets=[5], anxiety=up),
+        # Corinne, the winter and spring after the teacher's call
+        shift(219, "1982-11-15", 5, "Went quiet with her mother", "Went quiet with Delphine", relationship="distance", relationshipTargets=[4], anxiety=up),
+        shift(220, "1983-01-15", 5, "Took her mother's side", "Took Delphine's side against Marcus", relationship="inside", relationshipTargets=[4], relationshipTriangles=[3], symptom=up),
+        shift(221, "1983-01-15", 5, "Did Theo's chores", "Did Theo's chores for him", relationship="overfunctioning", relationshipTargets=[6], functioning=up),
+        shift(222, "1983-05-15", 5, "Stayed out of their fight", "Stayed out of her parents' fight", relationship="outside", relationshipTargets=[3], relationshipTriangles=[4], anxiety=down),
+        shift(223, "1983-05-15", 5, "Looked after Theo", "Looked after Theo most afternoons", relationship="toward", relationshipTargets=[6], symptom=down),
+        # Marcus and Delphine on one late date, three on him, one on her
+        shift(224, "1983-02-15", 3, "Held his ground on the house", "Held his ground with Delphine on the house", relationship="defined-self", relationshipTargets=[4], functioning=up),
+        shift(225, "1983-02-15", 3, "Stayed away sober", "Stayed away from the house, sober", relationship="away", relationshipTargets=[4], symptom=down),
+        shift(226, "1983-02-15", 3, "Told Corinne everything", "Told Corinne everything about the divorce", relationship="fusion", relationshipTargets=[5], anxiety=up),
+        shift(227, "1983-02-15", 4, "Fought over the house", "Fought with Marcus over the house", relationship="conflict", relationshipTargets=[3], functioning=down),
+    ]
+    # later years, outside the cluster, so the timeline spreads
+    later = [
+        shift(240, "1991-06-15", 5, "Moved away for college", "Moved to Portland for college", relationship="distance", relationshipTargets=[4], anxiety=up),
+        shift(241, "1995-09-15", 6, "Stopped seeing his father", "Stopped seeing Marcus", relationship="cutoff", relationshipTargets=[3], symptom=up),
+        shift(242, "1998-03-15", 3, "Wrote to Theo every month", "Wrote to Theo every month", relationship="toward", relationshipTargets=[6], functioning=up),
+        shift(243, "2003-11-15", 5, "Called her mother daily", "Called Delphine every day", relationship="fusion", relationshipTargets=[4], anxiety=up),
+        shift(244, "2005-02-15", 5, "Let her mother run the wedding", "Let Delphine run the wedding", relationship="underfunctioning", relationshipTargets=[4], functioning=down),
+        shift(245, "2008-07-15", 4, "Worried over Corinne's health", "Worried over Corinne's health", relationship="projection", relationshipTargets=[5], symptom=up),
+    ]
     return DiagramData(
         people=people,
         pair_bonds=[bond(20, 1, 2), bond(21, 3, 4)],
-        events=born + apart,
+        events=born + apart + stacked + later,
         clusters=[
             asdict(
                 Cluster(
@@ -492,7 +534,7 @@ def whitlock() -> DiagramData:
                     reason="Marcus and Delphine came apart, and the trouble moved.",
                     title="The years apart",
                     summary="Separation to the teacher's call.",
-                    eventIds=[e["id"] for e in apart],
+                    eventIds=[e["id"] for e in apart + stacked],
                     name="The years apart",
                 )
             )

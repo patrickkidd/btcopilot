@@ -2394,32 +2394,82 @@ test.describe("stepped by hand on a phone", () => {
     });
   };
 
-  // R-0852
-  test("puts the step's dot in the middle of the strip after each Next and Back, as near as the line's ends allow, so it is in sight, after a burst of taps too", async ({ page }) => {
+  /** The dot is in sight, and where the strip was slid to is the middle of the dot, as near as the line's ends allow. */
+  const centred = (d: Awaited<ReturnType<typeof dotAt>>, what: string) => {
+    expect(d.left, what).toBeGreaterThanOrEqual(0);
+    expect(d.right, what).toBeLessThanOrEqual(d.screen);
+    const x = (d.left + d.right) / 2 + d.scroll;
+    expect(Math.abs(d.scroll - Math.max(0, Math.min(d.end, x - d.screen / 2))), what).toBeLessThan(2);
+  };
+
+  // R-0852, R-0855
+  test("leaves the strip where it stands while the step's dot is in sight, and slides it to put the dot in the middle only once a step takes the dot off the screen, after a burst of taps too", async ({ page }) => {
     await family(page);
+    // from the present end, the first date's dot is off the screen: the strip slides to it
     await drawer(page).locator('[data-act="first"]').click();
-    await nextTo(page, "Walter and Rosa married");
-    const check = async (what: string) => {
-      const d = await dotAt(page);
-      expect(d.left, what).toBeGreaterThanOrEqual(0);
-      expect(d.right, what).toBeLessThanOrEqual(d.screen);
-      // where the dot stands on the line, and the line put on it
-      const x = (d.left + d.right) / 2 + d.scroll;
-      expect(Math.abs(d.scroll - Math.max(0, Math.min(d.end, x - d.screen / 2))), what).toBeLessThan(2);
-    };
-    // the marriage is a screen away from the births before it on this line
+    await expect(drawer(page).locator(".when")).toHaveText("Harold and June married");
     const first = await dotAt(page);
     expect(first.end).toBeGreaterThan(100);
-    await check("Walter and Rosa married");
-    await drawer(page).locator('[data-act="back"]').click();
-    await check("back from it");
+    centred(first, "Harold and June married");
+    // the two births after it are in sight from there: the strip does not move
+    for (const what of ["Walter was born", "Rosa was born"]) {
+      await drawer(page).locator('[data-act="next"]').click();
+      await expect(drawer(page).locator(".when")).toHaveText(what);
+      await page.waitForTimeout(700);
+      const d = await dotAt(page);
+      expect(d.scroll, what).toBe(first.scroll);
+      expect(d.left, what).toBeGreaterThanOrEqual(0);
+      expect(d.right, what).toBeLessThanOrEqual(d.screen);
+    }
+    // the marriage a screen on is off it: the strip slides to put its dot in the middle
     await drawer(page).locator('[data-act="next"]').click();
-    await check("next to it again");
-    for (let i = 0; i < 4; i++) {
+    await expect(drawer(page).locator(".when")).toHaveText("Walter and Rosa married");
+    const married = await dotAt(page);
+    expect(married.scroll).not.toBe(first.scroll);
+    centred(married, "Walter and Rosa married");
+    // back to the birth, now off the screen the other way
+    await drawer(page).locator('[data-act="back"]').click();
+    await expect(drawer(page).locator(".when")).toHaveText("Rosa was born");
+    centred(await dotAt(page), "back to Rosa was born");
+    for (let i = 0; i < 5; i++) {
       await drawer(page).locator('[data-act="next"]:not([disabled])').click();
       await page.waitForTimeout(120);
     }
-    await check("after four taps in a burst");
+    const burst = await dotAt(page);
+    expect(burst.left, "after five taps in a burst").toBeGreaterThanOrEqual(0);
+    expect(burst.right, "after five taps in a burst").toBeLessThanOrEqual(burst.screen);
+  });
+
+  // R-0854
+  test("slides the strip to an off-screen dot over time, frame by frame from where it stood, never jumping there", async ({ page }) => {
+    await family(page);
+    await drawer(page).locator('[data-act="first"]').click();
+    await expect(drawer(page).locator(".when")).toHaveText("Harold and June married");
+    await nextTo(page, "Rosa was born");
+    const from = (await dotAt(page)).scroll;
+    // the strip's offset watched over the travel to the marriage, a screen on
+    await page.evaluate(() => {
+      const seen: number[] = [];
+      (window as unknown as { seen: number[] }).seen = seen;
+      const t0 = performance.now();
+      const tick = () => {
+        const s = document.querySelector<HTMLElement>("#pbp .wire .ss-scroll");
+        if (s) seen.push(s.scrollLeft);
+        if (performance.now() - t0 < 900) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await drawer(page).locator('[data-act="next"]').click();
+    await expect(drawer(page).locator(".when")).toHaveText("Walter and Rosa married");
+    await page.waitForTimeout(1000);
+    const seen = await page.evaluate(() => (window as unknown as { seen: number[] }).seen);
+    const to = (await dotAt(page)).scroll;
+    expect(Math.abs(to - from)).toBeGreaterThan(100);
+    // many places between where it stood and where it landed, each on from the last
+    const between = seen.filter((x) => x > Math.min(from, to) + 1 && x < Math.max(from, to) - 1);
+    expect(between.length).toBeGreaterThan(4);
+    const dir = Math.sign(to - from);
+    expect(seen.slice(1).every((x, i) => dir * (x - seen[i]) >= -1)).toBe(true);
   });
 
   /** Where each moved person stands in the drawing, sampled over seven seconds. */
