@@ -23,8 +23,8 @@ class Qt:
         return _unpickle_type, (self.module, self.name, self.args)
 
 
-def when(y, m, d) -> Qt:
-    return Qt("QDateTime", y, m, d, 0, 0, 0, 0, 0)
+def when(y, m, d, h=0, mi=0) -> Qt:
+    return Qt("QDateTime", y, m, d, h, mi, 0, 0, 0)
 
 
 def dumps(data: dict) -> bytes:
@@ -120,9 +120,31 @@ def scene(**more) -> dict:
             }
         ],
         "events": [
-            event(20, "birth", child=3, person=1, spouse=2, dateTime=when(1990, 5, 11), nodal=True, tags=["family"]),
-            event(21, "married", person=1, spouse=2, dateTime=when(1985, 6, 1), unsure=True),
-            event(22, "death", person=2, dateTime=when(2010, 1, 2), dateCertainty="approximate"),
+            event(
+                20,
+                "birth",
+                child=3,
+                person=1,
+                spouse=2,
+                dateTime=when(1990, 5, 11),
+                nodal=True,
+                tags=["family"],
+            ),
+            event(
+                21,
+                "married",
+                person=1,
+                spouse=2,
+                dateTime=when(1985, 6, 1),
+                unsure=True,
+            ),
+            event(
+                22,
+                "death",
+                person=2,
+                dateTime=when(2010, 1, 2),
+                dateCertainty="approximate",
+            ),
         ],
         "emotions": [],
         "layers": [{"kind": "Layer", "id": 30, "name": "Work"}],
@@ -142,4 +164,11 @@ def scene(**more) -> dict:
 
 
 def shift(id, **more) -> dict:
-    return event(id, "shift", person=1, description="Lost the job", dateTime=when(2000, 3, 4), **more)
+    return event(
+        id,
+        "shift",
+        person=1,
+        description="Lost the job",
+        dateTime=when(2000, 3, 4),
+        **more,
+    )

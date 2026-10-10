@@ -13,7 +13,13 @@ SIP = {("sip", "_unpickle_type"), ("PyQt5.sip", "_unpickle_type")}
 # its plain value.
 ENUMS = {
     ("btcopilot.schema", name)
-    for name in ("EventKind", "VariableShift", "RelationshipKind", "DateCertainty", "PersonKind")
+    for name in (
+        "EventKind",
+        "VariableShift",
+        "RelationshipKind",
+        "DateCertainty",
+        "PersonKind",
+    )
 }
 # The desktop's 2.0.12b1 upgrade moved events out of people and pair-bonds;
 # it upgrades every file saved at or before it (compat.UP_TO) [Oracle: R-0855].
@@ -28,8 +34,16 @@ def _date(y, m, d) -> str | None:
     return datetime.date(y, m, d).isoformat() if y > 0 else None
 
 
+def _datetime(y, m, d, h=0, mi=0, s=0, *rest) -> str | None:
+    """The day alone at midnight; a time of day is kept so the import can say
+    it was dropped."""
+    if y <= 0 or (h, mi, s) == (0, 0, 0):
+        return _date(y, m, d)
+    return datetime.datetime(y, m, d, h, mi, s).isoformat(sep=" ", timespec="minutes")
+
+
 QT = {
-    "QDateTime": lambda y, m, d, *time: _date(y, m, d),
+    "QDateTime": _datetime,
     "QDate": _date,
     "QPointF": lambda *xy: xy,
     "QSize": lambda *wh: wh,
@@ -39,7 +53,9 @@ QT = {
 
 def _qt(module: str, name: str, args: tuple):
     if name not in QT:
-        raise ValueError(f"the file holds a Qt type this reader does not know: {module}.{name}")
+        raise ValueError(
+            f"the file holds a Qt type this reader does not know: {module}.{name}"
+        )
     return QT[name](*args)
 
 
@@ -52,7 +68,9 @@ class Reader(pickle.Unpickler):
             return _qt
         if (module, name) in ENUMS:
             return str
-        raise ValueError(f"the file holds a type this reader does not know: {module}.{name}")
+        raise ValueError(
+            f"the file holds a type this reader does not know: {module}.{name}"
+        )
 
 
 def version(text: str | None) -> tuple:
