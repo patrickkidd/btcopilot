@@ -205,19 +205,21 @@ R-0743 | TEST OWED | not built: the coach calling out a connection across genera
 R-0748 | WAIVED | one test proves F18 is drawn with no line through a name; the rest is a judgement that marriages inside a family are rare
 R-0757 | WAIVED | deferred to how coverage is shown; nothing is built to assert
 R-0769 | TEST OWED | not built: functioning going down has no animation until its art direction is done
-R-0850 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0851 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
 R-0852 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0853 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0854 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0855 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0856 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0857 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
 R-0858 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0859 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
 R-0860 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0861 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
 R-0862 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0863 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0864 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
 R-0865 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
+R-0867 | TEST OWED | not built: naming unnamed people by family position in the desktop .fd import (FD-377)
+R-0868 | TEST OWED | not built: the coding pass for shifts with no title or code in the desktop .fd import (FD-377)
+R-0869 | TEST OWED | not built: the coding pass for relationship lines and descriptions in the desktop .fd import (FD-377)
+R-0870 | TEST OWED | not built: the death event for a deceased person and the notes sent to the coding pass in the desktop .fd import (FD-377)
+R-0871 | TEST OWED | not built: the coach's first turn asking which person is you after a desktop .fd import (FD-377)
+R-0872 | TEST OWED | not built: the way to eyeball compare an imported result in the new app (FD-377)
+R-0873 | TEST OWED | not built: the emailed ledger of the desktop .fd import decisions (FD-377)
+R-0851 | TEST OWED | cited by 2 tests, one more owed for the coach tag: the later passes of the desktop .fd import (FD-377)
+R-0856 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-377)
+R-0857 | TEST OWED | cited by 1 test, two more owed for the events and data-model tags (FD-377)
+R-0861 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-377)
+R-0863 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-377)
+R-0864 | TEST OWED | cited by 1 test, two more owed for the events and data-model tags (FD-377)
