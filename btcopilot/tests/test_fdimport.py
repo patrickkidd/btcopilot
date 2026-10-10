@@ -383,13 +383,6 @@ def test_became_names_what_each_file_item_is_now():
     assert said["relationship line 30"] == "part of event 10, shift: Lost the job"
 
 
-def test_build_stops_without_the_coding_pass(monkeypatch):
-    # R-0868
-    monkeypatch.setattr(fdimport, "fdcoding", None)
-    with pytest.raises(ValueError, match="coding pass"):
-        built()
-
-
 def test_one_change_turn_and_one_undo_takes_it_all_off(test_user):
     # R-0850
     out = built(

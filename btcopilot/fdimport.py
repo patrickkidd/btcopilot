@@ -10,7 +10,7 @@ import collections
 import itertools
 from dataclasses import dataclass, field
 
-from btcopilot import diagramjson, record
+from btcopilot import diagramjson, fdcoding, record
 from btcopilot.coverage import CHILD_ROLE
 from btcopilot.extensions import db
 from btcopilot.fdledger import Decision
@@ -29,13 +29,7 @@ from btcopilot.schema import (
     enum_val,
 )
 
-try:
-    import btcopilot.fdcoding as fdcoding
-except ModuleNotFoundError:  # until the coding pass is on this branch
-    fdcoding = None
-
 TURN = "fd-import:{}"
-NO_CODING = "the coding pass (btcopilot/fdcoding.py) is not on this branch yet"
 # The desktop's own words for two kinds the app names otherwise [Oracle: R-0864].
 MOVED = "moved"
 OLD_SHIFT = "variable-shift"
@@ -551,8 +545,6 @@ def renumber(out: Imported) -> None:
 
 def build(fd: dict) -> Imported:
     """Read the file's items, code what the mapping left, then renumber."""
-    if fdcoding is None:
-        raise ValueError(NO_CODING)
     out = convert(fd)
     out.data, coded = fdcoding.code(out.data)
     out.decisions += coded
