@@ -77,7 +77,7 @@ function screens(store: Store): string[] {
   return told;
 }
 
-// R-0243, R-0NNN
+// R-0243, R-0858
 it("opens a diagram by its public id: every part read naming it by that id, every screen emptied first and then drawn", async () => {
   const store = new Store();
   const told = screens(store);
@@ -150,7 +150,7 @@ it("says a diagram an admin only looks at is read-only, from the diagram it open
   expect(store.readOnly()).toBe(false);
 });
 
-// R-0NNN
+// R-0860
 it("fails to open a diagram the server will not give, with the server's refusal, and holds no diagram", async () => {
   const store = new Store();
   const opening = store.open(key(5));

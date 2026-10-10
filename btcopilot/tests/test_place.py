@@ -72,7 +72,7 @@ def test_a_browser_opening_an_address_in_the_app_gets_the_page_there(web):
 
 
 def test_an_address_names_the_diagram_it_is_on_by_public_id_and_the_place_under_it():
-    # R-0NNN
+    # R-0857, R-0858
     assert place.split(f"/app/diagram/{KEY}/account/coach") == (KEY, "/app/account/coach")
     assert place.split(f"/app/diagram/{KEY}") == (KEY, "/app")
     assert place.split(f"/app/diagram/{KEY}/?notification=4") == (KEY, "/app/")
@@ -88,7 +88,7 @@ def test_an_address_names_the_diagram_it_is_on_by_public_id_and_the_place_under_
 
 
 def test_the_page_at_a_diagrams_address_opens_that_diagram(web, test_user):
-    # R-0NNN
+    # R-0857
     made = Diagram(user_id=test_user.id, name="Wren's family", data=diagramjson.dumps({}))
     db.session.add(made)
     db.session.commit()
@@ -102,7 +102,7 @@ def test_the_page_at_a_diagrams_address_opens_that_diagram(web, test_user):
 
 
 def test_an_address_without_a_diagram_opens_the_persons_own(web, test_user):
-    # R-0NNN
+    # R-0859
     own = test_user.free_diagram.public_id
     for path in ("/app/", "/app/account/coach", "/app/?notification=4"):
         opened = web.get(path, headers=OPENED)
@@ -111,7 +111,7 @@ def test_an_address_without_a_diagram_opens_the_persons_own(web, test_user):
 
 
 def test_the_page_at_a_diagram_the_person_cannot_see_says_so(web, theirs):
-    # R-0NNN
+    # R-0860
     for path in (
         f"/app/diagram/{theirs.public_id}/",
         f"/app/diagram/{theirs.public_id}/account",
@@ -128,7 +128,7 @@ def test_the_page_at_a_diagram_the_person_cannot_see_says_so(web, theirs):
 def test_an_admin_at_another_persons_address_is_put_on_their_diagram_and_app_brings_them_home(
     admin, test_user, theirs
 ):
-    # R-0NNN
+    # R-0861, R-0859
     opened = admin.get(f"/app/diagram/{theirs.public_id}/", headers=OPENED)
     assert opened.status_code == 200
     told = bootstrap(opened)["diagram"]
@@ -142,7 +142,7 @@ def test_an_admin_at_another_persons_address_is_put_on_their_diagram_and_app_bri
 
 
 def test_the_coach_never_names_another_diagram(family):
-    # R-0NNN
+    # R-0857
     with pytest.raises(ToolError) as refused:
         box(family).call(ToolName.Navigate, {"address": f"/app/diagram/{KEY}/account"})
     assert "names a diagram" in str(refused.value)

@@ -78,7 +78,7 @@ describe("the addresses of the app", () => {
 });
 
 describe("the diagram every address is on", () => {
-  // R-0NNN
+  // R-0857, R-0858
   it("writes every place under the diagram the app is on, by its public id, never its number", () => {
     expect(on(KEY, address(Place.Chat))).toBe(`/app/diagram/${KEY}/`);
     expect(on(KEY, address(Place.Coach))).toBe(`/app/diagram/${KEY}/account/coach`);
@@ -91,7 +91,7 @@ describe("the diagram every address is on", () => {
       }
   });
 
-  // R-0NNN
+  // R-0857, R-0858
   it("reads a diagram's address back as its public id and the place under it", () => {
     expect(split(`/app/diagram/${KEY}/account/coach`)).toEqual({ diagram: KEY, under: "/app/account/coach" });
     expect(split(`/app/diagram/${KEY}`)).toEqual({ diagram: KEY, under: "/app" });
@@ -108,7 +108,7 @@ describe("the diagram every address is on", () => {
       expect(parse(path)).toBeNull();
   });
 
-  // R-0NNN
+  // R-0859
   it("reads an address without a diagram as that place on the diagram the app is on", () => {
     expect(split("/app/account/coach")).toEqual({ diagram: null, under: "/app/account/coach" });
     expect(parse("/app/")).toEqual({ place: Place.Chat, args: [], diagram: null });
@@ -120,7 +120,7 @@ describe("the diagram every address is on", () => {
     expect(on(null, `/app/diagram/${KEY}/account`)).toBe("/app/account");
   });
 
-  // R-0NNN
+  // R-0857
   it("keeps the diagram when a lit item settles into its view", () => {
     expect(settled(on(KEY, address(Place.Session, 5)))).toBe(on(KEY, address(Place.Sessions)));
     expect(settled(on(KEY, address(Place.Message, 9)))).toBe(`/app/diagram/${KEY}/`);

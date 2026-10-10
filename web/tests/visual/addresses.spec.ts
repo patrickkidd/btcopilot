@@ -95,7 +95,7 @@ test.describe("on the fixture with three people over forty years", () => {
     await page.locator("#send").click();
 
     await expect(page.locator('#path [data-step="0"]')).toBeVisible();
-    await expect(page.locator("#view .ss-name")).toContainText(cluster.title);
+    await expect(page.locator("#path")).toContainText(cluster.title);
     await expect(page).toHaveURL(at(`cluster/${cluster.id}`));
     const chip = page.locator('.bub .did button.chip[data-kind="place"]');
     await expect(chip).toHaveText(`the cluster ${cluster.title}`);
@@ -103,11 +103,11 @@ test.describe("on the fixture with three people over forty years", () => {
     await page.locator('#path [data-step="0"]').click();
     await expect(page).toHaveURL(at(""));
     await chip.click();
-    await expect(page.locator("#view .ss-name")).toContainText(cluster.title);
+    await expect(page.locator("#path")).toContainText(cluster.title);
     await expect(page).toHaveURL(at(`cluster/${cluster.id}`));
   });
 
-  // R-0NNN
+  // R-0857, R-0858
   test("the address carries the diagram's public id, never its row number", async ({ page }) => {
     await page.goto("/app/");
     await expect(page).toHaveURL(at(""));
@@ -122,7 +122,7 @@ test.describe("on the fixture with three people over forty years", () => {
     expect(own.public_id).toMatch(/^[a-z0-9]{10}$/);
   });
 
-  // R-0NNN
+  // R-0859
   test("opened at /app/ or at a place without a diagram, the app lands on the person's own diagram and fills its id in", async ({
     page,
   }) => {
@@ -138,7 +138,7 @@ test.describe("on the fixture with three people over forty years", () => {
     await expect(page.locator("#chat")).toBeVisible();
   });
 
-  // R-0NNN
+  // R-0860
   test("a link to a diagram the person cannot open shows one plain page", async ({ page }) => {
     const theirs = publicId("one");
     for (const path of [`/app/diagram/${theirs}/`, `/app/diagram/${theirs}/account`, "/app/diagram/nope2nope2/"]) {
@@ -204,7 +204,7 @@ test.describe("the sessions drawer, as Patrick", () => {
     await expect(account).toBeVisible();
   });
 
-  // R-0NNN
+  // R-0861
   test("an admin opening another person's diagram sees its id in the address, and their own again on the way back", async ({
     page,
   }) => {

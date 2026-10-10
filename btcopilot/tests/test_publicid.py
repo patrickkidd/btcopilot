@@ -28,7 +28,7 @@ def another(user, name: str) -> Diagram:
 
 
 def test_every_new_diagram_gets_a_public_id_that_is_not_its_row_number(web, test_user):
-    # R-0NNN
+    # R-0858
     made = another(test_user, "Nell's family")
     assert SHAPE.fullmatch(made.public_id)
     assert made.public_id != str(made.id)
@@ -36,7 +36,7 @@ def test_every_new_diagram_gets_a_public_id_that_is_not_its_row_number(web, test
 
 
 def test_a_listed_diagram_carries_its_public_id_beside_its_row_number(web, test_user):
-    # R-0NNN
+    # R-0858
     [own] = web.get("/app/diagrams").get_json()
     assert own["id"] == test_user.free_diagram_id
     assert own["public_id"] == test_user.free_diagram.public_id
@@ -44,7 +44,7 @@ def test_a_listed_diagram_carries_its_public_id_beside_its_row_number(web, test_
 
 
 def test_the_page_names_the_diagram_it_reads_by_its_public_id(web, test_user, theirs):
-    # R-0NNN
+    # R-0858
     key = test_user.free_diagram.public_id
     for path in ("/app/timeline", "/app/sessions", "/app/statements"):
         assert web.get(path, query_string={"diagram": key}).status_code == 200, path
@@ -54,7 +54,7 @@ def test_the_page_names_the_diagram_it_reads_by_its_public_id(web, test_user, th
 
 
 def test_the_app_is_put_on_a_diagram_by_its_public_id_never_its_row_number(web, test_user):
-    # R-0NNN
+    # R-0858
     made = another(test_user, "Wren's family")
     headers = {"X-CSRFToken": csrf_token(web)}
     put = web.post(f"/app/diagrams/{made.public_id}/select", json={}, headers=headers)
@@ -67,7 +67,7 @@ def test_the_app_is_put_on_a_diagram_by_its_public_id_never_its_row_number(web, 
 
 
 def test_the_revision_gives_every_stored_diagram_its_own_public_id(flask_app, tmp_path):
-    # R-0NNN
+    # R-0858
     seeded = {table: values for table, values in rows({}, [], []).items() if values}
     seeded["diagrams"].append(
         {"id": 2, "user_id": 1, "name": "Nell", "data": b"{}", "version": 1, "created_at": T0}
