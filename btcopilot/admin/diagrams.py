@@ -2,10 +2,11 @@
 whole record written out as JSON, and change rows taken back."""
 
 import json
+import pathlib
 
 import click
 
-from btcopilot import diagramjson, record
+from btcopilot import diagramjson, fdfile, fdimport, record
 from btcopilot.admin.guard import writes
 from btcopilot.admin.users import find as find_user
 from btcopilot.admin.output import rows_option
@@ -124,3 +125,34 @@ def said(delta: dict) -> str:
 
 
 diagrams.add_command(writes(click.command("undo")(diagram_undo)))
+
+
+@click.argument("path", type=click.Path(exists=True, path_type=pathlib.Path))
+@click.option("--email", required=True, help="Whose new record it is.")
+@click.option("--name", help="The record's name; the file's name when left out.")
+@click.option("--yes", is_flag=True, help="Write it; without it, only the check and the counts.")
+@rows_option
+def diagram_import(path, email, name, yes):
+    """Make a new record for one person from a Family Diagram desktop file
+    (.fd), written as one change so one undo takes it all back. Without --yes
+    the record's rules are checked and the counts printed; nothing is kept."""
+    user = find_user(email)
+    try:
+        imported = fdimport.convert(fdfile.read(path))
+        made = fdimport.save(user.id, name or path.stem, imported, yes=yes)
+    except (ValueError, record.Invalid) as e:
+        db.session.rollback()
+        raise click.ClickException(str(e))
+    rows = [
+        {"what": "diagram", "count": made.id if made else None, "detail": "written" if made else "dry run"},
+        *({"what": what, "count": count, "detail": ""} for what, count in imported.summary().items()),
+        *(
+            {"what": "left blank", "count": blank["event"], "detail": f"{blank['field']}: {blank['raw']}"}
+            for blank in imported.blanks
+        ),
+        *({"what": "dropped", "count": count, "detail": what} for what, count in sorted(imported.dropped.items())),
+    ]
+    return ["what", "count", "detail"], rows
+
+
+diagrams.add_command(writes(click.command("import")(diagram_import)))
