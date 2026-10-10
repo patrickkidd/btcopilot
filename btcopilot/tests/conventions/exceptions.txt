@@ -206,8 +206,3 @@ R-0748 | WAIVED | one test proves F18 is drawn with no line through a name; the 
 R-0757 | WAIVED | deferred to how coverage is shown; nothing is built to assert
 R-0769 | TEST OWED | not built: functioning going down has no animation until its art direction is done
 R-0856 | TEST OWED | not built: the next batch puts the word diagram where the app's words said record
-R-0857 | TEST OWED | not built: the next batch puts the diagram's opaque id in the app's addresses
-R-0858 | TEST OWED | not built: with R-0857
-R-0859 | TEST OWED | not built: with R-0857
-R-0860 | TEST OWED | not built: with R-0857
-R-0861 | TEST OWED | not built: with R-0857
