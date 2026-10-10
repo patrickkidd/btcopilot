@@ -7,7 +7,7 @@ import type { Page } from "@playwright/test";
  */
 
 /** Where a turn is posted: a new thread, or the session already on screen. */
-export const SEND = /\/app\/(chat|sessions\/\d+\/statements)(\?diagram_id=\d+)?$/;
+export const SEND = /\/app\/(chat|sessions\/\d+\/statements)(\?diagram=[a-z0-9]+)?$/;
 
 /** Where the page follows the turn it just started. */
 export const STREAM = /\/app\/turns\/[^/]+\/events/;

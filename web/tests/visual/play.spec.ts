@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "./fixtures";
-import { stateFor, boxOf, step } from "./setup";
+import { at, stateFor, boxOf, step } from "./setup";
 import { colours, cutInFrame, leastName, wordsOutside } from "./gate";
 import { mockTurn } from "./turn";
 
@@ -142,7 +142,7 @@ test.describe("the play-by-play drawer", () => {
 
   // R-0590, R-0576, R-0563
   test("the teal cluster chip of a play whose cluster has changed since tells it again through explain", async ({ page }) => {
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const json = await (await route.fetch()).json();
       for (const cluster of json.clusters) cluster.digest = "changed since";
       await route.fulfill({ json });
@@ -154,7 +154,7 @@ test.describe("the play-by-play drawer", () => {
       return statements.find((s: { case: unknown }) => s.case);
     });
     const plays: string[] = [];
-    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) => {
+    await page.route(/\/app\/play(\?diagram=[a-z0-9]+)?$/, (route) => {
       plays.push(route.request().postData() ?? "");
       return route.fulfill({
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case, digest: "changed since" },
@@ -268,7 +268,7 @@ test.describe("the play-by-play drawer", () => {
       return (await (await fetch(`/app/sessions/${sessions[0].id}`)).json()).statements;
     });
     const play = statements.find((s: { case: unknown }) => s.case);
-    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) =>
+    await page.route(/\/app\/play(\?diagram=[a-z0-9]+)?$/, (route) =>
       route.fulfill({
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case },
       }),
@@ -288,7 +288,7 @@ test.describe("the play-by-play drawer", () => {
   // R-0456
   test("a move that also names a child is drawn from its person, never from the child", async ({ page }) => {
     let ids = { ada: 0, ben: 0, kid: 0 };
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       const e = tl.events.find((e: { title: string | null }) => e.title?.startsWith("Ada moved toward Ben") || e.relationship === "toward");
       const kid = tl.people.find((p: { id: number }) => p.id !== e.person && !e.relationshipTargets.includes(p.id));
@@ -326,7 +326,7 @@ test.describe("an event's words at the drawing's edge", () => {
 
   // R-0558, R-0551, R-0744
   test("beside the rightmost person keep the family's margin from the drawing's side", async ({ page }) => {
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       const e = tl.events.find((e: { title?: string }) => e.title === "Moved out");
       const right = tl.people.find((p: { name: string }) => p.name === "Delphine");
@@ -476,7 +476,7 @@ test.describe("a family the row rules cannot place", () => {
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, route);
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, route);
     await settle(page);
     await stored(page).click();
     await expect(drawer(page)).toBeVisible();
@@ -535,7 +535,7 @@ test.describe("a family wider than the phone", () => {
 
   // R-0796, R-0744, R-0749
   test("stops shrinking at the least name size, scrolls in its own frame and centres the step's person", async ({ page }) => {
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, joinedFamily([["Hugo", "Wanda"]], 6, "Hs5", "Hugo"));
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, joinedFamily([["Hugo", "Wanda"]], 6, "Hs5", "Hugo"));
     await settle(page);
     await stored(page).click();
     await expect(drawer(page)).toBeVisible();
@@ -583,7 +583,7 @@ test.describe("a move between two people further apart than the screen is wide",
   // R-0759, R-0744, R-0785
   test("shows whoever moves on each step, whole in the frame or by an arrow at its edge, the picture never sliding", async ({ page }) => {
     let ids: Record<string, number> = {};
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       ids = joined(tl, [["Hugo", "Wanda"]], WIDE, "Hs0", "Hs15");
       // the first move's date also holds a divorce, told first, as "Louann and
@@ -648,7 +648,7 @@ test.describe("the Family view's three generations", () => {
    * Cleo, the reader, is Hugo and Wanda's daughter. */
   const opened = async (page: Page) => {
     let ids: Record<string, number> = {};
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       ids = joined(tl, [["Hugo", "Wanda"]], 2, "Ws1", "Hs1");
       await route.fulfill({ json: tl });
@@ -690,7 +690,7 @@ test.describe("the Family view's three generations", () => {
   // R-0783, R-0851
   test("‹‹ First goes to the first date that touches the reader's own frame, not to dates about people outside it", async ({ page }) => {
     let ids: Record<string, number> = {};
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       ids = joined(tl, [["Hugo", "Wanda"]], 2, "Ws1", "Hs1");
       tl.events.forEach((e: Record<string, unknown>) => (e.relationshipTriangles = []));
@@ -751,7 +751,7 @@ test.describe("the Family view's three generations", () => {
   // R-0779, R-0785
   test("shows both partners on a couple's step, whole in the frame or by an arrow at its edge", async ({ page }) => {
     let ids: Record<string, number> = {};
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       ids = joined(tl, [["Hugo", "Wanda"]], 2, "Ws1", "Hs1");
       // three children spread the couple further apart than half the frame
@@ -779,7 +779,7 @@ test.describe("the Family view's three generations", () => {
 
   // R-0779, R-0742, R-0784
   test("keeps a long step title to its three lines above the years line, so the picture never moves", async ({ page }) => {
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       joined(tl, [["Hugo", "Wanda"]], 2, "Ws1", "Hs1");
       const first = tl.events.filter((e: { dateTime: string | null }) => e.dateTime).sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime))[0];
@@ -806,7 +806,7 @@ test.describe("the Family view's three generations", () => {
   // R-0785
   test("shows everyone a date involves, the second mover too, in the frame or by an arrow at its edge", async ({ page }) => {
     let ids: Record<string, number> = {};
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       ids = joined(tl, [["Hugo", "Wanda"]], 2, "Hugo", "Wanda");
       // on the same date Wanda's sister, at the far end of the family, takes on
@@ -841,7 +841,7 @@ test.describe("the Family view's three generations", () => {
 
   // R-0782
   test("keeps Back and Next in one place, so Next tapped again and again at one spot steps on each time", async ({ page }) => {
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, lifetime);
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
@@ -910,7 +910,7 @@ test.describe("the Family view's three generations", () => {
  * reader, at the size of the screen it is opened on. */
 const familyOf = async (page: Page, sibs: number, tweak: (tl: Record<string, any>, ids: Record<string, number>) => void = () => {}) => {
   let ids: Record<string, number> = {};
-  await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+  await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
     const tl = await (await route.fetch()).json();
     ids = joined(tl, [["Hugo", "Wanda"]], sibs, "Hugo", "Wanda");
     tweak(tl, ids);
@@ -1068,7 +1068,7 @@ test.describe("the Family view's frame wider than a phone turned sideways", () =
   test("scrolls inside its own frame, never the page", async ({ page }) => {
     const errors = watched(page);
     let ids: Record<string, number> = {};
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       ids = joined(tl, [["Hugo", "Wanda"]], WIDE, "Hs5", "Hugo");
       await route.fulfill({ json: tl });
@@ -1580,7 +1580,7 @@ test.describe("the Family view on a phone, turned", () => {
     test.skip(info.project.name !== "phone", "the size is the describe's own");
     const errors = watched(page);
     let ids: Record<string, number> = {};
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       ids = joined(tl, [["Hugo", "Wanda"]], 2, "Hugo", "Wanda");
       await route.fulfill({ json: tl });
@@ -1790,7 +1790,7 @@ for (const [what, viewport] of [
       test.skip(info.project.name !== "phone", "the size is the describe's own");
       // Delphine's and Theo's births with their dates unknown: steps the
       // timeline draws nothing of, as on Patrick's own diagram
-      await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+      await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
         const tl = await (await route.fetch()).json();
         for (const e of tl.events) if (e.id === 105 || e.id === 108) e.dateCertainty = "unknown";
         await route.fulfill({ json: tl });
@@ -1933,7 +1933,7 @@ test.describe("the whole family stepped through dates", () => {
 
   // R-0755
   test("offers its Family button at the end of the row when nothing is picked, next to the lists", async ({ page }) => {
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, lifetime);
     await settle(page);
     const family = page.locator("#caption #cap-family");
     await expect(family).toHaveText("Family");
@@ -1950,7 +1950,7 @@ test.describe("the whole family stepped through dates", () => {
 
   // R-0755
   test("keeps its Family button with a cluster open and after the cluster is put down, and it opens the whole family", async ({ page }) => {
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, lifetime);
     await settle(page);
     const family = page.locator("#caption #cap-family");
     await expect(family).toBeVisible();
@@ -1963,12 +1963,12 @@ test.describe("the whole family stepped through dates", () => {
     await expect(family).toBeVisible();
     await page.locator('#view .ss-hit[data-target="cluster"]').first().click();
     await family.click();
-    await expect(page).toHaveURL(/\/app\/family$/);
+    await expect(page).toHaveURL(at("family"));
   });
 
   // R-0755
   test("has no Family button on a record with no dated birth, couple, death or relationship shift", async ({ page }) => {
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       tl.events.forEach((e: Record<string, unknown>) => Object.assign(e, { kind: "noted", relationship: null, spouse: null, title: e.title ?? "Noted" }));
       await route.fulfill({ json: tl });
@@ -1981,14 +1981,14 @@ test.describe("the whole family stepped through dates", () => {
   // R-0755
   test("goes to the chat when the Family view's address is opened on a record with no dated step", async ({ page }) => {
     const errors = watched(page);
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       tl.events.forEach((e: Record<string, unknown>) => Object.assign(e, { kind: "noted", relationship: null, spouse: null, title: e.title ?? "Noted" }));
       await route.fulfill({ json: tl });
     });
     await page.goto("/app/family");
     await expect(page.locator("#view .ss")).toBeVisible();
-    await expect(page).toHaveURL(/\/app\/$/);
+    await expect(page).toHaveURL(at(""));
     await expect(drawer(page)).toBeHidden();
     expect(errors).toEqual([]);
   });
@@ -1996,11 +1996,11 @@ test.describe("the whole family stepped through dates", () => {
   // R-0742, R-0755, R-0756, R-0850
   test("opens on the record today and steps back through its history, the not yet born faded, and browser back returns to the timeline", async ({ page }) => {
     const errors = watched(page);
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, lifetime);
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, lifetime);
     await settle(page);
     await page.locator("#cap-family").click();
     await expect(drawer(page)).toBeVisible();
-    await expect(page).toHaveURL(/\/app\/family$/);
+    await expect(page).toHaveURL(at("family"));
     await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family › Ada's family");
     await expect(drawer(page).locator(".dots")).toHaveCount(0);
     // the current day: nothing happened on it, so the top line says the day,
@@ -2041,13 +2041,13 @@ test.describe("the whole family stepped through dates", () => {
     expect(await sideways(page)).toBe(false);
     await page.goBack();
     await expect(drawer(page)).toBeHidden();
-    await expect(page).toHaveURL(/\/app\/$/);
+    await expect(page).toHaveURL(at(""));
     expect(errors).toEqual([]);
   });
   // R-0742
   test("keeps its picture still while the words above it run to three lines, and its first date whole inside the frame", async ({ page }) => {
     const errors = watched(page);
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       const [ada, ben] = tl.people;
       const blank = { ...tl.events[0], relationshipTargets: [], relationshipTriangles: [], symptom: null, anxiety: null, functioning: null, spouse: null, child: null, codedInDiscussion: null, codedInStatement: null };
@@ -2091,7 +2091,7 @@ test.describe("the whole family wider than the phone", () => {
   test("shows each step's person on Back and Next, in the frame or by an arrow at its edge", async ({ page }) => {
     const errors = watched(page);
     let ids: Record<string, number> = {};
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       ids = joined(tl, [["Hugo", "Wanda"]], 6, "Hs5", "Hugo");
       const blank = { ...tl.events[0], relationship: null, relationshipTargets: [], relationshipTriangles: [], symptom: null, anxiety: null, functioning: null, title: null, description: null, person: null, spouse: null };
@@ -2540,7 +2540,7 @@ test.describe("the frame's travel to a step's people", () => {
   // R-0778
   test("sets off from where the frame stood, eases to exactly where it lands without passing it, taking longer the further it goes", async ({ page }) => {
     // the moves go back and forth between the two ends of the family
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       // wide enough to pan at the least name size (R-0796)
       const ids = joined(tl, [["Hugo", "Wanda"]], WIDE, "Ws15", "Hs15");
