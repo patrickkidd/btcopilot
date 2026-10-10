@@ -647,6 +647,9 @@ def build(fd: dict, model=fdcoding.ask) -> Imported:
     out.decisions += [
         replace(one, item=out.labels.get(_id(one.item), one.item)) for one in coded
     ]
+    # Read by the pass; the ledger holds them from the file itself.
+    for item in (out.data, *(i for name in COLLECTIONS for i in out.data[name])):
+        item.pop(RAW, None)
     _twins(out)
     renumber(out)
     return out

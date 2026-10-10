@@ -7,8 +7,10 @@ guessed [Oracle: R-0868].
 
 Each person's part is their events, the text on them, their bonds and their
 own notes, with the names of their relatives so a move can name whom it was
-aimed at; people share a call, in file order, up to PER_CALL items. Each answer is checked by the record's own rules before any of it
-is kept; a refused one is said by name in the decisions."""
+aimed at; people share a call, in file order, up to PER_CALL items, and a
+person with more is split across calls, each event with its own text. Each
+answer is checked by the record's own rules before any of it is kept; a
+refused one is said by name in the decisions."""
 
 import collections
 import copy
@@ -67,7 +69,8 @@ UNCODED = "Not coded yet"
 WHOLE = "the whole diagram"
 ROOM = 4096
 PER_ITEM = 512
-# Events and texts in one call; a person with more has a call alone.
+# Events and texts in one call, so that ROOM + PER_ITEM * PER_CALL stays
+# within what the side-call model may return.
 PER_CALL = 24
 
 
@@ -281,7 +284,7 @@ def batches(data: dict) -> list[Batch]:
 
 def _joined(found: list[Batch]) -> Batch:
     return Batch(
-        "; ".join(b.who for b in found),
+        "; ".join(dict.fromkeys(b.who for b in found)),
         list(dict.fromkeys(pid for b in found for pid in b.people)),
         [e for b in found for e in b.events],
         {eid: todo for b in found for eid, todo in b.todo.items()},
@@ -289,21 +292,46 @@ def _joined(found: list[Batch]) -> Batch:
     )
 
 
-def calls(data: dict) -> list[Batch]:
-    """The people's batches packed in file order into calls of at most
-    PER_CALL items, one person's never split; the diagram's own stays alone."""
-    found = batches(data)
-    people = [b for b in found if b.who != WHOLE]
-    whole = [b for b in found if b.who == WHOLE]
+def _packed(found: list[Batch]) -> list[Batch]:
+    """Batches joined in order into calls of at most PER_CALL items."""
     packed, current = [], []
-    for batch in people:
+    for batch in found:
         if current and sum(b.size for b in current) + batch.size > PER_CALL:
             packed.append(_joined(current))
             current = []
         current.append(batch)
-    if current:
-        packed.append(_joined(current))
-    return packed + whole
+    return packed + ([_joined(current)] if current else [])
+
+
+def _split(batch: Batch) -> list[Batch]:
+    """A batch over PER_CALL items in calls of its own, each with the whole
+    list of relatives, never parting an event from its own text."""
+    if batch.size <= PER_CALL:
+        return [batch]
+
+    def piece(events: list[dict], texts: dict[str, str]) -> Batch:
+        todo = {str(e["id"]): batch.todo[str(e["id"])] for e in events}
+        return Batch(batch.who, batch.people, events, todo, texts)
+
+    pieces = [
+        piece(
+            [e],
+            {s: t for s, t in batch.texts.items() if s.startswith(f"event {e['id']} ")},
+        )
+        for e in batch.events
+    ]
+    held = {source for p in pieces for source in p.texts}
+    pieces += [piece([], {s: t}) for s, t in batch.texts.items() if s not in held]
+    return _packed(pieces)
+
+
+def calls(data: dict) -> list[Batch]:
+    """The people's batches packed in file order into calls of at most
+    PER_CALL items, a person split only when theirs alone is over; the
+    diagram's own stays apart."""
+    found = batches(data)
+    people = [p for b in found if b.who != WHOLE for p in _split(b)]
+    return _packed(people) + [p for b in found if b.who == WHOLE for p in _split(b)]
 
 
 def answer_schema(batch: Batch, named: dict[int, str]) -> dict:
@@ -477,24 +505,22 @@ def _fallback(data: dict, event: dict, todo: Todo) -> dict:
 
 
 def _moveless(event: dict, named: dict[int, str], decisions: list) -> None:
-    """Whom a move nobody could complete was aimed at stays with the file's
-    values, by name: the record names them only on a relationship move."""
+    """Whom a move nobody could complete was aimed at is said by name in the
+    decisions only: the record names them only on a relationship move."""
     if event.get("relationship"):
         return
     for name in MOVES:
         said = ", ".join(named[pid] for pid in event.pop(name, None) or [])
-        if not said:
-            continue
-        event.setdefault(RAW, {})[name] = said
-        decisions.append(
-            Decision(
-                f"event {event['id']}",
-                name,
-                said,
-                "",
-                "With no relationship move to aim it, the name stays with the file's values.",
+        if said:
+            decisions.append(
+                Decision(
+                    f"event {event['id']}",
+                    name,
+                    said,
+                    "",
+                    "With no relationship move to aim it, the name is kept in this record only.",
+                )
             )
-        )
 
 
 def _change(decisions: list, event: dict, changes: dict, reason: str) -> None:

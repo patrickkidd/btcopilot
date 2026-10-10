@@ -38,9 +38,11 @@ class Model:
     def __init__(self, answers: dict | None = None):
         self.answers = answers or {}
         self.prompts = []
+        self.limits = []
 
     def __call__(self, prompt, response_format, schema, limit):
         self.prompts.append(prompt)
+        self.limits.append(limit)
         who = re.search(r"WHO: (.*)", prompt).group(1)
         return from_dict(response_format, self.answers.get(who, {}))
 
@@ -296,7 +298,7 @@ def test_the_prompt_carries_the_coachs_rules_and_the_rule_against_guesses(monkey
     )
 
 
-def test_a_move_nobody_could_complete_keeps_its_names_with_the_files_values():
+def test_a_move_nobody_could_complete_says_its_names_in_the_decisions_only():
     # R-0868, R-0869
     data = diagram(
         [
@@ -311,10 +313,7 @@ def test_a_move_nobody_could_complete_keeps_its_names_with_the_files_values():
     coded, decisions = fdcoding.code(data, Model())
     event = by_id(coded)[35]
     assert (event["kind"], event.get("relationshipTargets")) == ("noted", None)
-    assert event["fileValues"] == {
-        "relationship": "inside",
-        "relationshipTargets": "Bo Lund",
-    }
+    assert event["fileValues"] == {"relationship": "inside"}
     assert ("relationshipTargets", "Bo Lund") in [
         (d.field, d.before) for d in decisions
     ]
@@ -337,6 +336,38 @@ def test_people_share_a_call_up_to_its_size_in_file_order(monkeypatch):
         "Ada Lund; Bo Lund",
         "Cy Lund",
     ]
+
+
+def test_a_person_over_a_calls_size_is_split_with_their_relatives_in_every_call():
+    # R-0860
+    data = diagram([shift(n, description=f"argued {n}") for n in range(40, 70)])
+    model = Model(
+        {
+            "Ada Lund": {
+                "codings": [
+                    {
+                        "event": "69",
+                        "kind": "shift",
+                        "title": "Pulled away from home",
+                        "relationship": "distance",
+                        "relationshipTargets": ["Bo Lund"],
+                        "quote": "argued 69",
+                    }
+                ]
+            }
+        }
+    )
+    coded, _ = fdcoding.code(data, model)
+    assert len(model.prompts) == 3
+    kin = ("Ada Lund", "Bo Lund", "Cy Lund", "Dan Lund")
+    assert all(f"- {name}\n" in p for p in model.prompts for name in kin)
+    assert all("WHO: Ada Lund\n" in p for p in model.prompts)
+    # The Claude stand-in on Bedrock returns at most 32000 by the app's config.
+    assert max(model.limits) <= 32000
+    for n in range(40, 70):
+        [held] = [p for p in model.prompts if f"- event {n} " in p]
+        assert f"[event {n} description]\nargued {n}" in held
+    assert by_id(coded)[69]["relationshipTargets"] == [3]
 
 
 def test_without_the_sops_key_the_open_source_prompt_codes_the_import(

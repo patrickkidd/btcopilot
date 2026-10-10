@@ -1,14 +1,17 @@
+import datetime
 import json
 from types import SimpleNamespace
 
 import pytest
 
-from btcopilot import diagramjson, extensions, fdfile, fdimport, record
+from btcopilot import diagramjson, extensions, fdfile, fdimport, fdledger, record
 from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.fdledger import Decision
 from btcopilot.models import Author, Change, Diagram
 from btcopilot.tests.fdfixtures import bundle, dumps, event, person, scene, shift, when
+
+TODAY = datetime.date(2026, 10, 10)
 
 
 @pytest.fixture(autouse=True)
@@ -218,6 +221,34 @@ def test_notes_on_bonds_and_the_diagram_left_for_the_coding_pass():
     assert out.data["pair_bonds"][0][fdimport.RAW] == {"notes": "Met at sea."}
     assert out.data[fdimport.RAW] == {"notes": "Hard winter."}
     assert by_id(out.data["people"])[1][fdimport.RAW] == {"diagramNotes": "Quiet."}
+
+
+def test_the_files_values_go_to_the_pass_and_stay_in_the_ledger_only():
+    # R-0859, R-0870, R-0873
+    fd = fdfile.read(
+        dumps(
+            scene(
+                events=[shift(23, dynamicProperties={"relationship": "reciprocity"})],
+                layerItems=[{"kind": "Callout", "id": 40, "text": "Hard winter."}],
+                people=[
+                    person(1, "Ada", "female", primary=True, diagramNotes="Quiet."),
+                    person(2, "Bo", "male"),
+                ],
+            )
+        )
+    )
+    out = fdimport.build(fd)
+    data = out.data
+    assert not [
+        item
+        for item in (data, *data["people"], *data["pair_bonds"], *data["events"])
+        if fdimport.RAW in item
+    ]
+    text = fdledger.text(
+        "Lund family.fd", fd, fdimport.became(out), out.decisions, TODAY
+    )
+    assert "dynamicProperties.relationship: reciprocity" in text
+    assert "diagramNotes: Quiet." in text
 
 
 def test_moved_becomes_a_noted_place():
