@@ -914,6 +914,43 @@ def test_the_persons_own_period_is_shown_to_the_model_as_theirs():
     ]["id"]["enum"] == ["u1"]
 
 
+def tagged(event: dict, *tags: str) -> dict:
+    return {**event, "tags": list(tags)}
+
+
+# The same family brought in from the desktop app: three events tagged for the
+# grandmother's cancer, one for work.
+TAGS = record(
+    tagged(GRANDMOTHER.events[0], "Grandma's cancer"),
+    tagged(GRANDMOTHER.events[1], "Grandma's cancer", "work"),
+    tagged(GRANDMOTHER.events[2], "Grandma's cancer"),
+    *GRANDMOTHER.events[3:],
+)
+
+
+def test_tags_from_the_desktop_app_are_shown_as_a_hint_never_stored():
+    # R-0858, R-0857
+    assert clusters.tagged(TAGS, joinable(TAGS)) == {"Grandma's cancer": [20, 30, 31]}
+
+    with replies(answers(named(*WIDER, name=HYPOTHESIS))) as ask:
+        result = detect_clusters(TAGS, ask)
+    asked = ask.call_args_list[0].args[0]
+    assert '"note": "the person tagged these events in the desktop app"' in asked
+    assert '"name": "work"' not in asked
+    fields = ask.call_args_list[0].args[1]["properties"]["clusters"]["items"]
+    assert "id" not in fields["properties"]
+    assert [(c.name, c.eventIds, c.source) for c in result.clusters] == [
+        (HYPOTHESIS, WIDER, ClusterSource.Model)
+    ]
+
+
+def test_a_tag_the_model_does_not_take_up_is_not_a_period():
+    # R-0858
+    with replies(answers()) as ask:
+        result = detect_clusters(TAGS, ask)
+    assert result.clusters == []
+
+
 def test_a_wider_period_named_for_the_hypothesis_absorbs_the_persons_own():
     # R-0843, R-0841
     with replies(answers(named(*WIDER, name=HYPOTHESIS))) as ask:
