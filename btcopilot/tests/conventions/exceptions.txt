@@ -218,5 +218,4 @@ R-0863 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-3
 R-0864 | TEST OWED | cited by 1 test, two more owed for the events and data-model tags (FD-377)
 R-0874 | TEST OWED | cited by 1 test, two more owed for the events and data-model tags: concatenated notes on a merge in the desktop .fd import (FD-377)
 R-0875 | TEST OWED | no citing test yet: the wording of the email that carries the import ledger (FD-377)
-R-0876 | TEST OWED | not built: the import purpose value on the model-call ledger (FD-377)
 R-0877 | TEST OWED | no citing test yet: the inference pass judging same-day events in the desktop .fd import (FD-377)

@@ -4,12 +4,24 @@ from types import SimpleNamespace
 
 import pytest
 
-from btcopilot import diagramjson, extensions, fdfile, fdimport, fdledger, record
+from btcopilot import (
+    diagramjson,
+    extensions,
+    fdcoding,
+    fdfile,
+    fdimport,
+    fdledger,
+    record,
+)
 from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.fdledger import Decision
+from btcopilot.llmutil import Parsed, Served, Spent
 from btcopilot.models import Author, Change, Diagram
+from btcopilot.models.modelcall import ModelCall, Purpose
+from btcopilot.schema import from_dict
 from btcopilot.tests.fdfixtures import bundle, dumps, event, person, scene, shift, when
+from btcopilot.tests.test_fdmerge import Model, plain  # noqa: F401 (plain is autouse)
 
 TODAY = datetime.date(2026, 10, 10)
 
@@ -523,12 +535,9 @@ def test_one_change_turn_and_one_undo_takes_it_all_off(test_user):
     out = built(
         emotions=[{"kind": "cutoff", "id": 31, "person": 3, "target": 1, "event": None}]
     )
-    diagram = fdimport.save(test_user.id, "Lund family", out, yes=True)
+    diagram = fdimport.save(test_user.id, "Lund family", out, yes=True, turn="t1")
     [change] = Change.query.filter_by(diagram_id=diagram.id).all()
-    assert (change.turn_id, change.author) == (
-        fdimport.TURN.format(diagram.id),
-        Author.Pro,
-    )
+    assert (change.turn_id, change.author) == ("t1", Author.Pro)
     data = diagram.get_diagram_data()
     assert (len(data.people), len(data.events), len(data.pair_bonds), data.tags) == (
         3,
@@ -577,3 +586,167 @@ def test_admin_import_previews_then_writes_and_mails_the_record(
     [attached] = mail.attachments
     assert attached.filename == "Lund family - import record.txt"
     assert "Ada Lund (person 1)" in attached.data.decode()
+
+
+def family() -> dict:
+    """The diagram from the conversation: Ada, her husband not yet named, and
+    their son Cy."""
+    return {
+        "people": [
+            {"id": 1, "name": "Ada", "last_name": "Lund", "gender": "female"},
+            {"id": 2, "name": "Ada's husband", "gender": "male"},
+            {
+                "id": 3,
+                "name": "Cy",
+                "last_name": "Lund",
+                "gender": "male",
+                "parents": 4,
+            },
+        ],
+        "pair_bonds": [{"id": 4, "person_a": 1, "person_b": 2, "married": True}],
+        "events": [
+            {
+                "id": 5,
+                "kind": "birth",
+                "child": 3,
+                "person": 1,
+                "spouse": 2,
+                "dateTime": "1990-05-11",
+                "dateCertainty": "certain",
+            }
+        ],
+        "questions": [],
+        "lastItemId": 5,
+    }
+
+
+def stored(user) -> Diagram:
+    diagram = Diagram(
+        user_id=user.id, name="Ada's diagram", data=diagramjson.dumps(family())
+    )
+    db.session.add(diagram)
+    db.session.commit()
+    return diagram
+
+
+def answered(prompt, response_format, schema=None, limit=None) -> Parsed:
+    """The side-call model with nothing to say: every doubt stays a doubt."""
+    return Parsed(
+        from_dict(response_format, {}), Spent(10, 5), Served("gemini-3.1-flash-lite")
+    )
+
+
+@pytest.fixture
+def side_call(monkeypatch):
+    monkeypatch.setattr("btcopilot.metered.gemini_structured_sync", answered)
+
+
+def test_into_a_diagram_one_turn_holds_the_doubt_and_one_undo_takes_it_off(
+    test_user, side_call
+):
+    # R-0850, R-0851, R-0852
+    diagram = stored(test_user)
+    model = fdimport.meter(test_user.id, diagram)
+    out = fdimport.build(fdfile.read(dumps(scene())), model.structured, into=diagram)
+    fdimport.save(test_user.id, "", out, yes=True, turn=model.turn_id)
+    [change] = Change.query.filter_by(diagram_id=diagram.id).all()
+    assert change.turn_id == model.turn_id
+    data = diagramjson.loads(db.session.get(Diagram, diagram.id).data)
+    people = {p["name"]: p for p in data["people"]}
+    assert sorted(people) == ["Ada", "Ada's husband", "Bo", "Cy"]
+    assert [e["kind"] for e in data["events"] if e.get("child") == 3] == ["birth"]
+    [question] = data["questions"]
+    assert (question["state"], question["item_id"]) == (
+        "held",
+        str(people["Bo"]["id"]),
+    )
+
+    record.undo_changes(diagram.id, [change.id], author=Author.Coach)
+    data = diagramjson.loads(db.session.get(Diagram, diagram.id).data)
+    assert [p["name"] for p in data["people"]] == ["Ada", "Ada's husband", "Cy"]
+    assert ([e["id"] for e in data["events"]], data["questions"]) == ([5], [])
+
+
+def test_every_model_call_of_an_import_is_on_the_ledger_as_the_imports(
+    test_user, side_call, monkeypatch
+):
+    # R-0876
+    def code(data, model):
+        model("prompt", fdcoding.Answer, {}, 100)
+        return data, []
+
+    monkeypatch.setattr(fdimport, "fdcoding", SimpleNamespace(code=code))
+    model = fdimport.meter(test_user.id)
+    out = fdimport.build(fdfile.read(dumps(scene())), model.structured)
+    made = fdimport.save(test_user.id, "Lund", out, yes=True, turn=model.turn_id)
+    diagram = stored(test_user)
+    into = fdimport.meter(test_user.id, diagram)
+    fdimport.build(fdfile.read(dumps(scene())), into.structured, into=diagram)
+    calls = ModelCall.query.filter(
+        ModelCall.turn_id.in_([model.turn_id, into.turn_id])
+    ).all()
+    assert sorted((c.purpose, c.user_id, c.diagram_id) for c in calls) == [
+        (Purpose.Import, test_user.id, made.id),
+        (Purpose.Import, test_user.id, diagram.id),
+        (Purpose.Import, test_user.id, diagram.id),
+    ]
+
+
+def test_the_ledger_names_what_each_file_item_became_in_the_diagram(test_user):
+    # R-0873, R-0851
+    diagram = stored(test_user)
+    out = fdimport.build(fdfile.read(dumps(scene())), Model(), into=diagram)
+    said = fdimport.became(out)
+    assert said["person 1"] == "the same as person 1, Ada Lund"
+    assert said["person 3"] == "the same as person 3, Cy Lund"
+    assert said["person 2"].endswith(", Bo Lund")
+    assert said["event 20"].startswith("part of event 5, birth")
+    assert "Asked of the person: both are kept until they answer." in [
+        one.reason for one in out.decisions if one.item == "person 2"
+    ]
+
+
+def test_a_diagram_changed_since_the_import_read_it_is_not_written(test_user):
+    # R-0850
+    diagram = stored(test_user)
+    out = fdimport.build(fdfile.read(dumps(scene())), Model(), into=diagram)
+    diagram.version += 1
+    db.session.commit()
+    with pytest.raises(ValueError, match="changed since the import read it"):
+        fdimport.save(test_user.id, "", out, yes=True)
+
+
+def test_admin_import_into_a_diagram_previews_then_writes(
+    flask_app, test_user, tmp_path, side_call
+):
+    # R-0851, R-0873, R-0876
+    diagram = stored(test_user)
+    path = bundle(tmp_path, scene())
+    args = [
+        "diagrams",
+        "import",
+        str(path),
+        "--email",
+        test_user.username,
+        "--into",
+        str(diagram.id),
+        "--json",
+    ]
+    runner = flask_app.test_cli_runner()
+
+    dry = runner.invoke(admin, [*args, "--ledger", str(tmp_path / "record.txt")])
+    assert dry.exit_code == 0, dry.output
+    assert {"what": "held_questions", "count": 1, "detail": ""} in json.loads(
+        dry.output
+    )
+    assert Change.query.filter_by(diagram_id=diagram.id).count() == 0
+
+    flask_app.config["MAIL_SERVER"] = "localhost"
+    with extensions.mail.record_messages() as outbox:
+        done = runner.invoke(admin, [*args, "--yes"])
+    assert done.exit_code == 0, done.output
+    assert Change.query.filter_by(diagram_id=diagram.id).count() == 1
+    calls = ModelCall.query.filter_by(diagram_id=diagram.id).all()
+    assert {(c.purpose, c.user_id) for c in calls} == {(Purpose.Import, test_user.id)}
+    [mail] = outbox
+    assert mail.attachments[0].filename == "Ada's diagram - import record.txt"

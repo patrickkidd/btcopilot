@@ -21,6 +21,7 @@ class Trigger(enum.StrEnum):
 
     Correlation = "correlation"
     FollowUp = "follow_up"
+    Import = "import"
 
 
 class ProactiveMessage(db.Model, ModelMixin):

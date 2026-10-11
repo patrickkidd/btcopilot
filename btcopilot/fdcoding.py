@@ -1,9 +1,8 @@
 """The coding pass of a desktop file import: the model reads the text the file
 holds and codes what it states happened, by the coach's own rules for what goes
 in the record, so imports and conversations code alike [Oracle: R-0860]. What
-the file's author coded by hand stays as it is [Oracle: R-0859]; a shift that
-cannot be coded becomes a noted event, so nothing is lost and nothing is
-guessed [Oracle: R-0868].
+the file's author coded by hand stays as it is [Oracle: R-0859]; what the model
+cannot code is kept as a noted event [Oracle: R-0868].
 
 Each person's part is their events, the text on them, their bonds and their
 own notes, with the names of their relatives so a move can name whom it was

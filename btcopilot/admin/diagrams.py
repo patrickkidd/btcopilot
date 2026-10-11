@@ -13,6 +13,7 @@ from btcopilot.admin.users import find as find_user
 from btcopilot.admin.output import rows_option
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Diagram
+from btcopilot.models.modelcall import ModelCall
 
 
 def find(diagram_id: int) -> Diagram:
@@ -137,8 +138,13 @@ diagrams.add_command(writes(click.command("undo")(diagram_undo)))
 
 
 @click.argument("path", type=click.Path(exists=True, path_type=pathlib.Path))
-@click.option("--email", required=True, help="Whose new record it is.")
+@click.option("--email", required=True, help="Whose record it is.")
 @click.option("--name", help="The record's name; the file's name when left out.")
+@click.option(
+    "--into",
+    type=int,
+    help="Bring the file into this record of theirs instead of a new one.",
+)
 @click.option(
     "--ledger",
     type=click.Path(dir_okay=False, writable=True, path_type=pathlib.Path),
@@ -150,18 +156,24 @@ diagrams.add_command(writes(click.command("undo")(diagram_undo)))
     help="Write it and mail the import record; without it, only the check.",
 )
 @rows_option
-def diagram_import(path, email, name, ledger, yes):
+def diagram_import(path, email, name, into, ledger, yes):
     """Make a new record for one person from a Family Diagram desktop file
-    (.fd), written as one change so one undo takes it all back, and mail them
-    the import record: every field of the file and every choice made. Without
-    --yes the record's rules are checked, the import record written to a file
-    and the counts printed; nothing is kept or mailed."""
+    (.fd), or bring the file into one they have with --into, written as one
+    change so one undo takes it all back, and mail them the import record:
+    every field of the file and every choice made. Without --yes the record's
+    rules are checked, the import record written to a file and the counts
+    printed; nothing is kept or mailed. Every model call is on the model-call
+    ledger as the import's."""
     user = find_user(email)
-    name = name or path.stem
+    target = None if into is None else find(into)
+    if target is not None and target.user_id != user.id:
+        raise click.ClickException(f"diagram {target.id} is not {email}'s")
+    name = target.name if target else name or path.stem
+    model = fdimport.meter(user.id, target)
     try:
         fd = fdfile.read(path)
-        imported = fdimport.build(fd)
-        made = fdimport.save(user.id, name, imported, yes=yes)
+        imported = fdimport.build(fd, model.structured, into=target)
+        made = fdimport.save(user.id, name, imported, yes=yes, turn=model.turn_id)
     except (ValueError, record.Invalid) as e:
         db.session.rollback()
         raise click.ClickException(str(e))
@@ -187,6 +199,11 @@ def diagram_import(path, email, name, ledger, yes):
             {"what": what, "count": count, "detail": ""}
             for what, count in imported.summary().items()
         ),
+        {
+            "what": "model calls",
+            "count": ModelCall.query.filter_by(turn_id=model.turn_id).count(),
+            "detail": model.turn_id,
+        },
         *(
             {"what": "primary to ask", "count": pid, "detail": ""}
             for pid in imported.primaries

@@ -122,7 +122,7 @@ def apply(
     """
     with _locked(diagram_id) as diagram:
         data = diagramjson.loads(diagram.data)
-        applied = [d for delta in deltas for d in _apply(data, delta)]
+        applied = [d for delta in deltas for d in enact(data, delta)]
         return _commit(
             diagram,
             data,
@@ -141,7 +141,7 @@ def preview(
 ) -> None:
     """Raise Invalid where `apply` would refuse these deltas; writes nothing."""
     data = diagramjson.loads(db.session.get(Diagram, diagram_id).data)
-    applied = [d for delta in deltas for d in _apply(data, delta)]
+    applied = [d for delta in deltas for d in enact(data, delta)]
     _check(data, compress(applied), author, turn_id, False)
 
 
@@ -175,7 +175,7 @@ def undo(
                 actual = _get(data, inverse)
                 if actual != inverse["before"]:
                     raise Conflict(inverse, actual)
-                done = _apply(data, inverse)
+                done = enact(data, inverse)
                 # Taking off what the turn made would also take what hangs on it
                 # since, which the turn did not make.
                 if inverse["field"] is None and inverse["after"] is None and len(done) > 1:
@@ -398,7 +398,7 @@ def _held(item: dict, delta: dict):
     return item.get(delta["field"], empty)
 
 
-def _apply(data: dict, delta: dict) -> list[dict]:
+def enact(data: dict, delta: dict) -> list[dict]:
     kind = ItemKind(delta["item_kind"])
     if delta["field"] is not None:
         if kind is ItemKind.Diagram or _find(data, kind, delta["item_id"]) is not None:
@@ -711,7 +711,7 @@ def _moved(event: dict) -> bool:
     return _val(event.get("relationship")) in RELATIONSHIPS
 
 
-def _day(value) -> str | None:
+def day(value) -> str | None:
     if not value:
         return None
     if hasattr(value, "toString"):
@@ -867,8 +867,8 @@ def _dates(data: dict, deltas: list[dict]):
                     "year when only those are known",
                     "That date could not be read.",
                 )
-        end = _day(event.get("endDateTime"))
-        if end and end < (_day(event.get("dateTime")) or end):
+        end = day(event.get("endDateTime"))
+        if end and end < (day(event.get("dateTime")) or end):
             raise Invalid(
                 f"event {event_id} ends before it begins: date is when it began, "
                 "end_date when it ended",
@@ -896,7 +896,7 @@ def twin_key(event: dict) -> tuple:
     for a noted event, its item all match."""
     return (
         _val(event.get("kind")),
-        _day(event.get("dateTime")),
+        day(event.get("dateTime")),
         _links(event),
         _moves_of(event),
         _val(event.get("item")),
@@ -1869,7 +1869,7 @@ def facts(data: dict, person_id) -> dict[Kept, object]:
     person = _find(data, ItemKind.Person, person_id)
     gender = _val(person.get("gender"))
     return {
-        **{fact: _day((life(data, person_id, fact) or {}).get("dateTime")) for fact in LIFE},
+        **{fact: day((life(data, person_id, fact) or {}).get("dateTime")) for fact in LIFE},
         Kept.Gender: None if gender in (None, PersonKind.Unknown.value) else gender,
         Kept.Notes: (person.get("notes") or "").strip() or None,
         Kept.Parents: person.get("parents"),
@@ -1973,7 +1973,7 @@ def merging(data: dict, keep, drop, take: dict[str, str], name: str | None = Non
         kept, lost = life(data, keep, fact), life(data, drop, fact)
         if kept is None or lost is None:
             continue
-        if fact.value in theirs or _day(kept.get("dateTime")) is None:
+        if fact.value in theirs or day(kept.get("dateTime")) is None:
             for field in ("dateTime", "dateCertainty"):
                 put(ItemKind.Event, kept["id"], field, diagramjson.to_json(lost.get(field)))
         remove(ItemKind.Event, lost["id"])
@@ -2077,7 +2077,7 @@ def merge(
         data = diagramjson.loads(diagram.data)
         _merge_refusal(data, keep, drop, take)
         plan = merging(data, keep, drop, take, name)
-        applied = [d for delta in plan.deltas for d in _apply(data, delta)]
+        applied = [d for delta in plan.deltas for d in enact(data, delta)]
         change = _commit(
             diagram, data, compress(applied), author, turn_id, user_id, session_id, statement_id
         )

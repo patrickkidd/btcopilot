@@ -16,7 +16,9 @@ import enum
 import types
 from dataclasses import dataclass, field
 
-from btcopilot import diagramjson, prompts, record
+# fdimport merges with this module and this module renumbers with fdimport;
+# neither uses the other at import time.
+from btcopilot import diagramjson, fdimport, prompts, record
 from btcopilot.familymatch import PLACEHOLDER, Family, Relation, Status, match
 from btcopilot.fdcoding import ask
 from btcopilot.fdledger import Decision
@@ -114,7 +116,7 @@ def _linked(event: dict) -> set:
 
 
 def _day(event: dict) -> str | None:
-    return record._day(event.get("dateTime"))
+    return record.day(event.get("dateTime"))
 
 
 def _renumbered(existing: dict, imported: dict) -> tuple[dict, dict[int, int]]:
@@ -130,28 +132,7 @@ def _renumbered(existing: dict, imported: dict) -> tuple[dict, dict[int, int]]:
             lastItemId=existing.get("lastItemId") or 0,
         )
     )
-    items = [item for name in COLLECTIONS for item in data[name]]
-    new = {item["id"]: start + n for n, item in enumerate(items)}
-
-    def ref(value):
-        return None if value is None else new[value]
-
-    for person in data["people"]:
-        if "parents" in person:
-            person["parents"] = ref(person["parents"])
-    for bond in data["pair_bonds"]:
-        for side in ("person_a", "person_b"):
-            bond[side] = ref(bond[side])
-    for event in data["events"]:
-        for key in LINKS:
-            if key in event:
-                event[key] = ref(event[key])
-        for key in MOVES:
-            if key in event:
-                event[key] = [ref(value) for value in event[key]]
-    for item in items:
-        item["id"] = new[item["id"]]
-    return data, new
+    return data, fdimport.renumber(data, start)
 
 
 class Merge:
@@ -159,6 +140,8 @@ class Merge:
         self.existing = existing
         self.file, new = _renumbered(existing, imported)
         self.old = {n: o for o, n in new.items()}
+        # Each item of the file joined to another, to the one it joined.
+        self.joined: dict[int, int] = {}
         self.model = model
         self.data = copy.deepcopy(existing)
         for name in COLLECTIONS:
@@ -439,6 +422,12 @@ class Merge:
 
     # Joining
 
+    def final(self, item: int) -> int:
+        """The item a file's item is now, following every join."""
+        while item in self.joined:
+            item = self.joined[item]
+        return item
+
     def join_event(self, keep: dict, drop: dict, reason: str) -> None:
         """One event of two: the diagram's values win, what only the file has
         is added, and the notes of both are kept, one after the other."""
@@ -470,6 +459,7 @@ class Merge:
             keep["notes"] = notes
         self.data["events"].remove(drop)
         del self.events[eid]
+        self.joined[eid] = keep["id"]
         self.decide("event", eid, "", "", f"part of event {keep['id']}", reason)
 
     def join_bonds(self, keep: int, drop: int) -> None:
@@ -487,6 +477,7 @@ class Merge:
             )
             if twin is None:
                 continue
+            self.joined[bond["id"]] = twin["id"]
             for key, value in bond.items():
                 if key in ("id", "person_a", "person_b") or value in EMPTY:
                     continue
@@ -562,8 +553,9 @@ class Merge:
         self.join_bonds(keep, drop)
         take = {fact.value: record.Side.Keep.value for fact in both}
         for delta in record.merging(self.data, keep, drop, take).deltas:
-            record._apply(self.data, delta)
+            record.enact(self.data, delta)
         del self.people[drop]
+        self.joined[drop] = keep
         self.events = {e["id"]: e for e in self.data["events"]}
         self.decide("person", drop, "", "", f"person {keep}", reason)
 

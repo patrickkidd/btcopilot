@@ -8,17 +8,23 @@ Decision, for the ledger the person is sent [Oracle: R-0873]."""
 
 import collections
 import itertools
+import uuid
 from dataclasses import dataclass, field, replace
 
-from btcopilot import diagramjson, fdcoding, record
+# fdmerge renumbers with this module and this module merges with fdmerge;
+# neither uses the other at import time.
+from btcopilot import diagramjson, fdcoding, fdmerge, record
 from btcopilot.coverage import CHILD_ROLE
 from btcopilot.extensions import db
 from btcopilot.fdcoding import RAW
 from btcopilot.fdledger import Decision
+from btcopilot.metered import Metered
 from btcopilot.models import Author, Diagram
+from btcopilot.models.modelcall import ModelCall, Purpose
 from btcopilot.prompts import Role
 from btcopilot.record import generic_key
 from btcopilot.schema import (
+    ITEM_COLLECTIONS,
     RESERVED_ITEM_IDS,
     DateCertainty,
     EventKind,
@@ -99,6 +105,7 @@ LINE_USED = {
 }
 DROPPED = ("layers", "layerItems", "multipleBirths", "items", "pruned")
 COLLECTIONS = ("people", "pair_bonds", "events")
+ADDED = (*COLLECTIONS, "questions")
 PERSON_REFS = ("person", "spouse", "child")
 PERSON_LISTS = ("relationshipTargets", "relationshipTriangles")
 
@@ -116,6 +123,12 @@ class Imported:
     joined: dict[str, int] = field(default_factory=dict)
     lines: int = 0
     dropped: collections.Counter = field(default_factory=collections.Counter)
+    # The diagram it was built into, its version and its data as read then.
+    into: int | None = None
+    version: int | None = None
+    base: dict | None = None
+    # The merge's questions for the coach, held on the file's people.
+    held: list[dict] = field(default_factory=list)
 
     def summary(self) -> dict:
         return {
@@ -125,6 +138,7 @@ class Imported:
             "relationship_lines": self.lines,
             "choices": len(self.decisions),
             "dropped": sum(self.dropped.values()),
+            "held_questions": len(self.held),
         }
 
     def decide(self, item: str, name: str, before, after, reason: str) -> None:
@@ -556,12 +570,11 @@ def convert(fd: dict) -> Imported:
     return out
 
 
-def renumber(out: Imported) -> None:
-    """Every item a new id past the ones the app reserves, each reference
-    following it [Oracle: R-0850]."""
-    data = out.data
+def renumber(data: dict, start: int) -> dict[int, int]:
+    """Every item a new id from `start` on, each reference following it;
+    returns each old id's new one [Oracle: R-0850]."""
     items = [item for name in COLLECTIONS for item in data[name]]
-    new = {item["id"]: RESERVED_ITEM_IDS + n for n, item in enumerate(items, 1)}
+    new = {item["id"]: start + n for n, item in enumerate(items)}
     if len(new) != len(items):
         raise ValueError("two items in this file share an id")
 
@@ -587,11 +600,9 @@ def renumber(out: Imported) -> None:
         for key in PERSON_LISTS:
             if key in event:
                 event[key] = [ref(value, event) for value in event[key]]
-    out.primaries = [new[pid] for pid in out.primaries]
-    out.labels = {new[old]: label for old, label in out.labels.items() if old in new}
-    out.joined = {label: new[old] for label, old in out.joined.items()}
     for item in items:
         item["id"] = new[item["id"]]
+    return new
 
 
 def _id(label: str) -> int | None:
@@ -643,8 +654,9 @@ def _twins(out: Imported) -> None:
         )
 
 
-def build(fd: dict, model=fdcoding.ask) -> Imported:
-    """Read the file's items, code what the mapping left, then renumber."""
+def build(fd: dict, model=fdcoding.ask, into: Diagram | None = None) -> Imported:
+    """Read the file's items, code what the mapping left, then renumber; with
+    `into`, the items are brought into that diagram [Oracle: R-0851]."""
     out = convert(fd)
     out.data, coded = fdcoding.code(out.data, model)
     # The pass names an event by its id; a relationship line's own event is
@@ -656,35 +668,73 @@ def build(fd: dict, model=fdcoding.ask) -> Imported:
     for item in (out.data, *(i for name in COLLECTIONS for i in out.data[name])):
         item.pop(RAW, None)
     _twins(out)
-    renumber(out)
+    new = renumber(out.data, RESERVED_ITEM_IDS + 1)
+    _moved(out, new)
+    if into is not None:
+        _merge(out, into, model)
     return out
 
 
+def _moved(out: Imported, new: dict[int, int], part=lambda i: i) -> None:
+    """The file's names follow each item to its new id, or, where `part`
+    says it was joined to another item, to that one."""
+    ids = {item["id"] for name in COLLECTIONS for item in out.data[name]}
+
+    def to(old: int) -> int | None:
+        return part(new[old]) if old in new else None
+
+    out.primaries = [to(pid) for pid in out.primaries if to(pid) in ids]
+    out.joined = {label: to(old) for label, old in out.joined.items() if to(old) in ids}
+    labels = {}
+    for old, label in out.labels.items():
+        if new.get(old) in ids:
+            labels[new[old]] = label
+        elif to(old) in ids:
+            out.joined[label] = to(old)
+    out.labels = labels
+
+
+def _merge(out: Imported, into: Diagram, model) -> None:
+    """The coded file merged into the diagram as it stands; the merge's
+    choices name the file's items by their names in the file."""
+    out.into, out.version = into.id, into.version
+    out.base = diagramjson.loads(into.data)
+    merge = fdmerge.Merge(out.base, out.data, model)
+    out.data, decisions, out.held = merge.run()
+    out.data["questions"] = [*(out.data.get("questions") or []), *out.held]
+    out.decisions += [replace(one, item=_filed(out, one.item)) for one in decisions]
+    if any(p.get("primary") for p in out.base["people"]):
+        out.primaries = []
+    _moved(out, {old: new for new, old in merge.old.items()}, merge.final)
+
+
+def _filed(out: Imported, item: str) -> str:
+    """A merge choice's item, named by the file's item it came from."""
+    number = item.rpartition(" ")[2]
+    return out.labels.get(int(number), item) if number.isdigit() else item
+
+
+def _said(name: str, item: dict) -> str:
+    if name == "people":
+        text = " ".join(item.get(key) or "" for key in ("name", "last_name")).strip()
+        return f"person {item['id']}, {text}"
+    if name == "pair_bonds":
+        return f"pair-bond {item['id']}, between persons {item['person_a']} and {item['person_b']}"
+    title = item.get("title") or item.get("description")
+    return f"event {item['id']}, {item['kind']}" + (f": {title}" if title else "")
+
+
 def became(out: Imported) -> dict[str, str]:
-    """What each item of the file is in the new diagram, by its name there."""
-    said = {}
-    for name in COLLECTIONS:
-        for item in out.data[name]:
-            label = out.labels.get(item["id"])
-            if label is None:
-                continue
-            if name == "people":
-                text = " ".join(
-                    item.get(key) or "" for key in ("name", "last_name")
-                ).strip()
-                said[label] = f"person {item['id']}, {text}"
-            elif name == "pair_bonds":
-                said[label] = (
-                    f"pair-bond {item['id']}, between persons {item['person_a']} and {item['person_b']}"
-                )
-            else:
-                title = item.get("title") or item.get("description")
-                said[label] = f"event {item['id']}, {item['kind']}" + (
-                    f": {title}" if title else ""
-                )
-    events = {item["id"]: out.labels.get(item["id"]) for item in out.data["events"]}
-    for label, event in out.joined.items():
-        said[label] = f"part of {said.get(events[event]) or f'event {event}'}"
+    """What each item of the file is in the diagram, by its name there."""
+    items = {
+        item["id"]: (name, item) for name in COLLECTIONS for item in out.data[name]
+    }
+    said = {label: _said(*items[i]) for i, label in out.labels.items()}
+    for label, i in out.joined.items():
+        name, item = items[i]
+        said[label] = ("the same as " if name == "people" else "part of ") + _said(
+            name, item
+        )
     return said
 
 
@@ -716,11 +766,18 @@ def _removable(data: dict) -> list[tuple[ItemKind, dict]]:
 
 
 def deltas(out: Imported) -> list[dict]:
-    """Every item added whole, ordered so that undoing the turn, newest first,
-    takes each off with nothing hanging on it."""
+    """Every item the import adds, added whole and ordered so that undoing the
+    turn, newest first, takes each off with nothing hanging on it; then what
+    it changes on the diagram's own items, and the questions it holds."""
+    base = out.base or {}
+    had = {(name, item["id"]) for name in ADDED for item in base.get(name) or []}
+    added = {
+        name: [i for i in out.data.get(name) or [] if (name, i["id"]) not in had]
+        for name in ADDED
+    }
     items = [
-        *reversed(_removable(out.data)),
-        *((ItemKind.Event, event) for event in out.data["events"]),
+        *reversed(_removable(added)),
+        *((ItemKind.Event, event) for event in added["events"]),
     ]
     return [
         *(
@@ -731,7 +788,7 @@ def deltas(out: Imported) -> list[dict]:
                 "after": value,
             }
             for key, value in out.data.items()
-            if key not in COLLECTIONS
+            if key not in ITEM_COLLECTIONS.values() and value != base.get(key)
         ),
         *(
             {
@@ -742,26 +799,71 @@ def deltas(out: Imported) -> list[dict]:
             }
             for kind, item in items
         ),
+        *record.diff(
+            {name: base.get(name) or [] for name in COLLECTIONS},
+            {
+                name: [i for i in out.data[name] if (name, i["id"]) in had]
+                for name in COLLECTIONS
+            },
+        ),
+        *(
+            {
+                "item_kind": ItemKind.Question.value,
+                "item_id": question["id"],
+                "field": None,
+                "after": question,
+            }
+            for question in added["questions"]
+        ),
     ]
 
 
-def save(user_id: int, name: str, out: Imported, *, yes: bool) -> Diagram | None:
-    """A new diagram holding the import, checked by the record's own rules.
-    Without `yes` the check runs and nothing is kept."""
-    diagram = Diagram(user_id=user_id, name=name, data=diagramjson.dumps({}))
-    db.session.add(diagram)
-    db.session.flush()
+def meter(user_id: int, into: Diagram | None = None) -> Metered:
+    """The model as the import calls it: each call on the model-call ledger,
+    under the import's own turn [Oracle: R-0876]."""
+    return Metered(
+        user_id,
+        None if into is None else into.id,
+        TURN.format(uuid.uuid4().hex),
+        Purpose.Import,
+    )
+
+
+def save(
+    user_id: int,
+    name: str,
+    out: Imported,
+    *,
+    yes: bool,
+    turn: str | None = None,
+) -> Diagram | None:
+    """A new diagram holding the import, or the diagram it was built into,
+    checked by the record's own rules and written as one change-log turn.
+    Without `yes` the check runs and nothing is kept. `turn` is the meter's,
+    so the model calls made for a new diagram are put on it once it exists."""
+    turn = turn or TURN.format(uuid.uuid4().hex)
+    if out.into is None:
+        diagram = Diagram(user_id=user_id, name=name, data=diagramjson.dumps({}))
+        db.session.add(diagram)
+        db.session.flush()
+    else:
+        diagram = db.session.get(Diagram, out.into)
+        if diagram.version != out.version:
+            raise ValueError(f"diagram {diagram.id} changed since the import read it")
     if not yes:
         try:
             record.preview(diagram.id, deltas(out), author=Author.Pro)
         finally:
             db.session.rollback()
         return None
+    ModelCall.query.filter_by(turn_id=turn, diagram_id=None).update(
+        {"diagram_id": diagram.id}
+    )
     record.apply(
         diagram.id,
         deltas(out),
         author=Author.Pro,
-        turn_id=TURN.format(diagram.id),
+        turn_id=turn,
         user_id=user_id,
     )
     return diagram
