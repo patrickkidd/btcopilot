@@ -590,8 +590,8 @@ def test_a_topic_the_person_brings_after_an_import_comes_before_its_questions(
     )
     kept(coach, EARLIER)
     held = [
-        _held("q-kit", 5, "Is Christopher Hale, born 1982, the Kit you've mentioned?"),
-        _held("q-nell", 7, "Is Nell Hale, born 1979, the Nell you've mentioned?"),
+        _held("q90", 5, "Is Christopher Hale, born 1982, the Kit you've mentioned?"),
+        _held("q91", 7, "Is Nell Hale, born 1979, the Nell you've mentioned?"),
     ]
     brought_in(coach, monkeypatch, *held)
 
@@ -603,8 +603,6 @@ def test_a_topic_the_person_brings_after_an_import_comes_before_its_questions(
         q for q in asked if re.search(LEFT, q) or re.search(WHO, q, re.I)
     ], reply
     states = {
-        q["id"]: q["state"]
-        for q in questions_of(coach)
-        if q["id"] in ("q-kit", "q-nell")
+        q["id"]: q["state"] for q in questions_of(coach) if q["id"] in ("q90", "q91")
     }
-    assert states == {"q-kit": QuestionState.Held, "q-nell": QuestionState.Held}, states
+    assert states == {"q90": QuestionState.Held, "q91": QuestionState.Held}, states
