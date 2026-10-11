@@ -7,7 +7,15 @@ import pathlib
 
 import click
 
-from btcopilot import diagramjson, fdfile, fdimport, fdledger, record
+from btcopilot import (
+    diagramjson,
+    fdafter,
+    fdfile,
+    fdimport,
+    fdledger,
+    fdnotice,
+    record,
+)
 from btcopilot.admin.guard import writes
 from btcopilot.admin.users import find as find_user
 from btcopilot.admin.output import rows_option
@@ -185,6 +193,16 @@ def diagram_import(path, email, name, into, ledger, yes):
         datetime.date.today(),
     )
     if made:
+        fdafter.catch_up(made.id, turn_id=model.turn_id, user_id=user.id)
+        fdnotice.after_import(
+            made.id,
+            user.id,
+            fdnotice.Summary(
+                model.turn_id,
+                **imported.brought,
+                primaries=tuple(imported.primaries),
+            ),
+        )
         fdledger.send(user.username, path.name, name, text)
     else:
         ledger = ledger or pathlib.Path(fdledger.attachment(name))

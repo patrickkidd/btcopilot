@@ -9,7 +9,7 @@ The import's questions are told apart from the coach's own by the change-log
 turn that added them: the import's own turn."""
 
 import datetime
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
 # proactive picks this module's reminders and this module sends through
 # proactive; neither uses the other at import time.
@@ -40,12 +40,6 @@ HEAD = "QUESTIONS FROM THE IMPORTED FILE"
 
 
 @dataclass(frozen=True)
-class Counts:
-    people: int = 0
-    events: int = 0
-
-
-@dataclass(frozen=True)
 class Summary:
     """What an import brought in, as the importer counts it."""
 
@@ -54,11 +48,6 @@ class Summary:
     people: int
     events: int
     pair_bonds: int
-    # How the file's people and events found their place: by the rules, by
-    # the model pass, or left to the person as a question.
-    rules: Counts
-    model: Counts
-    asked: Counts
     # The people the file marked as the one it is about, when not exactly one.
     primaries: tuple[int, ...] = ()
 
@@ -81,25 +70,14 @@ def after_import(diagram_id: int, user_id: int, summary: Summary) -> ProactiveMe
         key=summary.turn_id,
         question=_words(summary, len(others), who),
     )
-    proactive.send(
-        user,
-        message,
-        message.question,
-        datetime.datetime.utcnow(),
-        {
-            "people": summary.people,
-            "events": summary.events,
-            "pair_bonds": summary.pair_bonds,
-            "rules": asdict(summary.rules),
-            "model": asdict(summary.model),
-            "asked": asdict(summary.asked),
-        },
-    )
+    proactive.send(user, message, message.question, datetime.datetime.utcnow())
     db.session.commit()
     return message
 
 
-def _ask_who(diagram_id: int, user_id: int, summary: Summary, data: DiagramData) -> dict:
+def _ask_who(
+    diagram_id: int, user_id: int, summary: Summary, data: DiagramData
+) -> dict:
     taken = {q["id"] for q in data.questions}
     people = {p["id"]: p for p in data.people}
     named = [_name(people[i]) for i in summary.primaries if i in people]
@@ -223,7 +201,11 @@ def reminder(user: User, now: datetime.datetime) -> ProactiveMessage | None:
         if not found or reminded >= REMINDERS:
             continue
         last = max(
-            [imports[-1].created_at, *(m.sent_at for m in sent), *_said(user, diagram.id)]
+            [
+                imports[-1].created_at,
+                *(m.sent_at for m in sent),
+                *_said(user, diagram.id),
+            ]
         )
         if now - last < (FIRST if reminded == 0 else EVERY):
             continue

@@ -61,6 +61,14 @@ class Verdict(enum.StrEnum):
 VERDICTS = {v.value for v in Verdict}
 
 
+class Placed(enum.StrEnum):
+    """How a file's person or event found its place in the diagram."""
+
+    Rules = "rules"
+    Model = "model"
+    Asked = "asked"
+
+
 @dataclass
 class PersonVerdict:
     person: str = ""
@@ -530,7 +538,27 @@ class Merge:
                     kept[key],
                     "The diagram already said otherwise; its value is kept.",
                 )
+        # A name the coach gave by family position stands for no name at all.
+        named = (
+            lost["name"]
+            if record.generic_key(kept)
+            and lost.get("name")
+            and not record.generic_key(lost)
+            else None
+        )
+        if named:
+            self.decide(
+                "person",
+                drop,
+                "name",
+                named,
+                named,
+                f"The diagram named them only by their place in the family, as "
+                f"{kept['name']}; the file's name takes its place.",
+            )
         for key in ("name", "last_name"):
+            if named and key == "name":
+                continue
             if lost.get(key) and kept.get(key) and lost[key] != kept[key]:
                 self.decide(
                     "person",
@@ -552,7 +580,7 @@ class Merge:
             )
         self.join_bonds(keep, drop)
         take = {fact.value: record.Side.Keep.value for fact in both}
-        for delta in record.merging(self.data, keep, drop, take).deltas:
+        for delta in record.merging(self.data, keep, drop, take, named).deltas:
             record.enact(self.data, delta)
         del self.people[drop]
         self.joined[drop] = keep
@@ -655,6 +683,18 @@ class Merge:
                 else "Nobody in the diagram is this person."
             )
             self.decide("person", y, "", "", f"person {y}", reason)
+        asked = {y for y, xs in unsure.items() if xs}
+        judged = {e for e, _ in pairs}
+        self.placed = {
+            Placed.Rules: collections.Counter(
+                people=len(self.found.people) - len(doubted),
+                events=len(self.file["events"]) - len(judged),
+            ),
+            Placed.Model: collections.Counter(
+                people=len(doubted) - len(asked), events=len(judged)
+            ),
+            Placed.Asked: collections.Counter(people=len(asked)),
+        }
         self.parented()
         self.join_events(events)
         taken = {q["id"] for q in self.data.get("questions") or []}

@@ -71,8 +71,8 @@ def by_id(data: dict) -> dict:
     return {event["id"]: event for event in data["events"]}
 
 
-def test_a_value_coded_by_hand_is_never_changed():
-    # R-0859, R-0868
+def test_a_value_coded_by_hand_is_never_changed_and_a_blank_one_is_coded():
+    # R-0859, R-0860
     data = diagram([shift(30, symptom="up", description="Drinking again")])
     model = Model(
         {
@@ -91,8 +91,11 @@ def test_a_value_coded_by_hand_is_never_changed():
         }
     )
     event = by_id(fdcoding.code(data, model)[0])[30]
-    assert (event["symptom"], event["title"]) == ("up", "Drinking again")
-    assert "anxiety" not in event
+    assert (event["symptom"], event["anxiety"], event["title"]) == (
+        "up",
+        "up",
+        "Drinking again",
+    )
 
 
 def test_a_shift_is_coded_from_its_description_and_each_change_says_why():

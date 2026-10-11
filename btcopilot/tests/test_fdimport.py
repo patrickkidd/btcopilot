@@ -7,6 +7,7 @@ import pytest
 from btcopilot import (
     diagramjson,
     extensions,
+    fdafter,
     fdcoding,
     fdfile,
     fdimport,
@@ -17,7 +18,14 @@ from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.fdledger import Decision
 from btcopilot.llmutil import Parsed, Served, Spent
-from btcopilot.models import Author, Change, Diagram
+from btcopilot.models import (
+    Author,
+    Change,
+    Diagram,
+    Observation,
+    ObservationKind,
+    ProactiveMessage,
+)
 from btcopilot.models.modelcall import ModelCall, Purpose
 from btcopilot.schema import from_dict
 from btcopilot.tests.fdfixtures import bundle, dumps, event, person, scene, shift, when
@@ -422,14 +430,25 @@ def test_a_merge_keeps_both_events_notes_and_only_the_words_that_differ():
     day = when(2010, 5, 1)
     out = built(
         events=[
-            event(23, "noted", person=1, description="Rehab", notes="Weeks.", dateTime=day),
-            event(24, "noted", person=1, description="Rehab", notes="Relapsed.", dateTime=day),
+            event(
+                23, "noted", person=1, description="Rehab", notes="Weeks.", dateTime=day
+            ),
+            event(
+                24,
+                "noted",
+                person=1,
+                description="Rehab",
+                notes="Relapsed.",
+                dateTime=day,
+            ),
             event(25, "noted", person=1, description="Clinic", dateTime=day),
         ]
     )
     [kept] = out.data["events"]
     assert kept["notes"] == "Weeks.\n\nRelapsed.\n\nClinic"
-    assert [one.reason.startswith("The app counts it") for one in out.decisions[-2:]] == [True, True]
+    assert [
+        one.reason.startswith("The app counts it") for one in out.decisions[-2:]
+    ] == [True, True]
 
 
 def test_noted_events_recording_different_items_on_one_day_stay_two(monkeypatch):
@@ -444,7 +463,9 @@ def test_noted_events_recording_different_items_on_one_day_stay_two(monkeypatch)
     out = built(
         events=[
             event(23, "noted", person=1, description="Moved to Tulsa", dateTime=day),
-            event(24, "noted", person=1, description="Started at the mill", dateTime=day),
+            event(
+                24, "noted", person=1, description="Started at the mill", dateTime=day
+            ),
         ]
     )
     assert len(out.data["events"]) == 2
@@ -468,6 +489,33 @@ def test_deceased_with_no_death_event_gets_one_with_the_cause():
     assert "dateTime" not in deaths[1]
     assert deaths[2]["id"] == 22 and deaths[2]["description"] == "Fell"
     assert reasons(out, "person 1") == ["deceased", "deceasedReason"]
+
+
+@pytest.mark.parametrize(
+    "flags, had, made",
+    [
+        ({"separated": True}, [], ["separated"]),
+        ({"separated": True, "divorced": True}, [], ["divorced"]),
+        ({"separated": True}, ["divorced"], []),
+    ],
+)
+def test_a_couple_ticked_apart_gets_the_event_the_app_records_it_as(flags, had, made):
+    # R-0870
+    bond = {"kind": "Marriage", "id": 10, "person_a": 1, "person_b": 2, "married": True}
+    events = [event(23 + n, kind, person=1, spouse=2) for n, kind in enumerate(had)]
+    out = imported(
+        pair_bonds=[{**bond, **flags}],
+        events=scene()["events"] + events,
+    )
+    parted = [
+        e
+        for e in out.data["events"]
+        if e["kind"] in ("separated", "divorced") and e["id"] not in (23, 24)
+    ]
+    assert [
+        (e["kind"], e["person"], e["spouse"], e["dateCertainty"]) for e in parted
+    ] == [(kind, 1, 2, "unknown") for kind in made]
+    assert "pair_bonds.separated" not in out.dropped
 
 
 @pytest.mark.parametrize("marked", [[], [1, 2]])
@@ -561,26 +609,54 @@ def test_record_rules_refuse_before_anything_is_written(test_user):
 
 
 def test_admin_import_previews_then_writes_and_mails_the_record(
-    flask_app, test_user, tmp_path
+    flask_app, test_user, tmp_path, monkeypatch
 ):
-    # R-0850, R-0873
+    # R-0850, R-0873, R-0878, R-0084, R-0517
     path = bundle(tmp_path, scene())
     ledger = tmp_path / "record.txt"
     args = ["diagrams", "import", str(path), "--email", test_user.username, "--json"]
     runner = flask_app.test_cli_runner()
+    caught = []
+    monkeypatch.setattr(
+        fdafter, "catch_up", lambda *args, **kwargs: caught.append((args, kwargs))
+    )
+    monkeypatch.setattr("btcopilot.proactive.push.send", lambda *args: None)
 
     dry = runner.invoke(admin, [*args, "--ledger", str(ledger)])
     assert dry.exit_code == 0, dry.output
     assert {"what": "people", "count": 3, "detail": ""} in json.loads(dry.output)
     assert "Ada Lund (person 1)" in ledger.read_text()
     assert Diagram.query.filter_by(name="Lund family").count() == 0
+    assert (caught, ProactiveMessage.query.count(), Observation.query.count()) == (
+        [],
+        0,
+        0,
+    )
 
     flask_app.config["MAIL_SERVER"] = "localhost"
     with extensions.mail.record_messages() as outbox:
         done = runner.invoke(admin, [*args, "--yes"])
     assert done.exit_code == 0, done.output
-    assert (
-        Diagram.query.filter_by(name="Lund family", user_id=test_user.id).count() == 1
+    made = Diagram.query.filter_by(name="Lund family", user_id=test_user.id).one()
+    turn = Change.query.filter_by(diagram_id=made.id).first().turn_id
+    assert caught == [((made.id,), {"turn_id": turn, "user_id": test_user.id})]
+    [message] = ProactiveMessage.query.all()
+    assert (message.diagram_id, message.key) == (made.id, turn)
+    assert message.question.startswith(
+        "Your file is in: 3 people, 3 events and 1 pair-bond."
+    )
+    [counted] = Observation.query.filter_by(kind=ObservationKind.Import).all()
+    assert (counted.diagram_id, counted.turn_id, counted.detail) == (
+        made.id,
+        turn,
+        {
+            "people": 3,
+            "events": 3,
+            "pair_bonds": 1,
+            "rules": {"people": 3, "events": 3},
+            "model": {"people": 0, "events": 0},
+            "asked": {"people": 0, "events": 0},
+        },
     )
     [mail] = outbox
     assert mail.recipients == [test_user.username]
@@ -747,9 +823,10 @@ def test_a_diagram_changed_since_the_import_read_it_is_not_written(test_user):
 
 
 def test_admin_import_into_a_diagram_previews_then_writes(
-    flask_app, test_user, tmp_path, side_call
+    flask_app, test_user, tmp_path, side_call, monkeypatch
 ):
     # R-0851, R-0873, R-0876
+    monkeypatch.setattr("btcopilot.proactive.push.send", lambda *args: None)
     diagram = stored(test_user)
     path = bundle(tmp_path, scene())
     args = [

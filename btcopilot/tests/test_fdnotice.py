@@ -10,7 +10,7 @@ from freezegun import freeze_time
 
 from btcopilot import fdimport, fdnotice, proactive, record
 from btcopilot.extensions import db
-from btcopilot.fdnotice import Counts, Summary
+from btcopilot.fdnotice import Summary
 from btcopilot.models import (
     Author,
     Change,
@@ -52,7 +52,12 @@ def _held(qid: str, person: int, text: str) -> dict:
 
 
 def _add(kind: ItemKind, item: dict) -> dict:
-    return {"item_kind": kind.value, "item_id": item["id"], "field": None, "after": item}
+    return {
+        "item_kind": kind.value,
+        "item_id": item["id"],
+        "field": None,
+        "after": item,
+    }
 
 
 def _summary(primaries=()) -> Summary:
@@ -61,9 +66,6 @@ def _summary(primaries=()) -> Summary:
         people=3,
         events=0,
         pair_bonds=0,
-        rules=Counts(people=1),
-        model=Counts(people=1),
-        asked=Counts(people=1),
         primaries=primaries,
     )
 
@@ -85,7 +87,10 @@ def imported(test_user):
         diagram.id,
         [
             *(_add(ItemKind.Person, p) for p in people),
-            _add(ItemKind.Question, _held("q1", CAL, "Is Cal, born 1950, your uncle Cal?")),
+            _add(
+                ItemKind.Question,
+                _held("q1", CAL, "Is Cal, born 1950, your uncle Cal?"),
+            ),
         ],
         author=Author.Pro,
         turn_id=TURN,
@@ -113,7 +118,12 @@ def _close(diagram, qid: str):
     record.apply(
         diagram.id,
         [
-            {"item_kind": ItemKind.Question.value, "item_id": qid, "field": f, "after": v}
+            {
+                "item_kind": ItemKind.Question.value,
+                "item_id": qid,
+                "field": f,
+                "after": v,
+            }
             for f, v in (
                 ("state", QuestionState.Resolved.value),
                 ("outcome", QuestionOutcome.LetGo.value),
@@ -126,7 +136,9 @@ def _close(diagram, qid: str):
 
 def _reply(user, when):
     discussion = (
-        Discussion.query.filter_by(user_id=user.id).order_by(Discussion.id.desc()).first()
+        Discussion.query.filter_by(user_id=user.id)
+        .order_by(Discussion.id.desc())
+        .first()
     )
     db.session.add(
         Statement(
@@ -155,35 +167,29 @@ def test_after_an_import_the_coach_writes_first_and_asks_which_person_is_you(
         "I'd like to check with you, a few at a time as we go. First, which of Ann "
         "Lark and Bob Lark is you?"
     )
-    assert message.statement.speaker_id == message.statement.discussion.chat_ai_speaker_id
+    assert (
+        message.statement.speaker_id == message.statement.discussion.chat_ai_speaker_id
+    )
     assert (message.trigger, message.key, message.sent_at) == (Trigger.Import, TURN, T0)
     assert push.call_args.args == (test_user, message.statement)
 
     data = data_of(imported)
-    assert [(q["id"], q["text"], q["state"]) for q in fdnotice.opened(imported.id, data)] == [
+    assert [
+        (q["id"], q["text"], q["state"]) for q in fdnotice.opened(imported.id, data)
+    ] == [
         ("q1", "Is Cal, born 1950, your uncle Cal?", "held"),
         ("q2", "Which of Ann Lark and Bob Lark is you?", "held"),
     ]
 
 
-def test_each_import_is_counted_on_the_observations_by_how_it_was_placed(
+def test_with_nobody_marked_the_message_asks_which_of_the_people_is_you(
     test_user, imported, push
 ):
-    # R-0878, R-0517
+    # R-0871, R-0878
     message = fdnotice.after_import(imported.id, test_user.id, _summary())
-    (row,) = Observation.query.filter_by(kind=ObservationKind.ProactiveSent).all()
-    assert row.detail == {
-        "reason": Trigger.Import.value,
-        "message": message.id,
-        "people": 3,
-        "events": 0,
-        "pair_bonds": 0,
-        "rules": {"people": 1, "events": 0},
-        "model": {"people": 1, "events": 0},
-        "asked": {"people": 1, "events": 0},
-    }
-    # nobody marked: the question names no one
     assert message.question.endswith("First, which of the people in your file is you?")
+    (row,) = Observation.query.filter_by(kind=ObservationKind.ProactiveSent).all()
+    assert row.detail == {"reason": Trigger.Import.value, "message": message.id}
 
 
 def test_with_one_person_marked_the_message_asks_nothing_of_who_they_are(
@@ -251,7 +257,9 @@ def test_each_coach_turn_sees_the_open_import_questions_until_closed(
     # R-0878, R-0852
     model = coach(monkeypatch, Model(said("Hello."), said("Hello again.")))
     post(web, token, "Hi.")
-    block = f"{fdnotice.HEAD}\n1 question the desktop file import kept is still open: q1."
+    block = (
+        f"{fdnotice.HEAD}\n1 question the desktop file import kept is still open: q1."
+    )
     assert block in model.systems[0]
 
     _close(imported, "q1")

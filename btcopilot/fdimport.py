@@ -19,7 +19,7 @@ from btcopilot.extensions import db
 from btcopilot.fdcoding import RAW
 from btcopilot.fdledger import Decision
 from btcopilot.metered import Metered
-from btcopilot.models import Author, Diagram
+from btcopilot.models import Author, Diagram, Observation, ObservationKind
 from btcopilot.models.modelcall import ModelCall, Purpose
 from btcopilot.prompts import Role
 from btcopilot.record import generic_key
@@ -69,7 +69,9 @@ PERSON_USED = {
     "diagramNotes",
 }
 BOND = ("person_a", "person_b", "married")
-BOND_USED = {"kind", "id", "notes", "diagramNotes", *BOND}
+# A couple the file ticks separated or divorced, to the event the app records it as.
+PARTED = {"divorced": EventKind.Divorced.value, "separated": EventKind.Separated.value}
+BOND_USED = {"kind", "id", "notes", "diagramNotes", *BOND, *PARTED}
 EVENT = (
     "person",
     "spouse",
@@ -129,6 +131,10 @@ class Imported:
     base: dict | None = None
     # The merge's questions for the coach, held on the file's people.
     held: list[dict] = field(default_factory=list)
+    # How many people, events and pair-bonds the file brought, and how its
+    # people and events found their place; into a new diagram, all by the rules.
+    brought: dict[str, int] = field(default_factory=dict)
+    placed: dict[fdmerge.Placed, collections.Counter] = field(default_factory=dict)
 
     def summary(self) -> dict:
         return {
@@ -421,6 +427,40 @@ def _deaths(out: Imported, chunks: list[dict], ids) -> None:
             )
 
 
+def _partings(out: Imported, chunks: list[dict], ids) -> None:
+    """A couple ticked divorced has a divorce event, one ticked only separated
+    a separation event, each date unknown where the file has none, so the
+    tick is not lost [Oracle: R-0870]."""
+    for chunk in chunks:
+        flag = next((flag for flag in PARTED if chunk.get(flag)), None)
+        if flag is None:
+            continue
+        couple = {chunk["person_a"], chunk["person_b"]}
+        kinds = {
+            e["kind"]
+            for e in out.data["events"]
+            if {e.get("person"), e.get("spouse")} == couple
+        }
+        if {PARTED[flag], PARTED["divorced"]} & kinds:
+            continue
+        out.data["events"].append(
+            {
+                "id": next(ids),
+                "kind": PARTED[flag],
+                "person": chunk["person_a"],
+                "spouse": chunk["person_b"],
+                "dateCertainty": DateCertainty.Unknown.value,
+            }
+        )
+        out.decide(
+            f"pair-bond {chunk['id']}",
+            flag,
+            True,
+            f"a {PARTED[flag]} event, date unknown",
+            f"The file ticks the couple {flag} with no {PARTED[flag]} event.",
+        )
+
+
 def _word(person: dict, role: tuple) -> str:
     woman, man, anyone = role
     return {PersonKind.Female: woman, PersonKind.Male: man}.get(
@@ -561,7 +601,9 @@ def convert(fd: dict) -> Imported:
         for item in fd.get(name) or []
         if isinstance(item, dict) and isinstance(item.get("id"), int)
     ]
-    _deaths(out, chunks, itertools.count(max(used + [fd.get("lastItemId") or 0]) + 1))
+    ids = itertools.count(max(used + [fd.get("lastItemId") or 0]) + 1)
+    _deaths(out, chunks, ids)
+    _partings(out, bonds, ids)
     _primary(out, chunks)
     _names(out)
     for name in DROPPED:
@@ -670,6 +712,11 @@ def build(fd: dict, model, into: Diagram | None = None) -> Imported:
     _twins(out)
     new = renumber(out.data, RESERVED_ITEM_IDS + 1)
     _moved(out, new)
+    out.brought = {name: len(out.data[name]) for name in COLLECTIONS}
+    out.placed = {way: collections.Counter() for way in fdmerge.Placed}
+    out.placed[fdmerge.Placed.Rules].update(
+        people=out.brought["people"], events=out.brought["events"]
+    )
     if into is not None:
         _merge(out, into, model)
     return out
@@ -701,6 +748,7 @@ def _merge(out: Imported, into: Diagram, model) -> None:
     out.base = diagramjson.loads(into.data)
     merge = fdmerge.Merge(out.base, out.data, model)
     out.data, decisions, out.held = merge.run()
+    out.placed = merge.placed
     out.data["questions"] = [*(out.data.get("questions") or []), *out.held]
     out.decisions += [replace(one, item=_filed(out, one.item)) for one in decisions]
     if any(p.get("primary") for p in out.base["people"]):
@@ -866,4 +914,19 @@ def save(
         turn_id=turn,
         user_id=user_id,
     )
+    db.session.add(
+        Observation(
+            diagram_id=diagram.id,
+            turn_id=turn,
+            kind=ObservationKind.Import,
+            detail={
+                **out.brought,
+                **{
+                    way.value: {name: counts[name] for name in ("people", "events")}
+                    for way, counts in out.placed.items()
+                },
+            },
+        )
+    )
+    db.session.commit()
     return diagram

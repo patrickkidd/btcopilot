@@ -184,9 +184,13 @@ def _owner(event: dict):
 
 
 def _todo(data: dict, event: dict) -> Todo:
+    """A shift is coded where its author left a value blank and its words
+    may say it; what they coded by hand stays as it is."""
     kind = event["kind"]
+    blank = [name for name in CODED if not event.get(name)]
     if kind == EventKind.Shift.value and (
-        not any(event.get(name) for name in CODED)
+        len(blank) == len(CODED)
+        or (blank and any(event.get(key) for key in TEXTS))
         or event.get(RAW)
         or (event.get("relationship") and not event.get("relationshipTargets"))
         or (

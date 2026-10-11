@@ -140,14 +140,18 @@ def test_the_rules_join_a_matched_person_and_add_the_rest():
     assert held == []
 
 
-def test_a_person_placed_by_position_is_asked_once_per_family():
-    # R-0851, R-0853
+def test_a_person_placed_by_position_is_asked_once_per_family_and_takes_the_files_name():
+    # R-0851, R-0853, R-0867
     model = Model({"people": [verdict("file 10", "diagram 5", "same")]})
     data, decisions, held = fdmerge.merge(existing(), imported(), model)
     assert len(model.prompts) == 1
     assert "Eva Berg" in model.prompts[0] and "Ada's mother" in model.prompts[0]
     mother = next(p for p in data["people"] if p["id"] == 5)
-    assert (mother["name"], mother["last_name"]) == ("Ada's mother", "Berg")
+    assert (mother["name"], mother["last_name"]) == ("Eva", "Berg")
+    assert any(
+        d.field == "name" and d.after == "Eva" and "as Ada's mother" in d.reason
+        for d in decisions
+    )
     assert [b["notes"] for b in data["pair_bonds"]] == ["Met at school"]
     bo = person(data, "Bo")
     assert bo["parents"] == 6
