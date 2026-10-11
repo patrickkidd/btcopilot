@@ -4,12 +4,16 @@ the text [Oracle: R-0828, R-0829, R-0830]. Text and Markdown are their own
 text, stored with the words in the request. A PDF or a photo is read by the
 model, a call per part, which takes longer than a request may sit open, so
 the request checks it and leaves its bytes in Redis for an hour, and the
-worker reads it there before the coach's turn, then lets the bytes go."""
+worker reads it there before the coach's turn, then lets the bytes go. A
+desktop Family Diagram file takes the same way to the worker, which brings it
+into the chat's diagram instead of reading it [Oracle: R-0880, R-0882]."""
 
 import base64
 import enum
 import io
+import pickle
 import time
+import zipfile
 from collections.abc import Callable
 from pathlib import Path
 
@@ -25,7 +29,7 @@ from werkzeug.exceptions import (
     UnsupportedMediaType,
 )
 
-from btcopilot import prompts
+from btcopilot import fdfile, prompts
 # The models package before the meter, which the models package imports.
 from btcopilot.models import TokenMeter
 from btcopilot.models.modelcall import Purpose
@@ -48,7 +52,7 @@ DECLINED = "refusal"
 # it within seconds while it is up; a file nobody read is gone within the hour.
 HELD_TTL = 3600
 
-KINDS_SAID = "PDF, JPEG, PNG, HEIC, text and Markdown files"
+KINDS_SAID = "PDF, JPEG, PNG, HEIC, text, Markdown and Family Diagram files"
 UNKNOWN = f"The app reads {KINDS_SAID}; this file is none of those."
 TOO_BIG = "That file is over 20 MB; the app reads files up to 20 MB."
 TOO_LONG = f"That PDF has more than {MAX_PAGES} pages; the app reads up to {MAX_PAGES}."
@@ -56,6 +60,11 @@ UNREADABLE = "The app could not open that file."
 CUT = "That file holds more than the app can read in one go; send it in parts."
 REFUSED = "The app could not read that file."
 GONE = "The app no longer has that file; send it again."
+NOT_BROUGHT = "The app could not bring that file into your diagram; try again."
+NOT_FD = (
+    "The app could not open that Family Diagram file. Open it in Family "
+    "Diagram, save it, and attach it again."
+)
 
 
 class Gone(Exception):
@@ -69,6 +78,7 @@ class Kind(enum.StrEnum):
     Heic = "heic"
     Text = "text"
     Markdown = "markdown"
+    Fd = "fd"
 
 
 SUFFIXES = {
@@ -82,6 +92,12 @@ SUFFIXES = {
     ".text": Kind.Text,
     ".md": Kind.Markdown,
     ".markdown": Kind.Markdown,
+    # The page sends an .fd folder's diagram.pickle under the folder's name; a
+    # browser that zips the folder itself sends the zip, and a picker that
+    # opens the folder lets the person take the diagram.pickle itself.
+    ".fd": Kind.Fd,
+    ".zip": Kind.Fd,
+    ".pickle": Kind.Fd,
 }
 IMAGES = (Kind.Jpeg, Kind.Png, Kind.Heic)
 
@@ -95,7 +111,7 @@ class File:
     def __init__(self, name: str, data: bytes):
         self.name = name
         self.data = data
-        self.kind = SUFFIXES.get(Path(name).suffix.lower())
+        self.kind = kind(name)
         if self.kind is None:
             raise UnsupportedMediaType(UNKNOWN)
         if len(data) > MAX_BYTES:
@@ -113,6 +129,8 @@ class File:
             if len(pages) > MAX_PAGES:
                 raise RequestEntityTooLarge(TOO_LONG)
             self.parts = _chunks(name, pages)
+        elif self.kind is Kind.Fd:
+            self.fd = _scene(data)
         else:
             self.parts = [
                 [_block("image", "image/jpeg", _jpeg(data)), _said(f"The file is named {name}.")]
@@ -152,6 +170,10 @@ class File:
         finally:
             TokenMeter.charge(user_id, meter.spent)
         return "\n\n".join(words)
+
+
+def kind(name: str) -> Kind | None:
+    return SUFFIXES.get(Path(name).suffix.lower())
 
 
 def read_held(
@@ -259,6 +281,30 @@ def held(turn_id: str) -> bytes | None:
 
 def drop(turn_id: str) -> None:
     files().drop(turn_id)
+
+
+def _scene(data: bytes) -> dict:
+    """The desktop file's scene, from its diagram.pickle or a zip of its
+    folder. A file saved before events had a list of their own is refused in
+    the reader's words; anything else that is not one, in the app's."""
+    if zipfile.is_zipfile(io.BytesIO(data)):
+        with zipfile.ZipFile(io.BytesIO(data)) as folder:
+            found = [
+                one
+                for one in folder.infolist()
+                if Path(one.filename).name == fdfile.PICKLE
+            ]
+            if len(found) != 1:
+                raise UnsupportedMediaType(NOT_FD)
+            if found[0].file_size > MAX_BYTES:
+                raise RequestEntityTooLarge(TOO_BIG)
+            data = folder.read(found[0])
+    try:
+        return fdfile.read(data)
+    except fdfile.TooOld as old:
+        raise UnsupportedMediaType(str(old))
+    except (pickle.UnpicklingError, EOFError, ValueError):
+        raise UnsupportedMediaType(NOT_FD)
 
 
 def _chunks(name: str, pages) -> list[list[dict]]:

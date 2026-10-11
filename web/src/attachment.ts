@@ -1,10 +1,40 @@
 import { closeX, el, esc } from "./dom";
 import { Sheet } from "./sheet";
+import { toast } from "./toast";
 
 /** What the picker offers; the server says what it takes and refuses the rest
  * in its own words. */
 export const KINDS =
-  ".pdf,.jpg,.jpeg,.png,.heic,.heif,.txt,.text,.md,.markdown,application/pdf,image/jpeg,image/png,image/heic,image/heif,text/plain,text/markdown";
+  ".pdf,.jpg,.jpeg,.png,.heic,.heif,.txt,.text,.md,.markdown,.fd,.zip,.pickle,application/pdf,image/jpeg,image/png,image/heic,image/heif,text/plain,text/markdown,application/zip";
+
+/** A desktop Family Diagram file is a folder, and the diagram.pickle in it is
+ * all the app needs: that one file is sent, under the folder's name (R-0882). */
+export const PICKLE = "diagram.pickle";
+export const NO_DIAGRAM = "That folder is not a Family Diagram file.";
+
+/** The folder's diagram.pickle as the file the message carries; null when the
+ * folder holds none. */
+export const fromFolder = (folder: string, files: File[]): File | null => {
+  const pickle = files.find((one) => one.name === PICKLE);
+  return pickle ? new File([pickle], folder) : null;
+};
+
+/** Every file directly in a folder dropped on the chat; a folder is read in
+ * batches until one comes back empty. */
+async function inside(folder: FileSystemDirectoryEntry): Promise<File[]> {
+  const reader = folder.createReader();
+  const entries: FileSystemEntry[] = [];
+  for (;;) {
+    const batch = await new Promise<FileSystemEntry[]>((done, fail) => reader.readEntries(done, fail));
+    if (!batch.length) break;
+    entries.push(...batch);
+  }
+  return Promise.all(
+    entries
+      .filter((one): one is FileSystemFileEntry => one.isFile)
+      .map((one) => new Promise<File>((done, fail) => one.file(done, fail))),
+  );
+}
 
 /** The file a message carries: its name as a chip, dimmed while the server
  * reads it, and once read a tap shows what the coach was given. The file
@@ -72,6 +102,9 @@ export class Attachment {
       if (!files(e)) return;
       e.preventDefault();
       screen.classList.remove("dropping");
+      // read now: the drop's items are gone once the event is over
+      const entry = e.dataTransfer!.items[0]?.webkitGetAsEntry();
+      if (entry?.isDirectory) return void this.folder(entry as FileSystemDirectoryEntry);
       const file = e.dataTransfer!.files[0];
       if (file) this.pick(file);
     });
@@ -87,6 +120,12 @@ export class Attachment {
       const text = chip && this.texts.get(chip);
       if (text != null) this.sheet.show(readSheet(chip!.textContent!, text));
     });
+  }
+
+  private async folder(entry: FileSystemDirectoryEntry): Promise<void> {
+    const file = fromFolder(entry.name, await inside(entry));
+    if (file) this.pick(file);
+    else toast(NO_DIAGRAM, true);
   }
 
   pick(file: File): void {

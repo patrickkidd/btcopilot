@@ -6,13 +6,26 @@ once. Everything the turn does goes into the turn's log as it happens, and the
 page follows that log. A page that reloads reads the log from the start.
 """
 
+import datetime
 import logging
 import uuid
 
 import btcopilot
 from btcopilot import attachments, extensions
 from btcopilot.extensions import db
-from btcopilot import chips, coverage, observer, record, shadow, turnlog, turnstore
+from btcopilot import (
+    chips,
+    coverage,
+    fdafter,
+    fdimport,
+    fdledger,
+    fdnotice,
+    observer,
+    record,
+    shadow,
+    turnlog,
+    turnstore,
+)
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Refusal, model_for
@@ -27,7 +40,9 @@ from btcopilot.models import (
     Purpose,
     Statement,
     StatementKind,
+    TokenMeter,
 )
+from btcopilot.metered import Metered
 from btcopilot.models.preferences import PrefKey
 from btcopilot.turnlog import TurnEventKind
 
@@ -167,6 +182,8 @@ def run(
     discussion = db.session.get(Discussion, discussion_id)
     said = db.session.get(Statement, statement_id)
     if said.attachment_name is not None and said.attachment_text is None:
+        if attachments.kind(said.attachment_name) is attachments.Kind.Fd:
+            return _import(turn_id, discussion, said)
         failed = _read(turn_id, discussion, said)
         if failed is not None:
             return failed
@@ -193,7 +210,7 @@ def run(
         reply = turn.run()
     except Stopped:
         db.session.rollback()
-        return _stopped(turn, statement_id)
+        return _stopped(discussion, turn_id, statement_id, turn.kept)
     # A refusal is not a fault to retry: the same words would be declined
     # again. The page gets the coach's sentence and the category stays here.
     except Refusal as refused:
@@ -276,27 +293,8 @@ def _read(turn_id: str, discussion: Discussion, said: Statement) -> dict | None:
         return None
     except Exception as error:
         # no rollback: the parts already read are charged whatever came after
-        _log.warning(f"coach_turn {turn_id} could not read its file: {error}")
-        db.session.add(
-            Observation(
-                diagram_id=discussion.diagram_id,
-                turn_id=turn_id,
-                kind=ObservationKind.TurnFailed,
-                detail={
-                    "error": f"{type(error).__name__}: {error}",
-                    "reason": type(error).__name__,
-                },
-            )
-        )
         own = attachments.why(error)
-        failed = {
-            "type": TurnEventKind.Failed.value,
-            "message": own or attachments.REFUSED,
-        }
-        turnstore.save(turn_id, discussion.id, [failed])
-        db.session.commit()
-        turnlog.clear(discussion.id)
-        turnlog.append(turn_id, failed)
+        failed = _untaken(turn_id, discussion, error, own or attachments.REFUSED)
         if own is None:
             raise
         return failed
@@ -305,35 +303,162 @@ def _read(turn_id: str, discussion: Discussion, said: Statement) -> dict | None:
     return None
 
 
-def _stopped(turn: CoachTurn, statement_id: int) -> dict:
+def _untaken(
+    turn_id: str, discussion: Discussion, error: Exception, message: str
+) -> dict:
+    """A file the turn could not take ends it before the coach: the thread is
+    told why, the session takes the next message, and the file stays held for
+    the hour, so trying the turn again takes it again."""
+    _log.warning(f"coach_turn {turn_id} could not take its file: {error}")
+    db.session.add(
+        Observation(
+            diagram_id=discussion.diagram_id,
+            turn_id=turn_id,
+            kind=ObservationKind.TurnFailed,
+            detail={
+                "error": f"{type(error).__name__}: {error}",
+                "reason": type(error).__name__,
+            },
+        )
+    )
+    failed = {"type": TurnEventKind.Failed.value, "message": message}
+    turnstore.save(turn_id, discussion.id, [failed])
+    db.session.commit()
+    turnlog.clear(discussion.id)
+    turnlog.append(turn_id, failed)
+    return failed
+
+
+def _import(turn_id: str, discussion: Discussion, said: Statement) -> dict:
+    """A desktop file attached in the chat, brought into the chat's diagram
+    [Oracle: R-0880]. Its model calls are charged to the person like the
+    coach's own, however the import ends. One the person stopped writes
+    nothing; one the import cannot write ends the turn saying why, the file
+    kept for the hour to try again."""
+    model = fdimport.meter(discussion.user_id, discussion.diagram)
+    try:
+        return _brought(turn_id, discussion, said, model)
+    except Stopped:
+        db.session.rollback()
+        TokenMeter.charge(discussion.user_id, model.spent)
+        return _stopped(discussion, turn_id, said.id)
+    except attachments.Gone as gone:
+        return _refused(turn_id, discussion, model, gone, str(gone))
+    except record.Invalid as invalid:
+        said_why = f"{attachments.NOT_BROUGHT} {invalid.plain}"
+        return _refused(turn_id, discussion, model, invalid, said_why)
+    except ValueError as error:
+        return _refused(turn_id, discussion, model, error, attachments.NOT_BROUGHT)
+    # The import's router: whatever else went wrong, the page is told the turn
+    # ended, and the error goes on to be logged and retried as usual.
+    except Exception as error:
+        _refused(turn_id, discussion, model, error, attachments.NOT_BROUGHT)
+        raise
+
+
+def _refused(
+    turn_id: str,
+    discussion: Discussion,
+    model: Metered,
+    error: Exception,
+    message: str,
+) -> dict:
+    db.session.rollback()
+    TokenMeter.charge(discussion.user_id, model.spent)
+    return _untaken(turn_id, discussion, error, message)
+
+
+def _brought(
+    turn_id: str, discussion: Discussion, said: Statement, model: Metered
+) -> dict:
+    """The import as every import runs: one change-log turn, its clusters
+    regrouped, the coach's first message after an import as this turn's reply,
+    and the import record mailed [Oracle: R-0878, R-0873]. Each model call
+    holds the session and stops at the person's stop."""
+    user = discussion.user
+    diagram = discussion.diagram
+
+    def heard(*args):
+        _held(turn_id, discussion.id)
+        return model.structured(*args)
+
+    data = attachments.held(turn_id)
+    if data is None:
+        raise attachments.Gone(attachments.GONE)
+    fd = attachments.File(said.attachment_name, data).fd
+    out = fdimport.build(fd, heard, into=diagram)
+    fdimport.save(user.id, diagram.name, out, yes=True, turn=model.turn_id)
+    fdafter.catch_up(diagram.id, turn_id=model.turn_id, user_id=user.id)
+    sent = fdnotice.after_import(
+        diagram.id,
+        user.id,
+        fdnotice.Summary(model.turn_id, **out.brought, primaries=tuple(out.primaries)),
+    )
+    fdledger.send(
+        user.username,
+        said.attachment_name,
+        diagram.name,
+        fdledger.text(
+            said.attachment_name,
+            fd,
+            fdimport.became(out),
+            out.decisions,
+            datetime.date.today(),
+        ),
+    )
+    # what the chip on the message shows the file became
+    said.attachment_text = sent.question
+    TokenMeter.charge(user.id, model.spent)
+    turnstore.save(turn_id, discussion.id, [turnstore.done(sent.statement.id)])
+    db.session.commit()
+    attachments.drop(turn_id)
+    turnlog.clear(discussion.id)
+    reply = {
+        "statement": sent.question,
+        "statement_id": sent.statement.id,
+        "views": [],
+        "events": [],
+        "turn_id": turn_id,
+        "kind": StatementKind.Turn.value,
+        "discussion_id": discussion.id,
+        "session": session_payload(discussion),
+    }
+    turnlog.append(turn_id, dict(reply, type=TurnEventKind.Done.value))
+    return reply
+
+
+def _stopped(
+    discussion: Discussion, turn_id: str, statement_id: int, done: list[dict] = ()
+) -> dict:
     """A turn the person stopped: no reply is kept and its edits are taken back
     as one, so the record is as it was before the words were sent; edits that
-    were changed since stay, and the last event says why (R-0636)."""
-    discussion = turn.discussion
+    were changed since stay with the tool calls `done` that made them, and the
+    last event says why (R-0636)."""
+    diagram = discussion.diagram
     ending = dict(
         turnstore.done(statement_id, release=btcopilot.__version__), stopped=True
     )
     kept = []
-    if Change.query.filter_by(diagram_id=turn.diagram.id, turn_id=turn.turn_id).first():
+    if Change.query.filter_by(diagram_id=diagram.id, turn_id=turn_id).first():
         try:
             record.undo(
-                turn.diagram.id,
-                turn.turn_id,
+                diagram.id,
+                turn_id,
                 author=Author.Coach,
                 user_id=discussion.user_id,
                 session_id=discussion.id,
             )
         except (record.Conflict, record.Invalid) as conflict:
-            _log.warning(f"coach_turn {turn.turn_id} stopped, edits kept: {conflict}")
+            _log.warning(f"coach_turn {turn_id} stopped, edits kept: {conflict}")
             ending["conflict"] = str(conflict)
-            kept = turn.kept
-    db.session.refresh(turn.diagram)
-    ending["version"] = turn.diagram.version
+            kept = list(done)
+    db.session.refresh(diagram)
+    ending["version"] = diagram.version
     Change.query.filter(
-        Change.diagram_id == turn.diagram.id,
-        Change.turn_id.in_([turn.turn_id, f"undo:{turn.turn_id}"]),
+        Change.diagram_id == diagram.id,
+        Change.turn_id.in_([turn_id, f"undo:{turn_id}"]),
     ).update({"statement_id": statement_id})
-    turnstore.save(turn.turn_id, discussion.id, kept + [ending])
+    turnstore.save(turn_id, discussion.id, kept + [ending])
     db.session.commit()
     turnlog.clear(discussion.id)
     event = dict(
@@ -341,12 +466,12 @@ def _stopped(turn: CoachTurn, statement_id: int) -> dict:
         statement=None,
         views=[],
         events=[],
-        turn_id=turn.turn_id,
+        turn_id=turn_id,
         kind=StatementKind.Turn.value,
         discussion_id=discussion.id,
         session=session_payload(discussion),
     )
-    turnlog.append(turn.turn_id, event)
+    turnlog.append(turn_id, event)
     return event
 
 

@@ -214,3 +214,5 @@ R-0861 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-3
 R-0864 | TEST OWED | cited by 1 test, two more owed for the events and data-model tags (FD-377)
 R-0875 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-377)
 R-0877 | TEST OWED | cited by 1 test of the merge into a diagram; the same judgement inside one file waits on Patrick, since R-0489 and R-0432 keep the record refusing two same-day events alike in all but their words (FD-377)
+R-0879 | TEST OWED | cited by 1 test of the person tool, one more owed for the coach tag: the prompt line telling the coach to mark the user, not yet written (FD-377)
+R-0881 | TEST OWED | cited by 1 test of the person tool, one more owed for the coach tag: the prompt line naming the new person fields, not yet written (FD-377)

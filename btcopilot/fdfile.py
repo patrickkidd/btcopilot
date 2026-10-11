@@ -30,6 +30,10 @@ TOO_OLD = (
 )
 
 
+class TooOld(ValueError):
+    """A file saved before the desktop moved events out of people."""
+
+
 def _date(y, m, d) -> str | None:
     return datetime.date(y, m, d).isoformat() if y > 0 else None
 
@@ -92,5 +96,5 @@ def read(source: Path | bytes) -> dict:
         source = (source / PICKLE if source.is_dir() else source).read_bytes()
     data = Reader(io.BytesIO(source)).load()
     if version(data.get("version")) <= OLDEST:
-        raise ValueError(TOO_OLD.format(data.get("version") or "before 1.0"))
+        raise TooOld(TOO_OLD.format(data.get("version") or "before 1.0"))
     return data

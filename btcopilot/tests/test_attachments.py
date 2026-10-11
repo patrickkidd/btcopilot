@@ -11,6 +11,8 @@ Invented names only.
 
 import base64
 import io
+import zipfile
+from types import SimpleNamespace
 
 import pillow_heif
 import pytest
@@ -18,18 +20,32 @@ from mock import patch
 from PIL import Image
 from pypdf import PdfReader, PdfWriter
 
-from btcopilot import attachments, turnlog, turns
+from btcopilot import (
+    attachments,
+    extensions,
+    fdafter,
+    fdcoding,
+    fdfile,
+    fdimport,
+    prompts,
+    turnlog,
+    turns,
+)
 from btcopilot.extensions import db
 from btcopilot.llmutil import Served, Spent, Text
 from btcopilot.models import (
     ModelCall,
     Observation,
     ObservationKind,
+    ProactiveMessage,
     Statement,
     TokenMeter,
 )
 from btcopilot.models.modelcall import Purpose
 from btcopilot.tests.conftest import Model, csrf_token, said
+from btcopilot.tests.fdfixtures import dumps, scene
+from btcopilot.tests.test_fdimport import answered
+from btcopilot.tests.test_fdmerge import PLAIN
 from btcopilot.tests.test_turnhistory import coach
 from btcopilot.turnlog import TurnEventKind
 
@@ -497,3 +513,119 @@ def test_a_file_the_hour_took_ends_the_turn_saying_to_send_it_again(
         "type": TurnEventKind.Failed.value,
         "message": attachments.GONE,
     }
+
+
+def zipped(data: bytes) -> bytes:
+    """An .fd folder as a browser that zips a folder sends it."""
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as folder:
+        folder.writestr(f"Lund family.fd/{fdfile.PICKLE}", data)
+        folder.writestr("__MACOSX/Lund family.fd/._diagram.pickle", b"\0")
+    return out.getvalue()
+
+
+@pytest.fixture
+def importing(tmp_path, monkeypatch, flask_app):
+    """The import's model calls stand in: the coding pass asks once and keeps
+    the file as it is, the merge's side calls have nothing to say. Its
+    regrouping is written down rather than run, and no push goes out."""
+    (tmp_path / "import_merge.prompty").write_text(PLAIN)
+    monkeypatch.setenv("FD_PRIVATE_PROMPTS", str(tmp_path))
+    prompts.files.cache_clear()
+
+    def code(data, model):
+        model("prompt", fdcoding.Answer, {}, 100)
+        return data, []
+
+    monkeypatch.setattr(fdimport, "fdcoding", SimpleNamespace(code=code))
+    monkeypatch.setattr("btcopilot.metered.gemini_structured_sync", answered)
+    monkeypatch.setattr("btcopilot.proactive.push.send", lambda *args: None)
+    regrouped = []
+    monkeypatch.setattr(fdafter, "catch_up", lambda *args, **kw: regrouped.append(kw))
+    flask_app.config["MAIL_SERVER"] = "localhost"
+    yield regrouped
+    prompts.files.cache_clear()
+
+
+@pytest.mark.parametrize(
+    "name, data",
+    [
+        ("Lund family.fd", dumps(scene())),
+        ("Lund family.fd.zip", zipped(dumps(scene()))),
+    ],
+)
+def test_a_desktop_file_is_brought_into_the_chats_diagram_and_the_coach_writes_first(
+    web, token, test_user, monkeypatch, held, importing, name, data
+):
+    # R-0880, R-0882, R-0878, R-0873
+    model = coach(monkeypatch, Model(said("Thank you.")))
+    with patch("btcopilot.turns.enqueue"):
+        body = send(web, token, name, data, statement="My old diagram.").get_json()
+    assert (body["attachment_name"], body["attachment_text"]) == (name, None)
+    assert held.held(body["turn_id"]) == data
+    with extensions.mail.record_messages() as outbox:
+        turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    [message] = ProactiveMessage.query.all()
+    assert message.question.startswith("Your file is in: 3 people, 3 events and 1 pair-bond.")
+    done = events(body["turn_id"])[-1]
+    assert (done["type"], done["statement_id"], done["statement"]) == (
+        TurnEventKind.Done.value,
+        message.statement_id,
+        message.question,
+    )
+    assert message.statement.discussion_id == body["discussion_id"]
+    people = test_user.free_diagram.get_diagram_data().people
+    assert {"Ada", "Bo", "Cy"} <= {p["name"] for p in people}
+    assert stored().attachment_text == message.question
+    assert (held.held(body["turn_id"]), model.histories) == (None, [])
+    [regrouped] = importing
+    assert regrouped["turn_id"] == message.key
+    [mail] = outbox
+    assert mail.recipients == [test_user.username]
+    call = ModelCall.query.filter_by(purpose=Purpose.Import).one()
+    assert (call.user_id, call.diagram_id) == (test_user.id, test_user.free_diagram_id)
+    assert TokenMeter.query.filter_by(user_id=test_user.id).one().input_tokens >= 10
+    assert turnlog.running(body["discussion_id"]) is None
+
+
+@pytest.mark.parametrize(
+    "data, message",
+    [
+        (dumps(scene(version="1.5.0")), "Open it in Family Diagram and save it"),
+        (b"not a diagram", attachments.NOT_FD),
+        (zipped(b"not a diagram"), attachments.NOT_FD),
+    ],
+)
+def test_a_desktop_file_the_app_cannot_open_is_refused_saying_what_to_do(
+    web, token, monkeypatch, data, message
+):
+    # R-0880, R-0855
+    coach(monkeypatch, Model(said("Thank you.")))
+    response = send(web, token, "Lund family.fd", data)
+    assert response.status_code == 415
+    assert message in response.get_data(as_text=True)
+    assert Statement.query.count() == 0
+
+
+def test_an_import_the_diagram_refuses_ends_the_turn_saying_so_and_can_be_tried_again(
+    web, token, test_user, monkeypatch, held, importing
+):
+    # R-0880, R-0829
+    def changed(*args, **kwargs):
+        raise ValueError("diagram changed since the import read it")
+
+    monkeypatch.setattr(fdimport, "save", changed)
+    coach(monkeypatch, Model(said("Thank you.")))
+    with patch("btcopilot.turns.enqueue"):
+        body = send(web, token, "Lund family.fd", dumps(scene())).get_json()
+    turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    assert events(body["turn_id"])[-1] == {
+        "type": TurnEventKind.Failed.value,
+        "message": attachments.NOT_BROUGHT,
+    }
+    [mine] = [s for s in web.get("/app/statements").get_json() if s["role"] == "user"]
+    assert (mine["unfinished"], mine["failure"]) == (True, attachments.NOT_BROUGHT)
+    assert (stored().attachment_text, ProactiveMessage.query.count()) == (None, 0)
+    assert held.held(body["turn_id"]) == dumps(scene())
+    assert TokenMeter.query.filter_by(user_id=test_user.id).one().input_tokens >= 10
+    assert turnlog.running(body["discussion_id"]) is None
