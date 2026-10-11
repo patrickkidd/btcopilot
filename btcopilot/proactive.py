@@ -353,11 +353,7 @@ def _people_in(event: dict) -> set[int]:
     return found
 
 
-def send(
-    user: User, message: ProactiveMessage, text: str, now, detail: dict | None = None
-):
-    """Into the person's sitting, then the notification; `detail` goes on the
-    row counting it sent."""
+def send(user: User, message: ProactiveMessage, text: str, now):
     diagram = db.session.get(Diagram, message.diagram_id)
     discussion = sitting(user, diagram)
     statement = Statement(
@@ -374,7 +370,7 @@ def send(
     message.sent_at = now
     db.session.add(message)
     db.session.flush()
-    _count(message, ObservationKind.ProactiveSent, detail)
+    _count(message, ObservationKind.ProactiveSent)
     push.send(user, statement)
 
 

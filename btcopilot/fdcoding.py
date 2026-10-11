@@ -138,6 +138,27 @@ def ask(prompt: str, response_format, schema: dict, limit: int):
     ).value
 
 
+def heard(model, *args) -> tuple:
+    """The model's answer and "", or None and why it could not be read."""
+    try:
+        return model(*args), ""
+    except OutputTruncatedError:
+        return None, "the model's answer ran past its length limit."
+    except Unreadable:
+        return None, "the model's answer was not the JSON asked for."
+
+
+def numbered(data: dict) -> types.SimpleNamespace:
+    """The diagram's items as record.next_id reads them."""
+    return types.SimpleNamespace(
+        people=data["people"],
+        events=data["events"],
+        pair_bonds=data["pair_bonds"],
+        emotions=data.get("emotions") or [],
+        lastItemId=data.get("lastItemId") or 0,
+    )
+
+
 def _said(value) -> str:
     if value is None:
         return ""
@@ -577,28 +598,17 @@ def _added(
     return event
 
 
-def _answer(batch: Batch, named: dict[int, str], model) -> tuple[Answer | None, str]:
-    try:
-        return (
-            model(
-                prompt(batch, named),
-                Answer,
-                answer_schema(batch, named),
-                ROOM + PER_ITEM * batch.size,
-            ),
-            "",
-        )
-    except OutputTruncatedError:
-        return None, "the model's answer ran past its length limit."
-    except Unreadable:
-        return None, "the model's answer was not the JSON asked for."
-
-
 def _batch(
     data: dict, batch: Batch, named: dict[int, str], model, ids_of, decisions: list
 ) -> None:
     ids = {named[pid]: pid for pid in batch.people}
-    answer, failed = _answer(batch, named, model)
+    answer, failed = heard(
+        model,
+        prompt(batch, named),
+        Answer,
+        answer_schema(batch, named),
+        ROOM + PER_ITEM * batch.size,
+    )
     events = {str(e["id"]): e for e in batch.events}
     refused = {
         eid: failed or "the model gave no coding for it."
@@ -684,13 +694,7 @@ def code(data: dict, model=ask) -> tuple[dict, list[Decision]]:
     data = copy.deepcopy(data)
     data.setdefault("pair_bonds", [])
     named = labels(data)
-    ids_of = types.SimpleNamespace(
-        people=data["people"],
-        events=data["events"],
-        pair_bonds=data["pair_bonds"],
-        emotions=data.get("emotions") or [],
-        lastItemId=data.get("lastItemId") or 0,
-    )
+    ids_of = numbered(data)
     decisions: list[Decision] = []
     for batch in calls(data):
         _batch(data, batch, named, model, ids_of, decisions)

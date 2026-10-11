@@ -295,6 +295,17 @@ def conflict(a: Kin, b: Kin) -> bool:
     return bool(a.born and b.born and abs(a.born - b.born) > 2)
 
 
+def full_name(k: Kin, side: Family) -> list[Kin]:
+    return [
+        o
+        for o in side.people.values()
+        if not o.unnamed
+        and o.first == k.first
+        and lasts_agree(o, k)
+        and not conflict(o, k)
+    ]
+
+
 class Matcher:
     def __init__(self, a: dict, b: dict):
         self.a, self.b = Family(a), Family(b)
@@ -394,23 +405,13 @@ class Matcher:
             if not added:
                 return
 
-    def full_name(self, k: Kin, side: Family) -> list[Kin]:
-        return [
-            o
-            for o in side.people.values()
-            if not o.unnamed
-            and o.first == k.first
-            and lasts_agree(o, k)
-            and not conflict(o, k)
-        ]
-
     def unique_pairs(self) -> list[tuple[int, int]]:
         pairs = []
         for ka in self.a.people.values():
             if ka.unnamed or not ka.lasts:
                 continue
-            hits = self.full_name(ka, self.b)
-            if len(hits) == 1 and len(self.full_name(hits[0], self.a)) == 1:
+            hits = full_name(ka, self.b)
+            if len(hits) == 1 and len(full_name(hits[0], self.a)) == 1:
                 pairs.append((ka.id, hits[0].id))
         return pairs
 

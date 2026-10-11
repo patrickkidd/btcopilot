@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from flask import current_app
 
 from btcopilot.auth.emails import deliver
+from btcopilot.schema import EventKind
 
 
 @dataclass
@@ -86,7 +87,7 @@ FIRST = (
 )
 DRAWN = "Drawing details from the desktop app"
 # Births and adoptions are about the child; every other event about its person.
-CHILD_KINDS = {"birth", "adopted"}
+CHILD_KINDS = {EventKind.Birth.value, EventKind.Adopted.value}
 RULE = "=" * 40
 SUBJECT = "Your Family Diagram file: a record of the import"
 BODY = (

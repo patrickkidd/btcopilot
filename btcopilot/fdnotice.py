@@ -125,7 +125,7 @@ def _words(summary: Summary, checks: int, who: dict | None) -> str:
     ]
     if checks:
         said.append(
-            f"There {'is' if checks == 1 else 'are'} {_many(checks, 'thing')} in it "
+            f"There {_is(checks)} {_many(checks, 'thing')} in it "
             "I'd like to check with you, a few at a time as we go."
         )
     if who:
@@ -139,6 +139,10 @@ def _words(summary: Summary, checks: int, who: dict | None) -> str:
 
 def _many(n: int, one: str, more: str | None = None) -> str:
     return f"{n} {one if n == 1 else more or one + 's'}"
+
+
+def _is(n: int) -> str:
+    return "is" if n == 1 else "are"
 
 
 def opened(diagram_id: int, data: DiagramData) -> list[dict]:
@@ -173,7 +177,7 @@ def block(diagram_id: int, data: DiagramData) -> str:
         return ""
     return (
         f"{HEAD}\n{_many(len(found), 'question')} the desktop file import kept "
-        f"{'is' if len(found) == 1 else 'are'} still open: "
+        f"{_is(len(found))} still open: "
         f"{', '.join(q['id'] for q in found)}."
     )
 
@@ -216,7 +220,7 @@ def reminder(user: User, now: datetime.datetime) -> ProactiveMessage | None:
             key=f"{turn}:{reminded + 1}",
             question=(
                 f"{_many(len(found), 'thing').capitalize()} from the file you brought in "
-                f"{'is' if len(found) == 1 else 'are'} still to check with you. "
+                f"{_is(len(found))} still to check with you. "
                 "Shall we look at one now?"
             ),
         )

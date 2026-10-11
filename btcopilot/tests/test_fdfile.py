@@ -22,7 +22,9 @@ def test_qt_values_read_as_plain_values(tmp_path):
 
 def test_reads_the_pickle_bytes_and_old_enums_as_values():
     # R-0854
-    data = fdfile.read(dumps(scene(events=[event(20, "shift", symptom=VariableShift.Up)])))
+    data = fdfile.read(
+        dumps(scene(events=[event(20, "shift", symptom=VariableShift.Up)]))
+    )
     assert data["events"][0]["symptom"] == "up"
 
 

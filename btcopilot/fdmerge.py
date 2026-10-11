@@ -13,20 +13,15 @@ is a Decision naming the file's item by its id in the imported diagram."""
 import collections
 import copy
 import enum
-import types
 from dataclasses import dataclass, field
 
 # fdimport merges with this module and this module renumbers with fdimport;
 # neither uses the other at import time.
 from btcopilot import diagramjson, fdimport, prompts, record
 from btcopilot.familymatch import PLACEHOLDER, Family, Relation, Status, match
-from btcopilot.fdcoding import ask
+from btcopilot.fdcoding import ask, heard, numbered
 from btcopilot.fdledger import Decision
-from btcopilot.llmutil import (
-    OutputTruncatedError,
-    Unreadable,
-    dataclass_to_json_schema,
-)
+from btcopilot.llmutil import dataclass_to_json_schema
 from btcopilot.models import Author
 from btcopilot.schema import (
     EventKind,
@@ -127,20 +122,47 @@ def _day(event: dict) -> str | None:
     return record.day(event.get("dateTime"))
 
 
+def _mapped(event: dict, same: dict[int, int]) -> dict:
+    out = dict(event)
+    for key in LINKS:
+        if event.get(key) is not None:
+            out[key] = same.get(event[key], event[key])
+    for key in MOVES:
+        if event.get(key):
+            out[key] = [same.get(x, x) for x in event[key]]
+    return out
+
+
+def _schema(call: Call) -> dict:
+    schema = dataclass_to_json_schema(Answer)
+    people = schema["properties"]["people"]["items"]
+    people["properties"]["person"]["enum"] = [_label(FILE, y) for y in call.people]
+    people["properties"]["candidate"]["enum"] = list(
+        dict.fromkeys(_label(DIAGRAM, x) for xs in call.people.values() for x in xs)
+    )
+    people["properties"]["verdict"]["enum"] = [v.value for v in Verdict]
+    people["required"] = ["person", "candidate", "verdict", "reason"]
+    events = schema["properties"]["events"]["items"]
+    events["properties"]["event"]["enum"] = list(
+        dict.fromkeys(_event_label(FILE, e) for e, _ in call.events)
+    )
+    events["properties"]["other"]["enum"] = list(
+        dict.fromkeys(_event_label(DIAGRAM, f) for _, f in call.events)
+    )
+    events["properties"]["verdict"]["enum"] = [Verdict.Same, Verdict.Different]
+    events["required"] = ["event", "other", "verdict", "reason"]
+    if not call.people:
+        del schema["properties"]["people"]
+    if not call.events:
+        del schema["properties"]["events"]
+    return schema
+
+
 def _renumbered(existing: dict, imported: dict) -> tuple[dict, dict[int, int]]:
     """The file's items under ids past every id the diagram holds, each
     reference following."""
     data = copy.deepcopy(imported)
-    start = record.next_id(
-        types.SimpleNamespace(
-            people=existing["people"],
-            events=existing["events"],
-            pair_bonds=existing["pair_bonds"],
-            emotions=existing.get("emotions") or [],
-            lastItemId=existing.get("lastItemId") or 0,
-        )
-    )
-    return data, fdimport.renumber(data, start)
+    return data, fdimport.renumber(data, record.next_id(numbered(existing)))
 
 
 class Merge:
@@ -210,22 +232,12 @@ class Merge:
             owner = _owner(event)
             if owner not in same or event["id"] in self.structural or not _day(event):
                 continue
-            twin = record.twin_key(self.mapped(event, same))
+            twin = record.twin_key(_mapped(event, same))
             out += [
                 (event["id"], other["id"])
                 for other in mine[event["kind"], same[owner], _day(event)]
                 if record.twin_key(other) != twin
             ]
-        return out
-
-    def mapped(self, event: dict, same: dict[int, int]) -> dict:
-        out = dict(event)
-        for key in LINKS:
-            if event.get(key) is not None:
-                out[key] = same.get(event[key], event[key])
-        for key in MOVES:
-            if event.get(key):
-                out[key] = [same.get(x, x) for x in event[key]]
         return out
 
     # Pass 2
@@ -322,46 +334,15 @@ class Merge:
             or "(none)",
         )
 
-    def schema(self, call: Call) -> dict:
-        schema = dataclass_to_json_schema(Answer)
-        people = schema["properties"]["people"]["items"]
-        people["properties"]["person"]["enum"] = [_label(FILE, y) for y in call.people]
-        people["properties"]["candidate"]["enum"] = list(
-            dict.fromkeys(_label(DIAGRAM, x) for xs in call.people.values() for x in xs)
-        )
-        people["properties"]["verdict"]["enum"] = [v.value for v in Verdict]
-        people["required"] = ["person", "candidate", "verdict", "reason"]
-        events = schema["properties"]["events"]["items"]
-        events["properties"]["event"]["enum"] = list(
-            dict.fromkeys(_event_label(FILE, e) for e, _ in call.events)
-        )
-        events["properties"]["other"]["enum"] = list(
-            dict.fromkeys(_event_label(DIAGRAM, f) for _, f in call.events)
-        )
-        events["properties"]["verdict"]["enum"] = [Verdict.Same, Verdict.Different]
-        events["required"] = ["event", "other", "verdict", "reason"]
-        if not call.people:
-            del schema["properties"]["people"]
-        if not call.events:
-            del schema["properties"]["events"]
-        return schema
-
     def answer(self, call: Call, same: dict[int, int]) -> tuple[Answer | None, str]:
         size = sum(len(xs) for xs in call.people.values()) + len(call.events)
-        try:
-            return (
-                self.model(
-                    self.prompt(call, same),
-                    Answer,
-                    self.schema(call),
-                    ROOM + PER_ANSWER * size,
-                ),
-                "",
-            )
-        except OutputTruncatedError:
-            return None, "the model's answer ran past its length limit."
-        except Unreadable:
-            return None, "the model's answer was not the JSON asked for."
+        return heard(
+            self.model,
+            self.prompt(call, same),
+            Answer,
+            _schema(call),
+            ROOM + PER_ANSWER * size,
+        )
 
     def refuse(self, kind: str, item: int | None, label: str, why: str, then: str):
         self.decisions.append(
