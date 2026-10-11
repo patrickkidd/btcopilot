@@ -1,0 +1,30 @@
+---
+name: import_merge
+description: Judges whether people and events of a desktop file being imported are ones the diagram already holds.
+inputs:
+  file: {}
+  diagram: {}
+  people: {}
+  events: {}
+---
+A family diagram drawn in the old desktop Family Diagram app is being brought into a diagram that a person has already begun with the coach. Some people in the file may already be in the diagram, under another name or with fewer details. Judge each pair below once, in the JSON asked for. Nobody is talking with you.
+
+**Rules.**
+
+1. same: the two are one person. Their names fit (a nickname, a maiden name, a role such as "Sarah's mother" for someone not yet named), no date disagrees, and their relatives fit.
+2. different: something rules it out, such as birth years far apart, a different sex, or relatives who cannot both be right.
+3. unsure: anything else. The person will be asked. Two people wrongly made one is worse than a question, so answer same only when the family around them fits.
+4. For two events: same when their words tell of one happening, different when they tell of two.
+5. reason: one plain sentence naming what decided it.
+
+**The family in the file:**
+{{ file }}
+
+**The family in the diagram:**
+{{ diagram }}
+
+**People to judge, each against the people of the diagram it may be:**
+{{ people }}
+
+**Events to judge, each against the diagram's event of the same kind on the same day:**
+{{ events }}
