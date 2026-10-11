@@ -7,6 +7,7 @@ undo takes it back [Oracle: R-0850]. Every choice made along the way is a
 Decision, for the ledger the person is sent [Oracle: R-0873]."""
 
 import collections
+import copy
 import itertools
 import uuid
 from dataclasses import dataclass, field, replace
@@ -16,6 +17,7 @@ from dataclasses import dataclass, field, replace
 from btcopilot import diagramjson, fdcoding, fdmerge, record
 from btcopilot.coverage import CHILD_ROLE
 from btcopilot.extensions import db
+from btcopilot.familymatch import unnamed
 from btcopilot.fdcoding import RAW
 from btcopilot.fdledger import Decision
 from btcopilot.metered import Metered
@@ -131,8 +133,9 @@ class Imported:
     base: dict | None = None
     # The merge's questions for the coach, held on the file's people.
     held: list[dict] = field(default_factory=list)
-    # How many people, events and pair-bonds the file brought, and how its
-    # people and events found their place; into a new diagram, all by the rules.
+    # How many people, events and pair-bonds the file brought, how many of
+    # the events the coding pass drew from its notes, and how its people and
+    # events found their place; into a new diagram, all by the rules.
     brought: dict[str, int] = field(default_factory=dict)
     placed: dict[fdmerge.Placed, collections.Counter] = field(default_factory=dict)
 
@@ -654,6 +657,10 @@ def _id(label: str) -> int | None:
 
 #: An event's own words besides its notes, kept in the notes of the event it merges into.
 WORDS = ("title", "description", "location")
+#: What a refused event no longer says when it falls back to a noted event.
+MOVED_FIELDS = (*fdcoding.VARIABLES, "relationship", *fdcoding.MOVES)
+#: Of the events the file brought, those the coding pass drew from its notes.
+DRAWN = "drawn"
 
 
 def _twins(out: Imported) -> None:
@@ -700,6 +707,7 @@ def build(fd: dict, model, into: Diagram | None = None) -> Imported:
     """Read the file's items, code what the mapping left, then renumber; with
     `into`, the items are brought into that diagram [Oracle: R-0851]."""
     out = convert(fd)
+    filed = {event["id"] for event in out.data["events"]}
     out.data, coded = fdcoding.code(out.data, model)
     # The pass names an event by its id; a relationship line's own event is
     # named in the ledger by the line it came from.
@@ -710,15 +718,18 @@ def build(fd: dict, model, into: Diagram | None = None) -> Imported:
     for item in (out.data, *(i for name in COLLECTIONS for i in out.data[name])):
         item.pop(RAW, None)
     _twins(out)
+    drawn = sum(event["id"] not in filed for event in out.data["events"])
     new = renumber(out.data, RESERVED_ITEM_IDS + 1)
     _moved(out, new)
     out.brought = {name: len(out.data[name]) for name in COLLECTIONS}
+    out.brought[DRAWN] = drawn
     out.placed = {way: collections.Counter() for way in fdmerge.Placed}
     out.placed[fdmerge.Placed.Rules].update(
         people=out.brought["people"], events=out.brought["events"]
     )
     if into is not None:
         _merge(out, into, model)
+    _settle(out)
     return out
 
 
@@ -751,9 +762,156 @@ def _merge(out: Imported, into: Diagram, model) -> None:
     out.placed = merge.placed
     out.data["questions"] = [*(out.data.get("questions") or []), *out.held]
     out.decisions += [replace(one, item=_filed(out, one.item)) for one in decisions]
-    if any(p.get("primary") for p in out.base["people"]):
+    if any(p.get("primary") and not unnamed(p.get("name")) for p in out.base["people"]):
         out.primaries = []
     _moved(out, {old: new for new, old in merge.old.items()}, merge.final)
+
+
+def _refused(out: Imported) -> dict[tuple[ItemKind, str], record.Invalid]:
+    """Each item the record's rules refuse on the diagram as the import would
+    leave it, with why; checked item by item only when the whole is refused."""
+    data = copy.deepcopy(out.base or {})
+    applied = record.compress(
+        [d for delta in deltas(out) for d in record.enact(data, delta)]
+    )
+    try:
+        record.validate(data, applied, Author.Pro, undoing=False)
+        return {}
+    except record.Invalid as invalid:
+        whole = invalid
+    items = collections.defaultdict(list)
+    for delta in applied:
+        if delta["item_id"] is not None:
+            items[ItemKind(delta["item_kind"]), str(delta["item_id"])].append(delta)
+    found = {}
+    for key, group in items.items():
+        try:
+            record.validate(data, group, Author.Pro, undoing=False)
+        except record.Invalid as invalid:
+            found[key] = invalid
+    if not found:
+        raise whole
+    return found
+
+
+def _settle(out: Imported) -> None:
+    """One refusal never stops the import: each item the record's rules
+    refuse falls back by itself, a step at a time, each step a choice in the
+    ledger [Oracle: R-0868]. A refusal no step answers stops it."""
+    steps = collections.Counter()
+    while refused := _refused(out):
+        for key, invalid in refused.items():
+            while not _fall(out, *key, steps[key], invalid):
+                steps[key] += 1
+            steps[key] += 1
+
+
+def _fall(
+    out: Imported, kind: ItemKind, item_id: str, step: int, invalid: record.Invalid
+) -> bool:
+    """Step `step` of an item's fall back; False when it changes nothing. The
+    diagram's own item keeps what it had; the file's event takes the coding
+    pass's fallback, then becomes a noted event keeping its words, then is left
+    out with its words in the ledger; the file's person takes a counted name;
+    the import's question is left out."""
+    name = ITEM_COLLECTIONS[kind]
+    item = next(i for i in out.data[name] if str(i["id"]) == item_id)
+    own = next(
+        (i for i in (out.base or {}).get(name) or [] if str(i["id"]) == item_id),
+        None,
+    )
+    why = f"The record's rules refused it: {invalid.plain}"
+    if own is not None:
+        steps = [lambda: _restore(out, kind, item, own, why)]
+    elif kind is ItemKind.Event:
+        steps = [
+            lambda: _change(out, item, fdcoding.fallback(out.data, item), why),
+            lambda: _noted(out, item, why),
+            lambda: _left(out, kind, item, why),
+        ]
+    elif kind is ItemKind.Person:
+        steps = [lambda: _counted(out, item, why)]
+    elif kind is ItemKind.Question:
+        steps = [lambda: _left(out, kind, item, why)]
+    else:
+        steps = []
+    if step >= len(steps):
+        raise invalid
+    return steps[step]()
+
+
+def _label(out: Imported, kind: ItemKind, item: dict) -> str:
+    return out.labels.get(item["id"]) or f"{_noun(kind)} {item['id']}"
+
+
+def _noun(kind: ItemKind) -> str:
+    return kind.value.replace("_", "-")
+
+
+def _change(out: Imported, event: dict, changes: dict, why: str) -> bool:
+    label = _label(out, ItemKind.Event, event)
+    fdcoding.change(out.decisions, label, event, changes, why)
+    return bool(changes)
+
+
+def _restore(out: Imported, kind: ItemKind, item: dict, own: dict, why: str) -> bool:
+    items = out.data[ITEM_COLLECTIONS[kind]]
+    items[items.index(item)] = copy.deepcopy(own)
+    out.decide(
+        f"{_noun(kind)} {own['id']} of the diagram",
+        "",
+        "",
+        "",
+        f"{why} The diagram's own item keeps what it had.",
+    )
+    return True
+
+
+def _noted(out: Imported, event: dict, why: str) -> bool:
+    if event["kind"] not in fdcoding.WORDED:
+        return False
+    changes = {key: None for key in MOVED_FIELDS if event.get(key)}
+    if event["kind"] != EventKind.Noted.value:
+        changes["kind"] = EventKind.Noted.value
+    if not changes:
+        return False
+    changes |= fdcoding.plain(out.data, {**event, **changes})
+    return _change(
+        out,
+        event,
+        changes,
+        f"{why} It is kept as a noted event with the file's words, so nothing is lost.",
+    )
+
+
+def _left(out: Imported, kind: ItemKind, item: dict, why: str) -> bool:
+    out.data[ITEM_COLLECTIONS[kind]].remove(item)
+    if item in out.held:
+        out.held.remove(item)
+    label = _label(out, kind, item)
+    out.labels.pop(item["id"], None)
+    out.joined = {k: v for k, v in out.joined.items() if v != item["id"]}
+    words = [item.get(key) for key in ("title", "description", "notes", "text")]
+    out.decide(
+        label,
+        "",
+        "\n".join(dict.fromkeys(w for w in words if _kept(w))),
+        "left out",
+        f"{why} It is left out of the diagram; what the file said is in this record.",
+    )
+    return True
+
+
+def _counted(out: Imported, person: dict, why: str) -> bool:
+    taken = {p.get("name") for p in out.data["people"]}
+    given = next(
+        f"{person['name']} {n}"
+        for n in itertools.count(2)
+        if f"{person['name']} {n}" not in taken
+    )
+    out.decide(_label(out, ItemKind.Person, person), "name", person["name"], given, why)
+    person["name"] = given
+    return True
 
 
 def _filed(out: Imported, item: str) -> str:
@@ -921,7 +1079,7 @@ def save(
             turn_id=turn,
             kind=ObservationKind.Import,
             detail={
-                **out.brought,
+                **{name: out.brought[name] for name in COLLECTIONS},
                 **{
                     way.value: {name: counts[name] for name in ("people", "events")}
                     for way, counts in out.placed.items()

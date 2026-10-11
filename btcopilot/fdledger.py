@@ -102,6 +102,11 @@ BODY = (
 )
 
 
+def many(n: int, one: str, more: str | None = None) -> str:
+    """A count with its noun: "1 pair-bond", "2 pair-bonds", "1 person"."""
+    return f"{n} {one if n == 1 else more or one + 's'}"
+
+
 def attachment(name: str) -> str:
     return f"{name} - import record.txt"
 
@@ -152,11 +157,21 @@ def _block(title: str, item: dict, became: dict, decided: dict) -> list[str]:
     }
     lines = [f"-- {title} --", "In the file:", *(f"  {line}" for line in fields(said))]
     lines.append(f"In the new diagram: {became.get(title, 'not an item of its own')}")
-    for one in decided.pop(title, []):
-        lines.append(
-            f'Choice on {one.field}: the file said "{one.before}"; the new diagram has "{one.after}". {one.reason}'
-        )
+    lines += [_choice(one) for one in decided.pop(title, [])]
     return [*lines, ""]
+
+
+def _choice(one: Decision) -> str:
+    """A choice on a field says what the file said and what the diagram has;
+    a choice on the whole item says what it became, if anything."""
+    if one.field:
+        return (
+            f'Choice on {one.field}: the file said "{one.before}"; '
+            f'the new diagram has "{one.after}". {one.reason}'
+        )
+    if one.after:
+        return f'Choice: the new diagram has "{one.after}". {one.reason}'
+    return f"Choice: {one.reason}"
 
 
 def _details(title: str, item: dict, whole: bool) -> list[str]:
@@ -244,8 +259,9 @@ def text(
         f"File: {file}",
         f"Saved by Family Diagram {fd.get('version') or 'unknown version'}",
         f"Imported: {today.isoformat()}",
-        f"In the file: {len(people)} people, {len(events)} events, {len(bonds)} pair-bonds, "
-        f"{len(rels)} relationship lines",
+        f"In the file: {many(len(people), 'person', 'people')}, "
+        f"{many(len(events), 'event')}, {many(len(bonds), 'pair-bond')}, "
+        f"{many(len(rels), 'relationship line')}",
         f"Choices made: {len(decisions)}",
         "The file's password and master key are left out of this record, for security.",
         "",

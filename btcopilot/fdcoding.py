@@ -501,7 +501,7 @@ def _coded(
     return changes
 
 
-def _fallback(data: dict, event: dict, todo: Todo) -> dict:
+def fallback(data: dict, event: dict, todo: Todo = Todo.Code) -> dict:
     """What a refused or missing answer leaves: a shift nobody coded by hand
     becomes a noted event, and anything that still needs words gets them
     without a name it links."""
@@ -512,16 +512,31 @@ def _fallback(data: dict, event: dict, todo: Todo) -> dict:
         and not any(event.get(name) for name in CODED)
     ):
         changes["kind"] = EventKind.Noted.value
-    worded = changes.get("kind", event["kind"]) in WORDED
+    return changes | plain(data, {**event, **changes})
+
+
+def plain(data: dict, event: dict) -> dict:
+    """The changes that leave an event's words naming nobody it links
+    [Oracle: R-0457], and a noted event or shift with a title and words: words
+    naming someone go to the notes, and a title is made from what is left."""
+    changes = {}
+    worded = event["kind"] in WORDED
+    notes = event.get("notes") or ""
     description = event.get("description") or ""
     if record.linked_name(data, event, description):
-        changes["notes"] = "\n\n".join(filter(None, (event.get("notes"), description)))
+        notes = "\n\n".join(filter(None, (notes, description)))
+        changes["notes"] = notes
         description = ""
         changes["description"] = UNCODED if worded else None
-    if not worded:
-        return changes
     title = event.get("title") or ""
-    if plain_title(title) is None or record.linked_name(data, event, title):
+    named = record.linked_name(data, event, title)
+    if named and title not in notes:
+        changes["notes"] = "\n\n".join(filter(None, (notes, title)))
+    if not worded:
+        if named:
+            changes["title"] = None
+        return changes
+    if plain_title(title) is None or named:
         changes["title"] = plain_title(description) or UNCODED
     if description.strip().lower() in record.PLACEHOLDERS:
         changes["description"] = changes["title"] if "title" in changes else title
@@ -547,11 +562,12 @@ def _moveless(event: dict, named: dict[int, str], decisions: list) -> None:
             )
 
 
-def _change(decisions: list, event: dict, changes: dict, reason: str) -> None:
+def change(decisions: list, item: str, event: dict, changes: dict, reason: str) -> None:
+    """Each change set on the event and said, as a choice on `item`."""
     for name, value in changes.items():
         decisions.append(
             Decision(
-                f"event {event['id']}",
+                item,
                 name,
                 _said(event.get(name)),
                 _said(value),
@@ -648,15 +664,21 @@ def _batch(
             continue
         refused.pop(coding.event)
         done.add(coding.event)
-        _change(decisions, event, changes, f'The file\'s text says "{coding.quote}".')
+        change(
+            decisions,
+            f"event {event['id']}",
+            event,
+            changes,
+            f'The file\'s text says "{coding.quote}".',
+        )
     for eid, why in refused.items():
         event = events[eid]
-        changes = _fallback(data, event, batch.todo[eid])
+        changes = fallback(data, event, batch.todo[eid])
         reason = f"The model's coding was refused: {why}"
         if changes.get("kind") == EventKind.Noted.value:
             reason += " It is kept as a noted event, so nothing is lost."
         if changes:
-            _change(decisions, event, changes, reason)
+            change(decisions, f"event {eid}", event, changes, reason)
         else:
             decisions.append(Decision(f"event {eid}", "", "", "", reason))
         _moveless(event, named, decisions)

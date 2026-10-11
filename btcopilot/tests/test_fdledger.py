@@ -30,7 +30,7 @@ def test_header_names_the_file_version_date_and_counts():
         "File: Lund family.fd",
         "Saved by Family Diagram 2.1.23b2",
         "Imported: 2026-10-10",
-        "In the file: 3 people, 3 events, 1 pair-bonds, 0 relationship lines",
+        "In the file: 3 people, 3 events, 1 pair-bond, 0 relationship lines",
         "Choices made: 0",
         "The file's password and master key are left out of this record, for security.",
     ]
@@ -142,3 +142,16 @@ def test_a_choice_about_an_item_the_file_did_not_hold_is_still_written():
     assert text.endswith(
         'event 99, kind: was "shift"; the new diagram has "noted". Nothing coded it.'
     )
+
+
+def test_a_choice_on_a_whole_item_names_no_blank_field():
+    # R-0873
+    choice = Decision(
+        "person 1", "", "", "person 3", "Nobody in the diagram is this person."
+    )
+    ada = section(ledger([choice]), "person 1")
+    assert (
+        'Choice: the new diagram has "person 3". Nobody in the diagram is this person.'
+        in ada
+    )
+    assert "Choice on :" not in ada

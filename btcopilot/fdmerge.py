@@ -17,12 +17,18 @@ from dataclasses import dataclass, field
 
 # fdimport merges with this module and this module renumbers with fdimport;
 # neither uses the other at import time.
-from btcopilot import diagramjson, fdimport, prompts, record
-from btcopilot.familymatch import PLACEHOLDER, Family, Relation, Status, match
+from btcopilot import diagramjson, fdcoding, fdimport, prompts, record
+from btcopilot.familymatch import (
+    PLACEHOLDER,
+    Family,
+    Relation,
+    Status,
+    match,
+    unnamed,
+)
 from btcopilot.fdcoding import ask, heard, numbered
 from btcopilot.fdledger import Decision
 from btcopilot.llmutil import dataclass_to_json_schema
-from btcopilot.models import Author
 from btcopilot.schema import (
     DateCertainty,
     EventKind,
@@ -534,12 +540,12 @@ class Merge:
                     kept[key],
                     "The diagram already said otherwise; its value is kept.",
                 )
-        # A name the coach gave by family position stands for no name at all.
+        # A name by family position, or the app's stand-in, is no name at all.
         named = (
             lost["name"]
-            if record.generic_key(kept)
+            if unnamed(kept.get("name"))
             and lost.get("name")
-            and not record.generic_key(lost)
+            and not unnamed(lost["name"])
             else None
         )
         if named:
@@ -549,8 +555,8 @@ class Merge:
                 "name",
                 named,
                 named,
-                f"The diagram named them only by their place in the family, as "
-                f"{kept['name']}; the file's name takes its place.",
+                f'The diagram had no name for them yet, only "{kept.get("name") or ""}"; '
+                "the file's name takes its place.",
             )
         for key in ("name", "last_name"):
             if named and key == "name":
@@ -693,10 +699,36 @@ class Merge:
         }
         self.parented()
         self.join_events(events)
+        self.unnamed()
         taken = {q["id"] for q in self.data.get("questions") or []}
         held = [self.question(y, x, taken) for y in sorted(unsure) for x in unsure[y]]
-        self.validate(held)
         return self.data, self.decisions, held
+
+    def unnamed(self) -> None:
+        """An event the import adds or changes says what happened without
+        naming anyone it links, by the names the diagram keeps for the people
+        joined [Oracle: R-0457]: the coding pass read the file's names only."""
+        ours = {e["id"]: e for e in self.existing["events"]}
+        dropped = {kept: e for e, kept in self.joined.items() if e in self.old}
+        for event in self.data["events"]:
+            eid = event["id"]
+            if ours.get(eid) == event or not any(
+                record.linked_name(self.data, event, event.get(key) or "")
+                for key in ("title", "description")
+            ):
+                continue
+            source = eid if eid in self.old else dropped.get(eid)
+            item = (
+                f"event {self.old[source]}" if source else f"event {eid} of the diagram"
+            )
+            fdcoding.change(
+                self.decisions,
+                item,
+                event,
+                fdcoding.plain(self.data, event),
+                "Its words named someone already on the event by the name the "
+                "diagram keeps for them; they go to its notes.",
+            )
 
     def parented(self) -> None:
         """A birth the file brought to a person of the diagram names the
@@ -751,26 +783,6 @@ class Merge:
             f = twins.get(record.twin_key(self.events[e]))
             if f is not None:
                 self.join_event(self.events[f], self.events[e], TWIN)
-
-    def validate(self, held: list[dict]) -> None:
-        """The record's own rules on the diagram as the import leaves it."""
-        trial = copy.deepcopy(self.data)
-        trial["questions"] = [*(trial.get("questions") or []), *held]
-        deltas = record.diff(
-            {k: v for k, v in self.existing.items() if k != "questions"},
-            {k: v for k, v in trial.items() if k != "questions"},
-        )
-        deltas += [
-            {
-                "item_kind": ItemKind.Question.value,
-                "item_id": q["id"],
-                "field": None,
-                "before": None,
-                "after": q,
-            }
-            for q in held
-        ]
-        record.validate(trial, deltas, Author.Pro, undoing=False)
 
 
 def merge(

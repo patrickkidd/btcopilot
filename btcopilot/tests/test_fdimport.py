@@ -1,5 +1,6 @@
 import datetime
 import json
+import random
 from types import SimpleNamespace
 
 import pytest
@@ -27,7 +28,7 @@ from btcopilot.models import (
     ProactiveMessage,
 )
 from btcopilot.models.modelcall import ModelCall, Purpose
-from btcopilot.schema import from_dict
+from btcopilot.schema import NotedFact, from_dict
 from btcopilot.tests.fdfixtures import bundle, dumps, event, person, scene, shift, when
 from btcopilot.tests.test_fdmerge import Model, plain  # noqa: F401 (plain is autouse)
 from btcopilot.toolbox import ToolName, Toolbox
@@ -44,7 +45,7 @@ def coding(monkeypatch):
         seen.append([p["id"] for p in data["people"]])
         return data, [Decision("event 20", "notes", "", "", "Nothing to code.")]
 
-    monkeypatch.setattr(fdimport, "fdcoding", SimpleNamespace(code=code))
+    monkeypatch.setattr(fdcoding, "code", code)
     return seen
 
 
@@ -410,19 +411,30 @@ def test_events_the_record_counts_as_one_are_made_one_with_every_word_kept():
     day = when(2010, 5, 1)
     out = built(
         events=[
-            event(23, "noted", person=1, description="Graduated", dateTime=day),
             event(
-                24, "noted", person=1, description="Rehab", notes="Weeks.", dateTime=day
+                23,
+                "noted",
+                person=1,
+                description="Graduated from college",
+                dateTime=day,
+            ),
+            event(
+                24,
+                "noted",
+                person=1,
+                description="Went to rehab",
+                notes="Weeks.",
+                dateTime=day,
             ),
         ]
     )
     [kept] = out.data["events"]
-    assert kept["notes"] == "Rehab\nWeeks."
+    assert kept["notes"] == "Went to rehab\nWeeks."
     assert (
         fdimport.became(out)["event 24"]
-        == f"part of event {kept['id']}, noted: Graduated"
+        == f"part of event {kept['id']}, noted: Graduated from college"
     )
-    assert "the same event as event 23" in out.decisions[-1].reason
+    assert any("the same event as event 23" in one.reason for one in out.decisions)
 
 
 def test_a_merge_keeps_both_events_notes_and_only_the_words_that_differ():
@@ -431,34 +443,37 @@ def test_a_merge_keeps_both_events_notes_and_only_the_words_that_differ():
     out = built(
         events=[
             event(
-                23, "noted", person=1, description="Rehab", notes="Weeks.", dateTime=day
+                23,
+                "noted",
+                person=1,
+                description="Went to rehab",
+                notes="Weeks.",
+                dateTime=day,
             ),
             event(
                 24,
                 "noted",
                 person=1,
-                description="Rehab",
+                description="Went to rehab",
                 notes="Relapsed.",
                 dateTime=day,
             ),
-            event(25, "noted", person=1, description="Clinic", dateTime=day),
+            event(25, "noted", person=1, description="Saw a clinic", dateTime=day),
         ]
     )
     [kept] = out.data["events"]
-    assert kept["notes"] == "Weeks.\n\nRelapsed.\n\nClinic"
-    assert [
-        one.reason.startswith("The app counts it") for one in out.decisions[-2:]
-    ] == [True, True]
+    assert kept["notes"] == "Weeks.\n\nRelapsed.\n\nSaw a clinic"
+    assert sum(one.reason.startswith("The app counts it") for one in out.decisions) == 2
 
 
 def test_noted_events_recording_different_items_on_one_day_stay_two(monkeypatch):
     # R-0489, R-0364
     def code(data, model):
-        for one, item in zip(data["events"], ("Places", "Work")):
+        for one, item in zip(data["events"], (NotedFact.Places, NotedFact.Work)):
             one["item"] = item
         return data, []
 
-    monkeypatch.setattr(fdimport, "fdcoding", SimpleNamespace(code=code))
+    monkeypatch.setattr(fdcoding, "code", code)
     day = when(2019, 3, 1)
     out = built(
         events=[
@@ -603,6 +618,8 @@ def test_one_change_turn_and_one_undo_takes_it_all_off(test_user):
 def test_record_rules_refuse_before_anything_is_written(test_user):
     # R-0593
     out = built(events=[event(23, "shift", person=1, dateTime=when(2000, 1, 1))])
+    [shift] = [e for e in out.data["events"] if e["kind"] == "noted"]
+    shift.update(kind="shift", title="Moved away", description="Moved away")
     with pytest.raises(record.Invalid):
         fdimport.save(test_user.id, "Lund family", out, yes=False)
     assert Diagram.query.filter_by(name="Lund family").count() == 0
@@ -781,7 +798,7 @@ def test_every_model_call_of_an_import_is_on_the_ledger_as_the_imports(
         model("prompt", fdcoding.Answer, {}, 100)
         return data, []
 
-    monkeypatch.setattr(fdimport, "fdcoding", SimpleNamespace(code=code))
+    monkeypatch.setattr(fdcoding, "code", code)
     model = fdimport.meter(test_user.id)
     out = fdimport.build(fdfile.read(dumps(scene())), model.structured)
     made = fdimport.save(test_user.id, "Lund", out, yes=True, turn=model.turn_id)
@@ -857,3 +874,106 @@ def test_admin_import_into_a_diagram_previews_then_writes(
     assert {(c.purpose, c.user_id) for c in calls} == {(Purpose.Import, test_user.id)}
     [mail] = outbox
     assert mail.attachments[0].filename == "Ada's diagram - import record.txt"
+
+
+def into(people: list[dict]) -> SimpleNamespace:
+    """A diagram the import reads but never writes."""
+    data = {
+        "people": people,
+        "pair_bonds": [],
+        "events": [],
+        "questions": [],
+        "lastItemId": 1,
+    }
+    return SimpleNamespace(id=1, version=1, data=diagramjson.dumps(data))
+
+
+STAND_IN = {"id": 1, "name": "User", "primary": True}
+
+
+def test_the_stand_in_for_the_user_becomes_the_files_one_primary_person():
+    # R-0871, R-0851
+    out = fdimport.build(fdfile.read(dumps(scene())), Model(), into=into([STAND_IN]))
+    [you] = [p for p in out.data["people"] if p.get("primary")]
+    assert (you["id"], you["name"], you["last_name"]) == (1, "Ada", "Lund")
+    assert "User" not in [p["name"] for p in out.data["people"]]
+    assert out.primaries == []
+
+
+@pytest.mark.parametrize("marked", [(), (1, 2)])
+def test_with_none_or_several_marked_the_stand_in_stays_and_the_choice_is_asked(
+    marked,
+):
+    # R-0871
+    fd = scene()
+    for chunk in fd["people"]:
+        chunk["primary"] = chunk["id"] in marked
+    out = fdimport.build(fdfile.read(dumps(fd)), Model(), into=into([STAND_IN]))
+    people = by_id(out.data["people"])
+    assert people[1]["name"] == "User" and people[1]["primary"]
+    assert sorted(people[i]["name"] for i in out.primaries) == sorted(
+        ["Ada", "Bo"][: len(marked)]
+    )
+
+
+@pytest.mark.parametrize("seed", [1, 2, 3])
+def test_a_refusal_of_one_event_anywhere_leaves_out_that_event_only(
+    test_user, seed, monkeypatch
+):
+    # R-0868, R-0850
+    fd = scene(
+        events=[
+            *scene()["events"],
+            shift(23),
+            event(
+                24,
+                "noted",
+                person=2,
+                description="Quit drinking",
+                dateTime=when(2001, 1, 1),
+            ),
+        ]
+    )
+    events = [e["description"] for e in fd["events"] if e.get("description")]
+    refused = random.Random(seed).choice(events)
+    validate = record.validate
+
+    def refusing(data, deltas, *args, **kwargs):
+        for delta in deltas:
+            one = record._find(data, record.ItemKind.Event, delta["item_id"])
+            if (
+                delta["item_kind"] == "event"
+                and one
+                and refused in (one.get("notes") or "") + (one.get("description") or "")
+            ):
+                raise record.Invalid("refused", "Refused for the test.")
+        return validate(data, deltas, *args, **kwargs)
+
+    monkeypatch.setattr(record, "validate", refusing)
+    out = fdimport.build(fdfile.read(dumps(fd)), Model())
+    made = fdimport.save(test_user.id, "Lund family", out, yes=True)
+    assert made is not None
+    kept = diagramjson.loads(db.session.get(Diagram, made.id).data)["events"]
+    assert len(kept) == len(fd["events"]) - 1
+    [left] = [d for d in out.decisions if d.after == "left out"]
+    assert refused in left.before and "Refused for the test." in left.reason
+
+
+def test_events_the_coding_pass_drew_from_the_notes_are_counted_apart(monkeypatch):
+    # R-0878, R-0860
+    def code(data, model):
+        data["events"].append(
+            {
+                "id": 99,
+                "kind": "noted",
+                "person": 1,
+                "title": "Moved to Tulsa",
+                "description": "Moved to Tulsa",
+                "dateCertainty": "unknown",
+            }
+        )
+        return data, []
+
+    monkeypatch.setattr(fdcoding, "code", code)
+    out = built()
+    assert out.brought == {"people": 3, "pair_bonds": 1, "events": 4, "drawn": 1}

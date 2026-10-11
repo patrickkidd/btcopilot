@@ -149,7 +149,7 @@ def test_a_person_placed_by_position_is_asked_once_per_family_and_takes_the_file
     mother = next(p for p in data["people"] if p["id"] == 5)
     assert (mother["name"], mother["last_name"]) == ("Eva", "Berg")
     assert any(
-        d.field == "name" and d.after == "Eva" and "as Ada's mother" in d.reason
+        d.field == "name" and d.after == "Eva" and 'only "Ada\'s mother"' in d.reason
         for d in decisions
     )
     assert [b["notes"] for b in data["pair_bonds"]] == ["Met at school"]
@@ -267,11 +267,47 @@ def test_a_couple_event_is_one_only_once_the_couple_is(said, count):
 
 def test_the_model_reads_an_approximate_date_as_about_its_year():
     # R-0851, R-0877
-    ours = shift(20, 3, "2001-05-01", dateCertainty="approximate", symptom="up", title="Panic attacks", description="Panic attacks")
-    theirs = shift(30, 3, "2001-05-01", anxiety="up", title="Anxious at work", description="Anxious at work")
+    ours = shift(
+        20,
+        3,
+        "2001-05-01",
+        dateCertainty="approximate",
+        symptom="up",
+        title="Panic attacks",
+        description="Panic attacks",
+    )
+    theirs = shift(
+        30,
+        3,
+        "2001-05-01",
+        anxiety="up",
+        title="Anxious at work",
+        description="Anxious at work",
+    )
     eva = birth(31, 5, "1955-01-01", dateCertainty="approximate")
     model = Model({"people": [verdict("file 23", "diagram 5", "unsure")]})
     fdmerge.merge(existing([ours]), imported([theirs, eva]), model)
     [prompt] = model.prompts
     assert "shift about 2001;" in prompt and "shift on 2001-05-01;" in prompt
     assert "born about 1955" in prompt and "born 1980-03-01" in prompt
+
+
+def test_words_naming_a_joined_person_by_the_diagrams_name_go_to_the_notes():
+    # R-0457, R-0851
+    fought = shift(
+        20,
+        6,
+        "2001-05-01",
+        relationship="conflict",
+        relationshipTargets=[4],
+        title="Fought with Cy",
+        description="Fought with Cy",
+    )
+    file = imported([fought])
+    file["people"][1].update(name="Cyrus", nickName="Cy")
+    data, decisions, held = fdmerge.merge(existing(), file, Model())
+    [event] = [e for e in data["events"] if e["kind"] == "shift"]
+    assert event["relationshipTargets"] == [4]
+    assert "Cy" not in event["title"] + event["description"]
+    assert event["notes"] == "Fought with Cy"
+    assert {d.field for d in decisions if d.item == "event 20"} >= {"title", "notes"}

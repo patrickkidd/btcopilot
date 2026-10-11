@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from btcopilot import fdimport, proactive, record
 from btcopilot.discussions import chats
 from btcopilot.extensions import db
+from btcopilot.familymatch import unnamed
+from btcopilot.fdledger import many
 from btcopilot.models import (
     Author,
     Change,
@@ -44,23 +46,27 @@ class Summary:
     """What an import brought in, as the importer counts it."""
 
     turn_id: str
-    # Added or joined to someone already in the diagram.
+    # Added or joined to someone already in the diagram; `events` counts the
+    # `drawn` ones the coding pass found in the file's notes.
     people: int
     events: int
     pair_bonds: int
+    drawn: int = 0
     # The people the file marked as the one it is about, when not exactly one.
     primaries: tuple[int, ...] = ()
 
 
 def after_import(diagram_id: int, user_id: int, summary: Summary) -> ProactiveMessage:
     """One coach message in the person's thread, sent now. When the diagram
-    says nobody is them, the import also keeps the question of which one is,
-    under its own turn, so it is counted and reminded of with the rest."""
+    says nobody is them, or only a person with no name yet, the import also
+    keeps the question of which one is, under its own turn, so it is counted
+    and reminded of with the rest."""
     user = db.session.get(User, user_id)
     data = db.session.get(Diagram, diagram_id).get_diagram_data()
     who = None
-    if data.primary_person() is None:
-        who = _ask_who(diagram_id, user_id, summary, data)
+    primary = data.primary_person()
+    if primary is None or unnamed(primary.get("name")):
+        who = _ask_who(diagram_id, user_id, summary, data, primary)
         data = db.session.get(Diagram, diagram_id).get_diagram_data()
     others = [q for q in opened(diagram_id, data) if q["id"] != (who and who["id"])]
     message = ProactiveMessage(
@@ -76,8 +82,14 @@ def after_import(diagram_id: int, user_id: int, summary: Summary) -> ProactiveMe
 
 
 def _ask_who(
-    diagram_id: int, user_id: int, summary: Summary, data: DiagramData
+    diagram_id: int,
+    user_id: int,
+    summary: Summary,
+    data: DiagramData,
+    primary: dict | None,
 ) -> dict:
+    """On the person with no name yet, when the diagram has one, so the
+    answer joins them to the person chosen [Oracle: R-0871]."""
     taken = {q["id"] for q in data.questions}
     people = {p["id"]: p for p in data.people}
     named = [_name(people[i]) for i in summary.primaries if i in people]
@@ -89,8 +101,8 @@ def _ask_who(
             else "Which of the people in your file is you?"
         ),
         "kind": QuestionKind.Fact.value,
-        "item_kind": None,
-        "item_id": None,
+        "item_kind": primary and ItemKind.Person.value,
+        "item_id": primary and str(primary["id"]),
         "fact": None,
         "state": QuestionState.Held.value,
         "outcome": None,
@@ -120,12 +132,15 @@ def _name(person: dict) -> str:
 
 def _words(summary: Summary, checks: int, who: dict | None) -> str:
     said = [
-        f"Your file is in: {_many(summary.people, 'person', 'people')}, "
-        f"{_many(summary.events, 'event')} and {_many(summary.pair_bonds, 'pair-bond')}."
+        f"Your file is in: {many(summary.people, 'person', 'people')}, "
+        f"{many(summary.events - summary.drawn, 'event')} and "
+        f"{many(summary.pair_bonds, 'pair-bond')}."
     ]
+    if summary.drawn:
+        said.append(f"I also found {many(summary.drawn, 'more event')} in your notes.")
     if checks:
         said.append(
-            f"There {_is(checks)} {_many(checks, 'thing')} in it "
+            f"There {_is(checks)} {many(checks, 'thing')} in it "
             "I'd like to check with you, a few at a time as we go."
         )
     if who:
@@ -135,10 +150,6 @@ def _words(summary: Summary, checks: int, who: dict | None) -> str:
     else:
         said.append("Where would you like to start?")
     return " ".join(said)
-
-
-def _many(n: int, one: str, more: str | None = None) -> str:
-    return f"{n} {one if n == 1 else more or one + 's'}"
 
 
 def _is(n: int) -> str:
@@ -176,7 +187,7 @@ def block(diagram_id: int, data: DiagramData) -> str:
     if not found:
         return ""
     return (
-        f"{HEAD}\n{_many(len(found), 'question')} the desktop file import kept "
+        f"{HEAD}\n{many(len(found), 'question')} the desktop file import kept "
         f"{_is(len(found))} still open: "
         f"{', '.join(q['id'] for q in found)}."
     )
@@ -219,7 +230,7 @@ def reminder(user: User, now: datetime.datetime) -> ProactiveMessage | None:
             trigger=Trigger.Import,
             key=f"{turn}:{reminded + 1}",
             question=(
-                f"{_many(len(found), 'thing').capitalize()} from the file you brought in "
+                f"{many(len(found), 'thing').capitalize()} from the file you brought in "
                 f"{_is(len(found))} still to check with you. "
                 "Shall we look at one now?"
             ),

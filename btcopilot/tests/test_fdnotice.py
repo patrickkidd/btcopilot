@@ -60,12 +60,9 @@ def _add(kind: ItemKind, item: dict) -> dict:
     }
 
 
-def _summary(primaries=()) -> Summary:
+def _summary(primaries=(), **counts) -> Summary:
     return Summary(
-        turn_id=TURN,
-        people=3,
-        events=0,
-        pair_bonds=0,
+        **{"turn_id": TURN, "people": 3, "events": 0, "pair_bonds": 0, **counts},
         primaries=primaries,
     )
 
@@ -270,3 +267,34 @@ def test_each_coach_turn_sees_the_open_import_questions_until_closed(
         turn_id="t-coach",
     )
     assert fdnotice.block(imported.id, data_of(imported)) == ""
+
+
+def test_the_files_own_events_are_counted_apart_from_those_found_in_its_notes(
+    test_user, imported, push
+):
+    # R-0878
+    message = fdnotice.after_import(
+        imported.id,
+        test_user.id,
+        _summary((ANN, BOB), events=7, drawn=2, pair_bonds=1, people=1),
+    )
+    assert message.question.startswith(
+        "Your file is in: 1 person, 5 events and 1 pair-bond. "
+        "I also found 2 more events in your notes."
+    )
+
+
+def test_a_stand_in_for_the_user_still_has_the_file_ask_which_person_is_them(
+    test_user, imported, push
+):
+    # R-0871, R-0878
+    record.apply(
+        imported.id,
+        [_add(ItemKind.Person, {**asdict(Person(id=1, name="User")), "primary": True})],
+        author=Author.Pro,
+        turn_id="t-first",
+    )
+    message = fdnotice.after_import(imported.id, test_user.id, _summary((ANN, BOB)))
+    assert message.question.endswith("First, which of Ann Lark and Bob Lark is you?")
+    [who] = [q for q in data_of(imported).questions if q["text"].startswith("Which")]
+    assert (who["item_kind"], who["item_id"]) == (ItemKind.Person.value, "1")

@@ -308,3 +308,25 @@ def test_one_disagreement_is_enough_to_ask(other):
     m = match(nell_married_sam(), nell_married_sam(**other))
     assert kin(m, 30) == (Status.Ambiguous, None)
     assert kin(match(nell_married_sam(), nell_married_sam()), 30) == (Status.Name, 30)
+
+
+def test_a_first_name_with_no_last_name_on_one_side_is_at_least_a_doubt():
+    # R-0851
+    a = diagram([person(1, "Ada", gender="female"), person(2, "John")])
+    b = diagram(
+        [
+            person(7, "Ada", "Lund", "female"),
+            person(8, "Bo", "Lund", "male"),
+            person(9, "Sam Johnson"),
+        ]
+    )
+    m = match(a, b)
+    assert (m.people[1].status, m.people[1].candidates) == (Status.Ambiguous, [7])
+    assert kin(m, 2) == (Status.Unmatched, None)
+
+
+def test_the_apps_stand_in_name_is_no_name_and_meets_the_files_one_primary():
+    # R-0871, R-0853
+    a = diagram([person(1, "User", primary=True)])
+    b = diagram([person(7, "Patrick", "Stinson", "male", primary=True)])
+    assert kin(match(a, b), 1) == (Status.Name, 7)

@@ -11,7 +11,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import cache
 
-from btcopilot.schema import EventKind, PersonKind
+from btcopilot.profile import PLACEHOLDER_NAME
+from btcopilot.schema import DEFAULT_SUBJECT_NAME, EventKind, PersonKind
 
 NICKNAMES = [
     {"bob", "bobby", "rob", "robbie", "robert", "bert"},
@@ -104,7 +105,12 @@ ROLES = {
     "unknown",
     "unnamed",
 }
+# The names the app gives a person before anyone has named them.
+STAND_INS = {PLACEHOLDER_NAME.lower(), DEFAULT_SUBJECT_NAME.lower()}
 THRESHOLD = 0.75
+# A first name the same, a common short form of it, or the same name spelled
+# another way; not a mere prefix or initial.
+SPELLED = 0.85
 POSITION = 0.5
 EPSILON = 0.05
 YEAR = re.compile(r"\b(1[5-9]\d\d|20\d\d)\b")
@@ -204,11 +210,17 @@ class Kin:
         return not self.first
 
 
+def unnamed(name: str | None) -> bool:
+    """A name that names nobody: empty, someone's relation, a role word, or
+    the app's stand-in for the person before they are named."""
+    return (
+        bool(PLACEHOLDER.search(name or "")) or set(tokens(name)) <= ROLES | STAND_INS
+    )
+
+
 def kin(person: dict, born: int | None) -> Kin:
     name = person.get("name") or ""
-    own = tokens(name)
-    if PLACEHOLDER.search(name) or set(own) <= ROLES:
-        own = []
+    own = [] if unnamed(name) else tokens(name)
     given = own + tokens(person.get("nickName")) + tokens(person.get("middleName"))
     firsts = set(given) | ({"".join(own)} if len(own) > 1 else set())
     last = person.get("last_name") or person.get("lastName")
@@ -508,8 +520,26 @@ class Matcher:
                 else:
                     self.link(x, y, False)
             if not fresh:
+                self.namesakes()
                 return
             self.walk()
+
+    def namesakes(self):
+        """Two people still apart whose first names are one name, as said,
+        shortened or spelled another way, one of them with no last name, are at least a doubt: the model judges them and, unsure,
+        the person is asked [Oracle: R-0851]."""
+        for x, ka in self.a.people.items():
+            if x in self.ab or ka.unnamed:
+                continue
+            for y, kb in self.b.people.items():
+                if (
+                    y not in self.ba
+                    and not kb.unnamed
+                    and token_score(ka.first, kb.first) >= SPELLED
+                    and not conflict(ka, kb)
+                    and not (ka.lasts and kb.lasts)
+                ):
+                    self.doubt(x, y)
 
     def hints(self) -> dict[int, set[int]]:
         out = defaultdict(set)
