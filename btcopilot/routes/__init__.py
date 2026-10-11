@@ -5,7 +5,7 @@ import uuid
 
 from flask import Blueprint, abort, request
 from flask_wtf.csrf import CSRFError, generate_csrf
-from werkzeug.exceptions import Forbidden
+from werkzeug.exceptions import Forbidden, HTTPException
 
 import btcopilot
 from btcopilot import auth
@@ -139,6 +139,15 @@ def _csrf_error(e):
 def _read_only(e):
     """Said in words, where every other refusal is a bare Forbidden."""
     return e.description, 403
+
+
+@bp.errorhandler(HTTPException)
+def _refused(e):
+    """A refusal is answered with its own words, never the HTML error page:
+    the page shows the person those words as they are."""
+    if not 400 <= (e.code or 0) < 500:
+        return e
+    return e.description, e.code
 
 
 @bp.errorhandler(ValueError)

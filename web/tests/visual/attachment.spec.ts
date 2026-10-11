@@ -138,3 +138,46 @@ test("a file picked or dropped goes with the message, reads, and shows what the 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+// R-0882
+test("the paperclip's sheet sits over the passkey card the page offered, which is still there after", async ({ page }, info) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("fd-home-screen-asked", String(Date.now()));
+    Object.defineProperty(window, "PublicKeyCredential", {
+      configurable: true,
+      value: { isUserVerifyingPlatformAuthenticatorAvailable: async () => true },
+    });
+  });
+  // the card comes once the paperclip is tapped: at phone width it covers the
+  // chat bar, so the paperclip cannot be reached while it is up
+  let offer: () => void = () => undefined;
+  const offered = new Promise<void>((go) => (offer = go));
+  await page.route("**/app/passkeys", async (route) => {
+    await offered;
+    await route.fulfill({ json: { passkeys: [] } });
+  });
+  await page.goto("/app/");
+  await expect(page.locator(".bub").last()).toBeVisible();
+
+  await page.locator("#attach").click();
+  offer();
+  const card = page.locator(".hs-card", { hasText: "Sign in faster" });
+  await expect(card).toBeAttached();
+  const sheet = page.locator(".fs-sheet.fl");
+  // every button on the sheet is the topmost thing at its centre, so a tap reaches it
+  await expect
+    .poll(() =>
+      sheet.locator("[data-act], .cardx").evaluateAll((buttons) =>
+        buttons.every((b) => {
+          const r = b.getBoundingClientRect();
+          return b.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        }),
+      ),
+    )
+    .toBe(true);
+  await page.screenshot({ path: info.outputPath("sheet-over-passkey.png") });
+
+  await sheet.locator(".cardx").click();
+  await expect(sheet).not.toHaveClass(/\bin\b/);
+  await expect(card).toBeVisible();
+});

@@ -1281,6 +1281,9 @@ button { font-family: inherit; }
 .fs-glyph.clip svg { width: 18px; height: 18px; }
 /* a file dragged over the chat on a computer lands on it */
 #chat-screen.dropping .chat { outline: 2px dashed var(--data); outline-offset: -6px; }
+/* the paperclip's sheet is asked for, so it sits over a card the page offered
+   on its own (the passkey or home screen card, at 60) until it is answered */
+.fs-scrim.fl, .fs-sheet.fl { z-index: 70; }
 .fs-sheet.fl { max-height: min(85%, 85dvh); }
 .fs-sheet.fl .cf-t { padding-right: 44px; overflow-wrap: anywhere; }
 .fl-text { min-height: 0; overflow-y: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 15px/1.45 var(--sans); color: var(--ink); }
