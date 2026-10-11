@@ -158,6 +158,16 @@ def _enum_param(cls, description: str) -> dict:
     return {"type": "string", "enum": _values(cls), "description": description}
 
 
+# A person's words beyond the name, by the name the tool gives them; the file
+# import writes them and matching people reads the other names.
+PERSON_TEXT = {
+    "notes": "notes",
+    "middle_name": "middleName",
+    "nickname": "nickName",
+    "birth_name": "birthName",
+    "alias": "alias",
+}
+
 # The event fields an edit may empty, by the name the tool gives them. Kind,
 # date and date_certainty stay: every event has them.
 CLEARABLE = {
@@ -288,6 +298,11 @@ def schemas(coder: bool = False) -> list[dict]:
                     "parents": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Parents],
+                    },
+                    **{field: {"type": "string"} for field in PERSON_TEXT},
+                    "primary": {
+                        "type": "boolean",
+                        "description": "true: this person is the user, and no one else is.",
                     },
                 },
             },
@@ -1264,13 +1279,33 @@ class Toolbox:
     # ── EDIT ────────────────────────────────────────────────────────────────
 
     def _edit_person(self, args: dict) -> tuple[str, dict]:
+        """Every attribute of a person the app keeps but the links other tools
+        own [Oracle: R-0881]. The user is one person: marking one takes the
+        mark off anyone else [Oracle: R-0879]."""
         fields = {}
         for key in ("name", "last_name", "parents"):
             if args.get(key) is not None:
                 fields[key] = args[key]
+        for key, field in PERSON_TEXT.items():
+            if args.get(key) is not None:
+                fields[field] = args[key]
         if args.get("gender"):
             fields["gender"] = choice(PersonKind, args["gender"], "genders").value
-        return self._write(ItemKind.Person, args.get("id"), fields)
+        if args.get("primary") is not None:
+            fields["primary"] = bool(args["primary"])
+        others = [
+            {
+                "item_kind": ItemKind.Person.value,
+                "item_id": person["id"],
+                "field": "primary",
+                "after": False,
+            }
+            for person in self.data.people
+            if fields.get("primary")
+            and person.get("primary")
+            and str(person["id"]) != str(args.get("id"))
+        ]
+        return self._write(ItemKind.Person, args.get("id"), fields, others=others)
 
     def _edit_pair_bond(self, args: dict) -> tuple[str, dict]:
         data = self.data
@@ -2118,7 +2153,12 @@ class Toolbox:
         return any(str(i.get("id")) == str(item_id) for i in collection)
 
     def _write(
-        self, kind: ItemKind, item_id, fields: dict, statement_id: int | None = None
+        self,
+        kind: ItemKind,
+        item_id,
+        fields: dict,
+        statement_id: int | None = None,
+        others: list[dict] = (),
     ) -> tuple[str, dict]:
         if not fields:
             raise ToolError(
@@ -2142,6 +2182,7 @@ class Toolbox:
             {"item_kind": kind.value, "item_id": item_id, "field": field, "after": value}
             for field, value in fields.items()
         ]
+        deltas += others
         if new and kind not in (ItemKind.Cluster, ItemKind.Question):
             deltas.append(
                 {
