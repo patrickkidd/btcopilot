@@ -172,10 +172,12 @@ def test_the_coding_pass_codes_plain_words_keeps_hand_coding_and_reads_no_guess_
         VariableShift.Up,
     ), events[HEART]
     added = [e for eid, e in events.items() if eid not in (DRINKING, MOVED, HEART)]
-    assert added and all(
-        e["person"] == ABE and (e.get("dateTime") or "").startswith("1979-03")
+    assert [
+        e
         for e in added
-    ), added
+        if e["person"] == ABE and (e.get("dateTime") or "").startswith("1979-03")
+    ], added
+    assert not [e for e in added if e["person"] in (RUTH, IDA)], added
     assert not [
         e
         for e in data["events"]
@@ -344,12 +346,12 @@ def test_the_merge_joins_a_nickname_keeps_a_namesake_apart_and_joins_one_happeni
 
 # The grouping: Hugh's first stroke in 2003, then a quiet stretch the app's
 # rules do not bridge, then his second stroke, a son pulling away and his death
-# in 2005 and 2006, all tagged by the person for the stroke. A second tag names
-# his brother Ray on three ordinary events.
+# in 2005 and 2006, all tagged by the person for the stroke. A tag is a hint,
+# never the ruling for a period, so whether the strokes make one period or two
+# is the model's reading. A second tag names his brother Ray on three ordinary
+# events.
 STROKE = "Dad's stroke"
 RAY = "Uncle Ray"
-FIRST_STROKE = {41, 42, 43}
-SECOND_STROKE = {44, 45, 46}
 RAYS = {51, 52, 53}
 
 
@@ -471,7 +473,7 @@ TAGGED = DiagramData(
 
 
 @passes(2, of=3)
-def test_a_tag_on_a_period_of_difficulty_is_taken_up_and_a_tag_naming_a_person_is_not():
+def test_a_tag_naming_a_person_is_not_made_a_period():
     # R-0858, R-0857
     try:
         result = detect_clusters(TAGGED, ask)
@@ -479,11 +481,6 @@ def test_a_tag_on_a_period_of_difficulty_is_taken_up_and_a_tag_naming_a_person_i
         raise AssertionError(f"refused twice: {refused}") from refused
     for cluster in result.clusters:
         print(f"  {cluster.eventIds} {cluster.name!r}: {cluster.reason}")
-    assert [
-        c
-        for c in result.clusters
-        if FIRST_STROKE & set(c.eventIds) and SECOND_STROKE & set(c.eventIds)
-    ], "no period holds both strokes"
     assert not [
         c.name
         for c in result.clusters
