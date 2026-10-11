@@ -153,7 +153,8 @@ def undo(
     user_id: int | None = None,
     session_id: int | None = None,
 ) -> Change:
-    """Reverse every delta of `turn_id`, newest first, and log the reversal."""
+    """Reverse every delta of `turn_id`, newest first, and log the reversal.
+    A question the turn made comes off with it; one from another turn stays."""
     with _locked(diagram_id) as diagram:
         changes = (
             Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)
@@ -164,12 +165,15 @@ def undo(
             raise ValueError(f"no changes for turn {turn_id} on diagram {diagram_id}")
 
         data = diagramjson.loads(diagram.data)
-        applied = []
+        made = _made_questions(data, changes)
+        applied = [_drop(data, ItemKind.Question, question_id) for question_id in made]
         for change in changes:
             # A question is put back only where a removal closed it.
             removal = any(_removes(delta) for delta in change.deltas)
             for delta in reversed(change.deltas):
-                if delta["item_kind"] == ItemKind.Question.value and not removal:
+                if delta["item_kind"] == ItemKind.Question.value and (
+                    not removal or str(delta["item_id"]) in made
+                ):
                     continue
                 inverse = _inverse(delta)
                 actual = _get(data, inverse)
@@ -192,6 +196,29 @@ def undo(
             None,
             undoing=True,
         )
+
+
+def _made_questions(data: dict, changes: list[Change]) -> list[str]:
+    """The questions the turn made that still stand as it left them. They are
+    part of what the turn wrote and come off with it; one asked, answered or
+    turned down since stays, since what the user has seen must stay where the
+    coach can see it (R-0006)."""
+    left = {}
+    for change in reversed(changes):
+        for delta in change.deltas:
+            if delta["item_kind"] != ItemKind.Question.value:
+                continue
+            question_id = str(delta["item_id"])
+            if delta["field"] is None and delta["before"] is None:
+                left[question_id] = dict(delta["after"])
+            elif question_id in left:
+                left[question_id][delta["field"]] = delta["after"]
+    return [
+        question_id
+        for question_id, item in left.items()
+        if _set_fields(diagramjson.to_json(_find(data, ItemKind.Question, question_id)))
+        == _set_fields(item)
+    ]
 
 
 def rewind(data: dict, deltas: list[dict]):

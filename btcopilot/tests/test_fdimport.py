@@ -22,6 +22,7 @@ from btcopilot.models.modelcall import ModelCall, Purpose
 from btcopilot.schema import from_dict
 from btcopilot.tests.fdfixtures import bundle, dumps, event, person, scene, shift, when
 from btcopilot.tests.test_fdmerge import Model, plain  # noqa: F401 (plain is autouse)
+from btcopilot.toolbox import ToolName, Toolbox
 
 TODAY = datetime.date(2026, 10, 10)
 
@@ -44,7 +45,7 @@ def imported(**more) -> fdimport.Imported:
 
 
 def built(**more) -> fdimport.Imported:
-    return fdimport.build(fdfile.read(dumps(scene(**more))))
+    return fdimport.build(fdfile.read(dumps(scene(**more))), Model())
 
 
 def by_id(items: list[dict]) -> dict:
@@ -249,7 +250,7 @@ def test_the_files_values_go_to_the_pass_and_stay_in_the_ledger_only():
             )
         )
     )
-    out = fdimport.build(fd)
+    out = fdimport.build(fd, Model())
     data = out.data
     assert not [
         item
@@ -665,6 +666,35 @@ def test_into_a_diagram_one_turn_holds_the_doubt_and_one_undo_takes_it_off(
     data = diagramjson.loads(db.session.get(Diagram, diagram.id).data)
     assert [p["name"] for p in data["people"]] == ["Ada", "Ada's husband", "Cy"]
     assert ([e["id"] for e in data["events"]], data["questions"]) == ([5], [])
+
+
+def test_the_coachs_undo_takes_off_an_import_and_its_questions_but_not_an_earlier_one(
+    test_user, side_call
+):
+    # R-0850, R-0006
+    diagram = stored(test_user)
+    Toolbox(diagram.id, "t0", session_id=7, author=Author.Coach).call(
+        ToolName.AddQuestion,
+        {
+            "text": "When did Ada and her husband marry?",
+            "kind": "fact",
+            "state": "held",
+            "item_kind": "person",
+            "item_id": "1",
+        },
+    )
+    model = fdimport.meter(test_user.id, diagram)
+    out = fdimport.build(fdfile.read(dumps(scene())), model.structured, into=diagram)
+    fdimport.save(test_user.id, "", out, yes=True, turn=model.turn_id)
+    data = diagramjson.loads(db.session.get(Diagram, diagram.id).data)
+    assert [q["state"] for q in data["questions"]] == ["held", "held"]
+
+    Toolbox(diagram.id, "t2", session_id=7, author=Author.Coach).call(ToolName.Undo, {})
+    data = diagramjson.loads(db.session.get(Diagram, diagram.id).data)
+    assert [p["name"] for p in data["people"]] == ["Ada", "Ada's husband", "Cy"]
+    assert [(q["text"], q["state"]) for q in data["questions"]] == [
+        ("When did Ada and her husband marry?", "held")
+    ]
 
 
 def test_every_model_call_of_an_import_is_on_the_ledger_as_the_imports(

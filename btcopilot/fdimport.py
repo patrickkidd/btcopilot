@@ -654,7 +654,7 @@ def _twins(out: Imported) -> None:
         )
 
 
-def build(fd: dict, model=fdcoding.ask, into: Diagram | None = None) -> Imported:
+def build(fd: dict, model, into: Diagram | None = None) -> Imported:
     """Read the file's items, code what the mapping left, then renumber; with
     `into`, the items are brought into that diagram [Oracle: R-0851]."""
     out = convert(fd)
