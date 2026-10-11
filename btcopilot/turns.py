@@ -6,7 +6,9 @@ once. Everything the turn does goes into the turn's log as it happens, and the
 page follows that log. A page that reloads reads the log from the start.
 """
 
+import dataclasses
 import datetime
+import json
 import logging
 import uuid
 
@@ -335,7 +337,7 @@ def _import(turn_id: str, discussion: Discussion, said: Statement) -> dict:
     coach's own, however the import ends. One the person stopped writes
     nothing; one the import cannot write ends the turn saying why, the file
     kept for the hour to try again."""
-    model = fdimport.meter(discussion.user_id, discussion.diagram)
+    model = fdimport.meter(discussion.user_id, discussion.diagram, turn_id)
     try:
         return _brought(turn_id, discussion, said, model)
     except Stopped:
@@ -371,10 +373,62 @@ def _refused(
 def _brought(
     turn_id: str, discussion: Discussion, said: Statement, model: Metered
 ) -> dict:
-    """The import as every import runs: one change-log turn, its clusters
-    regrouped, the coach's first message after an import as this turn's reply,
-    and the import record mailed [Oracle: R-0878, R-0873]. Each model call
-    holds the session and stops at the person's stop."""
+    """The import as every import runs, written once: trying the turn again
+    after the import's change-log turn is in runs only the steps after the
+    write that did not finish [Oracle: R-0880]."""
+    diagram = discussion.diagram
+    if not Change.query.filter_by(diagram_id=diagram.id, turn_id=model.turn_id).first():
+        _written(turn_id, discussion, said, model)
+    held = attachments.held(_landing(turn_id))
+    if held is None:
+        raise attachments.Gone(attachments.GONE)
+    landing = json.loads(held)
+    done = {fdafter.Step(step) for step in landing["done"]}
+    try:
+        sent = fdafter.land(
+            diagram.id,
+            discussion.user_id,
+            fdnotice.Summary(**landing["summary"]),
+            landing["mail"],
+            done,
+        )
+    finally:
+        landing["done"] = sorted(done)
+        attachments.hold(_landing(turn_id), json.dumps(landing).encode())
+    # what the chip on the message shows the file became
+    said.attachment_text = sent.question
+    TokenMeter.charge(discussion.user_id, model.spent)
+    turnstore.save(turn_id, discussion.id, [turnstore.done(sent.statement.id)])
+    db.session.commit()
+    attachments.drop(turn_id)
+    attachments.drop(_landing(turn_id))
+    turnlog.clear(discussion.id)
+    reply = {
+        "statement": sent.question,
+        "statement_id": sent.statement.id,
+        "views": [],
+        "events": [],
+        "turn_id": turn_id,
+        "kind": StatementKind.Turn.value,
+        "discussion_id": discussion.id,
+        "session": session_payload(discussion),
+        "imported": True,
+    }
+    turnlog.append(turn_id, dict(reply, type=TurnEventKind.Done.value))
+    return reply
+
+
+def _landing(turn_id: str) -> str:
+    """Where what the steps after the write need waits beside the file."""
+    return f"{turn_id}:landing"
+
+
+def _written(
+    turn_id: str, discussion: Discussion, said: Statement, model: Metered
+) -> None:
+    """The file brought into the diagram as one change-log turn, what the steps
+    after it need left beside the file first. Each model call holds the session
+    and stops at the person's stop."""
     user = discussion.user
     diagram = discussion.diagram
 
@@ -387,44 +441,28 @@ def _brought(
         raise attachments.Gone(attachments.GONE)
     fd = attachments.File(said.attachment_name, data).fd
     out = fdimport.build(fd, heard, into=diagram)
-    fdimport.save(user.id, diagram.name, out, yes=True, turn=model.turn_id)
-    fdafter.catch_up(diagram.id, turn_id=model.turn_id, user_id=user.id)
-    sent = fdnotice.after_import(
-        diagram.id,
-        user.id,
-        fdnotice.Summary(model.turn_id, **out.brought, primaries=tuple(out.primaries)),
+    summary = fdnotice.Summary(
+        model.turn_id, **out.brought, primaries=tuple(out.primaries)
     )
-    fdledger.send(
-        user.username,
+    ledger = fdledger.text(
         said.attachment_name,
-        diagram.name,
-        fdledger.text(
-            said.attachment_name,
-            fd,
-            fdimport.became(out),
-            out.decisions,
-            datetime.date.today(),
-        ),
+        fd,
+        fdimport.became(out),
+        out.decisions,
+        datetime.date.today(),
     )
-    # what the chip on the message shows the file became
-    said.attachment_text = sent.question
-    TokenMeter.charge(user.id, model.spent)
-    turnstore.save(turn_id, discussion.id, [turnstore.done(sent.statement.id)])
-    db.session.commit()
-    attachments.drop(turn_id)
-    turnlog.clear(discussion.id)
-    reply = {
-        "statement": sent.question,
-        "statement_id": sent.statement.id,
-        "views": [],
-        "events": [],
-        "turn_id": turn_id,
-        "kind": StatementKind.Turn.value,
-        "discussion_id": discussion.id,
-        "session": session_payload(discussion),
+    landing = {
+        "summary": dataclasses.asdict(summary),
+        "mail": {
+            "email": user.username,
+            "file": said.attachment_name,
+            "name": diagram.name,
+            "ledger": ledger,
+        },
+        "done": [],
     }
-    turnlog.append(turn_id, dict(reply, type=TurnEventKind.Done.value))
-    return reply
+    attachments.hold(_landing(turn_id), json.dumps(landing).encode())
+    fdimport.save(user.id, diagram.name, out, yes=True, turn=model.turn_id)
 
 
 def _stopped(

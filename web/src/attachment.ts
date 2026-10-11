@@ -19,6 +19,32 @@ export const fromFolder = (folder: string, files: File[]): File | null => {
   return pickle ? new File([pickle], folder) : null;
 };
 
+/** What a folder picker gave: the folder's own diagram.pickle under the
+ * folder's name, or, from a browser that let one file be picked instead, that
+ * file as it is. */
+export const fromPicked = (files: File[]): File | null => {
+  const folder = files[0]?.webkitRelativePath.split("/")[0];
+  if (!folder) return files[0] ?? null;
+  return fromFolder(
+    folder,
+    files.filter((one) => one.webkitRelativePath === `${folder}/${PICKLE}`),
+  );
+};
+
+export enum Pick {
+  File = "file",
+  Folder = "folder",
+}
+
+/** What the paperclip asks: a file the coach reads, or a desktop Family
+ * Diagram file, which is a folder (R-0882). */
+export const CHOICE =
+  `${closeX()}<div class="cf-t">What are you attaching?</div>` +
+  `<div class="cf-btns">` +
+  `<button class="cf-go" type="button" data-act="${Pick.File}">A photo, PDF or text file</button>` +
+  `<button class="cf-no" type="button" data-act="${Pick.Folder}">A Family Diagram file</button>` +
+  `</div>`;
+
 /** Every file directly in a folder dropped on the chat; a folder is read in
  * batches until one comes back empty. */
 async function inside(folder: FileSystemDirectoryEntry): Promise<File[]> {
@@ -69,21 +95,28 @@ export class Picked {
 export class Attachment {
   readonly picked = new Picked();
   private input = document.createElement("input");
+  private folderInput = document.createElement("input");
   private slot = el("div", "attached");
   private sheet: Sheet;
   private texts = new WeakMap<HTMLElement, string>();
 
   constructor(button: HTMLElement, field: HTMLElement, screen: HTMLElement, list: HTMLElement) {
-    this.input.type = "file";
+    this.input.type = this.folderInput.type = "file";
     this.input.accept = KINDS;
-    this.input.hidden = true;
+    this.folderInput.webkitdirectory = true;
+    this.input.hidden = this.folderInput.hidden = true;
     this.input.setAttribute("aria-label", "Attach a file");
-    button.after(this.input);
-    button.addEventListener("click", () => {
-      this.input.value = "";
-      this.input.click();
-    });
+    this.folderInput.setAttribute("aria-label", "Attach a Family Diagram file");
+    button.after(this.input, this.folderInput);
+    button.addEventListener("click", () => this.sheet.show(CHOICE));
     this.input.addEventListener("change", () => this.input.files?.[0] && this.pick(this.input.files[0]));
+    this.folderInput.addEventListener("change", () => {
+      const files = [...(this.folderInput.files ?? [])];
+      if (!files.length) return;
+      const file = fromPicked(files);
+      if (file) this.pick(file);
+      else toast(NO_DIAGRAM, true);
+    });
     this.slot.hidden = true;
     field.prepend(this.slot);
     this.slot.addEventListener("click", (e) => {
@@ -110,7 +143,14 @@ export class Attachment {
     });
     this.sheet = new Sheet(screen, "fl");
     screen.addEventListener("click", (e) => {
-      if ((e.target as Element).closest(".fs-sheet.fl .cardx, .fs-scrim.fl")) this.sheet.lower();
+      const target = e.target as Element;
+      const act = target.closest<HTMLElement>(".fs-sheet.fl [data-act]")?.dataset.act;
+      if (act || target.closest(".fs-sheet.fl .cardx, .fs-scrim.fl")) this.sheet.lower();
+      if (!act) return;
+      // opened in the tap itself, which a browser asks of a file picker
+      const picker = act === Pick.Folder ? this.folderInput : this.input;
+      picker.value = "";
+      picker.click();
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && this.sheet.up) this.sheet.lower();

@@ -866,13 +866,14 @@ def deltas(out: Imported) -> list[dict]:
     ]
 
 
-def meter(user_id: int, into: Diagram | None = None) -> Metered:
+def meter(user_id: int, into: Diagram | None = None, key: str | None = None) -> Metered:
     """The model as the import calls it: each call on the model-call ledger,
-    under the import's own turn [Oracle: R-0876]."""
+    under the import's own turn [Oracle: R-0876]; `key` names that turn, so
+    the chat turn that brought a file in finds its import again."""
     return Metered(
         user_id,
         None if into is None else into.id,
-        TURN.format(uuid.uuid4().hex),
+        TURN.format(key or uuid.uuid4().hex),
         Purpose.Import,
     )
 

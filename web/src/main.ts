@@ -1273,9 +1273,10 @@ function follow(turnId: string): void {
         chat.extend();
         feedback();
         // a reply held for a vote is not read aloud: it would say which is the coach's
-        if (speak.checked && !chat.feedback()) speech.say(reply.statement);
+        const voted = chat.feedback() && !reply.imported;
+        if (speak.checked && !voted) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => lens.aim(chip));
-        said.vote(turnId);
+        if (voted) said.vote(turnId);
         stopFollowing();
         if (!(await store.refresh(Part.Record, Part.Sittings))) return;
         void notices.refresh();

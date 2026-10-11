@@ -193,8 +193,7 @@ def diagram_import(path, email, name, into, ledger, yes):
         datetime.date.today(),
     )
     if made:
-        fdafter.catch_up(made.id, turn_id=model.turn_id, user_id=user.id)
-        fdnotice.after_import(
+        fdafter.land(
             made.id,
             user.id,
             fdnotice.Summary(
@@ -202,8 +201,8 @@ def diagram_import(path, email, name, into, ledger, yes):
                 **imported.brought,
                 primaries=tuple(imported.primaries),
             ),
+            {"email": user.username, "file": path.name, "name": name, "ledger": text},
         )
-        fdledger.send(user.username, path.name, name, text)
     else:
         ledger = ledger or pathlib.Path(fdledger.attachment(name))
         ledger.write_text(text)

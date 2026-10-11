@@ -27,6 +27,7 @@ from btcopilot import (
     fdcoding,
     fdfile,
     fdimport,
+    fdledger,
     prompts,
     turnlog,
     turns,
@@ -34,6 +35,7 @@ from btcopilot import (
 from btcopilot.extensions import db
 from btcopilot.llmutil import Served, Spent, Text
 from btcopilot.models import (
+    Change,
     ModelCall,
     Observation,
     ObservationKind,
@@ -629,3 +631,40 @@ def test_an_import_the_diagram_refuses_ends_the_turn_saying_so_and_can_be_tried_
     assert held.held(body["turn_id"]) == dumps(scene())
     assert TokenMeter.query.filter_by(user_id=test_user.id).one().input_tokens >= 10
     assert turnlog.running(body["discussion_id"]) is None
+
+
+def test_trying_again_after_a_written_import_runs_only_the_steps_that_failed(
+    web, token, test_user, monkeypatch, held, importing
+):
+    # R-0880, R-0873
+    mailed = []
+
+    def flaky(**mail):
+        if not mailed:
+            mailed.append(None)
+            raise ConnectionRefusedError("the mail server is down")
+        mailed.append(mail["email"])
+
+    monkeypatch.setattr(fdledger, "send", flaky)
+    coach(monkeypatch, Model(said("Thank you.")))
+    with patch("btcopilot.turns.enqueue"):
+        body = send(web, token, "Lund family.fd", dumps(scene())).get_json()
+    with pytest.raises(ConnectionRefusedError):
+        turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    assert events(body["turn_id"])[-1] == {
+        "type": TurnEventKind.Failed.value,
+        "message": attachments.NOT_BROUGHT,
+    }
+    imported = fdimport.TURN.format(body["turn_id"])
+    written = Change.query.filter_by(turn_id=imported).count()
+    assert written > 0
+    response = web.post(
+        f"/app/turns/{body['turn_id']}/resume", headers={"X-CSRFToken": token}
+    )
+    assert response.status_code == 202
+    assert events(body["turn_id"])[-1]["type"] == TurnEventKind.Done.value
+    assert Change.query.filter_by(turn_id=imported).count() == written
+    assert ModelCall.query.filter_by(purpose=Purpose.Import).count() == 1
+    assert (len(importing), ProactiveMessage.query.count()) == (1, 1)
+    assert mailed == [None, test_user.username]
+    assert stored().attachment_text == ProactiveMessage.query.one().question

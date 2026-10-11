@@ -1,3 +1,6 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { expect, test, type Page } from "./fixtures";
 import { stateFor } from "./setup";
 import { mockTurn, SEND } from "./turn";
@@ -11,7 +14,17 @@ const READ = "Dear Ann, the move to Bluff Street was hard on your father.";
 const REFUSED = "The app reads PDF, JPEG, PNG, HEIC, text and Markdown files; this file is none of those.";
 
 const file = (name: string, mimeType: string) => ({ name, mimeType, buffer: Buffer.from("Dear Ann") });
-const picker = (page: Page) => page.locator("#chat-screen input[type=file]");
+const picker = (page: Page) => page.locator("#chat-screen input[type=file]:not([webkitdirectory])");
+
+/** A desktop Family Diagram file as it sits on disk: a folder holding its
+ * diagram.pickle beside other files. */
+function fdFolder(): string {
+  const folder = join(mkdtempSync(join(tmpdir(), "fd-attach-")), "Lund family.fd");
+  mkdirSync(folder);
+  writeFileSync(join(folder, "diagram.pickle"), "the diagram");
+  writeFileSync(join(folder, "thumbnail.png"), "a picture");
+  return folder;
+}
 const picked = (page: Page) => page.locator("#inbar .attached");
 
 /** The send answered as the server does: the turn, and for a file it read,
@@ -51,8 +64,23 @@ test("a file picked or dropped goes with the message, reads, and shows what the 
   expect(Math.abs(clip.x - box.x)).toBeLessThanOrEqual(1);
   expect(Math.round(box.height)).toBe(44);
 
+  // the paperclip asks which: a file, or a desktop Family Diagram file, which
+  // is a folder whose diagram.pickle goes under the folder's name (R-0882)
+  const choice = page.locator(".fs-sheet.fl");
+  await page.locator("#attach").click();
+  await expect(choice.locator("[data-act]")).toHaveText(["A photo, PDF or text file", "A Family Diagram file"]);
+  const folderChooser = page.waitForEvent("filechooser");
+  await choice.locator("[data-act=folder]").click();
+  await (await folderChooser).setFiles(fdFolder());
+  await expect(choice).not.toHaveClass(/\bin\b/);
+  await expect(picked(page).locator(".chip")).toHaveText("Lund family.fd");
+  await picked(page).locator(".cardx").click();
+
   // picked, then taken out again with its cross
-  await picker(page).setInputFiles(file("notes.pdf", "application/pdf"));
+  await page.locator("#attach").click();
+  const fileChooser = page.waitForEvent("filechooser");
+  await choice.locator("[data-act=file]").click();
+  await (await fileChooser).setFiles(file("notes.pdf", "application/pdf"));
   await expect(picked(page).locator(".chip")).toHaveText("notes.pdf");
   await picked(page).locator(".cardx").click();
   await expect(picked(page)).toBeHidden();

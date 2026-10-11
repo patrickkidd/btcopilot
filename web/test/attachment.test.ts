@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { said } from "../src/api";
-import { fileChip, fromFolder, Picked, PICKLE, readSheet } from "../src/attachment";
+import { fileChip, fromFolder, fromPicked, Picked, PICKLE, readSheet } from "../src/attachment";
 
 const pdf = () => new File(["%PDF"], "Mom's letter.pdf", { type: "application/pdf" });
 
@@ -44,4 +44,20 @@ it("sends a desktop file's folder as its diagram.pickle under the folder's name,
   expect(sent.name).toBe("Lund family.fd");
   expect(await sent.text()).toBe(await pickle.text());
   expect(fromFolder("Photos", [new File(["x"], "image.png")])).toBeNull();
+});
+
+/** A file as a browser's picker gives it: with its path inside the folder
+ * picked, or "" when one file was picked. */
+const within = (path: string, name = path.split("/").pop()!): File => {
+  const file = new File(["x"], name);
+  Object.defineProperty(file, "webkitRelativePath", { value: path });
+  return file;
+};
+
+// R-0882
+it("takes a picked folder's own diagram.pickle, not one deeper in it, and a single file a picker gave as it is", () => {
+  const sent = fromPicked([within("Lund family.fd/Backups/diagram.pickle"), within(`Lund family.fd/${PICKLE}`)])!;
+  expect(sent.name).toBe("Lund family.fd");
+  expect(fromPicked([within("Lund family.fd/Backups/diagram.pickle")])).toBeNull();
+  expect(fromPicked([within("", PICKLE)])!.name).toBe(PICKLE);
 });
