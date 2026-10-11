@@ -295,6 +295,10 @@ def conflict(a: Kin, b: Kin) -> bool:
     return bool(a.born and b.born and abs(a.born - b.born) > 2)
 
 
+def same_sex(a: Kin, b: Kin) -> bool:
+    return a.gender is None or b.gender is None or a.gender == b.gender
+
+
 def full_name(k: Kin, side: Family) -> list[Kin]:
     return [
         o
@@ -380,14 +384,20 @@ class Matcher:
                 y = next(iter(ca[x]), None)
                 loose = best(xs - {x}, ys, edges) >= total - EPSILON
                 if len(ca[x]) == 1 and cb[y] == {x} and not loose:
+                    if self.disputed(x, y):
+                        self.doubt(x, y)
+                        continue
                     pos = self.a.people[x].unnamed or self.b.people[y].unnamed
                     self.link(x, y, pos)
                     added += 1
                 elif ca[x]:
-                    self.doubt_a[x] |= ca[x]
                     for y in ca[x]:
-                        self.doubt_b[y].add(x)
+                        self.doubt(x, y)
         return added
+
+    def doubt(self, x: int, y: int):
+        self.doubt_a[x].add(y)
+        self.doubt_b[y].add(x)
 
     def walk(self):
         while True:
@@ -424,6 +434,34 @@ class Matcher:
             and all(any(self.named(s, t) for s in pa) for t in pb)
         )
 
+    def parents_clash(self, x: int, y: int) -> bool:
+        pa = [p for p in self.a.parents[x] if not self.a.people[p].unnamed]
+        pb = [p for p in self.b.parents[y] if not self.b.people[p].unnamed]
+        ua = [s for s in pa if not any(self.agree(s, t) for t in pb)]
+        ub = [t for t in pb if not any(self.agree(s, t) for s in pa)]
+        return any(same_sex(self.a.people[s], self.b.people[t]) for s in ua for t in ub)
+
+    def bonds_clash(self, x: int, y: int) -> bool:
+        for s in self.a.partners[x]:
+            t = self.ab.get(s)
+            if t not in self.b.partners[y]:
+                continue
+            ya = self.a.bond_years[frozenset((x, s))]
+            yb = self.b.bond_years[frozenset((y, t))]
+            if ya and yb and not any(abs(i - j) <= 1 for i in ya for j in yb):
+                return True
+        return False
+
+    def disputed(self, x: int, y: int) -> bool:
+        """Two people the rules would join whose names, parents or dates say
+        otherwise; the model judges them instead [R-0851, R-0853]."""
+        ka, kb = self.a.people[x], self.b.people[y]
+        if ka.lasts and kb.lasts and not lasts_agree(ka, kb):
+            return True
+        if ka.born and kb.born and abs(ka.born - kb.born) > 1:
+            return True
+        return self.parents_clash(x, y) or self.bonds_clash(x, y)
+
     def evidence(self, x: int, y: int) -> bool:
         ka, kb = self.a.people[x], self.b.people[y]
         if ka.born and kb.born and abs(ka.born - kb.born) <= 1:
@@ -434,6 +472,9 @@ class Matcher:
             for s in self.a.related(x, r)
             for t in self.b.related(y, r)
         )
+
+    def primary(self, x: int, y: int) -> bool:
+        return self.a.people[x].primary and self.b.people[y].primary
 
     def anchors(self) -> list[tuple[int, int]]:
         found = [(x, y) for x, y in self.unique_pairs() if self.parents_agree(x, y)]
@@ -447,23 +488,33 @@ class Matcher:
     def run(self):
         for x, y in self.anchors():
             if x not in self.ab and y not in self.ba:
-                self.link(x, y, False)
+                if self.disputed(x, y) and not self.primary(x, y):
+                    self.doubt(x, y)
+                else:
+                    self.link(x, y, False)
         self.walk()
         while True:
             fresh = [
                 (x, y)
                 for x, y in self.unique_pairs()
-                if x not in self.ab and y not in self.ba and self.evidence(x, y)
+                if x not in self.ab
+                and y not in self.ba
+                and y not in self.doubt_a[x]
+                and self.evidence(x, y)
             ]
             for x, y in fresh:
-                self.link(x, y, False)
+                if self.disputed(x, y):
+                    self.doubt(x, y)
+                else:
+                    self.link(x, y, False)
             if not fresh:
                 return
             self.walk()
 
     def hints(self) -> dict[int, set[int]]:
         out = defaultdict(set)
-        for p, q in self.ab.items():
+        doubted = [(p, q) for p, qs in self.doubt_a.items() for q in qs]
+        for p, q in [*self.ab.items(), *doubted]:
             for r in Relation:
                 for x in self.a.related(p, r) - self.ab.keys():
                     for y in self.b.related(q, r) - self.ba.keys():

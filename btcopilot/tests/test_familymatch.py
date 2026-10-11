@@ -1,3 +1,5 @@
+import pytest
+
 from btcopilot.familymatch import Status, match
 
 
@@ -137,7 +139,8 @@ def test_half_sibling_through_another_bond_of_a_parent():
     b["people"][1]["name"] = "Glenn"
     m = match(family(), b)
     assert kin(m, 2) == (Status.Unmatched, None)
-    assert kin(m, 8) == (Status.Name, 8)
+    assert kin(m, 8) == (Status.Ambiguous, None)
+    assert m.people[8].candidates == [8]
 
 
 def same_named_brothers(years=(None, None), kids=()):
@@ -267,3 +270,41 @@ def test_result_is_symmetric():
     }
     assert ba.people[20].candidates == ab.people[20].candidates == [20, 21]
     assert {v: k for k, v in ab.pair_bonds.items()} == ba.pair_bonds
+
+
+def nell_married_sam(last="Price", father="Otto", wed=1990, born=1960):
+    d = harpers()
+    d["people"] += [
+        person(30, "Sam", last, "male", 31, birthDateTime=f"{born}-05-01"),
+        person(32, father, last, "male"),
+        person(33, "Greta", last, "female"),
+    ]
+    d["pair_bonds"] += [bond(31, 32, 33), bond(34, 4, 30)]
+    d["events"] = [
+        dict(id=70, kind="married", person=4, spouse=30, dateTime=f"{wed}-06-01")
+    ]
+    return d
+
+
+def test_two_men_of_one_first_name_go_to_the_model():
+    # R-0851, R-0853
+    m = match(
+        nell_married_sam(),
+        nell_married_sam(last="Ward", father="Lou", wed=1998),
+    )
+    assert kin(m, 4) == (Status.Name, 4)
+    assert kin(m, 30) == (Status.Ambiguous, None)
+    assert m.people[30].candidates == [30]
+    assert kin(m, 33) == (Status.Unmatched, None)
+    assert m.people[33].candidates == [33]
+
+
+@pytest.mark.parametrize(
+    "other",
+    [dict(last="Ward"), dict(father="Lou"), dict(wed=1998), dict(born=1962)],
+)
+def test_one_disagreement_is_enough_to_ask(other):
+    # R-0851, R-0853
+    m = match(nell_married_sam(), nell_married_sam(**other))
+    assert kin(m, 30) == (Status.Ambiguous, None)
+    assert kin(match(nell_married_sam(), nell_married_sam()), 30) == (Status.Name, 30)
