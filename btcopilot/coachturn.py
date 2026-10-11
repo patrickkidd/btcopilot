@@ -24,6 +24,7 @@ from btcopilot import (
     clock,
     clusters,
     coverage,
+    fdnotice,
     flow,
     profile,
     record,
@@ -376,6 +377,9 @@ class CoachTurn:
         )
         if pairs:
             tail = f"{tail}\n\n{pairs}"
+        imported = fdnotice.block(self.diagram.id, data)
+        if imported:
+            tail = f"{tail}\n\n{imported}"
         if not note:
             tail = f"{tail}{self._crisis(answered, data)}"
         gaps = profile.missing(data)

@@ -1,6 +1,7 @@
-"""The coach writing first. A pattern the record just made visible, or a
-follow-up the person agreed to, becomes one coach message in the family's
-thread and then a notification pointing at it. Kept rare on purpose: one
+"""The coach writing first. A pattern the record just made visible, a
+follow-up the person agreed to, or a reminder of what an imported file left
+to check, becomes one coach message in the family's thread and then a
+notification pointing at it. Kept rare on purpose: one
 unanswered message at a time, a budget from the person's own setting, and a
 kind of message ignored twice in a row stops until they answer."""
 
@@ -11,7 +12,9 @@ from zoneinfo import ZoneInfo
 
 from pywebpush import WebPushException
 
-from btcopilot import correlation, prompts, push
+# fdnotice sends through this module and this module picks fdnotice's
+# reminders; neither uses the other at import time.
+from btcopilot import correlation, fdnotice, prompts, push
 from btcopilot.discussions import chats, sitting, sync_chat_speakers
 from btcopilot.extensions import db
 from btcopilot.metered import Metered
@@ -144,7 +147,7 @@ def run(now: datetime.datetime | None = None, dry_run: bool = False) -> list[dic
         # next run rather than in the thread with no notification
         try:
             with db.session.begin_nested():
-                _send(user, message, text, now)
+                send(user, message, text, now)
         except WebPushException as e:
             row["reason"] = push.failure(e)
             continue
@@ -216,8 +219,9 @@ def _ignored(message: ProactiveMessage, now: datetime.datetime) -> bool:
 def _pick(
     user: User, now: datetime.datetime
 ) -> ProactiveMessage | correlation.Firing | Reason:
-    """A follow-up the person asked for comes before a pattern, and outside
-    the budget; neither comes while the last message waits for an answer or
+    """A follow-up the person asked for comes first, then a reminder of what
+    an imported file left to check, then a pattern; the first two outside the
+    budget, and none while the last message waits for an answer or
     after two of its kind in a row went unanswered."""
     sent = _sent(user)
     if sent and sent[-1].replied_at is None and not _ignored(sent[-1], now):
@@ -235,6 +239,9 @@ def _pick(
     )
     if due and Trigger.FollowUp not in stopped:
         return due
+    reminder = None if Trigger.Import in stopped else fdnotice.reminder(user, now)
+    if reminder:
+        return reminder
     found = _unasked(user, sent, Trigger.Correlation in stopped, now)
     # a follow-up that was due and held back is the reason, over the pattern's
     return Reason.Ignored if due and isinstance(found, Reason) else found
@@ -346,7 +353,11 @@ def _people_in(event: dict) -> set[int]:
     return found
 
 
-def _send(user: User, message: ProactiveMessage, text: str, now):
+def send(
+    user: User, message: ProactiveMessage, text: str, now, detail: dict | None = None
+):
+    """Into the person's sitting, then the notification; `detail` goes on the
+    row counting it sent."""
     diagram = db.session.get(Diagram, message.diagram_id)
     discussion = sitting(user, diagram)
     statement = Statement(
@@ -363,7 +374,7 @@ def _send(user: User, message: ProactiveMessage, text: str, now):
     message.sent_at = now
     db.session.add(message)
     db.session.flush()
-    _count(message, ObservationKind.ProactiveSent)
+    _count(message, ObservationKind.ProactiveSent, detail)
     push.send(user, statement)
 
 

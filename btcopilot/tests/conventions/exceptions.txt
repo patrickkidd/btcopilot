@@ -205,11 +205,9 @@ R-0743 | TEST OWED | not built: the coach calling out a connection across genera
 R-0748 | WAIVED | one test proves F18 is drawn with no line through a name; the rest is a judgement that marriages inside a family are rare
 R-0757 | WAIVED | deferred to how coverage is shown; nothing is built to assert
 R-0769 | TEST OWED | not built: functioning going down has no animation until its art direction is done
-R-0852 | TEST OWED | cited by 1 test, one more owed for the coach tag: the desktop .fd import (FD-377)
 R-0858 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
 R-0862 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
 R-0865 | TEST OWED | not built: the desktop .fd import (FD-377) does not exist yet
-R-0871 | TEST OWED | cited by 1 test, one more owed for the coach tag: the coach's first turn asking which person is you after a desktop .fd import (FD-377)
 R-0872 | TEST OWED | not built: the way to eyeball compare an imported result in the new app (FD-377)
 R-0856 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-377)
 R-0857 | TEST OWED | cited by 1 test, two more owed for the events and data-model tags (FD-377)
