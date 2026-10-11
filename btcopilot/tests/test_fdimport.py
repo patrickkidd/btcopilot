@@ -404,6 +404,39 @@ def test_events_the_record_counts_as_one_are_made_one_with_every_word_kept():
     assert "the same event as event 23" in out.decisions[-1].reason
 
 
+def test_a_merge_keeps_both_events_notes_and_only_the_words_that_differ():
+    # R-0868, R-0873
+    day = when(2010, 5, 1)
+    out = built(
+        events=[
+            event(23, "noted", person=1, description="Rehab", notes="Weeks.", dateTime=day),
+            event(24, "noted", person=1, description="Rehab", notes="Relapsed.", dateTime=day),
+            event(25, "noted", person=1, description="Clinic", dateTime=day),
+        ]
+    )
+    [kept] = out.data["events"]
+    assert kept["notes"] == "Weeks.\n\nRelapsed.\n\nClinic"
+    assert [one.reason.startswith("The app counts it") for one in out.decisions[-2:]] == [True, True]
+
+
+def test_noted_events_recording_different_items_on_one_day_stay_two(monkeypatch):
+    # R-0364, R-0432, R-0442
+    def code(data, model):
+        for one, item in zip(data["events"], ("Places", "Work")):
+            one["item"] = item
+        return data, []
+
+    monkeypatch.setattr(fdimport, "fdcoding", SimpleNamespace(code=code))
+    day = when(2019, 3, 1)
+    out = built(
+        events=[
+            event(23, "noted", person=1, description="Moved to Tulsa", dateTime=day),
+            event(24, "noted", person=1, description="Started at the mill", dateTime=day),
+        ]
+    )
+    assert len(out.data["events"]) == 2
+
+
 def test_deceased_with_no_death_event_gets_one_with_the_cause():
     # R-0870
     out = imported(

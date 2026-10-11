@@ -599,19 +599,24 @@ def _id(label: str) -> int | None:
     return int(number) if kind == "event" and number.isdigit() else None
 
 
+#: An event's own words besides its notes, kept in the notes of the event it merges into.
+WORDS = ("title", "description", "location")
+
+
 def _twins(out: Imported) -> None:
-    """Events the record counts as one, the same kind, day, people and what
-    moved, are made one: the first in the file keeps its place and the words
-    of the others go into its notes."""
+    """Events the record counts as one, the same kind, day, people, what
+    moved and item, are made one: the first in the file keeps its place, and
+    its notes are followed by the others' words it does not already hold."""
     kept = {}
     for event in list(out.data["events"]):
         first = kept.setdefault(record.twin_key(event), event)
         if first is event:
             continue
-        words = [
-            event.get(key) for key in ("title", "description", "location", "notes")
-        ]
-        said = "\n".join(dict.fromkeys(w for w in words if _kept(w)))
+        held = {first.get(key) for key in WORDS}
+        words = [event.get(key) for key in WORDS if event.get(key) not in held]
+        said = "\n".join(
+            dict.fromkeys(w for w in (*words, event.get("notes")) if _kept(w))
+        )
         first["notes"] = "\n\n".join(filter(None, (first.get("notes"), said)))
         _set(
             first,
@@ -634,7 +639,7 @@ def _twins(out: Imported) -> None:
             said,
             first["notes"],
             f"The app counts it as the same event as {out.labels[first['id']]}: the "
-            "same kind, day, people and what moved. Its words go into that event's notes.",
+            "same kind, day, people, what moved and item. Its words go into that event's notes.",
         )
 
 

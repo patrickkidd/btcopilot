@@ -892,13 +892,14 @@ def _moves_of(event: dict) -> tuple:
 
 
 def twin_key(event: dict) -> tuple:
-    """Two events are the same event when kind, day, people and what moved
-    all match."""
+    """Two events are the same event when kind, day, people, what moved and,
+    for a noted event, its item all match."""
     return (
         _val(event.get("kind")),
         _day(event.get("dateTime")),
         _links(event),
         _moves_of(event),
+        _val(event.get("item")),
     )
 
 
@@ -906,7 +907,8 @@ def _twins(data: dict, deltas: list[dict]):
     """The same event is not written down twice: an event this write adds that
     matches one already in the record on kind, day, people and what moved is
     refused, naming the one that is there. Two shifts for one person on one day
-    that move different variables are two events (R-0432)."""
+    that move different variables are two events (R-0432), as are two noted
+    events recording different items."""
     added = {
         str(delta["item_id"])
         for delta in deltas
