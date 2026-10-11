@@ -405,7 +405,7 @@ def test_events_the_record_counts_as_one_are_made_one_with_every_word_kept():
 
 
 def test_a_merge_keeps_both_events_notes_and_only_the_words_that_differ():
-    # R-0868, R-0873
+    # R-0868, R-0873, R-0874
     day = when(2010, 5, 1)
     out = built(
         events=[
