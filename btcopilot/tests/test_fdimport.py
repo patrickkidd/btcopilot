@@ -83,7 +83,7 @@ def test_people_and_their_other_names_kept():
 
 
 def test_events_copied_with_their_date_certainty():
-    # R-0859
+    # R-0859, R-0438
     events = by_id(imported().data["events"])
     assert events[20] == {
         "id": 20,
@@ -151,7 +151,7 @@ def test_value_the_app_has_no_word_for_left_for_the_coding_pass():
 
 
 def test_relationship_lines_go_on_their_event_or_become_a_shift():
-    # R-0859
+    # R-0859, R-0076, R-0013
     out = imported(
         events=[shift(23)],
         emotions=[
@@ -245,7 +245,7 @@ def test_notes_on_bonds_and_the_diagram_left_for_the_coding_pass():
 
 
 def test_the_files_values_go_to_the_pass_and_stay_in_the_ledger_only():
-    # R-0859, R-0870, R-0873
+    # R-0873, R-0294
     fd = fdfile.read(
         dumps(
             scene(
@@ -355,7 +355,7 @@ def test_second_unnamed_partner_never_takes_the_same_name():
 
 
 def test_a_shared_name_falls_back_to_the_full_name_then_a_count():
-    # R-0867
+    # R-0867, R-0548
     pairs = [(1, 2), (3, 4), (3, 5), (6, 7), (8, 9), (10, 11)]
     bonds = [
         {"kind": "Marriage", "id": 20 + n, "person_a": a, "person_b": b}
@@ -406,7 +406,7 @@ def test_an_events_own_move_naming_no_one_left_for_the_coding_pass():
 
 
 def test_events_the_record_counts_as_one_are_made_one_with_every_word_kept():
-    # R-0868, R-0873
+    # R-0489, R-0874, R-0873
     day = when(2010, 5, 1)
     out = built(
         events=[
@@ -426,7 +426,7 @@ def test_events_the_record_counts_as_one_are_made_one_with_every_word_kept():
 
 
 def test_a_merge_keeps_both_events_notes_and_only_the_words_that_differ():
-    # R-0868, R-0873, R-0874
+    # R-0874, R-0431, R-0489
     day = when(2010, 5, 1)
     out = built(
         events=[
@@ -452,7 +452,7 @@ def test_a_merge_keeps_both_events_notes_and_only_the_words_that_differ():
 
 
 def test_noted_events_recording_different_items_on_one_day_stay_two(monkeypatch):
-    # R-0364, R-0432, R-0442
+    # R-0489, R-0364
     def code(data, model):
         for one, item in zip(data["events"], ("Places", "Work")):
             one["item"] = item
@@ -532,7 +532,7 @@ def test_primary_left_unset_unless_exactly_one(marked):
 
 
 def test_ids_renumbered_past_the_reserved_ones_with_every_reference_kept(coding):
-    # R-0850
+    # R-0455, R-0850
     out = built(
         emotions=[
             {"kind": "cutoff", "id": 31, "person": 3, "target": 1, "event": None}
@@ -601,7 +601,7 @@ def test_one_change_turn_and_one_undo_takes_it_all_off(test_user):
 
 
 def test_record_rules_refuse_before_anything_is_written(test_user):
-    # R-0850
+    # R-0593
     out = built(events=[event(23, "shift", person=1, dateTime=when(2000, 1, 1))])
     with pytest.raises(record.Invalid):
         fdimport.save(test_user.id, "Lund family", out, yes=False)
@@ -611,7 +611,7 @@ def test_record_rules_refuse_before_anything_is_written(test_user):
 def test_admin_import_previews_then_writes_and_mails_the_record(
     flask_app, test_user, tmp_path, monkeypatch
 ):
-    # R-0850, R-0873, R-0878, R-0084, R-0517
+    # R-0850, R-0873, R-0878, R-0208, R-0517
     path = bundle(tmp_path, scene())
     ledger = tmp_path / "record.txt"
     args = ["diagrams", "import", str(path), "--email", test_user.username, "--json"]
@@ -747,7 +747,7 @@ def test_into_a_diagram_one_turn_holds_the_doubt_and_one_undo_takes_it_off(
 def test_the_coachs_undo_takes_off_an_import_and_its_questions_but_not_an_earlier_one(
     test_user, side_call
 ):
-    # R-0850, R-0006
+    # R-0850, R-0084
     diagram = stored(test_user)
     Toolbox(diagram.id, "t0", session_id=7, author=Author.Coach).call(
         ToolName.AddQuestion,
@@ -813,7 +813,7 @@ def test_the_ledger_names_what_each_file_item_became_in_the_diagram(test_user):
 
 
 def test_a_diagram_changed_since_the_import_read_it_is_not_written(test_user):
-    # R-0850
+    # R-0480
     diagram = stored(test_user)
     out = fdimport.build(fdfile.read(dumps(scene())), Model(), into=diagram)
     diagram.version += 1

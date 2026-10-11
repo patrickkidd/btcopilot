@@ -94,7 +94,7 @@ def test_other_name_fields_of_an_fd_file():
 
 
 def test_alias_is_not_a_name():
-    # R-0853
+    # R-0853, R-0863
     m = match(harpers(sister="Nell", alias="Joy"), harpers(sister="Joy"))
     assert kin(m, 4) == (Status.Unmatched, None)
     assert m.people[4].candidates == [4]

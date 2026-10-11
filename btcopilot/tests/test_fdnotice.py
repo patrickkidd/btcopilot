@@ -159,7 +159,7 @@ def _texts(rows: list[dict]) -> list[str | None]:
 def test_after_an_import_the_coach_writes_first_and_asks_which_person_is_you(
     test_user, imported, push
 ):
-    # R-0878, R-0871, R-0852
+    # R-0878, R-0871, R-0852, R-0493
     with freeze_time(T0):
         message = fdnotice.after_import(imported.id, test_user.id, _summary((ANN, BOB)))
     assert message.statement.text == (
@@ -214,7 +214,7 @@ def test_with_one_person_marked_the_message_asks_nothing_of_who_they_are(
 def test_reminders_come_while_the_import_questions_stay_open_and_stop(
     test_user, imported, push
 ):
-    # R-0878, R-0004
+    # R-0878, R-0608
     _brought_in(test_user, imported, (ANN, BOB))
     remind = "2 things from the file you brought in are still to check with you. Shall we look at one now?"
     # the import's message waits for an answer
@@ -236,7 +236,7 @@ def test_reminders_come_while_the_import_questions_stay_open_and_stop(
 def test_no_reminder_once_the_import_questions_are_closed_nor_past_four(
     test_user, imported, push
 ):
-    # R-0878
+    # R-0878, R-0608
     _brought_in(test_user, imported)
     for n in range(1, fdnotice.REMINDERS + 1):
         when = T0 + n * 10 * DAY
@@ -254,7 +254,7 @@ def test_no_reminder_once_the_import_questions_are_closed_nor_past_four(
 def test_each_coach_turn_sees_the_open_import_questions_until_closed(
     web, token, test_user, imported, monkeypatch
 ):
-    # R-0878, R-0852
+    # R-0878, R-0852, R-0493
     model = coach(monkeypatch, Model(said("Hello."), said("Hello again.")))
     post(web, token, "Hi.")
     block = (

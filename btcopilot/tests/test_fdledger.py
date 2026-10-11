@@ -121,7 +121,7 @@ def test_secrets_of_the_desktop_file_never_written():
 
 
 def test_mail_says_what_it_is_and_attaches_the_record(flask_app):
-    # R-0873
+    # R-0873, R-0875
     flask_app.config["MAIL_SERVER"] = "localhost"
     with flask_app.app_context(), extensions.mail.record_messages() as outbox:
         fdledger.send("ada@example.com", "Lund family.fd", "Lund family", "the record")

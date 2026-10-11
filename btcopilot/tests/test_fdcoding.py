@@ -198,7 +198,7 @@ def test_a_shift_the_text_does_not_code_becomes_a_noted_event():
 
 
 def test_an_invalid_answer_is_refused_by_name_and_the_shift_kept_as_noted():
-    # R-0868
+    # R-0453, R-0579, R-0868
     data = diagram([shift(33, description="Fought with Bo")], notes="Moved to Nome.")
     model = Model(
         {
@@ -242,7 +242,7 @@ def test_an_invalid_answer_is_refused_by_name_and_the_shift_kept_as_noted():
 
 
 def test_a_description_naming_its_person_is_reworded_and_a_missing_third_person_filled():
-    # R-0869
+    # R-0457, R-0431, R-0869
     data = diagram(
         [
             shift(
@@ -302,7 +302,7 @@ def test_the_prompt_carries_the_coachs_rules_and_the_rule_against_guesses(monkey
 
 
 def test_a_move_nobody_could_complete_says_its_names_in_the_decisions_only():
-    # R-0868, R-0869
+    # R-0585, R-0869
     data = diagram(
         [
             shift(
@@ -376,7 +376,7 @@ def test_a_person_over_a_calls_size_is_split_with_their_relatives_in_every_call(
 def test_without_the_sops_key_the_open_source_prompt_codes_the_import(
     monkeypatch, tmp_path
 ):
-    # R-0451
+    # R-0454
     monkeypatch.setenv(prompts.OPEN, "1")
     monkeypatch.delenv("FD_PRIVATE_PROMPTS")
     monkeypatch.delenv("SOPS_AGE_KEY", raising=False)

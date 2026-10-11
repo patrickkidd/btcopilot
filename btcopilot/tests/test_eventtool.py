@@ -132,7 +132,7 @@ def test_two_same_day_shifts_on_one_person_land_when_the_variables_differ(subscr
 
 
 def test_a_move_and_a_new_job_on_one_day_for_one_person_are_two_events(subscriber):
-    # R-0364, R-0432, R-0442
+    # R-0489, R-0364, R-0442
     diagram = _diagram(subscriber.user)
     _event(
         diagram,

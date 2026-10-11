@@ -171,7 +171,7 @@ def test_an_unsure_person_becomes_a_held_question_naming_the_candidate():
 
 
 def test_an_answer_it_was_not_asked_is_refused_by_name_and_counts_as_unsure():
-    # R-0851
+    # R-0851, R-0453, R-0579
     model = Model({"people": [verdict("file 10", "diagram 4", "same")]})
     data, decisions, held = fdmerge.merge(existing(), imported(), model)
     assert len(held) == 1
@@ -195,7 +195,7 @@ def shift(id, person, day, **more) -> dict:
 
 @pytest.mark.parametrize("said, count", [("same", 1), ("different", 2)])
 def test_same_day_events_of_a_matched_person_are_judged_by_their_words(said, count):
-    # R-0851
+    # R-0851, R-0877, R-0874
     ours = shift(
         20,
         3,

@@ -59,7 +59,7 @@ def shifts(first: int, count: int) -> list[Event]:
 
 
 def test_an_import_is_regrouped_under_its_turn_and_undone_with_it(test_user):
-    # R-0208, R-0076, R-0850
+    # R-0208, R-0076, R-0850, R-0084
     diagram = test_user.free_diagram
     turn = imported(diagram, [Person(id=1, name="Wren")], shifts(10, 4))
 
@@ -79,7 +79,7 @@ def test_an_import_is_regrouped_under_its_turn_and_undone_with_it(test_user):
 
 
 def test_an_import_into_a_diagram_with_a_report_puts_it_out_of_date(written, family):
-    # R-0825, R-0827
+    # R-0826, R-0827
     imported(family, [Person(id=40, name="Bo")], [])
 
     assert out_of_date(family)["sentence"] == (

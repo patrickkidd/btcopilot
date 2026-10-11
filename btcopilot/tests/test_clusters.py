@@ -929,7 +929,7 @@ TAGS = record(
 
 
 def test_tags_from_the_desktop_app_are_shown_as_a_hint_never_stored():
-    # R-0858, R-0857
+    # R-0858, R-0857, R-0215
     assert clusters.tagged(TAGS, joinable(TAGS)) == {"Grandma's cancer": [20, 30, 31]}
 
     with replies(answers(named(*WIDER, name=HYPOTHESIS))) as ask:

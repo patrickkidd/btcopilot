@@ -33,13 +33,13 @@ def test_reader_loads_no_qt():
 
 
 def test_unknown_qt_type_fails():
-    # R-0854
+    # R-0854, R-0453
     with pytest.raises(ValueError, match="PyQt5.QtCore.QRectF"):
         fdfile.read(dumps(scene(rect=Qt("QRectF", 0, 0, 1, 1))))
 
 
 def test_any_other_class_refused():
-    # R-0854
+    # R-0854, R-0453
     blob = dumps(scene(order=collections.OrderedDict()))
     with pytest.raises(ValueError, match="collections.OrderedDict"):
         fdfile.read(blob)
