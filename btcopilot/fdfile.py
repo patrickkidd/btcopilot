@@ -12,7 +12,7 @@ SIP = {("sip", "_unpickle_type"), ("PyQt5.sip", "_unpickle_type")}
 # Files saved before desktop 2.1.16 hold the app's own enums; each loads as
 # its plain value.
 ENUMS = {
-    ("btcopilot.schema", name)
+    ("btcopilot.schema", name): str
     for name in (
         "EventKind",
         "VariableShift",
@@ -64,14 +64,18 @@ def _qt(module: str, name: str, args: tuple):
 
 
 class Reader(pickle.Unpickler):
-    """Loads only Qt values through sip and the app's own enums; any other
-    class in the file is refused, since unpickling one could run code."""
+    """Loads only Qt values through sip, as qt makes them, and the classes
+    named in classes; any other class in the file is refused, since unpickling
+    one could run code."""
+
+    qt = staticmethod(_qt)
+    classes = ENUMS
 
     def find_class(self, module, name):
         if (module, name) in SIP:
-            return _qt
-        if (module, name) in ENUMS:
-            return str
+            return self.qt
+        if (module, name) in self.classes:
+            return self.classes[module, name]
         raise ValueError(
             f"the file holds a type this reader does not know: {module}.{name}"
         )

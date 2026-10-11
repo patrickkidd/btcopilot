@@ -2,7 +2,6 @@ import datetime
 import pickle
 
 import pytest
-from PyQt5.QtCore import QDateTime
 
 from btcopilot import diagramjson
 from btcopilot.admin import admin
@@ -937,7 +936,7 @@ def _write(diagram, kind: ItemKind, item_id, fields: dict):
         ({"description": "New Event"}, "event 40 is a shift event with no words"),
         ({"description": " unknown "}, "event 40 is a shift event with no words"),
         ({"dateTime": "1998"}, "event 40's dateTime '1998' is not a date"),
-        ({"dateTime": diagramjson.to_json(QDateTime(1998, 3, 1, 0, 0))}, "event 40's dateTime PyQt5.QtCore.QDateTime"),
+        ({"dateTime": {diagramjson.TAG: "QDateTime", "v": "1998-03-01T00:00:00.000"}}, "event 40's dateTime QtValue"),
         ({"kind": "divorced", "spouse": 3, "anxiety": None}, "event 40 is a divorced event between persons 1 and 3, who have no pair bond"),
         ({"kind": "birth", "child": 5, "spouse": 4, "anxiety": None}, "event 40 names person 4 as a parent of person 5, who is born to pair bond 9"),
         ({"kind": "birth", "child": 3, "person": None, "anxiety": None, "dateTime": "1991-01-01"}, "person 3 already has a birth, event 20"),

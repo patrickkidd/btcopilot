@@ -24,6 +24,7 @@ from btcopilot.fdledger import Decision
 from btcopilot.llmutil import dataclass_to_json_schema
 from btcopilot.models import Author
 from btcopilot.schema import (
+    DateCertainty,
     EventKind,
     ItemKind,
     QuestionKind,
@@ -120,6 +121,15 @@ def _linked(event: dict) -> set:
 
 def _day(event: dict) -> str | None:
     return record.day(event.get("dateTime"))
+
+
+def _when(event: dict, on: str = "") -> str:
+    """The date as the model is shown it: the year said as about when the date
+    is approximate or only a year, so a guessed day is never read as known."""
+    day = _day(event)
+    if len(day) == 4 or event.get("dateCertainty") == DateCertainty.Approximate:
+        return f"about {day[:4]}"
+    return on + day
 
 
 def _mapped(event: dict, same: dict[int, int]) -> dict:
@@ -280,7 +290,12 @@ class Merge:
                 said.append(f"{key} {person[key]}")
         for fact in (record.Kept.Gender, record.Kept.Birth, record.Kept.Death):
             if facts[fact]:
-                said.append(f"{record.KEPT_WORDS[fact]} {facts[fact]}")
+                shown = (
+                    _when(record.life(self.data, pid, fact))
+                    if fact in record.LIFE
+                    else facts[fact]
+                )
+                said.append(f"{record.KEPT_WORDS[fact]} {shown}")
         for relation in Relation:
             kin = self.family.related(pid, relation)
             if kin:
@@ -298,7 +313,7 @@ class Merge:
             for key in ("title", "description", "notes", "location")
             if event.get(key)
         ]
-        return f"{_event_label(side, eid)}: {event['kind']} on {_day(event)}; " + (
+        return f"{_event_label(side, eid)}: {event['kind']} {_when(event, 'on ')}; " + (
             "; ".join(words) or "no words"
         )
 

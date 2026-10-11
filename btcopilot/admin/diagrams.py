@@ -1,11 +1,14 @@
 """The family records themselves: who owns them, how much is in them, the
-whole record written out as JSON, and change rows taken back."""
+whole record written out as JSON, change rows taken back, and the records
+still stored as a pickle rewritten as JSON."""
 
 import datetime
+import hashlib
 import json
 import pathlib
 
 import click
+from sqlalchemy import update as sql_update
 
 from btcopilot import (
     diagramjson,
@@ -143,6 +146,115 @@ def said(delta: dict) -> str:
 
 
 diagrams.add_command(writes(click.command("undo")(diagram_undo)))
+
+
+MISSING = object()
+
+
+def _sha(blob: bytes) -> str:
+    return hashlib.sha256(blob).hexdigest()
+
+
+def converted(diagram: Diagram, plans: pathlib.Path) -> dict:
+    """One pickled diagram's dry run: the pickle and the JSON it becomes both
+    decoded and compared field by field; when equal, the plan and the pickle
+    saved for apply and undo."""
+    pickled = diagramjson.loads(diagram.data)
+    text = diagramjson.dumps(pickled)
+    loaded = diagramjson.loads(text)
+    fields = sorted(set(pickled) | set(loaded))
+    differ = [f for f in fields if pickled.get(f, MISSING) != loaded.get(f, MISSING)]
+    row = {
+        "diagram": diagram.id,
+        "kind": "pickle",
+        "fields": len(fields),
+        "equal": "no" if differ else "yes",
+        "differ": ", ".join(differ),
+        "plan": None,
+    }
+    if differ:
+        return row
+    plans.mkdir(parents=True, exist_ok=True)
+    (plans / f"to-json-{diagram.id}.pickle").write_bytes(diagram.data)
+    path = plans / f"to-json-{diagram.id}.json"
+    path.write_text(
+        json.dumps(
+            {
+                "diagram": diagram.id,
+                "version": diagram.version,
+                "pickle": _sha(diagram.data),
+                "json": text.decode("utf-8"),
+            }
+        )
+    )
+    return {**row, "plan": str(path)}
+
+
+def rewritten(path: pathlib.Path, undo: bool) -> dict:
+    """A saved plan written, or with undo its saved pickle put back, only when
+    the row still holds what the plan started from."""
+    plan = json.loads(path.read_text())
+    diagram = find(plan["diagram"])
+    text = plan["json"].encode("utf-8")
+    pickled = path.with_suffix(".pickle").read_bytes()
+    held, after = (_sha(text), pickled) if undo else (plan["pickle"], text)
+    if _sha(diagram.data) != held:
+        raise click.ClickException(
+            f"diagram {diagram.id} changed since the dry run: run it again"
+        )
+    db.session.execute(
+        sql_update(Diagram)
+        .where(Diagram.id == diagram.id)
+        .values(data=after, version=Diagram.version + 1)
+    )
+    db.session.commit()
+    return {"diagram": diagram.id, "kind": "pickle" if undo else "json", "plan": str(path)}
+
+
+@click.option("--diagram", "diagram_id", type=int, help="Only this record.")
+@click.option(
+    "--apply/--dry-run",
+    default=False,
+    help="Write saved plans; the default, --dry-run, compares and saves the "
+    "plans, writing nothing to the records.",
+)
+@click.option("--undo", is_flag=True, help="With --plan: put the saved pickle back.")
+@click.option(
+    "--plan",
+    "plan_paths",
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+    multiple=True,
+    help="With --apply or --undo: a plan file the dry run printed.",
+)
+@click.option(
+    "--plans",
+    type=click.Path(file_okay=False, path_type=pathlib.Path),
+    default="to-json-plans",
+    show_default=True,
+    help="Where the dry run saves its plans and the pickles.",
+)
+@rows_option
+def diagram_to_json(diagram_id, apply, undo, plan_paths, plans):
+    """Rewrite every record still stored as a pickle as the JSON the app
+    writes [Oracle: R-0854]. The dry run decodes each pickle and the JSON it
+    becomes, compares them field by field, prints each record's id, blob kind
+    and whether the two are equal, and saves a plan and the pickle for each
+    equal one; it writes nothing. --apply --plan writes exactly that plan;
+    --undo --plan puts the saved pickle back. Each refuses a record changed
+    since the dry run. Back up the database before --apply."""
+    if apply or undo:
+        if not plan_paths:
+            raise click.ClickException("--apply and --undo write a saved plan: give --plan, from a dry run")
+        return [rewritten(path, undo) for path in plan_paths]
+    found = [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
+    return [
+        converted(diagram, plans)
+        for diagram in found
+        if diagram.data and not diagramjson.is_json(diagram.data)
+    ]
+
+
+diagrams.add_command(writes(click.command("to-json")(diagram_to_json)))
 
 
 @click.argument("path", type=click.Path(exists=True, path_type=pathlib.Path))

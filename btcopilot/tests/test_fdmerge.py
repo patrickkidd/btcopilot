@@ -263,3 +263,15 @@ def test_a_couple_event_is_one_only_once_the_couple_is(said, count):
     married = [e for e in data["events"] if e["kind"] == "married"]
     assert len(married) == count
     assert len(held) == count - 1
+
+
+def test_the_model_reads_an_approximate_date_as_about_its_year():
+    # R-0851, R-0877
+    ours = shift(20, 3, "2001-05-01", dateCertainty="approximate", symptom="up", title="Panic attacks", description="Panic attacks")
+    theirs = shift(30, 3, "2001-05-01", anxiety="up", title="Anxious at work", description="Anxious at work")
+    eva = birth(31, 5, "1955-01-01", dateCertainty="approximate")
+    model = Model({"people": [verdict("file 23", "diagram 5", "unsure")]})
+    fdmerge.merge(existing([ours]), imported([theirs, eva]), model)
+    [prompt] = model.prompts
+    assert "shift about 2001;" in prompt and "shift on 2001-05-01;" in prompt
+    assert "born about 1955" in prompt and "born 1980-03-01" in prompt

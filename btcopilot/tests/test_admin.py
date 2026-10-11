@@ -14,7 +14,7 @@ from btcopilot import diagramjson, tuning, turnlog
 from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
 from btcopilot.admin.database import config
-from btcopilot.tests import olddump
+from btcopilot.tests import fdfixtures, olddump
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
 from btcopilot.llmutil import EXTRACTION_MODEL, Served, Spent, Text
@@ -424,3 +424,33 @@ def test_titles_fill_writes_nothing_over_an_edit_made_while_it_ran(
     )
     assert refused.exit_code != 0 and "edited" in refused.output
     assert titles_of(diagram) == [None, None, None, None]
+
+
+def test_to_json_rewrites_each_pickled_diagram_after_proving_it_equal(flask_app, run, test_user, tmp_path):
+    # R-0854, R-0083
+    pickled = fdfixtures.dumps(fdfixtures.scene())
+    odd = fdfixtures.dumps({"weight": float("nan")})
+    lund, other = (Diagram(user_id=test_user.id, name=name, data=blob) for name, blob in (("Lund", pickled), ("Odd", odd)))
+    db.session.add_all([lund, other])
+    db.session.commit()
+
+    planned = rows(run("diagrams", "to-json", "--plans", str(tmp_path), "--json"))
+    assert [(r["diagram"], r["kind"], r["equal"], r["differ"]) for r in planned] == [
+        (lund.id, "pickle", "yes", ""),
+        (other.id, "pickle", "no", "weight"),
+    ]
+    assert planned[1]["plan"] is None
+    db.session.refresh(lund)
+    assert lund.data == pickled
+
+    run("diagrams", "to-json", "--apply", "--plan", planned[0]["plan"], "--json")
+    db.session.refresh(lund)
+    assert diagramjson.is_json(lund.data)
+    assert diagramjson.loads(lund.data) == diagramjson.loads(pickled)
+
+    again = flask_app.test_cli_runner().invoke(admin, ["diagrams", "to-json", "--apply", "--plan", planned[0]["plan"]])
+    assert "changed since the dry run" in again.output
+
+    run("diagrams", "to-json", "--undo", "--plan", planned[0]["plan"], "--json")
+    db.session.refresh(lund)
+    assert lund.data == pickled

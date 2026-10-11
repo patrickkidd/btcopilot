@@ -13,7 +13,8 @@ from dataclasses import (
     replace,
 )
 from typing import ClassVar, get_origin, get_args
-from PyQt5.QtCore import QDate, QDateTime, QTime
+
+from btcopilot.qtvalue import QtValue
 
 _log = logging.getLogger(__name__)
 
@@ -21,41 +22,32 @@ BLANK_DATE_TEXT = "--/--/----"
 BLANK_TIME_TEXT = "--:-- pm"
 
 
-def validatedDateTimeText(dateText, timeText=None):
-    """mm/dd/yyyy. useTime is a QDateTime to take the time from."""
+def validatedDateTimeText(dateText, timeText=None) -> QtValue | None:
+    """A typed date, with the time of day from timeText, as the Qt date the
+    Pro scene holds; an empty one when the date cannot be read."""
     import dateutil.parser
 
-    ret = None
-    if len(dateText) == 8 and "/" in dateText:  # 05111980
+    when = None
+    if dateText not in (None, "", BLANK_DATE_TEXT):
         try:
-            x = int(dateText)
+            when = dateutil.parser.parse(dateText).replace(microsecond=0)
         except ValueError:
-            x = None
-        if x is not None:
-            mm = int(dateText[:2])
-            dd = int(dateText[2:4])
-            yyyy = int(dateText[4:8])
-            ret = QDateTime(QDate(yyyy, mm, dd))
-    if ret is None and dateText not in (None, "", BLANK_DATE_TEXT):
-        # normal route
-        try:
-            dt = dateutil.parser.parse(dateText)
-        except ValueError:
-            ret = QDateTime()
-        if ret is None:
-            ret = QDateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+            when = ""
     if timeText not in (None, "", BLANK_TIME_TEXT):
         try:
-            dt2 = dateutil.parser.parse(timeText)
+            clock = dateutil.parser.parse(timeText)
         except ValueError:
-            dt2 = None
-        if dt2:
-            if not ret:
-                ret = QDateTime.currentDateTime()
-            ret.setTime(
-                QTime(dt2.hour, dt2.minute, dt2.second, int(dt2.microsecond / 1000))
+            clock = None
+        if clock:
+            when = (when or datetime.datetime.now()).replace(
+                hour=clock.hour,
+                minute=clock.minute,
+                second=clock.second,
+                microsecond=clock.microsecond // 1000 * 1000,
             )
-    return ret
+    if when is None:
+        return None
+    return QtValue("QDateTime", when and when.isoformat(timespec="milliseconds"))
 
 
 class PDPValidationError(ValueError):
@@ -606,16 +598,15 @@ def event_title(event: dict) -> str:
 
 
 def parse_date(s):
-    """Normalize a date value to datetime.date. Real committed diagrams store
-    dates as PyQt5 QDateTime/QDate (Scene format), not ISO strings. Handle
-    str, datetime/date, and Qt date objects."""
+    """Normalize a date value to datetime.date. Diagrams the Pro app saved
+    store dates as Qt dates (btcopilot.qtvalue), not ISO strings. Handle str,
+    datetime/date, and Qt date values."""
     if not s:
         return None
     if isinstance(s, datetime.datetime):
         return s.date()
     if isinstance(s, datetime.date):
         return s
-    # PyQt5 QDateTime / QDate expose .toString("yyyy-MM-dd") and .date()
     to_string = getattr(s, "toString", None)
     if callable(to_string):
         try:
