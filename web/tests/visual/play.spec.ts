@@ -682,7 +682,7 @@ test.describe("the Family view's three generations", () => {
       expect(await drawn()).toEqual(frame);
       expect(await place()).toBe(at);
       // Ws1 and Hs1 move on this date, outside Cleo's frame
-      await expect(drawer(page).locator(".also")).toHaveText("Also on this date: Ws1, Hs1");
+      await expect(drawer(page).locator(".also")).toHaveText("Not in this picture: Ws1, Hs1");
     }
     expect(errors).toEqual([]);
   });
@@ -716,7 +716,7 @@ test.describe("the Family view's three generations", () => {
     await expect.poll(drawn).toEqual(of("Hs1", "Hal", "Hope", "Hugo", "Hs0"));
     await expect(stamp(page)).toHaveText(date);
     // Ws1 still moves toward Hs1 from outside his frame
-    await expect(drawer(page).locator(".also")).toHaveText("Also on this date: Ws1");
+    await expect(drawer(page).locator(".also")).toHaveText("Not in this picture: Ws1");
   });
 
   // R-0783
@@ -1541,7 +1541,7 @@ test.describe("the Family view as Patrick looked at it on his own record", () =>
     await expect(hugo).toHaveText("Hugo");
     while (!(await drawer(page).locator(".also").textContent())) await drawer(page).locator('[data-act="next"]').click();
     // his brother named beside the drawing: both carry their initials, in the words and the picture
-    await expect(drawer(page).locator(".also")).toHaveText("Also on this date: Hugo V.");
+    await expect(drawer(page).locator(".also")).toHaveText("Not in this picture: Hugo V.");
     await expect(drawer(page).locator(".when")).toContainText("Hugo B.");
     await expect(hugo).toHaveText("Hugo B.");
     // the brother's death, though he is not drawn
@@ -1784,12 +1784,13 @@ for (const [what, viewport] of [
       expect(far).toBeGreaterThan(0);
     });
 
-    // "when I click next in the full family diagram view, the timeline sometimes jumps around to a destination with no selected event visible." (Patrick, 2026-10-07)
-    // R-0796
-    test("keeps the step's dot or pill in sight on every step, and holds the line still on a step whose date is unknown", async ({ page }, info) => {
+    // "some events show like no event is selected which is confusing ... Whenever an event is selected then it should be displayed in the visual timeline like any other selected event, and the timeline scrolled to show it when necessary." (Patrick, 2026-10-12)
+    // R-0862, R-0796, R-0047
+    test("keeps the step's dot or pill lit and in sight on every step, its date over it, and never makes a step of an event whose date is unknown", async ({ page }, info) => {
       test.skip(info.project.name !== "phone", "the size is the describe's own");
-      // Delphine's and Theo's births with their dates unknown: steps the
-      // timeline draws nothing of, as on Patrick's own diagram
+      // Delphine's and Theo's births with their dates unknown, as the coach
+      // dates a guess, beside the shift of Theo's the record already dates so:
+      // on the shelf, not on the line, so never a step
       await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
         const tl = await (await route.fetch()).json();
         for (const e of tl.events) if (e.id === 105 || e.id === 108) e.dateCertainty = "unknown";
@@ -1806,42 +1807,61 @@ for (const [what, viewport] of [
           return {
             lit: !!lit,
             inside: mid !== undefined && mid >= line.left && mid <= line.right,
-            left: p.querySelector<HTMLElement>(".wire .ss-scroll")!.scrollLeft,
+            date: p.querySelector(".wire .ss-t.on")?.textContent ?? "",
           };
         });
       // opened on today, which picks nothing on the line (R-0850): the walk starts from the first date
       const back = drawer(page).locator('[data-act="back"]:not([disabled])');
       while (await back.count()) await back.click();
-      await expect.poll(async () => (await seen()).inside).toBe(true);
-      // where the line rests once its travel to the step's dot is over
-      const rested = async () => {
-        let last = -1;
-        await expect
-          .poll(async () => {
-            const at = (await seen()).left;
-            const same = at === last;
-            last = at;
-            return same;
-          }, { intervals: [300] })
-          .toBe(true);
-        return last;
-      };
+      const title = drawer(page).locator(".when");
       const next = drawer(page).locator('[data-act="next"]');
-      let held = 0;
-      while (await next.isEnabled()) {
-        const was = await rested();
+      const titles: string[] = [];
+      for (let i = 0; i < 60; i++) {
+        const said = await title.innerText();
+        if (said === "Today") break;
+        titles.push(said);
+        // every step has its dot, lit, in sight, with its date written over it
+        expect((await seen()).lit, said).toBe(true);
+        await expect.poll(async () => (await seen()).inside, { message: said }).toBe(true);
+        expect((await seen()).date, said).toMatch(/\b19\d\d\b|\b20\d\d\b/);
+        if (!(await next.isEnabled())) break;
         await next.click();
-        if ((await drawer(page).locator(".when").innerText()) === "Today") break;
-        if ((await seen()).lit) {
-          await expect.poll(async () => (await seen()).inside).toBe(true);
-          continue;
-        }
-        // nothing on the line stands for the step, so the line stays put
-        held++;
-        await page.waitForTimeout(600);
-        expect((await seen()).left).toBe(was);
       }
-      expect(held).toBe(2);
+      expect(titles).toContain("Corinne was born");
+      expect(titles.some((t) => t.includes("stopped seeing Marcus"))).toBe(true);
+      expect(titles).not.toContain("Delphine was born");
+      expect(titles).not.toContain("Theo was born");
+      expect(titles.some((t) => t.includes("want to talk about it"))).toBe(false);
+    });
+
+    // "it is confusing when some events show a title like `Meredith was born`, but also show `Also on this date: Meredith`, then under that `1989 . years after Connie`" (Patrick, 2026-10-12)
+    // R-0783, R-0540
+    test("says under a title the people the date touches who are not in this picture, and over the step's dot the date with a birth's description whole", async ({ page }, info) => {
+      test.skip(info.project.name !== "phone", "the size is the describe's own");
+      await settle(page);
+      await page.locator("#cap-family").click();
+      await expect(drawer(page)).toBeVisible();
+      await drawer(page).evaluate((p) => Promise.all(p.getAnimations().map((a) => a.finished)));
+      // the frame on Errol, Corinne's grandfather: his wife and his son, no one else
+      await tapPerson(page, 1);
+      await expect(drawer(page).locator(".path")).toHaveText("Timeline › Family › Errol's family");
+      const title = drawer(page).locator(".when");
+      const next = drawer(page).locator('[data-act="next"]');
+      const over = drawer(page).locator(".wire .ss-t.on");
+      const stepTo = async (what: string) => {
+        await drawer(page).locator('[data-act="first"]').click();
+        for (let i = 0; i < 40 && (await title.innerText()) !== what; i++) await next.click();
+        await expect(title).toHaveText(what);
+      };
+      // Delphine's birth touches only her, outside the frame: the line says she is not in this picture
+      await stepTo("Delphine was born");
+      await expect(drawer(page).locator(".also")).toHaveText("Not in this picture: Delphine");
+      // Theo's birth carries a description: the words over his dot say the date, then the description whole
+      await stepTo("Theo was born");
+      await expect.poll(async () => (await over.allInnerTexts()).join(" ")).toBe("Jun 1979 · Four years after Corinne, in the same June");
+      // a shift is titled by its own words, so only its date stands over its dot
+      await stepTo("Marcus fought with Delphine about the children; Marcus drinking after work most nights; Marcus missed shifts at the plant; Marcus left the bills to Delphine");
+      await expect.poll(async () => (await over.allInnerTexts()).join(" ")).toBe("Nov 1980");
     });
   });
 
@@ -1861,7 +1881,7 @@ test.describe("the Family view's frame on a phone turned sideways", () => {
       seen.push(await where());
     }
     // one date names Hs1, outside Cleo's frame, the others no one
-    expect(seen.map((s) => s[1])).toContain("Also on this date: Hs1");
+    expect(seen.map((s) => s[1])).toContain("Not in this picture: Hs1");
     expect(seen.map((s) => s[1])).toContain("");
     expect(new Set(seen.map((s) => s[0])).size).toBe(1);
     expect(await drawer(page).locator(".lv").evaluate((lv) => lv.scrollHeight <= lv.clientHeight + 1)).toBe(true);
