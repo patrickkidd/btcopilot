@@ -1,5 +1,6 @@
 import json
 
+import dataclasses
 import difflib
 from unittest import mock
 
@@ -10,7 +11,7 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import update as sql_update
 
 import btcopilot
-from btcopilot import diagramjson, tuning, turnlog
+from btcopilot import diagramjson, fdimport, fdmerge, tuning, turnlog
 from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
 from btcopilot.admin.database import config
@@ -21,6 +22,7 @@ from btcopilot.llmutil import EXTRACTION_MODEL, Served, Spent, Text
 from btcopilot.models import Diagram, ModelCall, Observation, ObservationKind
 from btcopilot.models.modelcall import Purpose
 from btcopilot.models.preferences import PrefKey, Spotlight
+from btcopilot.schema import from_dict
 
 
 @pytest.fixture
@@ -169,6 +171,44 @@ def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
     assert counted[1]["written"] == 1
     assert counted[-1]["why"].startswith("UnpicklingError")
     assert rows(run("users", "list", "--json")) == []
+
+
+@dataclasses.dataclass
+class Verdict:
+    same: bool
+
+
+def test_diagrams_import_passes_the_merge_settings_and_answers_from_a_file(
+    flask_app, test_user, tmp_path, monkeypatch
+):
+    # R-0851
+    answers = tmp_path / "answers.json"
+    answers.write_text(json.dumps([{"prompt": "Same?", "answer": {"same": True}}]))
+    seen = {}
+    real = fdimport.build
+
+    def build(fd, model, **kwargs):
+        seen.update(kwargs, said=model("Same?", Verdict))
+        with pytest.raises(click.ClickException, match="no saved answer"):
+            model("Other?", Verdict)
+        return real(fd, lambda prompt, shape, *more: from_dict(shape, {}), **kwargs)
+
+    monkeypatch.setattr(fdimport, "build", build)
+    path = fdfixtures.bundle(tmp_path, fdfixtures.scene())
+    result = flask_app.test_cli_runner().invoke(
+        admin,
+        [
+            "diagrams", "import", str(path), "--email", test_user.username,
+            "--ledger", str(tmp_path / "record.txt"), "--events", "two years",
+            "--person", "more", "--answers", str(answers),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert (seen["pairing"], seen["shown"], seen["said"]) == (
+        fdmerge.Pairing.TwoYears,
+        fdmerge.Shown.More,
+        Verdict(same=True),
+    )
 
 
 def test_token_cap_refuses_a_negative(flask_app, test_user):

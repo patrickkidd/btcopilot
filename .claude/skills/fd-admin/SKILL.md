@@ -172,6 +172,9 @@ Changes something: needs `--yes`.
 | `--name` | The record's name; the file's name when left out. |
 | `--into` | Bring the file into this record of theirs instead of a new one. |
 | `--ledger` | Where a dry run writes the import record; the record's name in this folder when left out. |
+| `--events` | With --into, which of the diagram's events the model may count as the same as one from the file: one kind on one day, or any kind within two years. |
+| `--person` | With --into, what the model is told of each person: names, dates and relatives, or also their notes, events and what they said to the coach. |
+| `--answers` | A JSON list of saved model answers, each {prompt, answer}, used instead of the model; a prompt with none stops the import. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin diagrams list`

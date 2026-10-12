@@ -16,6 +16,7 @@ from btcopilot import (
     fdfile,
     fdimport,
     fdledger,
+    fdmerge,
     fdnotice,
     record,
 )
@@ -25,6 +26,7 @@ from btcopilot.admin.output import rows_option
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Diagram
 from btcopilot.models.modelcall import ModelCall
+from btcopilot.schema import from_dict
 
 
 def find(diagram_id: int) -> Diagram:
@@ -257,6 +259,21 @@ def diagram_to_json(diagram_id, apply, undo, plan_paths, plans):
 diagrams.add_command(writes(click.command("to-json")(diagram_to_json)))
 
 
+class Saved:
+    """The model answered from a file of answers saved earlier, each found by
+    its prompt; a prompt with no saved answer stops the import."""
+
+    def __init__(self, path: pathlib.Path):
+        self.answers = {one["prompt"]: one["answer"] for one in json.loads(path.read_text())}
+
+    def __call__(self, prompt: str, response_format, schema=None, limit=None):
+        if prompt not in self.answers:
+            raise click.ClickException(
+                f"no saved answer for the prompt beginning {prompt[:120]!r}"
+            )
+        return from_dict(response_format, self.answers[prompt])
+
+
 @click.argument("path", type=click.Path(exists=True, path_type=pathlib.Path))
 @click.option("--email", required=True, help="Whose record it is.")
 @click.option("--name", help="The record's name; the file's name when left out.")
@@ -271,12 +288,32 @@ diagrams.add_command(writes(click.command("to-json")(diagram_to_json)))
     help="Where a dry run writes the import record; the record's name in this folder when left out.",
 )
 @click.option(
+    "--events",
+    type=click.Choice([one.value for one in fdmerge.Pairing]),
+    default=fdmerge.Pairing.SameDay.value,
+    help="With --into, which of the diagram's events the model may count as the "
+    "same as one from the file: one kind on one day, or any kind within two years.",
+)
+@click.option(
+    "--person",
+    type=click.Choice([one.value for one in fdmerge.Shown]),
+    default=fdmerge.Shown.Names.value,
+    help="With --into, what the model is told of each person: names, dates and "
+    "relatives, or also their notes, events and what they said to the coach.",
+)
+@click.option(
+    "--answers",
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+    help="A JSON list of saved model answers, each {prompt, answer}, used "
+    "instead of the model; a prompt with none stops the import.",
+)
+@click.option(
     "--yes",
     is_flag=True,
     help="Write it and mail the import record; without it, only the check.",
 )
 @rows_option
-def diagram_import(path, email, name, into, ledger, yes):
+def diagram_import(path, email, name, into, ledger, events, person, answers, yes):
     """Make a new record for one person from a Family Diagram desktop file
     (.fd), or bring the file into one they have with --into, written as one
     change so one undo takes it all back, and mail them the import record:
@@ -292,7 +329,13 @@ def diagram_import(path, email, name, into, ledger, yes):
     model = fdimport.meter(user.id, target)
     try:
         fd = fdfile.read(path)
-        imported = fdimport.build(fd, model.structured, into=target)
+        imported = fdimport.build(
+            fd,
+            Saved(answers) if answers else model.structured,
+            into=target,
+            pairing=fdmerge.Pairing(events),
+            shown=fdmerge.Shown(person),
+        )
         made = fdimport.save(user.id, name, imported, yes=yes, turn=model.turn_id)
     except (ValueError, record.Invalid) as e:
         db.session.rollback()
