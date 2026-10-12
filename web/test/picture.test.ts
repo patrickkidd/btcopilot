@@ -17,6 +17,7 @@ import {
   restWidth,
   ruler,
   spanYears,
+  stepWords,
   stops,
   strongest,
   told,
@@ -25,6 +26,7 @@ import {
   years,
   type Layer,
 } from "../src/picture";
+import { DateCertainty } from "../src/certainty";
 import { zones } from "../src/spotlight";
 import { Touch, type Cluster, type TimelineEvent } from "../src/types";
 
@@ -381,6 +383,36 @@ describe("the path row over the line", () => {
   // R-0540
   it("drops the words' own separator where they are cut, so the date's separator before the rest is never doubled", () => {
     expect(told("Harold Bell", "died · of lung cancer")).toEqual(["Harold died", "of lung cancer"]);
+  });
+
+  // "what does 'years after Connie' mean? This event display is incoherent and a lot of events are shown like that." (Patrick, 2026-10-12)
+  // R-0540, R-0742
+  it("says over a Family view step's dot the date, then only what the step's title leaves out: a birth's description whole, a shift's date alone", () => {
+    const birth = {
+      ...event(7, "1989-06-01"),
+      kind: "birth",
+      person: null,
+      child: 2,
+      person_name: "Meredith",
+      dateCertainty: DateCertainty.Approximate,
+      label: "born · Two years after Connie",
+      description: "Two years after Connie",
+    };
+    // the chat's line writes what its path cuts off, which the Family view has no path to say
+    expect(told(birth.person_name, birth.label)[1]).toBe("years after Connie");
+    expect(stepWords(birth)).toBe("1989 · Two years after Connie");
+    expect(stepWords({ ...birth, description: null })).toBe("1989");
+    // a shift's title is the step's own title, so the line adds nothing to the date
+    const shift = {
+      ...event(8, "1981-03-15"),
+      kind: "shift",
+      person_name: "Marcus",
+      label: "Stopped answering her calls",
+      title: "Stopped answering her calls",
+      description: "Stopped answering Delphine's calls",
+      dateCertainty: DateCertainty.Certain,
+    };
+    expect(stepWords(shift)).toBe("Mar 1981");
   });
 
   // R-0540

@@ -449,8 +449,8 @@ def whitlock() -> DiagramData:
     def bond(id, a, b):
         return {"id": id, "person_a": a, "person_b": b, "married": True}
 
-    def event(id, kind, date, **fields):
-        return asdict(Event(id=id, kind=kind, dateTime=date, dateCertainty=CERTAIN, **fields))
+    def event(id, kind, date, certainty=CERTAIN, **fields):
+        return asdict(Event(id=id, kind=kind, dateTime=date, dateCertainty=certainty, **fields))
 
     male, female = PersonKind.Male, PersonKind.Female
     people = [
@@ -469,7 +469,10 @@ def whitlock() -> DiagramData:
         event(105, EventKind.Birth, "1953-06-01", child=4),
         event(106, EventKind.Married, "1970-06-01", person=3, spouse=4),
         event(107, EventKind.Birth, "1975-06-01", person=3, spouse=4, child=5),
-        event(108, EventKind.Birth, "1979-06-01", person=3, spouse=4, child=6),
+        # a birth with a description, as the coach writes one: the Family view's
+        # title says "Theo was born", and the words over his dot say the rest
+        # whole, never a cut tail like "years after Corinne" (Patrick, 2026-10-12)
+        event(108, EventKind.Birth, "1979-06-01", person=3, spouse=4, child=6, description="Four years after Corinne, in the same June"),
     ]
     apart = [
         event(201, EventKind.Separated, "1980-09-15", person=3, spouse=4),
@@ -522,6 +525,10 @@ def whitlock() -> DiagramData:
         shift(243, "2003-11-15", 5, "Called her mother daily", "Called Delphine every day", relationship="fusion", relationshipTargets=[4], anxiety=up),
         shift(244, "2005-02-15", 5, "Let her mother run the wedding", "Let Delphine run the wedding", relationship="underfunctioning", relationshipTargets=[4], functioning=down),
         shift(245, "2008-07-15", 4, "Worried over Corinne's health", "Worried over Corinne's health", relationship="projection", relationshipTargets=[5], symptom=up),
+        # a shift the coach dated by its own guess, so its date is unknown: on
+        # the shelf, never a step of the Family view, which steps only through
+        # events the timeline draws (R-0862; Patrick, 2026-10-12)
+        shift(246, "1996-04-15", 6, "Would not talk about his father", "Kept saying “I don't want to talk about it right now” when Delphine raised his father", relationship="distance", relationshipTargets=[4], anxiety=up, certainty=UNKNOWN),
     ]
     return DiagramData(
         people=people,

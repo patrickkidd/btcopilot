@@ -1,5 +1,5 @@
 import { book } from "./case";
-import { DateCertainty } from "./certainty";
+import { dateOf } from "./certainty";
 import { closeX, esc, pan, still } from "./dom";
 // this line draws pills, dots and the wire
 import {
@@ -21,6 +21,7 @@ import {
   zones,
 } from "./spotlight";
 import {
+  EventKind,
   ItemKind,
   Spotlight,
   Touch,
@@ -331,6 +332,31 @@ export function told(who: string, label: string, family: string[] = []): [string
   return [all.slice(0, n).join(" "), rest.join(" ")];
 }
 
+/** The kinds whose label is the kind word itself, a description beside it a
+ * detail: the Family view's title says who and the kind, and no more. */
+const SELF_SAID = new Set<string>([
+  EventKind.Birth,
+  EventKind.Adopted,
+  EventKind.Married,
+  EventKind.Separated,
+  EventKind.Divorced,
+  EventKind.Bonded,
+  EventKind.Death,
+]);
+
+/** The words over a step's dot in the Family view: the date first, then only
+ * what the step's title leaves out (R-0540): a birth, a couple's event or a
+ * death is titled by who and the kind, so its description goes here whole,
+ * "1989 · Two years after Connie"; a shift or a noted event is titled by its
+ * own words, so its date stands alone. Never the tail of the words a path
+ * would have cut, "1989 · years after Connie", since the Family view has no
+ * such path (Patrick, 2026-10-12). */
+export function stepWords(event: TimelineEvent): string {
+  const date = dateText(event.dateTime as string, event.dateCertainty);
+  const detail = SELF_SAID.has(event.kind ?? "") ? (event.description ?? "").trim() : "";
+  return detail ? `${date} ${SEP} ${detail}` : date;
+}
+
 /** What each mode inside a cluster is called in the path. */
 const MODE: Partial<Record<Level, string>> = {
   [Level.About]: "about",
@@ -551,8 +577,7 @@ export function aboutMarkup(why: string, span: string, moments: { year: string; 
 const YEAR = 365.25 * 24 * 3600 * 1000;
 
 /** When a moment happened, or nothing when the record cannot say. */
-export const dateOf = (event: TimelineEvent) =>
-  event.dateCertainty === DateCertainty.Unknown ? null : event.dateTime;
+export { dateOf };
 
 export function years(iso: string): number {
   return new Date(iso + "T00:00:00Z").getTime() / YEAR;
@@ -1401,13 +1426,16 @@ export class Picture {
     if (chosen) {
       const event = chosen.event;
       // the path already says who and what happened: the line says only what
-      // it leaves out, the date first (no word twice)
-      const said = [
-        dateText(event.dateTime as string, event.dateCertainty),
-        told(event.person_name, event.label, this.firstNames())[1],
-      ]
-        .filter(Boolean)
-        .join(` ${SEP} `);
+      // it leaves out, the date first (no word twice); stepping, the Family
+      // view's title says it instead, and the line says what that leaves out
+      const said = this.stepping
+        ? stepWords(event)
+        : [
+            dateText(event.dateTime as string, event.dateCertainty),
+            told(event.person_name, event.label, this.firstNames())[1],
+          ]
+            .filter(Boolean)
+            .join(` ${SEP} `);
       const lines = wrap2(
         clip(said, Math.min(88, wide * ROWS.length)),
         wide,

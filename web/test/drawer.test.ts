@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { closeX, PAN, pathRow } from "../src/dom";
 import { FIT, fitScale, leastScale, NAME } from "../src/diagram";
-import { below, head, pointLine, shownBy, stepOf, topLine, yearsLine } from "../src/drawer";
+import { below, head, outsideLine, pointLine, shownBy, stepOf, topLine, yearsLine } from "../src/drawer";
 import { family, familyStart, Told, untold, when } from "../src/snapshots";
 import { DateCertainty } from "../src/certainty";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
@@ -222,4 +222,36 @@ it("shows a step on the timeline by an event the line draws, and by none when ev
   const id = whole.told.snapshots[j].event_ids[0];
   unknown.events.find((e) => e.id === id)!.dateCertainty = DateCertainty.Unknown;
   expect(shownBy(whole, j)).toBe(whole.told.snapshots[j].event_ids.find((other) => other !== id) ?? null);
+});
+
+// "some events show like no event is selected which is confusing ... Whenever an event is selected then it should be displayed in the visual timeline like any other selected event, and the timeline scrolled to show it when necessary." (Patrick, 2026-10-12)
+// R-0862, R-0047
+it("steps the Family view only through events the timeline draws: a shift dated by a guess, its date unknown, is no step, so every step but today's has its dot", () => {
+  const guessed = structuredClone(tl);
+  guessed.events.push({
+    ...guessed.events.find((e) => e.id === 132)!,
+    id: 9,
+    dateTime: "1996-04-15",
+    dateCertainty: DateCertainty.Unknown,
+    title: "Would not talk about it",
+    description: "Kept saying he did not want to talk about it right now",
+  });
+  const whole = new Told(guessed, family(guessed), true);
+  expect(whole.told.snapshots.map((s) => s.date)).not.toContain("1996-04-15");
+  expect(whole.told.snapshots.flatMap((s) => s.event_ids)).not.toContain(9);
+  whole.told.snapshots.forEach((s, i) => expect(shownBy(whole, i)).toBe(s.event_ids.length ? s.event_ids[0] : null));
+  // the years line draws no dot for it either
+  expect(whole.eventIds).not.toContain(9);
+  // dated for sure, the same shift is a step
+  guessed.events[guessed.events.length - 1].dateCertainty = DateCertainty.Certain;
+  expect(family(guessed).snapshots.map((s) => s.date)).toContain("1996-04-15");
+});
+
+// "It is confusing what 'Also on this date' means when it looks like the same event just showing 'Meredith'" (Patrick, 2026-10-12)
+// R-0783
+it("names who a date touches outside the frame as people not in this picture, each a tap, and never as a second list of the date's events", () => {
+  expect(outsideLine([])).toBe("");
+  expect(outsideLine([["7", "Meredith"]])).toBe('Not in this picture: <button type="button" class="also-who" data-centre="7">Meredith</button>');
+  expect(outsideLine([["7", "Meredith"]], 2)).toMatch(/^Not in this picture: <button[^>]*>Meredith<\/button>, \+2 more$/);
+  expect(outsideLine([], 3)).toBe("Not in this picture: +3 more");
 });

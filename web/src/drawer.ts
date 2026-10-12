@@ -179,6 +179,18 @@ export const head = (told: Told, cluster: string) =>
       closeX(` data-step="${CLUSTER}"`) +
       pointLine(told);
 
+/** The line under the Family view's title, for the people the date's events
+ * touch whom the frame does not draw, each a tap that puts the frame on them
+ * (R-0783). It says what the names are, people not in this picture, never a
+ * second list of the date's events, which the title already says (Patrick,
+ * 2026-10-12: "Meredith was born" over "Also on this date: Meredith" read as
+ * two events). `more` is how many it had no room for; no one, no line. */
+export function outsideLine(named: [string, string][], more = 0): string {
+  if (!named.length && !more) return "";
+  const who = named.map(([id, name]) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(name)}</button>`);
+  return `Not in this picture: ${[...who, ...(more ? [`+${more} more`] : [])].join(", ")}`;
+}
+
 /** The whole family's top line: what happened at the step, in the events' own
  * words; its date is the label over the years line, said once. */
 export const topLine = (told: Told, i: number, fact = told.told.snapshots[i].fact) =>
@@ -697,10 +709,8 @@ export class Drawer {
    * the frame on them; a list longer than its line ends in how many more. */
   private also(away: string[]): void {
     const line = this.panel.querySelector<HTMLElement>(".also")!;
-    const who = (id: string) => `<button type="button" class="also-who" data-centre="${esc(id)}">${esc(this.names[id])}</button>`;
     for (let n = away.length; n >= 0; n--) {
-      const more = away.length - n;
-      line.innerHTML = away.length ? `Also on this date: ${[...away.slice(0, n).map(who), ...(more ? [`+${more} more`] : [])].join(", ")}` : "";
+      line.innerHTML = outsideLine(away.slice(0, n).map((id) => [id, this.names[id]]), away.length - n);
       if (line.scrollWidth <= line.clientWidth + 1) return;
     }
   }

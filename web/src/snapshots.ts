@@ -19,7 +19,7 @@ import {
   type Shape,
 } from "./diagram";
 import { Move, Shift } from "./moves";
-import { DateCertainty } from "./certainty";
+import { DateCertainty, dateOf } from "./certainty";
 import { dateText } from "./spotlight";
 import { EventKind, type Case, type PairBond, type Person, type Timeline, type TimelineEvent } from "./types";
 
@@ -323,8 +323,9 @@ export class Told {
         marks: kept ? marks.filter((m) => peopleOf(m).every((id) => kept.has(id))) : marks,
       };
     });
-    // everyone the case's events name is drawn, the ones no snapshot shows too
-    if (whole) this.eventIds = tl.events.filter((e) => e.dateTime).map((e) => e.id);
+    // everyone the case's events name is drawn, the ones no snapshot shows too;
+    // an event whose date is unknown has no place on the line (R-0862)
+    if (whole) this.eventIds = tl.events.filter((e) => dateOf(e)).map((e) => e.id);
     else if (told.cluster_id === null) this.eventIds = told.snapshots.flatMap((s) => s.event_ids);
     else {
       const cluster = tl.clusters.find((c) => c.id === told.cluster_id);
@@ -729,13 +730,16 @@ export function said(tl: Timeline, ids: number[], names: Record<string, string>)
  * has a birth, an adoption, a couple's start or end, a death or a relationship
  * shift, in date order, each said once with who did it; and the current day,
  * a step with no event of its own, among them in date order, so the family is
- * seen as it stands today (R-0850). A record with no dated step has no today. */
+ * seen as it stands today (R-0850). A record with no dated step has no today.
+ * Only an event the timeline draws is a step, so every step has its dot on the
+ * line; an event whose date is unknown, a guess the coach made, is on the shelf
+ * and is never stepped to (R-0862, R-0047). */
 export function family(tl: Timeline, now = today()): Case {
   const people = new Map(tl.people.map((p) => [p.id, p]));
   const byId = new Map(tl.events.map((e) => [e.id, e]));
   const told = untold(
     tl,
-    tl.events.filter((e) => TURNS.has(e.kind ?? "") || e.relationship).map((e) => e.id),
+    tl.events.filter((e) => (TURNS.has(e.kind ?? "") || e.relationship) && dateOf(e)).map((e) => e.id),
   );
   const snapshots = told.snapshots.map((s) => {
     // an initial only for two people of one first name named on the one line (R-0548)
