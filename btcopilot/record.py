@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from sqlalchemy import update as sql_update
 
 from btcopilot import diagramjson
+from btcopilot.familymatch import unnamed
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Statement
 from btcopilot.prompts import Role
@@ -2072,7 +2073,9 @@ def merging(data: dict, keep, drop, take: dict[str, str], name: str | None = Non
     if name:
         put(ItemKind.Person, kept["id"], "name", name)
     for field in ("name", "last_name"):
-        if lost.get(field) and not kept.get(field) and not (name and field == "name"):
+        if field == "name" and (name or unnamed(lost.get(field))):
+            continue
+        if lost.get(field) and not kept.get(field):
             put(ItemKind.Person, kept["id"], field, lost[field])
     mine, other = facts(data, keep), facts(data, drop)
     for fact, field in ((Kept.Gender, "gender"), (Kept.Notes, "notes"), (Kept.Parents, "parents")):
@@ -2083,6 +2086,20 @@ def merging(data: dict, keep, drop, take: dict[str, str], name: str | None = Non
         dropped.append(dropped_words(fact, str(lost_fact), str(won)))
     remove(ItemKind.Person, lost["id"])
     return Merge(deltas, list(moved), dropped)
+
+
+def stand_in(data: dict, keep, drop) -> bool:
+    """`drop` is the app's nameless stand-in for the person, which marking
+    `keep` as the person joins into them, unless a merge would refuse the two
+    [Oracle: R-0871]."""
+    person = _find(data, ItemKind.Person, drop)
+    if person.get("last_name") or not unnamed(person.get("name")):
+        return False
+    try:
+        _merge_refusal(data, keep, drop, {})
+    except Invalid:
+        return False
+    return True
 
 
 def merge(

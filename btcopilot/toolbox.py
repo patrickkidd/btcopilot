@@ -1281,7 +1281,9 @@ class Toolbox:
     def _edit_person(self, args: dict) -> tuple[str, dict]:
         """Every attribute of a person the app keeps but the links other tools
         own [Oracle: R-0881]. The user is one person: marking one takes the
-        mark off anyone else [Oracle: R-0879]."""
+        mark off anyone else [Oracle: R-0879], and joins the app's nameless
+        stand-in for them into the one marked, in the same change
+        [Oracle: R-0871]."""
         fields = {}
         for key in ("name", "last_name", "parents"):
             if args.get(key) is not None:
@@ -1293,19 +1295,31 @@ class Toolbox:
             fields["gender"] = choice(PersonKind, args["gender"], "genders").value
         if args.get("primary") is not None:
             fields["primary"] = bool(args["primary"])
-        others = [
-            {
-                "item_kind": ItemKind.Person.value,
-                "item_id": person["id"],
-                "field": "primary",
-                "after": False,
-            }
-            for person in self.data.people
-            if fields.get("primary")
-            and person.get("primary")
-            and str(person["id"]) != str(args.get("id"))
-        ]
-        return self._write(ItemKind.Person, args.get("id"), fields, others=others)
+        others = []
+        joined = []
+        data = self.data
+        held = record.collections(data)
+        for person in data.people:
+            if not (
+                fields.get("primary")
+                and person.get("primary")
+                and str(person["id"]) != str(args.get("id"))
+            ):
+                continue
+            if args.get("id") is not None and record.stand_in(held, args["id"], person["id"]):
+                others += record.merging(held, args["id"], person["id"], {}).deltas
+                joined.append(person_line(person))
+            else:
+                others.append(
+                    {
+                        "item_kind": ItemKind.Person.value,
+                        "item_id": person["id"],
+                        "field": "primary",
+                        "after": False,
+                    }
+                )
+        said, patch = self._write(ItemKind.Person, args.get("id"), fields, others=others)
+        return "\n".join([said] + [f"Joined {line} into them." for line in joined]), patch
 
     def _edit_pair_bond(self, args: dict) -> tuple[str, dict]:
         data = self.data
