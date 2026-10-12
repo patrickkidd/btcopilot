@@ -2011,14 +2011,22 @@ if (CODER && parse(location.pathname)?.place === Place.Chat) {
 }
 
 // A card the page offers on its own sits above the chat bar, never over the
-// paperclip or Send, however tall the bar grows.
+// paperclip or Send, however tall the bar grows, and over the chat column
+// alone, never across the panel beside it on a computer.
 const inbar = $("inbar");
+const column = $("chat-screen");
 const clearBar = () => {
+  const shown = inbar.offsetParent !== null;
   const top = inbar.getBoundingClientRect().top;
-  const clear = inbar.offsetParent === null ? 0 : Math.max(0, window.innerHeight - top);
-  document.documentElement.style.setProperty("--bar-clear", `${clear}px`);
+  const { left, width } = column.getBoundingClientRect();
+  const root = document.documentElement.style;
+  root.setProperty("--bar-clear", `${shown ? Math.max(0, window.innerHeight - top) : 0}px`);
+  root.setProperty("--column-left", `${shown ? left : 0}px`);
+  root.setProperty("--column-width", shown ? `${width}px` : "100%");
 };
-new ResizeObserver(clearBar).observe(inbar);
+const watched = new ResizeObserver(clearBar);
+watched.observe(inbar);
+watched.observe(column);
 window.addEventListener("resize", clearBar);
 
 // The page is only served to a signed-in reader, so this is the moment to ask

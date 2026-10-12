@@ -216,6 +216,43 @@ test("the passkey card sits above the chat bar, so the paperclip and Send are ne
   await page.screenshot({ path: info.outputPath("passkey-above-bar.png") });
 });
 
+// R-0882, R-0832
+test("on a computer the passkey card sits inside the chat column, and is out of sight while the paperclip's sheet is up", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "the panel beside the chat is on a computer only");
+  await page.addInitScript(() => {
+    localStorage.setItem("fd-home-screen-asked", String(Date.now()));
+    Object.defineProperty(window, "PublicKeyCredential", {
+      configurable: true,
+      value: { isUserVerifyingPlatformAuthenticatorAvailable: async () => true },
+    });
+  });
+  await page.route("**/app/passkeys", (route) => route.fulfill({ json: { passkeys: [] } }));
+  await page.goto("/app/");
+  await expect(page.locator(".bub").last()).toBeVisible();
+  const card = page.locator(".hs-card", { hasText: "Sign in faster" });
+  await expect(card).toBeVisible();
+  const column = (await page.locator("#chat-screen").boundingBox())!;
+  const box = (await card.boundingBox())!;
+  expect([box.x >= column.x, box.x + box.width <= column.x + column.width]).toEqual([true, true]);
+  await page.screenshot({ path: info.outputPath("passkey-in-column.png") });
+
+  const sheet = page.locator(".fs-sheet.fl");
+  await page.locator("#attach").click();
+  await expect(sheet).toHaveClass(/\bin\b/);
+  await expect(card).toBeHidden();
+
+  await sheet.locator(".cardx").click();
+  await expect(card).toBeVisible();
+  await expect
+    .poll(() =>
+      card.locator(".hs-go").evaluate((b) => {
+        const r = b.getBoundingClientRect();
+        return b.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+      }),
+    )
+    .toBe(true);
+});
+
 // R-0830, R-0880
 test("a file whose turn failed is no longer said to be reading, and the thread says why", async ({ page }) => {
   const failed = "The app could not bring that file into your diagram; try again.";

@@ -1282,8 +1282,10 @@ button { font-family: inherit; }
 /* a file dragged over the chat on a computer lands on it */
 #chat-screen.dropping .chat { outline: 2px dashed var(--data); outline-offset: -6px; }
 /* the paperclip's sheet is asked for, so it sits over a card the page offered
-   on its own (the passkey or home screen card, at 60) until it is answered */
+   on its own (the passkey or home screen card, at 60), and the card is out of
+   sight until the sheet is answered, never half under it */
 .fs-scrim.fl, .fs-sheet.fl { z-index: 70; }
+body:has(.fs-sheet.fl.in) .hs-scrim { visibility: hidden; }
 .fs-sheet.fl { max-height: min(85%, 85dvh); }
 .fs-sheet.fl .cf-t { padding-right: 44px; overflow-wrap: anywhere; }
 .fl-text { min-height: 0; overflow-y: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 15px/1.45 var(--sans); color: var(--ink); }
@@ -2696,7 +2698,10 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
    2026-09-09). The card scrolls inside itself when the steps run long. */
 .hs-scrim {
   position: fixed;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: var(--column-left, 0px);
+  width: var(--column-width, 100%);
   z-index: 60;
   pointer-events: none;
   display: flex;
