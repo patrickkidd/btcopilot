@@ -87,7 +87,8 @@ test("the about page comes down from the top like a drawer, from above its own f
     const top = lay.getBoundingClientRect().top;
     return Math.max(...[lay, ...lay.querySelectorAll(".card")].map((e) => e.getBoundingClientRect().bottom - top));
   });
-  expect(rise).toBeLessThanOrEqual(-Math.floor(foot));
+  // give or take a pixel of rounding between the page's height and its cards' edges, as inside() allows
+  expect(rise).toBeLessThanOrEqual(-Math.floor(foot) + 1);
   expect(flight.to).toBe("translateY(0px)");
 });
 
@@ -149,7 +150,7 @@ test.describe("on the record with the longest line", () => {
       return (await (await fetch(`/app/sessions/${sessions[0].id}`)).json()).statements;
     });
     const play = statements.find((s: { case: unknown }) => s.case);
-    await page.route(/\/app\/play(\?diagram_id=\d+)?$/, (route) =>
+    await page.route(/\/app\/play(\?diagram=[a-z0-9]+)?$/, (route) =>
       route.fulfill({
         json: { statement: play.text, statement_id: play.id, kind: "play", cluster_id: play.cluster_id, case: play.case },
       }),

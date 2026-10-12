@@ -36,8 +36,11 @@ def payload(cut: Cut) -> dict:
     # it straight into the phone's own date picker.
     data["meeting_date"] = cut.meeting_date.isoformat() if cut.meeting_date else None
     data["session"] = session_name(cut)
-    owner = db.session.get(Diagram, cut.diagram_id).user
+    diagram = db.session.get(Diagram, cut.diagram_id)
+    owner = diagram.user
     data["owner"] = owner.full_name().strip() or owner.username
+    # the public id the app opens the cut's diagram by, and its address names
+    data["diagram"] = diagram.public_id
     data["sitting_id"] = adapter.statement(cut.start_statement_id).discussion_id
     data["end_order"] = adapter.statement_order(cut.diagram_id).get(cut.end_statement_id)
     data["cut_day"] = when.strftime("%b %-d") if when else None

@@ -1,8 +1,9 @@
+import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { closeX, PAN, pathRow } from "../src/dom";
 import { FIT, fitScale, leastScale, NAME } from "../src/diagram";
-import { below, head, pointLine, shownBy, stepOf, topLine, yearsLine } from "../src/drawer";
-import { family, Told, untold, when } from "../src/snapshots";
+import { below, head, outsideLine, pointLine, shownBy, stepOf, topLine, yearsLine } from "../src/drawer";
+import { family, familyStart, Told, untold, when } from "../src/snapshots";
 import { DateCertainty } from "../src/certainty";
 import { alone, apart, CORINNE, DELPHINE, sparse, timeline } from "./whitlock";
 
@@ -138,6 +139,25 @@ it("steps the whole family with Back and Next only, says where in its top line, 
   expect(topLine(whole, toward)).toBe('<span class="words">Delphine started calling Corinne every night</span>');
 });
 
+// R-0851, R-0782
+it("puts ‹‹ First at Back's left in the Family view's row, off on the first meaningful date, and not in the play-by-play", () => {
+  const whole = new Told(tl, family(tl), true);
+  const first = familyStart(tl, whole.told);
+  expect(first).toBeGreaterThan(-1);
+  const row = below(whole, whole.length - 1, null, first);
+  expect(row).toMatch(/<div class="left"><button class="stepbtn" type="button" data-act="first">‹‹ First<\/button><button class="stepbtn" type="button" data-act="back">/);
+  expect(below(whole, first, null, first)).toMatch(/data-act="first" disabled/);
+  expect(below(told, 2, null)).not.toContain('data-act="first"');
+});
+
+// R-0853
+it("fades the not yet born and the marks carried from earlier dates to one value, 0.2, fainter than the 0.3 they had", () => {
+  const css = readFileSync(new URL("../src/drawer.css", import.meta.url), "utf8");
+  expect(css).toMatch(/\.pbp \{ --faded: 0\.2; \}/);
+  expect(css).toContain(".pbp.whole .yet { opacity: var(--faded); }");
+  expect(css).toContain(".pbp .draw .was { opacity: var(--faded); }");
+});
+
 // "Yes, build that change to reuse the main timeline in the full Diagram view. But we still need to be stepping through the timeline event by event just like we are right now." (Patrick, 2026-10-07)
 // R-0796
 it("steps the Family view to a tapped cluster's first step, to a tapped event's own step, and to the nearest by date for an event no step holds", () => {
@@ -152,16 +172,19 @@ it("steps the Family view to a tapped cluster's first step, to a tapped event's 
   expect(shownBy(whole, j)).toBe(id);
 });
 
-// R-0742
-it("spans the whole family's years line over every dated event, this step ringed, earlier solid, later hollow", () => {
+// R-0742, R-0850
+it("spans the whole family's years line over every dated event, this step ringed, earlier solid, later hollow, the current day with no dot of its own", () => {
   const whole = new Told(tl, family(tl), true);
   const line = yearsLine(tl, whole, 3);
+  const dated = whole.told.snapshots.filter((s) => s.event_ids.length).length;
+  expect(dated).toBe(whole.length - 1);
   expect([...line.matchAll(/class="wnow"/g)]).toHaveLength(1);
   expect([...line.matchAll(/class="wd"/g)]).toHaveLength(3);
-  expect([...line.matchAll(/class="wahead"/g)]).toHaveLength(whole.length - 4);
-  expect([...line.matchAll(/class="wd dim"/g)]).toHaveLength(tl.events.length - whole.length);
+  expect([...line.matchAll(/class="wahead"/g)]).toHaveLength(dated - 4);
+  expect([...line.matchAll(/class="wd dim"/g)]).toHaveLength(tl.events.length - dated);
   expect(line).toContain(">1948</text>");
-  expect(line).toContain(">1999</text>");
+  // the line reaches the current day, the last step, past the newest event's 1999
+  expect(line).toContain(`>${new Date().getFullYear()}</text>`);
 });
 
 // R-0742
@@ -199,4 +222,36 @@ it("shows a step on the timeline by an event the line draws, and by none when ev
   const id = whole.told.snapshots[j].event_ids[0];
   unknown.events.find((e) => e.id === id)!.dateCertainty = DateCertainty.Unknown;
   expect(shownBy(whole, j)).toBe(whole.told.snapshots[j].event_ids.find((other) => other !== id) ?? null);
+});
+
+// "some events show like no event is selected which is confusing ... Whenever an event is selected then it should be displayed in the visual timeline like any other selected event, and the timeline scrolled to show it when necessary." (Patrick, 2026-10-12)
+// R-0862, R-0047
+it("steps the Family view only through events the timeline draws: a shift dated by a guess, its date unknown, is no step, so every step but today's has its dot", () => {
+  const guessed = structuredClone(tl);
+  guessed.events.push({
+    ...guessed.events.find((e) => e.id === 132)!,
+    id: 9,
+    dateTime: "1996-04-15",
+    dateCertainty: DateCertainty.Unknown,
+    title: "Would not talk about it",
+    description: "Kept saying he did not want to talk about it right now",
+  });
+  const whole = new Told(guessed, family(guessed), true);
+  expect(whole.told.snapshots.map((s) => s.date)).not.toContain("1996-04-15");
+  expect(whole.told.snapshots.flatMap((s) => s.event_ids)).not.toContain(9);
+  whole.told.snapshots.forEach((s, i) => expect(shownBy(whole, i)).toBe(s.event_ids.length ? s.event_ids[0] : null));
+  // the years line draws no dot for it either
+  expect(whole.eventIds).not.toContain(9);
+  // dated for sure, the same shift is a step
+  guessed.events[guessed.events.length - 1].dateCertainty = DateCertainty.Certain;
+  expect(family(guessed).snapshots.map((s) => s.date)).toContain("1996-04-15");
+});
+
+// "It is confusing what 'Also on this date' means when it looks like the same event just showing 'Meredith'" (Patrick, 2026-10-12)
+// R-0783
+it("names who a date touches outside the frame as people not in this picture, each a tap, and never as a second list of the date's events", () => {
+  expect(outsideLine([])).toBe("");
+  expect(outsideLine([["7", "Meredith"]])).toBe('Not in this picture: <button type="button" class="also-who" data-centre="7">Meredith</button>');
+  expect(outsideLine([["7", "Meredith"]], 2)).toMatch(/^Not in this picture: <button[^>]*>Meredith<\/button>, \+2 more$/);
+  expect(outsideLine([], 3)).toBe("Not in this picture: +3 more");
 });

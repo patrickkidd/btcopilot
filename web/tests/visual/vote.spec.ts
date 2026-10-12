@@ -159,7 +159,7 @@ test("a shadow reply that finishes 70 seconds after the coach's is still voted o
   await expect(bubble.locator(".vt-wait")).toHaveText("Waiting for other replies");
   // the mocked reply is not in the record, so the thread read once a minute
   // would draw the thread again without it; that read finds no signal instead
-  await page.route(/\/app\/statements\?diagram_id=\d+$/, (route) => route.abort("internetdisconnected"));
+  await page.route(/\/app\/statements\?diagram=[a-z0-9]+$/, (route) => route.abort("internetdisconnected"));
 
   await expect
     .poll(async () => {

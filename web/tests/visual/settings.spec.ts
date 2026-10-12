@@ -332,21 +332,21 @@ test.describe("the controls that were too small", () => {
 test.describe("your diagrams", () => {
   test.use({ storageState: stateFor("moves") });
 
-  const OTHER = { id: 987654, name: "The other family" };
+  const OTHER = { id: 987654, public_id: "zz987654zz", name: "The other family" };
 
   /** The account as the server tells it, with a second diagram beside the
    * fixture's own; which one is current follows the last select. The second
    * diagram is only in the page, so what is read by its id is the fixture's
    * own record, thread and sittings. */
   const twoDiagrams = async (page: Page) => {
-    let current: number | null = null;
+    let current: string | null = null;
     const selected: string[] = [];
-    await page.route(new RegExp(`\\?diagram_id=${OTHER.id}$`), async (route) =>
+    await page.route(new RegExp(`\\?diagram=${OTHER.public_id}$`), async (route) =>
       route.fulfill({ response: await route.fetch({ url: route.request().url().split("?")[0] }) }),
     );
-    await page.route(/\/app\/diagrams\/\d+\/select$/, async (route) => {
+    await page.route(/\/app\/diagrams\/[a-z0-9]+\/select$/, async (route) => {
       selected.push(route.request().url());
-      current = Number(route.request().url().match(/diagrams\/(\d+)/)![1]);
+      current = route.request().url().match(/diagrams\/([a-z0-9]+)/)![1];
       await route.fulfill({
         json: { ...OTHER, session_count: 0, last_activity: null, free: false, current: true, owned: true, access: "own", owner: "Unit Tester" },
       });
@@ -354,12 +354,12 @@ test.describe("your diagrams", () => {
     await page.route(/\/app\/account$/, async (route) => {
       const real = await (await route.fetch()).json();
       const own = real.diagrams[0];
-      current ??= own.id;
+      current ??= own.public_id;
       const other = { ...OTHER, session_count: 0, last_activity: null, free: false, owned: true, access: "own", owner: "Unit Tester" };
       await route.fulfill({
         json: {
           ...real,
-          diagrams: [own, other].map((d) => ({ ...d, current: d.id === current })),
+          diagrams: [own, other].map((d) => ({ ...d, current: d.public_id === current })),
         },
       });
     });
@@ -381,7 +381,7 @@ test.describe("your diagrams", () => {
     await page.locator('.sn-pane[data-page="diagrams"] .sn-row', { hasText: OTHER.name }).click();
     await expect(page.locator(".sn-stack")).toBeHidden();
     expect(selected).toHaveLength(1);
-    expect(selected[0]).toContain(`/diagrams/${OTHER.id}/select`);
+    expect(selected[0]).toContain(`/diagrams/${OTHER.public_id}/select`);
     await expect(page.locator("#title")).toHaveText(OTHER.name);
   });
 
@@ -392,7 +392,7 @@ test.describe("your diagrams", () => {
     test("the Family view's book reads its passages again for the diagram opened next", async ({ page }) => {
       await twoDiagrams(page);
       await page.route(/\/app\/case-report-passages(\?.*)?$/, (route) => {
-        const other = route.request().url().includes(`diagram_id=${OTHER.id}`);
+        const other = route.request().url().includes(`diagram=${OTHER.public_id}`);
         return route.fulfill({ json: { family: [{ text: other ? "The other family's passage" : "The first family's passage", by: "Kerr & Bowen, Family Evaluation, ch. 10" }] } });
       });
       await settle(page);

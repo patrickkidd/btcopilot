@@ -81,7 +81,7 @@ test.describe("the three levels on the moves record", () => {
   test("an open cluster's name too long for the phone is cut in the path, and the years and count under the line stay whole", async ({ page }, info) => {
     test.skip(info.project.name !== "phone", "only the phone is too narrow for the name");
     const long = "Pursuit of psychology and emotional regulation";
-    await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
+    await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       tl.clusters.forEach((c: { title: string }) => (c.title = long));
       await route.fulfill({ json: tl });

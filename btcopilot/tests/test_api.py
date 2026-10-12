@@ -482,7 +482,7 @@ def test_read_only_grant_is_not_listed_or_writable(web, token, test_user, test_u
     listed = web.get("/app/diagrams").get_json()
     assert shared.id not in {d["id"] for d in listed}
 
-    response = post(web, token, f"/app/diagrams/{shared.id}/select", {})
+    response = post(web, token, f"/app/diagrams/{shared.public_id}/select", {})
     assert response.status_code == 404
     assert test_user.current_diagram_id is None
 
@@ -520,7 +520,7 @@ def theirs(test_user_2):
 
 def view(admin, diagram):
     return admin.post(
-        f"/app/diagrams/{diagram.id}/select",
+        f"/app/diagrams/{diagram.public_id}/select",
         json={},
         headers={"X-CSRFToken": csrf_token(admin)},
     )
@@ -600,8 +600,12 @@ def test_an_admin_viewing_a_diagram_writes_nothing_on_it(
     sitting = Discussion.query.filter_by(diagram_id=theirs.id).one()
     before = (Statement.query.count(), Discussion.query.count(), Change.query.count())
 
+    # the page names the diagram it has open on every write, by its public id
+    url = path.format(sitting=sitting.id)
+    if "{sitting}" not in path:
+        url += f"?diagram={theirs.public_id}"
     refused = getattr(admin, method)(
-        path.format(sitting=sitting.id),
+        url,
         json=body,
         headers={"X-CSRFToken": csrf_token(admin)},
     )
@@ -617,7 +621,7 @@ def test_someone_who_is_not_an_admin_cannot_open_another_persons_diagram(
     web, token, test_user, theirs
 ):
     # R-0080
-    assert post(web, token, f"/app/diagrams/{theirs.id}/select", {}).status_code == 404
+    assert post(web, token, f"/app/diagrams/{theirs.public_id}/select", {}).status_code == 404
     assert test_user.current_diagram_id is None
 
 

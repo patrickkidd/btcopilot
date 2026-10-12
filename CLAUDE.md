@@ -127,7 +127,8 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 - **Every tuning signal feeds the learning loop, automatically (2026-09-28, Patrick: "Remember this always").** Anything that shows the coach or the app needs tuning (tool refusals and retries, failed turns, rejected play-by-play tellings, model errors) is written to the observations table, counted on the quality dashboard, and grouped into the short improvement queue he accepts or rejects. Be aggressive about what is tracked; keep the queue he reads to about ten items; real-model spend still needs his yes [R-0517].
 
 - **His terms, verified 2026-09-22 on the round-6 mockups: "cluster" (never "stretch"), "event"
-  (never "moment").** Captions, rulings and code comments use those two words.
+  (never "moment"); 2026-10-09: "diagram" (never "record"; it is like a medical case file or
+  chart).** Captions, rulings and code comments use those words.
 - **Never coin a term.** Say the thing in common words every time ("signing in with an email
   code also creates the account", never "login-is-signup"). A phrase from a doc is not his term
   unless he used it. That includes the corpus's own vocabulary: "topic block", "two clocks",

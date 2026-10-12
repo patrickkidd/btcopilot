@@ -7,7 +7,16 @@ from markupsafe import escape
 
 import btcopilot
 from btcopilot import auth
-from btcopilot.routes import asked_diagram, bp, current_session, diagram
+from btcopilot.routes import (
+    NoAccess,
+    asked_diagram,
+    bp,
+    current_session,
+    opens,
+    own_diagram,
+    put_on,
+)
+from btcopilot.models import Diagram
 from btcopilot.routes.diagrams import diagram_payload
 from btcopilot.discussions import session_payload
 from btcopilot.routes.sessions import thread
@@ -17,6 +26,23 @@ from btcopilot.timeline import build_timeline
 from btcopilot.schema import DiagramData
 
 BUNDLE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "web")
+
+
+def addressed(user):
+    """The diagram the page opens on: the one the address names by its public
+    id, which the page is then on; one the person may not open, or that no
+    diagram has, is the no-access page. An address without a diagram, the
+    home-screen icon's `/app/` among them, opens the person's own."""
+    key, _ = place.split(request.path)
+    if key is None:
+        found = own_diagram(user)
+    else:
+        found = Diagram.by_public_id(key)
+        if found is None or not opens(found, user):
+            raise NoAccess()
+    if found is not None:
+        put_on(user, found)
+    return found
 
 
 def _page() -> str:
@@ -31,7 +57,7 @@ def _page() -> str:
     with open(path) as file:
         page = file.read()
     user = auth.current_user()
-    in_use = diagram()
+    in_use = addressed(user)
     discussion = current_session(user)
     bootstrap = {
         "user": {

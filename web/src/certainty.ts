@@ -10,3 +10,9 @@ export const DateCertainty = {
   Certain: "certain",
 } as const;
 export type DateCertainty = (typeof DateCertainty)[keyof typeof DateCertainty];
+
+/** When an event happened, or nothing when the record cannot say: a date
+ * guessed with its certainty unknown is no date, so the line draws no dot for
+ * it and the Family view makes no step of it (R-0047, R-0862). */
+export const dateOf = (event: { dateTime: string | null; dateCertainty: string | null }): string | null =>
+  event.dateCertainty === DateCertainty.Unknown ? null : event.dateTime;

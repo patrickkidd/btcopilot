@@ -43,12 +43,14 @@ const proxy: Record<string, ProxyOptions> = Object.fromEntries(
   SERVER_PATHS.map((path) => [path, { target: FLASK, changeOrigin: false }]),
 );
 
-/** Ask the server for the page as this reader. Written against node's own
- * client rather than fetch because the Host header has to survive: the server
- * builds its sign-in links and sets its cookies from it, so a request that
- * arrived at this machine's network name must reach the server saying so. */
-function fromServer(headers: Record<string, unknown>) {
-  const to = new URL(`${FLASK}/app/`);
+/** Ask the server for the page as this reader, at the address opened: the
+ * server puts the page on the diagram the address names, or answers the
+ * no-access page. Written against node's own client rather than fetch because
+ * the Host header has to survive: the server builds its sign-in links and sets
+ * its cookies from it, so a request that arrived at this machine's network
+ * name must reach the server saying so. */
+function fromServer(headers: Record<string, unknown>, path = "/app/") {
+  const to = new URL(`${FLASK}${path}`);
   return new Promise<{
     status: number;
     body: string;
@@ -105,7 +107,7 @@ function page(): Plugin {
         // (R-0055), which the server would answer with the built page
         const opened = request.headers["sec-fetch-dest"] === "document" && parse(url);
         if (url !== "/app/" && url !== "/app" && !opened) return next();
-        const from = await fromServer(request.headers);
+        const from = await fromServer(request.headers, url);
         for (const cookie of from.cookies) response.appendHeader("Set-Cookie", cookie);
         if (from.status !== 200) {
           // signed out, or the server said something this cannot dress up

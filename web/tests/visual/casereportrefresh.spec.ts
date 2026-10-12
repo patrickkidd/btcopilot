@@ -13,7 +13,7 @@ const WRITTEN = ["main", "guesses", "own_part", "choice", "work_on"];
 /** The report's record, out of date until `current` says otherwise. */
 async function answer(page: Page, current: () => boolean): Promise<void> {
   await page.route("**/case-report-passages*", (route) => route.fulfill({ json: {} }));
-  await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route: Route) => {
+  await page.route(/\/app\/timeline(\?diagram=[a-z0-9]+)?$/, async (route: Route) => {
     const tl = await (await route.fetch()).json();
     tl.report_out_of_date = current() ? null : { change_id: 41, at: "2026-10-07T09:00:00", sentence: SENTENCE };
     await route.fulfill({ json: tl });
@@ -22,7 +22,7 @@ async function answer(page: Page, current: () => boolean): Promise<void> {
 
 /** A rewrite the server starts, answered with each state in turn when asked. */
 async function rewrite(page: Page, states: (number | string)[], onDone = () => {}): Promise<void> {
-  await page.route(/\/app\/case-report-rewrites\?diagram_id=\d+$/, (route) => route.fulfill({ status: 202, json: { id: "r1", state: "running" } }));
+  await page.route(/\/app\/case-report-rewrites\?diagram=[a-z0-9]+$/, (route) => route.fulfill({ status: 202, json: { id: "r1", state: "running" } }));
   await page.route("**/case-report-rewrites/r1", (route) => {
     const next = states.length > 1 ? states.shift()! : states[0];
     if (typeof next === "number") return route.fulfill({ status: next, body: "" });
@@ -137,7 +137,7 @@ test.describe("a case report out of date", () => {
   // R-0825
   test("a rewrite the server will not start now says so and leaves the report as it was", async ({ page }) => {
     await answer(page, () => false);
-    await page.route(/\/app\/case-report-rewrites\?diagram_id=\d+$/, (route) =>
+    await page.route(/\/app\/case-report-rewrites\?diagram=[a-z0-9]+$/, (route) =>
       route.fulfill({ status: 409, body: "the case report is already being written again" }),
     );
     await open(page);

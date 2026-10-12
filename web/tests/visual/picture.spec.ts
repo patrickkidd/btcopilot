@@ -133,7 +133,8 @@ test.describe("the resting line on a long record", () => {
     expect(stands.left).toBe(stands.end);
     const years = await yearsUnder(page);
     expect(years[0]).toBe("1924");
-    expect(years[years.length - 1]).toBe("1982");
+    // the Whitlocks' later shifts carry the line to 2008 (Patrick, 2026-10-09)
+    expect(years[years.length - 1]).toBe("2008");
   });
 
   // R-0381

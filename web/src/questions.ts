@@ -181,7 +181,7 @@ export class Questions {
   async sending(draft: string): Promise<void> {
     const ids = [...this.partly].filter((id) => draft.includes(token(ChipKind.Impression, id)));
     this.partly.clear();
-    await Promise.all(ids.map((id) => api.saveQuestion(store.id(), id, { pushback: Pushback.Partly })));
+    await Promise.all(ids.map((id) => api.saveQuestion(store.key(), id, { pushback: Pushback.Partly })));
   }
 
   private async onClick(e: Event): Promise<void> {
@@ -229,7 +229,7 @@ export class Questions {
   private async dismiss(q: AskedQuestion): Promise<void> {
     this.handlers.record(InteractionKind.Dismiss, ItemKind.Question, q.id);
     tap(Feature.QuestionDismiss, { kind: ItemKind.Question, id: q.id });
-    await api.saveQuestion(store.id(), q.id, {
+    await api.saveQuestion(store.key(), q.id, {
       state: QuestionState.Resolved,
       outcome: QuestionOutcome.DeclinedByUser,
     });
@@ -241,7 +241,7 @@ export class Questions {
   private async doesntFit(q: AskedQuestion): Promise<void> {
     if (this.handlers.busy()) return toast("The coach is still answering");
     this.partly.delete(q.id);
-    await api.saveQuestion(store.id(), q.id, {
+    await api.saveQuestion(store.key(), q.id, {
       state: QuestionState.Resolved,
       outcome: QuestionOutcome.DoesntFit,
     });

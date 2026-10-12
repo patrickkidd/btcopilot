@@ -49,6 +49,8 @@ def diagram_payload(diagram: Diagram, user) -> dict:
     when = max(filter(None, (latest, saved)), default=None)
     return {
         "id": diagram.id,
+        # what the address bar and the page's reads name the diagram by
+        "public_id": diagram.public_id,
         "name": diagram.name,
         "session_count": len(discussions),
         "last_activity": utc_iso(when) if when else None,
@@ -110,16 +112,19 @@ def diagram_create():
     return jsonify(diagram_payload(made, user)), 201
 
 
-@bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])
-def diagram_select(diagram_id: int):
-    """Put the app on one of the user's writable diagrams, or, for an admin,
-    on anyone's to look at: no access right is written for that, and every
-    write on it is refused. This never writes free_diagram_id: which diagram
-    is free of charge is a billing fact, not a record of where the reader is."""
+@bp.route("/diagrams/<public_id>/select", methods=["POST"])
+def diagram_select(public_id: str):
+    """Put the app on one of the user's writable diagrams, named by its public
+    id, or, for an admin, on anyone's to look at: no access right is written
+    for that, and every write on it is refused. This never writes
+    free_diagram_id: which diagram is free of charge is a billing fact, not a
+    record of where the reader is."""
     user = auth.current_user()
-    found = db.get_or_404(Diagram, diagram_id)
+    found = Diagram.by_public_id(public_id)
+    if found is None:
+        abort(404)
     if found not in writable(user) and access(found, user) is not Access.AdminView:
         abort(404)
-    user.current_diagram_id = diagram_id
+    user.current_diagram_id = found.id
     db.session.commit()
     return jsonify(diagram_payload(found, user))
