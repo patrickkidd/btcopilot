@@ -21,7 +21,16 @@ from btcopilot.familymatch import unnamed
 from btcopilot.fdcoding import RAW
 from btcopilot.fdledger import Decision, about
 from btcopilot.metered import Metered
-from btcopilot.models import Author, Diagram, Observation, ObservationKind
+from btcopilot.models import (
+    Author,
+    Diagram,
+    Discussion,
+    Observation,
+    ObservationKind,
+    Speaker,
+    SpeakerType,
+    Statement,
+)
 from btcopilot.models.modelcall import ModelCall, Purpose
 from btcopilot.prompts import Role
 from btcopilot.record import generic_key
@@ -703,9 +712,16 @@ def _twins(out: Imported) -> None:
         )
 
 
-def build(fd: dict, model, into: Diagram | None = None) -> Imported:
+def build(
+    fd: dict,
+    model,
+    into: Diagram | None = None,
+    pairing: fdmerge.Pairing = fdmerge.Pairing.SameDay,
+    shown: fdmerge.Shown = fdmerge.Shown.Names,
+) -> Imported:
     """Read the file's items, code what the mapping left, then renumber; with
-    `into`, the items are brought into that diagram [Oracle: R-0851]."""
+    `into`, the items are brought into that diagram by the merge run the way
+    `pairing` and `shown` say [Oracle: R-0851]."""
     out = convert(fd)
     filed = {event["id"] for event in out.data["events"]}
     out.data, coded = fdcoding.code(out.data, model)
@@ -729,7 +745,7 @@ def build(fd: dict, model, into: Diagram | None = None) -> Imported:
         people=out.brought["people"], events=out.brought["events"]
     )
     if into is not None:
-        _merge(out, into, model)
+        _merge(out, into, model, pairing, shown)
     _settle(out)
     return out
 
@@ -781,13 +797,20 @@ def _moved(out: Imported, new: dict[int, int], part=lambda i: i) -> None:
     out.labels = labels
 
 
-def _merge(out: Imported, into: Diagram, model) -> None:
+def _merge(
+    out: Imported,
+    into: Diagram,
+    model,
+    pairing: fdmerge.Pairing,
+    shown: fdmerge.Shown,
+) -> None:
     """The coded file merged into the diagram as it stands; the merge's
     choices name the file's items by their names in the file."""
     out.into, out.version = into.id, into.version
     # a diagram nothing has been written to yet holds none of its collections
     out.base = {name: [] for name in ADDED} | diagramjson.loads(into.data)
-    merge = fdmerge.Merge(out.base, out.data, model)
+    statements = _spoken(into.id) if shown is fdmerge.Shown.More else []
+    merge = fdmerge.Merge(out.base, out.data, model, pairing, shown, statements)
     out.data, decisions, out.held = merge.run()
     out.placed = merge.placed
     out.data["questions"] = [*(out.data.get("questions") or []), *out.held]
@@ -795,6 +818,20 @@ def _merge(out: Imported, into: Diagram, model) -> None:
     if any(p.get("primary") and not unnamed(p.get("name")) for p in out.base["people"]):
         out.primaries = []
     _moved(out, {old: new for new, old in merge.old.items()}, merge.final)
+
+
+def _spoken(diagram_id: int) -> list[str]:
+    """The person's own words to the coach in the diagram's threads, in order."""
+    rows = (
+        Statement.query.join(Discussion, Statement.discussion_id == Discussion.id)
+        .join(Speaker, Statement.speaker_id == Speaker.id)
+        .filter(
+            Discussion.diagram_id == diagram_id,
+            Speaker.type == SpeakerType.Subject,
+        )
+        .order_by(Statement.discussion_id, Statement.order, Statement.id)
+    )
+    return [row.text for row in rows if row.text]
 
 
 def _refused(out: Imported) -> dict[tuple[ItemKind, str], record.Invalid]:

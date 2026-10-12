@@ -419,3 +419,36 @@ def test_an_event_the_file_tells_twice_is_judged_first(said, count):
     assert len(told) == count
     if count == 1:
         assert told[0]["notes"] == "Shut\n\nMoved home"
+
+
+def test_the_stand_in_takes_the_files_main_person_and_keeps_the_mark():
+    # R-0871, R-0851
+    stand_in = {
+        "people": [{"id": 1, "name": "User", "primary": True}],
+        "pair_bonds": [],
+        "events": [],
+        "questions": [],
+        "lastItemId": 1,
+    }
+    data, decisions, held = fdmerge.merge(stand_in, imported(), Model())
+    [you] = [p for p in data["people"] if p.get("primary")]
+    assert (you["id"], you["name"]) == (1, "Ada")
+    assert not [d for d in decisions if d.field == "primary"]
+    assert any(
+        d.after == "person 1"
+        and d.reason
+        == "The app's stand-in for the person takes the desktop file's main person."
+        for d in decisions
+    )
+
+
+def test_the_files_main_person_loses_the_mark_to_a_named_one_they_are_not():
+    # R-0851
+    other = existing()
+    other["people"][0].update(name="Wren", last_name="Hale")
+    data, decisions, held = fdmerge.merge(other, imported(), Model())
+    assert [p["name"] for p in data["people"] if p.get("primary")] == ["Wren"]
+    assert any(
+        d.field == "primary" and d.reason == "The diagram already says who it is about."
+        for d in decisions
+    )

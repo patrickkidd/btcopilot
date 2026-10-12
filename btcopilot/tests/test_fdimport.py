@@ -13,6 +13,7 @@ from btcopilot import (
     fdfile,
     fdimport,
     fdledger,
+    fdmerge,
     record,
 )
 from btcopilot.admin import admin
@@ -23,9 +24,13 @@ from btcopilot.models import (
     Author,
     Change,
     Diagram,
+    Discussion,
     Observation,
     ObservationKind,
     ProactiveMessage,
+    Speaker,
+    SpeakerType,
+    Statement,
 )
 from btcopilot.models.modelcall import ModelCall, Purpose
 from btcopilot.schema import NotedFact, from_dict
@@ -1029,3 +1034,70 @@ def test_a_file_comes_into_a_diagram_nothing_has_been_written_to_yet(
     fdimport.save(test_user.id, "", out, yes=True, turn=model.turn_id)
     data = diagramjson.loads(db.session.get(Diagram, diagram.id).data)
     assert sorted(p["name"] for p in data["people"]) == ["Ada", "Bo", "Cy"]
+
+
+def talked(user, diagram: Diagram, said: list[tuple[SpeakerType, str]]) -> None:
+    discussion = Discussion(user_id=user.id, diagram_id=diagram.id)
+    db.session.add(discussion)
+    db.session.flush()
+    speakers = {
+        kind: Speaker(discussion_id=discussion.id, name=kind.value, type=kind)
+        for kind in SpeakerType
+    }
+    db.session.add_all(speakers.values())
+    db.session.flush()
+    for order, (kind, text) in enumerate(said):
+        db.session.add(
+            Statement(
+                discussion_id=discussion.id,
+                speaker_id=speakers[kind].id,
+                text=text,
+                order=order,
+            )
+        )
+    db.session.commit()
+
+
+@pytest.mark.parametrize(
+    "ways, statements",
+    [
+        ({}, []),
+        (
+            {"pairing": fdmerge.Pairing.TwoYears, "shown": fdmerge.Shown.More},
+            ["My son Cy moved away.", "Cy calls on Sundays."],
+        ),
+    ],
+)
+def test_the_import_runs_the_merge_the_way_it_is_asked_with_the_persons_own_words(
+    test_user, side_call, monkeypatch, ways, statements
+):
+    # R-0851, R-0853
+    diagram = stored(test_user)
+    talked(
+        test_user,
+        diagram,
+        [
+            (SpeakerType.Subject, "My son Cy moved away."),
+            (SpeakerType.Expert, "What was that like?"),
+            (SpeakerType.Subject, "Cy calls on Sundays."),
+        ],
+    )
+    seen = []
+    init = fdmerge.Merge.__init__
+
+    def merge(self, *args):
+        seen.append(args[3:])
+        init(self, *args)
+
+    monkeypatch.setattr(fdmerge.Merge, "__init__", merge)
+    model = fdimport.meter(test_user.id, diagram)
+    fdimport.build(
+        fdfile.read(dumps(scene())), model.structured, into=diagram, **ways
+    )
+    assert seen == [
+        (
+            ways.get("pairing", fdmerge.Pairing.SameDay),
+            ways.get("shown", fdmerge.Shown.Names),
+            statements,
+        )
+    ]

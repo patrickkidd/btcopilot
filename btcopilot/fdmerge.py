@@ -934,23 +934,37 @@ class Merge:
                 unsure[y] = [x]
             else:
                 joined[y] = x
-        primary = any(p.get("primary") for p in self.existing["people"])
+        # The file's person joined into the diagram's own keeps the mark: the
+        # two are one person, the app's nameless stand-in among them.
+        mains = {p["id"]: p for p in self.existing["people"] if p.get("primary")}
+        named = any(not unnamed(p.get("name")) for p in mains.values())
         for y in sorted(self.found.people):
-            if primary and self.people[y].pop("primary", None):
+            if (
+                mains
+                and joined.get(y) not in mains
+                and self.people[y].pop("primary", None)
+            ):
                 self.decide(
                     "person",
                     y,
                     "primary",
                     True,
                     "",
-                    "The diagram already says who it is about.",
+                    "The diagram already says who it is about."
+                    if named
+                    else "The app's stand-in for the person stays them until "
+                    "they say which person in the file they are.",
                 )
         for y, x in sorted(joined.items()):
-            reason = (
-                "The same name and family in the file and the diagram."
-                if y in same
-                else f"Judged the same person: {people[y, x][1]}"
-            )
+            if y not in same:
+                reason = f"Judged the same person: {people[y, x][1]}"
+            elif x in mains and unnamed(mains[x].get("name")):
+                reason = (
+                    "The app's stand-in for the person takes the desktop file's "
+                    "main person."
+                )
+            else:
+                reason = "The same name and family in the file and the diagram."
             self.join_person(x, y, reason)
         for y in sorted(set(self.found.people) - set(joined)):
             reason = (
