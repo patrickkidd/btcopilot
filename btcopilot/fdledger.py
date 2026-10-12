@@ -191,7 +191,7 @@ def _section(items: list[tuple[str, dict]], links: list[dict], became, decided):
     return out + ([DRAWN, *drawn, ""] if drawn else [])
 
 
-def _about(event: dict) -> int | None:
+def about(event: dict) -> int | None:
     return (
         event.get("child") if event.get("kind") in CHILD_KINDS else event.get("person")
     )
@@ -230,12 +230,12 @@ def text(
     by_event = {event["id"]: event for event in events}
     events_of = collections.defaultdict(list)
     for event in events:
-        events_of[_about(event) if _about(event) in order else None].append(event)
+        events_of[about(event) if about(event) in order else None].append(event)
     relsof = collections.defaultdict(list)
     for line in rels:
         owner = line.get("person")
         if owner is None and line.get("event") in by_event:
-            owner = _about(by_event[line["event"]])
+            owner = about(by_event[line["event"]])
         relsof[owner if owner in order else None].append(line)
     bonds_of = collections.defaultdict(list)
     for bond in bonds:

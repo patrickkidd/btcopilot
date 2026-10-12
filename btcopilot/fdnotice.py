@@ -68,13 +68,12 @@ def after_import(diagram_id: int, user_id: int, summary: Summary) -> ProactiveMe
     if primary is None or unnamed(primary.get("name")):
         who = _ask_who(diagram_id, user_id, summary, data, primary)
         data = db.session.get(Diagram, diagram_id).get_diagram_data()
-    others = [q for q in opened(diagram_id, data) if q["id"] != (who and who["id"])]
     message = ProactiveMessage(
         user_id=user_id,
         diagram_id=diagram_id,
         trigger=Trigger.Import,
         key=summary.turn_id,
-        question=_words(summary, len(others), who),
+        question=_words(summary, len(opened(diagram_id, data)), who),
     )
     proactive.send(user, message, message.question, datetime.datetime.utcnow())
     db.session.commit()
@@ -140,8 +139,8 @@ def _words(summary: Summary, checks: int, who: dict | None) -> str:
         said.append(f"I also found {many(summary.drawn, 'more event')} in your notes.")
     if checks:
         said.append(
-            f"There {_is(checks)} {many(checks, 'thing')} in it "
-            "I'd like to check with you, a few at a time as we go."
+            f"There {_is(checks)} {many(checks, 'thing')} in it I'd like to check "
+            f"with you{', a few at a time as we go' if checks > 1 else ''}."
         )
     if who:
         said.append(f"First, {who['text'][0].lower()}{who['text'][1:]}")

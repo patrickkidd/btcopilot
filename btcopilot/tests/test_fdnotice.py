@@ -160,8 +160,8 @@ def test_after_an_import_the_coach_writes_first_and_asks_which_person_is_you(
     with freeze_time(T0):
         message = fdnotice.after_import(imported.id, test_user.id, _summary((ANN, BOB)))
     assert message.statement.text == (
-        "Your file is in: 3 people, 0 events and 0 pair-bonds. There is 1 thing in it "
-        "I'd like to check with you, a few at a time as we go. First, which of Ann "
+        "Your file is in: 3 people, 0 events and 0 pair-bonds. There are 2 things in "
+        "it I'd like to check with you, a few at a time as we go. First, which of Ann "
         "Lark and Bob Lark is you?"
     )
     assert (
@@ -202,8 +202,7 @@ def test_with_one_person_marked_the_message_asks_nothing_of_who_they_are(
     message = fdnotice.after_import(imported.id, test_user.id, _summary())
     assert message.question == (
         "Your file is in: 3 people, 0 events and 0 pair-bonds. There is 1 thing in it "
-        "I'd like to check with you, a few at a time as we go. Shall we start with "
-        "the first one?"
+        "I'd like to check with you. Shall we start with the first one?"
     )
     assert [q["id"] for q in data_of(imported).questions] == ["q1"]
 

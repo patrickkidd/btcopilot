@@ -668,3 +668,25 @@ def test_trying_again_after_a_written_import_runs_only_the_steps_that_failed(
     assert (len(importing), ProactiveMessage.query.count()) == (1, 1)
     assert mailed == [None, test_user.username]
     assert stored().attachment_text == ProactiveMessage.query.one().question
+
+
+def test_an_import_that_breaks_anywhere_ends_the_turn_saying_so_and_raises_for_the_log(
+    web, token, test_user, monkeypatch, held, importing
+):
+    # R-0880, R-0829
+    def broke(*args, **kwargs):
+        raise KeyError(1468)
+
+    monkeypatch.setattr(fdimport, "build", broke)
+    coach(monkeypatch, Model(said("Thank you.")))
+    with patch("btcopilot.turns.enqueue"):
+        body = send(web, token, "Lund family.fd", dumps(scene())).get_json()
+    with pytest.raises(KeyError):
+        turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    assert events(body["turn_id"])[-1] == {
+        "type": TurnEventKind.Failed.value,
+        "message": attachments.NOT_BROUGHT,
+    }
+    [mine] = [s for s in web.get("/app/statements").get_json() if s["role"] == "user"]
+    assert (mine["unfinished"], mine["failure"]) == (True, attachments.NOT_BROUGHT)
+    assert turnlog.running(body["discussion_id"]) is None

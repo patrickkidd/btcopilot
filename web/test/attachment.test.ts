@@ -33,6 +33,9 @@ it("shows the file's name still while it is read, and once read a chip that open
   const read = fileChip("Mom's letter.pdf", "Dear Ann,");
   expect(read).not.toContain("reading");
   expect(read).not.toContain("disabled");
+  const untaken = fileChip("Lund family.fd", null, true);
+  expect(untaken).toContain('class="chip file untaken"');
+  expect(untaken).toContain("disabled");
   expect(readSheet("<b>.md", "1 < 2")).toContain("1 &lt; 2");
   expect(readSheet("<b>.md", "1 < 2")).toContain("&lt;b&gt;.md");
 });

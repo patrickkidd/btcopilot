@@ -1258,7 +1258,7 @@ button { font-family: inherit; }
    still while the server reads it, a tap once read shows what the coach read. */
 .bub > .file { margin-bottom: 4px; }
 .bub > .file:only-child { margin-bottom: 0; }
-.chip.file.reading { opacity: 0.6; cursor: default; }
+.chip.file:is(.reading, .untaken) { opacity: 0.6; cursor: default; }
 .chip.file.reading::after { content: " · reading"; }
 /* the file picked for the next message, in the box with its cross */
 .field > .attached { grid-area: slot; display: flex; align-items: center; padding-top: 4px; }
@@ -2702,11 +2702,11 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 16px;
+  padding: 16px 16px calc(16px + var(--bar-clear, 0px));
 }
 .hs-card {
   pointer-events: auto;
-  max-height: 70vh;
+  max-height: min(70vh, calc(100dvh - 32px - var(--bar-clear, 0px)));
   overflow-y: auto;
   width: 100%;
   max-width: 360px;

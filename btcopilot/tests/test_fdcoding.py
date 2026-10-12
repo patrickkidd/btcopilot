@@ -172,7 +172,9 @@ def test_a_dated_happening_in_notes_becomes_an_event_on_its_person_and_a_fact_a_
     assert "dateTime" not in work
     assert [(d.item, d.field, d.after) for d in decisions] == [
         ("person 1", "notes", "a new shift event: Hospitalized for depression"),
+        (f"event {stay['id']}", "symptom", "up"),
         ("person 1", "notes", "a new noted event: Worked as nurse"),
+        (f"event {work['id']}", "item", "work"),
     ]
 
 

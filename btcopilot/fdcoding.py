@@ -699,15 +699,18 @@ def _batch(
             )
             continue
         data["events"].append(event)
+        said = f'Added from {addition.source}, which says "{addition.quote}".'
         decisions.append(
             Decision(
-                item,
-                name,
-                "",
-                f"a new {event['kind']} event: {event['title']}",
-                f'Added from {addition.source}, which says "{addition.quote}".',
+                item, name, "", f"a new {event['kind']} event: {event['title']}", said
             )
         )
+        # each value the model gave the new event is a choice of its own
+        decisions += [
+            Decision(f"event {event['id']}", key, "", _said(event[key]), said)
+            for key in (*CODED, "item")
+            if key in event
+        ]
 
 
 def code(data: dict, model=ask) -> tuple[dict, list[Decision]]:

@@ -19,7 +19,7 @@ from btcopilot.coverage import CHILD_ROLE
 from btcopilot.extensions import db
 from btcopilot.familymatch import unnamed
 from btcopilot.fdcoding import RAW
-from btcopilot.fdledger import Decision
+from btcopilot.fdledger import Decision, about
 from btcopilot.metered import Metered
 from btcopilot.models import Author, Diagram, Observation, ObservationKind
 from btcopilot.models.modelcall import ModelCall, Purpose
@@ -709,6 +709,7 @@ def build(fd: dict, model, into: Diagram | None = None) -> Imported:
     out = convert(fd)
     filed = {event["id"] for event in out.data["events"]}
     out.data, coded = fdcoding.code(out.data, model)
+    _labeled(out)
     # The pass names an event by its id; a relationship line's own event is
     # named in the ledger by the line it came from.
     out.decisions += [
@@ -731,6 +732,34 @@ def build(fd: dict, model, into: Diagram | None = None) -> Imported:
         _merge(out, into, model)
     _settle(out)
     return out
+
+
+def _labeled(out: Imported) -> None:
+    """An event the file did not hold as one, a death or parting its ticks
+    made or one the coding pass read in its notes, named in the ledger by its
+    kind, its words and whom it is about in the file."""
+    taken = set(out.labels.values())
+    for event in out.data["events"]:
+        if event["id"] in out.labels:
+            continue
+        who = about(event)
+        title = event.get("title") or event.get("description")
+        label = " ".join(
+            filter(
+                None,
+                (
+                    f"the new {event['kind']} event",
+                    title and f'"{title}"',
+                    who is not None and f"of person {who}",
+                ),
+            )
+        )
+        named, n = label, 1
+        while named in taken:
+            n += 1
+            named = f"{label} ({n})"
+        taken.add(named)
+        out.labels[event["id"]] = named
 
 
 def _moved(out: Imported, new: dict[int, int], part=lambda i: i) -> None:
@@ -756,7 +785,8 @@ def _merge(out: Imported, into: Diagram, model) -> None:
     """The coded file merged into the diagram as it stands; the merge's
     choices name the file's items by their names in the file."""
     out.into, out.version = into.id, into.version
-    out.base = diagramjson.loads(into.data)
+    # a diagram nothing has been written to yet holds none of its collections
+    out.base = {name: [] for name in ADDED} | diagramjson.loads(into.data)
     merge = fdmerge.Merge(out.base, out.data, model)
     out.data, decisions, out.held = merge.run()
     out.placed = merge.placed

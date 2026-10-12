@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test, type Page } from "./fixtures";
 import { stateFor } from "./setup";
-import { mockTurn, SEND } from "./turn";
+import { mockTurn, SEND, STREAM } from "./turn";
 
 /** A file goes with a message as input to the case: picked with the
  * paperclip or dropped on the chat, its name a chip on the message while the
@@ -180,4 +180,66 @@ test("the paperclip's sheet sits over the passkey card the page offered, which i
   await sheet.locator(".cardx").click();
   await expect(sheet).not.toHaveClass(/\bin\b/);
   await expect(card).toBeVisible();
+});
+
+// R-0882
+test("the passkey card sits above the chat bar, so the paperclip and Send are never under it, and names the device it is on", async ({ page }, info) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("fd-home-screen-asked", String(Date.now()));
+    Object.defineProperty(window, "PublicKeyCredential", {
+      configurable: true,
+      value: { isUserVerifyingPlatformAuthenticatorAvailable: async () => true },
+    });
+  });
+  await page.route("**/app/passkeys", (route) => route.fulfill({ json: { passkeys: [] } }));
+  await page.goto("/app/");
+  await expect(page.locator(".bub").last()).toBeVisible();
+  const card = page.locator(".hs-card", { hasText: "Sign in faster" });
+  await expect(card).toBeVisible();
+  // a file picked makes the bar taller, and the card moves up with it
+  await picker(page).setInputFiles(file("letter.md", "text/markdown"));
+  await expect(picked(page)).toBeVisible();
+  for (const control of ["#attach", "#send"])
+    await expect
+      .poll(() =>
+        page.locator(control).evaluate((b) => {
+          const r = b.getBoundingClientRect();
+          return b.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        }),
+      )
+      .toBe(true);
+  const card_ = await card.boundingBox();
+  const bar = await page.locator("#inbar").boundingBox();
+  expect(card_!.y + card_!.height).toBeLessThanOrEqual(bar!.y);
+  const device = /iPhone|Android.*Mobile/.test(await page.evaluate(() => navigator.userAgent)) ? "phone" : "computer";
+  await expect(card).toContainText(`on this ${device} instead`);
+  await page.screenshot({ path: info.outputPath("passkey-above-bar.png") });
+});
+
+// R-0830, R-0880
+test("a file whose turn failed is no longer said to be reading, and the thread says why", async ({ page }) => {
+  const failed = "The app could not bring that file into your diagram; try again.";
+  await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
+  await page.route(SEND, (route) =>
+    route.fulfill({
+      status: 202,
+      json: { turn_id: "t1", discussion_id: 1, statement_id: 9600, attachment_name: "Lund family.fd", attachment_text: null },
+    }),
+  );
+  await page.route(STREAM, (route) =>
+    route.fulfill({
+      status: 200,
+      headers: { "content-type": "text/event-stream", "cache-control": "no-cache" },
+      body: `id: 1\ndata: ${JSON.stringify({ type: "failed", message: failed })}\n\n`,
+    }),
+  );
+  await page.goto("/app/");
+  await expect(page.locator(".bub").last()).toBeVisible();
+  await picker(page).setInputFiles(file("Lund family.fd", "application/octet-stream"));
+  await page.locator("#send").click();
+  await expect(page.locator(".sys.warn")).toContainText(failed);
+  const chip = page.locator(".bub.user").last().locator(".file .chip");
+  await expect(chip).toHaveClass(/untaken/);
+  await expect(chip).not.toHaveClass(/reading/);
+  await expect(page.locator(".bub.typing")).toHaveCount(0);
 });

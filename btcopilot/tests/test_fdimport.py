@@ -977,3 +977,55 @@ def test_events_the_coding_pass_drew_from_the_notes_are_counted_apart(monkeypatc
     monkeypatch.setattr(fdcoding, "code", code)
     out = built()
     assert out.brought == {"people": 3, "pair_bonds": 1, "events": 4, "drawn": 1}
+
+
+def test_an_event_drawn_from_the_notes_that_one_in_the_file_already_tells_joins_it(
+    monkeypatch,
+):
+    # R-0868, R-0873, R-0874
+    def code(data, model):
+        told = next(e for e in data["events"] if e["id"] == 23)
+        data["events"].append({**told, "id": 41, "title": "Moved again"})
+        return data, [Decision("event 41", "anxiety", "", "up", "Read in the notes.")]
+
+    monkeypatch.setattr(fdcoding, "code", code)
+    moved = event(
+        23, "noted", person=1, description="Moved to Tulsa", dateTime=when(2000, 3, 4)
+    )
+    out = built(events=[moved])
+    [kept] = out.data["events"]
+    drawn = 'the new noted event "Moved again" of person 1'
+    assert (
+        fdimport.became(out)[drawn]
+        == f"part of event {kept['id']}, noted: Moved to Tulsa"
+    )
+    assert [d.field for d in out.decisions if d.item == drawn] == ["anxiety", "notes"]
+    ledger = fdledger.text(
+        "Lund family.fd", scene(), fdimport.became(out), out.decisions, TODAY
+    )
+    assert (
+        f'{drawn}, anxiety: was ""; the new diagram has "up". Read in the notes.'
+        in ledger
+    )
+
+
+def test_a_death_the_file_only_ticks_is_named_in_the_ledger_by_whom_it_is_about():
+    # R-0870, R-0873
+    fd = scene()
+    fd["people"][0]["deceased"] = True
+    out = fdimport.build(fdfile.read(dumps(fd)), Model())
+    assert "the new death event of person 1" in fdimport.became(out)
+
+
+def test_a_file_comes_into_a_diagram_nothing_has_been_written_to_yet(
+    test_user, side_call
+):
+    # R-0880, R-0851
+    diagram = Diagram(user_id=test_user.id, name="New", data=diagramjson.dumps({}))
+    db.session.add(diagram)
+    db.session.commit()
+    model = fdimport.meter(test_user.id, diagram)
+    out = fdimport.build(fdfile.read(dumps(scene())), model.structured, into=diagram)
+    fdimport.save(test_user.id, "", out, yes=True, turn=model.turn_id)
+    data = diagramjson.loads(db.session.get(Diagram, diagram.id).data)
+    assert sorted(p["name"] for p in data["people"]) == ["Ada", "Bo", "Cy"]
