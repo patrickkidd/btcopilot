@@ -12,18 +12,30 @@ is a Decision naming the file's item by its id in the imported diagram."""
 
 import collections
 import copy
+import datetime
 import enum
+import itertools
+import re
 from dataclasses import dataclass, field
 
 # fdimport merges with this module and this module renumbers with fdimport;
 # neither uses the other at import time.
-from btcopilot import diagramjson, fdcoding, fdimport, prompts, record
+from btcopilot import (
+    coverage,
+    diagramjson,
+    fdcoding,
+    fdimport,
+    profile,
+    prompts,
+    record,
+)
 from btcopilot.familymatch import (
     PLACEHOLDER,
     Family,
     Relation,
     Status,
     match,
+    tokens,
     unnamed,
 )
 from btcopilot.fdcoding import ask, heard, numbered
@@ -31,10 +43,13 @@ from btcopilot.fdledger import Decision
 from btcopilot.llmutil import dataclass_to_json_schema
 from btcopilot.schema import (
     DateCertainty,
+    DiagramData,
     EventKind,
     ItemKind,
+    PersonKind,
     QuestionKind,
     QuestionState,
+    from_dict,
 )
 
 PROMPT = "import_merge"
@@ -52,6 +67,45 @@ FILE = "file"
 DIAGRAM = "diagram"
 JOINED = "The same kind of event for the same people within a year in both."
 TWIN = "The same kind, day, people and what moved: the app counts it as one event."
+OVER_DIAGRAM = (
+    "Only the file had it.",
+    "The diagram already said otherwise; its value is kept.",
+)
+OVER_FILE = (
+    "Only this telling in the file had it.",
+    "The file's earlier telling said otherwise; its value is kept.",
+)
+SAME_DAY = "the diagram's event of the same kind on the same day"
+NEAR = "an event of the diagram about the same person within two years, of any kind"
+REPEAT = "an event of the file about the same person within two years"
+# Two years either way, in years.
+SPAN = 2
+# The most event pairs one call judges when the events go apart from people.
+PER_CALL = 30
+# What a person's line shows of their notes, events and the person's words.
+NOTES = 300
+TITLES = 10
+SAID = 3
+SENTENCE = 200
+SENTENCES = re.compile(r"(?<=[.!?])\s+|\n+")
+CHILD_WORDS = {PersonKind.Female: "daughter", PersonKind.Male: "son"}
+
+
+class Pairing(enum.StrEnum):
+    """Which of a joined person's events the model judges against the
+    diagram's: one kind on one day, or any kind within two years."""
+
+    SameDay = "same day"
+    TwoYears = "two years"
+
+
+class Shown(enum.StrEnum):
+    """What the model is shown of each person: names, dates and relatives,
+    or also their notes, events, grandparents, why the rules were unsure, and
+    what the person said of them in conversation."""
+
+    Names = "names"
+    More = "more"
 
 
 class Verdict(enum.StrEnum):
@@ -100,6 +154,7 @@ class Call:
 
     people: dict[int, list[int]] = field(default_factory=dict)
     events: list[tuple[int, int]] = field(default_factory=list)
+    against: str = SAME_DAY
 
 
 def _label(side: str, pid: int) -> str:
@@ -138,6 +193,42 @@ def _when(event: dict, on: str = "") -> str:
     return on + day
 
 
+def _years(event: dict) -> float:
+    day = _day(event)
+    if len(day) == 4:
+        return int(day)
+    date = datetime.date.fromisoformat(day)
+    return date.year + (date.timetuple().tm_yday - 1) / 366
+
+
+def _near(a: dict, b: dict) -> bool:
+    return abs(_years(a) - _years(b)) <= SPAN
+
+
+def _words(event: dict) -> set[str]:
+    text = " ".join(event.get(k) or "" for k in ("title", "description"))
+    return {w for w in tokens(text) if len(w) > 3}
+
+
+def _alike(a: dict, b: dict) -> bool:
+    """Two tellings of one happening by their look: two words or more, and
+    half their words, the same."""
+    wa, wb = _words(a), _words(b)
+    return len(wa & wb) >= 2 and len(wa & wb) * 2 >= len(wa | wb)
+
+
+def _short(text: str, size: int) -> str:
+    text = " ".join(text.split())
+    return text if len(text) <= size else text[: size - 1].rstrip() + "…"
+
+
+def _by_first(pairs: list[tuple[int, int]]) -> dict[int, list[int]]:
+    out = collections.defaultdict(list)
+    for e, f in pairs:
+        out[e].append(f)
+    return out
+
+
 def _mapped(event: dict, same: dict[int, int]) -> dict:
     out = dict(event)
     for key in LINKS:
@@ -149,7 +240,7 @@ def _mapped(event: dict, same: dict[int, int]) -> dict:
     return out
 
 
-def _schema(call: Call) -> dict:
+def _schema(call: Call, label) -> dict:
     schema = dataclass_to_json_schema(Answer)
     people = schema["properties"]["people"]["items"]
     people["properties"]["person"]["enum"] = [_label(FILE, y) for y in call.people]
@@ -160,10 +251,10 @@ def _schema(call: Call) -> dict:
     people["required"] = ["person", "candidate", "verdict", "reason"]
     events = schema["properties"]["events"]["items"]
     events["properties"]["event"]["enum"] = list(
-        dict.fromkeys(_event_label(FILE, e) for e, _ in call.events)
+        dict.fromkeys(label(e) for e, _ in call.events)
     )
     events["properties"]["other"]["enum"] = list(
-        dict.fromkeys(_event_label(DIAGRAM, f) for _, f in call.events)
+        dict.fromkeys(label(f) for _, f in call.events)
     )
     events["properties"]["verdict"]["enum"] = [Verdict.Same, Verdict.Different]
     events["required"] = ["event", "other", "verdict", "reason"]
@@ -182,8 +273,29 @@ def _renumbered(existing: dict, imported: dict) -> tuple[dict, dict[int, int]]:
 
 
 class Merge:
-    def __init__(self, existing: dict, imported: dict, model):
+    def __init__(
+        self,
+        existing: dict,
+        imported: dict,
+        model,
+        pairing: Pairing = Pairing.SameDay,
+        shown: Shown = Shown.Names,
+        statements: list[str] = (),
+    ):
+        """`statements` are the person's own words to the coach, shown with
+        `Shown.More` beside the people of the diagram they name."""
         self.existing = existing
+        self.pairing, self.shown = pairing, shown
+        self.sentences = [
+            _short(one, SENTENCE)
+            for text in statements
+            for one in SENTENCES.split(text or "")
+            if one.strip()
+        ]
+        self.view = from_dict(DiagramData, existing)
+        own = profile.own(self.view)
+        self.main = own["id"] if own else None
+        self.ours_events = {e["id"] for e in existing["events"]}
         self.file, new = _renumbered(existing, imported)
         self.old = {n: o for o, n in new.items()}
         # Each item of the file joined to another, to the one it joined.
@@ -246,7 +358,12 @@ class Merge:
         out = []
         for event in self.file["events"]:
             owner = _owner(event)
-            if owner not in same or event["id"] in self.structural or not _day(event):
+            if (
+                owner not in same
+                or event["id"] in self.structural
+                or event["id"] not in self.events
+                or not _day(event)
+            ):
                 continue
             twin = record.twin_key(_mapped(event, same))
             out += [
@@ -277,14 +394,63 @@ class Merge:
         children = [p["id"] for p in self.data["people"] if p.get("parents") == bond]
         return [couple["person_a"], couple["person_b"], *children]
 
-    def grouped(self, doubted, pairs) -> list[Call]:
-        calls = collections.defaultdict(Call)
+    def repeats(self) -> list[tuple[int, int]]:
+        """Two events of the file about one person within two years that look
+        like one happening told twice, the later against the earlier; the
+        model judges them before anything is matched to the diagram."""
+        mine = collections.defaultdict(list)
+        for event in self.file["events"]:
+            if _day(event) and _owner(event) is not None:
+                mine[_owner(event)].append(event)
+        return [
+            (b["id"], a["id"])
+            for events in mine.values()
+            for a, b in itertools.combinations(events, 2)
+            if _near(a, b) and _alike(a, b) and record.twin_key(a) != record.twin_key(b)
+        ]
+
+    def near(self) -> list[tuple[int, int]]:
+        """Once people are joined, each event the file brought to a person of
+        the diagram against each of the diagram's own about them within two
+        years, of any kind, that the rules do not already count as one."""
+        paired = set(self.structural.values())
+        mine = collections.defaultdict(list)
+        for event in self.data["events"]:
+            eid = event["id"]
+            owner = _owner(event)
+            if eid in self.ours_events and eid not in paired and owner is not None:
+                if _day(event):
+                    mine[owner].append(event)
+        return [
+            (event["id"], other["id"])
+            for event in self.data["events"]
+            if event["id"] in self.old
+            and event["id"] not in self.structural
+            and _day(event)
+            for other in mine[_owner(event)]
+            if _near(event, other) and record.twin_key(event) != record.twin_key(other)
+        ]
+
+    def grouped(
+        self, doubted, pairs, against: str = SAME_DAY, size: int | None = None
+    ) -> list[Call]:
+        """One call per family; with `size`, events apart in calls of at most
+        that many pairs."""
+        calls = collections.defaultdict(list)
         for y, candidates in doubted.items():
-            calls[tuple(self.household(y))].people[y] = candidates
+            key = tuple(self.household(y))
+            calls[key] = calls[key] or [Call(against=against)]
+            calls[key][0].people[y] = candidates
         for e, f in pairs:
-            owner = _owner(self.events[e])
-            calls[tuple(self.household(owner))].events.append((e, f))
-        return list(calls.values())
+            key = tuple(self.household(_owner(self.events[e])))
+            calls[key] = calls[key] or [Call(against=against)]
+            if size and len(calls[key][-1].events) >= size:
+                calls[key].append(Call(against=against))
+            calls[key][-1].events.append((e, f))
+        return [call for group in calls.values() for call in group]
+
+    def event_label(self, eid: int) -> str:
+        return _event_label(DIAGRAM if eid in self.ours_events else FILE, eid)
 
     def line(self, pid: int, same: dict[int, int]) -> str:
         side = DIAGRAM if pid in self.ours else FILE
@@ -309,19 +475,78 @@ class Merge:
                 said.append(f"{relation.value}: {names}")
         if pid in same:
             said.append(f"already known to be {_label(DIAGRAM, same[pid])}")
+        if self.shown is Shown.More:
+            said += self.more(pid)
         return "; ".join(said)
+
+    def more(self, pid: int) -> list[str]:
+        """What `Shown.More` adds to a person's line."""
+        out = []
+        grand = {
+            g
+            for p in self.family.related(pid, Relation.Parent)
+            for g in self.family.related(p, Relation.Parent)
+        }
+        if grand:
+            names = ", ".join(_name(self.people[g]) for g in sorted(grand))
+            out.append(f"grandparents: {names}")
+        if self.people[pid].get("notes"):
+            out.append(f'notes: "{_short(self.people[pid]["notes"], NOTES)}"')
+        events = sorted(
+            (e for e in self.data["events"] if _owner(e) == pid),
+            key=lambda e: _day(e) or "",
+        )
+        titles = [
+            f"{_day(e)[:4] if _day(e) else 'undated'} "
+            + (e.get("title") or e.get("description") or e["kind"])
+            for e in events[:TITLES]
+        ]
+        if len(events) > TITLES:
+            titles.append(f"and {len(events) - TITLES} more")
+        if titles:
+            out.append("events: " + ", ".join(titles))
+        if pid in self.ours:
+            role = self.role(pid)
+            if role:
+                out.append(f"in the conversation they are the person's {role}")
+            out += [f'the person said: "{one}"' for one in self.spoken(pid)]
+        return out
+
+    def role(self, pid: int) -> str | None:
+        """What the person of the diagram is to the one it is about, in the
+        coach's words: "mother", "partner's father"; None for that one."""
+        found = re.search(
+            r"\(([^)]*)\)$", coverage.label(self.view, ItemKind.Person, pid)
+        )
+        return found.group(1) if found and pid != self.main else None
+
+    def spoken(self, pid: int) -> list[str]:
+        """Up to three of the person's sentences naming someone by name."""
+        name = self.people[pid].get("name")
+        if unnamed(name):
+            return []
+        names = {tokens(name)[0], " ".join(tokens(name))}
+        pattern = re.compile(
+            r"\b(" + "|".join(re.escape(n) for n in names) + r")\b", re.I
+        )
+        return [one for one in self.sentences if pattern.search(one)][:SAID]
 
     def said(self, eid: int) -> str:
         event = self.events[eid]
-        side = DIAGRAM if eid in {e["id"] for e in self.existing["events"]} else FILE
         words = [
             f"{key}: {event[key]}"
             for key in ("title", "description", "notes", "location")
             if event.get(key)
         ]
-        return f"{_event_label(side, eid)}: {event['kind']} {_when(event, 'on ')}; " + (
+        return f"{self.event_label(eid)}: {event['kind']} {_when(event, 'on ')}; " + (
             "; ".join(words) or "no words"
         )
+
+    def candidate(self, y: int, x: int) -> str:
+        why = self.found.people[y].why.get(x) if y in self.found.people else None
+        if self.shown is Shown.More and why:
+            return f"{_label(DIAGRAM, x)} (the rules were unsure because: {why})"
+        return _label(DIAGRAM, x)
 
     def prompt(self, call: Call, same: dict[int, int]) -> str:
         shown = []
@@ -345,14 +570,18 @@ class Merge:
             or "(none)",
             people="\n".join(
                 f"- {_label(FILE, y)} against "
-                + ", ".join(_label(DIAGRAM, x) for x in candidates)
+                + ", ".join(self.candidate(y, x) for x in candidates)
                 for y, candidates in call.people.items()
             )
             or "(none)",
             events="\n".join(
-                f"- {self.said(e)}\n  against {self.said(f)}" for e, f in call.events
+                f"- {self.said(e)}"
+                + "".join(f"\n  against {self.said(f)}" for f in others)
+                for e, others in _by_first(call.events).items()
             )
             or "(none)",
+            against=call.against,
+            more=self.shown is Shown.More,
         )
 
     def answer(self, call: Call, same: dict[int, int]) -> tuple[Answer | None, str]:
@@ -361,7 +590,7 @@ class Merge:
             self.model,
             self.prompt(call, same),
             Answer,
-            _schema(call),
+            _schema(call, self.event_label),
             ROOM + PER_ANSWER * size,
         )
 
@@ -407,8 +636,7 @@ class Merge:
             y = next((y for y in call.people if _label(FILE, y) == one.person), None)
             self.refuse("person", y, one.person, why, "It counts as unsure.")
         pairs = {
-            (_event_label(FILE, e), _event_label(DIAGRAM, f)): (e, f)
-            for e, f in call.events
+            (self.event_label(e), self.event_label(f)): (e, f) for e, f in call.events
         }
         for one in answer.events if answer else []:
             key = pairs.get((one.event, one.other))
@@ -425,7 +653,7 @@ class Merge:
             if key is not None:
                 events[key] = (Verdict.Unsure, "")
             e = next(
-                (e for e, _ in call.events if _event_label(FILE, e) == one.event), None
+                (e for e, _ in call.events if self.event_label(e) == one.event), None
             )
             self.refuse("event", e, one.event, why, "Both events are kept.")
         return people, events
@@ -438,9 +666,12 @@ class Merge:
             item = self.joined[item]
         return item
 
-    def join_event(self, keep: dict, drop: dict, reason: str) -> None:
-        """One event of two: the diagram's values win, what only the file has
-        is added, and the notes of both are kept, one after the other."""
+    def join_event(
+        self, keep: dict, drop: dict, reason: str, words: tuple = OVER_DIAGRAM
+    ) -> None:
+        """One event of two: the kept one's values win, what only the other
+        has is added, and the notes of both are kept, one after the other."""
+        only, otherwise = words
         eid = drop["id"]
         for key, value in drop.items():
             if key in ("id", "notes", *LINKS, *MOVES) or value in EMPTY:
@@ -449,16 +680,9 @@ class Merge:
                 keep[key] = list(dict.fromkeys([*keep.get(key, []), *value]))
             elif keep.get(key) in EMPTY:
                 keep[key] = value
-                self.decide("event", eid, key, value, value, "Only the file had it.")
+                self.decide("event", eid, key, value, value, only)
             elif diagramjson.to_json(keep[key]) != diagramjson.to_json(value):
-                self.decide(
-                    "event",
-                    eid,
-                    key,
-                    value,
-                    keep[key],
-                    "The diagram already said otherwise; its value is kept.",
-                )
+                self.decide("event", eid, key, value, keep[key], otherwise)
         notes = "\n\n".join(
             dict.fromkeys(filter(None, (keep.get("notes"), drop.get("notes"))))
         )
@@ -591,21 +815,52 @@ class Merge:
 
     # Pass 3
 
-    def question(self, y: int, x: int, taken: set[str]) -> dict:
-        person, other = self.people[y], self.people[x]
+    def described(self, y: int) -> str:
+        """The file's person by name and what tells them apart: their birth
+        year, else their parents, else their partner."""
+        person = self.people[y]
         born = record.facts(self.data, y)[record.Kept.Birth]
-        theirs = _name(person) + (f", born {born[:4]}," if born else "")
-        if PLACEHOLDER.search(other.get("name") or ""):
-            ours = other["name"]
-        elif other.get("name"):
-            ours = f"the {other['name']} you've mentioned"
+        if born:
+            return f"{_name(person)} born {born[:4]}"
+        for relation, word in (
+            (Relation.Parent, CHILD_WORDS.get(person.get("gender"), "child")),
+            (Relation.Partner, "partner"),
+        ):
+            kin = sorted({self.final(k) for k in self.family.related(y, relation)})
+            if kin:
+                names = " and ".join(_name(self.people[k]) for k in kin)
+                return f"{_name(person)}, {word} of {names},"
+        return _name(person)
+
+    def called(self, x: int) -> str:
+        """The diagram's person as the person knows them, with their birth
+        year where the diagram has one."""
+        name = self.people[x].get("name") or ""
+        role = self.role(x)
+        if role:
+            ours = f"your {role}" + ("" if unnamed(name) else f" {name}")
+        elif PLACEHOLDER.search(name):
+            ours = name
+        elif name:
+            ours = f"the {name} you've mentioned"
         else:
             ours = "someone you've already mentioned"
+        born = record.facts(self.data, x)[record.Kept.Birth]
+        return f"{ours}, born {born[:4]}," if born else ours
+
+    def question(self, y: int, x: int, taken: set[str]) -> dict:
+        """Asks whether two people are one, naming what tells each apart
+        [Oracle: R-0852]."""
+        named = not PLACEHOLDER.search(self.people[y].get("name") or "")
+        theirs = ("the " if named else "") + f"{self.described(y)} in the file"
+        text = (
+            f"Are you {theirs}?" if x == self.main else f"Is {self.called(x)} {theirs}?"
+        )
         qid = record.next_key("q", taken)
         taken.add(qid)
         return {
             "id": qid,
-            "text": f"Is {theirs} {ours}?",
+            "text": text,
             "kind": QuestionKind.Thought.value,
             "item_kind": ItemKind.Person.value,
             "item_id": str(y),
@@ -616,15 +871,34 @@ class Merge:
             "asked_at": None,
         }
 
-    def run(self) -> tuple[dict, list[Decision], list[dict]]:
-        same = self.same()
-        doubted = self.doubted()
-        pairs = self.pairs(same)
+    def heard_all(self, calls: list[Call], same: dict[int, int]) -> tuple[dict, dict]:
         people, events = {}, {}
-        for call in self.grouped(doubted, pairs):
+        for call in calls:
             found_people, found_events = self.judged(call, same)
             people |= found_people
             events |= found_events
+        return people, events
+
+    def repeated(self) -> list[tuple[int, int]]:
+        """The file's own events told twice, judged and joined first."""
+        pairs = self.repeats()
+        _, judged = self.heard_all(self.grouped({}, pairs, REPEAT, PER_CALL), {})
+        for (e, f), (verdict, reason) in judged.items():
+            if verdict is Verdict.Same and e in self.events and f in self.events:
+                self.join_event(
+                    self.events[f],
+                    self.events[e],
+                    f"Judged one happening told twice in the file: {reason}",
+                    OVER_FILE,
+                )
+        return pairs
+
+    def run(self) -> tuple[dict, list[Decision], list[dict]]:
+        repeats = self.repeated()
+        same = self.same()
+        doubted = self.doubted()
+        pairs = self.pairs(same) if self.pairing is Pairing.SameDay else []
+        people, events = self.heard_all(self.grouped(doubted, pairs), same)
         joined, unsure = dict(same), collections.defaultdict(list)
         claimed = collections.Counter()
         chosen = {}
@@ -685,8 +959,13 @@ class Merge:
                 else "Nobody in the diagram is this person."
             )
             self.decide("person", y, "", "", f"person {y}", reason)
+        self.family = Family(self.data)
+        self.parented()
+        if self.pairing is Pairing.TwoYears:
+            pairs = self.near()
+            events |= self.heard_all(self.grouped({}, pairs, NEAR, PER_CALL), {})[1]
         asked = {y for y, xs in unsure.items() if xs}
-        judged = {e for e, _ in pairs}
+        judged = {e for e, _ in [*pairs, *repeats]}
         self.placed = {
             Placed.Rules: collections.Counter(
                 people=len(self.found.people) - len(doubted),
@@ -697,7 +976,6 @@ class Merge:
             ),
             Placed.Asked: collections.Counter(people=len(asked)),
         }
-        self.parented()
         self.join_events(events)
         self.unnamed()
         taken = {q["id"] for q in self.data.get("questions") or []}
@@ -786,10 +1064,11 @@ class Merge:
 
 
 def merge(
-    existing: dict, imported: dict, model=ask
+    existing: dict, imported: dict, model=ask, **ways
 ) -> tuple[dict, list[Decision], list[dict]]:
     """`existing` is the diagram as stored, `imported` the importer's coded
-    diagram; `model` is called as fdcoding's is. Returns the merged diagram,
-    the choices for the import record, and the held questions to add, which
-    the merged diagram does not yet hold."""
-    return Merge(existing, imported, model).run()
+    diagram; `model` is called as fdcoding's is; `ways` are Merge's pairing,
+    shown and statements. Returns the merged diagram, the choices for the
+    import record, and the held questions to add, which the merged diagram
+    does not yet hold."""
+    return Merge(existing, imported, model, **ways).run()

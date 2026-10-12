@@ -1,6 +1,6 @@
 import pytest
 
-from btcopilot.familymatch import Status, match
+from btcopilot.familymatch import Doubt, Status, match
 
 
 def person(id, name, last=None, gender=None, parents=None, **extra):
@@ -330,3 +330,41 @@ def test_the_apps_stand_in_name_is_no_name_and_meets_the_files_one_primary():
     a = diagram([person(1, "User", primary=True)])
     b = diagram([person(7, "Patrick", "Stinson", "male", primary=True)])
     assert kin(match(a, b), 1) == (Status.Name, 7)
+
+
+def test_a_first_name_with_no_last_name_is_one_person_when_the_parents_are():
+    # R-0851, R-0853
+    a = harpers()
+    a["people"][3] = person(4, "Nell", None, "female", 10)
+    m = match(a, harpers())
+    assert kin(m, 4) == (Status.Name, 4)
+
+
+def test_with_no_one_marked_in_the_file_the_one_whose_family_fits_is_the_person():
+    # R-0871, R-0853
+    a = diagram(
+        [
+            person(1, "Ruth", gender="female", parents=10, primary=True),
+            person(2, "Glenn", gender="male"),
+            person(3, "Doris", gender="female"),
+        ],
+        [bond(10, 2, 3)],
+    )
+    b = diagram(
+        [
+            person(7, "Ruth", "Harper", "female", 20),
+            person(8, "Glenn", "Harper", "male"),
+            person(9, "Doris", "Harper", "female"),
+            person(5, "Ruth", "Moss", "female"),
+        ],
+        [bond(20, 8, 9)],
+    )
+    m = match(a, b)
+    assert m.ids == {1: 7, 2: 8, 3: 9}
+
+
+def test_each_doubt_says_why_the_rules_were_unsure():
+    # R-0851, R-0853
+    m = match(nell_married_sam(), nell_married_sam(last="Ward"))
+    assert m.people[30].why == {30: Doubt.LastNames}
+    assert m.people[33].why == {33: Doubt.Kin}

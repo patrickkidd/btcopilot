@@ -131,11 +131,25 @@ class Relation(enum.Enum):
     Sibling = "sibling"
 
 
+class Doubt(enum.StrEnum):
+    """Why the rules left two people to the model, in the words it is shown."""
+
+    LastNames = "last names differ"
+    Born = "birth years differ"
+    Parents = "their parents differ"
+    Married = "the years of their marriage differ"
+    Several = "more than one person fits"
+    Position = "only their place in the family fits; one of them has no name"
+    NoLast = "the same first name, and one of them has no last name"
+    Kin = "no name fits; they are related to someone already matched"
+
+
 @dataclass
 class PersonMatch:
     status: Status
     other: int | None = None
     candidates: list[int] = field(default_factory=list)
+    why: dict[int, Doubt] = field(default_factory=dict)
 
 
 @dataclass
@@ -330,6 +344,7 @@ class Matcher:
         self.position: set[int] = set()
         self.doubt_a = defaultdict(set)
         self.doubt_b = defaultdict(set)
+        self.why: dict[tuple[int, int], Doubt] = {}
 
     def named(self, x: int, y: int) -> bool:
         ka, kb = self.a.people[x], self.b.people[y]
@@ -396,20 +411,22 @@ class Matcher:
                 y = next(iter(ca[x]), None)
                 loose = best(xs - {x}, ys, edges) >= total - EPSILON
                 if len(ca[x]) == 1 and cb[y] == {x} and not loose:
-                    if self.disputed(x, y):
-                        self.doubt(x, y)
+                    why = self.disputed(x, y)
+                    if why:
+                        self.doubt(x, y, why)
                         continue
                     pos = self.a.people[x].unnamed or self.b.people[y].unnamed
                     self.link(x, y, pos)
                     added += 1
                 elif ca[x]:
                     for y in ca[x]:
-                        self.doubt(x, y)
+                        self.doubt(x, y, Doubt.Several)
         return added
 
-    def doubt(self, x: int, y: int):
+    def doubt(self, x: int, y: int, why: Doubt):
         self.doubt_a[x].add(y)
         self.doubt_b[y].add(x)
+        self.why.setdefault((x, y), why)
 
     def walk(self):
         while True:
@@ -464,15 +481,17 @@ class Matcher:
                 return True
         return False
 
-    def disputed(self, x: int, y: int) -> bool:
+    def disputed(self, x: int, y: int) -> Doubt | None:
         """Two people the rules would join whose names, parents or dates say
         otherwise; the model judges them instead [R-0851, R-0853]."""
         ka, kb = self.a.people[x], self.b.people[y]
         if ka.lasts and kb.lasts and not lasts_agree(ka, kb):
-            return True
+            return Doubt.LastNames
         if ka.born and kb.born and abs(ka.born - kb.born) > 1:
-            return True
-        return self.parents_clash(x, y) or self.bonds_clash(x, y)
+            return Doubt.Born
+        if self.parents_clash(x, y):
+            return Doubt.Parents
+        return Doubt.Married if self.bonds_clash(x, y) else None
 
     def evidence(self, x: int, y: int) -> bool:
         ka, kb = self.a.people[x], self.b.people[y]
@@ -485,6 +504,34 @@ class Matcher:
             for t in self.b.related(y, r)
         )
 
+    @staticmethod
+    def fitting(main: Kin, mine: Family, theirs: Family, named) -> list[Kin]:
+        """With no one marked as the one it is about on the other side, the
+        person there whose parents and partners best fit those of the one
+        marked here, and whose name fits theirs; nobody when two fit as well."""
+        kin = [
+            p
+            for r in (Relation.Parent, Relation.Partner)
+            for p in mine.related(main.id, r)
+        ]
+        score = {}
+        for k in theirs.people.values():
+            if conflict(main, k) or not (
+                main.unnamed or k.unnamed or first_score(main, k) >= THRESHOLD
+            ):
+                continue
+            theirs_kin = [
+                q
+                for r in (Relation.Parent, Relation.Partner)
+                for q in theirs.related(k.id, r)
+            ]
+            hits = sum(1 for p in kin if any(named(p, q) for q in theirs_kin))
+            if hits:
+                score[k.id] = hits
+        top = max(score.values(), default=0)
+        ids = [i for i, n in score.items() if n == top]
+        return [theirs.people[ids[0]]] if len(ids) == 1 else []
+
     def primary(self, x: int, y: int) -> bool:
         return self.a.people[x].primary and self.b.people[y].primary
 
@@ -492,6 +539,10 @@ class Matcher:
         found = [(x, y) for x, y in self.unique_pairs() if self.parents_agree(x, y)]
         pa = [k for k in self.a.people.values() if k.primary]
         pb = [k for k in self.b.people.values() if k.primary]
+        if len(pa) == 1 and not pb:
+            pb = self.fitting(pa[0], self.a, self.b, self.named)
+        elif len(pb) == 1 and not pa:
+            pa = self.fitting(pb[0], self.b, self.a, lambda y, x: self.named(x, y))
         if len(pa) == 1 and len(pb) == 1 and not conflict(pa[0], pb[0]):
             if pa[0].unnamed or pb[0].unnamed or first_score(pa[0], pb[0]) >= THRESHOLD:
                 found.append((pa[0].id, pb[0].id))
@@ -500,8 +551,9 @@ class Matcher:
     def run(self):
         for x, y in self.anchors():
             if x not in self.ab and y not in self.ba:
-                if self.disputed(x, y) and not self.primary(x, y):
-                    self.doubt(x, y)
+                why = self.disputed(x, y)
+                if why and not self.primary(x, y):
+                    self.doubt(x, y, why)
                 else:
                     self.link(x, y, False)
         self.walk()
@@ -515,8 +567,9 @@ class Matcher:
                 and self.evidence(x, y)
             ]
             for x, y in fresh:
-                if self.disputed(x, y):
-                    self.doubt(x, y)
+                why = self.disputed(x, y)
+                if why:
+                    self.doubt(x, y, why)
                 else:
                     self.link(x, y, False)
             if not fresh:
@@ -526,8 +579,11 @@ class Matcher:
 
     def namesakes(self):
         """Two people still apart whose first names are one name, as said,
-        shortened or spelled another way, one of them with no last name, are at least a doubt: the model judges them and, unsure,
-        the person is asked [Oracle: R-0851]."""
+        shortened or spelled another way, one of them with no last name, are
+        at least a doubt: the model judges them and, unsure, the person is
+        asked [Oracle: R-0851]. One whose parents or partner are already one
+        person the walk has joined by then, unless their dates or families
+        disagree."""
         for x, ka in self.a.people.items():
             if x in self.ab or ka.unnamed:
                 continue
@@ -539,7 +595,7 @@ class Matcher:
                     and not conflict(ka, kb)
                     and not (ka.lasts and kb.lasts)
                 ):
-                    self.doubt(x, y)
+                    self.doubt(x, y, Doubt.NoLast)
 
     def hints(self) -> dict[int, set[int]]:
         out = defaultdict(set)
@@ -557,14 +613,21 @@ class Matcher:
         people = {}
         for x in self.a.people:
             if x in self.ab:
-                status = Status.Position if x in self.position else Status.Name
-                people[x] = PersonMatch(status, self.ab[x])
+                if x in self.position:
+                    people[x] = PersonMatch(
+                        Status.Position, self.ab[x], why={self.ab[x]: Doubt.Position}
+                    )
+                else:
+                    people[x] = PersonMatch(Status.Name, self.ab[x])
                 continue
             doubt = sorted(self.doubt_a[x] - self.ba.keys())
             if doubt:
-                people[x] = PersonMatch(Status.Ambiguous, candidates=doubt)
+                why = {y: self.why[x, y] for y in doubt}
+                people[x] = PersonMatch(Status.Ambiguous, candidates=doubt, why=why)
             else:
-                people[x] = PersonMatch(Status.Unmatched, candidates=sorted(hints[x]))
+                ys = sorted(hints[x])
+                why = {y: Doubt.Kin for y in ys}
+                people[x] = PersonMatch(Status.Unmatched, candidates=ys, why=why)
         return FamilyMatch(
             people=people,
             unpaired=sorted(self.b.people.keys() - self.ba.keys()),
@@ -681,7 +744,8 @@ def invert(m: FamilyMatch) -> FamilyMatch:
     people = {y: PersonMatch(Status.Unmatched) for y in m.unpaired}
     for x, pm in m.people.items():
         if pm.other is not None:
-            people[pm.other] = PersonMatch(pm.status, x)
+            why = {x: pm.why[pm.other]} if pm.other in pm.why else {}
+            people[pm.other] = PersonMatch(pm.status, x, why=why)
     for status in (Status.Ambiguous, Status.Unmatched):
         for x, pm in sorted(m.people.items()):
             if pm.status is not status:
@@ -693,6 +757,7 @@ def invert(m: FamilyMatch) -> FamilyMatch:
                 ):
                     people[y].status = status
                     people[y].candidates.append(x)
+                    people[y].why[x] = pm.why[y]
     return FamilyMatch(
         people=dict(sorted(people.items())),
         unpaired=sorted(x for x, pm in m.people.items() if pm.other is None),

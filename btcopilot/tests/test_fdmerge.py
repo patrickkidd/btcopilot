@@ -165,7 +165,12 @@ def test_an_unsure_person_becomes_a_held_question_naming_the_candidate():
     data, decisions, held = fdmerge.merge(existing(), imported(), model)
     eva = person(data, "Eva")
     assert [(q["text"], q["item_kind"], q["item_id"], q["state"]) for q in held] == [
-        ("Is Eva Berg Ada's mother?", "person", str(eva["id"]), "held")
+        (
+            "Is your mother the Eva Berg, partner of Cy Lund, in the file?",
+            "person",
+            str(eva["id"]),
+            "held",
+        )
     ]
     assert person(data, "Ada's mother")["id"] == 5
 
@@ -311,3 +316,106 @@ def test_words_naming_a_joined_person_by_the_diagrams_name_go_to_the_notes():
     assert "Cy" not in event["title"] + event["description"]
     assert event["notes"] == "Fought with Cy"
     assert {d.field for d in decisions if d.item == "event 20"} >= {"title", "notes"}
+
+
+def test_the_question_names_what_tells_the_two_apart():
+    # R-0852, R-0851
+    ours = existing([birth(8, 5, "1959-01-01", dateCertainty="approximate")])
+    ours["people"][2]["name"] = "Karen"
+    file = imported([birth(31, 5, "1961-04-01")])
+    file["people"][2].update(name="Karen", last_name="Smith")
+    model = Model({"people": [verdict("file 11", "diagram 5", "unsure")]})
+    data, decisions, held = fdmerge.merge(ours, file, model)
+    assert [q["text"] for q in held] == [
+        "Is your mother Karen, born 1959, the Karen Smith born 1961 in the file?"
+    ]
+
+
+@pytest.mark.parametrize(
+    "pairing, count",
+    [(fdmerge.Pairing.SameDay, 2), (fdmerge.Pairing.TwoYears, 1)],
+)
+def test_events_of_a_joined_person_within_two_years_of_any_kind_go_to_the_model(
+    pairing, count
+):
+    # R-0877, R-0874, R-0851
+    ours = shift(20, 3, "2001-05-01", title="Panic attacks", notes="At work")
+    theirs = {
+        "id": 30,
+        "kind": "noted",
+        "person": 3,
+        "dateTime": "2002-02-01",
+        "dateCertainty": "certain",
+        "description": "Panic attacks at the office",
+        "notes": "Boss left",
+    }
+    model = Model(
+        {
+            "events": [
+                {
+                    "event": "file event 28",
+                    "other": "diagram event 20",
+                    "verdict": "same",
+                    "reason": "Both tell of the panic attacks.",
+                }
+            ]
+        }
+    )
+    data, decisions, held = fdmerge.merge(
+        existing([ours]), imported([theirs]), model, pairing=pairing
+    )
+    told = [e for e in data["events"] if e["kind"] in ("shift", "noted")]
+    assert len(told) == count
+    assert ("file event 28" in "".join(model.prompts)) is (count == 1)
+    if count == 1:
+        assert told[0]["notes"] == "At work\n\nBoss left"
+
+
+@pytest.mark.parametrize("shown", list(fdmerge.Shown))
+def test_more_shows_notes_events_grandparents_why_and_the_persons_own_words(shown):
+    # R-0851, R-0853
+    file = imported([shift(30, 5, "1979-06-01", title="Moved to Oslo")])
+    file["people"][2]["notes"] = "Grew up in Bergen"
+    model = Model()
+    fdmerge.merge(
+        existing(),
+        file,
+        model,
+        shown=shown,
+        statements=["My dad Cy drove trucks. I loved the summers."],
+    )
+    said = "".join(model.prompts)
+    more = [
+        'notes: "Grew up in Bergen"',
+        "events: 1979 Moved to Oslo",
+        "the rules were unsure because: only their place in the family fits",
+        "in the conversation they are the person's father",
+        'the person said: "My dad Cy drove trucks."',
+    ]
+    assert [w in said for w in more] == [shown is fdmerge.Shown.More] * len(more)
+    assert "I loved the summers" not in said
+
+
+@pytest.mark.parametrize("said, count", [("same", 1), ("different", 2)])
+def test_an_event_the_file_tells_twice_is_judged_first(said, count):
+    # R-0877, R-0874
+    lost = shift(30, 6, "1990-03-01", title="Lost his job at the mill", notes="Shut")
+    again = shift(31, 6, "1990-09-01", title="Lost the mill job", notes="Moved home")
+    model = Model(
+        {
+            "events": [
+                {
+                    "event": "file event 16",
+                    "other": "file event 15",
+                    "verdict": said,
+                    "reason": "One job lost.",
+                }
+            ]
+        }
+    )
+    data, decisions, held = fdmerge.merge(existing(), imported([lost, again]), model)
+    assert "against file event 15" in model.prompts[0]
+    told = [e for e in data["events"] if e["kind"] == "shift"]
+    assert len(told) == count
+    if count == 1:
+        assert told[0]["notes"] == "Shut\n\nMoved home"
