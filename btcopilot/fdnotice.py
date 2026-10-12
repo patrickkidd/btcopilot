@@ -47,11 +47,16 @@ class Summary:
 
     turn_id: str
     # Added or joined to someone already in the diagram; `events` counts the
-    # `drawn` ones the coding pass found in the file's notes.
+    # `drawn` ones the coding pass found in the file's notes, and the ones the
+    # import made from the file's ticks and relationship lines.
     people: int
     events: int
     pair_bonds: int
     drawn: int = 0
+    # The events the file itself holds, as its import record counts them.
+    filed: int = 0
+    # The events whose coding the pass refused, left to code later.
+    uncoded: int = 0
     # The people the file marked as the one it is about, when not exactly one.
     primaries: tuple[int, ...] = ()
 
@@ -132,11 +137,13 @@ def _name(person: dict) -> str:
 def _words(summary: Summary, checks: int, who: dict | None) -> str:
     said = [
         f"Your file is in: {many(summary.people, 'person', 'people')}, "
-        f"{many(summary.events - summary.drawn, 'event')} and "
+        f"{many(summary.filed, 'event')} and "
         f"{many(summary.pair_bonds, 'pair-bond')}."
     ]
     if summary.drawn:
         said.append(f"I also found {many(summary.drawn, 'more event')} in your notes.")
+    if summary.uncoded:
+        said.append(f"I couldn't code {summary.uncoded} of the events yet.")
     if checks:
         said.append(
             f"There {_is(checks)} {many(checks, 'thing')} in it I'd like to check "

@@ -14,6 +14,7 @@ from btcopilot import (
     fdimport,
     fdledger,
     fdmerge,
+    fdnotice,
     record,
 )
 from btcopilot.admin import admin
@@ -39,6 +40,8 @@ from btcopilot.tests.test_fdmerge import Model, plain  # noqa: F401 (plain is au
 from btcopilot.toolbox import ToolName, Toolbox
 
 TODAY = datetime.date(2026, 10, 10)
+# The coding pass itself, before the fixture below stands in for it.
+CODE = fdcoding.code
 
 
 @pytest.fixture(autouse=True)
@@ -675,6 +678,7 @@ def test_admin_import_previews_then_writes_and_mails_the_record(
             "people": 3,
             "events": 3,
             "pair_bonds": 1,
+            "uncoded": 0,
             "rules": {"people": 3, "events": 3},
             "model": {"people": 0, "events": 0},
             "asked": {"people": 0, "events": 0},
@@ -981,7 +985,14 @@ def test_events_the_coding_pass_drew_from_the_notes_are_counted_apart(monkeypatc
 
     monkeypatch.setattr(fdcoding, "code", code)
     out = built()
-    assert out.brought == {"people": 3, "pair_bonds": 1, "events": 4, "drawn": 1}
+    assert out.brought == {
+        "people": 3,
+        "pair_bonds": 1,
+        "events": 4,
+        "drawn": 1,
+        "filed": 3,
+        "uncoded": 0,
+    }
 
 
 def test_an_event_drawn_from_the_notes_that_one_in_the_file_already_tells_joins_it(
@@ -1101,3 +1112,33 @@ def test_the_import_runs_the_merge_the_way_it_is_asked_with_the_persons_own_word
             statements,
         )
     ]
+
+
+def test_the_coach_and_the_import_record_count_the_files_own_events_and_the_uncoded(
+    test_user, monkeypatch
+):
+    # R-0878, R-0873, R-0517
+    monkeypatch.setattr(fdcoding, "code", CODE)
+    fd = fdfile.read(
+        dumps(
+            scene(
+                events=[*scene()["events"], shift(23)],
+                emotions=[
+                    {"kind": "cutoff", "id": 31, "person": 3, "target": 1, "event": None}
+                ],
+            )
+        )
+    )
+    out = fdimport.build(fd, Model())
+    assert len(out.data["events"]) > len(fd["events"]) == 4
+
+    ledger = fdledger.text("Lund.fd", fd, fdimport.became(out), out.decisions, TODAY)
+    assert "In the file: 3 people, 4 events, 1 pair-bond" in ledger
+    summary = fdnotice.Summary("t1", **out.brought)
+    message = fdnotice._words(summary, 0, None)
+    assert message.startswith("Your file is in: 3 people, 4 events and 1 pair-bond.")
+    assert "I couldn't code 2 of the events yet." in message
+
+    made = fdimport.save(test_user.id, "Lund family", out, yes=True, turn="t1")
+    [counted] = Observation.query.filter_by(kind=ObservationKind.Import).all()
+    assert (counted.diagram_id, counted.detail["uncoded"]) == (made.id, 2)

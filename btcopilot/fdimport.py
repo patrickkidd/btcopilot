@@ -19,7 +19,7 @@ from btcopilot.coverage import CHILD_ROLE
 from btcopilot.extensions import db
 from btcopilot.familymatch import unnamed
 from btcopilot.fdcoding import RAW
-from btcopilot.fdledger import Decision, about
+from btcopilot.fdledger import Decision, about, filed
 from btcopilot.metered import Metered
 from btcopilot.models import (
     Author,
@@ -592,7 +592,7 @@ def convert(fd: dict) -> Imported:
     out.data["people"] = [_person(out, chunk) for chunk in chunks]
     bonds = fd.get("pair_bonds") or fd.get("marriages") or []
     out.data["pair_bonds"] = [_bond(out, chunk) for chunk in bonds]
-    out.data["events"] = [_event(out, chunk) for chunk in fd.get("events") or []]
+    out.data["events"] = [_event(out, chunk) for chunk in filed(fd)]
     by_id = {event["id"]: event for event in out.data["events"]}
     for chunk in fd.get("emotions") or []:
         made = _line(out, chunk, by_id)
@@ -670,6 +670,13 @@ WORDS = ("title", "description", "location")
 MOVED_FIELDS = (*fdcoding.VARIABLES, "relationship", *fdcoding.MOVES)
 #: Of the events the file brought, those the coding pass drew from its notes.
 DRAWN = "drawn"
+#: The events the file itself holds, as its import record counts them.
+FILED = "filed"
+#: Of the events the file brought, those whose coding the pass refused.
+UNCODED = "uncoded"
+#: What the coding pass says of an event it was asked to code: refused, or coded.
+REFUSED = "The model's coding was refused"
+TOLD = "The file's text says"
 
 
 def _twins(out: Imported) -> None:
@@ -723,7 +730,7 @@ def build(
     `into`, the items are brought into that diagram by the merge run the way
     `pairing` and `shown` say [Oracle: R-0851]."""
     out = convert(fd)
-    filed = {event["id"] for event in out.data["events"]}
+    own = {event["id"] for event in out.data["events"]}
     out.data, coded = fdcoding.code(out.data, model)
     _labeled(out)
     # The pass names an event by its id; a relationship line's own event is
@@ -735,11 +742,12 @@ def build(
     for item in (out.data, *(i for name in COLLECTIONS for i in out.data[name])):
         item.pop(RAW, None)
     _twins(out)
-    drawn = sum(event["id"] not in filed for event in out.data["events"])
+    drawn = sum(event["id"] not in own for event in out.data["events"])
+    uncoded = _uncoded(coded) & {f"event {e['id']}" for e in out.data["events"]}
     new = renumber(out.data, RESERVED_ITEM_IDS + 1)
     _moved(out, new)
     out.brought = {name: len(out.data[name]) for name in COLLECTIONS}
-    out.brought[DRAWN] = drawn
+    out.brought |= {DRAWN: drawn, FILED: len(filed(fd)), UNCODED: len(uncoded)}
     out.placed = {way: collections.Counter() for way in fdmerge.Placed}
     out.placed[fdmerge.Placed.Rules].update(
         people=out.brought["people"], events=out.brought["events"]
@@ -748,6 +756,13 @@ def build(
         _merge(out, into, model, pairing, shown)
     _settle(out)
     return out
+
+
+def _uncoded(coded: list[Decision]) -> set[str]:
+    """The events the coding pass was asked to code and could not: refused
+    each time, and never coded from the file's text."""
+    refused = {one.item for one in coded if one.reason.startswith(REFUSED)}
+    return refused - {one.item for one in coded if one.reason.startswith(TOLD)}
 
 
 def _labeled(out: Imported) -> None:
@@ -1146,7 +1161,7 @@ def save(
             turn_id=turn,
             kind=ObservationKind.Import,
             detail={
-                **{name: out.brought[name] for name in COLLECTIONS},
+                **{name: out.brought[name] for name in (*COLLECTIONS, UNCODED)},
                 **{
                     way.value: {name: counts[name] for name in ("people", "events")}
                     for way, counts in out.placed.items()

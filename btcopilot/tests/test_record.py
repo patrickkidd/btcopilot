@@ -1056,3 +1056,29 @@ def test_taking_back_an_event_made_before_its_title_was_backfilled_removes_it():
     data = {"events": [{"id": 66, "kind": "noted", "person": 1, "description": "told Lou", "title": "Told Lou"}]}
     record.rewind(data, made)
     assert data["events"] == []
+
+
+def test_undo_leaves_no_empty_field_so_the_turn_before_comes_off_too(subscriber):
+    # R-0084, R-0850
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 2, "field": "name", "after": "Bea"}],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Person, "item_id": 2, "field": "primary", "after": True},
+            {"item_kind": ItemKind.Person, "item_id": 2, "field": "notes", "after": "Eldest"},
+        ],
+        author=Author.Coach,
+        turn_id="t2",
+    )
+
+    record.undo(diagram.id, "t2", author=Author.User)
+    assert diagram.get_diagram_data().people == [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]
+
+    record.undo(diagram.id, "t1", author=Author.User)
+    assert diagram.get_diagram_data().people == [{"id": 1, "name": "Ada"}]

@@ -15,7 +15,18 @@ import re
 from sqlalchemy import or_
 
 import btcopilot
-from btcopilot import clock, clusters, coverage, place, proactive, prompts, record, views
+from btcopilot import (
+    clock,
+    clusters,
+    coverage,
+    fdnotice,
+    place,
+    proactive,
+    prompts,
+    record,
+    views,
+)
+from btcopilot.familymatch import unnamed
 from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
     bond_line,
@@ -1295,6 +1306,8 @@ class Toolbox:
             fields["gender"] = choice(PersonKind, args["gender"], "genders").value
         if args.get("primary") is not None:
             fields["primary"] = bool(args["primary"])
+        if args.get("id") is not None and fields.keys() & {"name", "last_name"}:
+            self._keep_stand_in(args["id"])
         others = []
         joined = []
         data = self.data
@@ -1320,6 +1333,27 @@ class Toolbox:
                 )
         said, patch = self._write(ItemKind.Person, args.get("id"), fields, others=others)
         return "\n".join([said] + [f"Joined {line} into them." for line in joined]), patch
+
+    def _keep_stand_in(self, person_id) -> None:
+        """While the import asks which person in the file is them, the app's
+        nameless stand-in for them is joined into the one they name, never
+        renamed into a second copy of them [Oracle: R-0871]."""
+        person = self._find_person(person_id)
+        if person.get("last_name") or not unnamed(person.get("name")):
+            return
+        if any(
+            q.get("item_kind") == ItemKind.Person.value
+            and str(q.get("item_id")) == str(person_id)
+            for q in fdnotice.opened(self.diagram_id, self.data)
+        ):
+            raise ToolError(
+                f"Person {person_id} is the app's stand-in for the person, and the "
+                "import is still asking which person in the file is them. Do not "
+                "rename it: call edit_person with primary true on the person they "
+                "named, which joins this stand-in into them.",
+                "It tried to rename the stand-in for you instead of marking the "
+                "person you named as you.",
+            )
 
     def _edit_pair_bond(self, args: dict) -> tuple[str, dict]:
         data = self.data

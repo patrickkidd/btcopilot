@@ -178,9 +178,9 @@ def undo(
                     continue
                 inverse = _inverse(delta)
                 actual = _get(data, inverse)
-                if actual != inverse["before"]:
+                if _set_fields(actual) != _set_fields(inverse["before"]):
                     raise Conflict(inverse, actual)
-                done = enact(data, inverse)
+                done = enact(data, inverse, back=True)
                 # Taking off what the turn made would also take what hangs on it
                 # since, which the turn did not make.
                 if inverse["field"] is None and inverse["after"] is None and len(done) > 1:
@@ -247,7 +247,7 @@ def rewind(data: dict, deltas: list[dict]):
 
 def _back(data: dict, delta: dict) -> dict:
     if delta["field"] is not None:
-        return _set(data, _inverse(delta))
+        return _set(data, _inverse(delta), back=True)
     if delta["after"] is None:
         return _restore(data, _inverse(delta))
     return _drop(data, ItemKind(delta["item_kind"]), delta["item_id"])
@@ -277,10 +277,10 @@ def taking_back(data: dict, changes: list[Change]) -> list[tuple[Change, list[di
 
 
 def _set_fields(value):
-    """A whole item without the fields that hold nothing, which a field taken
-    back to empty leaves behind."""
+    """A whole item without the fields that hold nothing, which reads the same
+    as an item without them."""
     if isinstance(value, dict):
-        return {field: held for field, held in value.items() if held is not None}
+        return {field: held for field, held in value.items() if held not in (None, [])}
     return value
 
 
@@ -426,11 +426,11 @@ def _held(item: dict, delta: dict):
     return item.get(delta["field"], empty)
 
 
-def enact(data: dict, delta: dict) -> list[dict]:
+def enact(data: dict, delta: dict, back: bool = False) -> list[dict]:
     kind = ItemKind(delta["item_kind"])
     if delta["field"] is not None:
         if kind is ItemKind.Diagram or _find(data, kind, delta["item_id"]) is not None:
-            return [_set(data, delta), *_carded(data, delta)]
+            return [_set(data, delta, back), *_carded(data, delta)]
         made = dict(delta, field=None, after={"id": delta["item_id"]})
         return [_restore(data, made), _set(data, delta), *_carded(data, delta)]
     if kind is ItemKind.Diagram:
@@ -474,10 +474,15 @@ def _carded(data: dict, delta: dict) -> list[dict]:
     ]
 
 
-def _set(data: dict, delta: dict) -> dict:
+def _set(data: dict, delta: dict, back: bool = False) -> dict:
     item = _item(data, delta)
     before = diagramjson.to_json(_held(item, delta))
-    item[delta["field"]] = diagramjson.from_json(delta["after"])
+    # Taking back a set on a field the item did not hold leaves it without one,
+    # not holding an empty field it never had.
+    if back and delta["after"] is None:
+        item.pop(delta["field"], None)
+    else:
+        item[delta["field"]] = diagramjson.from_json(delta["after"])
     return _delta(delta, before, delta["after"])
 
 

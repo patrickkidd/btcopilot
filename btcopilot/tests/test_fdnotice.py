@@ -28,6 +28,7 @@ from btcopilot.tests.conftest import Model, said
 from btcopilot.tests.test_coverage import data_of
 from btcopilot.tests.test_turnhistory import coach, post
 from btcopilot.tests.test_turns import token  # noqa: F401
+from btcopilot.toolbox import ToolError, ToolName, Toolbox
 
 TURN = fdimport.TURN.format("f00d")
 # Noon in Anchorage.
@@ -275,7 +276,7 @@ def test_the_files_own_events_are_counted_apart_from_those_found_in_its_notes(
     message = fdnotice.after_import(
         imported.id,
         test_user.id,
-        _summary((ANN, BOB), events=7, drawn=2, pair_bonds=1, people=1),
+        _summary((ANN, BOB), events=7, drawn=2, filed=5, pair_bonds=1, people=1),
     )
     assert message.question.startswith(
         "Your file is in: 1 person, 5 events and 1 pair-bond. "
@@ -297,3 +298,64 @@ def test_a_stand_in_for_the_user_still_has_the_file_ask_which_person_is_them(
     assert message.question.endswith("First, which of Ann Lark and Bob Lark is you?")
     [who] = [q for q in data_of(imported).questions if q["text"].startswith("Which")]
     assert (who["item_kind"], who["item_id"]) == (ItemKind.Person.value, "1")
+
+
+def test_the_stand_in_is_never_renamed_while_the_file_asks_who_is_them(
+    test_user, imported, push
+):
+    # R-0871
+    record.apply(
+        imported.id,
+        [_add(ItemKind.Person, {**asdict(Person(id=1, name="User")), "primary": True})],
+        author=Author.Pro,
+        turn_id="t-first",
+    )
+    fdnotice.after_import(imported.id, test_user.id, _summary((ANN, BOB)))
+    tools = Toolbox(imported.id, "t-answer", author=Author.Coach)
+    with pytest.raises(ToolError, match="primary true on the person they named"):
+        tools.call(
+            ToolName.EditPerson,
+            {"id": 1, "version": imported.version, "name": "Ann", "last_name": "Lark"},
+        )
+
+    tools.call(
+        ToolName.EditPerson, {"id": ANN, "version": imported.version, "primary": True}
+    )
+    people = {p["id"]: p for p in data_of(imported).people}
+    assert (1 in people, people[ANN]["primary"]) == (False, True)
+
+
+def test_undoing_the_answer_then_the_import_leaves_the_stand_in_alone(
+    test_user, push
+):
+    # R-0850, R-0871, R-0084
+    diagram = test_user.free_diagram
+    stand_in = {**asdict(Person(id=1, name="User")), "primary": True}
+    record.apply(
+        diagram.id,
+        [_add(ItemKind.Person, stand_in)],
+        author=Author.User,
+        turn_id="t-first",
+    )
+    people = [
+        asdict(Person(id=ANN, name="Ann", last_name="Lark")),
+        asdict(Person(id=BOB, name="Bob", last_name="Lark")),
+    ]
+    record.apply(
+        diagram.id,
+        [_add(ItemKind.Person, p) for p in people],
+        author=Author.Pro,
+        turn_id=TURN,
+        user_id=test_user.id,
+    )
+    fdnotice.after_import(diagram.id, test_user.id, _summary((ANN, BOB)))
+    before = data_of(diagram).people
+    Toolbox(diagram.id, "t-answer", author=Author.Coach).call(
+        ToolName.EditPerson, {"id": ANN, "version": diagram.version, "primary": True}
+    )
+
+    Toolbox(diagram.id, "t-undo", author=Author.Coach).call(ToolName.Undo, {})
+    assert sorted(data_of(diagram).people, key=lambda p: p["id"]) == before
+
+    Toolbox(diagram.id, "t-undo-again", author=Author.Coach).call(ToolName.Undo, {})
+    assert data_of(diagram).people == [stand_in]

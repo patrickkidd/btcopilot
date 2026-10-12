@@ -209,6 +209,12 @@ def _person(chunk: dict) -> str:
     return name or "no name in the file"
 
 
+def filed(fd: dict) -> list[dict]:
+    """The file's own events, before any the import makes from its ticks,
+    its relationship lines or its notes."""
+    return fd.get("events") or []
+
+
 def text(
     file: str,
     fd: dict,
@@ -223,7 +229,7 @@ def text(
     for one in decisions:
         decided[one.item].append(one)
     people = fd.get("people") or []
-    events = fd.get("events") or []
+    events = filed(fd)
     rels = fd.get("emotions") or []
     bonds = fd.get("pair_bonds") or fd.get("marriages") or []
     order = {chunk["id"]: n for n, chunk in enumerate(people)}
