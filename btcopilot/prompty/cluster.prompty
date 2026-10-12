@@ -24,7 +24,10 @@ its id, name, reason and events; one marked "the person drew this period" is the
 person's own. Every one of them is a hypothesis like yours: keep it, rename it,
 reshape it, merge it or drop it as the events now read, the person's own
 included. Return a period under the id of the one it grew out of. A period you
-leave out is removed. Second, runs of events the app's rules found close in
+leave out is removed. One marked "the person tagged these events in the desktop
+app" has no id and is not a period yet: it is a tag the person put on those
+events, and people use tags for many things, so it is one more hypothesis,
+never a boundary. When its events read as a period, return it as a new one. Second, runs of events the app's rules found close in
 time, each with the silence before it: a hint only, never a period by itself.
 Third, every event.
 

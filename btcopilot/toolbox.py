@@ -15,7 +15,18 @@ import re
 from sqlalchemy import or_
 
 import btcopilot
-from btcopilot import clock, clusters, coverage, place, proactive, prompts, record, views
+from btcopilot import (
+    clock,
+    clusters,
+    coverage,
+    fdnotice,
+    place,
+    proactive,
+    prompts,
+    record,
+    views,
+)
+from btcopilot.familymatch import unnamed
 from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
     bond_line,
@@ -158,6 +169,16 @@ def _enum_param(cls, description: str) -> dict:
     return {"type": "string", "enum": _values(cls), "description": description}
 
 
+# A person's words beyond the name, by the name the tool gives them; the file
+# import writes them and matching people reads the other names.
+PERSON_TEXT = {
+    "notes": "notes",
+    "middle_name": "middleName",
+    "nickname": "nickName",
+    "birth_name": "birthName",
+    "alias": "alias",
+}
+
 # The event fields an edit may empty, by the name the tool gives them. Kind,
 # date and date_certainty stay: every event has them.
 CLEARABLE = {
@@ -288,6 +309,11 @@ def schemas(coder: bool = False) -> list[dict]:
                     "parents": {
                         "type": "integer",
                         "description": means[prompts.ToolText.Parents],
+                    },
+                    **{field: {"type": "string"} for field in PERSON_TEXT},
+                    "primary": {
+                        "type": "boolean",
+                        "description": "true: this person is the user, and no one else is.",
                     },
                 },
             },
@@ -1264,13 +1290,70 @@ class Toolbox:
     # ── EDIT ────────────────────────────────────────────────────────────────
 
     def _edit_person(self, args: dict) -> tuple[str, dict]:
+        """Every attribute of a person the app keeps but the links other tools
+        own [Oracle: R-0881]. The user is one person: marking one takes the
+        mark off anyone else [Oracle: R-0879], and joins the app's nameless
+        stand-in for them into the one marked, in the same change
+        [Oracle: R-0871]."""
         fields = {}
         for key in ("name", "last_name", "parents"):
             if args.get(key) is not None:
                 fields[key] = args[key]
+        for key, field in PERSON_TEXT.items():
+            if args.get(key) is not None:
+                fields[field] = args[key]
         if args.get("gender"):
             fields["gender"] = choice(PersonKind, args["gender"], "genders").value
-        return self._write(ItemKind.Person, args.get("id"), fields)
+        if args.get("primary") is not None:
+            fields["primary"] = bool(args["primary"])
+        if args.get("id") is not None and fields.keys() & {"name", "last_name"}:
+            self._keep_stand_in(args["id"])
+        others = []
+        joined = []
+        data = self.data
+        held = record.collections(data)
+        for person in data.people:
+            if not (
+                fields.get("primary")
+                and person.get("primary")
+                and str(person["id"]) != str(args.get("id"))
+            ):
+                continue
+            if args.get("id") is not None and record.stand_in(held, args["id"], person["id"]):
+                others += record.merging(held, args["id"], person["id"], {}).deltas
+                joined.append(person_line(person))
+            else:
+                others.append(
+                    {
+                        "item_kind": ItemKind.Person.value,
+                        "item_id": person["id"],
+                        "field": "primary",
+                        "after": False,
+                    }
+                )
+        said, patch = self._write(ItemKind.Person, args.get("id"), fields, others=others)
+        return "\n".join([said] + [f"Joined {line} into them." for line in joined]), patch
+
+    def _keep_stand_in(self, person_id) -> None:
+        """While the import asks which person in the file is them, the app's
+        nameless stand-in for them is joined into the one they name, never
+        renamed into a second copy of them [Oracle: R-0871]."""
+        person = self._find_person(person_id)
+        if person.get("last_name") or not unnamed(person.get("name")):
+            return
+        if any(
+            q.get("item_kind") == ItemKind.Person.value
+            and str(q.get("item_id")) == str(person_id)
+            for q in fdnotice.opened(self.diagram_id, self.data)
+        ):
+            raise ToolError(
+                f"Person {person_id} is the app's stand-in for the person, and the "
+                "import is still asking which person in the file is them. Do not "
+                "rename it: call edit_person with primary true on the person they "
+                "named, which joins this stand-in into them.",
+                "It tried to rename the stand-in for you instead of marking the "
+                "person you named as you.",
+            )
 
     def _edit_pair_bond(self, args: dict) -> tuple[str, dict]:
         data = self.data
@@ -1580,9 +1663,8 @@ class Toolbox:
             )
         except record.Conflict as e:
             raise ToolError(
-                "That has already been changed since, so it cannot be put back "
-                f"as it was: {e}",
-                "That has been changed since, so it cannot be put back as it was.",
+                f"A later change touched this; take that back first: {e}",
+                "A later change touched this; take that back first.",
             )
         except record.Invalid as e:
             raise ToolError(f"Putting that back would leave {e}", e.plain)
@@ -1591,14 +1673,24 @@ class Toolbox:
         return ("Put back what the last turn changed.", self._patch(change))
 
     def _previous_turn(self) -> str | None:
-        """The turn before this one on this diagram — what 'put that back' means.
-        Questions are never put back, so a turn that touched only questions, a
-        dismissal say, is not it."""
+        """The turn before this one on this diagram not already put back — what
+        'put that back' means, so a second undo reaches the turn before that
+        [Oracle: R-0850]. Questions are never put back, so a turn that touched only
+        questions, a dismissal say, is not it."""
+        undone = {
+            turn_id.removeprefix("undo:")
+            for (turn_id,) in db.session.query(Change.turn_id).filter(
+                Change.diagram_id == self.diagram_id,
+                Change.turn_id.like("undo:%"),
+                Change.turn_id.notlike("undo:%#%"),
+            )
+        }
         rows = Change.query.filter(
             Change.diagram_id == self.diagram_id,
             Change.turn_id != self.turn_id,
             Change.turn_id.notlike("undo:%"),
             Change.turn_id.notlike("%backfill:%"),
+            Change.turn_id.notin_(undone),
         ).order_by(Change.id.desc())
         return next(
             (
@@ -2118,7 +2210,12 @@ class Toolbox:
         return any(str(i.get("id")) == str(item_id) for i in collection)
 
     def _write(
-        self, kind: ItemKind, item_id, fields: dict, statement_id: int | None = None
+        self,
+        kind: ItemKind,
+        item_id,
+        fields: dict,
+        statement_id: int | None = None,
+        others: list[dict] = (),
     ) -> tuple[str, dict]:
         if not fields:
             raise ToolError(
@@ -2142,6 +2239,7 @@ class Toolbox:
             {"item_kind": kind.value, "item_id": item_id, "field": field, "after": value}
             for field, value in fields.items()
         ]
+        deltas += others
         if new and kind not in (ItemKind.Cluster, ItemKind.Question):
             deltas.append(
                 {

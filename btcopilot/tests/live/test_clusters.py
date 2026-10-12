@@ -27,10 +27,15 @@ from btcopilot.clusters import (
     ModelCluster,
     detect_clusters,
 )
+from btcopilot.provider import bedrock_model
 from btcopilot.tests.live.criterion import once, passes
 from btcopilot.tests.test_clusters import ALL_HALE, HALE, HALE_NAMES, HALE_STORED
 
-MODEL = os.environ.get("LIVE_CLUSTER_MODEL", "us.anthropic.claude-opus-5")
+GROUPING = "claude-opus-5"
+# Claude Code signed in to Bedrock takes Bedrock's name for the model.
+MODEL = os.environ.get("LIVE_CLUSTER_MODEL") or (
+    bedrock_model(GROUPING) if os.environ.get("CLAUDE_CODE_USE_BEDROCK") else GROUPING
+)
 # The app sends the grouping prompt with no system prompt of its own; Claude
 # Code's own is replaced by one line so nothing about coding reaches the model.
 SYSTEM = "Answer with the JSON the schema asks for and nothing else."

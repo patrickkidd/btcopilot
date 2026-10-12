@@ -3,7 +3,8 @@ as a loose hypothesis that something bigger shifted in the family around then.
 
 The rules' runs of events are computed with no model call and go to the model
 as a hint only, never stored. The model reads every event, with the periods the
-diagram already has (the person's own marked as theirs), and returns the
+diagram already has (the person's own marked as theirs) and the tags the
+person put on events in the desktop app, and returns the
 periods as they should now stand: it may rename, reshape, merge or drop any of
 them. The code only backstops: three events at least, nothing over ten years,
 and two periods sharing days become one, since the family is one unit. Spec
@@ -414,9 +415,34 @@ def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
 
 
 THEIRS = "the person drew this period"
+TAGGED = "the person tagged these events in the desktop app"
 
 
-def _prompt(cands: list[Candidate], free: list[Event], stored: dict[str, dict]) -> str:
+def tagged(data: DiagramData, free: list[Event]) -> dict[str, list[int]]:
+    """Each tag the person put on events in the desktop app, with the events
+    the model may group that carry it: one more hypothesis shown beside the
+    person's own periods, never stored and never a boundary, since people use
+    tags for many things [Oracle: R-0857, R-0858]. A tag on fewer events than a
+    period holds is left out."""
+    ids = {e.id for e in free}
+    found: dict[str, list[int]] = {}
+    for chunk in data.events:
+        if isinstance(chunk, dict) and chunk.get("id") in ids:
+            for tag in chunk.get("tags") or []:
+                found.setdefault(tag, []).append(chunk["id"])
+    return {
+        tag: sorted(found[tag])
+        for tag in sorted(found)
+        if len(found[tag]) >= MIN_CLUSTER_EVENTS
+    }
+
+
+def _prompt(
+    cands: list[Candidate],
+    free: list[Event],
+    stored: dict[str, dict],
+    tags: dict[str, list[int]],
+) -> str:
     when = {e.id: parse_date(e.dateTime) for e in free}
     existing = []
     for cluster_id, cluster in stored.items():
@@ -429,6 +455,9 @@ def _prompt(cands: list[Candidate], free: list[Event], stored: dict[str, dict]) 
         if not _regroupable(cluster):
             shown["note"] = THEIRS
         existing.append(shown)
+    existing += [
+        {"name": tag, "eventIds": ids, "note": TAGGED} for tag, ids in tags.items()
+    ]
     return prompts.CLUSTER_PROMPT.format(
         existing=json.dumps(existing, indent=2),
         candidates=json.dumps(
@@ -729,12 +758,13 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
     free = joinable(data)
     taken = {str(cluster["id"]) for cluster in _stored(data)}
     existing = mine(data)
-    prompt = _prompt(cands, free, existing)
+    tags = tagged(data, free)
+    prompt = _prompt(cands, free, existing, tags)
     schema = answer_schema(existing)
     limit = THINKING_ROOM + PER_EVENT * len(free)
     _log.info(
         f"Grouping {len(free)} events: {len(existing)} groups already there, "
-        f"{len(cands)} proposed as a hint"
+        f"{len(cands)} proposed and {len(tags)} tags shown as a hint"
     )
 
     def heard(attempt: int, error: ClusterError, answer) -> None:

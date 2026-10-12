@@ -18,17 +18,19 @@ tagged object ``{"$": <tag>, "v": <plain json>}``:
 A dict whose keys are all strings becomes a plain JSON object. One that carries
 "$" as a key takes the tagged ``dict`` form instead, so a tag is never confused
 with data. Anything else raises.
+
+A Qt tag decodes to a QtValue holding the tag's own value, and a stored pickle
+is read with the desktop file's reader, so no Qt library is loaded
+[Oracle: R-0854].
 """
 
 import enum
+import io
 import json
 import pickle
-import sys
 
-import PyQt5.sip  # noqa: F401  registers QtCore types for pickle
-from PyQt5.QtCore import QDate, QDateTime, QPoint, QPointF, QSize, QSizeF, QTime, Qt
-
-from btcopilot import schema
+from btcopilot import fdfile, qtvalue, schema
+from btcopilot.qtvalue import QtValue
 
 TAG = "$"
 
@@ -37,6 +39,17 @@ ENUMS = {
     for name, obj in vars(schema).items()
     if isinstance(obj, type) and issubclass(obj, enum.Enum) and obj is not enum.Enum
 }
+
+
+class Reader(fdfile.Reader):
+    """A stored pickle: its Qt values as the QtValue the JSON tag decodes to,
+    the schema's enums as themselves."""
+
+    qt = staticmethod(qtvalue.unpickled)
+    classes = {
+        **{("btcopilot.schema", name): cls for name, cls in ENUMS.items()},
+        ("btcopilot.qtvalue", "QtValue"): QtValue,
+    }
 
 
 def to_json(data: dict) -> dict:
@@ -49,25 +62,6 @@ def from_json(doc: dict) -> dict:
 
 def _tag(kind, v):
     return {TAG: kind, "v": v}
-
-
-def _color_type():
-    """QColor's class, or None when the Qt GUI module was never loaded.
-
-    Colours are the only value here needing PyQt5.QtGui, and the server the Pro
-    app talks to runs without that module's system libraries. A QColor cannot
-    exist in a payload unless the module is already loaded, so looking the class
-    up rather than importing it keeps the GUI module out of startup.
-    """
-    gui = sys.modules.get("PyQt5.QtGui")
-    return getattr(gui, "QColor", None) if gui else None
-
-
-def _color(v):
-    """The one place that imports the Qt GUI module: a stored colour becoming a QColor."""
-    from PyQt5.QtGui import QColor
-
-    return QColor(v) if v else QColor()
 
 
 def _enc(v):
@@ -83,23 +77,8 @@ def _enc(v):
         if all(isinstance(k, str) and k != TAG for k in v):
             return {k: _enc(x) for k, x in v.items()}
         return _tag("dict", [[_enc(k), _enc(x)] for k, x in v.items()])
-    if isinstance(v, QDateTime):
-        return _tag("QDateTime", v.toString(Qt.ISODateWithMs))
-    if isinstance(v, QDate):
-        return _tag("QDate", v.toString(Qt.ISODate))
-    if isinstance(v, QTime):
-        return _tag("QTime", v.toString(Qt.ISODateWithMs))
-    if isinstance(v, QPointF):
-        return _tag("QPointF", [v.x(), v.y()])
-    if isinstance(v, QPoint):
-        return _tag("QPoint", [v.x(), v.y()])
-    if isinstance(v, QSizeF):
-        return _tag("QSizeF", [v.width(), v.height()])
-    if isinstance(v, QSize):
-        return _tag("QSize", [v.width(), v.height()])
-    color = _color_type()
-    if color is not None and isinstance(v, color):
-        return _tag("QColor", v.name(color.HexArgb) if v.isValid() else None)
+    if isinstance(v, QtValue):
+        return _tag(v.kind, list(v.v) if isinstance(v.v, tuple) else v.v)
     raise TypeError(f"cannot encode {type(v)}")
 
 
@@ -117,14 +96,10 @@ _DEC = {
     "enum": lambda v: ENUMS[v[0]][v[1]],
     "tuple": lambda v: tuple(_dec(x) for x in v),
     "dict": lambda v: {_dec(k): _dec(x) for k, x in v},
-    "QDateTime": lambda v: QDateTime.fromString(v, Qt.ISODateWithMs),
-    "QDate": lambda v: QDate.fromString(v, Qt.ISODate),
-    "QTime": lambda v: QTime.fromString(v, Qt.ISODateWithMs),
-    "QPointF": lambda v: QPointF(*v),
-    "QPoint": lambda v: QPoint(*v),
-    "QSizeF": lambda v: QSizeF(*v),
-    "QSize": lambda v: QSize(*v),
-    "QColor": _color,
+    **{
+        kind: lambda v, kind=kind: QtValue(kind, tuple(v) if isinstance(v, list) else v)
+        for kind in qtvalue.SIP
+    },
 }
 
 
@@ -134,7 +109,7 @@ def loads(blob: bytes | None) -> dict:
         return {}
     if blob[:1] == b"{":
         return from_json(json.loads(blob.decode("utf-8")))
-    return pickle.loads(blob)
+    return Reader(io.BytesIO(blob)).load()
 
 
 def dumps(data: dict) -> bytes:

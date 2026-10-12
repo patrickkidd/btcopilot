@@ -136,3 +136,19 @@ R-0669), runs: "I have to go. I'll ask Aunt Ruth on Sunday when Grandpa left." i
 in the person's words and the coach assigns no step of its own. There is no case for feeling or
 why questions: both are allowed, tracked against the rates on Murray Bowen's tapes and never gated
 (the 2026-10-06 rulings on why and feeling questions).
+
+## The desktop file import
+
+`test_fdimport_live.py` holds one case per model pass of the import, each 2 of 3, on invented
+families. The coding, merge and grouping calls go through `claude -p` as the grouping cases in
+`test_clusters.py` do; the coding and merge calls on `LIVE_IMPORT_MODEL` (Haiku by default).
+
+| Test | What it checks |
+|------|----------------|
+| `test_the_coding_pass_codes_plain_words_keeps_hand_coding_and_reads_no_guess_as_fact` (R-0860, R-0868, R-0859, R-0364) | "Started drinking every night and missed work most Mondays" stays a shift, symptom up; "Moved to Juneau" becomes a noted event on places; a hand-coded symptom stays; the note "In March 1979 her brother Abe was hospitalized" adds an event on Abe in March 1979, and "Probably a cutoff from her mother's side" adds nothing (no event on Ruth or her mother); an event drawn from another event's words, such as the early retirement beside the heart attack, is allowed |
+| `test_the_merge_joins_a_nickname_keeps_a_namesake_apart_and_joins_one_happening_told_twice` (R-0851, R-0853, R-0877) | Christopher, born 1982, is joined to the diagram's Kit; the file's Nell who died in 1979 is never joined to the living Nell (one wrong join fails the case) and is not asked about; two tellings of the panic attacks on one day become one event, and the car accident that day stays its own |
+| `test_a_tag_naming_a_person_is_not_made_a_period` (R-0858, R-0857) | no period is made of the three ordinary events tagged "Uncle Ray"; whether the father's two strokes, tagged alike, make one period or two is left to the model, since a tag is a hint and never decides a period |
+| `test_given_the_floor_after_an_import_the_coach_asks_which_person_is_them` (R-0871, R-0878) | after a file that marked both sisters, "I'm not sure where to begin" gets which of them is the person as the reply's first question, and that question is kept as asked |
+| `test_a_topic_the_person_brings_after_an_import_comes_before_its_questions` (R-0815, R-0878, R-0852) | with two of the import's questions open, "My boss called me into her office today and I froze again" gets a first question about it, and both import questions stay held |
+
+On the subscription on 2026-10-11 (coach on claude-opus-5-5, coding and merge on Haiku, grouping on claude-opus-5), each 3 of 3. Against master's prompts, which person is them fell to 0 of 3 and the person's own topic held at 3 of 3 (it guards a rule master already had); master has no coding or merge prompt.

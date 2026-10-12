@@ -807,7 +807,7 @@ function addStatements(statements: api.Said[], newest = false): void {
       coach && notes ? (notes.args as unknown as Notes) : null,
     );
     if (statement.attachment_name !== null)
-      attachment.show(bubble, statement.attachment_name, statement.attachment_text);
+      attachment.show(bubble, statement.attachment_name, statement.attachment_text, statement.unfinished);
     if (statement.feedback)
       chat.kept(bubble, statement.turn_id!, statement.feedback, newest && statement === statements.at(-1));
     if (statement.stopped) chat.halted(statement.conflict ? STOPPED_KEPT : STOPPED);
@@ -1273,9 +1273,10 @@ function follow(turnId: string): void {
         chat.extend();
         feedback();
         // a reply held for a vote is not read aloud: it would say which is the coach's
-        if (speak.checked && !chat.feedback()) speech.say(reply.statement);
+        const voted = chat.feedback() && !reply.imported;
+        if (speak.checked && !voted) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => lens.aim(chip));
-        said.vote(turnId);
+        if (voted) said.vote(turnId);
         stopFollowing();
         if (!(await store.refresh(Part.Record, Part.Sittings))) return;
         void notices.refresh();
@@ -1294,6 +1295,7 @@ function follow(turnId: string): void {
           bubble.settle("", () => {});
           stopped = { turn: turnId, bubble: bubble.bubble };
         }
+        attachment.untaken($("chat"));
         chat.warn(message, () => void resume(turnId));
       }),
     refused: (message) =>
@@ -1327,7 +1329,7 @@ function stopFollowing(): void {
  * chip whose read failed stays dimmed, under the thread's warning saying why
  * (R-0830). */
 async function readBack(): Promise<void> {
-  const reading = [...$("chat").querySelectorAll<HTMLElement>(".bub[data-statement] > .file > .chip.reading")];
+  const reading = [...$("chat").querySelectorAll<HTMLElement>(".bub[data-statement] > .file > .chip:is(.reading, .untaken)")];
   if (!reading.length) return;
   const live = store.live();
   let page: api.Said[];
@@ -2007,6 +2009,25 @@ if (CODER && parse(location.pathname)?.place === Place.Chat) {
       console.warn(error.message);
     });
 }
+
+// A card the page offers on its own sits above the chat bar, never over the
+// paperclip or Send, however tall the bar grows, and over the chat column
+// alone, never across the panel beside it on a computer.
+const inbar = $("inbar");
+const column = $("chat-screen");
+const clearBar = () => {
+  const shown = inbar.offsetParent !== null;
+  const top = inbar.getBoundingClientRect().top;
+  const { left, width } = column.getBoundingClientRect();
+  const root = document.documentElement.style;
+  root.setProperty("--bar-clear", `${shown ? Math.max(0, window.innerHeight - top) : 0}px`);
+  root.setProperty("--column-left", `${shown ? left : 0}px`);
+  root.setProperty("--column-width", shown ? `${width}px` : "100%");
+};
+const watched = new ResizeObserver(clearBar);
+watched.observe(inbar);
+watched.observe(column);
+window.addEventListener("resize", clearBar);
 
 // The page is only served to a signed-in reader, so this is the moment to ask
 // about a key on this device, and then about the home screen or, once on it,

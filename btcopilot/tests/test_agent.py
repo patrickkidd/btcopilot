@@ -224,26 +224,52 @@ def test_undo_puts_back_what_the_previous_turn_changed(discussion, family):
     assert Change.query.filter_by(turn_id="undo:earlier").count() == 1
 
 
-def test_undoing_the_same_turn_twice_is_refused_in_plain_words(discussion, family):
-    # R-0084
+def rename(discussion, family, name, turn_id):
     record.apply(
         family.id,
-        [{"item_kind": ItemKind.Person, "item_id": 1, "field": "name", "after": "Wrenn"}],
+        [{"item_kind": ItemKind.Person, "item_id": 1, "field": "name", "after": name}],
         author=Author.Coach,
-        turn_id="earlier",
+        turn_id=turn_id,
         user_id=discussion.user_id,
     )
-    run(discussion, "Put that back.", Model(called(ToolName.Undo), said("Done.")))
-    assert family.get_diagram_data().people[0]["name"] == "Wren"
 
-    model = Model(called(ToolName.Undo), said("That is already back."))
+
+def test_a_second_undo_reaches_the_turn_before_the_one_already_put_back(
+    discussion, family
+):
+    # R-0084, R-0850
+    rename(discussion, family, "Wrenn", "import")
+    rename(discussion, family, "Wrenna", "answer")
+    run(discussion, "Put that back.", Model(called(ToolName.Undo), said("Done.")))
+    assert family.get_diagram_data().people[0]["name"] == "Wrenn"
+
+    run(discussion, "And the import.", Model(called(ToolName.Undo), said("Done.")))
+    assert family.get_diagram_data().people[0]["name"] == "Wren"
+    assert Change.query.filter_by(turn_id="undo:import").count() == 1
+
+    model = Model(called(ToolName.Undo), said("Nothing is left to put back."))
     reply = run(discussion, "Put that back again.", model)
     assert EventKind.RecordPatch.value not in kinds(reply)
-    assert family.get_diagram_data().people[0]["name"] == "Wren"
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True
+    assert "nothing before this to put back" in refused["content"]
+
+
+def test_an_undo_a_later_change_blocks_says_to_take_that_back_first(
+    discussion, family
+):
+    # R-0084, R-0850
+    rename(discussion, family, "Wrenn", "earlier")
+    rename(discussion, family, "Wrenna", f"case-report-backfill:{family.id}")
+
+    model = Model(called(ToolName.Undo), said("That changed since."))
+    reply = run(discussion, "Put that back.", model)
+    assert EventKind.RecordPatch.value not in kinds(reply)
+    assert family.get_diagram_data().people[0]["name"] == "Wrenna"
 
     refused = model.histories[-1][-1]["content"][0]
     assert refused["is_error"] is True
-    assert "cannot be put back" in refused["content"]
+    assert "A later change touched this; take that back first" in refused["content"]
 
 
 def test_show_with_an_unknown_id_fails_where_the_model_can_see_it(discussion, family):

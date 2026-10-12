@@ -12,9 +12,10 @@ import pytest
 from jinja2 import TemplateNotFound
 from mock import patch
 
-from btcopilot import promptdir, prompts
+from btcopilot import fdmerge, promptdir, prompts
 from btcopilot.promptdir import PromptDir, key_present, read, split
 from btcopilot.tests.repo import REPO
+from btcopilot.tests.test_fdmerge import Model, existing, imported
 
 GOLDENS = os.path.join(os.path.dirname(__file__), "prompt_goldens.json")
 # Where the private files sit in this repo, whatever the run was pointed at.
@@ -113,7 +114,7 @@ def test_the_private_coach_prompt_keeps_every_paragraph_it_had(monkeypatch):
 
 
 def test_the_app_runs_whole_with_no_private_prompts(public):
-    # R-0451
+    # R-0454
     assert public.get_agent_prompt(record="Marcus, 40")
     assert public.scribe_prompt(record="Marcus, 40")
     assert set(public.tool_meanings()) == set(public.ToolText)
@@ -340,3 +341,24 @@ def test_the_coach_asks_one_item_and_the_question_names_it(public):
     fact = public.tool_meanings()[public.ToolText.Fact]
     assert "Name it whenever the question asks for one of the required facts." in fact
     assert "A question that asks for two items is kept as two questions." in fact
+
+
+@pytest.mark.parametrize("shown", list(fdmerge.Shown))
+@pytest.mark.parametrize("private", [False, True])
+def test_the_import_merge_prompt_renders_with_what_the_merge_passes(
+    monkeypatch, private, shown
+):
+    # R-0851, R-0853
+    if private and not key_present():
+        pytest.skip("no key opens the private prompts")
+    monkeypatch.setenv(
+        "FD_PRIVATE_PROMPTS", str(REAL_PRIVATE if private else "/nonexistent")
+    )
+    prompts.files.cache_clear()
+    try:
+        model = Model()
+        fdmerge.merge(existing(), imported(), model, shown=shown)
+    finally:
+        prompts.files.cache_clear()
+    assert model.prompts
+    assert all("{{" not in said and "{%" not in said for said in model.prompts)

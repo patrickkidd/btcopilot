@@ -261,9 +261,11 @@ Recognize corrections: "No, that's wrong...", "I already told you...", "Stop doi
 frustrated tone about repeated mistakes, "The actual way is...", any explanation of something
 you got wrong.
 
-**Response protocol:** (1) Acknowledge briefly, no over-apologizing. (2) **Before continuing**,
-update the relevant doc file above. (3) State: "Documented in [file] to prevent recurrence."
-(4) Continue with the corrected approach.
+**Response protocol:** (1) Acknowledge briefly, no over-apologizing. (2) Fix the behaviour
+now. (3) Write it down only when it is new and lasting and no existing rule covers it: then
+merge it into the doc file above that owns the subject, in as few words as hold it. Never one
+entry per statement, and never into CLAUDE.local.md unless it is a fact about this machine
+(Patrick, 2026-10-12: CLAUDE.local.md was flooded with a rule per statement).
 
 ### Knowledge Capture
 

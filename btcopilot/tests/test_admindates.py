@@ -1,11 +1,10 @@
 import json
 
-from PyQt5.QtCore import QDateTime
-
 from btcopilot import clusters
 from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.models import Change
+from btcopilot.qtvalue import QtValue
 from btcopilot.schema import Event, Person, asdict, from_dict
 
 
@@ -27,7 +26,7 @@ def test_the_repair_turns_a_hand_edits_qt_date_into_text(flask_app, test_user):
             "person": 1,
             "title": "Slept badly",
             "description": "Slept badly after the move",
-            "dateTime": QDateTime(2019, 4, 2, 0, 0),
+            "dateTime": QtValue("QDateTime", "2019-04-02T00:00:00.000"),
             "dateCertainty": "approximate",
             "symptom": "up",
         }
@@ -65,7 +64,7 @@ def test_the_repair_turns_the_date_alone_past_an_older_fault_in_the_event(flask_
         "kind": "shift",
         "person": 1,
         "description": "",
-        "dateTime": QDateTime(2019, 4, 2, 0, 0),
+        "dateTime": QtValue("QDateTime", "2019-04-02T00:00:00.000"),
         "dateCertainty": "approximate",
     }
     data.events = [dict(wordless)]

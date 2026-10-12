@@ -25,11 +25,26 @@ function remember(): void {
   }
 }
 
-/** What to call it on the phone in the reader's hand. */
+enum Device {
+  Phone = "phone",
+  Tablet = "tablet",
+  Computer = "computer",
+}
+
+/** The device in the reader's hand. An iPad says it is a Mac, and only its
+ * touch screen tells it apart. */
+function device(): Device {
+  const agent = navigator.userAgent;
+  if (/iphone|ipod|android.*mobile/i.test(agent)) return Device.Phone;
+  if (/ipad|android/i.test(agent) || (/macintosh/i.test(agent) && navigator.maxTouchPoints > 1))
+    return Device.Tablet;
+  return Device.Computer;
+}
+
+/** What to call the key on the device in the reader's hand. */
 export function deviceWords(): string {
-  return /iphone|ipad|ipod|macintosh|android/i.test(navigator.userAgent)
-    ? "Face ID or fingerprint"
-    : "device sign-in";
+  if (device() !== Device.Computer) return "Face ID or fingerprint";
+  return /macintosh/i.test(navigator.userAgent) ? "Touch ID" : "device sign-in";
 }
 
 export async function available(): Promise<boolean> {
@@ -89,7 +104,7 @@ function card(done: () => void): HTMLElement {
     el(
       "div",
       "hs-say",
-      `Use ${deviceWords()} on this phone instead of waiting for a code`,
+      `Use ${deviceWords()} on this ${device()} instead of waiting for a code`,
     ),
   );
 

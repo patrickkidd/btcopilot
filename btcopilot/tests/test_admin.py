@@ -1,5 +1,6 @@
 import json
 
+import dataclasses
 import difflib
 from unittest import mock
 
@@ -10,17 +11,18 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import update as sql_update
 
 import btcopilot
-from btcopilot import diagramjson, tuning, turnlog
+from btcopilot import diagramjson, fdimport, fdmerge, tuning, turnlog
 from btcopilot.admin import admin
 from btcopilot.admin import guard, setting, skill
 from btcopilot.admin.database import config
-from btcopilot.tests import olddump
+from btcopilot.tests import fdfixtures, olddump
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
 from btcopilot.llmutil import EXTRACTION_MODEL, Served, Spent, Text
 from btcopilot.models import Diagram, ModelCall, Observation, ObservationKind
 from btcopilot.models.modelcall import Purpose
 from btcopilot.models.preferences import PrefKey, Spotlight
+from btcopilot.schema import from_dict
 
 
 @pytest.fixture
@@ -169,6 +171,44 @@ def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
     assert counted[1]["written"] == 1
     assert counted[-1]["why"].startswith("UnpicklingError")
     assert rows(run("users", "list", "--json")) == []
+
+
+@dataclasses.dataclass
+class Verdict:
+    same: bool
+
+
+def test_diagrams_import_passes_the_merge_settings_and_answers_from_a_file(
+    flask_app, test_user, tmp_path, monkeypatch
+):
+    # R-0851
+    answers = tmp_path / "answers.json"
+    answers.write_text(json.dumps([{"prompt": "Same?", "answer": {"same": True}}]))
+    seen = {}
+    real = fdimport.build
+
+    def build(fd, model, **kwargs):
+        seen.update(kwargs, said=model("Same?", Verdict))
+        with pytest.raises(click.ClickException, match="no saved answer"):
+            model("Other?", Verdict)
+        return real(fd, lambda prompt, shape, *more: from_dict(shape, {}), **kwargs)
+
+    monkeypatch.setattr(fdimport, "build", build)
+    path = fdfixtures.bundle(tmp_path, fdfixtures.scene())
+    result = flask_app.test_cli_runner().invoke(
+        admin,
+        [
+            "diagrams", "import", str(path), "--email", test_user.username,
+            "--ledger", str(tmp_path / "record.txt"), "--events", "two years",
+            "--person", "more", "--answers", str(answers),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert (seen["pairing"], seen["shown"], seen["said"]) == (
+        fdmerge.Pairing.TwoYears,
+        fdmerge.Shown.More,
+        Verdict(same=True),
+    )
 
 
 def test_token_cap_refuses_a_negative(flask_app, test_user):
@@ -424,3 +464,33 @@ def test_titles_fill_writes_nothing_over_an_edit_made_while_it_ran(
     )
     assert refused.exit_code != 0 and "edited" in refused.output
     assert titles_of(diagram) == [None, None, None, None]
+
+
+def test_to_json_rewrites_each_pickled_diagram_after_proving_it_equal(flask_app, run, test_user, tmp_path):
+    # R-0854, R-0083
+    pickled = fdfixtures.dumps(fdfixtures.scene())
+    odd = fdfixtures.dumps({"weight": float("nan")})
+    lund, other = (Diagram(user_id=test_user.id, name=name, data=blob) for name, blob in (("Lund", pickled), ("Odd", odd)))
+    db.session.add_all([lund, other])
+    db.session.commit()
+
+    planned = rows(run("diagrams", "to-json", "--plans", str(tmp_path), "--json"))
+    assert [(r["diagram"], r["kind"], r["equal"], r["differ"]) for r in planned] == [
+        (lund.id, "pickle", "yes", ""),
+        (other.id, "pickle", "no", "weight"),
+    ]
+    assert planned[1]["plan"] is None
+    db.session.refresh(lund)
+    assert lund.data == pickled
+
+    run("diagrams", "to-json", "--apply", "--plan", planned[0]["plan"], "--json")
+    db.session.refresh(lund)
+    assert diagramjson.is_json(lund.data)
+    assert diagramjson.loads(lund.data) == diagramjson.loads(pickled)
+
+    again = flask_app.test_cli_runner().invoke(admin, ["diagrams", "to-json", "--apply", "--plan", planned[0]["plan"]])
+    assert "changed since the dry run" in again.output
+
+    run("diagrams", "to-json", "--undo", "--plan", planned[0]["plan"], "--json")
+    db.session.refresh(lund)
+    assert lund.data == pickled

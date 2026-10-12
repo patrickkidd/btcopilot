@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from sqlalchemy import update as sql_update
 
 from btcopilot import diagramjson
+from btcopilot.familymatch import unnamed
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Statement
 from btcopilot.prompts import Role
@@ -122,7 +123,7 @@ def apply(
     """
     with _locked(diagram_id) as diagram:
         data = diagramjson.loads(diagram.data)
-        applied = [d for delta in deltas for d in _apply(data, delta)]
+        applied = [d for delta in deltas for d in enact(data, delta)]
         return _commit(
             diagram,
             data,
@@ -141,7 +142,7 @@ def preview(
 ) -> None:
     """Raise Invalid where `apply` would refuse these deltas; writes nothing."""
     data = diagramjson.loads(db.session.get(Diagram, diagram_id).data)
-    applied = [d for delta in deltas for d in _apply(data, delta)]
+    applied = [d for delta in deltas for d in enact(data, delta)]
     _check(data, compress(applied), author, turn_id, False)
 
 
@@ -153,7 +154,8 @@ def undo(
     user_id: int | None = None,
     session_id: int | None = None,
 ) -> Change:
-    """Reverse every delta of `turn_id`, newest first, and log the reversal."""
+    """Reverse every delta of `turn_id`, newest first, and log the reversal.
+    A question the turn made comes off with it; one from another turn stays."""
     with _locked(diagram_id) as diagram:
         changes = (
             Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)
@@ -164,18 +166,21 @@ def undo(
             raise ValueError(f"no changes for turn {turn_id} on diagram {diagram_id}")
 
         data = diagramjson.loads(diagram.data)
-        applied = []
+        made = _made_questions(data, changes)
+        applied = [_drop(data, ItemKind.Question, question_id) for question_id in made]
         for change in changes:
             # A question is put back only where a removal closed it.
             removal = any(_removes(delta) for delta in change.deltas)
             for delta in reversed(change.deltas):
-                if delta["item_kind"] == ItemKind.Question.value and not removal:
+                if delta["item_kind"] == ItemKind.Question.value and (
+                    not removal or str(delta["item_id"]) in made
+                ):
                     continue
                 inverse = _inverse(delta)
                 actual = _get(data, inverse)
-                if actual != inverse["before"]:
+                if _set_fields(actual) != _set_fields(inverse["before"]):
                     raise Conflict(inverse, actual)
-                done = _apply(data, inverse)
+                done = enact(data, inverse, back=True)
                 # Taking off what the turn made would also take what hangs on it
                 # since, which the turn did not make.
                 if inverse["field"] is None and inverse["after"] is None and len(done) > 1:
@@ -192,6 +197,29 @@ def undo(
             None,
             undoing=True,
         )
+
+
+def _made_questions(data: dict, changes: list[Change]) -> list[str]:
+    """The questions the turn made that still stand as it left them. They are
+    part of what the turn wrote and come off with it; one asked, answered or
+    turned down since stays, since what the user has seen must stay where the
+    coach can see it (R-0006)."""
+    left = {}
+    for change in reversed(changes):
+        for delta in change.deltas:
+            if delta["item_kind"] != ItemKind.Question.value:
+                continue
+            question_id = str(delta["item_id"])
+            if delta["field"] is None and delta["before"] is None:
+                left[question_id] = dict(delta["after"])
+            elif question_id in left:
+                left[question_id][delta["field"]] = delta["after"]
+    return [
+        question_id
+        for question_id, item in left.items()
+        if _set_fields(diagramjson.to_json(_find(data, ItemKind.Question, question_id)))
+        == _set_fields(item)
+    ]
 
 
 def rewind(data: dict, deltas: list[dict]):
@@ -219,7 +247,7 @@ def rewind(data: dict, deltas: list[dict]):
 
 def _back(data: dict, delta: dict) -> dict:
     if delta["field"] is not None:
-        return _set(data, _inverse(delta))
+        return _set(data, _inverse(delta), back=True)
     if delta["after"] is None:
         return _restore(data, _inverse(delta))
     return _drop(data, ItemKind(delta["item_kind"]), delta["item_id"])
@@ -249,10 +277,10 @@ def taking_back(data: dict, changes: list[Change]) -> list[tuple[Change, list[di
 
 
 def _set_fields(value):
-    """A whole item without the fields that hold nothing, which a field taken
-    back to empty leaves behind."""
+    """A whole item without the fields that hold nothing, which reads the same
+    as an item without them."""
     if isinstance(value, dict):
-        return {field: held for field, held in value.items() if held is not None}
+        return {field: held for field, held in value.items() if held not in (None, [])}
     return value
 
 
@@ -398,11 +426,11 @@ def _held(item: dict, delta: dict):
     return item.get(delta["field"], empty)
 
 
-def _apply(data: dict, delta: dict) -> list[dict]:
+def enact(data: dict, delta: dict, back: bool = False) -> list[dict]:
     kind = ItemKind(delta["item_kind"])
     if delta["field"] is not None:
         if kind is ItemKind.Diagram or _find(data, kind, delta["item_id"]) is not None:
-            return [_set(data, delta), *_carded(data, delta)]
+            return [_set(data, delta, back), *_carded(data, delta)]
         made = dict(delta, field=None, after={"id": delta["item_id"]})
         return [_restore(data, made), _set(data, delta), *_carded(data, delta)]
     if kind is ItemKind.Diagram:
@@ -446,10 +474,15 @@ def _carded(data: dict, delta: dict) -> list[dict]:
     ]
 
 
-def _set(data: dict, delta: dict) -> dict:
+def _set(data: dict, delta: dict, back: bool = False) -> dict:
     item = _item(data, delta)
     before = diagramjson.to_json(_held(item, delta))
-    item[delta["field"]] = diagramjson.from_json(delta["after"])
+    # Taking back a set on a field the item did not hold leaves it without one,
+    # not holding an empty field it never had.
+    if back and delta["after"] is None:
+        item.pop(delta["field"], None)
+    else:
+        item[delta["field"]] = diagramjson.from_json(delta["after"])
     return _delta(delta, before, delta["after"])
 
 
@@ -595,7 +628,7 @@ def _check(
     event does not block it; taking it back puts the stored date back as it
     was [Oracle: R-0084]."""
     if not turn_id.removeprefix("undo:").startswith(DATE_REPAIR):
-        _validate(data, deltas, author, undoing, refile)
+        validate(data, deltas, author, undoing, refile)
         return
     other = [d for d in deltas if d["item_kind"] != ItemKind.Event.value or d["field"] not in DATES]
     if other:
@@ -604,7 +637,7 @@ def _check(
         _dates(data, deltas)
 
 
-def _validate(
+def validate(
     data: dict, deltas: list[dict], author: Author, undoing: bool, refile: bool = False
 ):
     """Every cluster this write leaves behind holds at least MIN_CLUSTER_EVENTS
@@ -711,7 +744,7 @@ def _moved(event: dict) -> bool:
     return _val(event.get("relationship")) in RELATIONSHIPS
 
 
-def _day(value) -> str | None:
+def day(value) -> str | None:
     if not value:
         return None
     if hasattr(value, "toString"):
@@ -867,8 +900,8 @@ def _dates(data: dict, deltas: list[dict]):
                     "year when only those are known",
                     "That date could not be read.",
                 )
-        end = _day(event.get("endDateTime"))
-        if end and end < (_day(event.get("dateTime")) or end):
+        end = day(event.get("endDateTime"))
+        if end and end < (day(event.get("dateTime")) or end):
             raise Invalid(
                 f"event {event_id} ends before it begins: date is when it began, "
                 "end_date when it ended",
@@ -892,13 +925,14 @@ def _moves_of(event: dict) -> tuple:
 
 
 def twin_key(event: dict) -> tuple:
-    """Two events are the same event when kind, day, people and what moved
-    all match."""
+    """Two events are the same event when kind, day, people, what moved and,
+    for a noted event, its item all match."""
     return (
         _val(event.get("kind")),
-        _day(event.get("dateTime")),
+        day(event.get("dateTime")),
         _links(event),
         _moves_of(event),
+        _val(event.get("item")),
     )
 
 
@@ -906,7 +940,8 @@ def _twins(data: dict, deltas: list[dict]):
     """The same event is not written down twice: an event this write adds that
     matches one already in the record on kind, day, people and what moved is
     refused, naming the one that is there. Two shifts for one person on one day
-    that move different variables are two events (R-0432)."""
+    that move different variables are two events (R-0432), as are two noted
+    events recording different items."""
     added = {
         str(delta["item_id"])
         for delta in deltas
@@ -1867,7 +1902,7 @@ def facts(data: dict, person_id) -> dict[Kept, object]:
     person = _find(data, ItemKind.Person, person_id)
     gender = _val(person.get("gender"))
     return {
-        **{fact: _day((life(data, person_id, fact) or {}).get("dateTime")) for fact in LIFE},
+        **{fact: day((life(data, person_id, fact) or {}).get("dateTime")) for fact in LIFE},
         Kept.Gender: None if gender in (None, PersonKind.Unknown.value) else gender,
         Kept.Notes: (person.get("notes") or "").strip() or None,
         Kept.Parents: person.get("parents"),
@@ -1971,7 +2006,7 @@ def merging(data: dict, keep, drop, take: dict[str, str], name: str | None = Non
         kept, lost = life(data, keep, fact), life(data, drop, fact)
         if kept is None or lost is None:
             continue
-        if fact.value in theirs or _day(kept.get("dateTime")) is None:
+        if fact.value in theirs or day(kept.get("dateTime")) is None:
             for field in ("dateTime", "dateCertainty"):
                 put(ItemKind.Event, kept["id"], field, diagramjson.to_json(lost.get(field)))
         remove(ItemKind.Event, lost["id"])
@@ -2043,7 +2078,9 @@ def merging(data: dict, keep, drop, take: dict[str, str], name: str | None = Non
     if name:
         put(ItemKind.Person, kept["id"], "name", name)
     for field in ("name", "last_name"):
-        if lost.get(field) and not kept.get(field) and not (name and field == "name"):
+        if field == "name" and (name or unnamed(lost.get(field))):
+            continue
+        if lost.get(field) and not kept.get(field):
             put(ItemKind.Person, kept["id"], field, lost[field])
     mine, other = facts(data, keep), facts(data, drop)
     for fact, field in ((Kept.Gender, "gender"), (Kept.Notes, "notes"), (Kept.Parents, "parents")):
@@ -2054,6 +2091,20 @@ def merging(data: dict, keep, drop, take: dict[str, str], name: str | None = Non
         dropped.append(dropped_words(fact, str(lost_fact), str(won)))
     remove(ItemKind.Person, lost["id"])
     return Merge(deltas, list(moved), dropped)
+
+
+def stand_in(data: dict, keep, drop) -> bool:
+    """`drop` is the app's nameless stand-in for the person, which marking
+    `keep` as the person joins into them, unless a merge would refuse the two
+    [Oracle: R-0871]."""
+    person = _find(data, ItemKind.Person, drop)
+    if person.get("last_name") or not unnamed(person.get("name")):
+        return False
+    try:
+        _merge_refusal(data, keep, drop, {})
+    except Invalid:
+        return False
+    return True
 
 
 def merge(
@@ -2075,7 +2126,7 @@ def merge(
         data = diagramjson.loads(diagram.data)
         _merge_refusal(data, keep, drop, take)
         plan = merging(data, keep, drop, take, name)
-        applied = [d for delta in plan.deltas for d in _apply(data, delta)]
+        applied = [d for delta in plan.deltas for d in enact(data, delta)]
         change = _commit(
             diagram, data, compress(applied), author, turn_id, user_id, session_id, statement_id
         )

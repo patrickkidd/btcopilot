@@ -458,6 +458,9 @@ export interface Reply {
   stopped?: boolean;
   /** Why a stopped turn's edits could not be taken back, when they could not. */
   conflict?: string;
+  /** The coach's first message after a desktop file was brought in: no
+   * shadow reply is made for it, so it is never held for a vote. */
+  imported?: boolean;
 }
 
 /** One picture of a play-by-play: a date, the events on it, the fact line and

@@ -11,6 +11,7 @@ from btcopilot.timeline import build_timeline
 from btcopilot.models import Author, Change
 from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
 from btcopilot.models import Diagram
+from btcopilot.schema import NotedFact
 from btcopilot.tests.conftest import version
 
 FAMILY = {
@@ -128,6 +129,37 @@ def test_two_same_day_shifts_on_one_person_land_when_the_variables_differ(subscr
         title="On edge", description="On edge",
     )
     assert len(diagram.get_diagram_data().events) == 2
+
+
+def test_a_move_and_a_new_job_on_one_day_for_one_person_are_two_events(subscriber):
+    # R-0489, R-0364, R-0442
+    diagram = _diagram(subscriber.user)
+    _event(
+        diagram,
+        kind="noted",
+        date="2019-03-01",
+        person=1,
+        item=NotedFact.Places.value,
+        title="Moved to Tulsa", description="Moved to Tulsa",
+    )
+    _event(
+        diagram,
+        kind="noted",
+        date="2019-03-01",
+        person=1,
+        item=NotedFact.Work.value,
+        title="Started at the mill", description="Started at the mill",
+    )
+    assert len(diagram.get_diagram_data().events) == 2
+    with pytest.raises(ToolError, match="already event"):
+        _event(
+            diagram,
+            kind="noted",
+            date="2019-03-01",
+            person=1,
+            item=NotedFact.Work.value,
+            title="New job", description="New job",
+        )
 
 
 def test_a_couple_event_with_no_spouse_is_refused_to_the_coach(subscriber):

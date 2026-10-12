@@ -6,7 +6,7 @@ import flask
 import pytest
 
 import btcopilot
-from btcopilot import diagramjson, turns
+from btcopilot import attachments, diagramjson, turns
 from btcopilot.discussions import open_session
 from btcopilot.models.etc import AccessRight
 from btcopilot.routes import Access
@@ -37,6 +37,7 @@ from btcopilot.schema import (
     asdict,
 )
 from btcopilot.tests.conftest import Model, csrf_token, replied, said, version
+from btcopilot.tests.test_attachments import send
 from btcopilot.tests.test_turnhistory import coach
 from btcopilot.toolbox import ToolName, Toolbox
 
@@ -224,6 +225,15 @@ def test_chat_requires_json(web, token):
     # R-0453
     response = web.post("/app/chat", data="hello", headers={"X-CSRFToken": token})
     assert response.status_code == 415
+
+
+def test_a_refused_file_is_answered_with_its_words_alone(web, token):
+    # R-0830
+    response = send(web, token, "notes.docx", b"PK")
+    assert (response.status_code, response.get_data(as_text=True)) == (
+        415,
+        attachments.UNKNOWN,
+    )
 
 
 @pytest.mark.chat_flow
