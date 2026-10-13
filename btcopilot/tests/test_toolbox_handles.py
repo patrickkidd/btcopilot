@@ -68,3 +68,15 @@ def test_off_the_event_tool_has_no_handle_and_integer_ids(monkeypatch):
     props = _edit_event_schema()["input_schema"]["properties"]
     assert "handle" not in props
     assert props["person"]["type"] == "integer"
+
+
+def test_a_question_about_a_new_person_names_them_by_handle(diagram, on):
+    # ruling pending: Patrick's decision on handles, coach-fewer-calls experiment
+    tools = Toolbox(diagram.id, "t1", session_id=7)
+    tools.call(ToolName.EditPerson.value, {"name": "Ada", "handle": "a"})
+    tools.call(
+        ToolName.AddQuestion.value,
+        {"text": "When was Ada born?", "kind": "fact", "state": "asked", "item_kind": "person", "item_id": "a", "fact": "birth_date"},
+    )
+    data = diagram.get_diagram_data()
+    assert str(data.questions[-1]["item_id"]) == str(data.people[0]["id"])

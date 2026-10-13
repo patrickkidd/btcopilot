@@ -231,17 +231,37 @@ HANDLE = {
         "an add. Never stored."
     ),
 }
-#: The fields that take a person or event id, per tool, and whether each is a list.
+class Link(enum.Enum):
+    One = "one"
+    Many = "many"
+    Text = "text"
+
+
+#: The fields that take an item id, per tool: an integer, a list of them, or a
+#: string that may also be some other kind of id.
 LINKS = {
+    ToolName.ReadEvents: {"ids": Link.Many, "person": Link.One},
+    ToolName.EditPerson: {"id": Link.One},
     ToolName.EditEvent: {
-        "person": False,
-        "spouse": False,
-        "child": False,
-        "relationship_targets": True,
-        "relationship_triangles": True,
+        "id": Link.One,
+        "person": Link.One,
+        "spouse": Link.One,
+        "child": Link.One,
+        "relationship_targets": Link.Many,
+        "relationship_triangles": Link.Many,
     },
-    ToolName.EditPairBond: {"person_a": False, "person_b": False},
-    ToolName.EditCluster: {"event_ids": True},
+    ToolName.EditPairBond: {"person_a": Link.One, "person_b": Link.One},
+    ToolName.EditCluster: {"event_ids": Link.Many},
+    ToolName.Remove: {"item_id": Link.Text},
+    ToolName.MergePeople: {"keep": Link.One, "drop": Link.One},
+    ToolName.AddQuestion: {"item_id": Link.Text},
+    ToolName.Show: {
+        "persons": Link.Many,
+        "event_a": Link.One,
+        "event_b": Link.One,
+        "events": Link.Many,
+    },
+    ToolName.SearchChat: {"person": Link.One},
 }
 NAMED = (ToolName.EditPerson, ToolName.EditEvent)
 EITHER = ["integer", "string"]
@@ -255,9 +275,9 @@ def _with_handles(tools: list[dict]) -> list[dict]:
     for tool in tools:
         name = ToolName(tool["name"])
         props = tool["input_schema"]["properties"]
-        for key, many in LINKS.get(name, {}).items():
-            target = props[key]["items"] if many else props[key]
-            target["type"] = EITHER
+        for key, link in LINKS.get(name, {}).items():
+            if link is not Link.Text:
+                (props[key]["items"] if link is Link.Many else props[key])["type"] = EITHER
         if name in NAMED:
             props["handle"] = HANDLE
     return tools
@@ -1151,11 +1171,25 @@ class Toolbox:
 
     def _resolve(self, tool: ToolName, args: dict) -> dict:
         args = {k: v for k, v in args.items() if k != "handle"}
-        for key, many in LINKS.get(tool, {}).items():
-            if args.get(key) is not None:
-                args[key] = [self._id(v) for v in args[key]] if many else self._id(args[key])
-        if tool is ToolName.Remove and args.get("item_id") in self.handles:
-            args["item_id"] = str(self.handles[args["item_id"]])
+        for key, link in LINKS.get(tool, {}).items():
+            value = args.get(key)
+            if value is None:
+                continue
+            if link is Link.Many:
+                args[key] = [self._id(v) for v in value]
+            elif link is Link.One:
+                args[key] = self._id(value)
+            elif value in self.handles:
+                args[key] = str(self.handles[value])
+        if tool is ToolName.AddImpression and args.get("evidence"):
+            args["evidence"] = [
+                {**e, "id": str(self.handles[e["id"]])} if e.get("id") in self.handles else e
+                for e in args["evidence"]
+            ]
+        if tool is ToolName.Navigate and args.get("address"):
+            head, _, tail = args["address"].rpartition(":")
+            if head and tail in self.handles:
+                args["address"] = f"{head}:{self.handles[tail]}"
         return args
 
     def _id(self, value):
