@@ -8,6 +8,30 @@ Read this first, every session. This is the current truth; the derivation lives 
 **append to HISTORY, revise STATE** as part of any work that changes either.
 Ten-minute read by design.
 
+## FD-381 — where it stands (2026-10-13)
+
+Everything below is brainstorm direction, not ruling, until Patrick says to take it forward.
+
+**Goal.** Fix the coach's regression on Patrick's hard presenting problem with a theory deep-dive on his own case, and present the case through the case report at the app seminar on Friday 2026-10-16 (Jira FD-381, draft PR 161, parked).
+
+**Research.** btcopilot-sources branch worker/job-035-coaching-stance, folder research/coaching-stance/ (diagnosis, literature, magic, his-case, proposals, evals, case-report, trial with blind packs and KEY.md). Verified here: 25 of 25 sampled quotations exact; statement ids match his thread. Verifier's notes: ~/.claude/jobs/7f0ffc20/tmp/verify/VERIFY.md.
+
+**Blind read.** Patrick tapped all 16 replies (artifact A3jSmK96qXX9tY2uY9NjVY, picks in the db collection). Nothing rang true on turn 878; on 882 two did: the knowledge variant and the ask-the-history variant (it asked about his contact with his mother's side). His verdict: "not a lot of magic going on in these replies"; "important to hear about the problem a bit but not to dwell on it tactically". No prompt variant earned a build.
+
+**Direction for "What brought <name>".** One small datapoint the coach decides (where the person's focus landed when they came), written by the coach as a card in the same refresh as the other five. Inputs are bounded: the coach's notes going forward, each conversation's digest for existing diagrams; never a fixed rule such as the first message. The first refresh fills it, so the backfill is implicit. It needs a new card value, which is his schema call when taken forward.
+
+**Where the evaluation material goes instead.** The summary names who has the symptom and what it is, first (Family Evaluation line 3301). Dates and circumstances of each eruption go to clusters (FTiCP line 1152; the shock wave, FTiCP line 2474: "death or the threatened death of a significant family member", "months or years"). The symptom inside the family process goes to the coach's guess and card nine. Where to put energy goes to What to work on and The effort.
+
+**Clusters on his diagram** (tmp/shockwave/order.md, shockwave.md). 1998-99: his underfunctioning began 3 months before Robert's death (Jun 1998), the larger drop 4 months after; Catherine's breast cancer 12 months after. 2005-06: no death or diagnosis near (a breakup 6 months before). 2008-11: begins the month of Catherine's lung-cancer diagnosis (Sep 2008, approximate), ends at her death; the stored cluster's title says "mother's death" but the death is his grandmother's. 2014-15: paternal grandparents' deaths, then his cutoff from his mother and the move, a stretch he never named. His mother has almost no events in these stretches.
+
+**Cluster code on master.** The 10-year refusal and dropping failing stored clusters (job 021's recommendations) are present. Unconfirmed: whether an illness diagnosis seeds a group, and whether the reach goes past 548 days. Job 021 said delayed shock waves are not modelled.
+
+**Pages for Patrick.** Deaths and periods https://claude.ai/artifact/7N4zgcJgwEdXXUqthLfQLh; case report rule options (superseded) https://claude.ai/artifact/E59Gm5wVXmqwqd29WeZZ88.
+
+**PR 161.** Parked. Built before he picked the rule; the page-built "What brought him" card with a week-of-events row is the wrong shape and will be reshaped. Only the summary prompt change (name who has the symptom and what it is, first) stands.
+
+**Loose ends.** Six unpushed commits on btcopilot-sources master (his statements, a one-line user rule, the efficiency run): Patrick pushes. The worker trial harness on btcopilot branch worker/job-035-live-trial is unverified. The worker spent $9.85 on 85 coach turns (his authorization there).
+
 **Play-by-play redesign — approved and built.** The snapshot-based drawer, designed on Fable
 from the theory corpus and approved by Patrick 2026-09-27, replaced the old moves board; see
 "Where the build stands" below for what shipped and where it stands.
