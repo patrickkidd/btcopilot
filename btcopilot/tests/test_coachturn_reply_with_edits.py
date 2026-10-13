@@ -1,13 +1,32 @@
 """With COACH_REPLY_WITH_EDITS on, words that come with tool calls that all
 succeed are the reply, so the turn makes no second model call."""
 
+import enum
+
 import pytest
 
+from btcopilot.coachturn import REPLY, UNSENT
 from btcopilot.extensions import db
 from btcopilot.models import Statement, StatementKind
 from btcopilot.toolbox import ToolName
 from btcopilot.schema import Person, asdict
-from btcopilot.tests.conftest import Model, called, csrf_token, said, wrote
+from btcopilot.tests.conftest import (
+    Model,
+    called,
+    calling,
+    csrf_token,
+    said,
+    wrote,
+)
+
+
+class Reply(enum.Enum):
+    """The reply tool lives in the turn, not the toolbox's ToolName."""
+
+    Reply = REPLY["name"]
+
+
+REPLY_TOOL = Reply.Reply
 
 
 @pytest.fixture(autouse=True)
@@ -94,3 +113,54 @@ def test_switch_off_keeps_the_closing_call(web, family, monkeypatch):
     assert len(model.systems) == 2
     assert reply == "Added Nell."
     assert "Nell" in names(family)
+
+
+def test_a_reply_call_with_a_successful_edit_is_the_reply(web, family, monkeypatch):
+    # ruling pending: Patrick's decision on the reply call, coach-fewer-calls experiment
+    monkeypatch.setenv("COACH_REPLY_WITH_EDITS", "1")
+    model, reply = turn(
+        web,
+        monkeypatch,
+        calling(
+            (ToolName.EditPerson, {"name": "Nell"}),
+            (REPLY_TOOL, {"words": "Added Nell."}),
+        ),
+    )
+    assert len(model.systems) == 1
+    assert reply == "Added Nell."
+    assert "Nell" in names(family)
+
+
+def test_a_reply_call_beside_a_refused_edit_is_not_sent(web, family, monkeypatch):
+    # ruling pending: Patrick's decision on the reply call, coach-fewer-calls experiment
+    monkeypatch.setenv("COACH_REPLY_WITH_EDITS", "1")
+    model, reply = turn(
+        web,
+        monkeypatch,
+        calling(
+            (
+                ToolName.EditEvent,
+                {
+                    "kind": "symptom",
+                    "date": "2019-03-01",
+                    "date_certainty": "certain",
+                    "person": 1,
+                    "description": "Headaches",
+                },
+            ),
+            (REPLY_TOOL, {"words": "Noted the headaches."}),
+        ),
+        said("Tell me about the headaches."),
+    )
+    assert len(model.systems) == 2
+    assert reply == "Tell me about the headaches."
+    results = model.histories[1][-1]["content"]
+    assert results[-1]["tool_use_id"] == "tu_reply_1"
+    assert results[-1]["content"].startswith(UNSENT)
+
+
+def test_switch_off_offers_no_reply_tool(web, family, monkeypatch):
+    # ruling pending: Patrick's decision on the reply call, coach-fewer-calls experiment
+    monkeypatch.delenv("COACH_REPLY_WITH_EDITS", raising=False)
+    model, _ = turn(web, monkeypatch, said("Go on."))
+    assert "reply" not in model.offered[0]

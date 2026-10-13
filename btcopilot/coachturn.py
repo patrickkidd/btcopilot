@@ -161,6 +161,25 @@ def run_call(toolbox: Toolbox, call) -> tuple[str, dict | None, str | None]:
     return text, event, None
 
 
+REPLY = {
+    "name": "reply",
+    "description": (
+        "Your words to the person, exactly as they should read, in the same "
+        "message as your last tool calls. Same rules as a spoken reply."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {"words": {"type": "string"}},
+        "required": ["words"],
+    },
+}
+UNSENT = "not sent: a call in this message was refused; fix it, then call reply again"
+
+
+def replies_with_edits() -> bool:
+    return os.environ.get("COACH_REPLY_WITH_EDITS") == "1"
+
+
 def _again(model, system, messages: list[dict], spoken: str, ask: str, turn_id: str):
     """Ask the coach once more, with no tools."""
     asked = messages + [
@@ -391,11 +410,12 @@ class CoachTurn:
         spoken = ""
         events = []
         silent = False
+        tools = schemas(self.toolbox.coder)
+        if replies_with_edits():
+            tools.append(REPLY)
 
         for step in range(MAX_STEPS):
-            turn = self._say(
-                system, messages, schemas(self.toolbox.coder), stream=True
-            )
+            turn = self._say(system, messages, tools, stream=True)
             # A turn ends on words, never on a tool call. Text written before a
             # call is the model working out what to do and the user never sees
             # it, so only a step that calls nothing is the coach speaking.
@@ -411,7 +431,11 @@ class CoachTurn:
                 _log.info(f"Turn {self.turn_id} step {step} thought aloud: {turn.text}")
 
             results = []
+            replied = None
             for call in turn.calls:
+                if call.name == REPLY["name"]:
+                    replied = call
+                    continue
                 self._halt()
                 asked = toolcall(self.toolbox.data, call.name, call.args)
                 text, event, refusal = run_call(self.toolbox, call)
@@ -439,6 +463,16 @@ class CoachTurn:
                         TurnEventKind.RecordPatch,
                     )
                     self._note(events, dict(event, type=kind.value))
+            refused = any(result["is_error"] for result in results)
+            if replied:
+                results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": replied.id,
+                        "content": UNSENT if refused else "sent",
+                        "is_error": refused,
+                    }
+                )
             sentences = self._regroup(events)
             if sentences:
                 last = results[-1]
@@ -453,11 +487,10 @@ class CoachTurn:
                     "results": results,
                 }
             )
-            if (
-                os.environ.get("COACH_REPLY_WITH_EDITS") == "1"
-                and spoken.strip()
-                and not any(r["is_error"] for r in results)
-            ):
+            if replied and not refused:
+                spoken = replied.args["words"]
+                break
+            if replies_with_edits() and spoken.strip() and not refused:
                 break
         else:
             _log.warning(
