@@ -173,7 +173,12 @@ function body(card: Card, v: CaseView): string {
         ...(b.latest ? [factChip(b.latest)] : []),
         ...b.clusters.map((c) => chip(ChipKind.Cluster, c.id, c.label)),
       ];
-      return lead(b.lead) + (course.length ? sublabel("The trouble's course, dated") + chips(course) : "") + lead(b.asked);
+      return (
+        lead(b.lead) +
+        (course.length ? sublabel("The trouble's course, dated") + chips(course) : "") +
+        (b.around.length ? sublabel("Around the newest time") + chips(b.around.map(factChip)) : "") +
+        lead(b.asked)
+      );
     }
     case Card.Couple:
       // married: Bowen's stages, each head a chip with its events under it (R-0835), then what the card still needs

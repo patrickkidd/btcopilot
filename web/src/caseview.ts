@@ -115,7 +115,7 @@ export interface CaseView {
   now: number;
   household: Still;
   main: Guess | null;
-  brought: { lead: string; first: Fact | null; latest: Fact | null; clusters: ClusterRef[]; asked: string };
+  brought: { lead: string; first: Fact | null; latest: Fact | null; clusters: ClusterRef[]; around: Fact[]; asked: string };
   /** Married now: the picture's solid line with no later separation or divorce, both partners alive (R-0694). */
   married: boolean;
   /** The couple since they met, stage by stage (R-0833, R-0834, R-0835), and
@@ -166,6 +166,7 @@ const WHAT: Record<string, string> = {
  * couple's own to be on the couple card (R-0834). */
 const NEAR_YEARS = 2;
 
+const WEEK = 7 * 24 * 3600 * 1000;
 const byDate = (a: TimelineEvent, b: TimelineEvent) => a.dateTime!.localeCompare(b.dateTime!);
 
 /** A shift that marks how someone was doing: a symptom, anxiety or functioning mark. */
@@ -307,20 +308,28 @@ class Reader {
     return e?.dateTime ? dateText(e.dateTime, e.dateCertainty) : "";
   }
 
-  /** What brought the person: the record's own events of theirs that carry a
-   * symptom, counted, the first and the latest as chips, and the clusters
-   * they fall in (Patrick, 2026-10-03: no strip of its own). */
+  /** What brought the person: the newest event of theirs that carries a
+   * symptom, in its own words, the first and the latest as chips, the
+   * clusters they fall in, and the family's other dated events of the week
+   * before it, with no sentence joining them (Patrick, 2026-10-03: no strip of
+   * its own; FD-381). */
   brought(sessions: Session[]): CaseView["brought"] {
     const s = this.subject;
     const flares = this.tl.events.filter((e) => e.person === s.id && e.symptom && e.dateTime).sort(byDate);
     const ids = new Set(flares.map((e) => e.id));
     const clusters = this.tl.clusters.filter((c) => c.event_ids.some((id) => ids.has(id)));
-    // dates only inside chips: the lead counts, the chips date
+    const newest = flares[flares.length - 1];
+    const from = newest && new Date(Date.parse(newest.dateTime!) - WEEK).toISOString().slice(0, 10);
+    const around = newest
+      ? this.tl.events.filter((e) => e.id !== newest.id && e.dateTime && e.dateTime >= from! && e.dateTime <= newest.dateTime!).sort(byDate)
+      : [];
+    // dates only inside chips: the lead is the event's own words
     return {
-      lead: flares.length ? `${s.name}'s symptoms appear in ${flares.length === 1 ? "one event" : `${flares.length} events`} in the diagram.` : "",
+      lead: newest ? newest.description || newest.label : "",
       first: flares.length ? this.fact(flares[0]) : null,
-      latest: flares.length > 1 ? this.fact(flares[flares.length - 1]) : null,
+      latest: flares.length > 1 ? this.fact(newest) : null,
       clusters: clusters.map((c) => ({ id: c.id, label: `${c.label} · ${c.title}` })),
+      around: around.map((e) => this.named(e)),
       asked: sessions.length ? `Who asked for help: ${s.name}, in ${pronouns(s).his} own chat with the coach.` : "",
     };
   }

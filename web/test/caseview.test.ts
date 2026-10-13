@@ -227,7 +227,24 @@ it("keeps every date inside a chip: no lead line names a year or a month", () =>
   parted.events.push(event(300, EventKind.Separated, "2020-01-01", { person: 1, spouse: 10 }));
   const leads = [v.brought.lead, v.brought.asked, v.couple.lead, v.couple.needs, v.effort, ...v.sides.map((s) => s.lead), ...caseView(parted, ONE, "").stages.map((r) => r.label)];
   for (const line of leads) expect(line).not.toMatch(/\b(1[89]|20)\d\d\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/);
-  expect(v.brought.lead).toBe("Nora's symptoms appear in 2 events in the diagram.");
+  expect(v.brought.lead).toBe("Panic attacks at work");
+});
+
+// R-candidate: the case report starts from what brought the person, in their own words, with the family's events of that week beside it and no joining sentence (FD-381)
+it("shows on what brought the person the newest trouble in its own words and the family's events of the week before it", () => {
+  const tl = halloran();
+  tl.events.push(
+    event(400, EventKind.Shift, "2021-09-20", { person: 10, title: "Lost his job" }),
+    event(401, EventKind.Shift, "2021-09-26", { person: 3, title: "Fell at home" }),
+    event(402, EventKind.Shift, "2021-10-01", { person: 1, title: "Panic attacks at work", description: "Woke at three and could not face the office", symptom: "up" }),
+  );
+  tl.events = tl.events.filter((e) => e.id !== 210);
+  const v = caseView(tl, ONE, "");
+  expect(v.brought.lead).toBe("Woke at three and could not face the office");
+  expect(v.brought.around.map((f) => f.id)).toEqual([401]);
+  const card = cards(v, false).split(`data-card="${Card.Brought}"`)[1].split("</section>")[0];
+  expect(card).toContain("Around the newest time");
+  expect(card).not.toMatch(/symptoms appear in/);
 });
 
 // R-0709
