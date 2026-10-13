@@ -10,6 +10,7 @@ the call fails with words the model can act on [Oracle: R-0075].
 import datetime
 import enum
 import logging
+import os
 import re
 
 from sqlalchemy import or_
@@ -221,13 +222,54 @@ VERSION = {
 }
 
 
+HANDLES = "COACH_HANDLES"
+HANDLE = {
+    "type": "string",
+    "description": (
+        "A short word you choose for this new person (or event), so later tool "
+        "calls in the same reply can use it wherever an id is expected. Only on "
+        "an add. Never stored."
+    ),
+}
+#: The fields that take a person or event id, per tool, and whether each is a list.
+LINKS = {
+    ToolName.EditEvent: {
+        "person": False,
+        "spouse": False,
+        "child": False,
+        "relationship_targets": True,
+        "relationship_triangles": True,
+    },
+    ToolName.EditPairBond: {"person_a": False, "person_b": False},
+    ToolName.EditCluster: {"event_ids": True},
+}
+NAMED = (ToolName.EditPerson, ToolName.EditEvent)
+EITHER = ["integer", "string"]
+
+
+def handles_on() -> bool:
+    return os.environ.get(HANDLES) == "1"
+
+
+def _with_handles(tools: list[dict]) -> list[dict]:
+    for tool in tools:
+        name = ToolName(tool["name"])
+        props = tool["input_schema"]["properties"]
+        for key, many in LINKS.get(name, {}).items():
+            target = props[key]["items"] if many else props[key]
+            target["type"] = EITHER
+        if name in NAMED:
+            props["handle"] = HANDLE
+    return tools
+
+
 def schemas(coder: bool = False) -> list[dict]:
     """The coach's tool schemas; a coder's navigate also lists the coder's
     screens (R-0626). What a field means clinically comes from
     `prompts.tool_meanings()`, which fdserver overrides (R-0305); everything
     here is the shape of the value, not what it means to a clinician."""
     means = prompts.tool_meanings()
-    return [
+    tools = [
         {
             "name": ToolName.ReadPeople.value,
             "description": "Everyone in the record, with their ids, names and parents.",
@@ -880,6 +922,7 @@ def schemas(coder: bool = False) -> list[dict]:
             },
         },
     ]
+    return _with_handles(tools) if handles_on() else tools
 
 
 def said_label(statement: Statement) -> str:
@@ -1056,6 +1099,8 @@ class Toolbox:
         self.views: list[dict] = []
         # The record versions this turn's own writes made, undo included.
         self.versions: set[int] = set()
+        # The new items this turn named, handle to id; never stored.
+        self.handles: dict[str, int] = {}
 
     @property
     def coder(self) -> bool:
@@ -1084,12 +1129,45 @@ class Toolbox:
             tool = ToolName(name)
         except ValueError:
             raise ToolError(f"There is no tool called {name}", "There is no such tool.")
+        handle = args.get("handle") if handles_on() else None
+        if handles_on():
+            args = self._resolve(tool, args)
+        if handle is not None and args.get("id") is not None:
+            raise ToolError(
+                f"handle is only for a new item; this one already has id {args['id']}",
+                "It named an item already in the record as new.",
+            )
         if tool in CHANGES and (tool in EXISTING or args.get("id") is not None):
             self._fresh(args.get("version"))
         text, event = getattr(self, f"_{tool.value}")(args)
         if tool in READS:
             text = f"{text}\n\n{version_line(self.diagram.version)}"
+        if handle is not None:
+            kind = ItemKind.Person if tool is ToolName.EditPerson else ItemKind.Event
+            self.handles[handle] = next(
+                int(d["item_id"]) for d in event["deltas"] if d["item_kind"] == kind.value
+            )
         return text, event
+
+    def _resolve(self, tool: ToolName, args: dict) -> dict:
+        args = {k: v for k, v in args.items() if k != "handle"}
+        for key, many in LINKS.get(tool, {}).items():
+            if args.get(key) is not None:
+                args[key] = [self._id(v) for v in args[key]] if many else self._id(args[key])
+        if tool is ToolName.Remove and args.get("item_id") in self.handles:
+            args["item_id"] = str(self.handles[args["item_id"]])
+        return args
+
+    def _id(self, value):
+        if not isinstance(value, str) or value.isdigit():
+            return value
+        if value not in self.handles:
+            raise ToolError(
+                f"no new item named '{value}' in this reply; add it first, in an "
+                "earlier tool call of the same reply",
+                "It named a new item it had not added.",
+            )
+        return self.handles[value]
 
     def _fresh(self, version) -> None:
         if version is None:
