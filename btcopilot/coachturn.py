@@ -12,6 +12,7 @@ import datetime
 import hashlib
 import itertools
 import logging
+import os
 import uuid
 from typing import Callable
 
@@ -452,6 +453,12 @@ class CoachTurn:
                     "results": results,
                 }
             )
+            if (
+                os.environ.get("COACH_REPLY_WITH_EDITS") == "1"
+                and spoken.strip()
+                and not any(r["is_error"] for r in results)
+            ):
+                break
         else:
             _log.warning(
                 f"Turn {self.turn_id} hit the step cap: {MAX_STEPS} steps used, "
