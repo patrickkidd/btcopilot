@@ -211,62 +211,34 @@ def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, famil
     assert {d["item_kind"] for d in change.deltas} == {"cluster", "diagram"}
 
 
-def test_a_grouping_the_user_made_is_absorbed_by_a_wider_period(discussion, family):
-    # R-0843
+def test_a_grouping_the_user_made_is_kept_through_a_regroup(discussion, family):
+    # R-0850
+    """The model's periods are stored beside the person's own, which stays
+    as they drew it."""
     data = family.get_diagram_data()
-    data.clusters = [
-        asdict(
-            Cluster(
-                id="c1",
-                title="When he left",
-                summary="",
-                name="When he left",
-                eventIds=[10, 11, 12],
-                source=ClusterSource.User,
-            )
+    theirs = asdict(
+        Cluster(
+            id="c1",
+            title="When he left",
+            summary="",
+            name="When he left",
+            eventIds=[10, 11, 12],
+            source=ClusterSource.User,
         )
-    ]
+    )
+    data.clusters = [theirs]
     family.set_diagram_data(data)
     db.session.commit()
 
-    with detects(("Everything at once", [10, 11, 12, 13, 14, 15])):
+    with detects(("The winter after", [13, 14, 15])):
         sync(family.id, turn_id="t1", user_id=family.user_id)
 
     stored = clusters_of(family)
-    assert "c1" not in stored
+    assert stored["c1"] == theirs
     assert [(c["eventIds"], c["source"]) for c in stored.values()] == [
-        ([10, 11, 12, 13, 14, 15], ClusterSource.Model.value)
+        ([10, 11, 12], ClusterSource.User.value),
+        ([13, 14, 15], ClusterSource.Model.value),
     ]
-
-
-def test_a_grouping_the_user_made_that_the_answer_leaves_out_is_removed(
-    discussion, family
-):
-    # R-0843
-    """The model was shown the person's own grouping and returned its own
-    periods without it: one reading of the family, so it goes."""
-    data = family.get_diagram_data()
-    data.clusters = [
-        asdict(
-            Cluster(
-                id="c1",
-                title="When he left",
-                summary="",
-                name="When he left",
-                eventIds=[11, 12],
-                source=ClusterSource.User,
-            )
-        )
-    ]
-    family.set_diagram_data(data)
-    db.session.commit()
-
-    with detects(("The hard spring", [10, 11, 12]), ("The winter after", [13, 14, 15])):
-        sync(family.id, turn_id="t1", user_id=family.user_id)
-
-    stored = clusters_of(family)
-    assert "c1" not in stored
-    assert [c["eventIds"] for c in stored.values()] == [[10, 11, 12], [13, 14, 15]]
 
 
 def test_a_grouping_under_the_minimum_is_never_stored(discussion, family):
@@ -396,12 +368,12 @@ def test_undoing_the_removal_of_such_a_grouping_reads_as_words_too(family):
     assert clusters_of(family) == {}
 
 
-def test_a_grouping_of_unknown_provenance_is_reshaped_like_the_users(
+def test_a_grouping_of_unknown_provenance_is_kept_like_the_users(
     discussion, family
 ):
-    # R-0843
+    # R-0850
     """A row written before provenance was recorded is treated as the user's,
-    and the user's is a hypothesis the model may absorb."""
+    and the user's stays as it was drawn."""
     data = family.get_diagram_data()
     stale = asdict(
         Cluster(id="c1", title="When he left", summary="", eventIds=[10, 11, 12])
@@ -411,12 +383,11 @@ def test_a_grouping_of_unknown_provenance_is_reshaped_like_the_users(
     family.set_diagram_data(data)
     db.session.commit()
 
-    with detects(("Everything at once", [10, 11, 12, 13, 14, 15])):
+    with detects(("The winter after", [13, 14, 15])):
         sync(family.id, turn_id="t1", user_id=family.user_id)
 
     stored = clusters_of(family)
-    assert "c1" not in stored
-    assert [c["eventIds"] for c in stored.values()] == [[10, 11, 12, 13, 14, 15]]
+    assert [c["eventIds"] for c in stored.values()] == [[10, 11, 12], [13, 14, 15]]
 
 
 def test_the_coach_is_never_told_the_model_made_a_grouping_it_may_not_have(family):

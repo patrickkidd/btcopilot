@@ -2,9 +2,11 @@
 apart and two strays, the shape of the fault seen on production. An older
 prompt let the model fold them into one period of fifty years. Read as
 hypotheses of a family process, the periods stay apart across the quiet
-decades, each named for what seems to have shifted, never for its years
-(R-0841, R-0844, R-0837, R-0838). Invented names only; no real record is
-involved.
+decades, each named for the change in the family that opened it, never for
+its years or the person's trouble (R-0841, R-0844, R-0837, R-0838, R-0850).
+Invented names only; no real record is involved. Pass criteria are k of n runs
+on the stored clusters, stated on each test; none has been run against the
+prompt of DETECTION_VERSION 10 yet (real-model spend waits on Patrick).
 
 The app's grouping model is Gemini, and this suite's machine may have no key
 for it, so the call goes through Claude Code (`claude -p` with the answer's
@@ -26,6 +28,7 @@ from btcopilot.clusters import (
     ClusterListResponse,
     ModelCluster,
     detect_clusters,
+    symptom_words,
 )
 from btcopilot.tests.live.criterion import once, passes
 from btcopilot.tests.test_clusters import ALL_HALE, HALE, HALE_NAMES, HALE_STORED
@@ -157,7 +160,7 @@ def test_a_stored_fifty_year_group_is_not_handed_back_unchanged():
     try:
         result = detect_clusters(HALE_STORED, ask)
     except ClusterError as refused:
-        # both answers refused: in the turn the stored group is removed and
+        # both answers refused: in the turn the stored group is set aside and
         # nothing is named after its years (R-0844, R-0838)
         print(f"  refused twice, the last by {refused.check.value}: {refused}")
         return
@@ -168,3 +171,21 @@ def test_a_stored_fifty_year_group_is_not_handed_back_unchanged():
     assert not [
         c for c in result.clusters if span(c)[0] <= 1955 and span(c)[1] >= 1994
     ], "a group still spans 1955 and 1994"
+
+
+@passes(8, of=10)
+def test_a_period_is_named_by_its_change_and_holds_the_death_it_follows():
+    # R-0850
+    """Pass: no stored name uses the words the person's trouble is told in
+    (Edith's headaches, June's drinking, Nell's panic attacks), and the
+    grandfather's 1998 death, offered in the run around Nell and Theo's
+    trouble, is held by the period over those years."""
+    result = detect_clusters(HALE, ask)
+    told = symptom_words(HALE)
+    for cluster in result.clusters:
+        print(f"  {span(cluster)} {cluster.eventIds} {cluster.name!r}")
+    assert not [
+        c.name for c in result.clusters if told & set(c.name.lower().split())
+    ]
+    late = [c for c in result.clusters if span(c)[0] >= 1996]
+    assert late and any(11 in c.eventIds for c in late)
