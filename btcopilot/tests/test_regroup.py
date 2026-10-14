@@ -5,6 +5,7 @@ import json
 
 from mock import patch
 
+from btcopilot import diagramjson
 from btcopilot.admin import admin
 from btcopilot.clusters import ClusterListResponse, ModelCluster, compute_cache_key
 from btcopilot.extensions import db
@@ -21,6 +22,12 @@ GROUPED = ClusterListResponse(
     clusters=[
         ModelCluster(eventIds=[10, 11, 12, 13, 14, 15], name="A hard year", reason="r")
     ]
+)
+
+
+CHANGED = (
+    "events or an answer about when the most was going on changed since the last "
+    "grouping"
 )
 
 
@@ -49,10 +56,35 @@ def test_the_dry_run_lists_records_behind_their_events_and_calls_no_model(
     with patch("btcopilot.metered.gemini_structured_sync") as asked:
         rows = regroup(flask_app)
     assert [(r["diagram"], r["why"], r["groups"]) for r in rows] == [
-        (family.id, "events changed since the last grouping", 0)
+        (family.id, CHANGED, 0)
     ]
     assert not asked.called
     assert clusters_of(family) == {}
+
+
+def test_a_record_whose_only_change_is_an_answer_is_listed(flask_app, family):
+    # R-0853
+    grouped_now(family)
+    assert [r["why"] for r in regroup(flask_app)] == ["events and no groups"]
+    stored = diagramjson.loads(family.data)
+    stored["questions"] = [
+        {
+            "id": "q1",
+            "kind": "fact",
+            "text": "When in your life was the most going on?",
+            "state": "resolved",
+            "outcome": "answered",
+            "fact": "most_going_on",
+            "item_kind": "person",
+            "item_id": 1,
+            "answer": {"kind": "statement", "id": 7, "label": "You said, 3 Oct"},
+        }
+    ]
+    family.data = diagramjson.dumps(stored)
+    db.session.commit()
+    assert [(r["diagram"], r["why"]) for r in regroup(flask_app)] == [
+        (family.id, CHANGED)
+    ]
 
 
 def test_a_record_with_events_and_no_groups_is_listed_though_its_events_held(

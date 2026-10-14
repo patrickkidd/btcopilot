@@ -19,7 +19,10 @@ TURN = "regroup:{}:{}"
 
 
 class Why(enum.StrEnum):
-    Changed = "events changed since the last grouping"
+    Changed = (
+        "events or an answer about when the most was going on changed since the last "
+        "grouping"
+    )
     Ungrouped = "events and no groups"
 
 
