@@ -8,31 +8,45 @@ Read this first, every session. This is the current truth; the derivation lives 
 **append to HISTORY, revise STATE** as part of any work that changes either.
 Ten-minute read by design.
 
-## FD-381 — where it stands (2026-10-13)
+## FD-381 — where it stands (2026-10-14, end of round 1)
 
-Everything below is brainstorm direction, not ruling, until Patrick says to take it forward.
+Brainstorm is not ruling: nothing here is a ruling until Patrick says to take it forward. Jira FD-381, branch FD-381, draft PR 161. Goal: fix the coach on Patrick's hard presenting problem and show the case through the case report at the app seminar on Friday 2026-10-16. A new session told "FD-381 build coordinator; read doc/STATE.md" starts here.
 
-**Goal.** Fix the coach's regression on Patrick's hard presenting problem with a theory deep-dive on his own case, and present the case through the case report at the app seminar on Friday 2026-10-16 (Jira FD-381, draft PR 161, parked).
+**Where the coordinator's material lives.**
+- Briefs and grounding: /private/tmp/claude-501/-Users-patrick-btcopilot/9d7987a9-4a3f-5f52-9721-dc5b87867996/scratchpad/briefs/ (common.md the fixed rules, clusters.md, drawer.md, cards.md) and scratchpad/ground.md (ruling, code map, the ten cards, rules A1-A9 and B1-B9, what is not the builders' to decide).
+- Theory: btcopilot-sources research/case-report-cards/ — THEORY-HANDOVER-2026-10-14.md (section 2 is binding) and BUILD-KICKOFF-2026-10-14.md (the scope). Ruling R-0850. Earlier research: btcopilot-sources branch worker/job-035-coaching-stance.
+- Approved rules page: research/clusters/rules-2026-10-14.html.
 
-**Research.** btcopilot-sources branch worker/job-035-coaching-stance, folder research/coaching-stance/ (diagnosis, literature, magic, his-case, proposals, evals, case-report, trial with blind packs and KEY.md). Verified here: 25 of 25 sampled quotations exact; statement ids match his thread. Verifier's notes: ~/.claude/jobs/7f0ffc20/tmp/verify/VERIFY.md.
+**Round 1, built and pushed on FD-381 (2026-10-14).**
+- Cluster grouping by rules A1-A9 (51d85493, 9873a417). The fixed list of opening kinds is gone. Seeds are three counting shifts: a rise in symptom or anxiety, a fall in functioning, a relationship shift. Events with unknown dates are left out. The 548 days and the 10-year cap go to the grouping call as suggestions; only the cap is enforced. A name in the person's trouble words is refused once, then stored as "A change in the family, <years>". The person's own periods are never reshaped (this reverses R-0843 in favour of A7 and R-0850). Failing app clusters are set aside, never deleted. The call returns the opening event. DETECTION_VERSION is 10. One grouping call per diagram on its next event change, two when it refuses.
+- Schema (1c06f742, 166ac68a, 22cc5978): a cluster gains setAside (bool) and openingEventId (int or none). DiagramData.drawn_clusters() in schema.py is the one accessor for clusters not set aside, used by every read site; the timeline payload carries both keys.
+- Cluster drawer (a0bb5858, 33629b1e): a one-row view by default; "By person" lanes on a toggle remembered per browser. The key line stands at the stored opening event (fallback: the first event that is neither a shift nor noted). Hollow dots for approximate dates. Dot colours by kind of shift: symptom red, anxiety amber, functioning green, relationship teal; other events in ink. Telemetry features cluster_view_row and cluster_view_lanes, mirrored in productevents.py.
+- Case report (91a933c3, 9ad403ee, f88081e9): the refresh reads the diagram, the coach's notes, one stored summary per conversation (written once into the existing summary column when missing), and the first conversation's opening up to 2000 characters only when no note sits on the "What brought" card. New card value what_brought (CaseReportCard.WhatBrought). The guess is one pattern statement with For and Against lines per cluster, an Open line, and a dashed amber "Your period" chip for the person's own period. The choice card is no longer written or drawn (value kept, marked unused); the part card carries "Other way:"; card nine carries "Prognosis:" and "Aim:". Cause words are in one list (record.CAUSE from schema.CauseWord); proactive.CAUSES stays separate on purpose because it measures the coach's sentences and a pinned figure depends on it. A card giving a cause is refused once, then stored with the sentence removed; each catch is written to the observations table. One model call per refresh when summaries exist.
 
-**Blind read.** Patrick tapped all 16 replies (artifact A3jSmK96qXX9tY2uY9NjVY, picks in the db collection). Nothing rang true on turn 878; on 882 two did: the knowledge variant and the ask-the-history variant (it asked about his contact with his mother's side). His verdict: "not a lot of magic going on in these replies"; "important to hear about the problem a bit but not to dwell on it tactically". No prompt variant earned a build.
+**Decisions the coordinator made without Patrick (to confirm).**
+1. Reach follows rules page A3, not the kickoff's "two to five years".
+2. The drawer choice is remembered per browser, in no table.
+3. Summaries are stored in the existing summary column.
+4. The four dot colours.
+5. The trouble-word fallback name for a cluster.
+6. "What to work on" now shows as the 8th card on screen because the choice card is gone (Patrick calls it card nine).
 
-**Direction for "What brought <name>".** One small datapoint the coach decides (where the person's focus landed when they came), written by the coach as a card in the same refresh as the other five. Inputs are bounded: the coach's notes going forward, each conversation's digest for existing diagrams; never a fixed rule such as the first message. The first refresh fills it, so the backfill is implicit. It needs a new card value, which is his schema call when taken forward.
+**Waiting on Patrick (asked 2026-10-14, unanswered).**
+1. Yes on the what_brought card value.
+2. How the coach stores what brought the person in, going forward. Recommended: an impression on that card, plus a coverage item "what brings you here" placed first in the coach's question order.
+3. How the coach stores the person's own periods as clusters. Recommended: the grouping call reads stated periods from the notes and writes them marked as the person's; no new coach tool.
+4. Ruling candidate for the onboarding eval: "The coach finds out what brings the person in within its first few replies unless the person offers it first; it writes that down as a note and does not ask again."
 
-**Where the evaluation material goes instead.** The summary names who has the symptom and what it is, first (Family Evaluation line 3301). Dates and circumstances of each eruption go to clusters (FTiCP line 1152; the shock wave, FTiCP line 2474: "death or the threatened death of a significant family member", "months or years"). The symptom inside the family process goes to the coach's guess and card nine. Where to put energy goes to What to work on and The effort.
+**Next rounds, in order.**
+- (a) Coach prompt round after his answers: the onboarding question, the check-off, note storage, and removing "choice" from the coach's card list in the impressions prompt and tool (private/prompts/fragments, toolbox.py). Each prompt change ships with a live eval citing a ruling.
+- (b) A verifier that built nothing: the full unit suite once; a browser check of the cluster drawer and the case report on a sandbox with Patrick's own diagram (export under ~/.claude/research/FD-conversation-flow/data2/, loaded into a sandbox account), local model for plumbing. The live evals (tests/live: test_clusters, test_casereportrewrite, test_casereportcards) need a spend ask before running.
+- (c) An eyeball link for Patrick on a --real sandbox.
+- (d) The pre-deploy bar, then deploy Thursday 2026-10-15. Catch-up: none beyond the refresh and the regroup on the next event change.
+- (e) PR 161 reshaped to the new content, with "User-facing changes" then "Developer-facing changes".
 
-**Clusters on his diagram** (tmp/shockwave/order.md, shockwave.md). 1998-99: his underfunctioning began 3 months before Robert's death (Jun 1998), the larger drop 4 months after; Catherine's breast cancer 12 months after. 2005-06: no death or diagnosis near (a breakup 6 months before). 2008-11: begins the month of Catherine's lung-cancer diagnosis (Sep 2008, approximate), ends at her death; the stored cluster's title says "mother's death" but the death is his grandmother's. 2014-15: paternal grandparents' deaths, then his cutoff from his mother and the move, a stretch he never named. His mother has almost no events in these stretches.
+**Open items from builders.** What openingEventId holds when the call names no event (the drawer falls back, the data stays empty). Whether clusters and the coach's guess should be one hypothesis writer (parked).
 
-**Cluster code on master.** The 10-year refusal and dropping failing stored clusters (job 021's recommendations) are present. Unconfirmed: whether an illness diagnosis seeds a group, and whether the reach goes past 548 days. Job 021 said delayed shock waves are not modelled.
-
-**Pages for Patrick.** Deaths and periods https://claude.ai/artifact/7N4zgcJgwEdXXUqthLfQLh; case report rule options (superseded) https://claude.ai/artifact/E59Gm5wVXmqwqd29WeZZ88.
-
-**PR 161.** Parked. Built before he picked the rule; the page-built "What brought him" card with a week-of-events row is the wrong shape and will be reshaped. Only the summary prompt change (name who has the symptom and what it is, first) stands.
-
-**Loose ends.** Six unpushed commits on btcopilot-sources master (his statements, a one-line user rule, the efficiency run): Patrick pushes. The worker trial harness on btcopilot branch worker/job-035-live-trial is unverified. The worker spent $9.85 on 85 coach turns (his authorization there).
-
-Theory handover for the build: btcopilot-sources research/case-report-cards/THEORY-HANDOVER-2026-10-14.md (read before the kickoff brief).
+**Loose ends from before.** Six unpushed commits on btcopilot-sources master (Patrick pushes). The worker trial harness on btcopilot branch worker/job-035-live-trial is unverified.
 
 **Play-by-play redesign — approved and built.** The snapshot-based drawer, designed on Fable
 from the theory corpus and approved by Patrick 2026-09-27, replaced the old moves board; see
