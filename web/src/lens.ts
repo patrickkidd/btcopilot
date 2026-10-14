@@ -1,10 +1,17 @@
 import { CHIP_KIND, PicEvent, REST, SelKind, reduce, type Outcome, type PicState, type Sel } from "./caption";
 import { aimedEvents, Lead } from "./chips";
 import { CLUSTER, pathRow } from "./dom";
-import { Picture, Target, Via, type Tap } from "./picture";
+import { ClusterView, Picture, storedView, Target, Via, type Tap } from "./picture";
 import { ASK_MARK, FAMILY_MARK, IN_CHAT_MARK, listButton, PLAY_MARK, tok } from "./tokens";
 import { Feature } from "./track";
 import { ChipKind, ChipTone, InteractionKind, ItemKind, Spotlight, type Chip, type Cluster, type Timeline } from "./types";
+
+/** Each drawing of a cluster's page is counted as it is shown, to see how much
+ * the lanes are used (Patrick, 2026-10-13). */
+const VIEW_FEATURES: Record<ClusterView, Feature> = {
+  [ClusterView.Row]: Feature.ClusterViewRow,
+  [ClusterView.Lanes]: Feature.ClusterViewLanes,
+};
 
 /** The picture and the row under it, as one controller: a tap on the line, a
  * chip in the words, the path over the line and the (i) all come through here
@@ -66,7 +73,11 @@ export class Lens {
   ) {
     this.picture = new Picture(
       hosts.view,
-      { onTap: (tap: Tap) => this.onTap(tap), onBook: (button) => hooks.book?.(button) },
+      {
+        onTap: (tap: Tap) => this.onTap(tap),
+        onBook: (button) => hooks.book?.(button),
+        onView: (view) => hooks.track(VIEW_FEATURES[view]),
+      },
       spot,
     );
     hosts.path.addEventListener("click", (e) => {
@@ -76,6 +87,7 @@ export class Lens {
     hosts.info.addEventListener("click", () => {
       hooks.track(Feature.PictureInfo);
       this.picture.about();
+      if (this.picture.aboutOpen()) hooks.track(VIEW_FEATURES[storedView()]);
       this.rest();
     });
   }

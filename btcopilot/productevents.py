@@ -33,6 +33,8 @@ class Feature(enum.StrEnum):
     TraceToChat = "trace_to_chat"
     PictureUp = "picture_up"
     PictureInfo = "picture_info"
+    ClusterViewRow = "cluster_view_row"
+    ClusterViewLanes = "cluster_view_lanes"
     PictureClear = "picture_clear"
     OpenMenu = "open_menu"
     CloseMenu = "close_menu"

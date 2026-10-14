@@ -1,7 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   CLUSTER_BOOK,
   CLUSTER_BOOK_TITLE,
+  ClusterView,
+  VIEW_KEY,
+  drawing,
+  place,
+  storeView,
+  storedView,
   Level,
   Target,
   aboutMarkup,
@@ -445,4 +451,52 @@ it("slides the line to put the step's dot in the middle, as near as its ends all
   expect(inSight(2000, 0, 1440)).toBe(false);
   expect(inSight(2000, 1280, 1440)).toBe(true);
   expect(inSight(10, 0, 1440)).toBe(false);
+});
+
+describe("the drawing on a cluster's page", () => {
+  const ev = (id: number, iso: string, over: Partial<TimelineEvent> = {}): TimelineEvent =>
+    ({ id, dateTime: iso, label: `event ${id}`, kind: "shift", person_name: "Ada", dateCertainty: "certain", ...over }) as TimelineEvent;
+  const events = [
+    ev(1, "1998-01-01", { symptom: "up" }),
+    ev(2, "1998-07-01", { kind: "death", label: "Grandmother died", person_name: "Rose" }),
+    ev(3, "1999-01-01", { anxiety: "up", dateCertainty: "approximate" }),
+  ];
+
+  // R-0213, R-0850
+  it("puts one row of dots by date, hollow when approximate, the key line at the death", () => {
+    const p = place(events, ClusterView.Row, 300);
+    expect(p.dots.map((d) => Math.round(d.x))).toEqual([8, Math.round(8 + (years("1998-07-01") - years("1998-01-01")) / (years("1999-01-01") - years("1998-01-01")) * 284), 292]);
+    expect(p.dots.map((d) => d.hollow)).toEqual([false, false, true]);
+    expect(p.dots.map((d) => d.colour)).toEqual(["var(--remove)", "var(--ink)", "var(--ask)"]);
+    expect(p.key).toEqual({ x: p.dots[1].x, label: "Grandmother died" });
+    expect(p.years).toEqual(["1998", "1999"]);
+    expect(p.lanes).toEqual([]);
+    expect(new Set(p.dots.map((d) => d.y)).size).toBe(1);
+  });
+
+  // R-0213, R-0850
+  it("gives each person a lane with their name, the key line across every lane", () => {
+    const p = place(events, ClusterView.Lanes, 300);
+    expect(p.lanes.map((l) => l.name)).toEqual(["Ada", "Rose"]);
+    expect(p.dots[0].x).toBe(72);
+    expect(p.dots[1].y).toBe(p.lanes[1].y);
+    expect(p.dots[2].y).toBe(p.lanes[0].y);
+    const svg = drawing(events, ClusterView.Lanes, 300);
+    expect(svg).toContain('class="ab-key"');
+    expect(svg).toContain('class="ab-view" data-view="row">One row</button>');
+  });
+
+  // R-0213
+  it("keeps the reader's choice in the browser, one row by default", () => {
+    expect(storedView()).toBe(ClusterView.Row);
+    const kept = new Map<string, string>();
+    vi.stubGlobal("localStorage", { getItem: (k: string) => kept.get(k) ?? null, setItem: (k: string, v: string) => kept.set(k, v) });
+    expect(drawing(events, storedView(), 300)).toContain('data-view="lanes">By person</button>');
+    storeView(ClusterView.Lanes);
+    expect(storedView()).toBe(ClusterView.Lanes);
+    expect(kept.get(VIEW_KEY)).toBe("lanes");
+    storeView(ClusterView.Row);
+    expect(storedView()).toBe(ClusterView.Row);
+    vi.unstubAllGlobals();
+  });
 });
