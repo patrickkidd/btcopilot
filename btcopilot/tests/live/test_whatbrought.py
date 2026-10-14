@@ -1,8 +1,6 @@
-"""Early in the first conversation the coach finds out what brings the person
-in: when they say it unasked it writes it down and never asks; when they talk
-about something else first it follows them and asks by its tenth reply. Either
-way the answer is the coach's note on the what_brought card, resting on the
-person's own message.
+"""What brought the person in, in two made-up first conversations (R-0854):
+one that opens on a trip and one that opens on a sleep problem. Each ends with
+the coach's note on the what_brought card, resting on the person's message.
 
 Invented names only.
 """
