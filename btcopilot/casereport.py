@@ -37,7 +37,6 @@ from btcopilot.recordtext import note_line, on_map, outline, question_order
 from btcopilot.schema import (
     CardLine,
     CaseReportCard,
-    CauseWord,
     DiagramData,
     EvidenceKind,
     EventKind,
@@ -69,7 +68,6 @@ OPENING = "THE OPENING OF THE FIRST CONVERSATION"
 # How much of the first conversation the rewrite reads raw, when no note on
 # the what_brought card holds what brought the person in (R-0850).
 OPENING_CHARS = 2000
-CAUSED = re.compile(r"\b(" + "|".join(w.value for w in CauseWord) + r")\b", re.IGNORECASE)
 SENTENCE = re.compile(r"(?<=[.?!])\s+")
 # A cluster's slot on the coach's guess: "For c3: ..." or "Against c3: ...".
 SLOT = re.compile(rf"^({CardLine.For.value}|{CardLine.Against.value}) (\S+):")
@@ -266,7 +264,7 @@ def checked(call) -> str | None:
 
 def caused(call) -> str | None:
     """The first word in a card's text that gives a cause or a why, or None (R-0850)."""
-    found = CAUSED.search(call.args.get("text") or "")
+    found = record.CAUSE.search(call.args.get("text") or "")
     return found and found.group(0)
 
 
@@ -274,7 +272,7 @@ def uncaused(text: str) -> str:
     """The text with every sentence that gives a cause or a why taken out."""
     kept = []
     for line in text.splitlines():
-        sentences = [s for s in SENTENCE.split(line) if not CAUSED.search(s)]
+        sentences = [s for s in SENTENCE.split(line) if not record.CAUSE.search(s)]
         if sentences:
             kept.append(" ".join(sentences))
     return "\n".join(kept)

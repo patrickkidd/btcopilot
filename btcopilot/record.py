@@ -23,6 +23,7 @@ from btcopilot.models import Diagram
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
     CaseReportCard,
+    CauseWord,
     LIST_FIELDS,
     MIN_CLUSTER_EVENTS,
     DateCertainty,
@@ -1620,8 +1621,8 @@ def _rests(data: dict, impression: dict, impression_id: str, added: bool):
 # came first and how close in time (R-0569, R-0504); Bowen never went beyond
 # "a striking time sequence".
 CAUSE = re.compile(
-    r"\b(caus(e|es|ed|ing)|drove|drives|driven|(led|leads|leading) to|because of"
-    r"|made (him|her|them)|result(ed|s)? in|trigger(ed|s)?)\b",
+    r"\b(" + "|".join(w.value for w in CauseWord) + r"|drives|driven|leading to"
+    r"|results? in|triggers?)\b",
     re.IGNORECASE,
 )
 
