@@ -497,9 +497,12 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
         for call in calls:
             if caused(call):
                 call.args = {**call.args, "text": uncaused(call.args.get("text") or "")}
-        _put(diagram, toolbox, [c for c in calls if c.args.get("text")], retried=False, first=first)
+        given = [c for c in calls if c.args.get("text")]
+        twice = _put(diagram, toolbox, given, retried=False, first=first)
+        written = {c.args.get(CARD) for c in given if c.id in twice}
         for card in _missing(toolbox, before):
-            _absent(diagram.id, turn_id, card, retried=False, first=first[card])
+            if card not in written:
+                _absent(diagram.id, turn_id, card, retried=False, first=first[card])
     return _settled(diagram, toolbox, before)
 
 

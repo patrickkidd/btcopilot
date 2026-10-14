@@ -368,6 +368,19 @@ def test_what_brought_resting_on_no_message_of_the_person_is_refused_and_asked_f
     assert "statement" in still.detail["reason"]
 
 
+def test_a_card_refused_on_both_tries_is_written_down_once_per_try(web, past, written, family):
+    # R-0850
+    sleep = guessed("They came about sleep.", "what_brought")
+    rewrite(web, Model(calling(sleep, *FOUR), calling(sleep)))
+
+    rows = refusals(reason="case report rewrite: what_brought: ")
+    assert [o.detail["reason"].split("; ")[0] for o in rows] == [
+        "case report rewrite: what_brought: refused: " + rows[0].detail["refusal"],
+        "case report rewrite: what_brought: refused: " + rows[1].detail["refusal"],
+    ]
+    assert refusals(refusal="no what_brought card") == []
+
+
 def test_a_card_giving_a_cause_is_asked_for_again_once(web, past, written, family):
     # R-0850, R-0569
     model = Model(calling(guessed("Your sleep went because your mother fell ill.")),
