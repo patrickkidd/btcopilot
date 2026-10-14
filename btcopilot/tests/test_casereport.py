@@ -90,21 +90,23 @@ def test_an_impression_added_on_a_card_is_on_it_and_on_the_coachs_map(family):
             "text": TENSE,
             "evidence": [{"kind": "person", "id": "1"}],
             "state": "raised",
-            "case_report_card": "choice",
+            "case_report_card": "what_brought",
         },
     )
 
-    assert cards(family) == {"i1": "choice"}
-    assert "card=choice" in box(family).call(ToolName.ReadImpressions, {})[0]
+    assert cards(family) == {"i1": "what_brought"}
+    assert "card=what_brought" in box(family).call(ToolName.ReadImpressions, {})[0]
 
 
-def test_a_question_goes_only_on_the_own_part_or_the_choice_card(family):
-    # R-0709
+def test_a_question_goes_only_on_the_own_part_card(family):
+    # R-0709, R-0850
     add(box(family), text=OWN, kind="thought", case_report_card="own_part")
     assert cards(family) == {"q1": "own_part"}
 
-    with pytest.raises(ToolError, match="only on own_part or choice"):
+    with pytest.raises(ToolError, match="goes only on own_part"):
         card(family, "q1", "main_guess", tool=ToolName.SetQuestion)
+    with pytest.raises(ToolError, match="goes only on own_part"):
+        card(family, "q1", "choice", tool=ToolName.SetQuestion)
 
 
 def test_a_guess_kept_for_later_goes_on_no_card(family):

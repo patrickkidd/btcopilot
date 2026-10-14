@@ -423,7 +423,7 @@ ASKED_AGAIN = "asked_again_on"
 # Asked again this many times and passed over, it is no longer waiting.
 PASSES = 2
 CARD_HOLDS = {CaseReportCard.WorkOn: 3, CaseReportCard.CoachGuess: 3}
-QUESTION_CARDS = (CaseReportCard.OwnPart, CaseReportCard.Choice)
+QUESTION_CARDS = (CaseReportCard.OwnPart,)
 
 
 def _carded(data: dict, delta: dict) -> list[dict]:
@@ -1535,7 +1535,7 @@ def _again(rules) -> str:
 
 def _card(question: dict, question_id: str, rules, state, written: set, author: Author):
     """Only the coach puts an entry on a case report card; a question goes only
-    on the own part card or the choice card; and an entry kept for later is on
+    on the own part card; and an entry kept for later is on
     none, since the page never sees it (R-0709)."""
     noun = rules.noun
     if CARD in written and Author(author) is not Author.Coach:

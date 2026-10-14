@@ -537,10 +537,47 @@ class CaseReportCard(enum.StrEnum):
     """The case report card a question or an impression is on (R-0709)."""
 
     MainGuess = "main_guess"
+    WhatBrought = "what_brought"
     OwnPart = "own_part"
+    # Merged into own_part (R-0850): never written or shown, kept so stored entries still read.
     Choice = "choice"
     WorkOn = "work_on"
     CoachGuess = "coach_guess"
+
+
+class CardLine(enum.StrEnum):
+    """A line after a card's first lines, opened by its mark (R-0850): what
+    holds for and against a cluster, named by its id, the open question, the
+    other way it could have gone, the prognosis and the aim."""
+
+    For = "For"
+    Against = "Against"
+    Open = "Open"
+    OtherWay = "Other way"
+    Prognosis = "Prognosis"
+    Aim = "Aim"
+
+
+class CauseWord(enum.StrEnum):
+    """Words that give a cause or a why, never on a card (R-0850, R-0569)."""
+
+    Because = "because"
+    Cause = "cause"
+    Caused = "caused"
+    Causes = "causes"
+    Causing = "causing"
+    LedTo = "led to"
+    LeadsTo = "leads to"
+    LeadTo = "lead to"
+    DueTo = "due to"
+    Why = "why"
+    Triggered = "triggered"
+    ResultedIn = "resulted in"
+    Drove = "drove"
+    MadeHim = "made him"
+    MadeHer = "made her"
+    MadeThem = "made them"
+    MadeYou = "made you"
 
 
 class Pushback(enum.StrEnum):

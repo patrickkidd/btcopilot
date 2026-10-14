@@ -335,8 +335,6 @@ def rewritten(diagram: Diagram, plans: pathlib.Path, requests: pathlib.Path | No
     owner = db.session.get(User, diagram.user_id)
     turn_id = REWRITE.format(diagram.id)
     toolbox = casereport.box(diagram, owner, turn_id)
-    system, messages = casereport.asked(diagram, owner, toolbox)
-    tools = casereport.offered()
     meter = Metered(
         diagram.user_id,
         diagram.id,
@@ -344,6 +342,8 @@ def rewritten(diagram: Diagram, plans: pathlib.Path, requests: pathlib.Path | No
         Purpose.Backfill,
         model=model_for(setting.read(SettingKey.CoachModel, diagram.user_id)),
     )
+    system, messages = casereport.asked(diagram, owner, toolbox, meter)
+    tools = casereport.offered()
     tokens = round(len(system + json.dumps(messages) + json.dumps(tools)) / PER_TOKEN)
     name = f"case-report-{diagram.id}.json"
     before = {q[CARD]: q for q in written(diagram.get_diagram_data())}

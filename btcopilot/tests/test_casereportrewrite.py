@@ -17,8 +17,8 @@ from mock import patch
 from btcopilot import casereport, turnlog
 from btcopilot.admin import admin
 from btcopilot.extensions import db
-from btcopilot.models import Change, ModelCall, Observation, ObservationKind, Purpose, TokenMeter
-from btcopilot.schema import Person
+from btcopilot.models import Change, Discussion, ModelCall, Observation, ObservationKind, Purpose, TokenMeter
+from btcopilot.schema import Cluster, Person
 from btcopilot.tests.conftest import Model, calling, csrf_token, version
 from btcopilot.tests.test_casereport import card, cards
 from btcopilot.tests.test_impressions import impress
@@ -162,7 +162,7 @@ def test_the_timeline_says_what_put_the_report_out_of_date(web, written, family)
 FIVE = [
     (ToolName.AddImpression, {"text": f"Guess for {name}.", "state": "raised",
                               "evidence": [{"kind": "person", "id": "1"}], "case_report_card": name})
-    for name in ("main_guess", "coach_guess", "own_part", "choice", "work_on")
+    for name in ("main_guess", "coach_guess", "own_part", "work_on")
 ]
 
 
@@ -181,10 +181,10 @@ def test_a_rewrite_writes_every_card_again_in_one_model_call(web, past, written,
     turn_id = response.get_json()["id"]
     assert web.get(f"/app/case-report-rewrites/{turn_id}").get_json() == {"id": turn_id, "state": "done"}
     done = turnlog.read_from(turn_id, 0)[-1][1]
-    assert done["cards"] == ["main_guess", "coach_guess", "own_part", "choice", "work_on"]
+    assert done["cards"] == ["main_guess", "coach_guess", "own_part", "work_on"]
     now = cards(family)
     assert now["i1"] is None
-    assert sorted(v for v in now.values() if v) == ["choice", "coach_guess", "main_guess", "own_part", "work_on"]
+    assert sorted(v for v in now.values() if v) == ["coach_guess", "main_guess", "own_part", "work_on"]
     assert model.offered == [["add_impression"]]
     assert ModelCall.query.filter_by(purpose=Purpose.Coach, turn_id=turn_id).count() == 1
     assert TokenMeter.query.filter_by(user_id=family.user_id).count() == 1
@@ -283,6 +283,127 @@ def test_a_rewrite_of_a_family_the_reader_cannot_open_is_not_found(web):
     assert web.get("/app/case-report-rewrites/nobody").status_code == 404
 
 
+def brought(statement, text="“My grandmother raised me.”"):
+    return (ToolName.AddImpression, {"text": text, "state": "raised", "case_report_card": "what_brought",
+                                     "evidence": [{"kind": "statement", "id": str(statement)}]})
+
+
+def guessed(text, card="coach_guess", evidence=({"kind": "person", "id": "1"},)):
+    return (ToolName.AddImpression, {"text": text, "state": "raised", "case_report_card": card,
+                                     "evidence": list(evidence)})
+
+
+def texts(family) -> dict:
+    return {q["case_report_card"]: q["text"] for q in stored(family).values() if q.get("case_report_card")}
+
+
+def test_a_rewrite_reads_one_summary_per_conversation_and_the_first_ones_opening(web, past, written, family):
+    # R-0850
+    db.session.get(Discussion, past["session"]).summary = "Ruth raised the person."
+    db.session.commit()
+    model = Model(calling(*FIVE))
+    rewrite(web, model)
+
+    opening = model.histories[0][0]["content"]
+    assert "Ruth raised the person." in opening.split(casereport.SUMMARIES)[1]
+    raw = opening.split(casereport.OPENING)[1]
+    assert f"[message {past['user']}" in raw and "My grandmother raised me." in raw
+    assert len(raw) <= casereport.OPENING_CHARS + len(raw.splitlines()) + 1
+
+
+def test_a_rewrite_writes_a_summary_for_a_conversation_with_none(web, past, written, family):
+    # R-0850
+    db.session.get(Discussion, past["session"]).summary = None
+    db.session.commit()
+    with patch.object(Discussion, "update_summary", autospec=True,
+                      side_effect=lambda d, meter: setattr(d, "summary", "Written now.")) as summarized:
+        model = Model(calling(*FIVE))
+        rewrite(web, model)
+
+    assert summarized.call_count == 1
+    assert "Written now." in model.histories[0][0]["content"]
+
+
+def test_what_brought_is_written_from_the_persons_own_message_and_then_no_opening_is_read(web, past, written, family):
+    # R-0850
+    rewrite(web, Model(calling(brought(past["user"]), *FIVE)))
+
+    assert texts(family)["what_brought"] == "“My grandmother raised me.”"
+    model = Model(calling(*FIVE))
+    rewrite(web, model)
+    assert casereport.OPENING not in model.histories[0][0]["content"]
+
+
+def test_what_brought_resting_on_no_message_of_the_person_is_refused(web, past, written, family):
+    # R-0850
+    rewrite(web, Model(calling(guessed("They came about sleep.", "what_brought"))))
+
+    assert "what_brought" not in texts(family)
+    refused = Observation.query.filter_by(kind=ObservationKind.ToolRefused).one()
+    assert "statement" in refused.detail["refusal"]
+
+
+def test_a_card_giving_a_cause_is_asked_for_again_once(web, past, written, family):
+    # R-0850, R-0569
+    model = Model(calling(guessed("Your sleep went because your mother fell ill.")),
+                  calling(guessed("Your sleep went the winter your mother fell ill.")))
+    rewrite(web, model)
+
+    assert len(model.histories) == 2
+    (result,) = model.histories[1][-1]["content"]
+    assert (result["is_error"], "because" in result["content"]) == (True, True)
+    assert texts(family)["coach_guess"] == "Your sleep went the winter your mother fell ill."
+
+
+def test_a_card_giving_a_cause_twice_is_written_without_that_sentence(web, past, written, family):
+    # R-0850, R-0569
+    why = guessed("Your sleep and your mother's illness came the same winter. That is why you pulled away.")
+    rewrite(web, Model(calling(why), calling(why)))
+
+    assert texts(family)["coach_guess"] == "Your sleep and your mother's illness came the same winter."
+
+
+@pytest.fixture
+def grouped(family, written):
+    data = family.get_diagram_data()
+    data.clusters.append(asdict(Cluster(id="c1", title="Ada's illness", summary="", eventIds=[int(written)])))
+    family.set_diagram_data(data)
+    db.session.commit()
+    return "c1"
+
+
+def test_the_coach_guess_gives_for_and_against_each_cluster_it_rests_on(web, past, grouped, family):
+    # R-0850
+    text = "Distance between you and your mother, 2004.\nFor c1: the sleep trouble began that autumn.\nAgainst c1: one event."
+    rewrite(web, Model(calling(guessed(text, evidence=[{"kind": "cluster", "id": grouped}]))))
+
+    assert texts(family)["coach_guess"] == text
+
+
+def test_a_for_or_against_on_a_cluster_the_guess_does_not_rest_on_is_refused(web, past, grouped, family):
+    # R-0850
+    rewrite(web, Model(calling(guessed("Distance, 2004.\nFor c9: nothing."))))
+
+    assert "coach_guess" not in texts(family)
+    assert "c9" in Observation.query.filter_by(kind=ObservationKind.ToolRefused).one().detail["refusal"]
+
+
+def test_the_choice_is_written_on_the_part_card_with_the_other_way_and_never_on_its_own(web, past, written, family):
+    # R-0850
+    part = "In 2004 you stopped calling your mother.\nOther way: could contact have stayed light?"
+    rewrite(web, Model(calling(guessed(part, "own_part"), guessed("You could have called.", "choice"))))
+
+    assert texts(family) == {"main_guess": FELL, "own_part": part}
+
+
+def test_what_to_work_on_carries_the_prognosis_and_the_aim(web, past, written, family):
+    # R-0850
+    work = "More contact with your mother.\nPrognosis: trouble may come again near the next loss.\nAim: call her weekly"
+    rewrite(web, Model(calling(guessed(work, "work_on"))))
+
+    assert texts(family)["work_on"] == work
+
+
 def catch_up(flask_app, *args, model=None) -> list[dict]:
     with patch("btcopilot.admin.casereport.model_for", return_value=model or Model()):
         result = flask_app.test_cli_runner().invoke(admin, ["case-report", "rewrite", *args, "--json"])
@@ -309,7 +430,7 @@ def test_the_catch_up_writes_the_plan_and_names_the_changes_undo_takes_back(
     plan = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*FIVE)))[0]["plan"]
     (done,) = catch_up(flask_app, "--apply", "--plan", plan)
 
-    assert done["cards"] == "main_guess, coach_guess, own_part, choice, work_on"
+    assert done["cards"] == "main_guess, coach_guess, own_part, work_on"
     assert cards(family)["i1"] is None
     result = flask_app.test_cli_runner().invoke(
         admin, ["diagrams", "undo", str(family.id), *done["changes"].split(), "--yes"]
@@ -345,7 +466,7 @@ def test_the_catch_up_saves_requests_for_the_subscription_and_takes_its_answers(
     (answers / f"case-report-{family.id}.json").write_text(json.dumps({"model": "m", "content": blocks}))
     rows = catch_up(flask_app, "--plans", str(tmp_path / "plans"), "--saved-answers", str(answers))
 
-    assert len(rows) == 5
+    assert len(rows) == 4
     assert ModelCall.query.filter_by(purpose=Purpose.Backfill).count() == 0
 
 

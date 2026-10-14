@@ -10,6 +10,7 @@ event on the turn log; the page polls its state.
 
 import enum
 import logging
+import re
 import uuid
 
 from btcopilot import clock, coverage, extensions, profile, record, turnlog
@@ -23,6 +24,7 @@ from btcopilot.models import (
     Author,
     Change,
     Diagram,
+    Discussion,
     Observation,
     ObservationKind,
     Purpose,
@@ -30,11 +32,14 @@ from btcopilot.models import (
     User,
 )
 from btcopilot.prompts import case_report_rewrite, get_agent_prompt
-from btcopilot.questions import sessions
+from btcopilot.questions import order, sessions
 from btcopilot.recordtext import note_line, on_map, outline, question_order
 from btcopilot.schema import (
+    CardLine,
     CaseReportCard,
+    CauseWord,
     DiagramData,
+    EvidenceKind,
     EventKind,
     ItemKind,
     QuestionState,
@@ -59,6 +64,15 @@ CLOSED = "CLOSED QUESTIONS"
 BROKE = "The case report could not be written again just now."
 REFUSED = "The case report could not be written again from this diagram."
 MOVED = "The diagram changed while the case report was being written; refresh it again."
+SUMMARIES = "ONE SUMMARY PER CONVERSATION (oldest first)"
+OPENING = "THE OPENING OF THE FIRST CONVERSATION"
+# How much of the first conversation the rewrite reads raw, when no note on
+# the what_brought card holds what brought the person in (R-0850).
+OPENING_CHARS = 2000
+CAUSED = re.compile(r"\b(" + "|".join(w.value for w in CauseWord) + r")\b", re.IGNORECASE)
+SENTENCE = re.compile(r"(?<=[.?!])\s+")
+# A cluster's slot on the coach's guess: "For c3: ..." or "Against c3: ...".
+SLOT = re.compile(rf"^({CardLine.For.value}|{CardLine.Against.value}) (\S+):")
 
 
 class State(enum.StrEnum):
@@ -232,9 +246,38 @@ def checked(call) -> str | None:
         return f"add_impression may not give {', '.join(extra)} here"
     if call.args.get("state") != QuestionState.Raised.value:
         return "a guess on the case report is raised"
-    if call.args.get(CARD) not in {c.value for c in CaseReportCard}:
-        return f"no case report card {call.args.get(CARD)!r}"
+    card = call.args.get(CARD)
+    if card not in {c.value for c in CaseReportCard}:
+        return f"no case report card {card!r}"
+    if card == CaseReportCard.Choice:
+        return "the choice is part of own_part now: state the other way it could have gone there"
+    evidence = call.args.get("evidence") or []
+    if card == CaseReportCard.WhatBrought and not any(
+        one.get("kind") == EvidenceKind.Statement for one in evidence
+    ):
+        return "what_brought rests on the person's own message: give it as a statement"
+    clusters = {str(one.get("id")) for one in evidence if one.get("kind") == EvidenceKind.Cluster}
+    for line in (call.args.get("text") or "").splitlines():
+        slot = SLOT.match(line)
+        if slot and slot.group(2) not in clusters:
+            return f"{slot.group(1)} {slot.group(2)} names a cluster the card does not rest on"
     return None
+
+
+def caused(call) -> str | None:
+    """The first word in a card's text that gives a cause or a why, or None (R-0850)."""
+    found = CAUSED.search(call.args.get("text") or "")
+    return found and found.group(0)
+
+
+def uncaused(text: str) -> str:
+    """The text with every sentence that gives a cause or a why taken out."""
+    kept = []
+    for line in text.splitlines():
+        sentences = [s for s in SENTENCE.split(line) if not CAUSED.search(s)]
+        if sentences:
+            kept.append(" ".join(sentences))
+    return "\n".join(kept)
 
 
 def box(diagram: Diagram, user: User, turn_id: str) -> Toolbox:
@@ -249,9 +292,40 @@ def box(diagram: Diagram, user: User, turn_id: str) -> Toolbox:
     )
 
 
-def asked(diagram: Diagram, user: User, toolbox: Toolbox) -> tuple[str, list[dict]]:
+def summaries(diagram: Diagram, meter: Metered) -> str:
+    """One summary per conversation, the stored one, written now for a
+    conversation that has none (R-0850)."""
+    lines = []
+    for n, discussion in enumerate(sessions(diagram), 1):
+        if not discussion.summary:
+            discussion.update_summary(meter)
+        day = discussion.created_at.date().isoformat()
+        lines.append(f"{n}. {day}: {discussion.summary}")
+    return "\n".join(lines)
+
+
+def opening(data: DiagramData, first: Discussion) -> str:
+    """The first conversation's opening, each message by its number, up to
+    OPENING_CHARS; nothing when a note on the what_brought card already
+    holds what brought the person in (R-0850)."""
+    if any(q.get(CARD) == CaseReportCard.WhatBrought for q in data.questions):
+        return ""
+    said, size = [], 0
+    for statement in sorted(first.statements, key=order):
+        who = "Person" if statement.speaker_id == first.chat_user_speaker_id else "Coach"
+        line = f"[message {statement.id}, {statement.created_at.date().isoformat()}] {who}: {statement.text}"
+        said.append(line[: OPENING_CHARS - size])
+        size += len(line)
+        if size >= OPENING_CHARS:
+            break
+    return "\n".join(said)
+
+
+def asked(diagram: Diagram, user: User, toolbox: Toolbox, meter: Metered) -> tuple[str, list[dict]]:
     """The one call's system prompt, the coach's own, and its opening message
-    with every event's words and notes, so it reads nothing."""
+    with every event's words and notes, one summary per conversation, and,
+    with no note on what brought the person, the first conversation's opening
+    read raw, so it reads nothing (R-0850)."""
     data = diagram.get_diagram_data()
     own = profile.own(data)
     system = get_agent_prompt(
@@ -260,7 +334,11 @@ def asked(diagram: Diagram, user: User, toolbox: Toolbox) -> tuple[str, list[dic
         coverage=coverage.block(data),
     )
     events, _ = toolbox.call(ToolName.ReadEvents, {"fields": [ReadField.Words, ReadField.Notes]})
-    return system, [{"role": "user", "content": f"{case_report_rewrite()}\n\nEVENTS\n{events}"}]
+    content = f"{case_report_rewrite()}\n\nEVENTS\n{events}\n\n{SUMMARIES}\n{summaries(diagram, meter)}"
+    raw = opening(data, sessions(diagram)[0])
+    if raw:
+        content += f"\n\n{OPENING}\n{raw}"
+    return system, [{"role": "user", "content": content}]
 
 
 def wrote(diagram: Diagram, toolbox: Toolbox, calls: list) -> list[str]:
@@ -294,25 +372,60 @@ class Moved(Exception):
     """The family changed while the model wrote, so its cards would be old."""
 
 
-def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
-    """One model call writes every card again (R-0825), the report held
-    through every piece of it. Cards read from a family that changed during
-    the call are not written, so the report stays out of date (R-0826)."""
-    toolbox = box(diagram, user, turn_id)
-    version = diagram.version
-    system, messages = asked(diagram, user, toolbox)
+def _called(diagram: Diagram, meter: Metered, system: str, messages: list[dict], turn_id: str):
+    """One model call, the report held through every piece of it."""
     words = meter.turn(system, messages, offered(), turn_id)
     while True:
         turnlog.hold(diagram.id, turn_id)
         try:
             next(words)
         except StopIteration as stop:
-            turn = stop.value
-            break
+            return stop.value
+
+
+def _again(turn, caught: dict) -> list[dict]:
+    """The model's answer and what each call came to: a card that gave a
+    cause or a why is refused, the rest stand."""
+    results = [
+        {
+            "type": "tool_result",
+            "tool_use_id": call.id,
+            "content": (
+                f"refused: {caught[call.id]!r} gives a cause or a why; state the pattern, "
+                "what happened and when, and give this card again"
+                if call.id in caught
+                else "kept"
+            ),
+            "is_error": call.id in caught,
+        }
+        for call in turn.calls
+    ]
+    return [{"role": "assistant", "content": turn.blocks}, {"role": "user", "content": results}]
+
+
+def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
+    """One model call writes every card again (R-0825). A card that gives a
+    cause or a why is refused and asked for once more; given again with one,
+    it is written with those sentences taken out (R-0850). Cards read from a
+    family that changed during the call are not written, so the report stays
+    out of date (R-0826)."""
+    toolbox = box(diagram, user, turn_id)
+    version = diagram.version
+    system, messages = asked(diagram, user, toolbox, meter)
+    turn = _called(diagram, meter, system, messages, turn_id)
+    calls = turn.calls
+    caught = {call.id: word for call in calls if (word := caused(call))}
+    if caught:
+        retry = _called(diagram, meter, system, messages + _again(turn, caught), turn_id)
+        calls = [c for c in calls if c.id not in caught] + retry.calls
+    for call in calls:
+        if caused(call):
+            call.args = {**call.args, "text": uncaused(call.args.get("text") or "")}
+    calls = [c for c in calls if c.args.get("text")]
     db.session.refresh(diagram)
     if diagram.version != version:
         raise Moved(f"diagram {diagram.id} moved from version {version} to {diagram.version}")
-    return wrote(diagram, toolbox, turn.calls)
+    return wrote(diagram, toolbox, calls)
 
 
 def _observe(diagram_id: int, turn_id: str, kind: ObservationKind, detail: dict) -> None:
