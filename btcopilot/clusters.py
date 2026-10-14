@@ -736,9 +736,10 @@ def _screen(
     return Screened(kept=kept, faults=faults, absorbed=absorbed)
 
 
-def _stored(data: DiagramData) -> list[dict]:
-    """The stored clusters still drawn: one set aside stays in the diagram but
-    is never handed back or drawn [Oracle: R-0850]."""
+def drawn(data: DiagramData) -> list[dict]:
+    """The diagram's clusters every reader shows: one set aside stays in
+    `data.clusters`, which only regrouping reads, but is never drawn, so the
+    one axis holds no overlap [Oracle: R-0845, R-0850]."""
     return [
         cluster
         for cluster in data.clusters
@@ -746,6 +747,8 @@ def _stored(data: DiagramData) -> list[dict]:
         and cluster.get("id") is not None
         and not cluster.get("setAside")
     ]
+
+
 
 
 def _judged(
@@ -757,7 +760,7 @@ def _judged(
     always handed back, as they drew them [Oracle: R-0850, R-0844]."""
     when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
     kept, failing = {}, []
-    for cluster in _stored(data):
+    for cluster in drawn(data):
         dates = [when[i] for i in cluster.get("eventIds") or [] if i in when]
         span = span_of(dates)
         name = _said(_title(cluster), span) if span else repr(_title(cluster))

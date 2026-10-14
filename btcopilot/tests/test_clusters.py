@@ -1178,3 +1178,13 @@ def test_a_stored_period_is_judged_against_the_data():
     assert (run.toFirst, run.toLast, run.supported) == (-90, 214, True)
     theirs = clusters.judge({"eventIds": [1, 3, 5], "source": "user"}, SLEEP)
     assert not theirs.supported
+
+
+def test_a_set_aside_cluster_stays_stored_but_is_never_drawn():
+    # R-0845, R-0850
+    aside = asdict(already(1, 2, 3, cluster_id="c1"))
+    aside["setAside"] = True
+    data = record(*RECORD.events, clusters=[already(4, 5, 6, cluster_id="c2")])
+    data.clusters.append(aside)
+    assert [c["id"] for c in clusters.drawn(data)] == ["c2"]
+    assert [c["id"] for c in data.clusters] == ["c2", "c1"]
