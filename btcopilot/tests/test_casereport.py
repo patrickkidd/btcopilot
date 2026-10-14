@@ -207,20 +207,19 @@ def test_the_book_passages_are_a_404_to_one_who_may_not(web, test_user_2, passag
 
 
 def test_the_case_report_fixture_holds_every_card_and_the_persons_own_answer(flask_app):
-    # R-0708, R-0709
+    # R-0708, R-0709, R-0850
     diagram = install("case-report").free_diagram
     shown = {q["id"]: q for q in questions.asked(diagram.id, diagram.get_diagram_data())}
 
     assert {i: q["case_report_card"] for i, q in shown.items() if q["case_report_card"]} == {
         "i1": "main_guess",
         "i2": "own_part",
-        "i3": "choice",
         "i4": "work_on",
         "i5": "work_on",
         "i6": "coach_guess",
         "q1": "own_part",
-        "q2": "choice",
     }
+    assert shown["i2"]["text"].splitlines()[1].startswith("Other way: ")
     assert "i7" not in shown
     assert shown["q1"]["answer"]["text"] == CASE_REPORT_CHAT[2][1]
     card(diagram, "i6", "main_guess")
