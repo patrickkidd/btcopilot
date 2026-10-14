@@ -8,7 +8,7 @@ import { stateFor } from "./setup";
  * takes minutes. */
 
 const SENTENCE = "Delphine's 1995 diagnosis was added after the coach wrote this report.";
-const WRITTEN = ["main", "guesses", "own_part", "choice", "work_on"];
+const WRITTEN = ["main", "brought", "guesses", "own_part", "work_on"];
 
 /** The report's record, out of date until `current` says otherwise. */
 async function answer(page: Page, current: () => boolean): Promise<void> {
@@ -111,7 +111,7 @@ test.describe("a case report out of date", () => {
     await sheet(page).getByText("Refresh the report").click();
     await expect(sheet(page)).toBeHidden();
     for (const card of WRITTEN) await expect(page.locator(`#case-body .level[data-card="${card}"]`)).toHaveClass(/\bdim\b/);
-    await expect(page.locator('#case-body .level[data-card="brought"]')).not.toHaveClass(/\bdim\b/);
+    await expect(page.locator('#case-body .level[data-card="family"]')).not.toHaveClass(/\bdim\b/);
     await expect(line(page)).toHaveText("The coach is rewriting its five cards from the diagram as it stands now.");
     await expect(line(page)).toHaveCount(0, { timeout: 15_000 });
     await expect(dimmed(page)).toHaveCount(0);
