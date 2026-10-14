@@ -39,7 +39,15 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
-from btcopilot.tests.conftest import Model, called, csrf_token, said, version, wrote
+from btcopilot.tests.conftest import (
+    Model,
+    called,
+    calling,
+    csrf_token,
+    said,
+    version,
+    wrote,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -179,6 +187,37 @@ def test_a_turn_that_changes_no_event_does_not_regroup(discussion, family):
         ).run()
     detect.assert_not_called()
     assert clusters_of(family) == {}
+
+
+def test_a_turn_that_answers_when_the_most_was_going_on_regroups(discussion, family):
+    # R-0853
+    discussion.chat_user_speaker_id = discussion.speakers[0].id
+    db.session.commit()
+    with detects(("After the move", [10, 11, 12])) as detect:
+        CoachTurn(
+            discussion,
+            "The worst was 1994, the year we moved.",
+            purpose=Purpose.Coach,
+            model=Model(
+                calling(
+                    (
+                        ToolName.AddQuestion,
+                        {
+                            "text": "When in your life was the most going on?",
+                            "kind": "fact",
+                            "state": "resolved",
+                            "outcome": "answered",
+                            "fact": "most_going_on",
+                            "item_kind": "person",
+                            "item_id": "1",
+                        },
+                    )
+                ),
+                said("That year stands out."),
+            ),
+        ).run()
+    detect.assert_called_once()
+    assert [c["name"] for c in clusters_of(family).values()] == ["After the move"]
 
 
 def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, family):

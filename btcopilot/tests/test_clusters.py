@@ -221,6 +221,38 @@ def test_a_birth_long_before_anything_is_recorded_is_scaffolding():
     assert grouped(data) == [[5, 2, 3, 4]]
 
 
+def test_the_recorded_period_starts_at_the_first_shift():
+    # R-0038, R-0037
+    """A birth years before the first shift is held out; an early marriage and
+    a birth months before the shift are not."""
+    data = record(
+        asdict(
+            Event(id=1, kind=EventKind.Married, person=1, spouse=2, dateTime="1950-01-01")
+        ),
+        asdict(Event(id=2, kind=EventKind.Birth, child=3, dateTime="1950-06-01")),
+        asdict(Event(id=3, kind=EventKind.Birth, child=4, dateTime="1952-01-01")),
+        moment(4, "1952-06-01", person=3),
+    )
+    assert [e.id for e in joinable(data)] == [1, 3, 4]
+
+
+def test_a_change_in_the_family_among_the_shifts_opens_their_period():
+    # R-0375, R-0850
+    """The marriage between the shifts belongs to their run and is read as
+    the period's opening; the shifts are what the period is about."""
+    data = record(
+        moment(1, "1994-06-01", person=1),
+        asdict(
+            Event(id=2, kind=EventKind.Married, person=1, spouse=2, dateTime="1994-09-01")
+        ),
+        moment(3, "1994-11-01", person=1),
+        moment(4, "1995-02-01", person=2, symptom=VariableShift.Up),
+    )
+    assert grouped(data) == [[1, 2, 3, 4]]
+    read = clusters.judge({"eventIds": [1, 2, 3, 4]}, data)
+    assert (read.opening, read.shiftIds) == (2, [1, 3, 4])
+
+
 def test_any_change_in_the_family_may_open_a_run_and_trouble_may_come_first():
     # R-0850
     """No kind list seeds or filters a run: a run is seeded at three shifts

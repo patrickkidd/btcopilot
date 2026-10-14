@@ -11,14 +11,15 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
 
 ## The formulation
 
-1. A cluster is a run of chronic anxiety above the family's average level, opened by a
-   disturbance of the balance of a relationship system, bound through the family's patterns,
-   and ending at a new equilibrium that may include a symptom. [Oracle: R-0850] FE 1373, 1375,
-   1389, 921, 1919, 1379.
-2. The cluster is the formulation's evidence in time, not the formulation. [Oracle: R-0850]
-3. The coach's guess states the pattern: which way of binding the anxiety carried it (Kerr's
-   three kinds of dysfunction: illness in a spouse, marital conflict, impairment of a child),
-   through whom, and when. [Oracle: R-0850] FE 1905.
+1. A cluster is a stretch when the family's chronic anxiety runs above its usual level. A
+   disturbance in its relationships opens it, the family's patterns bind it, and it ends at a
+   new balance, which may hold a symptom. [Oracle: R-0850] FE 1373, 1375, 1389, 921, 1919,
+   1379.
+2. A cluster is evidence in time for the formulation; it is not the formulation itself.
+   [Oracle: R-0850]
+3. The coach's guess states the pattern: which of Kerr's three kinds of dysfunction carried the
+   anxiety (illness in a spouse, marital conflict, impairment of a child), through whom, and
+   when. [Oracle: R-0850] FE 1905.
 4. Over- and under-functioning between two people lies behind illness in a spouse.
    [Oracle: R-0850] FE 1979.
 5. Distance is a further way anxiety is bound. [Oracle: R-0850] FE 957.
@@ -26,9 +27,9 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
    [Oracle: R-0850] FTiCP 1312, 2036.
 7. The event that opens a cluster matters through the relationships it unbalances, more than
    through the event itself. [Oracle: R-0850] FE 1377.
-8. A cluster may open at any change in who is in the family or in how a key member functions:
-   an addition, a loss, a threatened loss, a departure, a marriage, a cutoff. [Oracle: R-0850]
-   FTiCP 2470, 2474.
+8. A cluster may open when someone joins or leaves the family, or when a key member's
+   functioning changes: an addition, a loss, a threatened loss, a departure, a marriage, a
+   cutoff. [Oracle: R-0850] FTiCP 2470, 2474.
 9. Families hide the connection between such events and react with denial when it is shown, so
    the app shows the dates side by side and lets the person see it. [Oracle: R-0850] FTiCP 2474,
    2482.
@@ -80,7 +81,8 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
 
 - A1. A cluster is the app's opinion that shifts across the family belong to one span of time,
   stored with its events and who proposed it.
-- A2. A cluster may open at a change in who is in the family or in how a key member functions.
+- A2. A cluster may open when someone joins or leaves the family, or a key member's
+  functioning changes.
 - A3. A cluster may reach months to years after a loss; the gaps are measured and kept as data.
 - A4. Its members are the shifts of anyone in the extended family.
 - A5. Which losses matter is the app's judgement of the lost person's importance, never a fixed

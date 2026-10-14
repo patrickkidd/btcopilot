@@ -552,11 +552,15 @@ class CoachTurn:
             _log.warning(f"Turn {self.turn_id} left a sitting's title as it was: {failed}")
 
     def _regroup(self, events: list[dict]) -> list[str]:
-        """Re-group the line when the turn has moved an event, before the coach
-        speaks, so the grouping it points at is stored. Returns the sentences
-        saying what changed, for the coach to read in the tool answer."""
+        """Re-group the line when the turn has moved an event or changed a
+        question, before the coach speaks, so the grouping it points at is
+        stored. A question regroups only when it is an answer to when the most
+        was going on, which the cache key holds [Oracle: R-0853]. Returns the
+        sentences saying what changed, for the coach to read in the tool
+        answer."""
         if not any(
-            delta["item_kind"] == ItemKind.Event.value for delta in self.toolbox.deltas
+            delta["item_kind"] in (ItemKind.Event.value, ItemKind.Question.value)
+            for delta in self.toolbox.deltas
         ):
             return []
         # Refused answers are handled inside the regrouping; what reaches here is
