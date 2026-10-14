@@ -90,12 +90,12 @@ def test_an_impression_added_on_a_card_is_on_it_and_on_the_coachs_map(family):
             "text": TENSE,
             "evidence": [{"kind": "person", "id": "1"}],
             "state": "raised",
-            "case_report_card": "what_brought",
+            "case_report_card": "main_guess",
         },
     )
 
-    assert cards(family) == {"i1": "what_brought"}
-    assert "card=what_brought" in box(family).call(ToolName.ReadImpressions, {})[0]
+    assert cards(family) == {"i1": "main_guess"}
+    assert "card=main_guess" in box(family).call(ToolName.ReadImpressions, {})[0]
 
 
 def test_a_question_goes_only_on_the_own_part_card(family):

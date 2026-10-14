@@ -1008,7 +1008,7 @@ BROUGHT = (
     f"{CaseReportCard.WhatBrought.value} rests on the person's own message: give one "
     "of their messages as a statement"
 )
-BROUGHT_PLAIN = "What brought the person in has to rest on something they said."
+BROUGHT_PLAIN = "What brought the person in has to rest on a statement they made."
 
 
 class ToolError(Exception):

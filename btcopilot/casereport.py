@@ -247,13 +247,7 @@ def checked(call) -> str | None:
     card = call.args.get(CARD)
     if card not in {c.value for c in CaseReportCard}:
         return f"no case report card {card!r}"
-    if card == CaseReportCard.Choice:
-        return "the choice is part of own_part now: state the other way it could have gone there"
     evidence = call.args.get("evidence") or []
-    if card == CaseReportCard.WhatBrought and not any(
-        one.get("kind") == EvidenceKind.Statement for one in evidence
-    ):
-        return "what_brought rests on the person's own message: give it as a statement"
     clusters = {str(one.get("id")) for one in evidence if one.get("kind") == EvidenceKind.Cluster}
     for line in (call.args.get("text") or "").splitlines():
         slot = SLOT.match(line)
