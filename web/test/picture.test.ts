@@ -474,6 +474,12 @@ describe("the drawing on a cluster's page", () => {
     expect(new Set(p.dots.map((d) => d.y)).size).toBe(1);
   });
 
+  // R-0850
+  it("draws the key line at the opening event the cluster stores, before any other rule", () => {
+    const p = place(events, ClusterView.Row, 300, 3);
+    expect(p.key).toEqual({ x: p.dots[2].x, label: "event 3" });
+  });
+
   // R-0213, R-0850
   it("gives each person a lane with their name, the key line across every lane", () => {
     const p = place(events, ClusterView.Lanes, 300);

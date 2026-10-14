@@ -565,10 +565,13 @@ const SHIFT_COLOURS: [keyof TimelineEvent, string][] = [
 export const colourOf = (event: TimelineEvent) =>
   (event.kind === EventKind.Shift && SHIFT_COLOURS.find(([field]) => event[field])?.[1]) || "var(--ink)";
 
-/** The cluster's key event: its first change in who is in the family or how
- * they are bound to each other, which the line is drawn at. */
-export const keyOf = (events: TimelineEvent[]) =>
-  events.find((e) => e.kind !== EventKind.Shift && e.kind !== EventKind.Noted) ?? null;
+/** The cluster's key event, which the line is drawn at: the opening event the
+ * cluster stores (R-0850), or when it stores none, its first change in who is
+ * in the family or how they are bound to each other. */
+export const keyOf = (events: TimelineEvent[], opening: number | null = null) =>
+  (opening === null
+    ? events.find((e) => e.kind !== EventKind.Shift && e.kind !== EventKind.Noted)
+    : events.find((e) => e.id === opening)) ?? null;
 
 const LANE_H = 30;
 const NAME_W = 64;
@@ -587,7 +590,7 @@ export interface Placed {
 }
 
 /** Where each dated event of a cluster lands in a drawing `width` wide. */
-export function place(events: TimelineEvent[], view: ClusterView, width: number): Placed {
+export function place(events: TimelineEvent[], view: ClusterView, width: number, opening: number | null = null): Placed {
   const dated = events.filter((e) => dateOf(e)).sort((a, b) => a.dateTime!.localeCompare(b.dateTime!));
   const names = view === ClusterView.Lanes ? [...new Set(dated.map((e) => e.person_name))] : [""];
   const left = (view === ClusterView.Lanes ? NAME_W : 0) + 8;
@@ -611,7 +614,7 @@ export function place(events: TimelineEvent[], view: ClusterView, width: number)
       hollow: e.dateCertainty === DateCertainty.Approximate,
     };
   });
-  const key = keyOf(dated);
+  const key = keyOf(dated, opening);
   return {
     dots,
     key: key && { x: x(key), label: cut(key.label, SHORT) },
@@ -623,9 +626,9 @@ export function place(events: TimelineEvent[], view: ClusterView, width: number)
 
 /** The cluster's events as dots by date, the key event's line through them,
  * the years at the ends, and the button that swaps one row for lanes. */
-export function drawing(events: TimelineEvent[], view: ClusterView, width: number): string {
+export function drawing(events: TimelineEvent[], view: ClusterView, width: number, opening: number | null = null): string {
   if (!events.some((e) => dateOf(e))) return "";
-  const p = place(events, view, width);
+  const p = place(events, view, width, opening);
   const f = (n: number) => n.toFixed(1);
   const anchor = (x: number) => (x > width * 0.7 ? "end" : x < width * 0.3 ? "start" : "middle");
   const marks =
@@ -1186,7 +1189,7 @@ export class Picture {
       .sort((a, b) => (a.dateTime ?? "").localeCompare(b.dateTime ?? ""));
     const moments = events.map((e) => ({ year: this.yearOf(e), label: e.label }));
     // the page's words sit between its 16px left and its 52px right, clear of the cross
-    const draw = drawing(events, storedView(), this.width - 68);
+    const draw = drawing(events, storedView(), this.width - 68, cluster.openingEventId ?? null);
     this.card(aboutMarkup(why, fullYears(cluster.start, cluster.end), moments, draw));
   }
 
