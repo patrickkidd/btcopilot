@@ -104,7 +104,7 @@ def catch_up(flask_app, *args, model=None):
             admin, ["questions", "catch-up", *args, "--json"]
         )
     assert result.exit_code == 0, result.output
-    return json.loads(result.output)
+    return json.loads(result.stdout)
 
 
 def dry(flask_app, tmp_path, *turns) -> dict:

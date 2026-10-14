@@ -48,13 +48,13 @@ def backfill(flask_app, *args, model=None):
 def dry(flask_app, tmp_path, *turns) -> list[dict]:
     result = backfill(flask_app, "--plans", str(tmp_path), model=Model(*turns))
     assert result.exit_code == 0, result.output
-    return json.loads(result.output)
+    return json.loads(result.stdout)
 
 
 def apply(flask_app, rows) -> list[dict]:
     result = backfill(flask_app, "--apply", "--plan", rows[0]["plan"])
     assert result.exit_code == 0, result.output
-    return json.loads(result.output)
+    return json.loads(result.stdout)
 
 
 def test_a_dry_run_shows_and_saves_the_cards_and_writes_nothing(
@@ -164,7 +164,7 @@ def test_a_guess_raised_after_the_cards_is_carded_and_the_cards_set_stay(
     )
     result = backfill(flask_app, "--plans", str(tmp_path), model=model)
     assert result.exit_code == 0, result.output
-    rows = json.loads(result.output)
+    rows = json.loads(result.stdout)
     assert "are on no card: i3." in model.histories[0][0]["content"]
     assert [bool(r.get("refused")) for r in rows] == [False, True]
 

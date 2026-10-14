@@ -18,7 +18,7 @@ def test_set_rejects_an_unknown_model(flask_app, test_user):
 
 def test_shadows_set_names_the_shadow_models_for_everyone(flask_app):
     # R-0637
-    assert json.loads(invoke(flask_app, "shadows", "show").output) == [
+    assert json.loads(invoke(flask_app, "shadows", "show").stdout) == [
         {"model": "sonnet"}
     ]
     invoke(flask_app, "shadows", "set", "sonnet", "opus-5.5")
@@ -34,7 +34,7 @@ def test_set_writes_and_clears_a_persons_model_and_show_names_their_shadows(
     invoke(flask_app, "set", test_user.username, "sonnet-5")
     test_user.set_prefs(shadow_models=["haiku-4.5", "sonnet"])
     db.session.commit()
-    shown = json.loads(invoke(flask_app, "show").output)
+    shown = json.loads(invoke(flask_app, "show").stdout)
     assert shown[1] == {
         "email": test_user.username,
         "model": "sonnet-5",
@@ -44,4 +44,4 @@ def test_set_writes_and_clears_a_persons_model_and_show_names_their_shadows(
     test_user.set_prefs(shadow_models=[])
     db.session.commit()
     assert setting.read(SettingKey.CoachModel, test_user.id) is None
-    assert len(json.loads(invoke(flask_app, "show").output)) == 1
+    assert len(json.loads(invoke(flask_app, "show").stdout)) == 1

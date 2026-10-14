@@ -12,7 +12,7 @@ from btcopilot.schema import Event, Person, asdict, from_dict
 def dates(flask_app, *args) -> list[dict]:
     result = flask_app.test_cli_runner().invoke(admin, ["diagrams", "dates", *args, "--json"])
     assert result.exit_code == 0, (result.output, result.exception)
-    return json.loads(result.output)
+    return json.loads(result.stdout)
 
 
 def test_the_repair_turns_a_hand_edits_qt_date_into_text(flask_app, test_user):

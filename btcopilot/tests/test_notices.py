@@ -54,7 +54,7 @@ def test_sending_delivers_now_to_everyone_it_is_for(
     key, secret = subscribe(test_user, "https://push.example/phone")
     with extensions.mail.record_messages() as outbox:
         result = send("everyone", *flag)
-    assert json.loads(result.output)[0]["people"] == 2
+    assert json.loads(result.stdout)[0]["people"] == 2
     rows = {n.user_id: n for n in Notification.query}
     assert (rows[test_user.id].channel, rows[test_user_2.id].channel) == (
         NotificationChannel.Push,
@@ -121,7 +121,7 @@ def test_the_command_reads_everyone_a_role_or_addresses(
     test_user_2.roles = btcopilot.ROLE_AUDITOR
     db.session.commit()
     people = {
-        to: json.loads(send(to).output)[0]["people"] for to in ("everyone", "auditor")
+        to: json.loads(send(to).stdout)[0]["people"] for to in ("everyone", "auditor")
     }
     people[test_user.username] = json.loads(
         send(test_user.username, "--link", "account", "--until", "2026-10-01").output
@@ -142,7 +142,7 @@ def test_the_command_reads_everyone_a_role_or_addresses(
         ),
     ]
     runner = flask_app.test_cli_runner()
-    listed = json.loads(runner.invoke(admin, ["notice", "list", "--json"]).output)
+    listed = json.loads(runner.invoke(admin, ["notice", "list", "--json"]).stdout)
     assert [(r["to"], r["got"]) for r in listed] == [
         (test_user.username, 1),
         ("auditor", 1),

@@ -36,7 +36,7 @@ def regroup(flask_app, *args) -> list[dict]:
         admin, ["diagrams", "regroup", *args, "--json"]
     )
     assert result.exit_code == 0, result.output
-    return json.loads(result.output)
+    return json.loads(result.stdout)
 
 
 def grouped_now(diagram) -> None:

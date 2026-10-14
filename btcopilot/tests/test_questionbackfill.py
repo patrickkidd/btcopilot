@@ -44,7 +44,7 @@ def backfill(flask_app, *turns, args=("--yes",), group="questions") -> tuple[lis
             admin, [group, "backfill", *args, "--json"]
         )
     assert result.exit_code == 0, result.output
-    return json.loads(result.output), model
+    return json.loads(result.stdout), model
 
 
 def asking(past, text=RUTH, message="reply"):

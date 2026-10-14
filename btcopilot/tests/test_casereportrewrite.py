@@ -474,7 +474,7 @@ def catch_up(flask_app, *args, model=None) -> list[dict]:
     with patch("btcopilot.admin.casereport.model_for", return_value=model or Model()):
         result = flask_app.test_cli_runner().invoke(admin, ["case-report", "rewrite", *args, "--json"])
     assert result.exit_code == 0, result.output
-    return json.loads(result.output)
+    return json.loads(result.stdout)
 
 
 def test_the_catch_up_dry_run_saves_the_plan_and_writes_nothing(flask_app, tmp_path, past, written, family):
