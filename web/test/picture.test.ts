@@ -3,6 +3,7 @@ import {
   CLUSTER_BOOK,
   CLUSTER_BOOK_TITLE,
   ClusterView,
+  clusterPage,
   VIEW_KEY,
   drawing,
   place,
@@ -454,42 +455,72 @@ it("slides the line to put the step's dot in the middle, as near as its ends all
 });
 
 describe("the drawing on a cluster's page", () => {
-  const ev = (id: number, iso: string, over: Partial<TimelineEvent> = {}): TimelineEvent =>
-    ({ id, dateTime: iso, label: `event ${id}`, kind: "shift", person_name: "Ada", dateCertainty: "certain", ...over }) as TimelineEvent;
+  const ev = (id: number, iso: string | null, over: Partial<TimelineEvent> = {}): TimelineEvent =>
+    ({ id, dateTime: iso, label: `event ${id}`, kind: "shift", person: 1, person_name: "Ada", dateCertainty: "certain", ...over }) as TimelineEvent;
   const events = [
     ev(1, "1998-01-01", { symptom: "up" }),
-    ev(2, "1998-07-01", { kind: "death", label: "Grandmother died", person_name: "Rose" }),
-    ev(3, "1999-01-01", { anxiety: "up", dateCertainty: "approximate" }),
+    ev(2, "1998-07-01", { kind: "death", label: "Grandmother died", person: 2, person_name: "Rose" }),
+    ev(3, "1999-01-01", { anxiety: "up", dateCertainty: "approximate", person_name: "Ada → Rose" }),
+    ev(4, "1998-04-01", { kind: "bonded", dateCertainty: "unknown" }),
   ];
+  const people = new Map([[1, "Ada"], [2, "Rose"]]);
 
   // R-0213, R-0850
-  it("puts one row of dots by date, hollow when approximate, the key line at the death", () => {
-    const p = place(events, ClusterView.Row, 300);
-    expect(p.dots.map((d) => Math.round(d.x))).toEqual([8, Math.round(8 + (years("1998-07-01") - years("1998-01-01")) / (years("1999-01-01") - years("1998-01-01")) * 284), 292]);
-    expect(p.dots.map((d) => d.hollow)).toEqual([false, false, true]);
-    expect(p.dots.map((d) => d.colour)).toEqual(["var(--remove)", "var(--ink)", "var(--ask)"]);
-    expect(p.key).toEqual({ x: p.dots[1].x, label: "Grandmother died" });
+  it("puts one row of dots by date, hollow when the date is unsure or unknown", () => {
+    const p = place(events, ClusterView.Row, 300, null);
+    const x = (iso: string) => 8 + ((years(iso) - years("1998-01-01")) / (years("1999-01-01") - years("1998-01-01"))) * 284;
+    expect(p.dots.map((d) => [d.id, Math.round(d.x), d.hollow])).toEqual([
+      [1, 8, false],
+      [4, Math.round(x("1998-04-01")), true],
+      [2, Math.round(x("1998-07-01")), false],
+      [3, 292, true],
+    ]);
+    expect(p.dots.map((d) => d.colour)).toEqual(["var(--remove)", "var(--ink)", "var(--ink)", "var(--ask)"]);
     expect(p.years).toEqual(["1998", "1999"]);
     expect(p.lanes).toEqual([]);
-    expect(new Set(p.dots.map((d) => d.y)).size).toBe(1);
   });
 
   // R-0850
-  it("draws the key line at the opening event the cluster stores, before any other rule", () => {
-    const p = place(events, ClusterView.Row, 300, 3);
-    expect(p.key).toEqual({ x: p.dots[2].x, label: "event 3" });
+  it("draws the key line only at the opening event the cluster stores", () => {
+    expect(place(events, ClusterView.Row, 300, null).key).toBeNull();
+    const p = place(events, ClusterView.Row, 300, 2);
+    expect(p.key).toEqual({ x: p.dots[2].x, label: "Grandmother died" });
   });
 
-  // R-0213, R-0850
-  it("gives each person a lane with their name, the key line across every lane", () => {
-    const p = place(events, ClusterView.Lanes, 300);
+  // R-0850
+  it("gives each person one lane by who they are, a two-person event in its first person's", () => {
+    const p = place(events, ClusterView.Lanes, 300, 2, people);
     expect(p.lanes.map((l) => l.name)).toEqual(["Ada", "Rose"]);
+    expect(p.dots.find((d) => d.id === 3)!.y).toBe(p.lanes[0].y);
+    expect(p.dots.find((d) => d.id === 2)!.y).toBe(p.lanes[1].y);
     expect(p.dots[0].x).toBe(72);
-    expect(p.dots[1].y).toBe(p.lanes[1].y);
-    expect(p.dots[2].y).toBe(p.lanes[0].y);
-    const svg = drawing(events, ClusterView.Lanes, 300);
-    expect(svg).toContain('class="ab-key"');
-    expect(svg).toContain('class="ab-view" data-view="row">One row</button>');
+    expect(drawing(events, ClusterView.Lanes, 300, 2, people)).toContain('class="ab-view" data-view="row">One row</button>');
+  });
+
+  // R-0850
+  it("lists every event of the cluster, the undated ones too", () => {
+    const cluster = { reason: "", summary: null, start: "1998-01-01", end: "1999-01-01", play_ids: [1, 2, 3, 4, 5], openingEventId: null } as unknown as Cluster;
+    const page = clusterPage(cluster, [...events, ev(5, null, { label: "Moved away" })], [], ClusterView.Row, 300);
+    expect(page).toContain("1998–1999 · 5 events");
+    expect(page).toContain('<span class="ab-yr"></span><span class="ab-what">Moved away</span>');
+  });
+
+  // R-0168
+  it("gives every dot a target the picture's tap language answers", () => {
+    const svg = drawing(events, ClusterView.Row, 300, null);
+    expect(svg.match(new RegExp(`data-target="${Target.Dot}"`, "g"))).toHaveLength(4);
+    expect(svg).toContain('data-index="4"');
+  });
+
+  // R-0850
+  it("names under the drawing only the colours in it, and the hollow dot", () => {
+    const legend = drawing(events, ClusterView.Row, 300, null).split('class="ab-span ab-legend">')[1];
+    expect(legend).toContain("symptom");
+    expect(legend).toContain("anxiety");
+    expect(legend).toContain("other events");
+    expect(legend).toContain("hollow: approximate date");
+    expect(legend).not.toContain("functioning");
+    expect(legend).not.toContain("relationship");
   });
 
   // R-0213
@@ -497,7 +528,7 @@ describe("the drawing on a cluster's page", () => {
     expect(storedView()).toBe(ClusterView.Row);
     const kept = new Map<string, string>();
     vi.stubGlobal("localStorage", { getItem: (k: string) => kept.get(k) ?? null, setItem: (k: string, v: string) => kept.set(k, v) });
-    expect(drawing(events, storedView(), 300)).toContain('data-view="lanes">By person</button>');
+    expect(drawing(events, storedView(), 300, null)).toContain('data-view="lanes">By person</button>');
     storeView(ClusterView.Lanes);
     expect(storedView()).toBe(ClusterView.Lanes);
     expect(kept.get(VIEW_KEY)).toBe("lanes");

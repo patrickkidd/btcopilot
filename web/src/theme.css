@@ -269,7 +269,12 @@ button { font-family: inherit; }
 .ss.about svg.ab-draw { position: static; width: 100%; height: auto; margin: 4px 0 2px; overflow: visible; }
 .ab-lane { stroke: var(--line); stroke-width: 1.5; }
 .ab-key { stroke: var(--ink); stroke-width: 1.4; stroke-dasharray: 4 3; }
-.ab-dot { stroke-width: 2; }
+.ab-dot { stroke-width: 2; pointer-events: none; }
+.ab-hit { fill: transparent; cursor: pointer; }
+.ab-legend { font-size: 11px; }
+.ab-swatch { display: inline-block; width: 8px; height: 8px; margin: 0 4px 0 6px; border-radius: 50%; vertical-align: 0; }
+.ab-swatch:first-child { margin-left: 0; }
+.ab-hollow { box-sizing: border-box; border: 2px solid var(--faint); background: none; }
 .ab-draw text { font: 400 11px var(--mono); fill: var(--faint); }
 .ab-draw .ab-keyname { fill: var(--ink); }
 .ab-view { margin: 0 0 8px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 14px; background: none; color: var(--data); font: 400 12px var(--mono); cursor: pointer; }

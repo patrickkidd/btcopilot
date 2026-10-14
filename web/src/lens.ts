@@ -113,6 +113,14 @@ export class Lens {
       this.climb(CLUSTER);
       return;
     }
+    // A dot on a cluster's page does what a dot on the line does: the event is
+    // picked inside its cluster and says itself (R-0168). An event with no
+    // place on the line opens in its own editor instead.
+    if (tap.target === Target.Dot) {
+      if (picture.onLine(tap.index)) this.apply(reduce(this.state, PicEvent.Tap, { kind: SelKind.Event, id: String(tap.index) }));
+      else this.hooks.edit(tap.index);
+      return;
+    }
     if (tap.target === Target.Shelf) {
       this.apply(reduce(this.state, PicEvent.Tap, { kind: SelKind.Shelf, id: "shelf" }));
       return;
