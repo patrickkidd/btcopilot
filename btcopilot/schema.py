@@ -346,6 +346,9 @@ class Fact(enum.StrEnum):
     Stress = "stress"
     # On the person: the two or three times they say the most was going on.
     MostGoingOn = "most_going_on"
+    # On the person: what brought them in, kept as the coach's note on the
+    # what_brought card.
+    WhatBrought = "what_brought"
 
 
 class NotedFact(enum.StrEnum):

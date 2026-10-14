@@ -204,6 +204,10 @@ ASKED_IN = {
 }
 
 
+# The cards the coach writes; the choice card is part of own_part (R-0850).
+CARDS = tuple(card for card in CaseReportCard if card is not CaseReportCard.Choice)
+
+
 def _card_param(cards, means: str, clear: bool = False) -> dict:
     values = [card.value for card in cards]
     if clear:
@@ -636,7 +640,7 @@ def schemas(coder: bool = False) -> list[dict]:
                     },
                     "asked_in": ASKED_IN,
                     "case_report_card": _card_param(
-                        CaseReportCard, means[prompts.ToolText.CaseReportCard]
+                        CARDS, means[prompts.ToolText.CaseReportCard]
                     ),
                 },
                 "required": ["text", "evidence", "state"],
@@ -664,7 +668,7 @@ def schemas(coder: bool = False) -> list[dict]:
                         "description": "How it ended; only with resolved.",
                     },
                     "case_report_card": _card_param(
-                        CaseReportCard, means[prompts.ToolText.CaseReportCard], clear=True
+                        CARDS, means[prompts.ToolText.CaseReportCard], clear=True
                     ),
                 },
                 "required": ["id", "version"],
@@ -997,6 +1001,14 @@ FIND_OUT = re.compile(
     re.I,
 )
 FINDING_OUT = "It was about to close a question the person said they would find the answer to."
+
+# What brought the person in rests on their own message, and that note closes
+# the item on the coach's list (R-0852).
+BROUGHT = (
+    f"{CaseReportCard.WhatBrought.value} rests on the person's own message: give one "
+    "of their messages as a statement"
+)
+BROUGHT_PLAIN = "What brought the person in has to rest on something they said."
 
 
 class ToolError(Exception):
@@ -1692,7 +1704,7 @@ class Toolbox:
         if state is rules.shown:
             fields.update(self._asked(said))
         if args.get(record.CARD) is not None:
-            fields[record.CARD] = choice(CaseReportCard, args[record.CARD], "cards").value
+            fields[record.CARD] = self._card(args[record.CARD], rules, fields.get("evidence")).value
         text, patch = self._write(ItemKind.Question, None, fields, said and said.id)
         counted = (
             fields.get("outcome") == QuestionOutcome.Answered
@@ -1802,6 +1814,7 @@ class Toolbox:
             )
         fields["outcome"] = outcome.value
         if outcome is QuestionOutcome.Answered:
+            self._unbrought(fields.get("fact"))
             if args.get("answer") is not None:
                 answer = self._mine(args["answer"])
             elif self.said is not None:
@@ -1849,6 +1862,8 @@ class Toolbox:
                 fields.update(self._asked(None))
         if args.get("outcome") is not None:
             fields["outcome"] = choice(QuestionOutcome, args["outcome"], "outcomes").value
+        if rules is record.QUESTION and fields.get("outcome") == QuestionOutcome.Answered:
+            self._unbrought(found.get("fact"))
         if (
             rules is record.QUESTION
             and fields.get("outcome") == QuestionOutcome.Unknown
@@ -1866,7 +1881,7 @@ class Toolbox:
             fields["answer"] = self._cited(self._mine(self.said.id))
         if record.CARD in args:
             card = args[record.CARD]
-            fields[record.CARD] = card and choice(CaseReportCard, card, "cards").value
+            fields[record.CARD] = card and self._card(card, rules, found.get("evidence")).value
         counted = (
             fields.get("outcome") == QuestionOutcome.Answered
             and found.get("fact") == Fact.Children
@@ -1877,6 +1892,36 @@ class Toolbox:
         if counted:
             text = f"{text}\n\n{self._counted(int(found['item_id']), args['count'])}"
         return text, patch
+
+    def _card(self, value, rules, evidence: list[dict] | None) -> CaseReportCard:
+        """A card the coach writes an impression on; one on what_brought rests
+        on one of the person's own messages. Which cards take a question is the
+        record's check."""
+        card = choice(CaseReportCard, value, "cards")
+        if rules is not record.IMPRESSION:
+            return card
+        if card not in CARDS:
+            raise ToolError(
+                f"the {card.value} card is part of own_part now: state the other way "
+                "it could have gone there",
+                "That card is no longer on the case report.",
+            )
+        if card is CaseReportCard.WhatBrought:
+            ids = [int(e["id"]) for e in evidence or [] if e["kind"] == EvidenceKind.Statement]
+            if not any(self._own(i) for i in ids):
+                raise ToolError(BROUGHT, BROUGHT_PLAIN)
+        return card
+
+    def _unbrought(self, fact) -> None:
+        """What brought the person in is answered by the coach's note on its
+        card, so its question closes as answered only once that note is kept."""
+        if fact == Fact.WhatBrought and coverage.brought(self.data) is None:
+            raise ToolError(
+                f"{coverage.WORDS[Fact.WhatBrought]} is answered by your note: first keep "
+                f"it with add_impression on the {CaseReportCard.WhatBrought.value} card, "
+                "raised, resting on the person's message, then close this question",
+                "It closed what brought the person in without writing it down.",
+            )
 
     def _finding_out(self) -> bool:
         """Whether the message being answered says the person will find the
@@ -1985,8 +2030,9 @@ class Toolbox:
             "label": said_label(statement),
         }
 
-    def _mine(self, statement_id: int) -> Statement:
-        statement = (
+    def _own(self, statement_id: int) -> Statement | None:
+        """The person's own message in this family's sessions, if it is one."""
+        return (
             Statement.query.join(Discussion)
             .filter(
                 Statement.id == statement_id,
@@ -1995,6 +2041,9 @@ class Toolbox:
             )
             .one_or_none()
         )
+
+    def _mine(self, statement_id: int) -> Statement:
+        statement = self._own(statement_id)
         if statement is None:
             raise ToolError(
                 f"Message {statement_id} is not one the person wrote in this family's sessions",
