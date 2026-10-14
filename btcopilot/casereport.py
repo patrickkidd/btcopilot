@@ -45,7 +45,7 @@ from btcopilot.schema import (
     enum_val,
     parse_date,
 )
-from btcopilot.toolbox import ReadField, ToolName, Toolbox, schemas
+from btcopilot.toolbox import CARDS, ReadField, ToolName, Toolbox, schemas
 from btcopilot.turnlog import TurnEventKind
 
 _log = logging.getLogger(__name__)
@@ -71,6 +71,20 @@ OPENING_CHARS = 2000
 SENTENCE = re.compile(r"(?<=[.?!])\s+")
 # A cluster's slot on the coach's guess: "For c3: ..." or "Against c3: ...".
 SLOT = re.compile(rf"^({CardLine.For.value}|{CardLine.Against.value}) (\S+):")
+# Every mark that opens a line of a card, which the page draws only at the
+# start of one (R-0850).
+MARK = re.compile(
+    rf"\b(?:(?:{CardLine.For.value}|{CardLine.Against.value}) \S+"
+    rf"|{'|'.join(m.value for m in CardLine if m not in (CardLine.For, CardLine.Against))}):"
+)
+# An id in a card's words: a cluster, question or impression key, a number in
+# brackets that is not a year, or a number after what it numbers.
+RAW_ID = re.compile(
+    r"\b[ciq]\d+\b|\((?!(?:18|19|20)\d\d\))\d+\)"
+    r"|\b(?:events?|persons?|people|clusters?|messages?|statements?|bonds?|pair-bonds?"
+    r"|couples?|questions?|impressions?) #?\d+\b",
+    re.I,
+)
 
 
 class State(enum.StrEnum):
@@ -250,9 +264,22 @@ def checked(call) -> str | None:
     evidence = call.args.get("evidence") or []
     clusters = {str(one.get("id")) for one in evidence if one.get("kind") == EvidenceKind.Cluster}
     for line in (call.args.get("text") or "").splitlines():
+        line = line.strip()
         slot = SLOT.match(line)
         if slot and slot.group(2) not in clusters:
             return f"{slot.group(1)} {slot.group(2)} names a cluster the card does not rest on"
+        inside = next((m for m in MARK.finditer(line) if m.start() > 0), None)
+        if inside:
+            return (
+                f"{inside.group(0)!r} is inside a line: start each of "
+                f"{', '.join(m.value for m in CardLine)} on a line of its own"
+            )
+        raw = RAW_ID.search(line[slot.end():] if slot else line)
+        if raw:
+            return (
+                f"{raw.group(0)!r} is an id in the card's words: name the person, event or "
+                "cluster in words; a cluster's id goes only after For or Against"
+            )
     return None
 
 
@@ -338,14 +365,41 @@ def wrote(diagram: Diagram, toolbox: Toolbox, calls: list) -> list[str]:
     and what was on a card written anew taken off it. The cards written, in
     order."""
     before = {q["id"] for q in toolbox.data.questions}
+    _put(diagram, toolbox, calls, retried=False)
+    return _settled(diagram, toolbox, before)
+
+
+def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool) -> dict[str, str]:
+    """Each guess in through the coach's own tool unless it gives a cause or
+    a why or the checks refuse it, every refusal written down. Why each
+    refused call was refused, as the model reads it."""
+    refused = {}
     for call in calls:
-        refusal = checked(call)
+        word = caused(call)
+        told = refusal = (
+            f"{word!r} gives a cause or a why; state the pattern, what happened and when"
+            if word
+            else checked(call)
+        )
         if refusal is None:
-            _, _, refusal = run_call(toolbox, call)
+            told, _, refusal = run_call(toolbox, call)
         if refusal:
+            refused[call.id] = told
             _observe(diagram.id, toolbox.turn_id, ObservationKind.ToolRefused,
-                     {"tool": call.name, "refusal": refusal, "retried": False,
+                     {"tool": call.name, "refusal": refusal, "retried": retried,
                       "reason": f"case report rewrite: {call.name}: {refusal}"})
+    return refused
+
+
+def _missing(toolbox: Toolbox, before: set[str]) -> list[str]:
+    """The cards no guess was written on since the rewrite began."""
+    written = {q.get(CARD) for q in toolbox.data.questions if q["id"] not in before}
+    return [card.value for card in CARDS if card.value not in written]
+
+
+def _settled(diagram: Diagram, toolbox: Toolbox, before: set[str]) -> list[str]:
+    """What was on a card written anew taken off it. The cards written, in
+    order."""
     after = toolbox.data.questions
     new = [q for q in after if q["id"] not in before and q.get(CARD)]
     cards = list(dict.fromkeys(q[CARD] for q in new))
@@ -375,52 +429,63 @@ def _called(diagram: Diagram, meter: Metered, system: str, messages: list[dict],
             return stop.value
 
 
-def _again(turn, caught: dict) -> list[dict]:
-    """The model's answer and what each call came to: a card that gave a
-    cause or a why is refused, the rest stand."""
+def _again(turn, refused: dict[str, str], missing: list[str]) -> list[dict]:
+    """The model's answer, what each call came to, and the cards it did not
+    give: a refused card is given again, a missing one now."""
     results = [
         {
             "type": "tool_result",
             "tool_use_id": call.id,
-            "content": (
-                f"refused: {caught[call.id]!r} gives a cause or a why; state the pattern, "
-                "what happened and when, and give this card again"
-                if call.id in caught
-                else "kept"
-            ),
-            "is_error": call.id in caught,
+            "content": f"refused: {refused[call.id]}; give this card again" if call.id in refused else "kept",
+            "is_error": call.id in refused,
         }
         for call in turn.calls
     ]
+    if missing:
+        results.append({"type": "text", "text": (
+            f"Not given: {', '.join(missing)}. Give each now; leave one out again only when "
+            "nothing on the diagram could rest under it."
+        )})
     return [{"role": "assistant", "content": turn.blocks}, {"role": "user", "content": results}]
 
 
 def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
-    """One model call writes every card again (R-0825). A card that gives a
-    cause or a why is refused and asked for once more; given again with one,
-    it is written with those sentences taken out (R-0850). Cards read from a
-    family that changed during the call are not written, so the report stays
-    out of date (R-0826)."""
+    """One model call writes every card again (R-0825, R-0850). A card
+    refused (a cause or a why, a mark inside a line, an id in its words, or
+    the coach's tool) and a card not given are asked for once more; given
+    again with a cause, a card is written with those sentences taken out, and
+    one still refused or missing keeps what it had, written down (R-0850).
+    Cards read from a family that changed during a call are not written, so
+    the report stays out of date (R-0826)."""
     toolbox = box(diagram, user, turn_id)
+    before = {q["id"] for q in toolbox.data.questions}
     version = diagram.version
     system, messages = asked(diagram, user, toolbox, meter)
     turn = _called(diagram, meter, system, messages, turn_id)
-    calls = turn.calls
-    caught = {call.id: word for call in calls if (word := caused(call))}
-    if caught:
-        _observe(diagram.id, turn_id, ObservationKind.ToolRefused,
-                 {"tool": ToolName.AddImpression.value, "refusal": f"gave a cause: {', '.join(caught.values())}",
-                  "retried": True, "reason": "case report rewrite: a card gave a cause or a why"})
-        retry = _called(diagram, meter, system, messages + _again(turn, caught), turn_id)
-        calls = [c for c in calls if c.id not in caught] + retry.calls
-    for call in calls:
-        if caused(call):
-            call.args = {**call.args, "text": uncaused(call.args.get("text") or "")}
-    calls = [c for c in calls if c.args.get("text")]
+    _unmoved(diagram, version)
+    refused = _put(diagram, toolbox, turn.calls, retried=True)
+    missing = _missing(toolbox, before)
+    if refused or missing:
+        again = {c.args.get(CARD) for c in turn.calls if c.id in refused} | set(missing)
+        version = diagram.version
+        retry = _called(diagram, meter, system, messages + _again(turn, refused, missing), turn_id)
+        _unmoved(diagram, version)
+        calls = [c for c in retry.calls if c.args.get(CARD) in again]
+        for call in calls:
+            if caused(call):
+                call.args = {**call.args, "text": uncaused(call.args.get("text") or "")}
+        _put(diagram, toolbox, [c for c in calls if c.args.get("text")], retried=False)
+        for card in _missing(toolbox, before):
+            _observe(diagram.id, turn_id, ObservationKind.ToolRefused,
+                     {"tool": ToolName.AddImpression.value, "refusal": f"no {card} card given",
+                      "retried": False, "reason": f"case report rewrite: the {card} card was not given"})
+    return _settled(diagram, toolbox, before)
+
+
+def _unmoved(diagram: Diagram, version: int) -> None:
     db.session.refresh(diagram)
     if diagram.version != version:
         raise Moved(f"diagram {diagram.id} moved from version {version} to {diagram.version}")
-    return wrote(diagram, toolbox, calls)
 
 
 def _observe(diagram_id: int, turn_id: str, kind: ObservationKind, detail: dict) -> None:
