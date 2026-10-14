@@ -206,3 +206,7 @@ R-0748 | WAIVED | one test proves F18 is drawn with no line through a name; the 
 R-0757 | WAIVED | deferred to how coverage is shown; nothing is built to assert
 R-0769 | TEST OWED | not built: functioning going down has no animation until its art direction is done
 R-0850 | TEST OWED | the framing is built into the case report prompt and cards on FD-381; its tests come with that build
+R-0851 | TEST OWED | built on FD-381: the what_brought card value and the setAside and openingEventId cluster fields; its tests come with that build
+R-0852 | TEST OWED | not built: the what_brought coverage item and the coach writing the card note during the chat turn; waits on the coach build
+R-0853 | TEST OWED | not built: the grouping step writing user clusters from the answers to the most_going_on item; waits on that build
+R-0854 | TEST OWED | not built: the first-conversation question about what brings the person in; the limit of ten replies is a placeholder until the production count is read
