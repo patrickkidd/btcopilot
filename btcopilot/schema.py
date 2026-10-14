@@ -719,6 +719,18 @@ class DiagramData:
         "pruned",
     ]
 
+    def drawn_clusters(self) -> list[dict]:
+        """The clusters every reader shows. One set aside stays in `clusters`,
+        which only regrouping reads, so the one axis holds no overlap
+        [Oracle: R-0845, R-0850]."""
+        return [
+            cluster
+            for cluster in self.clusters
+            if isinstance(cluster, dict)
+            and cluster.get("id") is not None
+            and not cluster.get("setAside")
+        ]
+
     def clear(self) -> None:
         self.people = []
         self.events = []

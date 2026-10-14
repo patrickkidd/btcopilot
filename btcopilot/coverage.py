@@ -388,7 +388,7 @@ def evidence(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> str | N
         if fact is Fact.Alive:
             return "they are the person you are talking with"
         if fact is Fact.Stress:
-            return f"the record's {len(data.clusters)} clusters"
+            return f"the record's {len(data.drawn_clusters())} clusters"
         if fact is Fact.Order:
             return "every child of their parents has a dated birth"
         return person_line(_person(data, iid))
@@ -585,7 +585,7 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
         case Fact.Parents:
             return _parents(data, iid) is not None
         case Fact.Stress:
-            return bool(data.clusters)
+            return bool(data.drawn_clusters())
     return bool(_records(data, fact, iid))
 
 

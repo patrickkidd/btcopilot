@@ -324,6 +324,8 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
                 "reason": cluster.get("reason"),
                 "cluster_ids": [str(cluster["id"])],
                 "source": cluster.get("source"),
+                "openingEventId": cluster.get("openingEventId"),
+                "setAside": bool(cluster.get("setAside")),
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "event_ids": ids,
@@ -348,7 +350,7 @@ def aimable(refs: list[Ref], data: DiagramData) -> list[Ref]:
         if isinstance(p, dict) and p.get("id") is not None
     }
     events = _events_payload(data, people_by_id)
-    clusters = _drawn_clusters(events, data.clusters)
+    clusters = _drawn_clusters(events, data.drawn_clusters())
     dated = {event["id"]: event for event in events if not _undated(event)}
     played = {event_id for cluster in clusters for event_id in cluster["play_ids"]}
     named_clusters = {name for cluster in clusters for name in cluster["cluster_ids"]}
@@ -644,7 +646,7 @@ def build_timeline(data: DiagramData) -> dict:
             for p in people
         ],
         "events": events,
-        "clusters": _drawn_clusters(events, data.clusters),
+        "clusters": _drawn_clusters(events, data.drawn_clusters()),
         "pair_bonds": bonds,
         "lanes": lanes,
         "bond_lanes": bond_lanes,

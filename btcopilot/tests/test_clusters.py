@@ -1186,5 +1186,5 @@ def test_a_set_aside_cluster_stays_stored_but_is_never_drawn():
     aside["setAside"] = True
     data = record(*RECORD.events, clusters=[already(4, 5, 6, cluster_id="c2")])
     data.clusters.append(aside)
-    assert [c["id"] for c in clusters.drawn(data)] == ["c2"]
+    assert [c["id"] for c in data.drawn_clusters()] == ["c2"]
     assert [c["id"] for c in data.clusters] == ["c2", "c1"]

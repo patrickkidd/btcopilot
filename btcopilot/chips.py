@@ -72,7 +72,7 @@ def token(kind: ChipKind, target, label: str | None = None) -> str:
 def _ids(data: DiagramData, kind: ChipKind) -> set[str]:
     collection = {
         ChipKind.Event: data.events,
-        ChipKind.Cluster: data.clusters,
+        ChipKind.Cluster: data.drawn_clusters(),
         ChipKind.Person: data.people,
         ChipKind.PairBond: data.pair_bonds,
         ChipKind.Question: [q for q in data.questions if record.note(q) is record.QUESTION],
@@ -225,7 +225,7 @@ def _describe(kind: ChipKind, target: str, data: DiagramData, diagram_id: int | 
             f"pair bond {target}: {names[str(bond['person_a'])]} & "
             f"{names[str(bond['person_b'])]}"
         )
-    cluster = next(c for c in data.clusters if str(c.get("id")) == target)
+    cluster = next(c for c in data.drawn_clusters() if str(c.get("id")) == target)
     return f"cluster {target}: {cluster.get('name') or cluster.get('title') or ''}".strip()
 
 

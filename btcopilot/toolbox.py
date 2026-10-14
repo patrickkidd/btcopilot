@@ -1494,7 +1494,7 @@ class Toolbox:
                 fields["startDate"], fields["endDate"] = dates[0], dates[-1]
         item_id = args.get("id")
         if item_id is not None and str(item_id) not in {
-            str(c.get("id")) for c in data.clusters
+            str(c.get("id")) for c in data.drawn_clusters()
         }:
             raise ToolError(f"No cluster {item_id} in the record", GONE)
         return self._write(ItemKind.Cluster, item_id, fields)
@@ -2108,7 +2108,7 @@ class Toolbox:
         return int(event_id)
 
     def _cluster(self, data: DiagramData, cluster_id: str) -> dict:
-        for cluster in data.clusters:
+        for cluster in data.drawn_clusters():
             if str(cluster.get("id")) == str(cluster_id):
                 return cluster
         raise ToolError(f"No cluster {cluster_id} in the record", views.NO_CLUSTER)

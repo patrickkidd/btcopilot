@@ -189,7 +189,7 @@ def digests(data: DiagramData, tl: dict) -> dict[str, str]:
     record's timeline, the drawer's own input."""
     return {
         str(c["id"]): digest(tl, c, events_of(data, c))
-        for c in data.clusters
+        for c in data.drawn_clusters()
         if isinstance(c, dict)
     }
 
@@ -238,7 +238,7 @@ class PlayTurn:
 
     @classmethod
     def stored(cls, data: DiagramData, cluster_id: str, **kwargs) -> "PlayTurn":
-        for cluster in data.clusters:
+        for cluster in data.drawn_clusters():
             if isinstance(cluster, dict) and str(cluster.get("id")) == str(cluster_id):
                 return cls(data, cluster, **kwargs)
         raise ValueError(f"No cluster {cluster_id!r} in the record")

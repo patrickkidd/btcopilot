@@ -107,7 +107,7 @@ def resolve(refs: list[Ref], data: DiagramData) -> list[Ref]:
     """Drop references the diagram cannot aim at, so no chip points at nothing."""
     people = {p.get("id") for p in data.people if isinstance(p, dict)}
     events = {e.get("id") for e in data.events if isinstance(e, dict)}
-    clusters = {c.get("id") for c in data.clusters if isinstance(c, dict)}
+    clusters = {c.get("id") for c in data.drawn_clusters() if isinstance(c, dict)}
 
     resolved = []
     for ref in refs:
@@ -225,7 +225,7 @@ def index(data: DiagramData | None) -> str:
 
     sections = [
         ("People", _people_entries(people, dated)),
-        ("Clusters", _cluster_entries(data.clusters, dated)),
+        ("Clusters", _cluster_entries(data.drawn_clusters(), dated)),
         (
             "Events (newest first)",
             [

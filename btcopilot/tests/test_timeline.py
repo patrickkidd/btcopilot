@@ -551,3 +551,19 @@ def test_a_chip_naming_an_undated_event_in_a_cluster_survives():
     data = _undated_in_cluster()
     chip = Ref(kind=RefKind.Events, label="that week", event_ids=[12])
     assert aimable([chip], data) == [chip]
+
+
+def test_a_set_aside_cluster_is_not_in_the_payload_and_the_payload_names_its_opening():
+    # R-0845
+    events = [
+        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "1991-01-01", "symptom", VariableShift.Down),
+    ]
+    data = _data([1], events)
+    kept = Cluster(id="cl-1", title="Kept", summary="s", eventIds=[10, 11], openingEventId=10)
+    aside = Cluster(id="cl-2", title="Aside", summary="s", eventIds=[10, 11], setAside=True)
+    data.clusters = [asdict(kept), asdict(aside)]
+    drawn = build_timeline(data)["clusters"]
+    assert [c["id"] for c in drawn] == ["cl-1"]
+    assert drawn[0]["openingEventId"] == 10
+    assert drawn[0]["setAside"] is False

@@ -160,6 +160,8 @@ export interface Cluster {
   reason: string | null;
   /** The cluster's own opening loss or change, when the grouping named one. */
   openingEventId?: number | null;
+  /** True for a period the app set aside; the payload never carries one. */
+  setAside?: boolean;
   /** The person's own period, or the app's. */
   source?: ClusterSource | null;
   cluster_ids: string[];

@@ -247,7 +247,7 @@ def render(data: DiagramData | None, speaker: int | None = None) -> str:
         ),
         _section("PAIR BONDS", [bond_line(b) for b in _rows(data.pair_bonds)]),
         _section(EVENTS, [event_line(e) for e in events]),
-        _section("CLUSTERS", [cluster_line(c) for c in _rows(data.clusters)]),
+        _section("CLUSTERS", [cluster_line(c) for c in _rows(data.drawn_clusters())]),
     ]
     return "\n\n".join(section for section in sections if section)
 
@@ -294,7 +294,7 @@ def outline(data: DiagramData | None, version: int, speaker: int | None = None) 
             ],
         ),
         _section("PAIR BONDS", [bond_line(b) for b in _rows(data.pair_bonds)]),
-        _section("CLUSTERS", [_span(c, dates) for c in _rows(data.clusters)]),
+        _section("CLUSTERS", [_span(c, dates) for c in _rows(data.drawn_clusters())]),
         _section(
             QUESTIONS,
             _notes(data, (record.QUESTION, record.TODO)),

@@ -29,7 +29,7 @@ def counts(diagram: Diagram) -> dict:
         "people": len(data.people),
         "events": len(data.events),
         "pair_bonds": len(data.pair_bonds),
-        "clusters": len(data.clusters),
+        "clusters": len(data.drawn_clusters()),
         "format": "json" if diagramjson.is_json(diagram.data) else "pickle",
         "updated_at": diagram.updated_at,
     }
