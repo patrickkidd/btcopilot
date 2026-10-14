@@ -463,6 +463,7 @@ class Cluster:
     # One sentence saying what the record shows these events have in common.
     reason: str | None = None
     setAside: bool = False
+    openingEventId: int | None = None
 
 
 class ItemKind(enum.StrEnum):
