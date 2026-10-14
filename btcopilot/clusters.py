@@ -490,6 +490,10 @@ def _asked(data: DiagramData) -> dict[int, str]:
     }
 
 
+def told_ids(data: DiagramData) -> tuple[int, ...]:
+    return tuple(sorted(_asked(data)))
+
+
 def most_going_on(data: DiagramData) -> list[Answer]:
     return [
         Answer(messageId=i, question=text, words=db.session.get(Statement, i).spoken)
@@ -560,7 +564,7 @@ def _prompt(
             "id": cluster_id,
             "name": _title(cluster),
             "reason": cluster.get("reason") or cluster.get("summary") or "",
-            "eventIds": cluster.get("eventIds") or [],
+            "eventIds": [i for i in cluster.get("eventIds") or [] if i in when],
         }
         if cluster.get("openingEventId") is not None:
             shown["openingId"] = cluster["openingEventId"]
@@ -594,9 +598,10 @@ def _title(cluster: dict) -> str:
     return cluster.get("name") or cluster.get("title") or ""
 
 
-def _sculpted(cluster: ModelCluster, was: dict) -> bool:
-    """Whether the model handed a stored grouping back other than as it was."""
-    return set(cluster.eventIds) != set(was.get("eventIds") or []) or (
+def _sculpted(cluster: ModelCluster, was: dict, known: set[int]) -> bool:
+    """Whether the model handed a stored grouping back other than as it was,
+    among the events it was offered."""
+    return set(cluster.eventIds) != set(was.get("eventIds") or []) & known or (
         cluster.name != _title(was)
     )
 
@@ -1059,7 +1064,7 @@ def detect_clusters(
     the second, a cluster that still fails is dropped and the rest kept; an
     answer that cannot be read, or keeps nothing out of what it returned,
     raises [Oracle: R-0846, R-0844]."""
-    cache_key = compute_cache_key(_dated(data), tuple(_asked(data)))
+    cache_key = compute_cache_key(_dated(data), told_ids(data))
     cands = candidates(data)
     if not cands and not said:
         return ClusterResult(clusters=[], cacheKey=cache_key)
@@ -1129,12 +1134,16 @@ def detect_clusters(
         heard(2 if retry else 1, fault, None)
 
     when = {e.id: e.dateTime for e in free}
+    known = set(when)
     clusters, changes = [], []
     for cluster in screened.kept:
         spanned = sorted(when[event_id] for event_id in cluster.eventIds)
         cluster_id = cluster.id or next_id(taken)
         taken.add(cluster_id)
         was = existing.get(cluster.id) if cluster.id else None
+        # An event of unknown date is never offered, so one a stored period
+        # holds stays on it as it was [Oracle: R-0850].
+        held = [i for i in (was or {}).get("eventIds") or [] if i not in known]
         clusters.append(
             Cluster(
                 id=cluster_id,
@@ -1142,13 +1151,13 @@ def detect_clusters(
                 name=cluster.name,
                 summary=cluster.reason,
                 reason=cluster.reason,
-                eventIds=list(cluster.eventIds),
+                eventIds=[*cluster.eventIds, *held],
                 openingEventId=cluster.openingId,
                 startDate=spanned[0],
                 endDate=spanned[-1],
                 source=(
                     _source(was)
-                    if was is not None and not _sculpted(cluster, was)
+                    if was is not None and not _sculpted(cluster, was, known)
                     else ClusterSource.Model
                 ),
             )
@@ -1211,21 +1220,21 @@ def _regroupable(cluster: dict) -> bool:
 def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     """The model's grouping, each cluster under its own id: the model's own
     statement of which stored cluster it is, so what the coach said about it
-    last turn still points at something the diagram holds. A grouping under the
+    last turn still points at something the diagram holds. `dates` are the
+    events of known date; the span is theirs, and an event of unknown date a
+    stored period held stays on it [Oracle: R-0850]. A grouping under the
     minimum is a bug in whatever produced it and raises."""
     taken = {str(c["id"]) for c in stored}
     kept: dict[str, Cluster] = {}
     for cluster in detected:
-        event_ids = [e for e in cluster.eventIds if e in dates]
-        if len(event_ids) < MIN_CLUSTER_EVENTS:
+        if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
             raise ClusterError(
                 f"Grouping {cluster.eventIds} arrived holding fewer than "
                 f"{MIN_CLUSTER_EVENTS} events.",
                 ClusterCheck.TooSmall,
             )
-        cluster.eventIds = event_ids
         cluster.name = cluster.name or cluster.title
-        spanned = sorted(dates[e] for e in event_ids)
+        spanned = sorted(dates[e] for e in cluster.eventIds if e in dates)
         cluster.startDate, cluster.endDate = spanned[0], spanned[-1]
         cluster.id = str(cluster.id) if cluster.id else next_id(taken | set(kept))
         kept[cluster.id] = cluster
@@ -1296,7 +1305,7 @@ def _events(data: DiagramData) -> list[Event]:
 def behind(data: DiagramData) -> bool:
     """Whether the record's events, or the person's answers to when the most
     was going on, changed since its last grouping."""
-    return compute_cache_key(_events(data), tuple(_asked(data))) != data.clusterCacheKey
+    return compute_cache_key(_events(data), told_ids(data)) != data.clusterCacheKey
 
 
 def sync(
@@ -1319,11 +1328,11 @@ def sync(
     diagram = db.session.get(Diagram, diagram_id)
     data = diagram.get_diagram_data()
     events = _events(data)
-    cache_key = compute_cache_key(events, tuple(_asked(data)))
+    cache_key = compute_cache_key(events, told_ids(data))
     if not force and cache_key == data.clusterCacheKey:
         return None
 
-    dates = {e.id: e.dateTime for e in events if e.dateTime}
+    dates = {e.id: e.dateTime for e in _dated(data)}
     metered = metered or Metered(user_id, diagram_id, turn_id, Purpose.Cluster)
 
     def observe(kind: ObservationKind, detail: dict) -> None:

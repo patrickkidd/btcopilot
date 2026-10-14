@@ -1,6 +1,7 @@
-"""Regrouping the records whose clusters are behind their events, so a fix to
-the grouping reaches them without waiting for the person's next turn
-[Oracle: R-0772, R-0780]."""
+"""Regrouping the records whose clusters are behind their events or the
+person's answers to when the most was going on, so a fix to the grouping
+reaches them without waiting for the person's next turn [Oracle: R-0772,
+R-0844, R-0853]."""
 
 import datetime
 import enum
@@ -24,7 +25,7 @@ class Why(enum.StrEnum):
 
 def why(diagram: Diagram) -> Why | None:
     data = diagram.get_diagram_data()
-    if not clusters.candidates(data):
+    if not clusters.candidates(data) and not clusters.told_ids(data):
         return None
     if clusters.behind(data):
         return Why.Changed
@@ -43,12 +44,16 @@ def why(diagram: Diagram) -> Why | None:
 )
 @rows_option
 def regroup(diagram_id, apply):
-    """Regroup each record whose events changed since its last grouping, or that
-    has events to group and no groups. The dry run lists them and makes no model
-    call; --apply makes the grouping calls a turn makes, one or two per record,
-    each in the model-calls ledger, and writes each record's new grouping as one
-    change row that `diagrams undo` takes back. A record whose answers are both
-    refused gets the rules' groups under their years, and `failed` says so."""
+    """Regroup each record whose events, or the person's answers to when the
+    most was going on, changed since its last grouping, or that has events to
+    group and no groups. The dry run lists them and makes no model call;
+    --apply makes the grouping calls a turn makes, one or two per record, each
+    in the model-calls ledger, and writes each record's new grouping as one
+    change row that `diagrams undo` takes back: the app's periods as the answer
+    returns them, the ones it leaves out set aside, and the periods the person
+    named written as theirs. A record whose answers are both refused keeps the
+    stored periods that pass, sets aside the app's that fail, names nothing
+    after its years, and `failed` says so."""
     columns = ["diagram", "why", "groups", "regrouped", "change", "failed"]
     found = [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
     stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%S")

@@ -6,6 +6,7 @@ scripts the model and checks what the code drops, merges and keeps.
 """
 
 import datetime
+import json
 from contextlib import contextmanager
 
 import pytest
@@ -1391,3 +1392,44 @@ def test_the_persons_answer_alone_puts_the_grouping_behind():
     data.clusterCacheKey = clusters.compute_cache_key(clusters._events(data))
     assert not clusters.behind(data)
     assert clusters.behind(asked(data, 7))
+
+
+def test_a_stored_period_with_undated_events_regroups_and_keeps_them(test_user):
+    # R-0850
+    """Events of unknown date are never offered, so the answer that hands the
+    period back without them is not refused; they stay on it as they were,
+    and the opening the answer names is stored."""
+    after = named(50, 51, 52, 53, cluster_id="c1", name="After the death")
+    after.openingId = 51
+    diagram = test_user.free_diagram
+    diagram.set_diagram_data(
+        record(
+            moment(50, "1994-01-01", person=1),
+            asdict(
+                Event(id=51, kind=EventKind.Death, person=2, dateTime="1994-03-01")
+            ),
+            moment(52, "1994-05-01", person=1),
+            moment(53, "1994-08-01", person=1),
+            moment(54, "1994-04-01", person=1, dateCertainty=DateCertainty.Unknown),
+            asdict(
+                Event(id=55, kind=EventKind.Shift, person=1, anxiety=VariableShift.Up)
+            ),
+            clusters=[already(50, 51, 52, 53, 54, 55)],
+        )
+    )
+    db.session.commit()
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[parsed(answers(after))],
+    ) as ask:
+        sync(diagram.id, turn_id="t1", user_id=diagram.user_id)
+    asked = ask.call_args_list[0].args[0]
+    offered = asked.split("PERIODS THIS DIAGRAM HAS")[1].split("RUNS THE APP'S RULES")[0]
+    assert json.loads(offered)[0]["eventIds"] == [50, 51, 52, 53]
+    assert Observation.query.filter_by(kind=ObservationKind.ClusterRefused).all() == []
+    [cluster] = diagram.get_diagram_data().clusters
+    assert (cluster["eventIds"], cluster["openingEventId"]) == (
+        [50, 51, 52, 53, 54, 55],
+        51,
+    )
+    assert (cluster["startDate"], cluster["endDate"]) == ("1994-01-01", "1994-08-01")
