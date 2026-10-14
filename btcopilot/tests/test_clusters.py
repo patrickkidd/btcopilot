@@ -1121,7 +1121,7 @@ def test_refused_twice_sets_aside_a_stored_model_group_over_ten_years(test_user)
 
 
 def test_refused_twice_keeps_the_persons_own_and_every_passing_group(test_user):
-    # R-0840, R-0844
+    # R-0840, R-0844, R-0850
     done, removed, kept = regrouped(
         test_user,
         record(
@@ -1133,17 +1133,84 @@ def test_refused_twice_keeps_the_persons_own_and_every_passing_group(test_user):
             ],
         ),
     )
-    assert done is None
+    assert [d["field"] for d in done.change.deltas] == ["clusterCacheKey"]
     assert removed == []
     assert kept == ["u1", "c2"]
 
 
-def test_refused_twice_with_nothing_stored_names_nothing_after_its_years(test_user):
-    # R-0844
+def test_refused_twice_with_nothing_stored_names_nothing_and_is_not_asked_again(
+    test_user,
+):
+    # R-0844, R-0850
     done, removed, kept = regrouped(test_user, record(*EARLY))
-    assert done is None
+    assert done is not None
     assert kept == []
-    assert not test_user.free_diagram.get_diagram_data().clusterCacheKey
+    diagram = test_user.free_diagram
+    with patch("btcopilot.metered.gemini_structured_sync") as asked:
+        assert sync(diagram.id, turn_id="t2", user_id=diagram.user_id) is None
+    assert not asked.called
+
+
+# Shaped like Patrick's own diagram, fictionalized: two stored periods of the
+# app's with too few shifts that support them, one with two, one with none,
+# and a period the person drew with none.
+THIN = record(
+    moment(50, "2005-01-01", person=1, symptom=VariableShift.Up),
+    moment(51, "2005-08-01", person=1, functioning=VariableShift.Down),
+    moment(52, "2006-03-01", person=1, anxiety=VariableShift.Down),
+    moment(53, "2010-04-01", person=2, anxiety=VariableShift.Up),
+    moment(54, "2010-09-01", person=2, symptom=VariableShift.Up),
+    moment(55, "2011-01-01", person=2, functioning=VariableShift.Down),
+    asdict(Event(id=60, kind=EventKind.Birth, child=2, dateTime="2017-05-01")),
+    asdict(Event(id=61, kind=EventKind.Birth, child=3, dateTime="2020-05-01")),
+    moment(62, "2026-01-01", person=1, functioning=VariableShift.Up),
+    moment(70, "1990-02-01", person=3, anxiety=VariableShift.Down),
+    moment(71, "1990-06-01", person=3, anxiety=VariableShift.Down),
+    moment(72, "1990-09-01", person=3, anxiety=VariableShift.Down),
+    clusters=[
+        already(50, 51, 52, cluster_id="c1", name="A breakup and the first symptoms"),
+        already(60, 61, 62, cluster_id="c2", name="Back home and the family grows"),
+        own(70, 71, 72),
+    ],
+)
+BACK_HOME = answers(named(60, 61, 62, name="Back home and the family grows"))
+
+
+def test_a_stored_period_with_too_few_shifts_is_set_aside_before_the_call(
+    test_user,
+):
+    # R-0850, R-0853
+    """Handed back as existing, the two thin periods came back from the call
+    and were refused twice, so they stayed drawn and every later change made
+    the same two calls. They are set aside first, the person's own is kept,
+    and the refused regroup marks the diagram grouped."""
+    assert list(clusters.mine(THIN)) == ["u1"]
+    assert [(c["id"], check) for c, check, _ in clusters.broken(THIN)] == [
+        ("c1", ClusterCheck.FewShifts),
+        ("c2", ClusterCheck.FewShifts),
+    ]
+
+    diagram = test_user.free_diagram
+    diagram.set_diagram_data(THIN)
+    db.session.commit()
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[parsed(BACK_HOME), parsed(BACK_HOME)],
+    ) as asked:
+        done = sync(diagram.id, turn_id="t1", user_id=diagram.user_id)
+    assert '"c1"' not in asked.call_args_list[0].args[0]
+    assert done is not None
+    assert [
+        o.detail.get("setAside")
+        for o in Observation.query.filter_by(kind=ObservationKind.ClusterFailed)
+    ] == ["c1", "c2", None]
+    data = diagram.get_diagram_data()
+    assert [c["id"] for c in data.drawn_clusters()] == ["u1"]
+    assert [c["id"] for c in data.clusters] == ["c1", "c2", "u1"]
+
+    with patch("btcopilot.metered.gemini_structured_sync") as again:
+        assert sync(diagram.id, turn_id="t2", user_id=diagram.user_id) is None
+    assert not again.called
 
 
 def test_a_stored_model_group_named_by_its_years_is_not_handed_back(test_user):

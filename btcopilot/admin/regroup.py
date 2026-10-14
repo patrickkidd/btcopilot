@@ -54,9 +54,11 @@ def regroup(diagram_id, apply):
     in the model-calls ledger, and writes each record's new grouping as one
     change row that `diagrams undo` takes back: the app's periods as the answer
     returns them, the ones it leaves out set aside, and the periods the person
-    named written as theirs. A record whose answers are both refused keeps the
-    stored periods that pass, sets aside the app's that fail, names nothing
-    after its years, and `failed` says so."""
+    named written as theirs. Before the call, a stored period of the app's
+    that fails a check is set aside. A record whose answers are both refused
+    keeps the stored periods that pass, sets aside the app's that fail, names
+    nothing after its years, is not regrouped by a turn until its events or
+    answers change, and `failed` says so."""
     columns = ["diagram", "why", "groups", "regrouped", "change", "failed"]
     found = [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
     stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%S")
@@ -81,10 +83,11 @@ def regroup(diagram_id, apply):
             db.session.commit()
             row["regrouped"] = len(diagram.get_diagram_data().clusters)
             row["change"] = done.change.id if done else None
-            row["failed"] = bool(
-                Observation.query.filter_by(
+            row["failed"] = any(
+                "setAside" not in o.detail
+                for o in Observation.query.filter_by(
                     turn_id=turn_id, kind=ObservationKind.ClusterFailed
-                ).count()
+                )
             )
         rows.append(row)
     return columns, rows

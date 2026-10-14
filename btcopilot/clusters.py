@@ -225,6 +225,22 @@ def too_long(dates: list[datetime.date]) -> bool:
 Span = tuple[datetime.date, datetime.date]
 
 
+def backstop(
+    ids: list[int], when: dict[int, datetime.date], shifts: set[int]
+) -> ClusterCheck | None:
+    """The first check an app period fails, returned by the model or stored:
+    three events, three shifts that support it, ten years at most
+    [Oracle: R-0850, R-0837]. `when` dates the events it may hold; `shifts`
+    are those that support a cluster."""
+    if len(ids) < MIN_CLUSTER_EVENTS:
+        return ClusterCheck.TooSmall
+    if sum(i in shifts for i in ids) < MIN_CLUSTER_EVENTS:
+        return ClusterCheck.FewShifts
+    if too_long([when[i] for i in ids]):
+        return ClusterCheck.TooLong
+    return None
+
+
 def years_name(name: str) -> bool:
     """Whether a name is only a year or a run of years, a length rather than
     a hypothesis [Oracle: R-0844, R-0841]."""
@@ -908,33 +924,34 @@ def _screen(
     kept = []
     for cluster in merged:
         said = _said_of(cluster, when)
-        if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
+        check = backstop(cluster.eventIds, when, shifts)
+        if check is ClusterCheck.TooSmall:
             faults.append(
                 ClusterError(
                     f"Period {cluster.name!r} holds {len(cluster.eventIds)} events; "
                     f"anything under {MIN_CLUSTER_EVENTS} is never a period.",
-                    ClusterCheck.TooSmall,
+                    check,
                     said,
                 )
             )
-        elif sum(i in shifts for i in cluster.eventIds) < MIN_CLUSTER_EVENTS:
+        elif check is ClusterCheck.FewShifts:
             faults.append(
                 ClusterError(
                     f"Period {cluster.name!r} holds fewer than {MIN_CLUSTER_EVENTS} "
                     "shifts that are a rise in symptom or anxiety, a fall in "
                     "functioning, or a relationship shift.",
-                    ClusterCheck.FewShifts,
+                    check,
                     said,
                 )
             )
-        elif too_long([when[i] for i in cluster.eventIds]):
+        elif check is ClusterCheck.TooLong:
             faults.append(
                 ClusterError(
                     f"Period {cluster.name!r} runs from {said['start'][:4]} to "
                     f"{said['end'][:4]}: more than {MAX_SPAN_YEARS} years is this "
                     "family's ordinary level, not a period. Return the periods "
                     "inside it.",
-                    ClusterCheck.TooLong,
+                    check,
                     said,
                 )
             )
@@ -949,34 +966,40 @@ def _judged(
     data: DiagramData,
 ) -> tuple[dict[str, dict], list[tuple[dict, ClusterCheck, str]]]:
     """The stored clusters handed back to the model, by id, and each stored
-    model cluster that fails the ten-year backstop or is named only by its
-    years, with a sentence naming it and its years. The person's own are
-    always handed back, as they drew them [Oracle: R-0850, R-0844]."""
-    when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
+    model cluster that fails a check a returned one must pass, or is named
+    only by its years, with a sentence naming it and its years. The person's
+    own are always handed back, as they drew them, and only judged
+    [Oracle: R-0850, R-0853, R-0844]."""
+    dated = _dated(data)
+    when = {e.id: parse_date(e.dateTime) for e in dated}
+    shifts = {e.id for e in dated if supports(e)}
     kept, failing = {}, []
     for cluster in data.drawn_clusters():
-        dates = [when[i] for i in cluster.get("eventIds") or [] if i in when]
-        span = span_of(dates)
+        ids = [i for i in cluster.get("eventIds") or [] if i in when]
+        span = span_of([when[i] for i in ids])
         name = _said(_title(cluster), span) if span else repr(_title(cluster))
+        named = f"Stored grouping {cluster['id']} {name}"
+        check = backstop(ids, when, shifts)
         if not _regroupable(cluster):
             kept[str(cluster["id"])] = cluster
-        elif too_long(dates):
+        elif check is ClusterCheck.TooSmall:
+            failing.append((cluster, check, f"{named} holds {len(ids)} dated events"))
+        elif check is ClusterCheck.FewShifts:
             failing.append(
                 (
                     cluster,
-                    ClusterCheck.TooLong,
-                    f"Stored grouping {cluster['id']} {name} fails the "
-                    f"{MAX_SPAN_YEARS}-year check",
+                    check,
+                    f"{named} holds {sum(i in shifts for i in ids)} shifts that "
+                    f"support it, under {MIN_CLUSTER_EVENTS}",
                 )
+            )
+        elif check is ClusterCheck.TooLong:
+            failing.append(
+                (cluster, check, f"{named} fails the {MAX_SPAN_YEARS}-year check")
             )
         elif years_name(_title(cluster)):
             failing.append(
-                (
-                    cluster,
-                    ClusterCheck.YearsName,
-                    f"Stored grouping {cluster['id']} {name} is named only by "
-                    "its years",
-                )
+                (cluster, ClusterCheck.YearsName, f"{named} is named only by its years")
             )
         else:
             kept[str(cluster["id"])] = cluster
@@ -985,8 +1008,9 @@ def _judged(
 
 def mine(data: DiagramData) -> dict[str, dict]:
     """The stored clusters handed to the model as existing. A model cluster
-    over ten years or named only by its years is left out and set aside, its
-    events back to the hint [Oracle: R-0838, R-0844, R-0850]."""
+    that fails a check a returned one must pass, or is named only by its
+    years, is left out and set aside, its events back to the hint
+    [Oracle: R-0838, R-0844, R-0850]."""
     kept, failing = _judged(data)
     for _, _, why in failing:
         _log.info(f"{why} and is not handed back")
@@ -1253,6 +1277,16 @@ def set_aside(cluster_ids) -> list[dict]:
     ]
 
 
+def grouped(cache_key: str) -> dict:
+    """Marks the record grouped as its events and answers now stand."""
+    return {
+        "item_kind": ItemKind.Diagram.value,
+        "item_id": None,
+        "field": "clusterCacheKey",
+        "after": cache_key,
+    }
+
+
 def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[dict]:
     """Every app cluster the answer did not return is set aside, never
     deleted; the person's own are kept as they drew them [Oracle: R-0850]."""
@@ -1382,8 +1416,11 @@ def sync(
         )
     except ClusterError as failed:
         # No usable answer: the clusters that pass stay, a stored model cluster
-        # over ten years or named only by its years is set aside, its events dots
-        # until a regroup passes [Oracle: R-0840, R-0844].
+        # that fails a check is set aside, its events dots until a regroup
+        # passes, and a refused answer marks this state of the record grouped,
+        # so the same calls are not made again until it changes; a call that
+        # never answered is tried again next turn [Oracle: R-0840, R-0844,
+        # R-0850].
         observe(
             ObservationKind.ClusterFailed,
             {
@@ -1394,11 +1431,14 @@ def sync(
             },
         )
         _log.warning(f"Turn {turn_id} grouping refused twice: {failed}")
-        if not failing:
+        deltas = set_aside(str(cluster["id"]) for cluster, _, _ in failing)
+        if failed.check is not ClusterCheck.CallFailed:
+            deltas.append(grouped(cache_key))
+        if not deltas:
             return None
         change = record.apply(
             diagram_id,
-            set_aside(str(cluster["id"]) for cluster, _, _ in failing),
+            deltas,
             author=Author.Coach,
             turn_id=turn_id,
             user_id=user_id,
@@ -1406,14 +1446,7 @@ def sync(
         )
         return Regroup(change=change, sentences=[])
     deltas = _deltas(data.clusters, result.clusters, dates)
-    deltas.append(
-        {
-            "item_kind": ItemKind.Diagram.value,
-            "item_id": None,
-            "field": "clusterCacheKey",
-            "after": cache_key,
-        }
-    )
+    deltas.append(grouped(cache_key))
     change = record.apply(
         diagram_id,
         deltas,

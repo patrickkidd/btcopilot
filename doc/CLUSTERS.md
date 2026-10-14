@@ -81,9 +81,15 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    family, <years>".
 4. Every refused answer, dropped period and merged period is a cluster_refused
    row in the observations table with the model's own answer [Oracle: R-0844].
-5. A stored app period over ten years or named only by its years is never handed
-   back; it is set aside with a cluster_failed row [Oracle: R-0838, R-0844,
-   R-0840]. No usable answer twice: the stored periods that pass stay.
+5. Before the call, every stored app period meets the same checks as a returned
+   one (three dated events, three supporting shifts, ten years at most) and is
+   not named only by its years; one that fails is never handed back, and is set
+   aside with a cluster_failed row naming it and its years [Oracle: R-0838,
+   R-0844, R-0840, R-0850]. The person's own are never set aside, only judged
+   (A7) [Oracle: R-0853]. No usable answer twice: the stored periods that pass
+   stay, and when the answers were refused (not when the call never answered)
+   the cache key is written, so no turn makes the same calls again until the
+   events or the person's answers change.
 6. Every stored app period the answer did not return is set aside. The person's
    own are never changed by a regroup.
 7. The person's periods [Oracle: R-0853]. The call also gets the person's

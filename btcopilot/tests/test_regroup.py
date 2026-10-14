@@ -10,7 +10,15 @@ from btcopilot.admin import admin
 from btcopilot.clusters import ClusterListResponse, ModelCluster, compute_cache_key
 from btcopilot.extensions import db
 from btcopilot.models import ModelCall, Observation, ObservationKind
-from btcopilot.schema import Event, from_dict
+from btcopilot.schema import (
+    Cluster,
+    ClusterSource,
+    DateCertainty,
+    Event,
+    EventKind,
+    asdict,
+    from_dict,
+)
 from btcopilot.tests.test_clustersync import (  # noqa: F401
     clusters_of,
     family,
@@ -125,3 +133,43 @@ def test_apply_says_which_records_got_no_answer_and_names_nothing(flask_app, fam
     assert [(r["regrouped"], r["failed"]) for r in rows] == [(0, True)]
     assert clusters_of(family) == {}
     assert Observation.query.filter_by(kind=ObservationKind.ClusterFailed).count() == 1
+
+
+def test_a_stored_period_set_aside_before_an_answer_that_passes_is_not_failed(
+    flask_app, family
+):
+    # R-0850
+    data = family.get_diagram_data()
+    data.events += [
+        asdict(
+            Event(
+                id=20 + n,
+                kind=EventKind.Shift,
+                person=1,
+                dateTime=f"1999-0{n + 1}-01",
+                dateCertainty=DateCertainty.Certain,
+                description=f"calmer {n}",
+                anxiety="down",
+            )
+        )
+        for n in range(3)
+    ]
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="c1",
+                title="A calmer year",
+                summary="r",
+                eventIds=[20, 21, 22],
+                source=ClusterSource.Model,
+            )
+        )
+    ]
+    family.set_diagram_data(data)
+    db.session.commit()
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        rows = regroup(flask_app, "--apply")
+    assert [r["failed"] for r in rows] == [False]
+    assert clusters_of(family)["c1"]["setAside"]

@@ -715,7 +715,7 @@ def test_an_accepted_grouping_answer_writes_no_observation(family):
 
 
 def test_twice_refused_with_no_groups_stores_nothing_named_after_its_years(family):
-    # R-0517, R-0844
+    # R-0517, R-0844, R-0850
     with patch(
         "btcopilot.metered.gemini_structured_sync",
         side_effect=[parsed(PAIR), parsed(PAIR)],
@@ -724,7 +724,7 @@ def test_twice_refused_with_no_groups_stores_nothing_named_after_its_years(famil
     assert clusters_of(family) == {}
     failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
     assert (failed.detail["check"], failed.detail["fallback"]) == ("too_small", False)
-    assert not family.get_diagram_data().clusterCacheKey
+    assert family.get_diagram_data().clusterCacheKey
 
 
 def test_a_model_that_fills_every_offered_field_still_groups_a_new_record(family):
@@ -758,7 +758,7 @@ def test_an_answer_cut_off_at_its_limit_is_refused_and_asked_again(family):
 
 
 def test_a_grouping_call_that_fails_twice_never_fails_the_turn(discussion, family):
-    # R-0517, R-0844
+    # R-0517, R-0844, R-0850
     with patch(
         "btcopilot.metered.gemini_structured_sync",
         side_effect=[TimeoutError(), TimeoutError()],
@@ -789,3 +789,4 @@ def test_a_grouping_call_that_fails_twice_never_fails_the_turn(discussion, famil
     failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
     assert (failed.detail["check"], failed.detail["fallback"]) == ("call_failed", False)
     assert clusters_of(family) == {}
+    assert not family.get_diagram_data().clusterCacheKey
