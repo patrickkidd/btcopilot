@@ -32,6 +32,8 @@ Everything below is brainstorm direction, not ruling, until Patrick says to take
 
 **Loose ends.** Six unpushed commits on btcopilot-sources master (his statements, a one-line user rule, the efficiency run): Patrick pushes. The worker trial harness on btcopilot branch worker/job-035-live-trial is unverified. The worker spent $9.85 on 85 coach turns (his authorization there).
 
+Theory handover for the build: btcopilot-sources research/case-report-cards/THEORY-HANDOVER-2026-10-14.md (read before the kickoff brief).
+
 **Play-by-play redesign — approved and built.** The snapshot-based drawer, designed on Fable
 from the theory corpus and approved by Patrick 2026-09-27, replaced the old moves board; see
 "Where the build stands" below for what shipped and where it stands.
