@@ -1275,7 +1275,9 @@ def test_a_period_the_person_names_is_stored_as_theirs(discussion):
         asked(record(*ASH.events), said),
         ClusterListResponse(periods=[period(said)]),
     )
-    assert ROWAN_SAID in " ".join(ask.call_args_list[0].args[0].split())
+    asked_ = " ".join(ask.call_args_list[0].args[0].split())
+    assert ROWAN_SAID in asked_
+    assert "Never rename, merge, split, shorten or widen a period of theirs" in asked_
     assert ask.call_args_list[0].kwargs["schema"]["properties"]["periods"]
     [cluster] = data.clusters
     assert (cluster["name"], cluster["source"], cluster["eventIds"]) == (

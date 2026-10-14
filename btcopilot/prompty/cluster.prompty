@@ -2,46 +2,62 @@
 name: cluster
 description: Notice the periods of heightened difficulty in a family's events and hold each as a hypothesis.
 ---
-**Your task.** Read this family's events the way a clinician reads a family
-history. Notice the periods when things were heightened for someone: shifts and
-events piling up close together. A shift can be a fall as well as a rise:
-functioning going down counts as much as a symptom or anxiety going up. Anxiety
-is never written down for you; infer it from what piles up.
+**Your task.** Read this family's events and notice the periods when things were
+heightened for someone: shifts and events piling up close together. Only some
+shifts count toward a period: a rise in symptom or anxiety, a fall in
+functioning, or a relationship shift. A drop in anxiety or a rise in
+functioning does not. The shifts may be anyone's in the extended family.
+Anxiety is never written down for you; infer it from what piles up.
 
-**Each period is a loose hypothesis.** Hold each one as a guess that some bigger
-shift happened in the family around then: someone added, someone lost, someone's
-position changed, even when nothing like that is recorded yet. A period needs no
-visible opening event and no definite end; it ends where things look settled. A
-family often has not connected its own troubles to what else was going on, so a
-period drawn around one person's own problems is the usual place to start. You
-do not have the whole story; do not hold a period tighter than the events allow.
+**Each period is a loose hypothesis.** Hold each one as a guess that the family's
+balance was disturbed around then by a change in who is in the family or in
+how a key member functions: a birth, a death, a serious diagnosis, someone
+leaving, a marriage, a separation, a cutoff. These are examples, not a list:
+judge which change mattered by who changed, not by the kind of event. The
+trouble may begin months before the change as well as after it: about eighteen
+months either side is usual, and nothing longer than ten years is one period. A
+period needs no visible opening event and no definite end. You do not have the
+whole story; do not hold a period tighter than the events allow.
 
 **One reading per family.** The family is one emotional unit, so two periods
-never cover the same days. Most events stay outside any period.
+never cover the same days. Most events
+stay outside any period.
 
 **What you are given.** First, the periods this diagram already has, each with
-its id, name, reason and events; one marked "the person drew this period" is the
-person's own. Every one of them is a hypothesis like yours: keep it, rename it,
-reshape it, merge it or drop it as the events now read, the person's own
-included. Return a period under the id of the one it grew out of. A period you
-leave out is removed. Second, runs of events the app's rules found close in
-time, each with the silence before it: a hint only, never a period by itself.
-Third, every event.
+its id, name, reason and events. One marked "the person drew this period" is
+the person's own: it stays as they drew it, you never return it, and your
+periods never share its days. Keep, rename, reshape, merge or drop any other
+one as the events now read, returning it under its id. A period you leave out
+is set aside. Second, runs of events the app's rules found close in time, each
+with the silence before it: a hint only, never a period by itself. Third, every
+event. Fourth, the person's answers when asked when the most was going on in
+their life, with their birth date.
 
-**Name and reason.** Name each period for the hypothesis: what seems to have
-shifted in the family, or the event that dominates it, and when, in words this
-person would recognise; never its length, and never its years alone. The
-`reason` is one sentence: which events pile up and what you suspect shifted.
-When a period is not exactly as you were given it, `change` says in one
-sentence, the way you would say it aloud about this person's story, what in the
+**The person's own periods.** For each time the person names in an answer that
+is not already listed as "the person drew this period", return one entry under
+`periods`: `messageId`, the answer it is in; `name`, a short phrase copied word
+for word from their answer; `words`, their sentence that names it, copied word
+for word; and `startYear` and `endYear` as their words give them, an age read
+against their birth date, a single year given as both. Leave both years out
+when their words give none. Never rename, merge, split, shorten or widen a
+period of theirs, and never fold one into yours. Your periods never share their
+years. When there are no answers, return no `periods`.
+
+**Name and reason.** Name each period of yours by the change that opened it and
+its years, in words this person would recognise; never by the person's own
+trouble or symptom, never its length, and never its years alone. `openingId` is
+the event that opened it, when one of its events did. The `reason` is one
+sentence: which events pile up and what you suspect shifted. When a period is
+not exactly as you were given it, `change` says in one sentence what in the
 events made you see it so.
 
-Every period holds at least three events. A period covering the whole history is
-the family's ordinary level, not a period. Never write an id that is not listed
-below, and never add a detail that is not on the events you were given.
+Every period of yours holds at least three of the shifts that count. Never write
+an id that is not listed below, and never add a detail that is not on the events
+you were given.
 
-Return one entry per period: `id` when it grew out of a listed one, `eventIds`,
-`name`, `reason`, and `change` when it is not exactly as given.
+Return one entry under `clusters` per period of yours: `id` when it grew out of
+a listed one, `eventIds`, `name`, `reason`, `openingId` when an event opened it,
+and `change` when it is not exactly as given.
 
 PERIODS THIS DIAGRAM HAS
 
@@ -54,3 +70,7 @@ RUNS THE APP'S RULES FOUND (A HINT ONLY)
 EVERY EVENT
 
 {events}
+
+WHEN THE PERSON SAID THE MOST WAS GOING ON
+
+{told}
