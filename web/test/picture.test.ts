@@ -517,7 +517,7 @@ describe("the drawing on a cluster's page", () => {
     ];
     const all = dates.map(([id, iso, sure]) => ev(id, iso, { dateCertainty: sure as TimelineEvent["dateCertainty"] }));
     const ids = all.map((e) => e.id);
-    const cluster = { id: "p", title: "2009\u20132011", label: "2009\u20132011", reason: "", summary: null, start: "2009-09-01", end: "2010-11-01", count: 9, event_ids: ids.slice(0, 9), play_ids: ids, openingEventId: null } as unknown as Cluster;
+    const cluster = { id: "p", title: "2009\u20132011", label: "2009\u20132011", reason: "", summary: null, start: "2009-09-01", end: "2010-11-01", count: 13, event_ids: ids.slice(0, 9), play_ids: ids, openingEventId: null } as unknown as Cluster;
     return { all, cluster };
   };
 
@@ -526,7 +526,7 @@ describe("the drawing on a cluster's page", () => {
     const { all, cluster } = period();
     expect(clusterPage(cluster, all, [], ClusterView.Row, 360)).toContain("2009\u20132011 · 13 events");
     expect(place(all, ClusterView.Row, 360, null).years).toEqual(["2009", "2011"]);
-    expect(clusterLabel(cluster)).toBe("2009\u20132011 · 9 events");
+    expect(clusterLabel(cluster)).toBe("2009\u20132011 · 13 events");
     expect(periodName(cluster)).toBe("2009\u20132011");
     expect(periodName({ ...cluster, title: "When Lily came" })).toBe("When Lily came \u00b7 2009\u20132011");
   });

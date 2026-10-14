@@ -1,7 +1,7 @@
 import pytest
 
 from btcopilot.seed import seed_diagram_data
-from btcopilot.refs import Ref, RefKind
+from btcopilot.refs import Ref, RefKind, cluster_years
 from btcopilot.timeline import GAP_DAYS, aimable, build_timeline
 from btcopilot.schema import (
     Cluster,
@@ -243,6 +243,30 @@ def test_a_period_is_written_with_the_years_stored_on_it_not_its_drawn_span():
     assert (cluster["start"], cluster["end"]) == ("2009-09-01", "2010-11-01")
     assert cluster["label"] == "2009–2011"
     assert cluster["title"] == "2009–2011"
+
+
+def test_a_cluster_with_no_stored_dates_is_written_with_the_years_of_its_dated_events():
+    # R-0853
+    events = [
+        _shift(10, 1, "2004-03-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "2006-08-01", "symptom", VariableShift.Down),
+        _shift(12, 1, None, "symptom", VariableShift.Up),
+    ]
+    data = _data([1], events)
+    data.clusters = [asdict(Cluster(id="cl-n", title="", summary="", eventIds=[10, 11, 12]))]
+    cluster = build_timeline(data)["clusters"][0]
+    assert cluster["label"] == "2004–2006"
+    assert cluster["title"] == "2004–2006"
+
+
+def test_a_cluster_with_no_stored_dates_and_no_dated_event_has_no_years():
+    # R-0853
+    events = [_shift(10, 1, None, "symptom", VariableShift.Up)]
+    data = _data([1], events)
+    stored = asdict(Cluster(id="cl-u", title="", summary="", eventIds=[10]))
+    data.clusters = [stored]
+    assert cluster_years(stored, []) is None
+    assert build_timeline(data)["clusters"] == []
 
 
 def test_two_clusters_inside_one_run_of_events_stay_two_groupings():
@@ -568,11 +592,11 @@ def _undated_in_cluster() -> DiagramData:
 
 
 def test_an_undated_event_plays_where_the_coach_put_it_but_draws_no_dot():
-    # R-0527, R-0532
+    # R-0527, R-0532, R-0850
     cluster = build_timeline(_undated_in_cluster())["clusters"][0]
     assert cluster["play_ids"] == [10, 12, 11, 13]
     assert cluster["event_ids"] == [10, 11, 13]
-    assert cluster["count"] == 3
+    assert cluster["count"] == 4
 
 
 def test_a_chip_naming_an_undated_event_in_a_cluster_survives():

@@ -298,7 +298,7 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
     previous_end = None
     for group, cluster in groups:
         start, end = group[0][1], group[-1][1]
-        years = cluster_years(cluster)
+        years = cluster_years(cluster, [date for _, date in group])
         ids = [chunk["id"] for chunk, _ in group]
         # The play-by-play keeps the coach's stored order and the undated
         # events the wire has no place for.
@@ -325,7 +325,9 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
                 "end": end.isoformat(),
                 "event_ids": ids,
                 "play_ids": play or ids,
-                "count": len(group),
+                # Every event it holds, the undated ones too, as its page counts
+                # them; the line draws only the dated ones (R-0850).
+                "count": len(play or ids),
                 "gap_days": (start - previous_end).days if previous_end else 0,
             }
         )

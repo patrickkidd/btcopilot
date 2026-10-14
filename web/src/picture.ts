@@ -157,7 +157,7 @@ function edges(clusters: { start: string; end: string }[], at: (iso: string) => 
  * further, so the whole history is always one or two swipes (R-0381). The
  * clusters come in time order; the dates are every dated moment, in order. */
 export function restWidth(
-  clusters: { start: string; end: string; count?: number }[],
+  clusters: { start: string; end: string; event_ids?: number[] }[],
   dates: string[],
   screen: number,
 ): number {
@@ -166,7 +166,8 @@ export function restWidth(
   if (span <= 0) return screen;
   let scale = (screen - 2 * X_PAD) / span;
   clusters.forEach((cluster, i) => {
-    const dots = cluster.count ?? 0;
+    // room for the dots drawn, which are its dated events only
+    const dots = cluster.event_ids?.length ?? 0;
     const room =
       Math.max(
         shortYears(cluster.start, cluster.end).length * YEAR_CH + 8,
