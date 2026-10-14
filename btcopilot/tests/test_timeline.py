@@ -5,6 +5,7 @@ from btcopilot.refs import Ref, RefKind
 from btcopilot.timeline import GAP_DAYS, aimable, build_timeline
 from btcopilot.schema import (
     Cluster,
+    ClusterSource,
     DateCertainty,
     DiagramData,
     Event,
@@ -214,6 +215,34 @@ def test_a_cluster_takes_its_title_from_a_stored_cluster_inside_it():
     cluster = build_timeline(data)["clusters"][0]
     assert cluster["title"] == "The year everything moved"
     assert cluster["cluster_ids"] == ["cl-1"]
+
+
+def test_a_period_is_written_with_the_years_stored_on_it_not_its_drawn_span():
+    # R-0853
+    events = [
+        _shift(10, 1, "2009-09-01", "symptom", VariableShift.Up, DateCertainty.Approximate),
+        _shift(11, 1, "2010-06-01", "symptom", VariableShift.Down, DateCertainty.Approximate),
+        _shift(12, 1, "2010-11-01", "symptom", VariableShift.Up, DateCertainty.Approximate),
+        _shift(13, 1, "2011-01-01", "symptom", VariableShift.Up, DateCertainty.Unknown),
+    ]
+    data = _data([1], events)
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="cl-p",
+                title="",
+                summary="",
+                eventIds=[10, 11, 12, 13],
+                startDate="2009-09-01",
+                endDate="2011-01-01",
+                source=ClusterSource.User,
+            )
+        )
+    ]
+    cluster = build_timeline(data)["clusters"][0]
+    assert (cluster["start"], cluster["end"]) == ("2009-09-01", "2010-11-01")
+    assert cluster["label"] == "2009–2011"
+    assert cluster["title"] == "2009–2011"
 
 
 def test_two_clusters_inside_one_run_of_events_stay_two_groupings():
@@ -560,8 +589,9 @@ def test_a_set_aside_cluster_is_not_in_the_payload_and_the_payload_names_its_ope
         _shift(11, 1, "1991-01-01", "symptom", VariableShift.Down),
     ]
     data = _data([1], events)
-    kept = Cluster(id="cl-1", title="Kept", summary="s", eventIds=[10, 11], openingEventId=10)
-    aside = Cluster(id="cl-2", title="Aside", summary="s", eventIds=[10, 11], setAside=True)
+    span = {"startDate": "1990-01-01", "endDate": "1991-01-01"}
+    kept = Cluster(id="cl-1", title="Kept", summary="s", eventIds=[10, 11], openingEventId=10, **span)
+    aside = Cluster(id="cl-2", title="Aside", summary="s", eventIds=[10, 11], setAside=True, **span)
     data.clusters = [asdict(kept), asdict(aside)]
     drawn = build_timeline(data)["clusters"]
     assert [c["id"] for c in drawn] == ["cl-1"]

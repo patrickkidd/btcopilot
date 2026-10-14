@@ -183,6 +183,15 @@ def _people_entries(people: dict, dated: list[tuple[dict, datetime.date]]) -> li
     return entries
 
 
+def cluster_years(cluster: dict) -> str:
+    """A cluster's years, "2009–2011", the one way every screen writes them:
+    its stored start and end dates, the years the person gave for a period of
+    their own, the span the grouping stored for the app's [Oracle: R-0853]."""
+    start = parse_date(cluster["startDate"])
+    end = parse_date(cluster.get("endDate")) or start
+    return str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
+
+
 def _cluster_entries(
     clusters: list[dict], dated: list[tuple[dict, datetime.date]]
 ) -> list[str]:
@@ -194,8 +203,7 @@ def _cluster_entries(
         start = parse_date(cluster.get("startDate"))
         if start is None or not first <= start <= last:
             continue
-        end = parse_date(cluster.get("endDate")) or start
-        span = str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
+        span = cluster_years(cluster)
         title = (cluster.get("title") or "").strip()[:_LABEL_CHARS]
         entries.append((start, f"{cluster['id']} {span} {title}".strip()))
     entries.sort(key=lambda pair: pair[0], reverse=True)

@@ -602,11 +602,10 @@ it("adds every cluster to the coach's guess card as a hypothesis chip, in date o
   expect(caseView(tl, ONE, "").hypotheses).toEqual([]);
 });
 
-// R-0850
-it("writes a period's years on its chip from its first to its last stored date, an unknown date included", () => {
+// R-0853
+it("writes a period's years on its chip as the server stored them, not from the span drawn on the line", () => {
   const tl = halloran();
   const p = { ...cluster(tl, "p1", "When Lily came", "2009-09-01", "2010-11-01"), source: ClusterSource.User };
-  tl.events.push(event(990, EventKind.Shift, "2011-01-01", { person: 4, title: "Later", dateCertainty: "unknown" }));
-  tl.clusters = [{ ...p, play_ids: [...p.play_ids, 990] }];
+  tl.clusters = [{ ...p, label: "2009\u20132011" }];
   expect(caseView(tl, ONE, "").hypotheses.map((c) => c.label)).toEqual(["Your period: When Lily came · 2009–2011"]);
 });

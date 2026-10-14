@@ -7,7 +7,7 @@ import logging
 import re
 from dataclasses import MISSING, fields as dc_fields
 
-from btcopilot.refs import Ref, RefKind
+from btcopilot.refs import Ref, RefKind, cluster_years
 from btcopilot.schema import (
     DateCertainty,
     DiagramData,
@@ -242,10 +242,6 @@ def _events_payload(data: DiagramData, people_by_id: dict) -> list[dict]:
     return sorted(events, key=lambda e: (_undated(e), e["dateTime"] or "", e["id"]))
 
 
-def _cluster_label(start: datetime.date, end: datetime.date) -> str:
-    return str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
-
-
 def _cluster_group(cluster: dict, by_id: dict, claimed: set) -> list:
     """The dated events one stored cluster owns: the ones it names, or the ones
     inside its date range when it names none. An event belongs to one cluster."""
@@ -302,6 +298,7 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
     previous_end = None
     for group, cluster in groups:
         start, end = group[0][1], group[-1][1]
+        years = cluster_years(cluster)
         ids = [chunk["id"] for chunk, _ in group]
         # The play-by-play keeps the coach's stored order and the undated
         # events the wire has no place for.
@@ -315,10 +312,8 @@ def _drawn_clusters(events: list[dict], clusters: list[dict]) -> list[dict]:
                 # It carries the record's own id, so a chip written about it
                 # resolves in the record.
                 "id": str(cluster["id"]),
-                "label": _cluster_label(start, end),
-                "title": (
-                    cluster.get("name") or cluster.get("title") or _cluster_label(start, end)
-                ),
+                "label": years,
+                "title": cluster.get("name") or cluster.get("title") or years,
                 "summary": cluster.get("summary"),
                 # Why these events are one episode, in the coach's own sentence.
                 "reason": cluster.get("reason"),

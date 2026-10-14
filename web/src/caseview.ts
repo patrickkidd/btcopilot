@@ -50,27 +50,11 @@ export const ORDER: Card[] = [
   Card.Effort,
 ];
 
-/** The first and last years of a period's stored dates, an unsure or unknown
- * date included, as the stored period runs from its first to its last event. */
-export function periodSpan(events: TimelineEvent[]): [string, string] {
-  const dates = events.filter((e) => e.dateTime).map((e) => e.dateTime!.slice(0, 4)).sort();
-  return [dates[0], dates[dates.length - 1]];
-}
-
-/** A period's years, "2009–2011", the one way the case report's chip, the
- * cluster's page and its drawing write them (R-0850). */
-export function periodYears(cluster: { event_ids: number[]; play_ids: number[] }, all: TimelineEvent[]): string {
-  const ids = new Set([...cluster.event_ids, ...cluster.play_ids]);
-  const [a, b] = periodSpan(all.filter((e) => ids.has(e.id)));
-  return a === b ? a : `${a}–${b}`;
-}
-
-/** A period on a chip: its name, then its years; a period with no name of its
- * own carries its years as its title, and they are written once. */
-const periodName = (c: Cluster, all: TimelineEvent[]) => {
-  const years = periodYears(c, all);
-  return c.title && c.title !== c.label ? `${c.title} \u00b7 ${years}` : years;
-};
+/** A period on a chip: its name, then the years the server stored for it,
+ * "When Lily came \u00b7 2009\u20132011"; a period with no name of its own has its
+ * years as its title, and they are written once (R-0853). */
+export const periodName = (c: Pick<Cluster, "title" | "label">) =>
+  c.title !== c.label ? `${c.title} \u00b7 ${c.label}` : c.label;
 
 /** The guess cards: with nothing on them they say so in the coach's bubble (R-0699). */
 export const GUESS_CARDS = new Set([Card.Main, Card.Guesses, Card.OwnPart, Card.WorkOn]);
@@ -611,7 +595,7 @@ class Reader {
       .filter((one) => one.kind === EvidenceKind.Cluster)
       .map((one) => this.tl.clusters.find((c) => c.id === String(one.id)))
       .filter((c): c is NonNullable<typeof c> => !!c)
-      .map((c) => ({ id: c.id, label: periodName(c, this.tl.events) }));
+      .map((c) => ({ id: c.id, label: periodName(c) }));
     const events = q.evidence
       .filter((one) => one.kind === EvidenceKind.Event)
       .map((one) => this.event(Number(one.id)))
@@ -683,7 +667,7 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
       .map((c) => {
         const mine = c.source === ClusterSource.User;
         const slot = pattern?.slots[c.id];
-        const named = periodName(c, tl.events);
+        const named = periodName(c);
         return { id: c.id, label: mine ? `Your period: ${named}` : `Hypothesis: ${named}`, mine, for: slot?.for ?? null, against: slot?.against ?? null };
       }),
     ask: pattern?.open ?? questions.find((q) => open(q) && onCard(null)(q))?.text ?? null,

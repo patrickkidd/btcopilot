@@ -1,5 +1,4 @@
 import { book } from "./case";
-import { periodSpan, periodYears } from "./caseview";
 import { DateCertainty } from "./certainty";
 import { closeX, esc, pan, still } from "./dom";
 // this line draws pills, dots and the wire
@@ -349,8 +348,8 @@ export const clusterStep = (c: Named) => c.title || spanYears(c.start, c.end);
 /** The words under the line with a cluster open and nothing picked: its years
  * and how many events it holds, "1981\u20132003 \u00b7 3 events" (R-0583, R-0767);
  * the name is in the path above. */
-export const clusterLabel = (c: { event_ids: number[]; play_ids: number[]; count: number }, all: TimelineEvent[]) =>
-  `${periodYears(c, all)} \u00b7 ${c.count} event${c.count === 1 ? "" : "s"}`;
+export const clusterLabel = (c: { label: string; count: number }) =>
+  `${c.label} \u00b7 ${c.count} event${c.count === 1 ? "" : "s"}`;
 
 /** The path over the line, from the whole timeline down to where the reader
  * is: the cluster open by its name, then the mode it is in or the event
@@ -670,7 +669,7 @@ export function place(
       view === ClusterView.Lanes
         ? lanes.map((id, i) => ({ name: cut(people.get(id) ?? "", 9), y: laneY(i) }))
         : [],
-    years: periodSpan(dated),
+    years: [dated[0].dateTime!.slice(0, 4), dated[dated.length - 1].dateTime!.slice(0, 4)],
     height: TOP + LANE_H * lanes.length + 18,
   };
 }
@@ -744,7 +743,7 @@ export function clusterPage(
   const moments = events.map((e) => ({ year: e.dateTime?.slice(0, 4) ?? "", label: e.label }));
   const names = new Map(people.map((p) => [p.id, p.name]));
   const draw = drawing(events, view, width, cluster.openingEventId ?? null, names);
-  return aboutMarkup(why, periodYears(cluster, all), moments, draw);
+  return aboutMarkup(why, cluster.label, moments, draw);
 }
 
 /** The page behind a cluster's i, as markup: the coach's reason, the years and
@@ -1377,7 +1376,7 @@ export class Picture {
         index: clusters.indexOf(cluster),
         left: hits[i].left,
         width: hits[i].right - hits[i].left,
-        label: cluster.title || periodYears(cluster, this.data?.events ?? []),
+        label: cluster.title,
       });
     });
     // what this turn removed stays where it was, in its colour, until the next
@@ -1422,7 +1421,7 @@ export class Picture {
     const title =
       !said.text && open && !chosen
         ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
-          `width:${screen - 2 * X_PAD}px"><span>${esc(clusterLabel(open, this.data?.events ?? []))}</span></div>`
+          `width:${screen - 2 * X_PAD}px"><span>${esc(clusterLabel(open))}</span></div>`
         : "";
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
