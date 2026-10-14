@@ -30,6 +30,7 @@ import {
   years,
   type Layer,
 } from "../src/picture";
+import { periodYears } from "../src/caseview";
 import { zones } from "../src/spotlight";
 import { Touch, type Cluster, type TimelineEvent } from "../src/types";
 
@@ -343,10 +344,11 @@ describe("the path row over the line", () => {
 
   // R-0583, R-0767
   it("writes the years and the count once under the line, the name once above it", () => {
-    const open = { title: "Every mark", start: "1972-06-10", end: "1999-02-01", count: 12 };
-    expect(clusterLabel(open)).toBe("1972–1999 · 12 events");
-    expect(clusterLabel({ ...open, end: "1972-12-01", count: 1 })).toBe("1972 · 1 event");
-    expect(clusterLabel(open)).not.toContain("Every mark");
+    const open = { title: "Every mark", start: "1972-06-10", end: "1999-02-01", count: 12, event_ids: [1, 2], play_ids: [] };
+    const all = [{ id: 1, dateTime: "1972-06-10" }, { id: 2, dateTime: "1999-02-01" }] as TimelineEvent[];
+    expect(clusterLabel(open, all)).toBe("1972–1999 · 12 events");
+    expect(clusterLabel({ ...open, event_ids: [1], count: 1 }, all)).toBe("1972 · 1 event");
+    expect(clusterLabel(open, all)).not.toContain("Every mark");
     expect(clusterStep(open)).toBe("Every mark");
     expect(clusterStep(open)).not.toMatch(/\d{4}/);
   });
@@ -499,10 +501,49 @@ describe("the drawing on a cluster's page", () => {
 
   // R-0850
   it("lists every event of the cluster, the undated ones too", () => {
-    const cluster = { reason: "", summary: null, start: "1998-01-01", end: "1999-01-01", play_ids: [1, 2, 3, 4, 5], openingEventId: null } as unknown as Cluster;
+    const cluster = { reason: "", summary: null, start: "1998-01-01", end: "1999-01-01", event_ids: [1, 2, 3], play_ids: [1, 2, 3, 4, 5], openingEventId: null } as unknown as Cluster;
     const page = clusterPage(cluster, [...events, ev(5, null, { label: "Moved away" })], [], ClusterView.Row, 300);
     expect(page).toContain("1998–1999 · 5 events");
     expect(page).toContain('<span class="ab-yr"></span><span class="ab-what">Moved away</span>');
+  });
+
+  /** A period as the person stored it: on the line from Sep 2009 to Nov 2010,
+   * four events after it whose dates the diagram does not know, same dates shared. */
+  const period = () => {
+    const dates: [number, string, string][] = [
+      [16, "2009-09-01", "approximate"], [17, "2009-09-01", "approximate"], [18, "2010-01-01", "approximate"],
+      [19, "2010-06-01", "approximate"], [20, "2010-10-01", "approximate"], [21, "2010-10-01", "approximate"],
+      [23, "2010-11-01", "approximate"], [104, "2010-11-01", "approximate"], [105, "2010-11-01", "approximate"],
+      [106, "2010-12-01", "unknown"], [107, "2011-01-01", "unknown"], [108, "2011-01-01", "unknown"], [24, "2011-01-01", "unknown"],
+    ];
+    const all = dates.map(([id, iso, sure]) => ev(id, iso, { dateCertainty: sure as TimelineEvent["dateCertainty"] }));
+    const ids = all.map((e) => e.id);
+    const cluster = { id: "p", title: "", reason: "", summary: null, start: "2009-09-01", end: "2010-11-01", count: 9, event_ids: ids.slice(0, 9), play_ids: ids, openingEventId: null } as unknown as Cluster;
+    return { all, cluster };
+  };
+
+  // R-0850
+  it("writes a period's years one way on its page, its drawing and under the line, from its first to its last stored date", () => {
+    const { all, cluster } = period();
+    expect(periodYears(cluster, all)).toBe("2009\u20132011");
+    expect(clusterPage(cluster, all, [], ClusterView.Row, 360)).toContain("2009\u20132011 · 13 events");
+    expect(place(all, ClusterView.Row, 360, null).years).toEqual(["2009", "2011"]);
+    expect(clusterLabel(cluster, all)).toBe("2009\u20132011 · 9 events");
+  });
+
+  // R-0168, R-0850
+  it("stacks events on one date a few pixels apart in the one row, each dot answering its own tap", () => {
+    const { all } = period();
+    const p = place(all, ClusterView.Row, 360, null);
+    const at = (id: number) => p.dots.find((d) => d.id === id)!;
+    expect(p.lanes).toEqual([]);
+    expect([at(23).x, at(104).x]).toEqual([at(105).x, at(105).x]);
+    expect([at(23).y - at(104).y, at(104).y - at(105).y]).toEqual([8, 8]);
+    const inside = (b: { x: number; y: number; w: number; h: number }, d: { x: number; y: number }) =>
+      d.x >= b.x && d.x <= b.x + b.w && d.y >= b.y && d.y <= b.y + b.h;
+    for (const d of p.dots) expect(p.dots.filter((o) => inside(o.hit, d)).map((o) => o.id)).toEqual([d.id]);
+    const svg = drawing(all, ClusterView.Row, 360, null);
+    expect(svg.match(/<rect class="ab-hit"/g)).toHaveLength(13);
   });
 
   // R-0168

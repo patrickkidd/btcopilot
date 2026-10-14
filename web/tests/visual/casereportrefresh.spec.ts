@@ -111,7 +111,8 @@ test.describe("a case report out of date", () => {
     await sheet(page).getByText("Refresh the report").click();
     await expect(sheet(page)).toBeHidden();
     for (const card of WRITTEN) await expect(page.locator(`#case-body .level[data-card="${card}"]`)).toHaveClass(/\bdim\b/);
-    await expect(page.locator('#case-body .level[data-card="family"]')).not.toHaveClass(/\bdim\b/);
+    // the family is a card in the list on the phone, and stands in the column beside the cards on a wide window
+    await expect(page.locator("#case-body, #case-dash").locator('.level[data-card="family"]')).not.toHaveClass(/\bdim\b/);
     await expect(line(page)).toHaveText("The coach is rewriting its five cards from the diagram as it stands now.");
     await expect(line(page)).toHaveCount(0, { timeout: 15_000 });
     await expect(dimmed(page)).toHaveCount(0);

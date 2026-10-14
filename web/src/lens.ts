@@ -86,9 +86,7 @@ export class Lens {
     });
     hosts.info.addEventListener("click", () => {
       hooks.track(Feature.PictureInfo);
-      this.picture.about();
-      if (this.picture.aboutOpen()) hooks.track(VIEW_FEATURES[storedView()]);
-      this.rest();
+      this.about();
     });
   }
 
@@ -311,6 +309,15 @@ export class Lens {
   /** Empty ground on the picture puts it down: the whole line at a glance. */
   putDown(): void {
     this.picture.dismiss();
+    this.rest();
+  }
+
+  /** The open cluster's view, the one way in from its info button and from a
+   * chip naming it (Patrick, 2026-10-14): the drawing, the toggle, the events
+   * and the book, its view counted when shown. */
+  about(): void {
+    this.picture.about();
+    if (this.picture.aboutOpen()) this.hooks.track(VIEW_FEATURES[storedView()]);
     this.rest();
   }
 

@@ -15,3 +15,14 @@ it("keeps one width at which the app widens", () => {
   const all = ["main.ts", "pro.ts", "viewport.ts", "lens.ts", "casereport.ts"].map(source).join("\n");
   expect(all.match(/min-width: 840px/g)).toHaveLength(1);
 });
+
+// R-0850
+it("opens a cluster's view one way, from its info button and from a chip naming it, its view counted when shown", () => {
+  const lens = source("lens.ts");
+  expect(lens.match(/picture\.about\(\)/g)).toHaveLength(1);
+  expect(lens).toMatch(/Feature\.PictureInfo\);\s*this\.about\(\);/);
+  expect(lens).toMatch(/this\.picture\.about\(\);\s*if \(this\.picture\.aboutOpen\(\)\) this\.hooks\.track\(VIEW_FEATURES\[storedView\(\)\]\)/);
+  const report = source("casereport.ts");
+  expect(report).toContain("if (chip.kind === ChipKind.Cluster) return this.lens.about();");
+  expect(report).not.toContain("picture.about(");
+});

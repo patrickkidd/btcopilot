@@ -1,4 +1,5 @@
 import { book } from "./case";
+import { periodSpan, periodYears } from "./caseview";
 import { DateCertainty } from "./certainty";
 import { closeX, esc, pan, still } from "./dom";
 // this line draws pills, dots and the wire
@@ -348,8 +349,8 @@ export const clusterStep = (c: Named) => c.title || spanYears(c.start, c.end);
 /** The words under the line with a cluster open and nothing picked: its years
  * and how many events it holds, "1981\u20132003 \u00b7 3 events" (R-0583, R-0767);
  * the name is in the path above. */
-export const clusterLabel = (c: { start: string; end: string; count: number }) =>
-  `${fullYears(c.start, c.end)} \u00b7 ${c.count} event${c.count === 1 ? "" : "s"}`;
+export const clusterLabel = (c: { event_ids: number[]; play_ids: number[]; count: number }, all: TimelineEvent[]) =>
+  `${periodYears(c, all)} \u00b7 ${c.count} event${c.count === 1 ? "" : "s"}`;
 
 /** The path over the line, from the whole timeline down to where the reader
  * is: the cluster open by its name, then the mode it is in or the event
@@ -585,14 +586,43 @@ const laneOf = (e: TimelineEvent) =>
 
 const LANE_H = 30;
 const NAME_W = 64;
-const STACK = 12;
+/** How far apart up the row events on the same date stand, the row staying one row. */
+const STACK = 8;
+/** How far a dot's target reaches past it where no other dot is near. */
+const THUMB = 12;
 const TOP = 22;
 const SHORT = 22;
 
 const cut = (text: string, n: number) => (text.length > n ? text.slice(0, n - 1) + "\u2026" : text);
 
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Each dot's own target: a thumb's reach around it, cut halfway to any dot
+ * nearer than that, along the way the two stand furthest apart, so no target
+ * covers another dot and every dot answers its own tap (R-0168). */
+export function targets(dots: { x: number; y: number }[]): Box[] {
+  return dots.map((d) => {
+    let [l, r, t, b] = [d.x - THUMB, d.x + THUMB, d.y - THUMB, d.y + THUMB];
+    for (const o of dots) {
+      const [dx, dy] = [o.x - d.x, o.y - d.y];
+      if (o === d || Math.abs(dx) >= 2 * THUMB || Math.abs(dy) >= 2 * THUMB) continue;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        if (dx > 0) r = Math.min(r, d.x + dx / 2);
+        else l = Math.max(l, d.x + dx / 2);
+      } else if (dy > 0) b = Math.min(b, d.y + dy / 2);
+      else t = Math.max(t, d.y + dy / 2);
+    }
+    return { x: l, y: t, w: r - l, h: b - t };
+  });
+}
+
 export interface Placed {
-  dots: { id: number; x: number; y: number; colour: string; hollow: boolean }[];
+  dots: { id: number; x: number; y: number; colour: string; hollow: boolean; hit: Box }[];
   key: { x: number; label: string } | null;
   lanes: { name: string; y: number }[];
   years: [string, string];
@@ -620,27 +650,27 @@ export function place(
   const stacked = new Map<string, number>();
   const dots = dated.map((e) => {
     const lane = view === ClusterView.Lanes ? lanes.indexOf(laneOf(e)) : 0;
-    const at = x(e);
-    const slot = `${lane}:${Math.round(at / STACK)}`;
+    const slot = `${lane}:${e.dateTime!.slice(0, 10)}`;
     const n = stacked.get(slot) ?? 0;
     stacked.set(slot, n + 1);
     return {
       id: e.id,
-      x: at,
-      y: laneY(lane) - n * (view === ClusterView.Lanes ? 6 : STACK),
+      x: x(e),
+      y: laneY(lane) - n * STACK,
       colour: colourOf(e),
       hollow: e.dateCertainty !== DateCertainty.Certain,
     };
   });
+  const hits = targets(dots);
   const key = keyOf(dated, opening);
   return {
-    dots,
+    dots: dots.map((d, i) => ({ ...d, hit: hits[i] })),
     key: key && { x: x(key), label: cut(key.label, SHORT) },
     lanes:
       view === ClusterView.Lanes
         ? lanes.map((id, i) => ({ name: cut(people.get(id) ?? "", 9), y: laneY(i) }))
         : [],
-    years: [yearAt(a).toString(), dated[dated.length - 1].dateTime!.slice(0, 4)],
+    years: periodSpan(dated),
     height: TOP + LANE_H * lanes.length + 18,
   };
 }
@@ -674,8 +704,7 @@ export function drawing(
       .map(
         (d) =>
           `<circle class="ab-dot" cx="${f(d.x)}" cy="${f(d.y)}" r="5" stroke="${d.colour}" fill="${d.hollow ? "var(--panel)" : d.colour}"/>` +
-          // a thumb-sized target over the small dot
-          `<circle class="ab-hit" data-target="${Target.Dot}" data-index="${d.id}" cx="${f(d.x)}" cy="${f(d.y)}" r="12"/>`,
+          `<rect class="ab-hit" data-target="${Target.Dot}" data-index="${d.id}" x="${f(d.hit.x)}" y="${f(d.hit.y)}" width="${f(d.hit.w)}" height="${f(d.hit.h)}"/>`,
       )
       .join("") +
     `<text class="ab-end" x="${p.lanes.length ? NAME_W + 8 : 8}" y="${f(p.height - 4)}">${p.years[0]}</text>` +
@@ -715,7 +744,7 @@ export function clusterPage(
   const moments = events.map((e) => ({ year: e.dateTime?.slice(0, 4) ?? "", label: e.label }));
   const names = new Map(people.map((p) => [p.id, p.name]));
   const draw = drawing(events, view, width, cluster.openingEventId ?? null, names);
-  return aboutMarkup(why, fullYears(cluster.start, cluster.end), moments, draw);
+  return aboutMarkup(why, periodYears(cluster, all), moments, draw);
 }
 
 /** The page behind a cluster's i, as markup: the coach's reason, the years and
@@ -773,13 +802,6 @@ export function yearAt(at: number): number {
 interface Mark {
   event: TimelineEvent;
   x: number;
-}
-
-/** "2006", or "2004–2006": the span in full years, for a page with room. */
-function fullYears(start: string, end: string): string {
-  const a = yearAt(years(start));
-  const b = yearAt(years(end));
-  return a === b ? String(a) : `${a}\u2013${b}`;
 }
 
 /** The dated moments no cluster claims. */
@@ -1355,7 +1377,7 @@ export class Picture {
         index: clusters.indexOf(cluster),
         left: hits[i].left,
         width: hits[i].right - hits[i].left,
-        label: cluster.title || fullYears(cluster.start, cluster.end),
+        label: cluster.title || periodYears(cluster, this.data?.events ?? []),
       });
     });
     // what this turn removed stays where it was, in its colour, until the next
@@ -1400,7 +1422,7 @@ export class Picture {
     const title =
       !said.text && open && !chosen
         ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
-          `width:${screen - 2 * X_PAD}px"><span>${esc(clusterLabel(open))}</span></div>`
+          `width:${screen - 2 * X_PAD}px"><span>${esc(clusterLabel(open, this.data?.events ?? []))}</span></div>`
         : "";
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";

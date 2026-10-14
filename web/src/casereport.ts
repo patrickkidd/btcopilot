@@ -279,8 +279,8 @@ export class CaseReport implements View {
   }
 
   /** A chip on the report: an event lights on the timeline as in the chat; a
-   * person lights that person's events (R-0700); a cluster opens on the
-   * timeline the way its pill does, so explain is offered (R-0700). */
+   * person lights that person's events (R-0700); a cluster opens its view, as
+   * its info button on the timeline does (Patrick, 2026-10-14). */
   private chip(chip: Chip): void {
     const tl = this.opened!.record;
     // what a chip names is shown on the full line, so a folded line opens first
@@ -291,13 +291,14 @@ export class CaseReport implements View {
       if (ids.length) this.lens.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
       return;
     }
-    // a chip naming a cluster, or events inside one, opens that cluster the
-    // way a tap on it on the timeline does, so explain is offered (R-0700),
-    // and lights what it names there
+    // a chip naming a cluster opens its view; a chip naming events inside one
+    // opens that cluster the way a tap on it on the timeline does, so explain
+    // is offered (R-0700), and lights what it names there
     const ids = aimedEvents(chip, tl.clusters);
     const cluster = ids.length ? tl.clusters.find((c) => ids.every((id) => c.event_ids.includes(id))) : undefined;
     if (cluster) {
       this.lens.openCluster(cluster);
+      if (chip.kind === ChipKind.Cluster) return this.lens.about();
       this.lens.picture.spotlight(ids);
       return;
     }
