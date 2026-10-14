@@ -227,6 +227,7 @@ rulings and the oracle SPEC. The encrypted rulings store and prompts in this rep
 | The app's JSON API | [doc/API.md](doc/API.md) |
 | Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md), [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md), [doc/EVENT_MODEL.md](doc/EVENT_MODEL.md) |
 | Clusters | [doc/CLUSTERS.md](doc/CLUSTERS.md) |
+| Case report: the formulation framing, the cards, the cluster rules | [doc/CASE_REPORT.md](doc/CASE_REPORT.md) |
 | Coverage of the basic data: required items, their states, the metrics | [doc/COVERAGE.md](doc/COVERAGE.md) |
 | Drawability — when the timeline picture may draw vs must ask | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
 | Crisis protocol | [doc/CRISIS_PROTOCOL.md](doc/CRISIS_PROTOCOL.md) |

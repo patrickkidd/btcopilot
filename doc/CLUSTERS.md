@@ -5,6 +5,9 @@ on Patrick's reading; the earlier pages are in git history.
 
 ## What a cluster is
 
+The definition of a cluster as the case report's evidence in time, with its book lines, is in
+[CASE_REPORT.md](CASE_REPORT.md) [Oracle: R-0850].
+
 A cluster is a period when difficulty was heightened for someone in the family,
 held loosely as a hypothesis that something bigger shifted in the family around
 then: a birth, a death, a move, someone's position changing. It is inferred from
