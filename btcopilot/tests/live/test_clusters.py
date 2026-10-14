@@ -4,9 +4,11 @@ prompt let the model fold them into one period of fifty years. Read as
 hypotheses of a family process, the periods stay apart across the quiet
 decades, each named for the change in the family that opened it, never for
 its years or the person's trouble (R-0841, R-0844, R-0837, R-0838, R-0850).
-Invented names only; no real record is involved. Pass criteria are k of n runs
-on the stored clusters, stated on each test; none has been run against the
-prompt of DETECTION_VERSION 10 yet (real-model spend waits on Patrick).
+The periods the person names when asked when the most was going on come back
+as hers, in her words (R-0853). Invented names only; no real record is
+involved. Pass criteria are k of n runs on the stored clusters, stated on each
+test; none has been run against the prompt of DETECTION_VERSION 11 yet
+(real-model spend waits on Patrick).
 
 The app's grouping model is Gemini, and this suite's machine may have no key
 for it, so the call goes through Claude Code (`claude -p` with the answer's
@@ -24,12 +26,15 @@ import tempfile
 from decimal import Decimal
 
 from btcopilot.clusters import (
+    Answer,
     ClusterError,
     ClusterListResponse,
     ModelCluster,
+    TheirPeriod,
     detect_clusters,
     symptom_words,
 )
+from btcopilot.schema import ClusterSource
 from btcopilot.tests.live.criterion import once, passes
 from btcopilot.tests.test_clusters import ALL_HALE, HALE, HALE_NAMES, HALE_STORED
 
@@ -88,7 +93,8 @@ def ask(prompt: str, schema: dict, limit: int) -> ClusterListResponse:
     print(f"  {MODEL}: ${spent[-1]:.4f}, {sum(spent):.4f} so far")
     answer = result.get("structured_output") or json.loads(result["result"])
     return ClusterListResponse(
-        clusters=[ModelCluster(**group) for group in answer.get("clusters", [])]
+        clusters=[ModelCluster(**group) for group in answer.get("clusters", [])],
+        periods=[TheirPeriod(**period) for period in answer.get("periods", [])],
     )
 
 
@@ -189,3 +195,31 @@ def test_a_period_is_named_by_its_change_and_holds_the_death_it_follows():
     ]
     late = [c for c in result.clusters if span(c)[0] >= 1996]
     assert late and any(11 in c.eventIds for c in late)
+
+
+# Nell's answer when the coach asked when the most was going on.
+NELL_SAID = (
+    "The worst stretch was after Theo and I got married, from 1996 until we "
+    "split in 2001. Before that, 1994, when Mum and Dad divorced, was hard too."
+)
+
+
+@passes(8, of=10)
+def test_the_periods_the_person_names_come_back_as_hers():
+    # R-0853
+    """Pass: exactly two periods of hers are stored, over 1994 and over 1996 to
+    2001 (the code refuses any not in her words or sharing days), and no period
+    of the app's shares their days."""
+    said = [Answer(1, "When in your life was the most going on?", NELL_SAID)]
+    result = detect_clusters(HALE, ask, said=said)
+    for cluster in result.clusters:
+        print(f"  {cluster.source} {span(cluster)} {cluster.eventIds} {cluster.name!r}")
+    hers = [c for c in result.clusters if c.source is ClusterSource.User]
+    assert sorted(span(c) for c in hers) == [(1994, 1994), (1996, 2001)]
+    ours = [c for c in result.clusters if c.source is ClusterSource.Model]
+    assert not [
+        c.name
+        for c in ours
+        for h in hers
+        if c.startDate < h.endDate and h.startDate < c.endDate
+    ]

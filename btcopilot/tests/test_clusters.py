@@ -11,13 +11,15 @@ from contextlib import contextmanager
 import pytest
 from mock import Mock, patch
 
-from btcopilot import clusters
+from btcopilot import clusters, diagramjson
 from btcopilot.clusters import (
     MAX_SPAN_YEARS,
+    Answer,
     ClusterCheck,
     ClusterError,
     ClusterListResponse,
     ModelCluster,
+    TheirPeriod,
     _deltas,
     answer_schema,
     candidates,
@@ -30,7 +32,7 @@ from btcopilot.clusters import (
 )
 from btcopilot.extensions import db
 from btcopilot.llmutil import Parsed, Served, Spent, gemini_structured_sync
-from btcopilot.models import Observation, ObservationKind
+from btcopilot.models import Observation, ObservationKind, Statement
 from btcopilot.seed import seed_diagram_data
 from btcopilot.schema import (
     Cluster,
@@ -39,8 +41,13 @@ from btcopilot.schema import (
     DiagramData,
     Event,
     EventKind,
+    Fact,
+    ItemKind,
     PairBond,
     Person,
+    QuestionKind,
+    QuestionOutcome,
+    QuestionState,
     RelationshipKind,
     VariableShift,
     asdict,
@@ -788,7 +795,8 @@ def test_the_prompt_holds_periods_as_hypotheses_with_the_silence_before_each_hin
     assert "1 year and 10 months with nothing recorded before this group" in asked
     for sentence in (
         "Each period is a loose hypothesis",
-        "a change in who is in the family or in how a key member functions",
+        "a change in who is in the family",
+        "how a key member functions",
         "These are examples, not a list",
         "a rise in symptom or anxiety, a fall in functioning, or a relationship shift",
         "A drop in anxiety or a rise in functioning does not",
@@ -1188,3 +1196,164 @@ def test_a_set_aside_cluster_stays_stored_but_is_never_drawn():
     data.clusters.append(aside)
     assert [c["id"] for c in data.drawn_clusters()] == ["c2"]
     assert [c["id"] for c in data.clusters] == ["c2", "c1"]
+
+
+# The fictional Ash family: Rowan (1) says the years after the divorce were the
+# worst. In those years her own trouble, her sister Iris's (2) remarriage and
+# Iris's fall at work: two shifts that count, so the period is not supported.
+ROWAN_SAID = "Honestly the years after my divorce, 2005 to 2006, were the worst."
+DIVORCE = "the years after my divorce"
+ASH = record(
+    moment(40, "2005-03-01", person=1, symptom=VariableShift.Up),
+    asdict(
+        Event(id=41, kind=EventKind.Married, person=2, spouse=3, dateTime="2006-01-10")
+    ),
+    moment(42, "2006-08-01", person=2, functioning=VariableShift.Down),
+    moment(43, "2009-05-01", person=2, anxiety=VariableShift.Up),
+)
+
+
+def period(message_id: int, name=DIVORCE, words=ROWAN_SAID, years=(2005, 2006)):
+    return TheirPeriod(
+        messageId=message_id,
+        name=name,
+        words=words,
+        startYear=years and years[0],
+        endYear=years and years[1],
+    )
+
+
+def asked(data: DiagramData, message_id: int) -> DiagramData:
+    data.questions = [
+        {
+            "id": "q1",
+            "kind": QuestionKind.Fact.value,
+            "text": "When in your life was the most going on?",
+            "state": QuestionState.Resolved.value,
+            "outcome": QuestionOutcome.Answered.value,
+            "fact": Fact.MostGoingOn.value,
+            "item_kind": ItemKind.Person.value,
+            "item_id": 1,
+            "answer": {"kind": "statement", "id": message_id, "label": "You said, 3 Oct"},
+        }
+    ]
+    return data
+
+
+def told_by(discussion, words: str) -> int:
+    statement = Statement(
+        discussion_id=discussion.id,
+        speaker_id=discussion.chat_user_speaker_id,
+        text=words,
+        order=2,
+    )
+    db.session.add(statement)
+    db.session.commit()
+    return statement.id
+
+
+def grouped_with(discussion, data: DiagramData, *answered: ClusterListResponse):
+    diagram = discussion.diagram
+    diagram.set_diagram_data(data)
+    stored = diagramjson.loads(diagram.data)
+    stored["questions"] = data.questions
+    diagram.data = diagramjson.dumps(stored)
+    db.session.commit()
+    with patch(
+        "btcopilot.metered.gemini_structured_sync",
+        side_effect=[parsed(one) for one in answered],
+    ) as ask:
+        sync(diagram.id, turn_id="t1", user_id=diagram.user_id)
+    return diagram.get_diagram_data(), ask
+
+
+def test_a_period_the_person_names_is_stored_as_theirs(discussion):
+    # R-0853
+    said = told_by(discussion, ROWAN_SAID)
+    data, ask = grouped_with(
+        discussion,
+        asked(record(*ASH.events), said),
+        ClusterListResponse(periods=[period(said)]),
+    )
+    assert ROWAN_SAID in " ".join(ask.call_args_list[0].args[0].split())
+    assert ask.call_args_list[0].kwargs["schema"]["properties"]["periods"]
+    [cluster] = data.clusters
+    assert (cluster["name"], cluster["source"], cluster["eventIds"]) == (
+        DIVORCE,
+        ClusterSource.User.value,
+        [40, 41, 42],
+    )
+    assert (cluster["startDate"], cluster["endDate"]) == ("2005-03-01", "2006-08-01")
+
+
+def test_a_regroup_leaves_the_persons_period_as_it_is():
+    # R-0853
+    stored = asdict(
+        Cluster(
+            id="c1",
+            title=DIVORCE,
+            name=DIVORCE,
+            summary=ROWAN_SAID,
+            reason=ROWAN_SAID,
+            eventIds=[40, 41, 42],
+            source=ClusterSource.User,
+        )
+    )
+    data = asked(record(*ASH.events), 7)
+    data.clusters = [stored]
+    seen = []
+    with replies(ClusterListResponse(periods=[period(7, years=(2004, 2006))])) as ask:
+        result = detect_clusters(
+            data, ask, heard(seen), [Answer(7, "When?", ROWAN_SAID)]
+        )
+    assert '"note": "the person drew this period"' in ask.call_args_list[0].args[0]
+    assert seen == [(1, ClusterCheck.Theirs)]
+    dates = {e["id"]: e["dateTime"] for e in data.events}
+    assert _deltas(data.clusters, result.clusters, dates) == []
+
+
+def test_an_unsupported_period_of_theirs_is_kept_and_judged_unsupported():
+    # R-0853
+    with replies(ClusterListResponse(periods=[period(7)])) as ask:
+        result = detect_clusters(ASH, ask, said=[Answer(7, "When?", ROWAN_SAID)])
+    [theirs] = result.clusters
+    assert theirs.source is ClusterSource.User
+    assert not clusters.judge(asdict(theirs), ASH).supported
+
+
+def test_a_period_in_other_words_than_theirs_is_not_written():
+    # R-0853
+    seen = []
+    renamed = period(7, name="After the divorce")
+    with replies(ClusterListResponse(periods=[renamed])) as ask:
+        result = detect_clusters(
+            ASH, ask, heard(seen), [Answer(7, "When?", ROWAN_SAID)]
+        )
+    assert seen == [(1, ClusterCheck.Renamed)]
+    assert result.clusters == []
+
+
+def test_a_period_with_no_years_is_not_written_and_is_observed(discussion):
+    # R-0853
+    words = "When everything happened at once, I suppose."
+    said = told_by(discussion, words)
+    data, _ = grouped_with(
+        discussion,
+        asked(record(*ASH.events), said),
+        ClusterListResponse(
+            periods=[
+                period(said, name="everything happened at once", words=words, years=None)
+            ]
+        ),
+    )
+    assert data.clusters == []
+    [noted] = Observation.query.filter_by(kind=ObservationKind.ClusterRefused).all()
+    assert (noted.detail["check"], noted.detail["messageId"]) == ("no_years", said)
+
+
+def test_the_persons_answer_alone_puts_the_grouping_behind():
+    # R-0853
+    data = record(*ASH.events)
+    data.clusterCacheKey = clusters.compute_cache_key(clusters._events(data))
+    assert not clusters.behind(data)
+    assert clusters.behind(asked(data, 7))

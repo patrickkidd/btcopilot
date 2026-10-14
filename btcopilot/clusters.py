@@ -1,16 +1,18 @@
 """Noticing the periods of heightened difficulty in a family's events, each held
-as a hypothesis that a change in who is in the family, or in how a key member
-functions, disturbed its balance around then [Oracle: R-0850].
+as a hypothesis that the family's balance was upset around then by someone
+joining or leaving it, or by a key member's functioning changing [Oracle: R-0850].
 
 The rules' runs of events are computed with no model call and go to the model
 as a hint only, never stored: a run is seeded at shifts that support a cluster,
 anyone's in the family, and every event near them is offered as its possible
 opening; which opening mattered is the model's judgement. The model returns the
-app's periods as they should now stand; the person's own stay as they drew them
-and are judged against the data like the app's. The code only backstops: three
-supporting shifts at least, nothing over ten years, no name told in the
-person's trouble, two periods sharing days become one, and a period that fails
-is set aside, never deleted. Spec and ruling ids: doc/CLUSTERS.md.
+app's periods as they should now stand, and reads the periods the person named
+when asked when the most was going on, each written once as theirs; the
+person's own stay as they drew them and are judged against the data like the
+app's [Oracle: R-0853]. The code only backstops: three supporting shifts at
+least, nothing over ten years, no name told in the person's trouble, two
+periods sharing days become one, and a period that fails is set aside, never
+deleted. Spec and ruling ids: doc/CLUSTERS.md.
 """
 
 import datetime
@@ -33,8 +35,8 @@ from btcopilot.llmutil import (
 from btcopilot.metered import Metered
 from btcopilot import record
 from btcopilot.models import Author, Change, Observation, ObservationKind, Purpose
-from btcopilot import prompts
-from btcopilot.models import Diagram
+from btcopilot import profile, prompts
+from btcopilot.models import Diagram, Statement
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     DateCertainty,
@@ -45,6 +47,7 @@ from btcopilot.schema import (
     DiagramData,
     Event,
     EventKind,
+    Fact,
     ItemKind,
     asdict,
     from_dict,
@@ -68,7 +71,10 @@ _log = logging.getLogger(__name__)
 # family may open it, events of unknown date are left out, the person's own
 # periods are kept as they drew them, and a failing period is set aside
 # [Oracle: R-0850].
-DETECTION_VERSION = 10
+# 11: the periods the person named when asked when the most was going on are
+# written as theirs, and their answers join the cache key, so every record
+# regroups on its next event change [Oracle: R-0853].
+DETECTION_VERSION = 11
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -88,6 +94,9 @@ SPAN_DAYS = 548
 # 6232 tokens; with no limit, one answer repeated a sentence for 63000.
 THINKING_ROOM = 4096
 PER_EVENT = 24
+# Room per answer of the person's for the periods read from it: the question
+# asks for two or three times, each a name, a sentence of theirs and two years.
+PER_ANSWER = 160
 CALM_GAP_DAYS = 730
 # A returned group whose dated events span more than this is refused and the
 # model is asked again with the reason; on the second answer it is dropped and
@@ -147,6 +156,9 @@ class ClusterCheck(enum.StrEnum):
     FewShifts = "few_shifts"
     SymptomName = "symptom_name"
     Theirs = "theirs"
+    NoYears = "no_years"
+    Renamed = "renamed"
+    UnknownMessage = "unknown_message"
     Merged = "merged"
     CutOff = "cut_off"
     Unreadable = "unreadable"
@@ -440,11 +452,52 @@ class ModelCluster:
 
 
 @dataclass
+class TheirPeriod:
+    """A period the person named, as the grouping call read it from their
+    message: their name for it and their sentence, both in their words, and
+    its years."""
+
+    messageId: int
+    name: str
+    words: str
+    startYear: int | None = None
+    endYear: int | None = None
+
+
+@dataclass
 class ClusterListResponse:
     clusters: list[ModelCluster] = field(default_factory=list)
+    periods: list[TheirPeriod] = field(default_factory=list)
 
 
-def compute_cache_key(events: list[Event]) -> str:
+@dataclass
+class Answer:
+    """The person's message answering when the most was going on, with the
+    coach's question it answered [Oracle: R-0853]."""
+
+    messageId: int
+    question: str
+    words: str
+
+
+def _asked(data: DiagramData) -> dict[int, str]:
+    """The person's answers to when the most was going on, by message id, each
+    with the question it answered."""
+    return {
+        question["answer"]["id"]: question.get("text") or ""
+        for question in data.questions
+        if question.get("fact") == Fact.MostGoingOn and question.get("answer")
+    }
+
+
+def most_going_on(data: DiagramData) -> list[Answer]:
+    return [
+        Answer(messageId=i, question=text, words=db.session.get(Statement, i).spoken)
+        for i, text in sorted(_asked(data).items())
+    ]
+
+
+def compute_cache_key(events: list[Event], told_ids: tuple[int, ...] = ()) -> str:
     event_data = [
         {
             "id": e.id,
@@ -457,7 +510,9 @@ def compute_cache_key(events: list[Event]) -> str:
         }
         for e in events
     ]
-    return hash_sarf_dicts([{"detectionVersion": DETECTION_VERSION}] + event_data)
+    return hash_sarf_dicts(
+        [{"detectionVersion": DETECTION_VERSION, "told": sorted(told_ids)}] + event_data
+    )
 
 
 def _event_json(event: Event) -> dict:
@@ -491,7 +546,13 @@ def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
 THEIRS = "the person drew this period"
 
 
-def _prompt(cands: list[Candidate], free: list[Event], stored: dict[str, dict]) -> str:
+def _prompt(
+    cands: list[Candidate],
+    free: list[Event],
+    stored: dict[str, dict],
+    said: list[Answer],
+    born: str | None,
+) -> str:
     when = {e.id: parse_date(e.dateTime) for e in free}
     existing = []
     for cluster_id, cluster in stored.items():
@@ -516,6 +577,16 @@ def _prompt(cands: list[Candidate], free: list[Event], stored: dict[str, dict]) 
             indent=2,
         ),
         events=json.dumps([_event_json(e) for e in free], indent=2),
+        told=json.dumps(
+            {
+                "personBorn": born,
+                "answers": [
+                    {"messageId": one.messageId, "question": one.question, "said": one.words}
+                    for one in said
+                ],
+            },
+            indent=2,
+        ),
     )
 
 
@@ -631,14 +702,137 @@ def _merged(
     return out, absorbed
 
 
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def _in_their_words(text: str, said: str) -> bool:
+    """Whether a phrase is the person's own: its words side by side, in order,
+    in their message."""
+    part, whole = _words(text), _words(said)
+    return bool(part) and any(
+        whole[i : i + len(part)] == part for i in range(len(whole) - len(part) + 1)
+    )
+
+
+def _years(period: TheirPeriod) -> Span | None:
+    if period.startYear is None or period.endYear is None or period.startYear > period.endYear:
+        return None
+    return datetime.date(period.startYear, 1, 1), datetime.date(period.endYear, 12, 31)
+
+
+@dataclass
+class Named:
+    """A period the person named, with the events inside its years."""
+
+    period: TheirPeriod
+    eventIds: list[int]
+
+
+def _read_theirs(
+    periods: list[TheirPeriod],
+    said: list[Answer],
+    data: DiagramData,
+) -> tuple[list[Named], list[ClusterError]]:
+    """The periods the person named, each with every dated event in the family
+    inside its years, never reshaped [Oracle: R-0853]. One with no readable
+    years, not in their own words, too few events, or sharing days with a
+    period of theirs already stored or read first is not written; each such is
+    a fault, never asked again, since asking cannot add years to their words."""
+    events = _dated(data)
+    when = {e.id: parse_date(e.dateTime) for e in events}
+    messages = {one.messageId: one.words for one in said}
+    taken = [
+        span
+        for cluster in data.clusters
+        if isinstance(cluster, dict)
+        and not _regroupable(cluster)
+        and (span := span_of([when[i] for i in cluster.get("eventIds") or [] if i in when]))
+    ]
+    kept: list[Named] = []
+    faults: list[ClusterError] = []
+
+    def fault(message: str, check: ClusterCheck, period: TheirPeriod, ids: list[int]):
+        dates = [when[i] for i in ids]
+        faults.append(
+            ClusterError(
+                message,
+                check,
+                {
+                    "name": period.name,
+                    "eventIds": ids,
+                    "start": min(dates).isoformat() if dates else None,
+                    "end": max(dates).isoformat() if dates else None,
+                    "messageId": period.messageId,
+                },
+            )
+        )
+
+    for period in periods:
+        if period.messageId not in messages:
+            fault(
+                f"Message {period.messageId} is not one of the person's answers you "
+                "were given.",
+                ClusterCheck.UnknownMessage,
+                period,
+                [],
+            )
+            continue
+        words = messages[period.messageId]
+        if not (_in_their_words(period.name, words) and _in_their_words(period.words, words)):
+            fault(
+                f"The person's period {period.name!r} is not in their own words.",
+                ClusterCheck.Renamed,
+                period,
+                [],
+            )
+            continue
+        years = _years(period)
+        if years is None:
+            fault(
+                f"The person's period {period.name!r} has no years their words "
+                "give.",
+                ClusterCheck.NoYears,
+                period,
+                [],
+            )
+            continue
+        ids = [e.id for e in events if years[0] <= when[e.id] <= years[1]]
+        if len(ids) < MIN_CLUSTER_EVENTS:
+            fault(
+                f"The person's period {period.name!r} holds {len(ids)} events in "
+                f"its years; anything under {MIN_CLUSTER_EVENTS} is never a period.",
+                ClusterCheck.TooSmall,
+                period,
+                ids,
+            )
+            continue
+        span = span_of([when[i] for i in ids])
+        if any(overlapping(span, other) for other in taken):
+            fault(
+                f"The person's period {period.name!r} shares days with a period "
+                "of theirs already stored.",
+                ClusterCheck.Theirs,
+                period,
+                ids,
+            )
+            continue
+        taken.append(span)
+        kept.append(Named(period=period, eventIds=ids))
+    return kept, faults
+
+
 @dataclass
 class Screened:
     """One answer read against the checks: the periods that pass, each period
-    that fails with why, and each period merged into another."""
+    that fails with why, each period merged into another, and the person's
+    periods read from their answers with those not written."""
 
     kept: list[ModelCluster]
     faults: list[ClusterError]
     absorbed: list[tuple[ModelCluster, ModelCluster]]
+    named: list[Named] = field(default_factory=list)
+    unnamed: list[ClusterError] = field(default_factory=list)
 
 
 def _screen(
@@ -646,20 +840,28 @@ def _screen(
     free: list[Event],
     stored: dict[str, dict],
     told: set[str],
+    data: DiagramData,
+    said: list[Answer],
     last: bool = False,
 ) -> Screened:
     """`last` is the second answer: a period still named by the person's
-    trouble is kept under a plain name instead of dropped."""
+    trouble is kept under a plain name instead of dropped. The person's
+    periods are read first, so the app's never share their days."""
     if response is None:
         raise ClusterError("No grouping came back.", ClusterCheck.Missing)
+    named, unnamed = _read_theirs(response.periods, said, data)
     known = {e.id for e in free}
     when = {e.id: parse_date(e.dateTime) for e in free}
     shifts = {e.id for e in free if supports(e)}
+    full = {e.id: parse_date(e.dateTime) for e in _dated(data)}
     theirs = [
         (cluster, span)
         for cluster in stored.values()
         if not _regroupable(cluster)
         and (span := span_of([when[i] for i in cluster.get("eventIds") or [] if i in when]))
+    ] + [
+        ({"name": one.period.name}, span_of([full[i] for i in one.eventIds]))
+        for one in named
     ]
     faults: list[ClusterError] = []
     usable: list[ModelCluster] = []
@@ -733,7 +935,9 @@ def _screen(
             )
         else:
             kept.append(cluster)
-    return Screened(kept=kept, faults=faults, absorbed=absorbed)
+    return Screened(
+        kept=kept, faults=faults, absorbed=absorbed, named=named, unnamed=unnamed
+    )
 
 
 def _judged(
@@ -790,13 +994,15 @@ def broken(data: DiagramData) -> list[tuple[dict, ClusterCheck, str]]:
     return _judged(data)[1]
 
 
-def answer_schema(stored: dict[str, dict]) -> dict:
+def answer_schema(stored: dict[str, dict], said: list[Answer] = ()) -> dict:
     """The answer's shape, with `id` limited to the groups the record holds and
     left out when it holds none (the person's own are never the model's to
     hand back), and every group's events, name and reason
     required. Offered a free-text id, the grouping model wrote one for every
     new group, and the check refused each answer; with nothing required, it
-    once left out every group's events."""
+    once left out every group's events. The person's periods are asked for
+    only when they answered, each under one of their messages, its years left
+    out when their words give none."""
     schema = dataclass_to_json_schema(
         ClusterListResponse, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
     )
@@ -808,6 +1014,12 @@ def answer_schema(stored: dict[str, dict]) -> dict:
         fields["id"]["enum"] = ours
     else:
         del fields["id"]
+    if not said:
+        del schema["properties"]["periods"]
+        return schema
+    period = schema["properties"]["periods"]["items"]
+    period["required"] = ["messageId", "name", "words"]
+    period["properties"]["messageId"]["enum"] = [one.messageId for one in said]
     return schema
 
 
@@ -833,19 +1045,23 @@ def _answered(ask, prompt: str, schema: dict, limit: int) -> "ClusterListRespons
         ) from failed
 
 
-def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
+def detect_clusters(
+    data: DiagramData, ask, refused=None, said: list[Answer] = ()
+) -> ClusterResult:
     """`ask` takes the prompt, the answer's schema and its token limit and
     returns the model's ClusterListResponse; `refused`, when given, hears each
-    refused answer, dropped cluster and merged cluster with its attempt number
-    and the answer it came in.
+    refused answer, dropped cluster, merged cluster and period of the person's
+    not written, with its attempt number and the answer it came in. `said` is
+    the person's answers to when the most was going on; each period they name
+    there is returned once as theirs [Oracle: R-0853].
 
     A first answer with any fault is asked for once more with the reasons. On
     the second, a cluster that still fails is dropped and the rest kept; an
     answer that cannot be read, or keeps nothing out of what it returned,
     raises [Oracle: R-0846, R-0844]."""
-    cache_key = compute_cache_key(_dated(data))
+    cache_key = compute_cache_key(_dated(data), tuple(_asked(data)))
     cands = candidates(data)
-    if not cands:
+    if not cands and not said:
         return ClusterResult(clusters=[], cacheKey=cache_key)
 
     free = joinable(data)
@@ -854,9 +1070,11 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
     }
     existing = mine(data)
     told = symptom_words(data)
-    prompt = _prompt(cands, free, existing)
-    schema = answer_schema(existing)
-    limit = THINKING_ROOM + PER_EVENT * len(free)
+    own = profile.own(data)
+    born = own and profile.birth(data, own["id"])
+    prompt = _prompt(cands, free, existing, said, born and born["dateTime"])
+    schema = answer_schema(existing, said)
+    limit = THINKING_ROOM + PER_EVENT * len(free) + PER_ANSWER * len(said)
     _log.info(
         f"Grouping {len(free)} events: {len(existing)} groups already there, "
         f"{len(cands)} proposed as a hint"
@@ -871,7 +1089,7 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
         answer = None
         try:
             answer = _answered(ask, words, schema, limit)
-            screened = _screen(answer, free, existing, told, last=n == 2)
+            screened = _screen(answer, free, existing, told, data, said, last=n == 2)
         except ClusterError as failed:
             heard(n, failed, answer)
             raise
@@ -892,6 +1110,7 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
             n == 2
             and screened.faults
             and not screened.kept
+            and not screened.named
             and answer.clusters
             and not all(f.check is ClusterCheck.Theirs for f in screened.faults)
         ):
@@ -906,6 +1125,8 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
         retry, why = True, str(failed)
     if retry:
         screened = attempt(2, prompt + prompts.CLUSTER_REJECTED.format(why=why))
+    for fault in screened.unnamed:
+        heard(2 if retry else 1, fault, None)
 
     when = {e.id: e.dateTime for e in free}
     clusters, changes = [], []
@@ -935,6 +1156,24 @@ def detect_clusters(data: DiagramData, ask, refused=None) -> ClusterResult:
         if cluster.change:
             changes.append(cluster.change)
             _log.info(f"Regrouped {cluster.name!r}: {cluster.change}")
+    dated = {e.id: e.dateTime for e in _dated(data)}
+    for one in screened.named:
+        cluster_id = next_id(taken)
+        taken.add(cluster_id)
+        clusters.append(
+            Cluster(
+                id=cluster_id,
+                title=one.period.name,
+                name=one.period.name,
+                summary=one.period.words,
+                reason=one.period.words,
+                eventIds=one.eventIds,
+                startDate=dated[one.eventIds[0]],
+                endDate=dated[one.eventIds[-1]],
+                source=ClusterSource.User,
+            )
+        )
+        _log.info(f"Wrote the person's period {one.period.name!r}")
     return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=changes)
 
 
@@ -1055,8 +1294,9 @@ def _events(data: DiagramData) -> list[Event]:
 
 
 def behind(data: DiagramData) -> bool:
-    """Whether the record's events changed since its last grouping."""
-    return compute_cache_key(_events(data)) != data.clusterCacheKey
+    """Whether the record's events, or the person's answers to when the most
+    was going on, changed since its last grouping."""
+    return compute_cache_key(_events(data), tuple(_asked(data))) != data.clusterCacheKey
 
 
 def sync(
@@ -1073,12 +1313,13 @@ def sync(
 
     Clusters are stored, not derived on read, so the coach can point at one and
     have it still be there next turn. The rules' runs are a hint; the model
-    decides the periods, the person's own included, and never invents a member.
+    decides the app's periods and reads the person's from their answers, never
+    reshaping theirs and never inventing a member.
     """
     diagram = db.session.get(Diagram, diagram_id)
     data = diagram.get_diagram_data()
     events = _events(data)
-    cache_key = compute_cache_key(events)
+    cache_key = compute_cache_key(events, tuple(_asked(data)))
     if not force and cache_key == data.clusterCacheKey:
         return None
 
@@ -1128,6 +1369,7 @@ def sync(
                 prompt, ClusterListResponse, schema, limit
             ),
             refused,
+            most_going_on(data),
         )
     except ClusterError as failed:
         # No usable answer: the clusters that pass stay, a stored model cluster

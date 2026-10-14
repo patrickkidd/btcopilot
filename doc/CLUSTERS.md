@@ -11,9 +11,9 @@ The definition of a cluster as the case report's evidence in time, with its book
 The rules as built (FD-381, 2026-10-14) are the approved rules page,
 `btcopilot-sources/research/clusters/rules-2026-10-14.html`, A1 to A9 [Oracle: R-0850].
 
-- A cluster may open at any change in who is in the family or in how a key
-  member functions: an addition, a loss, a threatened loss, a departure, a
-  marriage, a cutoff, a fall in a key member's functioning. Which opening
+- A cluster may open when someone joins or leaves the family, or when a key
+  member's functioning changes: an addition, a loss, a threatened loss, a
+  departure, a marriage, a cutoff, a fall in a key member's functioning. Which opening
   mattered is the grouping call's judgement of the lost or changed person's
   importance, never a list of event kinds in code. Trouble may begin before the
   opening event (A2, A5).
@@ -26,6 +26,8 @@ The rules as built (FD-381, 2026-10-14) are the approved rules page,
   share days [Oracle: R-0845].
 - The person's own periods are kept as they drew them and judged against the
   data like the app's; an unsupported one stays shown as the person's (A7).
+  The periods the person names when the coach asks when the most was going on
+  are stored as theirs, source `user` [Oracle: R-0853].
 - The app never deletes a cluster: one that fails a check is set aside (stored
   with `setAside`, not drawn) (A8).
 
@@ -84,18 +86,35 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    R-0840]. No usable answer twice: the stored periods that pass stay.
 6. Every stored app period the answer did not return is set aside. The person's
    own are never changed by a regroup.
-7. `judge(cluster, data)` reads any stored period against the data: its
+7. The person's periods [Oracle: R-0853]. The call also gets the person's
+   answers to the `most_going_on` item (each closed question's `answer`, the
+   message it cites) and their birth date. For each period named there it
+   returns their name for it and their sentence, both copied from the message,
+   and its first and last year. The code writes it as a cluster with source
+   `user` holding every dated event in the family inside those years, its dates
+   the first and last of them. It is not written, and is a cluster_refused row
+   instead, when the message is not one of the answers, the name or sentence is
+   not the person's words in order, the years are missing, the years hold fewer
+   than three events, or it shares days with a stored period of theirs or one
+   read before it in the same answer. None of these is asked again. The app's
+   periods never share their days. Once written it is the person's like any
+   other: never reshaped, judged by `judge` with the same checks, kept and shown
+   when unsupported.
+8. `judge(cluster, data)` reads any stored period against the data: its
    supporting shifts, whether they are one person's run, its opening (the stored
    `openingEventId`, else its first change in the family), and the days from the
    opening to its first and last supporting shift, negative when the trouble came
-   first (A3, A9). The page and the cards read it; it is not stored.
+   first (A3, A9). It is not stored, and no page or card reads it yet.
 
 ## When it runs
 
 After any coach turn that adds or changes an event, when the cache key (the
-events' dates, date certainty and shifts plus `DETECTION_VERSION`, now 10)
+events' dates, date certainty and shifts, the message ids of the person's
+answers to when the most was going on, plus `DETECTION_VERSION`, now 11)
 differs from the stored one; `flask admin diagrams regroup` reruns diagrams that
-are behind. Version 10 regroups every diagram on its next event change.
+are behind. Version 11 regroups every diagram on its next event change. A turn
+that only closes the `most_going_on` question, with no event change, does not
+regroup; the next event change or `regroup` writes the person's periods.
 
 ## What a stored cluster holds
 
