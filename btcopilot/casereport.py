@@ -369,10 +369,12 @@ def wrote(diagram: Diagram, toolbox: Toolbox, calls: list) -> list[str]:
     return _settled(diagram, toolbox, before)
 
 
-def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool) -> dict[str, str]:
+def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool,
+         first: dict[str, str] | None = None) -> dict[str, str]:
     """Each guess in through the coach's own tool unless it gives a cause or
-    a why or the checks refuse it, every refusal written down. Why each
-    refused call was refused, as the model reads it."""
+    a why or the checks refuse it, every refusal written down with its card
+    and, on the second try, what came of the first (`first`, by card). Why
+    each refused call was refused, as the model reads it."""
     refused = {}
     for call in calls:
         word = caused(call)
@@ -385,10 +387,26 @@ def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool) -> dict
             told, _, refusal = run_call(toolbox, call)
         if refusal:
             refused[call.id] = told
+            card = call.args.get(CARD)
             _observe(diagram.id, toolbox.turn_id, ObservationKind.ToolRefused,
                      {"tool": call.name, "refusal": refusal, "retried": retried,
-                      "reason": f"case report rewrite: {call.name}: {refusal}"})
+                      "reason": _reason(card or call.name, f"refused: {refusal}",
+                                        first and first[card])})
     return refused
+
+
+def _reason(card: str, came: str, first: str | None = None) -> str:
+    """An observation's reason: the card, what came of it, and on the second
+    try what came of the first, refused with its reason or missing (R-0850)."""
+    said = f"case report rewrite: {card}: {came}"
+    return f"{said}; first try: {first}" if first else said
+
+
+def _absent(diagram_id: int, turn_id: str, card: str, retried: bool,
+            first: str | None = None) -> None:
+    _observe(diagram_id, turn_id, ObservationKind.ToolRefused,
+             {"tool": ToolName.AddImpression.value, "refusal": f"no {card} card given",
+              "retried": retried, "reason": _reason(card, "missing", first)})
 
 
 def _missing(toolbox: Toolbox, before: set[str]) -> list[str]:
@@ -464,9 +482,14 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
     turn = _called(diagram, meter, system, messages, turn_id)
     _unmoved(diagram, version)
     refused = _put(diagram, toolbox, turn.calls, retried=True)
+    first = {c.args.get(CARD): f"refused: {refused[c.id]}" for c in turn.calls if c.id in refused}
     missing = _missing(toolbox, before)
-    if refused or missing:
-        again = {c.args.get(CARD) for c in turn.calls if c.id in refused} | set(missing)
+    for card in missing:
+        if card not in first:
+            _absent(diagram.id, turn_id, card, retried=True)
+            first[card] = "missing"
+    if first:
+        again = set(first)
         version = diagram.version
         retry = _called(diagram, meter, system, messages + _again(turn, refused, missing), turn_id)
         _unmoved(diagram, version)
@@ -474,11 +497,9 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
         for call in calls:
             if caused(call):
                 call.args = {**call.args, "text": uncaused(call.args.get("text") or "")}
-        _put(diagram, toolbox, [c for c in calls if c.args.get("text")], retried=False)
+        _put(diagram, toolbox, [c for c in calls if c.args.get("text")], retried=False, first=first)
         for card in _missing(toolbox, before):
-            _observe(diagram.id, turn_id, ObservationKind.ToolRefused,
-                     {"tool": ToolName.AddImpression.value, "refusal": f"no {card} card given",
-                      "retried": False, "reason": f"case report rewrite: the {card} card was not given"})
+            _absent(diagram.id, turn_id, card, retried=False, first=first[card])
     return _settled(diagram, toolbox, before)
 
 

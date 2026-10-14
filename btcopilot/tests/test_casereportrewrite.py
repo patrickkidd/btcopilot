@@ -363,6 +363,9 @@ def test_what_brought_resting_on_no_message_of_the_person_is_refused_and_asked_f
     rewrite(web, Model(calling(guessed("They came about sleep.", "what_brought"), *FOUR), calling()))
     assert texts(family)["what_brought"] == "“My grandmother raised me.”"
     assert [o.detail["retried"] for o in refusals(refusal="statement")] == [True, True]
+    (still,) = refusals(refusal="no what_brought card")
+    assert still.detail["reason"].startswith("case report rewrite: what_brought: missing; first try: refused: ")
+    assert "statement" in still.detail["reason"]
 
 
 def test_a_card_giving_a_cause_is_asked_for_again_once(web, past, written, family):
@@ -463,8 +466,10 @@ def test_a_card_not_given_is_asked_for_once_more_and_still_missing_keeps_its_not
     assert "what_brought" in asked and "own_part" in asked and "main_guess" not in asked
     assert texts(family)["work_on"] == "Guess for work_on."
     assert "what_brought" not in texts(family)
-    (missing,) = refusals(refusal="no what_brought card")
-    assert missing.detail["retried"] is False
+    first, last = refusals(refusal="no what_brought card")
+    assert (first.detail["retried"], last.detail["retried"]) == (True, False)
+    assert first.detail["reason"] == "case report rewrite: what_brought: missing"
+    assert last.detail["reason"] == "case report rewrite: what_brought: missing; first try: missing"
 
     rewrite(web, Model(calling(*every(past)[:1]), calling()))
     assert texts(family)["main_guess"] == "Guess for main_guess."
