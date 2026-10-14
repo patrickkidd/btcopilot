@@ -170,7 +170,7 @@ Every record, with how much is in it.
 
 ### `flask admin diagrams regroup`
 
-Regroup each record whose events changed since its last grouping, or that has events to group and no groups. The dry run lists them and makes no model call; --apply makes the grouping calls a turn makes, one or two per record, each in the model-calls ledger, and writes each record's new grouping as one change row that `diagrams undo` takes back. A record whose answers are both refused gets the rules' groups under their years, and `failed` says so.
+Regroup each record whose events, or the person's answers to when the most was going on, changed since its last grouping, or that has events to group and no groups. The dry run lists them and makes no model call; --apply makes the grouping calls a turn makes, one or two per record, each in the model-calls ledger, and writes each record's new grouping as one change row that `diagrams undo` takes back: the app's periods as the answer returns them, the ones it leaves out set aside, and the periods the person named written as theirs. A record whose answers are both refused keeps the stored periods that pass, sets aside the app's that fail, names nothing after its years, and `failed` says so.
 
 Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
 
