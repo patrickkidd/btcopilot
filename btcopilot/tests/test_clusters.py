@@ -208,7 +208,7 @@ def test_a_pair_of_related_moves_is_not_yet_a_cluster():
 
 
 def test_a_birth_long_before_anything_is_recorded_is_scaffolding():
-    # R-0037, R-0038, R-0850
+    # R-0037, R-0850
     """A birth years before the first shift is scaffolding; one a few months
     before may be what opened the run."""
     data = record(
@@ -222,7 +222,7 @@ def test_a_birth_long_before_anything_is_recorded_is_scaffolding():
 
 
 def test_the_recorded_period_starts_at_the_first_shift():
-    # R-0038, R-0037
+    # R-0037, R-0850
     """A birth years before the first shift is held out; an early marriage and
     a birth months before the shift are not."""
     data = record(
@@ -254,7 +254,7 @@ def test_a_change_in_the_family_among_the_shifts_opens_their_period():
 
 
 def test_any_change_in_the_family_may_open_a_run_and_trouble_may_come_first():
-    # R-0850
+    # R-0850, R-0375
     """No kind list seeds or filters a run: a run is seeded at three shifts
     of anyone in the family, and every event near them, the move and the
     grandmother's death after the first shift, is offered as its possible

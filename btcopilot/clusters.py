@@ -193,7 +193,7 @@ def supports(event: Event) -> bool:
 def _scaffold(event: Event, opens: datetime.date) -> bool:
     """Early births give people ages and generations and are diagnostically
     inert [Oracle: R-0037]; the diagnostic period opens at the first shift that
-    supports a cluster [Oracle: R-0038], and a change in the family up to
+    supports a cluster, and a change in the family up to
     SPAN_DAYS before it may still open it, since trouble can come first or
     after [Oracle: R-0850]."""
     return (
