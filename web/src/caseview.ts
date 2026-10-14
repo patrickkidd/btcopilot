@@ -2,7 +2,9 @@ import { arrange, Sex, Tie, type Bond, type Brood, type Cast, type Layout, type 
 import { dateText } from "./spotlight";
 import { aboutOf, Family, tieBefore, when } from "./snapshots";
 import {
+  CardLine,
   CaseReportCard,
+  ClusterSource,
   EventKind,
   EvidenceKind,
   QuestionKind,
@@ -30,7 +32,6 @@ export enum Card {
   Sides = "sides",
   Guesses = "guesses",
   OwnPart = "own_part",
-  Choice = "choice",
   WorkOn = "work_on",
   Effort = "effort",
 }
@@ -44,13 +45,12 @@ export const ORDER: Card[] = [
   Card.Sides,
   Card.Guesses,
   Card.OwnPart,
-  Card.Choice,
   Card.WorkOn,
   Card.Effort,
 ];
 
 /** The guess cards: with nothing on them they say so in the coach's bubble (R-0699). */
-export const GUESS_CARDS = new Set([Card.Main, Card.Guesses, Card.OwnPart, Card.Choice, Card.WorkOn]);
+export const GUESS_CARDS = new Set([Card.Main, Card.Guesses, Card.OwnPart, Card.WorkOn]);
 
 /** A dated event on a chip: its date, then its words. An undated event is never a chip. */
 export interface Fact {
@@ -69,12 +69,33 @@ export interface Who {
   name: string;
 }
 
-/** A coach's guess: its stored words whole, the dated facts it rests on, and
- * the people it names. */
+/** What holds for and against one cluster, in the coach's words. */
+export interface Slot {
+  for: string | null;
+  against: string | null;
+}
+
+/** A coach's guess: its words before any marked line, the dated facts, the
+ * people and the clusters it rests on, the person's message it quotes, and
+ * its marked lines (R-0850). */
 export interface Guess {
   text: string;
   facts: Fact[];
   people: Who[];
+  clusters: ClusterRef[];
+  /** Whose words and when, as the message it rests on is labelled: "You said, 21 Sep". */
+  said: string | null;
+  slots: Record<string, Slot>;
+  open: string | null;
+  other: string | null;
+  prognosis: string | null;
+  aim: string | null;
+}
+
+/** A cluster on the coach's guess: its chip, whether it is the person's own
+ * period, and what holds for and against it. */
+export interface Held extends ClusterRef, Slot {
+  mine: boolean;
 }
 
 /** A family standing still at today's date, as the app lays it out, or the
@@ -115,7 +136,8 @@ export interface CaseView {
   now: number;
   household: Still;
   main: Guess | null;
-  brought: { lead: string; first: Fact | null; latest: Fact | null; clusters: ClusterRef[]; around: Fact[]; asked: string };
+  /** The coach's card on what brought the person (R-0850), or null when not asked yet. */
+  brought: Guess | null;
   /** Married now: the picture's solid line with no later separation or divorce, both partners alive (R-0694). */
   married: boolean;
   /** The couple since they met, stage by stage (R-0833, R-0834, R-0835), and
@@ -124,20 +146,24 @@ export interface CaseView {
   couple: { lead: string; stages: Stage[]; needs: string };
   stages: StageRow[];
   sides: Side[];
-  guesses: Guess[];
-  /** Every stored cluster in date order, worded as the hypothesis it is (R-0698, R-0841). */
-  hypotheses: ClusterRef[];
+  /** The coach's one pattern statement (R-0850). */
+  guess: Guess | null;
+  /** Every stored cluster in date order, worded as the hypothesis it is (R-0698, R-0841), with its for and against. */
+  hypotheses: Held[];
   /** The coach's first open question on no card, asked in its bubble. */
   ask: string | null;
   ownPart: { guess: Guess | null; ask: string | null; answer: string | null };
-  choice: { guess: Guess | null; ask: string | null };
-  work: { aim: Fact | null; guesses: Guess[] };
+  /** The aim in the person's words, or the event the coach rested it on. */
+  work: { aim: Fact | null; said: string | null; guesses: Guess[] };
   effort: string;
 }
 
-/** The most guesses the card on what to work on, and the card of the coach's guess, hold (R-0709). */
+/** The most guesses the card on what to work on holds (R-0709). */
 const WORK_ON_MAX = 3;
-const COACH_GUESS_MAX = 3;
+
+const MARKS = Object.values(CardLine).join("|");
+/** "For c3: ..." or "Open: ...": a marked line of a card (R-0850). */
+const MARKED = new RegExp(`^(${MARKS})(?: (\\S+))?:\\s*(.*)$`);
 
 const SELF_DESCRIBING = new Set<string>([
   EventKind.Birth,
@@ -166,7 +192,6 @@ const WHAT: Record<string, string> = {
  * couple's own to be on the couple card (R-0834). */
 const NEAR_YEARS = 2;
 
-const WEEK = 7 * 24 * 3600 * 1000;
 const byDate = (a: TimelineEvent, b: TimelineEvent) => a.dateTime!.localeCompare(b.dateTime!);
 
 /** A shift that marks how someone was doing: a symptom, anxiety or functioning mark. */
@@ -306,32 +331,6 @@ class Reader {
   died(p: Person): string {
     const e = p.death_event == null ? undefined : this.event(p.death_event);
     return e?.dateTime ? dateText(e.dateTime, e.dateCertainty) : "";
-  }
-
-  /** What brought the person: the newest event of theirs that carries a
-   * symptom, in its own words, the first and the latest as chips, the
-   * clusters they fall in, and the family's other dated events of the week
-   * before it, with no sentence joining them (Patrick, 2026-10-03: no strip of
-   * its own; FD-381). */
-  brought(sessions: Session[]): CaseView["brought"] {
-    const s = this.subject;
-    const flares = this.tl.events.filter((e) => e.person === s.id && e.symptom && e.dateTime).sort(byDate);
-    const ids = new Set(flares.map((e) => e.id));
-    const clusters = this.tl.clusters.filter((c) => c.event_ids.some((id) => ids.has(id)));
-    const newest = flares[flares.length - 1];
-    const from = newest && new Date(Date.parse(newest.dateTime!) - WEEK).toISOString().slice(0, 10);
-    const around = newest
-      ? this.tl.events.filter((e) => e.id !== newest.id && e.dateTime && e.dateTime >= from! && e.dateTime <= newest.dateTime!).sort(byDate)
-      : [];
-    // dates only inside chips: the lead is the event's own words
-    return {
-      lead: newest ? newest.description || newest.label : "",
-      first: flares.length ? this.fact(flares[0]) : null,
-      latest: flares.length > 1 ? this.fact(newest) : null,
-      clusters: clusters.map((c) => ({ id: c.id, label: `${c.label} · ${c.title}` })),
-      around: around.map((e) => this.named(e)),
-      asked: sessions.length ? `Who asked for help: ${s.name}, in ${pronouns(s).his} own chat with the coach.` : "",
-    };
   }
 
   /** The person's marriage now (R-0694): the bond the picture draws solid,
@@ -567,6 +566,29 @@ class Reader {
   /** A guess as the case report shows it: the stored words whole, the dated
    * events it rests on as chips, and everyone it names but the person. */
   guess(q: AskedQuestion): Guess {
+    const lines = q.text.split("\n");
+    const body: string[] = [];
+    const g = { slots: {} as Record<string, Slot>, open: null as string | null, other: null as string | null, prognosis: null as string | null, aim: null as string | null };
+    for (const line of lines) {
+      const m = MARKED.exec(line);
+      if (!m) {
+        body.push(line);
+        continue;
+      }
+      const [, mark, id, words] = m;
+      if (mark === CardLine.For || mark === CardLine.Against) {
+        const slot = (g.slots[id] ??= { for: null, against: null });
+        slot[mark === CardLine.For ? "for" : "against"] = words;
+      } else if (mark === CardLine.Open) g.open = words;
+      else if (mark === CardLine.OtherWay) g.other = words;
+      else if (mark === CardLine.Prognosis) g.prognosis = words;
+      else g.aim = words;
+    }
+    const clusters = q.evidence
+      .filter((one) => one.kind === EvidenceKind.Cluster)
+      .map((one) => this.tl.clusters.find((c) => c.id === String(one.id)))
+      .filter((c): c is NonNullable<typeof c> => !!c)
+      .map((c) => ({ id: c.id, label: `${c.title} \u00b7 ${c.label}` }));
     const events = q.evidence
       .filter((one) => one.kind === EvidenceKind.Event)
       .map((one) => this.event(Number(one.id)))
@@ -576,9 +598,12 @@ class Reader {
       ...events.flatMap((e) => [e.person, e.spouse, e.child, ...e.relationshipTargets, ...e.relationshipTriangles]),
     ].filter((id): id is number => id != null && id !== this.subject.id && this.people.has(id));
     return {
-      text: q.text,
+      text: body.join("\n").trim(),
       facts: this.facts(events),
       people: [...new Set(named)].map((id) => ({ id, name: this.name(id) })),
+      clusters,
+      said: q.evidence.find((one) => one.kind === EvidenceKind.Statement)?.label || null,
+      ...g,
     };
   }
 }
@@ -603,12 +628,15 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
   const askOn = (card: CaseReportCard) => newest(questions.filter((q) => open(q) && onCard(card)(q)))?.text ?? null;
   const main = guessOn(CaseReportCard.MainGuess);
   const own = guessOn(CaseReportCard.OwnPart);
-  const choice = guessOn(CaseReportCard.Choice);
+  const brought = guessOn(CaseReportCard.WhatBrought);
+  const coach = guessOn(CaseReportCard.CoachGuess);
+  const pattern = coach && r.guess(coach);
   const workOn = guesses.filter(onCard(CaseReportCard.WorkOn)).slice(-WORK_ON_MAX);
   const work = workOn.map((q) => r.guess(q));
   // what the person said they are working on: the first guess's first evidence (the coach's prompt)
   const said = workOn[0]?.evidence[0];
   const aimed = said?.kind === EvidenceKind.Event ? r.event(Number(said.id)) : undefined;
+  const aim = [...work].reverse().find((g) => g.aim)?.aim ?? null;
   const answered = newest(questions.filter((q) => onCard(CaseReportCard.OwnPart)(q) && q.answer?.text));
   const wed = r.marriage();
   const { him, his } = pronouns(s);
@@ -620,20 +648,24 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     now: r.now,
     household: r.still(r.household(), s.id),
     main: main && r.guess(main),
-    brought: r.brought(chats),
+    brought: brought && r.guess(brought),
     married: !!wed,
     couple: wed ? r.couple(wed) : { lead: "", stages: [], needs: "" },
     stages: wed ? [] : r.stages(),
     sides: r.sides(),
     // only what the coach chose for this card, never every guess it holds (Patrick, 2026-10-04)
-    guesses: guesses.filter(onCard(CaseReportCard.CoachGuess)).slice(-COACH_GUESS_MAX).map((q) => r.guess(q)),
+    guess: pattern,
     hypotheses: [...tl.clusters]
       .sort((a, b) => a.start.localeCompare(b.start))
-      .map((c) => ({ id: c.id, label: `Hypothesis: ${c.title ? `${c.title} \u00b7 ` : ""}${c.label}` })),
-    ask: questions.find((q) => open(q) && onCard(null)(q))?.text ?? null,
+      .map((c) => {
+        const mine = c.source === ClusterSource.User;
+        const slot = pattern?.slots[c.id];
+        const named = `${c.title ? `${c.title} \u00b7 ` : ""}${c.label}`;
+        return { id: c.id, label: mine ? `Your period: ${named}` : `Hypothesis: ${named}`, mine, for: slot?.for ?? null, against: slot?.against ?? null };
+      }),
+    ask: pattern?.open ?? questions.find((q) => open(q) && onCard(null)(q))?.text ?? null,
     ownPart: { guess: own && r.guess(own), ask: answered ? null : askOn(CaseReportCard.OwnPart), answer: answered?.answer?.text ?? null },
-    choice: { guess: choice && r.guess(choice), ask: askOn(CaseReportCard.Choice) },
-    work: { aim: aimed ? r.fact(aimed) : null, guesses: work },
+    work: { aim: !aim && aimed ? r.fact(aimed) : null, said: aim, guesses: work },
     effort: chats.length
       ? `${s.name} has talked with the coach in ${chats.length === 1 ? "one session" : `${chats.length} sessions`}.`
       : "",

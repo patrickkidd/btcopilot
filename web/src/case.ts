@@ -1,7 +1,7 @@
 import { pill } from "./chips";
 import { draw, leastScale } from "./diagram";
 import { closeX, esc } from "./dom";
-import { Card, GUESS_CARDS, ORDER, type CaseView, type Fact, type Guess, type Still, type Who } from "./caseview";
+import { Card, GUESS_CARDS, ORDER, type CaseView, type Fact, type Guess, type Held, type Still, type Who } from "./caseview";
 import { ChipKind, ChipTone, type Passages } from "./types";
 
 /** The case report's markup, card by card, as the approved proposal draws it
@@ -28,8 +28,6 @@ export function title(card: Card, v: CaseView): string {
       return "The coach's guess";
     case Card.OwnPart:
       return `${v.name}'s own part`;
-    case Card.Choice:
-      return "Where there was a choice";
     case Card.WorkOn:
       return "What to work on, what to expect";
     case Card.Effort:
@@ -54,8 +52,6 @@ function short(card: Card, v: CaseView): string {
       return "The coach's guess";
     case Card.OwnPart:
       return `${v.name}'s part`;
-    case Card.Choice:
-      return "The choice";
     case Card.WorkOn:
       return "What to work on";
     case Card.Effort:
@@ -79,7 +75,6 @@ function bookOf(card: Card, v: CaseView): string {
     case Card.Guesses:
       return "6";
     case Card.OwnPart:
-    case Card.Choice:
       return "7a";
     case Card.WorkOn:
       return "9a";
@@ -96,6 +91,9 @@ export const ORDER_TITLE = "Why these cards, in this order";
 export const NOT_ENOUGH = "Not enough in the diagram to make a guess yet. Chat more with me so I have more to go on.";
 /** What the work card says when the person has not said what they are working on (R-0740). */
 export const NOT_SAID = "You haven't said yet what you're working on. Chat more with me about it.";
+/** What the card on what brought the person says before the coach has found it out (R-0850). */
+export const NOT_ASKED = "Not asked yet.";
+export const BRINGS = "What brings you here?";
 
 const lead = (text: string) => (text ? `<p class="lead">${esc(text)}</p>` : "");
 const sublabel = (text: string) => `<p class="sublabel">${esc(text)}</p>`;
@@ -119,6 +117,9 @@ const chip = (kind: ChipKind, target: string | number, face: string) =>
   pill({ kind, target: String(target), label: face, tone: ChipTone.Data, bare: false }, face);
 
 const factChip = (f: Fact) => chip(ChipKind.Event, f.id, f.face);
+const clusterChip = (c: { id: string; label: string }) => chip(ChipKind.Cluster, c.id, c.label);
+/** What the app still needs to know, de-emphasized: the dashed amber chip (R-0850). */
+const needs = (words: string) => `<span class="chip ask qmark dashed">? ${esc(words)}</span>`;
 const personChip = (p: Who) => chip(ChipKind.Person, p.id, p.name);
 const chips = (inner: string[]) => (inner.length ? `<div class="chips">${inner.join("")}</div>` : "");
 
@@ -133,7 +134,14 @@ function bubble(words: string, facts: Fact[] = [], ask: string | null = null): s
 }
 
 const guessBlock = (g: Guess, ask: string | null = null) =>
-  `<div class="gbub">${bubble(g.text, g.facts, ask)}${chips([...g.facts.map(factChip), ...g.people.map(personChip)])}</div>`;
+  `<div class="gbub">${bubble(g.text, g.facts, ask)}${chips([...g.facts.map(factChip), ...g.clusters.map(clusterChip), ...g.people.map(personChip)])}</div>`;
+
+/** A cluster under the coach's guess: its chip, then what holds for it and against it (R-0850). */
+const held = (c: Held) => {
+  const slot = (mark: string, words: string | null) => (words ? `<b>${mark}</b><span>${esc(words)}</span>` : "");
+  const slots = c.for || c.against ? `<div class="slots">${slot("For", c.for)}${slot("Against", c.against)}</div>` : "";
+  return `<div class="cl${c.mine ? " his" : ""}">${clusterChip(c)}${slots}</div>`;
+};
 
 const notEnough = (words = NOT_ENOUGH) => `<div class="gbub">${bubble(words)}</div>`;
 
@@ -167,18 +175,10 @@ function body(card: Card, v: CaseView): string {
     case Card.Family:
       return picture(v, v.household, `${v.name}'s family`);
     case Card.Brought: {
+      // the person's own words with whose and when, else the coach's reading, else what it still needs (R-0850)
       const b = v.brought;
-      const course = [
-        ...(b.first ? [factChip(b.first)] : []),
-        ...(b.latest ? [factChip(b.latest)] : []),
-        ...b.clusters.map((c) => chip(ChipKind.Cluster, c.id, c.label)),
-      ];
-      return (
-        lead(b.lead) +
-        (course.length ? sublabel("The trouble's course, dated") + chips(course) : "") +
-        (b.around.length ? sublabel("Around the newest time") + chips(b.around.map(factChip)) : "") +
-        lead(b.asked)
-      );
+      if (!b) return lead(NOT_ASKED) + needs(BRINGS);
+      return b.said ? `<div class="gbub"><div class="bub user">${esc(b.text)}</div></div>${faint(b.said)}` : guessBlock(b);
     }
     case Card.Couple:
       // married: Bowen's stages, each head a chip with its events under it (R-0835), then what the card still needs
@@ -194,23 +194,27 @@ function body(card: Card, v: CaseView): string {
     case Card.Sides:
       return v.sides.map((s) => fold(s.label, lead(s.lead) + picture(v, s.still, s.label))).join("");
     case Card.Guesses: {
-      const ask = v.ask ? `<div class="gbub">${bubble("", [], v.ask)}</div>` : "";
-      // the clusters as hypotheses, under the coach's own chips, each opening its cluster (R-0698, R-0201)
-      const held = chips(v.hypotheses.map((c) => chip(ChipKind.Cluster, c.id, c.label)));
-      return `<div class="glist">${v.guesses.length ? v.guesses.map((g) => guessBlock(g)).join("") : notEnough()}${held}${ask}</div>`;
+      // the pattern, then each cluster with its for and against, each opening its cluster, then what it still needs (R-0850, R-0698, R-0201)
+      const lead = v.guess ? `<div class="gbub">${bubble(v.guess.text, v.guess.facts)}</div>` : notEnough();
+      const clusters = v.hypotheses.length ? `<div class="glist">${v.hypotheses.map(held).join("")}</div>` : "";
+      return `<div class="glist">${lead}${clusters}${v.ask ? needs(v.ask) : ""}</div>`;
     }
     case Card.OwnPart: {
+      // the moves, then the other way it could have gone, stated as the alternative (R-0850)
       const o = v.ownPart;
-      const coach = o.guess ? guessBlock(o.guess, o.ask) : o.ask ? `<div class="gbub">${bubble("", [], o.ask)}</div>` : "";
+      const other = o.guess?.other ? `<span class="chip ask qmark">? ${esc(o.guess.other)}</span>` : "";
+      const coach = o.guess ? guessBlock(o.guess, o.ask) + other : o.ask ? `<div class="gbub">${bubble("", [], o.ask)}</div>` : "";
       const own = o.answer ? `${sublabel(`${v.name}'s own view`)}<div class="bub user">${esc(o.answer)}</div>` : "";
       return coach || own ? coach + own : notEnough();
     }
-    case Card.Choice:
-      return v.choice.guess ? guessBlock(v.choice.guess, v.choice.ask) : v.choice.ask ? `<div class="gbub">${bubble("", [], v.choice.ask)}</div>` : notEnough();
-    case Card.WorkOn:
-      return v.work.guesses.length
-        ? chips(v.work.aim ? [factChip(v.work.aim)] : []) + `<div class="glist">${v.work.guesses.map((g) => guessBlock(g)).join("")}</div>`
-        : notEnough(NOT_SAID);
+    case Card.WorkOn: {
+      // the focus, then the prognosis as its own sentence, then the aim in the person's words (R-0850)
+      const w = v.work;
+      if (!w.guesses.length) return notEnough(NOT_SAID);
+      const aim = w.said ? `<span class="chip his">${esc(`You said: ${w.said}`)}</span>` : w.aim ? factChip(w.aim) : "";
+      const work = w.guesses.map((g) => guessBlock(g) + (g.prognosis ? `<p class="prognosis">${esc(g.prognosis)}</p>` : "")).join("");
+      return `<div class="glist">${work}</div>${aim ? chips([aim]) : ""}`;
+    }
     case Card.Effort:
       return lead(v.effort);
   }

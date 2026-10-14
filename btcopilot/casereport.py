@@ -416,6 +416,9 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
     calls = turn.calls
     caught = {call.id: word for call in calls if (word := caused(call))}
     if caught:
+        _observe(diagram.id, turn_id, ObservationKind.ToolRefused,
+                 {"tool": ToolName.AddImpression.value, "refusal": f"gave a cause: {', '.join(caught.values())}",
+                  "retried": True, "reason": "case report rewrite: a card gave a cause or a why"})
         retry = _called(diagram, meter, system, messages + _again(turn, caught), turn_id)
         calls = [c for c in calls if c.id not in caught] + retry.calls
     for call in calls:

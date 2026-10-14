@@ -57,6 +57,25 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
    aim as a chip in their words.
 10. The effort: what the person has done since setting the aim and what followed, as dated chips.
 
+## How the refresh writes them (as built)
+
+- One model call, the coach's own prompt, offered only add_impression; it writes cards 1, 3, 6, 7
+  and 9; the page draws the rest from the diagram. [Oracle: R-0825, R-0850]
+- Its inputs: every event with its words and notes, the coach's notes and questions, one summary
+  per conversation (the stored one; a conversation with none gets one written then, one extra
+  call each), and, while no note is on card 3, the first conversation's opening read raw, each
+  message by its number, up to 2000 characters. Never the whole thread.
+- Card 3 (`what_brought`) quotes the person and rests on their message, which the page shows as
+  "You said, <day>"; with none, the card reads "Not asked yet" and a dashed amber "What brings
+  you here?".
+- The coach's later lines are marked: "For <cluster>:" and "Against <cluster>:" (card 6, only on
+  clusters it rests on), "Open:" (card 6, the dashed amber chip), "Other way:" (card 7, the
+  alternative), "Prognosis:" and "Aim:" (card 9).
+- A card that gives a cause or a why is refused and asked for once more; given again with one, it
+  is written with those sentences taken out. The words are one list in the code.
+- Card 8, the choice, is no longer written or drawn; the page has nine cards, so what to work on
+  is numbered 8 on it.
+
 ## Cluster rules
 
 - A1. A cluster is the app's opinion that shifts across the family belong to one span of time,

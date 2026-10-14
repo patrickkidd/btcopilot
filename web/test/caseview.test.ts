@@ -1,9 +1,10 @@
 import { expect, it } from "vitest";
-import { cards, NOT_ENOUGH, NOT_SAID, rail } from "../src/case";
+import { BRINGS, cards, NOT_ASKED, NOT_ENOUGH, NOT_SAID, rail } from "../src/case";
 import { Card, caseView, ORDER } from "../src/caseview";
 import { esc } from "../src/dom";
 import {
   CaseReportCard,
+  ClusterSource,
   EventKind,
   EvidenceKind,
   QuestionKind,
@@ -149,7 +150,7 @@ it("says on every guess card that there is not enough yet, and never picks a mai
   const v = caseView(tl, ONE, "");
   expect(v.main).toBeNull();
   const html = cards(v, false);
-  const guessCards = [Card.Main, Card.OwnPart, Card.Choice];
+  const guessCards = [Card.Main, Card.OwnPart];
   for (const card of guessCards) expect(html.split(`data-card="${card}"`)[1].split("</section>")[0]).toContain(NOT_ENOUGH);
   const thin = cards(caseView({ ...emptyTimeline(), people: [person(1, "Ines", "female", null, true)] }, ONE, ""), false);
   expect(thin.split(`data-card="${Card.Couple}"`)[1].split("</section>")[0]).not.toContain("<p class=\"lead\">");
@@ -225,36 +226,76 @@ it("keeps every date inside a chip: no lead line names a year or a month", () =>
   const v = caseView(tl, [{ kind: SessionKind.Chat, last_activity: "2026-10-01T10:00:00" } as Session], "");
   const parted = halloran();
   parted.events.push(event(300, EventKind.Separated, "2020-01-01", { person: 1, spouse: 10 }));
-  const leads = [v.brought.lead, v.brought.asked, v.couple.lead, v.couple.needs, v.effort, ...v.sides.map((s) => s.lead), ...caseView(parted, ONE, "").stages.map((r) => r.label)];
+  const leads = [v.couple.lead, v.couple.needs, v.effort, ...v.sides.map((s) => s.lead), ...caseView(parted, ONE, "").stages.map((r) => r.label)];
   for (const line of leads) expect(line).not.toMatch(/\b(1[89]|20)\d\d\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/);
-  expect(v.brought.lead).toBe("Panic attacks at work");
 });
 
-// R-candidate: the case report starts from what brought the person, in their own words, with the family's events of that week beside it and no joining sentence (FD-381)
-it("shows on what brought the person the newest trouble in its own words and the family's events of the week before it", () => {
+const on = (text: string, card: CaseReportCard, evidence: AskedQuestion["evidence"]) => ({ ...guess("n1", text, card), evidence });
+const body = (html: string, card: Card) => html.split(`data-card="${card}"`)[1].split("</section>")[0];
+
+// R-0850
+it("shows on what brought the person the coach's card: their own words, whose and when, and no page-built events", () => {
   const tl = halloran();
-  tl.events.push(
-    event(400, EventKind.Shift, "2021-09-20", { person: 10, title: "Lost his job" }),
-    event(401, EventKind.Shift, "2021-09-26", { person: 3, title: "Fell at home" }),
-    event(402, EventKind.Shift, "2021-10-01", { person: 1, title: "Panic attacks at work", description: "Woke at three and could not face the office", symptom: "up" }),
-  );
-  tl.events = tl.events.filter((e) => e.id !== 210);
+  tl.asked_questions = [on("\u201cI don't sleep that well.\u201d", CaseReportCard.WhatBrought, [{ kind: EvidenceKind.Statement, id: 7, label: "You said, 21 Sep" }])];
+  const card = body(cards(caseView(tl, ONE, ""), false), Card.Brought);
+  expect(card).toContain('<div class="bub user">\u201cI don&#39;t sleep that well.\u201d</div>');
+  expect(card).toContain("You said, 21 Sep");
+  expect(card).not.toContain('data-kind="event"');
+});
+
+// R-0850
+it("says on what brought the person that it is not asked yet, with the dashed amber question", () => {
+  const card = body(cards(caseView(halloran(), ONE, ""), false), Card.Brought);
+  expect(card).toContain(NOT_ASKED);
+  expect(card).toContain(`chip ask qmark dashed">? ${BRINGS}`);
+});
+
+// R-0850
+it("gives the coach's guess one pattern, each cluster's for and against, the person's own period dashed, and what it needs as the dashed amber chip", () => {
+  const tl = halloran();
+  tl.clusters = [cluster("c1", "Walter's death", "2011-02-01", "2013-05-01"), { ...cluster("c2", "A hard time", "2005-01-01", "2006-06-01"), source: ClusterSource.User }];
+  const text = "Distance between Nora and Frank, 2011 to 2013.\nFor c1: Walter died Feb 2011.\nAgainst c1: one event.\nOpen: Frank's own events in those years.";
+  tl.asked_questions = [on(text, CaseReportCard.CoachGuess, [{ kind: EvidenceKind.Cluster, id: "c1", label: "" }])];
   const v = caseView(tl, ONE, "");
-  expect(v.brought.lead).toBe("Woke at three and could not face the office");
-  expect(v.brought.around.map((f) => f.id)).toEqual([401]);
-  const card = cards(v, false).split(`data-card="${Card.Brought}"`)[1].split("</section>")[0];
-  expect(card).toContain("Around the newest time");
-  expect(card).not.toMatch(/symptoms appear in/);
+  expect(v.guess?.text).toBe("Distance between Nora and Frank, 2011 to 2013.");
+  const card = body(cards(v, false), Card.Guesses);
+  expect(card).toContain("<b>For</b><span>Walter died Feb 2011.</span><b>Against</b><span>one event.</span>");
+  expect(card).toContain('<div class="cl his">');
+  expect(card).toContain("Your period: A hard time");
+  expect(card).toContain(`chip ask qmark dashed">? Frank&#39;s own events in those years.`);
+  expect(card).not.toContain("For c1");
+});
+
+// R-0850
+it("states on the part card the other way it could have gone, and draws no card of the choice", () => {
+  const tl = halloran();
+  tl.asked_questions = [guess("i1", "In 2011 you stopped calling your father.\nOther way: could contact have stayed light?", CaseReportCard.OwnPart, [202])];
+  const html = cards(caseView(tl, ONE, ""), false);
+  const card = body(html, Card.OwnPart);
+  expect(card).toContain("In 2011 you stopped calling your father.</div>");
+  expect(card).toContain("? could contact have stayed light?");
+  expect(html).not.toContain('data-card="choice"');
+});
+
+// R-0850
+it("gives what to work on its prognosis as its own sentence and the aim in the person's words", () => {
+  const tl = halloran();
+  tl.asked_questions = [guess("w1", "More contact with your father.\nPrognosis: more trouble near the next loss.\nAim: call him weekly", CaseReportCard.WorkOn, [210])];
+  const v = caseView(tl, ONE, "");
+  const card = body(cards(v, false), Card.WorkOn);
+  expect(card).toContain('<p class="prognosis">more trouble near the next loss.</p>');
+  expect(card).toContain("You said: call him weekly");
+  expect(v.work.aim).toBeNull();
 });
 
 // R-0709
 it("shows on the coach's guess card only the guesses the coach chose for it", () => {
   const tl = halloran();
   tl.asked_questions = [...Array(13).keys()].map((n) => guess(`i${n}`, `Guess ${n}.`, n === 4 || n === 9 ? CaseReportCard.CoachGuess : null, [202]));
-  expect(caseView(tl, ONE, "").guesses.map((g) => g.text)).toEqual(["Guess 4.", "Guess 9."]);
+  expect(caseView(tl, ONE, "").guess?.text).toBe("Guess 9.");
   tl.asked_questions = tl.asked_questions.map((q) => ({ ...q, case_report_card: null }));
   const none = caseView(tl, ONE, "");
-  expect(none.guesses).toEqual([]);
+  expect(none.guess).toBeNull();
   expect(cards(none, false).split(`data-card="${Card.Guesses}"`)[1].split("</section>")[0]).toContain(NOT_ENOUGH);
 });
 
@@ -262,7 +303,7 @@ it("shows on the coach's guess card only the guesses the coach chose for it", ()
 it("counts only chats as the person talking with the coach, never a note or a recording", () => {
   const notes = [SessionKind.Note, SessionKind.Recording].map((kind) => ({ kind }) as Session);
   const v = caseView(halloran(), notes, "");
-  expect([v.brought.asked, v.effort]).toEqual(["", ""]);
+  expect(v.effort).toBe("");
   const chatted = caseView(halloran(), [...notes, { kind: SessionKind.Chat } as Session], "");
   expect(chatted.effort).toBe("Nora has talked with the coach in one session.");
 });
