@@ -462,6 +462,7 @@ class Cluster:
     source: ClusterSource = ClusterSource.Model
     # One sentence saying what the record shows these events have in common.
     reason: str | None = None
+    setAside: bool = False
 
 
 class ItemKind(enum.StrEnum):
