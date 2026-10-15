@@ -62,8 +62,13 @@ class MarkWhy(enum.StrEnum):
 
 
 class Marked(enum.StrEnum):
+    # kept before the flag is committed, so `undo` finds a mark cut short
+    Marking = "marking"
     Set = "set"
     Cleared = "cleared"
+
+
+OURS = (Marked.Marking, Marked.Set)
 
 
 REGROUPS = (RegroupWhy.Called, RegroupWhy.Uncalled)
@@ -314,7 +319,8 @@ def owed(entry: dict, saved: dict, marks: dict[str, str]) -> tuple[bool, bool]:
     """What of a planned record is still to write under this plan, read just
     before its write: its regroup, unless it ran or a turn regrouped the
     record since the plan; its mark, unless this plan set or cleared it or
-    the coach wrote every card again since the plan."""
+    the coach wrote every card again since the plan; a mark cut short is
+    still owed."""
     diagram = db.session.get(Diagram, entry["diagram"])
     if unowned(entry, diagram):
         return False, False
@@ -327,7 +333,7 @@ def owed(entry: dict, saved: dict, marks: dict[str, str]) -> tuple[bool, bool]:
     )
     mark = (
         entry["mark"]
-        and str(diagram.id) not in marks
+        and marks.get(str(diagram.id)) in (None, Marked.Marking)
         and marking(diagram, data, deployed_of(saved)) in MARKS
     )
     return regroup, mark
@@ -429,7 +435,7 @@ def state(entry: dict, saved: dict, marks: dict[str, str]) -> dict:
                 and not (regrouped and changed_since(diagram.id, regrouped[-1]))
             )
     mark_done = True
-    if entry["mark"] and str(diagram.id) not in marks:
+    if entry["mark"] and marks.get(str(diagram.id)) in (None, Marked.Marking):
         mark_done = marking(diagram, data, deployed_of(saved)) not in MARKS
         if mark_done:
             notes.append(Skipped.Rewritten.value)
@@ -532,6 +538,9 @@ def apply(path, diagram_id, limit, as_json):
             break
         left = owed(entry, saved, marks)
         if any(left):
+            if left[1]:
+                marks[str(entry["diagram"])] = Marked.Marking
+                keep(path, marks)
             caught_up(entry, saved["made"], *left)
             if left[1]:
                 marks[str(entry["diagram"])] = Marked.Set
@@ -622,7 +631,7 @@ def undo(path, diagram_id, yes):
         diagram = db.session.get(Diagram, entry["diagram"])
         if diagram is None:
             continue
-        if marks.get(str(diagram.id)) == Marked.Set:
+        if marks.get(str(diagram.id)) in OURS:
             if yes:
                 diagram.case_report_forced_out_of_date = False
                 db.session.commit()

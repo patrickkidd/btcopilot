@@ -16,7 +16,7 @@ import pytest
 from mock import patch
 
 from btcopilot import casereport, diagramjson, record
-from btcopilot.admin import admin
+from btcopilot.admin import admin, fd381catchup
 from btcopilot.clusters import ClusterListResponse, ModelCluster, compute_cache_key
 from btcopilot.extensions import db
 from btcopilot.models import (
@@ -352,6 +352,31 @@ def test_undo_takes_back_the_regroup_and_the_mark(
     assert clusters_of(family) == {}
     assert family.get_diagram_data().clusterCacheKey is None
     assert stale(old) is None
+    assert not forced(old)
+    assert kept(path) == {str(old.id): "cleared"}
+
+
+def test_undo_takes_back_a_mark_whose_apply_stopped_after_the_flag_was_set(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772
+    _, path = planned(flask_app, tmp_path)
+    keep = fd381catchup.keep
+
+    def full(at, marks):
+        if marks[str(old.id)] == "set":
+            raise OSError("no space left on the device")
+        keep(at, marks)
+
+    with patch("btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)), patch(
+        "btcopilot.admin.fd381catchup.keep", side_effect=full
+    ):
+        result = flask_app.test_cli_runner().invoke(admin, ["fd381-catchup", "apply", "--plan", path])
+    assert isinstance(result.exception, OSError)
+    assert forced(old)
+    assert kept(path) == {str(old.id): "marking"}
+
+    catchup(flask_app, "undo", "--plan", path, "--yes")
     assert not forced(old)
     assert kept(path) == {str(old.id): "cleared"}
 
