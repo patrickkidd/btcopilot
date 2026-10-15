@@ -74,15 +74,17 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    events, no outside vocabulary, no word the person's trouble is told in (the
    words of symptom events' descriptions not used elsewhere), no days shared with
    the person's own period. Then the app's periods sharing a day or an event are
-   merged into the one holding more. Then at least three supporting shifts and no
-   more than ten years [Oracle: R-0846, R-0837]. A first answer with any fault is
+   merged into the one holding more. Then at least three events and no more than
+   ten years [Oracle: R-0846, R-0837]. Fewer than three supporting shifts never
+   refuses a period: it counts against it (A1), on that cluster's Against line of
+   the coach's guess (step 8) [Oracle: R-0850]. A first answer with any fault is
    asked once more with the reasons; on the second, a failing period is dropped,
    except one still named by the trouble, which is kept as "A change in the
    family, <years>".
 4. Every refused answer, dropped period and merged period is a cluster_refused
    row in the observations table with the model's own answer [Oracle: R-0844].
 5. Before the call, every stored app period meets the same checks as a returned
-   one (three dated events, three supporting shifts, ten years at most) and is
+   one (three dated events, ten years at most) and is
    not named only by its years; one that fails is never handed back, and is set
    aside with a cluster_failed row naming it and its years [Oracle: R-0838,
    R-0844, R-0840, R-0850]. The person's own are never set aside, only judged
@@ -110,15 +112,18 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    supporting shifts, whether they are one person's run, its opening (the stored
    `openingEventId`, else its first change in the family), and the days from the
    opening to its first and last supporting shift, negative when the trouble came
-   first (A3, A9). It is not stored, and no page or card reads it yet.
+   first (A3, A9). It is not stored. The case report's refresh reads it for every
+   drawn cluster, and a cluster with fewer than three supporting shifts gets that
+   on its Against line (doc/CASE_REPORT.md) [Oracle: R-0850].
 
 ## When it runs
 
 After any coach turn that adds or changes an event, when the cache key (the
 events' dates, date certainty and shifts, the message ids of the person's
-answers to when the most was going on, plus `DETECTION_VERSION`, now 11)
+answers to when the most was going on, plus `DETECTION_VERSION`, now 12)
 differs from the stored one; `flask admin diagrams regroup` reruns diagrams that
-are behind. Version 11 regroups every diagram on its next event change. A turn
+are behind. Version 12 regroups every diagram on its next event change, so
+periods set aside only for too few supporting shifts are offered again. A turn
 that only closes the `most_going_on` question, with no event change, does not
 regroup; the next event change or `regroup` writes the person's periods.
 

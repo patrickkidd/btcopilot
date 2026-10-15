@@ -418,6 +418,15 @@ def test_the_coach_guess_gives_for_and_against_each_cluster_it_rests_on(web, pas
     assert texts(family)["coach_guess"] == text
 
 
+def test_a_rewrite_reads_a_cluster_with_fewer_than_three_supporting_shifts(web, past, grouped, family):
+    # R-0850
+    model = Model(calling(*every(past)))
+    rewrite(web, model)
+
+    held = model.histories[0][0]["content"].split(casereport.HELD)[1]
+    assert held.split("\n\n")[0].strip().splitlines() == ["c1: 1 supporting shift, fewer than 3; all of them Wren's"]
+
+
 def test_a_for_or_against_on_a_cluster_the_guess_does_not_rest_on_is_refused(web, past, grouped, family):
     # R-0850
     rewrite(web, Model(calling(guessed("Distance, 2004.\nFor c9: nothing.")), calling()))

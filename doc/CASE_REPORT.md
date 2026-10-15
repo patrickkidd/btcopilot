@@ -65,7 +65,11 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
 - Its inputs: every event with its words and notes, the coach's notes and questions, one summary
   per conversation (the stored one; a conversation with none gets one written then, one extra
   call each), and, while no note is on card 3, the first conversation's opening read raw, each
-  message by its number, up to 2000 characters. Never the whole thread.
+  message by its number, up to 2000 characters, and for each drawn cluster its supporting shifts
+  (how many, whether all one person's, the days from its opening to the first and last). Never the
+  whole thread.
+- A cluster with fewer than three supporting shifts stays stored and drawn; the shortfall is said
+  on its Against line of card 6, in words (A1). [Oracle: R-0850]
 - Card 3 (`what_brought`) quotes the person and rests on their message, which the page shows as
   "You said, <day>"; with none, the card reads "Not asked yet" and a dashed amber "What brings
   you here?".
@@ -80,7 +84,8 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
 ## Cluster rules
 
 - A1. A cluster is the app's opinion that shifts across the family belong to one span of time,
-  stored with its events and who proposed it.
+  stored with its events and who proposed it. Counts against it: fewer than three of its events
+  are supporting shifts, or shifts added later fall mostly outside its span. Neither refuses it.
 - A2. A cluster may open when someone joins or leaves the family, or a key member's
   functioning changes.
 - A3. A cluster may reach months to years after a loss; the gaps are measured and kept as data.

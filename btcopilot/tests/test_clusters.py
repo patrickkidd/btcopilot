@@ -1173,44 +1173,33 @@ THIN = record(
         own(70, 71, 72),
     ],
 )
-BACK_HOME = answers(named(60, 61, 62, name="Back home and the family grows"))
 
 
-def test_a_stored_period_with_too_few_shifts_is_set_aside_before_the_call(
+def test_a_stored_period_with_too_few_shifts_is_handed_back_and_stays_drawn(
     test_user,
 ):
     # R-0850, R-0853
-    """Handed back as existing, the two thin periods came back from the call
-    and were refused twice, so they stayed drawn and every later change made
-    the same two calls. They are set aside first, the person's own is kept,
-    and the refused regroup marks the diagram grouped."""
-    assert list(clusters.mine(THIN)) == ["u1"]
-    assert [(c["id"], check) for c, check, _ in clusters.broken(THIN)] == [
-        ("c1", ClusterCheck.FewShifts),
-        ("c2", ClusterCheck.FewShifts),
-    ]
+    """Fewer than three shifts that support a period counts against it on the
+    case report and never sets it aside: the two thin periods are handed back
+    as existing and stay drawn after the regroup."""
+    assert list(clusters.mine(THIN)) == ["c1", "c2", "u1"]
+    assert clusters.broken(THIN) == []
 
     diagram = test_user.free_diagram
     diagram.set_diagram_data(THIN)
     db.session.commit()
+    kept = answers(
+        named(50, 51, 52, cluster_id="c1", name="A breakup and the first symptoms"),
+        named(60, 61, 62, cluster_id="c2", name="Back home and the family grows"),
+    )
     with patch(
-        "btcopilot.metered.gemini_structured_sync",
-        side_effect=[parsed(BACK_HOME), parsed(BACK_HOME)],
+        "btcopilot.metered.gemini_structured_sync", side_effect=[parsed(kept)]
     ) as asked:
-        done = sync(diagram.id, turn_id="t1", user_id=diagram.user_id)
-    assert '"c1"' not in asked.call_args_list[0].args[0]
-    assert done is not None
-    assert [
-        o.detail.get("setAside")
-        for o in Observation.query.filter_by(kind=ObservationKind.ClusterFailed)
-    ] == ["c1", "c2", None]
-    data = diagram.get_diagram_data()
-    assert [c["id"] for c in data.drawn_clusters()] == ["u1"]
-    assert [c["id"] for c in data.clusters] == ["c1", "c2", "u1"]
-
-    with patch("btcopilot.metered.gemini_structured_sync") as again:
-        assert sync(diagram.id, turn_id="t2", user_id=diagram.user_id) is None
-    assert not again.called
+        sync(diagram.id, turn_id="t1", user_id=diagram.user_id)
+    assert '"c1"' in asked.call_args_list[0].args[0]
+    assert Observation.query.filter_by(kind=ObservationKind.ClusterFailed).count() == 0
+    drawn = diagram.get_diagram_data().drawn_clusters()
+    assert sorted(c["id"] for c in drawn) == ["c1", "c2", "u1"]
 
 
 def test_a_stored_model_group_named_by_its_years_is_not_handed_back(test_user):
@@ -1260,18 +1249,19 @@ def test_a_period_named_by_the_persons_trouble_is_refused_then_named_plainly():
     assert [c.name for c in result.clusters] == ["A change in the family, 1997–1998"]
 
 
-def test_a_period_needs_three_shifts_that_count_and_keeps_its_opening():
+def test_a_period_with_two_shifts_that_count_is_kept_with_its_opening():
     # R-0850
-    """The calmer shift does not count, so the death with two shifts is
-    refused; with the third it passes and stores the event that opened it."""
-    opened = named(1, 2, 3, 4, name="After the death")
+    """The calmer shift does not count, so the death holds two shifts that
+    support it: that counts against it on the case report, and the first
+    answer is kept as it came, with the event that opened it."""
+    opened = named(1, 3, 4, 5, name="After the death")
     opened.openingId = 1
     seen = []
-    with replies(answers(named(1, 3, 4, 5, name="After the death")), answers(opened)) as ask:
+    with replies(answers(opened)) as ask:
         result = detect_clusters(SLEEP, ask, heard(seen))
-    assert seen == [(1, ClusterCheck.FewShifts)]
+    assert (seen, ask.call_count) == ([], 1)
     assert (result.clusters[0].eventIds, result.clusters[0].openingEventId) == (
-        [1, 2, 3, 4],
+        [1, 3, 4, 5],
         1,
     )
 

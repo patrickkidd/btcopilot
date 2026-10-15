@@ -9,10 +9,12 @@ opening; which opening mattered is the model's judgement. The model returns the
 app's periods as they should now stand, and reads the periods the person named
 when asked when the most was going on, each written once as theirs; the
 person's own stay as they drew them and are judged against the data like the
-app's [Oracle: R-0853]. The code only backstops: three supporting shifts at
-least, nothing over ten years, no name told in the person's trouble, two
-periods sharing days become one, and a period that fails is set aside, never
-deleted. Spec and ruling ids: doc/CLUSTERS.md.
+app's [Oracle: R-0853]. The code only backstops: three events at least,
+nothing over ten years, no name told in the person's trouble, two periods
+sharing days become one, and a period that fails is set aside, never deleted.
+Fewer than three supporting shifts counts against a period and never refuses
+it: the case report's refresh hears the count [Oracle: R-0850]. Spec and ruling
+ids: doc/CLUSTERS.md.
 """
 
 import datetime
@@ -74,7 +76,10 @@ _log = logging.getLogger(__name__)
 # 11: the periods the person named when asked when the most was going on are
 # written as theirs, and their answers join the cache key, so every record
 # regroups on its next event change [Oracle: R-0853].
-DETECTION_VERSION = 11
+# 12: fewer than three supporting shifts counts against a period and no longer
+# refuses or sets it aside, so every record regroups on its next event change
+# [Oracle: R-0850].
+DETECTION_VERSION = 12
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -153,7 +158,6 @@ class ClusterCheck(enum.StrEnum):
     OutsideWords = "outside_words"
     TooLong = "too_long"
     YearsName = "years_name"
-    FewShifts = "few_shifts"
     SymptomName = "symptom_name"
     Theirs = "theirs"
     NoYears = "no_years"
@@ -225,17 +229,13 @@ def too_long(dates: list[datetime.date]) -> bool:
 Span = tuple[datetime.date, datetime.date]
 
 
-def backstop(
-    ids: list[int], when: dict[int, datetime.date], shifts: set[int]
-) -> ClusterCheck | None:
+def backstop(ids: list[int], when: dict[int, datetime.date]) -> ClusterCheck | None:
     """The first check an app period fails, returned by the model or stored:
-    three events, three shifts that support it, ten years at most
-    [Oracle: R-0850, R-0837]. `when` dates the events it may hold; `shifts`
-    are those that support a cluster."""
+    three events, ten years at most [Oracle: R-0850, R-0837]. `when` dates the
+    events it may hold. Its supporting shifts are never checked here: too few
+    counts against it on the case report, never refuses it [Oracle: R-0850]."""
     if len(ids) < MIN_CLUSTER_EVENTS:
         return ClusterCheck.TooSmall
-    if sum(i in shifts for i in ids) < MIN_CLUSTER_EVENTS:
-        return ClusterCheck.FewShifts
     if too_long([when[i] for i in ids]):
         return ClusterCheck.TooLong
     return None
@@ -873,7 +873,6 @@ def _screen(
     named, unnamed = _read_theirs(response.periods, said, data)
     known = {e.id for e in free}
     when = {e.id: parse_date(e.dateTime) for e in free}
-    shifts = {e.id for e in free if supports(e)}
     full = {e.id: parse_date(e.dateTime) for e in _dated(data)}
     theirs = [
         (cluster, span)
@@ -924,22 +923,12 @@ def _screen(
     kept = []
     for cluster in merged:
         said = _said_of(cluster, when)
-        check = backstop(cluster.eventIds, when, shifts)
+        check = backstop(cluster.eventIds, when)
         if check is ClusterCheck.TooSmall:
             faults.append(
                 ClusterError(
                     f"Period {cluster.name!r} holds {len(cluster.eventIds)} events; "
                     f"anything under {MIN_CLUSTER_EVENTS} is never a period.",
-                    check,
-                    said,
-                )
-            )
-        elif check is ClusterCheck.FewShifts:
-            faults.append(
-                ClusterError(
-                    f"Period {cluster.name!r} holds fewer than {MIN_CLUSTER_EVENTS} "
-                    "shifts that are a rise in symptom or anxiety, a fall in "
-                    "functioning, or a relationship shift.",
                     check,
                     said,
                 )
@@ -972,27 +961,17 @@ def _judged(
     [Oracle: R-0850, R-0853, R-0844]."""
     dated = _dated(data)
     when = {e.id: parse_date(e.dateTime) for e in dated}
-    shifts = {e.id for e in dated if supports(e)}
     kept, failing = {}, []
     for cluster in data.drawn_clusters():
         ids = [i for i in cluster.get("eventIds") or [] if i in when]
         span = span_of([when[i] for i in ids])
         name = _said(_title(cluster), span) if span else repr(_title(cluster))
         named = f"Stored grouping {cluster['id']} {name}"
-        check = backstop(ids, when, shifts)
+        check = backstop(ids, when)
         if not _regroupable(cluster):
             kept[str(cluster["id"])] = cluster
         elif check is ClusterCheck.TooSmall:
             failing.append((cluster, check, f"{named} holds {len(ids)} dated events"))
-        elif check is ClusterCheck.FewShifts:
-            failing.append(
-                (
-                    cluster,
-                    check,
-                    f"{named} holds {sum(i in shifts for i in ids)} shifts that "
-                    f"support it, under {MIN_CLUSTER_EVENTS}",
-                )
-            )
         elif check is ClusterCheck.TooLong:
             failing.append(
                 (cluster, check, f"{named} fails the {MAX_SPAN_YEARS}-year check")

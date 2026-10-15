@@ -31,10 +31,14 @@ from btcopilot.models import (
     TokenMeter,
     User,
 )
+# After btcopilot.models: btcopilot.clusters imports btcopilot.metered first,
+# and btcopilot.metered and btcopilot.models import each other.
+from btcopilot import clusters
 from btcopilot.prompts import case_report_rewrite, get_agent_prompt
 from btcopilot.questions import order, sessions
 from btcopilot.recordtext import note_line, on_map, outline, question_order
 from btcopilot.schema import (
+    MIN_CLUSTER_EVENTS,
     CardLine,
     CaseReportCard,
     DiagramData,
@@ -65,6 +69,7 @@ REFUSED = "The case report could not be written again from this diagram."
 MOVED = "The diagram changed while the case report was being written; refresh it again."
 SUMMARIES = "ONE SUMMARY PER CONVERSATION (oldest first)"
 OPENING = "THE OPENING OF THE FIRST CONVERSATION"
+HELD = "THE SHIFTS THAT SUPPORT EACH CLUSTER"
 # How much of the first conversation the rewrite reads raw, when no note on
 # the what_brought card holds what brought the person in (R-0850).
 OPENING_CHARS = 2000
@@ -323,6 +328,34 @@ def summaries(diagram: Diagram, meter: Metered) -> str:
     return "\n".join(lines)
 
 
+def _days(gap: int) -> str:
+    if gap == 0:
+        return "on the day of its opening"
+    return f"{abs(gap)} days {'after' if gap > 0 else 'before'} its opening"
+
+
+def held(data: DiagramData) -> str:
+    """Each drawn cluster read against the data: how many of its events are a
+    rise in symptom or anxiety, a fall in functioning or a relationship shift,
+    whether they are all one person's, and how far the first and last fall
+    from its opening, so the coach's guess says on that cluster's Against line
+    when there are fewer than three (R-0850)."""
+    people = {str(p["id"]): p for p in data.people}
+    lines = []
+    for cluster in data.drawn_clusters():
+        read = clusters.judge(cluster, data)
+        count = len(read.shiftIds)
+        parts = [f"{count} supporting shift{'' if count == 1 else 's'}"
+                 + ("" if read.supported else f", fewer than {MIN_CLUSTER_EVENTS}")]
+        if read.runOf is not None:
+            parts.append(f"all of them {_name(people, read.runOf) or 'one person'}'s")
+        if read.opening is not None and read.toFirst is not None:
+            parts.append(f"opened by event {read.opening}, the first shift {_days(read.toFirst)}, "
+                         f"the last {_days(read.toLast)}")
+        lines.append(f"{cluster['id']}: " + "; ".join(parts))
+    return "\n".join(lines)
+
+
 def opening(data: DiagramData, first: Discussion) -> str:
     """The first conversation's opening, each message by its number, up to
     OPENING_CHARS; nothing when a note on the what_brought card already
@@ -342,9 +375,10 @@ def opening(data: DiagramData, first: Discussion) -> str:
 
 def asked(diagram: Diagram, user: User, toolbox: Toolbox, meter: Metered) -> tuple[str, list[dict]]:
     """The one call's system prompt, the coach's own, and its opening message
-    with every event's words and notes, one summary per conversation, and,
-    with no note on what brought the person, the first conversation's opening
-    read raw, so it reads nothing (R-0850)."""
+    with every event's words and notes, the shifts that support each drawn
+    cluster, one summary per conversation, and, with no note on what brought
+    the person, the first conversation's opening read raw, so it reads nothing
+    (R-0850)."""
     data = diagram.get_diagram_data()
     own = profile.own(data)
     system = get_agent_prompt(
@@ -353,7 +387,11 @@ def asked(diagram: Diagram, user: User, toolbox: Toolbox, meter: Metered) -> tup
         coverage=coverage.block(data),
     )
     events, _ = toolbox.call(ToolName.ReadEvents, {"fields": [ReadField.Words, ReadField.Notes]})
-    content = f"{case_report_rewrite()}\n\nEVENTS\n{events}\n\n{SUMMARIES}\n{summaries(diagram, meter)}"
+    content = f"{case_report_rewrite()}\n\nEVENTS\n{events}"
+    support = held(data)
+    if support:
+        content += f"\n\n{HELD}\n{support}"
+    content += f"\n\n{SUMMARIES}\n{summaries(diagram, meter)}"
     raw = opening(data, sessions(diagram)[0])
     if raw:
         content += f"\n\n{OPENING}\n{raw}"
