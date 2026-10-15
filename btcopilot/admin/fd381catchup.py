@@ -334,15 +334,31 @@ def owed(entry: dict, made: str) -> tuple[bool, bool]:
 
 def caught_up(entry: dict, made: str, regroup: bool, marks: bool) -> None:
     """One planned record's writes: the regroup through the function a coach
-    turn runs, then the mark."""
+    turn runs, then the mark. A grouping the record refuses at the write
+    keeps the groups already there, as a turn's does, and is written down as
+    failed, so the rest of the plan goes on."""
     diagram = find(entry["diagram"])
     if regroup:
-        clusters.sync(
-            diagram.id,
-            turn_id=TURN.format(diagram.id, made),
-            user_id=diagram.user_id,
-            force=True,
-        )
+        turn_id = TURN.format(diagram.id, made)
+        try:
+            clusters.sync(
+                diagram.id, turn_id=turn_id, user_id=diagram.user_id, force=True
+            )
+        except (clusters.ClusterError, record.Invalid) as refused:
+            check = getattr(refused, "check", None)
+            db.session.add(
+                Observation(
+                    diagram_id=diagram.id,
+                    turn_id=turn_id,
+                    kind=ObservationKind.ClusterFailed,
+                    detail={
+                        **({"check": check.value} if check else {}),
+                        "detail": str(refused),
+                        "fallback": False,
+                        "reason": f"the record refused the regroup: {refused}",
+                    },
+                )
+            )
         db.session.commit()
     if marks:
         mark(diagram, MARK.format(diagram.id, made))

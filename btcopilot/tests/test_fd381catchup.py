@@ -14,11 +14,18 @@ from decimal import Decimal
 import pytest
 from mock import patch
 
-from btcopilot import casereport, diagramjson
+from btcopilot import casereport, diagramjson, record
 from btcopilot.admin import admin
 from btcopilot.clusters import ClusterListResponse, ModelCluster, compute_cache_key
 from btcopilot.extensions import db
-from btcopilot.models import Change, Diagram, ModelCall, Purpose
+from btcopilot.models import (
+    Change,
+    Diagram,
+    ModelCall,
+    Observation,
+    ObservationKind,
+    Purpose,
+)
 from btcopilot.schema import Event, Person, asdict, from_dict
 from btcopilot.tests.test_casereport import card
 from btcopilot.tests.test_clustersync import (  # noqa: F401
@@ -313,3 +320,24 @@ def test_a_grouping_with_no_answer_is_failed_and_not_called_again(
         catchup(flask_app, "apply", "--plan", path)
     assert asked.call_count == 2
     assert clusters_of(family) == {}
+
+
+def test_a_regroup_the_record_refuses_is_failed_written_down_and_the_rest_go_on(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772, R-0517
+    _, path = planned(flask_app, tmp_path)
+    refused = record.Invalid(
+        "that would leave clusters ['c1'] with fewer than 3 events", ""
+    )
+    with patch("btcopilot.clusters.sync", side_effect=refused):
+        rows, said = catchup(flask_app, "apply", "--plan", path)
+
+    assert [(r["diagram"], r["done"], r["failed"]) for r in rows] == [
+        (family.id, False, True),
+        (old.id, True, None),
+    ]
+    assert "completed: 2 planned, 1 done, 1 failed, 0 not yet written" in said
+    (seen,) = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).all()
+    assert seen.diagram_id == family.id
+    assert seen.detail["reason"].startswith("the record refused the regroup")
