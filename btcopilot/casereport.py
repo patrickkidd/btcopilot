@@ -363,9 +363,9 @@ def overlong(call) -> int | None:
 def unmarked(call) -> str | None:
     """Why a card's words, outside the person's quoted ones, do not say whose
     reading they are, or None; what brought the person is their own quoted
-    words (R-0850, R-0863)."""
+    words, and the family card gives the diagram's facts bare (R-0850, R-0863)."""
     text = call.args.get("text") or ""
-    if call.args.get(CARD) == CaseReportCard.WhatBrought or text.startswith(THIN):
+    if call.args.get(CARD) in (CaseReportCard.WhatBrought, CaseReportCard.Family) or text.startswith(THIN):
         return None
     return None if WHOSE.search(record.QUOTED.sub("", text)) else (
         "the card does not say whose reading it is: give what the person said as "

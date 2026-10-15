@@ -804,6 +804,7 @@ def test_a_card_not_saying_whose_reading_it_is_twice_is_written_and_written_down
         ("Not enough in the diagram yet: your father's parents' names.", "sides"),
         ('You said "I stopped calling her" in 2004.', "own_part"),
         ("In 2004 you stopped calling your mother. The app's guess: distance.", "own_part"),
+        ("The home you grew up in: your mother, your father and you.\nYou are the only child.", "family"),
     ],
 )
 def test_a_card_saying_whose_reading_it_is_or_how_little_the_diagram_holds_is_never_refused_for_it(
