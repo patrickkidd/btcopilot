@@ -285,24 +285,49 @@ export class CaseReport implements View {
     const tl = this.opened!.record;
     // what a chip names is shown on the full line, so a folded line opens first
     this.openedAt = this.body.scrollTop;
-    this.strip.open();
-    if (chip.kind === ChipKind.Person) {
-      const ids = tl.events.filter((e) => e.dateTime && [e.person, e.child, e.spouse].includes(Number(chip.target))).map((e) => e.id);
-      if (ids.length) this.lens.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
-      return;
-    }
     // a chip naming a cluster opens its view; a chip naming events inside one
     // opens that cluster the way a tap on it on the timeline does, so explain
     // is offered (R-0700), and lights what it names there
-    const ids = aimedEvents(chip, tl.clusters);
+    const ids = chip.kind === ChipKind.Person ? [] : aimedEvents(chip, tl.clusters);
     const cluster = ids.length ? tl.clusters.find((c) => ids.every((id) => c.event_ids.includes(id))) : undefined;
+    if (cluster && chip.kind === ChipKind.Cluster) {
+      const open = this.openOver();
+      this.lens.openCluster(cluster);
+      void open.then(() => this.lens.about());
+      return;
+    }
+    this.strip.open();
+    if (chip.kind === ChipKind.Person) {
+      const mine = tl.events.filter((e) => e.dateTime && [e.person, e.child, e.spouse].includes(Number(chip.target))).map((e) => e.id);
+      if (mine.length) this.lens.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(mine[0]) }), mine);
+      return;
+    }
     if (cluster) {
       this.lens.openCluster(cluster);
-      if (chip.kind === ChipKind.Cluster) return this.lens.about();
       this.lens.picture.spotlight(ids);
       return;
     }
     this.lens.aim(chip);
+  }
+
+  /** The folded line opens for a cluster's view, which is laid over the cards:
+   * the cards scroll with the line as it opens, so they stand where they were
+   * on the screen and nothing under the view moves (R-0460). Settles once the
+   * line is open, so the view is held to the screen from where it lands. */
+  private openOver(): Promise<void> {
+    const b = this.body;
+    const [top, from] = [b.getBoundingClientRect().top, b.scrollTop];
+    const pic = this.root.querySelector<HTMLElement>(":scope > .pic")!;
+    this.strip.open();
+    return new Promise((done) => {
+      const keep = () => {
+        b.scrollTop = from + b.getBoundingClientRect().top - top;
+        this.openedAt = b.scrollTop;
+        if (pic.getAnimations().length) requestAnimationFrame(keep);
+        else done();
+      };
+      keep();
+    });
   }
 
   /** The cluster told in the play-by-play drawer: the record's own dated
