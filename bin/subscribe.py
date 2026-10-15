@@ -76,7 +76,10 @@ def main(args: list[str]) -> int:
                     [scratch / f"work{i}" for i in range(len(waiting))],
                 ):
                     print(f"round {round + 1}: {line}", flush=True)
-    raise SystemExit(f"still awaiting answers after {ROUNDS} rounds")
+    raise SystemExit(
+        f"still awaiting answers after {ROUNDS} rounds; the last answered: "
+        f"{[r.name for r in waiting]}"
+    )
 
 
 if __name__ == "__main__":
