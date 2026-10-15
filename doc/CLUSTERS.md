@@ -61,9 +61,13 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
 
 1. The rules find runs with no model call (`candidates`): every dated event
    within 548 days of a supporting shift, anyone's, cut at two years with no
-   supporting shift, at least three supporting shifts. Births and adoptions more
+   supporting shift, at least three events. Births and adoptions more
    than 548 days before the first supporting shift are scaffolding and held out.
-   The runs go to the model as a hint only, each with the silence before it.
+   The runs go to the model as a hint only, each with the silence before it and
+   its count of supporting shifts; a run with fewer than three is offered too
+   (A1) [Oracle: R-0850]. The prompt says a period is stronger with three or
+   more and one with fewer may stand when its events belong together, its
+   reason saying so.
 2. The model gets every event, the stored periods (the person's own marked "the
    person drew this period"), and the hint. The 548 days and the ten-year cap are
    both given as suggestions (A3). It returns the app's periods: id when one grew
@@ -114,16 +118,19 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    opening to its first and last supporting shift, negative when the trouble came
    first (A3, A9). It is not stored. The case report's refresh reads it for every
    drawn cluster, and a cluster with fewer than three supporting shifts gets that
-   on its Against line (doc/CASE_REPORT.md) [Oracle: R-0850].
+   on its Against line (doc/CASE_REPORT.md). A cluster whose supporting shifts
+   are all one person's is that person's run: the coach's guess says so, and its
+   Open line asks about the others in the family then (A9) [Oracle: R-0850].
 
 ## When it runs
 
 After any coach turn that adds or changes an event, when the cache key (the
 events' dates, date certainty and shifts, the message ids of the person's
-answers to when the most was going on, plus `DETECTION_VERSION`, now 12)
+answers to when the most was going on, plus `DETECTION_VERSION`, now 13)
 differs from the stored one; `flask admin diagrams regroup` reruns diagrams that
 are behind. Version 12 regroups every diagram on its next event change, so
-periods set aside only for too few supporting shifts are offered again. A turn
+periods set aside only for too few supporting shifts are offered again; version
+13 does again, with runs of fewer than three supporting shifts in the hint. A turn
 that only closes the `most_going_on` question, with no event change, does not
 regroup; the next event change or `regroup` writes the person's periods.
 

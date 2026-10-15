@@ -4,7 +4,9 @@ holds a new guess afterwards, none of the ones it held before, and the new
 Executive Summary reads the family as the summary eval asks (R-0820). Then the
 formulation framing (R-0850): what brought the person is decided from the
 opening of their first conversation, in their own words; no card gives a
-cause; the part card states the other way it could have gone.
+cause; the part card states the other way it could have gone; a cluster with
+fewer than three supporting shifts, all the speaker's, is said to be both on its
+line, and the Open line asks about the others in the family.
 
 The family is the summary eval's, plus the speaker twice stopping calling her
 mother and saying she is working on calling her every week. A pass is all four
@@ -15,10 +17,12 @@ coach's judgement. Written, not yet run: real spend needs Patrick's yes.
 Invented names only.
 """
 
+import re
+
 from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot.models import Observation, ObservationKind
-from btcopilot.schema import CardLine
+from btcopilot.schema import CardLine, Cluster, ClusterSource, asdict
 from btcopilot.tests.live.criterion import passes
 from btcopilot.tests.live.test_executivesummary import (
     ADA,
@@ -51,11 +55,19 @@ def old(id, text, card) -> dict:
 BEFORE = [old(f"i{n}", f"An earlier guess for {card}.", card) for n, card in enumerate(CARDS, start=1)]
 
 
-def seeded(coach) -> None:
+# Her own period, so no regrouping in a turn replaces it: Silas's death, her
+# classes stopped and her calls to her mother stopped, two supporting shifts,
+# both hers.
+THIN = Cluster(id="c1", title="After Grandpa died", summary="", name="After Grandpa died",
+               eventIds=[32, 33, 36], source=ClusterSource.User, startDate="2009-03-14", endDate="2009-10-01")
+
+
+def seeded(coach, clusters=()) -> None:
     coach.record(people=[ADA, HUGH, SILAS, RUTH, WALT, IRIS, TESS], pair_bonds=BONDS, events=[*EVENTS, *MORE])
     diagram = coach.user.free_diagram
     data = diagramjson.loads(diagram.data)
     data["questions"] = list(BEFORE)
+    data["clusters"] = [asdict(one) for one in clusters]
     diagram.data = diagramjson.dumps(data)
     db.session.commit()
 
@@ -82,8 +94,8 @@ OPENING = ("Hi. I'm not sure where to start, I've been meaning to try this for a
            "My husband says I'm the anxious one, and I suppose since my mother's fall I can't stop checking on everyone.")
 
 
-def refreshed(coach, *said) -> list[dict]:
-    seeded(coach)
+def refreshed(coach, *said, clusters=()) -> list[dict]:
+    seeded(coach, clusters)
     for statement in said:
         coach.turn(statement)
     response = coach.web.post("/app/case-report-rewrites", headers={"X-CSRFToken": coach.token})
@@ -124,3 +136,16 @@ def test_the_part_card_states_the_other_way_it_could_have_gone(coach):
     card = on(refreshed(coach, *OPENING), "own_part")
     other = [line for line in card["text"].splitlines() if line.startswith(f"{CardLine.OtherWay.value}:")]
     assert other and other[-1].rstrip().endswith("?"), card["text"]
+
+
+@passes(2, of=3)
+def test_a_thin_run_of_one_persons_shifts_is_said_so_and_the_open_line_asks_about_the_others(coach):
+    # R-0850
+    # pass: a For or Against line on c1 gives its shortfall ("only", "two" or "fewer") and names Wren or "you",
+    # and the Open line names someone else in the family or asks about the others
+    card = on(refreshed(coach, *OPENING, clusters=[THIN]), "coach_guess")
+    lines = card["text"].splitlines()
+    held = " ".join(line for line in lines if line.startswith((f"{CardLine.For.value} c1", f"{CardLine.Against.value} c1")))
+    assert re.search(r"\b(only|two|fewer)\b", held.lower()) and re.search(r"\b(Wren|yours?)\b", held), card["text"]
+    opened = " ".join(line for line in lines if line.startswith(f"{CardLine.Open.value}:"))
+    assert re.search(r"\b(Ada|Hugh|Tess|Silas|Ruth|others?|rest of)\b", opened), card["text"]

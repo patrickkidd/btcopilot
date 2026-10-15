@@ -69,7 +69,9 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
   (how many, whether all one person's, the days from its opening to the first and last). Never the
   whole thread.
 - A cluster with fewer than three supporting shifts stays stored and drawn; the shortfall is said
-  on its Against line of card 6, in words (A1). [Oracle: R-0850]
+  on its Against line of card 6, in words (A1). One whose supporting shifts are all one person's
+  is that person's run: card 6 says so, and its Open line asks about the others in the family then
+  (A9). [Oracle: R-0850]
 - Card 3 (`what_brought`) quotes the person and rests on their message, which the page shows as
   "You said, <day>"; with none, the card reads "Not asked yet" and a dashed amber "What brings
   you here?".

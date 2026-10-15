@@ -340,3 +340,23 @@ def test_the_coach_asks_one_item_and_the_question_names_it(public):
     fact = public.tool_meanings()[public.ToolText.Fact]
     assert "Name it whenever the question asks for one of the required facts." in fact
     assert "A question that asks for two items is kept as two questions." in fact
+
+
+def test_the_grouping_prompt_lets_a_period_with_fewer_than_three_shifts_stand(public):
+    # R-0850
+    prompt = " ".join(public.CLUSTER_PROMPT.split())
+    assert "at least three of the shifts that count" not in prompt
+    assert (
+        "one with fewer may still be proposed when its events belong together, and "
+        "its `reason` then says so"
+    ) in prompt
+    assert "`supportingShifts`" in prompt
+
+
+def test_the_refresh_prompt_asks_about_the_others_on_one_persons_run(public):
+    # R-0850
+    prompt = public.case_report_rewrite()
+    assert (
+        "A cluster whose shifts are all one person's is that person's run: the coach's "
+        "guess says so on its line, and its Open line asks about the others in the family then."
+    ) in prompt

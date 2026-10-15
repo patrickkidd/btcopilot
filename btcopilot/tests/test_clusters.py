@@ -79,7 +79,7 @@ def record(
 
 
 # The fictional Hale family, shaped like the fault seen on production: three
-# runs of events decades apart and two strays, a grandparent on the 1948
+# runs of events decades apart and one stray, a grandparent on the 1948
 # marriage and on the 1998 death the only bridge between the 1950s and the
 # 1990s. Nobody real. 1 Walter and 2 Edith (the grandparents), 3 June and 4 Ray
 # (the parents), 5 Nell (the person), 6 Mae (her aunt), 7 Theo (her husband).
@@ -175,9 +175,10 @@ HALE_EVENTS = (
         )
     ),
 )
-# The three proposals the rules make of it, and the two events in none.
-HALE_PROPOSALS = [[2, 3, 4, 5], [9, 10, 11, 12, 13, 14]]
-HALE_STRAYS = [1, 6, 7, 8]
+# The three runs the rules offer of it, the 1994 one with two supporting
+# shifts, and the 1948 marriage in none.
+HALE_PROPOSALS = [[2, 3, 4, 5], [6, 7, 8], [9, 10, 11, 12, 13, 14]]
+HALE_STRAYS = [1]
 ALL_HALE = list(range(1, 15))
 
 
@@ -283,16 +284,36 @@ def test_a_death_with_no_shifts_near_it_opens_nothing():
     # R-0850
     data = record(
         asdict(Event(id=1, kind=EventKind.Death, person=1, dateTime="1994-06-01")),
+        moment(2, "1994-09-01", person=2, kind=EventKind.Noted, description="moved"),
+        moment(3, "1994-11-01", person=2, kind=EventKind.Noted, description="new job"),
+    )
+    assert grouped(data) == []
+
+
+def test_a_run_with_fewer_than_three_supporting_shifts_is_offered_with_its_count():
+    # R-0850
+    """Fewer than three supporting shifts counts against a run, never keeps
+    it from the hint: the death and the two shifts after it are offered, the
+    count beside them; two events stay too few."""
+    data = record(
+        asdict(Event(id=1, kind=EventKind.Death, person=1, dateTime="1994-06-01")),
         moment(2, "1994-09-01", person=2),
         moment(3, "1994-11-01", person=2),
     )
-    assert grouped(data) == []
+    proposed = candidates(data)
+    assert [(c.eventIds, c.shiftIds) for c in proposed] == [([1, 2, 3], [2, 3])]
+    prompt = clusters._prompt(proposed, joinable(data), {}, [], None)
+    hint = prompt.split("RUNS THE APP'S RULES FOUND (A HINT ONLY)")[1].split("EVERY EVENT")[0]
+    assert [(run["supportingShifts"], run["eventIds"]) for run in json.loads(hint)] == [
+        (2, [1, 2, 3])
+    ]
 
 
 def test_a_calmer_shift_supports_nothing_and_an_unknown_date_opens_nothing():
     # R-0850
     """A drop in anxiety or a rise in functioning is no support, and an event
-    whose date is unknown neither opens nor supports a run."""
+    whose date is unknown neither opens nor supports a run: the run is offered
+    with its two rises in anxiety as its supporting shifts."""
     data = record(
         moment(1, "1994-06-01", person=1),
         moment(2, "1994-07-01", person=1, anxiety=VariableShift.Down),
@@ -300,7 +321,7 @@ def test_a_calmer_shift_supports_nothing_and_an_unknown_date_opens_nothing():
         moment(4, "1994-09-01", person=1, dateCertainty=DateCertainty.Unknown),
         moment(5, "1994-10-01", person=1),
     )
-    assert grouped(data) == []
+    assert [(c.eventIds, c.shiftIds) for c in candidates(data)] == [([1, 2, 3, 5], [1, 5])]
     assert [e.id for e in joinable(data)] == [1, 2, 3, 5]
 
 
@@ -675,11 +696,12 @@ def spans(result) -> list[tuple[str, str]]:
     return [(c.startDate[:4], c.endDate[:4]) for c in result.clusters]
 
 
-def test_the_hale_record_proposes_three_groups_decades_apart_and_two_strays():
-    # R-0837, R-0215
+def test_the_hale_record_proposes_three_groups_decades_apart_and_one_stray():
+    # R-0837, R-0215, R-0850
     proposed = candidates(HALE)
     assert [c.eventIds for c in proposed] == HALE_PROPOSALS
-    assert [c.startDate for c in proposed] == ["1954-02-10", "1996-09-01"]
+    assert [c.startDate for c in proposed] == ["1954-02-10", "1994-03-05", "1996-09-01"]
+    assert [len(c.shiftIds) for c in proposed] == [3, 2, 3]
     grouped = {i for c in proposed for i in c.eventIds}
     assert [e.id for e in joinable(HALE) if e.id not in grouped] == HALE_STRAYS
 

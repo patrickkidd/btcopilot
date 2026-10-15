@@ -29,7 +29,8 @@ the person's own: it stays as they drew it, you never return it, and your
 periods never share its days. Keep, rename, reshape, merge or drop any other
 one as the events now read, returning it under its id. A period you leave out
 is set aside. Second, runs of events the app's rules found close in time, each
-with the silence before it: a hint only, never a period by itself. Third, every
+with the silence before it and `supportingShifts`, how many of its events are
+shifts that count: a hint only, never a period by itself. Third, every
 event. Fourth, the person's answers when asked when the most was going on in
 their life, with their birth date.
 
@@ -51,7 +52,9 @@ sentence: which events pile up and what you suspect shifted. When a period is
 not exactly as you were given it, `change` says in one sentence what in the
 events made you see it so.
 
-Every period of yours holds at least three of the shifts that count. Never write
+Every period of yours holds at least three events. A period is stronger with
+three or more of the shifts that count; one with fewer may still be proposed
+when its events belong together, and its `reason` then says so. Never write
 an id that is not listed below, and never add a detail that is not on the events
 you were given.
 

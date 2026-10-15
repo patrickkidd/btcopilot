@@ -1,14 +1,16 @@
 """The grouping call on the fictional Hale record: three runs of events decades
-apart and two strays, the shape of the fault seen on production. An older
+apart and one stray, the shape of the fault seen on production. An older
 prompt let the model fold them into one period of fifty years. Read as
 hypotheses of a family process, the periods stay apart across the quiet
 decades, each named for the change in the family that opened it, never for
 its years or the person's trouble (R-0841, R-0844, R-0837, R-0838, R-0850).
 The periods the person names when asked when the most was going on come back
-as hers, in her words (R-0853). Invented names only; no real record is
-involved. Pass criteria are k of n runs on the stored clusters, stated on each
-test; none has been run against the prompt of DETECTION_VERSION 11 yet
-(real-model spend waits on Patrick).
+as hers, in her words (R-0853). Fewer than three of the shifts that count
+weighs against a period and never keeps it out: the 1994 run, offered with its
+two, may come back with its shortfall said in its reason (R-0850). Invented
+names only; no real record is involved. Pass criteria are k of n runs on the
+stored clusters, stated on each test; none has been run against the prompt of
+DETECTION_VERSION 13 yet (real-model spend waits on Patrick).
 
 The app's grouping model is Gemini, and this suite's machine may have no key
 for it, so the call goes through Claude Code (`claude -p` with the answer's
@@ -32,6 +34,7 @@ from btcopilot.clusters import (
     ModelCluster,
     TheirPeriod,
     detect_clusters,
+    judge,
     symptom_words,
 )
 from btcopilot.schema import ClusterSource
@@ -195,6 +198,26 @@ def test_a_period_is_named_by_its_change_and_holds_the_death_it_follows():
     ]
     late = [c for c in result.clusters if span(c)[0] >= 1996]
     assert late and any(11 in c.eventIds for c in late)
+
+
+SHORTFALL = re.compile(r"\b(only|two|fewer|single|lone)\b")
+
+
+@passes(8, of=10)
+def test_a_period_with_fewer_than_three_shifts_stands_with_its_shortfall_said():
+    # R-0850
+    """Pass: a period holds the 1994 divorce with Nell's distance from her
+    mother and June's drinking after it, two of the shifts that count, and
+    every period of the app's with fewer than three says so in its reason."""
+    result = detect_clusters(HALE, ask)
+    thin = []
+    for cluster in result.clusters:
+        count = len(judge({"eventIds": cluster.eventIds}, HALE).shiftIds)
+        print(f"  {span(cluster)} {cluster.eventIds} {count} {cluster.name!r}: {cluster.reason}")
+        if count < 3:
+            thin.append(cluster)
+    assert [c for c in result.clusters if {6, 7, 8} <= set(c.eventIds)]
+    assert not [c.reason for c in thin if not SHORTFALL.search(c.reason.lower())]
 
 
 # Nell's answer when the coach asked when the most was going on.

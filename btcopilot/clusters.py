@@ -79,7 +79,11 @@ _log = logging.getLogger(__name__)
 # 12: fewer than three supporting shifts counts against a period and no longer
 # refuses or sets it aside, so every record regroups on its next event change
 # [Oracle: R-0850].
-DETECTION_VERSION = 12
+# 13: the runs offered as a hint include those with fewer than three supporting
+# shifts, each with its count, and the prompt lets such a period stand with its
+# shortfall noted, so every record regroups on its next event change
+# [Oracle: R-0850].
+DETECTION_VERSION = 13
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -345,7 +349,8 @@ def candidates(data: DiagramData) -> list[Candidate]:
     """Runs of events close in time around the shifts that support a
     cluster, anyone's in the extended family, with no model in the loop. Any
     event near a run may be its opening; which ones matter is the grouping
-    call's judgement, never a list of kinds [Oracle: R-0850]."""
+    call's judgement, never a list of kinds. A run with fewer than three
+    supporting shifts is offered too, its count beside it [Oracle: R-0850]."""
     free = joinable(data)
     marked = [e for e in free if supports(e)]
     if not marked:
@@ -380,7 +385,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
             when,
             marked_ids,
         )
-        if sum(event_id in marked_ids for event_id in ids) >= MIN_CLUSTER_EVENTS
+        if marked_ids & set(ids) and len(ids) >= MIN_CLUSTER_EVENTS
     ]
     return sorted(kept, key=lambda c: (c.startDate, c.eventIds[0]))
 
@@ -591,7 +596,11 @@ def _prompt(
         existing=json.dumps(existing, indent=2),
         candidates=json.dumps(
             [
-                {"before": _before(candidate, when), "eventIds": candidate.eventIds}
+                {
+                    "before": _before(candidate, when),
+                    "supportingShifts": len(candidate.shiftIds),
+                    "eventIds": candidate.eventIds,
+                }
                 for candidate in cands
             ],
             indent=2,
