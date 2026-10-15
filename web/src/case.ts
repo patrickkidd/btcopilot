@@ -146,6 +146,28 @@ const held = (c: Held) => {
   return `<div class="cl${c.mine ? " his" : ""}">${clusterChip(c)}${slots}</div>`;
 };
 
+/** A stored card's words in order, each part the person's own words inside
+ * quotation marks or the coach's words around them. */
+export function quoted(text: string): { quote: boolean; words: string }[] {
+  const parts: { quote: boolean; words: string }[] = [];
+  let last = 0;
+  for (const m of text.matchAll(/\u201c([^\u201d]+)\u201d|"([^"]+)"/g)) {
+    parts.push({ quote: false, words: text.slice(last, m.index) }, { quote: true, words: m[1] ?? m[2] });
+    last = m.index + m[0].length;
+  }
+  parts.push({ quote: false, words: text.slice(last) });
+  return parts.map((p) => ({ ...p, words: p.words.trim() })).filter((p) => /[\p{L}\p{N}]/u.test(p.words));
+}
+
+/** The person's own words in the statement bubble and the coach's around them
+ * as plain card text; words with no quotation marks are all the person's (R-0863). */
+function said(text: string): string {
+  const user = (words: string) => `<div class="gbub"><div class="bub user">${esc(words)}</div></div>`;
+  const parts = quoted(text);
+  if (!parts.some((p) => p.quote)) return user(text);
+  return parts.map((p) => (p.quote ? user(p.words) : lead(p.words))).join("");
+}
+
 const notEnough = (words = NOT_ENOUGH) => `<div class="gbub">${bubble(words)}</div>`;
 
 /** The top padding of a family's frame on the report, as casereport.css gives it. */
@@ -181,7 +203,7 @@ function body(card: Card, v: CaseView): string {
       // the person's own words with whose and when, else the coach's reading, else what it still needs (R-0850)
       const b = v.brought;
       if (!b) return lead(NOT_ASKED) + needs(BRINGS);
-      return b.said ? `<div class="gbub"><div class="bub user">${esc(b.text)}</div></div>${faint(b.said)}` : guessBlock(b);
+      return b.said ? said(b.text) + faint(b.said) : guessBlock(b);
     }
     case Card.Couple:
       // married: Bowen's stages, each head a chip with its events under it (R-0835), then what the card still needs

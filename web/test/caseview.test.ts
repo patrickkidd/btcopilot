@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { BRINGS, cards, NOT_ASKED, NOT_ENOUGH, NOT_SAID, rail, UNSURE } from "../src/case";
+import { BRINGS, cards, NOT_ASKED, NOT_ENOUGH, NOT_SAID, quoted, rail, UNSURE } from "../src/case";
 import { Card, caseView, ORDER } from "../src/caseview";
 import { esc } from "../src/dom";
 import {
@@ -238,9 +238,21 @@ it("shows on what brought the person the coach's card: their own words, whose an
   const tl = halloran();
   tl.asked_questions = [on("\u201cI don't sleep that well.\u201d", CaseReportCard.WhatBrought, [{ kind: EvidenceKind.Statement, id: 7, label: "You said, 21 Sep" }])];
   const card = body(cards(caseView(tl, ONE, ""), false), Card.Brought);
-  expect(card).toContain('<div class="bub user">\u201cI don&#39;t sleep that well.\u201d</div>');
+  expect(card).toContain('<div class="bub user">I don&#39;t sleep that well.</div>');
   expect(card).toContain("You said, 21 Sep");
   expect(card).not.toContain('data-kind="event"');
+});
+
+// R-0863
+it("puts only the quoted words of what brought the person in the statement bubble, the coach's words around them as plain card text", () => {
+  const tl = halloran();
+  const text = "Nora came because of her sleep: \u201cI don't sleep that well.\u201d She wants to understand it.";
+  tl.asked_questions = [on(text, CaseReportCard.WhatBrought, [{ kind: EvidenceKind.Statement, id: 7, label: "You said, 21 Sep" }])];
+  const card = body(cards(caseView(tl, ONE, ""), false), Card.Brought);
+  expect(card.match(/class="bub user"/g)).toHaveLength(1);
+  expect(card).toContain('<p class="lead">Nora came because of her sleep:</p><div class="gbub"><div class="bub user">I don&#39;t sleep that well.</div></div><p class="lead">She wants to understand it.</p>');
+  expect(quoted('He said "it\'s the work" twice.').filter((p) => p.quote).map((p) => p.words)).toEqual(["it's the work"]);
+  expect(quoted("No quotation marks here.")).toEqual([{ quote: false, words: "No quotation marks here." }]);
 });
 
 // R-0850
@@ -261,7 +273,7 @@ it("gives the coach's guess one pattern, each cluster's for and against, the per
   const card = body(cards(v, false), Card.Guesses);
   expect(card).toContain("<b>For</b><span>Walter died Feb 2011.</span><b>Against</b><span>one event.</span>");
   expect(card).toContain('<div class="cl his">');
-  expect(card).toContain("Your period: A hard time");
+  expect(card).toContain("Your suggestion: A hard time");
   expect(card).toContain(`chip ask qmark dashed">? Frank&#39;s own events in those years.`);
   expect(card).not.toContain("For c1");
 });
@@ -629,5 +641,15 @@ it("writes a period's years on its chip as the server stored them, not from the 
   const tl = halloran();
   const p = { ...cluster(tl, "p1", "When Lily came", "2009-09-01", "2010-11-01"), source: ClusterSource.User };
   tl.clusters = [{ ...p, label: "2009\u20132011" }];
-  expect(caseView(tl, ONE, "").hypotheses.map((c) => c.label)).toEqual(["Your period: When Lily came · 2009–2011"]);
+  expect(caseView(tl, ONE, "").hypotheses.map((c) => c.label)).toEqual(["Your suggestion: When Lily came · 2009–2011"]);
+});
+
+// R-0865
+it("labels a period the person named as their suggestion, never as their period", () => {
+  const tl = halloran();
+  tl.clusters = [{ ...cluster(tl, "p1", "A hard time", "2005-01-01", "2006-06-01"), source: ClusterSource.User }, cluster(tl, "c1", "Walter's death", "2011-02-01", "2013-05-01")];
+  const labels = caseView(tl, ONE, "").hypotheses.map((c) => c.label);
+  expect(labels[0]).toMatch(/^Your suggestion: A hard time/);
+  expect(labels[1]).toMatch(/^Hypothesis: /);
+  expect(labels.join(" ")).not.toContain("Your period");
 });

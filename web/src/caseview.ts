@@ -687,7 +687,7 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
         const mine = c.source === ClusterSource.User;
         const slot = pattern?.slots[c.id];
         const named = periodName(c);
-        return { id: c.id, label: mine ? `Your period: ${named}` : `Hypothesis: ${named}`, mine, for: slot?.for ?? null, against: slot?.against ?? null };
+        return { id: c.id, label: mine ? `Your suggestion: ${named}` : `Hypothesis: ${named}`, mine, for: slot?.for ?? null, against: slot?.against ?? null };
       }),
     ask: pattern?.open ?? questions.find((q) => open(q) && onCard(null)(q))?.text ?? null,
     ownPart: { guess: own && r.guess(own), ask: answered ? null : askOn(CaseReportCard.OwnPart), answer: answered?.answer?.text ?? null },
