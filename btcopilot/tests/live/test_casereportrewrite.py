@@ -172,10 +172,10 @@ def test_the_part_card_states_the_other_way_it_could_have_gone(coach):
 def test_a_thin_run_of_one_persons_shifts_is_said_so_and_the_open_line_asks_about_the_others(coach):
     # R-0850
     # pass: a For or Against line on c1 gives its shortfall ("only", "two" or "fewer") and names Wren or "you",
-    # and the Open line names someone else in the family or asks about the others
+    # and the Open line names someone else in the family, by name or by what they are to her, or asks about the others
     card = on(refreshed(coach, *OPENING, clusters=[THIN]), "coach_guess")
     lines = card["text"].splitlines()
     held = " ".join(line for line in lines if line.startswith((f"{CardLine.For.value} c1", f"{CardLine.Against.value} c1")))
     assert re.search(r"\b(only|two|fewer)\b", held.lower()) and re.search(r"\b(Wren|yours?)\b", held), card["text"]
     opened = " ".join(line for line in lines if line.startswith(f"{CardLine.Open.value}:"))
-    assert re.search(r"\b(Ada|Hugh|Tess|Silas|Ruth|others?|rest of)\b", opened), card["text"]
+    assert re.search(r"\b(Ada|Hugh|Tess|Silas|Ruth|others?|rest of|mother|father|sister|grand\w+)\b", opened), card["text"]
