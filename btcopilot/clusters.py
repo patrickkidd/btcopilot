@@ -91,10 +91,12 @@ _log = logging.getLogger(__name__)
 # most was going on is found for a question closed before the answer was
 # written on it, so every record regroups on its next event change
 # [Oracle: R-0850, R-0853, R-0376].
-# 15: a run is seeded only at a shift whose date is known, the people are
-# offered with what each is to the person, and a run with three or more
-# supporting shifts comes back as a period or is declined with a reason, so
-# every record regroups on its next event change [Oracle: R-0850, R-0856].
+# 15: a run is seeded only at a shift whose date is known and needs two
+# supporting shifts, the people are offered with what each is to the person,
+# every run comes back as a period or is declined with a reason, an opening of
+# unknown date is cleared without asking again, and a second call sees the
+# first answer, so every record regroups on its next event change
+# [Oracle: R-0850, R-0856].
 DETECTION_VERSION = 15
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
