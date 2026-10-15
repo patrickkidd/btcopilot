@@ -356,7 +356,9 @@ def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reas
     with replies(first, second) as ask:
         result = detect_clusters(data, ask, heard(seen))
     assert seen == [(1, ClusterCheck.Unanswered), (2, ClusterCheck.Declined)]
-    assert "Run r2 (2010-01-01 to 2010-04-01) has 3 shifts" in ask.call_args_list[1].args[0]
+    again = ask.call_args_list[1].args[0]
+    assert "Run r2 (2010-01-01 to 2010-04-01) has 3 shifts" in again
+    assert 'Your last answer was: {"clusters": [{"id": null, "eventIds": [1, 2, 3]' in again
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3]]
     assert answer_schema({}, [], candidates(data))["properties"]["declined"]["items"][
         "properties"

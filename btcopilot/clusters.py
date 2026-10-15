@@ -1337,10 +1337,13 @@ def detect_clusters(
         if refused:
             refused(attempt, error, answer)
 
+    given: list[ClusterListResponse] = []
+
     def attempt(n: int, words: str) -> Screened:
         answer = None
         try:
             answer = _answered(ask, words, schema, limit)
+            given.append(answer)
             screened = _screen(
                 answer, free, existing, told, data, said, last=n == 2, runs=cands
             )
@@ -1374,7 +1377,14 @@ def detect_clusters(
     try:
         screened = attempt(1, prompt)
         retry = bool(screened.faults)
-        why = " ".join(str(fault) for fault in screened.faults)
+        # The second call does not see the first answer unless it is told it,
+        # so without it every period is read afresh, not only the faulty one.
+        why = " ".join(
+            [
+                *(str(fault) for fault in screened.faults),
+                f"Your last answer was: {json.dumps(asdict(given[0]))}",
+            ]
+        )
     except ClusterError as failed:
         retry, why = True, str(failed)
     if retry:
