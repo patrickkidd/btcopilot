@@ -78,3 +78,21 @@ def test_no_card_calls_a_cluster_chronic_anxiety(coach):
     cards = formulated(coach, "Ever since my grandmother got sick I've had chronic anxiety.", clusters=ANXIOUS)
     said = {c: words(q) for c, q in cards.items()}
     assert not any(re.search(r"chronic anxiety", s, re.I) for s in said.values()), said
+
+
+# A hard year of Wren's at college with no loss in the family near it.
+COLLEGE = [
+    told(80, "shift", "2005-03-01", 1, "Could not sleep before exams", symptom="up"),
+    told(81, "shift", "2005-09-01", 1, "Dropped out of college for a term", functioning="down"),
+]
+MISFIT = Cluster(id="c3", title="My bad year at college", summary="", name="My bad year at college",
+                 eventIds=[80, 81], source=ClusterSource.User, startDate="2005-03-01", endDate="2005-09-01")
+
+
+@passes(2, of=3)
+def test_the_coachs_guess_names_the_period_its_pattern_does_not_fit(coach):
+    # R-0850
+    # pass: the coach's guess statement, outside its For and Against lines, names 2005 as a period the pattern does not fit
+    guess = statement(formulated(coach, events=[IVY_BORN, *ILLNESS, SIDED, *LOSS, *COLLEGE],
+                                 clusters=[*CLUSTERS, MISFIT])["coach_guess"])
+    assert "2005" in guess and re.search(r"not fit|n't fit|exception|except|no loss|apart from|outside", guess, re.I), guess
