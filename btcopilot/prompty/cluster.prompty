@@ -59,7 +59,8 @@ already listed as "the person drew this period", return one entry under
 for word from their answer; `words`, their sentence that names it, copied word
 for word; and `startYear` and `endYear` as their words give them, an age read
 against their birth date, a single year given as both. Leave both years out
-when their words give none. Their `name` and `words` keep "I", "me" and "my"
+when their words give none; a time of theirs is still returned, and unclear
+years never leave it out. Their `name` and `words` keep "I", "me" and "my"
 as they said them; the coach's voice below is for your periods only. Never rename, merge, split, shorten or widen a
 period of theirs, and never fold one into yours. Return each one even when a
 period of yours covers the same years: theirs stands and yours gives way. Your periods never share their years, and whether they do is read from the
@@ -85,7 +86,8 @@ couldn't sleep before races"). Write the name, `reason` and `change` as the
 coach speaking to the person, calling them "you"; never write "I", "me" or
 "my" as if you were them. Their own words appear only inside quotation marks.
 
-Every period of yours holds at least three events. A period is stronger with
+Every period of yours holds at least three events of any kind, though only
+two of them need be shifts that count. A period is stronger with
 three or more of the shifts that count; one with fewer may still be proposed
 when its events belong together, and its `reason` then says so. With fewer than three, a run is a period when a change in the family's
 membership, or in how a key member functions, sits among its shifts and the
