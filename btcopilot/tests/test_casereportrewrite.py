@@ -19,7 +19,7 @@ from btcopilot.admin import admin
 from btcopilot.coachmodel import CoachModel
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Discussion, ModelCall, Observation, ObservationKind, Purpose, TokenMeter
-from btcopilot.schema import Cluster, DiagramData, Person
+from btcopilot.schema import Cluster, DiagramData, PairBond, Person
 from btcopilot.tests.conftest import Model, calling, csrf_token, version
 from btcopilot.tests.test_casereport import card, cards
 from btcopilot.tests.test_impressions import impress
@@ -456,6 +456,27 @@ def test_the_family_and_each_parents_family_not_given_are_asked_for_once_more(we
     written = sorted(v for v in cards(family).values() if v)
     assert written == CARDS_WRITTEN
     assert refusals(refusal="no family card") and refusals(refusal="no sides card")
+
+
+def test_one_parents_family_given_of_two_is_asked_for_once_more_and_no_side_is_left_blank(web, past, written, family):
+    # R-0850, R-0866
+    data = family.get_diagram_data()
+    data.people.append(asdict(Person(id=90, name="Cal")))
+    data.pair_bonds.append(asdict(PairBond(id=91, person_a=2, person_b=90)))
+    next(p for p in data.people if p["id"] == 1)["parents"] = 91
+    data.lastItemId = max(data.lastItemId, 91)
+    family.set_diagram_data(data)
+    db.session.commit()
+    for turn in ("r2", "r3"):
+        impress(box(family, turn), text=f"The app's guess for a side, from {turn}.")
+    card(family, "i2", "sides", "c2")
+    card(family, "i3", "sides", "c3")
+    model = Model(calling(*every(past)[:-1]), calling())
+    rewrite(web, model)
+
+    assert "sides" in model.histories[1][-1]["content"][-1]["text"]
+    sides = sorted(q["text"] for q in stored(family).values() if q.get("case_report_card") == "sides")
+    assert sides == ["The app's guess for a side, from r3.", "The app's guess for sides, mother's side."]
 
 
 def test_what_brought_resting_on_no_message_of_the_person_is_refused_and_asked_for_once_more(

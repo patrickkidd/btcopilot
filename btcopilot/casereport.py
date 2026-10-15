@@ -13,6 +13,7 @@ import enum
 import logging
 import re
 import uuid
+from collections import Counter
 
 from btcopilot import clock, coverage, extensions, profile, record, turnlog
 from btcopilot.admin import setting
@@ -839,22 +840,32 @@ def _absent(diagram_id: int, turn_id: str, card: str, retried: bool,
               "retried": retried, "reason": _reason(card, "missing", first)})
 
 
+def _asked(data: DiagramData, card: CaseReportCard) -> int:
+    """How many guesses a rewrite asks for on a card: one, or on each parent's
+    family one a side for each of the person's parents in the diagram (R-0866)."""
+    if card is CaseReportCard.Sides:
+        return min(max(len(coverage.sides(data)), 1), record.CARD_HOLDS[card])
+    return 1
+
+
 def _missing(toolbox: Toolbox, before: set[str]) -> list[str]:
-    """The cards no guess was written on since the rewrite began."""
-    written = {q.get(CARD) for q in toolbox.data.questions if q["id"] not in before}
-    return [card.value for card in CARDS if card.value not in written]
+    """The cards given fewer guesses since the rewrite began than it asks for."""
+    written = Counter(q.get(CARD) for q in toolbox.data.questions if q["id"] not in before)
+    return [card.value for card in CARDS if written[card.value] < _asked(toolbox.data, card)]
 
 
 def _settled(diagram: Diagram, toolbox: Toolbox, before: set[str]) -> list[str]:
-    """What was on a card written anew taken off it. The cards written, in
-    order."""
+    """What was on a card written anew taken off it, unless the card is still
+    short of what was asked, so a side not given again keeps its note. The
+    cards written, in order."""
     after = toolbox.data.questions
     new = [q for q in after if q["id"] not in before and q.get(CARD)]
     cards = list(dict.fromkeys(q[CARD] for q in new))
+    short = set(_missing(toolbox, before))
     off = [
         {"item_kind": ItemKind.Question.value, "item_id": q["id"], "field": CARD, "after": None}
         for q in after
-        if q.get(CARD) in cards and q["id"] not in {n["id"] for n in new}
+        if q.get(CARD) in cards and q.get(CARD) not in short and q["id"] not in {n["id"] for n in new}
         and record.note(q) is record.IMPRESSION
     ]
     if off:
