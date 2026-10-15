@@ -102,16 +102,6 @@ FORETOLD = re.compile(
 # The Executive Summary: who has the trouble and what it is in one or two
 # sentences, then the pattern of the coach's guess in one (R-0850).
 SUMMARY_SENTENCES = 3
-# An id in a card's words: a cluster, question or impression key, a number in
-# brackets that is not a year, or a number after what it numbers.
-RAW_ID = re.compile(
-    r"\b[ciq]\d+\b|\((?!(?:18|19|20)\d\d\))\d+\)"
-    r"|\b(?:events?|persons?|people|clusters?|messages?|statements?|bonds?|pair-bonds?"
-    r"|couples?|questions?|impressions?) #?\d+\b",
-    re.I,
-)
-
-
 class State(enum.StrEnum):
     Running = "running"
     Done = "done"
@@ -302,7 +292,7 @@ def checked(call) -> str | None:
                 f"{inside.group(0)!r} is inside a line: start each of "
                 f"{', '.join(m.value for m in CardLine)} on a line of its own"
             )
-        raw = RAW_ID.search(line[slot.end():] if slot else line)
+        raw = record.RAW_ID.search(line[slot.end():] if slot else line)
         if raw:
             return (
                 f"{raw.group(0)!r} is an id in the card's words: name the person, event or "

@@ -121,6 +121,7 @@ def numbers(result: Score) -> dict:
         "openings": [agreed, of],
         "voice": result.count(Rule.Voice),
         "cause": result.count(Rule.Cause),
+        "id violations": result.count(Rule.Id),
     }
 
 
@@ -203,7 +204,7 @@ def test_grouping_matches_the_expected_clusters(case, board):
     ms = round((time.monotonic() - started) * 1000)
     result = score(stored, case.expected, case.data, case.theirs)
     bar = BARS[case.name]
-    misses = result.missed(bar.rules | {Rule.Voice, Rule.Cause})
+    misses = result.missed(bar.rules | {Rule.Voice, Rule.Cause, Rule.Id})
     if result.clusters.f1 < bar.clusters:
         misses.append(f"cluster F1 {result.clusters.f1:.2f} under {bar.clusters}")
     if result.members.f1 < bar.members:

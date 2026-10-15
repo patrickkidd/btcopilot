@@ -1989,3 +1989,26 @@ def test_an_illness_the_grouping_names_opens_the_period_without_it_the_marriage_
     cluster = {"eventIds": [1, 2, 3, 4]}
     assert clusters.judge(cluster, data).opening == 1
     assert clusters.judge({**cluster, "openingEventId": 3}, data).opening == 3
+
+
+def test_a_period_naming_events_by_number_is_refused_and_years_pass():
+    # R-0864, R-0850
+    seen = []
+    with replies(
+        answers(named(1, 2, 3, 4, name="After grandfather's death", reason="Events 41, 51 pile up.")),
+        answers(named(1, 2, 3, 4, name="After grandfather's death", reason="Sleep went in 1998.")),
+    ) as ask:
+        result = detect_clusters(SLEEP, ask, heard(seen))
+    assert seen == [(1, ClusterCheck.RawId)]
+    assert "never by number" in ask.call_args_list[1].args[0]
+    assert [c.reason for c in result.clusters] == ["Sleep went in 1998."]
+
+
+def test_the_second_answer_with_an_id_is_stored_without_that_sentence():
+    # R-0864
+    cluster = ModelCluster(
+        name="Period c6", eventIds=[1, 2], reason="Sleep went in 1998. Events 41 and 51 pile up."
+    )
+    clusters._plain(cluster, {1: datetime.date(1998, 1, 1), 2: datetime.date(1998, 6, 1)})
+    assert cluster.reason == "Sleep went in 1998."
+    assert not clusters.record.ided(cluster.name)

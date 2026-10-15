@@ -37,7 +37,7 @@ from btcopilot.clusters import (
     trouble_words,
     unsure,
 )
-from btcopilot.record import caused, voiced
+from btcopilot.record import caused, ided, voiced
 from btcopilot.matching import (
     F1Metrics,
     calculate_f1_from_counts,
@@ -60,6 +60,7 @@ class Rule(enum.StrEnum):
     Theirs = "the person's period missing or changed"
     Voice = "speaks as the person"
     Cause = "gives a cause"
+    Id = "id violations"
     Opening = "opening differs"
 
 
@@ -166,6 +167,8 @@ def score(
                 result.misses.append((Rule.Voice, f"{field_} {text!r} says {voiced(text)!r}"))
             if text and caused(text):
                 result.misses.append((Rule.Cause, f"{field_} {text!r} says {caused(text)!r}"))
+            if text and ided(text):
+                result.misses.append((Rule.Id, f"{field_} {text!r} holds {ided(text)!r}"))
     for c in stored:
         opening = every.get(c.openingEventId)
         if opening is not None and unsure(opening):

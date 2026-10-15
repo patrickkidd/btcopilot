@@ -1639,6 +1639,22 @@ QUOTED = re.compile(r'"[^"]*"|“[^”]*”')
 SENTENCE = re.compile(r"(?<=[.?!])\s+")
 
 
+# An id in a card's words: a cluster, question or impression key, a number in
+# brackets that is not a year, or a number after what it numbers.
+RAW_ID = re.compile(
+    r"\b[ciq]\d+\b|\((?!(?:18|19|20)\d\d\))\d+\)"
+    r"|\b(?:events?|persons?|people|clusters?|messages?|statements?|bonds?|pair-bonds?"
+    r"|couples?|questions?|impressions?) #?\d+\b",
+    re.I,
+)
+
+
+def ided(text: str) -> str | None:
+    """The first raw id in the text outside quotation marks, or None (R-0864)."""
+    found = RAW_ID.search(QUOTED.sub("", text))
+    return found and found.group(0)
+
+
 def caused(text: str) -> str | None:
     """The first word of the text that gives a cause or a why, or None."""
     found = CAUSE.search(text)
@@ -1661,6 +1677,15 @@ def plain(text: str) -> str:
         if sentences:
             kept.append(" ".join(sentences))
     return "\n".join(kept)
+
+
+def unided(text: str) -> str:
+    """The text with every sentence taken out that holds a raw id (R-0864)."""
+    return "\n".join(
+        kept
+        for line in text.splitlines()
+        if (kept := " ".join(s for s in SENTENCE.split(line) if not ided(s)))
+    )
 
 
 # Words that point a person away from their own story to sources behind the

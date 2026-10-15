@@ -103,7 +103,8 @@ _log = logging.getLogger(__name__)
 # [Oracle: R-0853].
 # 17: a period's name and sentences never give a cause or speak as the person,
 # so every record regroups on its next event change [Oracle: R-0864, R-0860].
-DETECTION_VERSION = 17
+# 18: and never hold a raw event or cluster id [Oracle: R-0864].
+DETECTION_VERSION = 18
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -218,6 +219,7 @@ class ClusterCheck(enum.StrEnum):
     CallFailed = "call_failed"
     Cause = "cause"
     FirstPerson = "first_person"
+    RawId = "raw_id"
 
 
 class ClusterError(Exception):
@@ -910,6 +912,13 @@ def _fault(
             "marks.",
             ClusterCheck.FirstPerson,
         )
+    word = record.ided(words)
+    if word:
+        return (
+            f"Period {cluster.name!r} holds an id ({word!r}): name events by the "
+            "person and what happened, with years or dates, never by number.",
+            ClusterCheck.RawId,
+        )
     trouble = trouble_in(cluster.name, told)
     if trouble:
         return (
@@ -921,8 +930,8 @@ def _fault(
 
 
 # What the coach's words on a period may not do: give a cause, or speak as
-# the person (R-0864, R-0860).
-SPOKEN = (ClusterCheck.Cause, ClusterCheck.FirstPerson)
+# the person, or hold a raw id (R-0864, R-0860).
+SPOKEN = (ClusterCheck.Cause, ClusterCheck.FirstPerson, ClusterCheck.RawId)
 
 
 def _plain(cluster: ModelCluster, when: dict[int, datetime.date]) -> None:
@@ -930,9 +939,11 @@ def _plain(cluster: ModelCluster, when: dict[int, datetime.date]) -> None:
     cause or speaks as the person taken out, and a name that does either
     replaced by its plain name; a reason left empty fails as none, and a
     period with no events fails as empty."""
-    cluster.reason = record.plain(cluster.reason)
-    cluster.change = record.plain(cluster.change or "") or None
-    if cluster.eventIds and (record.caused(cluster.name) or record.voiced(cluster.name)):
+    cluster.reason = record.unided(record.plain(cluster.reason))
+    cluster.change = record.unided(record.plain(cluster.change or "")) or None
+    if cluster.eventIds and (
+        record.caused(cluster.name) or record.voiced(cluster.name) or record.ided(cluster.name)
+    ):
         cluster.name = plain_name(cluster, when)
 
 
