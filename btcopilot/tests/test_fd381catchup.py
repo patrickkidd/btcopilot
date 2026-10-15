@@ -109,14 +109,13 @@ def current(test_user_2, old):
     return reported(test_user_2, "Nell")
 
 
-@pytest.fixture
-def measured(test_user):
-    """The last grouping call in the ledger."""
+def paid(user_id: int, turn_id: str, diagram_id: int | None = None) -> None:
+    """A grouping call in the ledger."""
     db.session.add(
         ModelCall(
-            user_id=test_user.id,
-            diagram_id=None,
-            turn_id="t0",
+            user_id=user_id,
+            diagram_id=diagram_id,
+            turn_id=turn_id,
             purpose=Purpose.Cluster,
             model="gemini-3.1-flash-lite",
             input_tokens=900,
@@ -129,6 +128,12 @@ def measured(test_user):
         )
     )
     db.session.commit()
+
+
+@pytest.fixture
+def measured(test_user):
+    """The last grouping call in the ledger."""
+    paid(test_user.id, "t0")
 
 
 def catchup(flask_app, *args):
@@ -712,3 +717,57 @@ def test_an_undone_regroup_with_no_call_is_not_written_again(
     regroups = Change.query.filter(Change.turn_id.like(f"fd381-catchup:{calmer.id}:%"))
     assert regroups.count() == 1
     assert not clusters_of(calmer)["c1"].get("setAside")
+
+
+def test_a_run_stopped_after_a_paid_call_does_not_pay_again(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772
+    _, path = planned(flask_app, tmp_path)
+    made = json.loads(open(path).read())["made"]
+    paid(family.user_id, f"fd381-catchup:{family.id}:{made}", family.id)
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ) as asked:
+        rows, said = catchup(flask_app, "apply", "--plan", path)
+
+    assert not asked.called
+    assert (rows[0]["failed"], rows[0]["cost_usd"]) == (True, float(PER_CALL))
+    assert said.splitlines()[1] == done(done=1, failed=1)
+
+
+def test_undo_stopped_partway_says_which_rows_it_took_back(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772
+    _, path = planned(flask_app, tmp_path)
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        catchup(flask_app, "apply", "--plan", path)
+    (first,) = Change.query.filter(
+        Change.turn_id.like(f"{casereport.OUT_OF_DATE}{old.id}:%")
+    ).all()
+    second = record.apply(old.id, [], author=Author.Coach, turn_id=first.turn_id)
+    real, calls = record.taking_back, []
+
+    def written_between(data, changes):
+        # the third and fourth reads are undo_changes taking back each row,
+        # newest first: a write between them stops the older one
+        calls.append(changes)
+        if len(calls) == 4:
+            raise record.Conflict(
+                {"before": None, "item_kind": "diagram", "item_id": None, "field": "f"},
+                1,
+            )
+        return real(data, changes)
+
+    with patch("btcopilot.record.taking_back", side_effect=written_between):
+        rows, _ = catchup(
+            flask_app, "undo", "--plan", path, "--diagram", str(old.id), "--yes"
+        )
+
+    assert [(r["change"], r["undone"], bool(r["refused"])) for r in rows] == [
+        (second.id, True, False),
+        (first.id, False, True),
+    ]
