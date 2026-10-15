@@ -99,6 +99,41 @@ The paid suite, as it would run:
 
     uv run pytest btcopilot/tests/live -m "not waiting" --collect-only -q
 
+## Cluster F1
+
+`clusters/` scores the app's grouping call against expected clusters [Oracle: R-0856]. Each case
+in `clusters/cases/` is a fictional diagram, the person's answer to when the most was going on, the
+clusters expected of it and the periods the person named; `patrick` is a fictional copy of
+Patrick's own diagram (same people, links, dates, date certainties and shifts, every name, place,
+job and wording changed) and is the case the prompts are tuned on; `addition`, `thin` and `dense`
+are placeholders until real cases arrive. A case whose person answered also runs as
+`<name>-unasked`. The expected clusters are a draft until Patrick confirms them.
+
+Each run makes the production call, `detect_clusters` on Gemini, once per case (twice when the
+first answer is refused), and prints a table: clusters expected and stored, cluster precision,
+recall and F1, the F1 of the member events within paired clusters, openings agreed, answers
+refused, and pass or the misses. A stored cluster pairs with an expected one when they share at
+least half of the larger one's events. Each case's bar is `BARS` in `clusters/test_f1.py`; the
+rules beside F1 are in `clusters/score.py`. The answers, stored clusters and score go to
+`clusters/runs/<time>/` (git-ignored) and one line per case to the eval ledger.
+
+    LIVE_REPLAY=only GOOGLE_GEMINI_API_KEY=... SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt \
+        uv run pytest btcopilot/tests/live/clusters --e2e
+
+`LIVE_REPLAY=only` keeps the coach's machinery offline, so no Anthropic key or balance check is
+needed. Cost, at gemini-3.1-flash-lite's rates: `patrick` sends about 11,000 tokens, the
+placeholders about 3,000; a call costs about half a cent, never above 1.4 cents at its output
+limit, so a run of the five cases is 2 to 3 cents, at most about 13 when every first answer is
+refused. On a Bedrock machine the call goes to the Claude stand-in, so the run does not measure
+Gemini. Free ways, $0 and no network: replay a run with `CLUSTER_ANSWERS=<its runs folder>`, or
+prove the runner on the hand-written answers with `CLUSTER_ANSWERS=btcopilot/tests/live/clusters/answers
+CLUSTER_LEDGER=<a scratch file>`; the scorer's own tests run in the same command.
+
+A real case: build its fictional copy (structure, dates, certainties and shifts kept, every name,
+place, job and wording changed, no quote kept), write it as `clusters/cases/<name>.json` in the
+shape of `patrick.json` with `"draft"` set until Patrick confirms its expected clusters, add its bar
+to `BARS`, and when it replaces a placeholder, delete that placeholder and its answers file.
+
 ## Waiting list
 
 These evals check a coding on the record: a symptom, anxiety or functioning shift, or a

@@ -1,0 +1,35 @@
+{
+ "model": "hand-written",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Amos's death",
+     "reason": "Della's worry and distance came before Amos died in 1989 and Felix's grades fell after.",
+     "openingId": 11
+    },
+    {
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Rhea leaving home and Della's diagnosis",
+     "reason": "Rhea's own shifts after she left home in 1993, around her mother's diagnosis in 1995.",
+     "openingId": 15
+    }
+   ],
+   "periods": []
+  }
+ ]
+}

@@ -1,0 +1,174 @@
+{
+ "about": "A third child is born ten years after the second; within the next eighteen months both parents and both older children shift. The birth, an addition, opens the run.",
+ "placeholder": "PLACEHOLDER until a real case arrives and gets its own synthetic copy (R-0856).",
+ "expected": [
+  {
+   "name": "Bea's birth, 1995-96",
+   "opening": 4,
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ]
+  }
+ ],
+ "theirs": [],
+ "diagram": {
+  "people": [
+   {
+    "id": 1,
+    "name": "Ada",
+    "gender": "female",
+    "parents": 10,
+    "primary": true
+   },
+   {
+    "id": 2,
+    "name": "Paul",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 3,
+    "name": "Lena",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 4,
+    "name": "Jonah",
+    "gender": "male",
+    "parents": 10
+   },
+   {
+    "id": 5,
+    "name": "Bea",
+    "gender": "female",
+    "parents": 10
+   },
+   {
+    "id": 6,
+    "name": "Rosa",
+    "gender": "female",
+    "parents": null
+   }
+  ],
+  "pair_bonds": [
+   {
+    "id": 10,
+    "person_a": 2,
+    "person_b": 3,
+    "married": true
+   }
+  ],
+  "events": [
+   {
+    "id": 1,
+    "kind": "married",
+    "dateTime": "1982-06-05",
+    "dateCertainty": "certain",
+    "person": 2,
+    "spouse": 3
+   },
+   {
+    "id": 2,
+    "kind": "birth",
+    "dateTime": "1983-04-11",
+    "dateCertainty": "certain",
+    "person": 2,
+    "spouse": 3,
+    "child": 4
+   },
+   {
+    "id": 3,
+    "kind": "birth",
+    "dateTime": "1985-09-20",
+    "dateCertainty": "certain",
+    "person": 2,
+    "spouse": 3,
+    "child": 1
+   },
+   {
+    "id": 4,
+    "kind": "birth",
+    "dateTime": "1995-03-02",
+    "dateCertainty": "certain",
+    "person": 2,
+    "spouse": 3,
+    "child": 5,
+    "description": "a third child, ten years after Ada"
+   },
+   {
+    "id": 5,
+    "kind": "shift",
+    "dateTime": "1995-08-01",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "anxiety": "up",
+    "description": "worn out and on edge with the baby"
+   },
+   {
+    "id": 6,
+    "kind": "shift",
+    "dateTime": "1995-11-01",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "relationship": "distance",
+    "relationshipTargets": [
+     3
+    ],
+    "description": "working late most nights, rarely home"
+   },
+   {
+    "id": 7,
+    "kind": "shift",
+    "dateTime": "1996-02-01",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "description": "stomach aches, missing school"
+   },
+   {
+    "id": 8,
+    "kind": "shift",
+    "dateTime": "1996-05-10",
+    "dateCertainty": "certain",
+    "person": 4,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     2
+    ],
+    "description": "shouting matches with his father"
+   },
+   {
+    "id": 9,
+    "kind": "shift",
+    "dateTime": "1996-09-01",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "functioning": "down",
+    "description": "did not go back to her job"
+   },
+   {
+    "id": 10,
+    "kind": "noted",
+    "dateTime": "2003-08-01",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "moved to the city for college"
+   },
+   {
+    "id": 11,
+    "kind": "death",
+    "dateTime": "2007-02-14",
+    "dateCertainty": "certain",
+    "person": 6,
+    "description": "died"
+   }
+  ]
+ },
+ "said": []
+}

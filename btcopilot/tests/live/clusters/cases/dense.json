@@ -1,0 +1,318 @@
+{
+ "about": "A dense diagram with a change in the family nearly every year. Rhea's own shifts after she leaves home are her run (A9); her grandmother's death on a placeholder date sits just before it and opens nothing (A9).",
+ "placeholder": "PLACEHOLDER until a real case arrives and gets its own synthetic copy (R-0856).",
+ "expected": [
+  {
+   "name": "Amos's death, 1988-90",
+   "opening": 11,
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ]
+  },
+  {
+   "name": "Rhea leaving home and her mother's diagnosis, 1993-96",
+   "opening": 15,
+   "runOf": 1,
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ]
+  }
+ ],
+ "theirs": [],
+ "diagram": {
+  "people": [
+   {
+    "id": 1,
+    "name": "Rhea",
+    "gender": "female",
+    "parents": 30,
+    "primary": true
+   },
+   {
+    "id": 2,
+    "name": "Della",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 3,
+    "name": "Victor",
+    "gender": "male",
+    "parents": 31
+   },
+   {
+    "id": 4,
+    "name": "Felix",
+    "gender": "male",
+    "parents": 30
+   },
+   {
+    "id": 5,
+    "name": "Opal",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 6,
+    "name": "Amos",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 7,
+    "name": "Greta",
+    "gender": "female",
+    "parents": null
+   }
+  ],
+  "pair_bonds": [
+   {
+    "id": 30,
+    "person_a": 3,
+    "person_b": 2,
+    "married": true
+   },
+   {
+    "id": 31,
+    "person_a": 6,
+    "person_b": 5,
+    "married": true
+   }
+  ],
+  "events": [
+   {
+    "id": 1,
+    "kind": "married",
+    "dateTime": "1972-05-20",
+    "dateCertainty": "certain",
+    "person": 3,
+    "spouse": 2
+   },
+   {
+    "id": 2,
+    "kind": "birth",
+    "dateTime": "1975-02-11",
+    "dateCertainty": "certain",
+    "person": 3,
+    "spouse": 2,
+    "child": 1
+   },
+   {
+    "id": 3,
+    "kind": "birth",
+    "dateTime": "1978-07-30",
+    "dateCertainty": "certain",
+    "person": 3,
+    "spouse": 2,
+    "child": 4
+   },
+   {
+    "id": 4,
+    "kind": "separated",
+    "dateTime": "1980-06-01",
+    "dateCertainty": "certain",
+    "person": 3,
+    "spouse": 2,
+    "description": "a trial separation"
+   },
+   {
+    "id": 5,
+    "kind": "shift",
+    "dateTime": "1980-10-01",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "anxiety": "up",
+    "description": "drinking more while living apart"
+   },
+   {
+    "id": 6,
+    "kind": "noted",
+    "dateTime": "1985-04-01",
+    "dateCertainty": "certain",
+    "person": 3,
+    "description": "left the state for work for two years"
+   },
+   {
+    "id": 7,
+    "kind": "noted",
+    "dateTime": "1986-01-10",
+    "dateCertainty": "approximate",
+    "person": 5,
+    "description": "came to stay for the winter"
+   },
+   {
+    "id": 8,
+    "kind": "shift",
+    "dateTime": "1986-06-01",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "anxiety": "down",
+    "description": "easier with her mother-in-law there"
+   },
+   {
+    "id": 9,
+    "kind": "shift",
+    "dateTime": "1988-03-01",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "anxiety": "up",
+    "description": "lying awake over money"
+   },
+   {
+    "id": 10,
+    "kind": "shift",
+    "dateTime": "1988-05-01",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "relationship": "distance",
+    "relationshipTargets": [
+     3
+    ],
+    "description": "stopped talking with her husband about money"
+   },
+   {
+    "id": 11,
+    "kind": "death",
+    "dateTime": "1989-07-19",
+    "dateCertainty": "certain",
+    "person": 6,
+    "description": "died"
+   },
+   {
+    "id": 12,
+    "kind": "shift",
+    "dateTime": "1989-11-01",
+    "dateCertainty": "approximate",
+    "person": 4,
+    "functioning": "down",
+    "description": "grades fell"
+   },
+   {
+    "id": 13,
+    "kind": "shift",
+    "dateTime": "1990-03-01",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "anxiety": "down",
+    "description": "calmer once back at work"
+   },
+   {
+    "id": 14,
+    "kind": "death",
+    "dateTime": "1993-01-01",
+    "dateCertainty": "unknown",
+    "person": 7,
+    "description": "died",
+    "notes": "Nobody remembers the date; 1993 is a placeholder."
+   },
+   {
+    "id": 15,
+    "kind": "noted",
+    "dateTime": "1993-09-01",
+    "dateCertainty": "certain",
+    "person": 1,
+    "description": "left home for college"
+   },
+   {
+    "id": 16,
+    "kind": "shift",
+    "dateTime": "1994-03-01",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "description": "migraines kept her in bed"
+   },
+   {
+    "id": 17,
+    "kind": "shift",
+    "dateTime": "1994-04-01",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     4
+    ],
+    "description": "called her brother most nights"
+   },
+   {
+    "id": 18,
+    "kind": "noted",
+    "dateTime": "1995-02-01",
+    "dateCertainty": "certain",
+    "person": 2,
+    "description": "told she had breast cancer"
+   },
+   {
+    "id": 19,
+    "kind": "shift",
+    "dateTime": "1995-06-01",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "away",
+    "relationshipTargets": [
+     4
+    ],
+    "description": "stopped returning her brother's calls"
+   },
+   {
+    "id": 20,
+    "kind": "shift",
+    "dateTime": "1996-02-01",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     2
+    ],
+    "description": "stopped calling home"
+   },
+   {
+    "id": 21,
+    "kind": "death",
+    "dateTime": "1998-03-01",
+    "dateCertainty": "certain",
+    "person": 5,
+    "description": "died"
+   },
+   {
+    "id": 22,
+    "kind": "noted",
+    "dateTime": "1998-09-01",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "description": "the family sold the house"
+   },
+   {
+    "id": 23,
+    "kind": "shift",
+    "dateTime": "2004-05-01",
+    "dateCertainty": "approximate",
+    "person": 4,
+    "relationship": "distance",
+    "relationshipTargets": [
+     3
+    ],
+    "description": "stopped calling his father"
+   },
+   {
+    "id": 24,
+    "kind": "shift",
+    "dateTime": "2006-01-01",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "anxiety": "down",
+    "description": "calmer after changing jobs"
+   }
+  ]
+ },
+ "said": []
+}

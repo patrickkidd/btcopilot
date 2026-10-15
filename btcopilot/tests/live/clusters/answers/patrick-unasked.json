@@ -1,0 +1,84 @@
+{
+ "model": "hand-written",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "eventIds": [
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      171,
+      39
+     ],
+     "name": "Arthur's death",
+     "reason": "Arthur died in June 1998; Owen's college year came apart over the next months and Edna's first cancer followed within a year.",
+     "openingId": 78
+    },
+    {
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Tessa, then the separation",
+     "reason": "A new partner in 2005 and the separation in mid-2006, with two of the shifts that count, fewer than three.",
+     "openingId": 11
+    },
+    {
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      177,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Edna's illness and death",
+     "reason": "Edna's illness from about 2008 to her death in February 2011, with Owen's moves, the breakup and his distance from his parents in the same years.",
+     "openingId": null
+    },
+    {
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Iris's and Harold's deaths",
+     "reason": "Iris died at the end of 2014; within seven months Owen could not talk with his mother, shut her out and left.",
+     "openingId": 61
+    }
+   ],
+   "periods": []
+  }
+ ]
+}
