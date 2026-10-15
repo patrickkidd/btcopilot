@@ -264,21 +264,31 @@ button { font-family: inherit; }
 .ab-why { margin: 0 0 8px; font: 400 14px/1.4 var(--sans); color: var(--ink); }
 .ab-span { margin: 0 0 6px; font: 400 13px var(--mono); color: var(--faint); }
 .ab-list { list-style: none; margin: 0; padding: 0; }
-.ab-list li { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font: 400 13px/1.35 var(--mono); }
+.ab-list li { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; font: 400 13px/1.35 var(--mono); cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* a row and its dot selected together, in the line's own selected colours (R-0861) */
+.ab-list li.on { background: var(--tint); }
+.ab-list li.on .ab-what { color: var(--data); font-weight: 500; }
+.ab-dot.on { filter: drop-shadow(0 0 1.5px var(--move)) drop-shadow(0 0 1px var(--move)); }
 .ab-yr { flex: none; width: 44px; color: var(--data); }
 .ab-what { color: var(--ink); }
-/* the cluster's drawing: dots by date, the key event's line, the years at the ends */
+/* the cluster's drawing: dots by date, a line at each event they cluster around, the years at the ends */
 .ss.about svg.ab-draw { position: static; width: 100%; height: auto; margin: 4px 0 2px; overflow: visible; }
 .ab-lane { stroke: var(--line); stroke-width: 1.5; }
 .ab-key { stroke: var(--ink); stroke-width: 1.4; stroke-dasharray: 4 3; }
+/* a death solid, an illness found dashed in the symptom's colour, as the first cluster mockup (R-0862) */
+.ab-key.ab-death { stroke-width: 2; stroke-dasharray: none; }
+.ab-key.ab-illness { stroke: var(--remove); stroke-width: 1.5; stroke-dasharray: 4 2; }
 .ab-dot { stroke-width: 2; pointer-events: none; }
-.ab-hit { fill: transparent; cursor: pointer; }
+.ab-hit { fill: transparent; cursor: pointer; -webkit-touch-callout: none; }
 .ab-legend { font-size: 11px; }
 .ab-swatch { display: inline-block; width: 8px; height: 8px; margin: 0 4px 0 6px; border-radius: 50%; vertical-align: 0; }
 .ab-swatch:first-child { margin-left: 0; }
 .ab-hollow { box-sizing: border-box; border: 2px solid var(--faint); background: none; }
+.ab-swatch.ab-line { width: 0; height: 10px; border-radius: 0; border-left: 2px solid var(--ink); vertical-align: -1px; }
+.ab-swatch.ab-line.ab-illness { border-left: 2px dashed var(--remove); }
 .ab-draw text { font: 400 11px var(--mono); fill: var(--faint); }
 .ab-draw .ab-keyname { fill: var(--ink); }
+.ab-draw .ab-keyname.ab-illness { fill: var(--remove); }
 .ab-view { margin: 0 0 8px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 14px; background: none; color: var(--data); font: 400 12px var(--mono); cursor: pointer; }
 /* the about page's book: the Family view's book button, in the page's bottom-right
    corner as far in as the cross is in the top-right (.cardx), the same size (R-0691) */

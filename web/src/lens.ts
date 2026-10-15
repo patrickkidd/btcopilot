@@ -77,6 +77,8 @@ export class Lens {
         onTap: (tap: Tap) => this.onTap(tap),
         onBook: (button) => hooks.book?.(button),
         onView: (view) => hooks.track(VIEW_FEATURES[view]),
+        // a tap on a cluster's page only selects (R-0861); a long press opens the event's own editor
+        onHold: (id) => hooks.edit(id),
       },
       spot,
     );
@@ -109,14 +111,6 @@ export class Lens {
     }
     if (tap.target === Target.Close) {
       this.climb(CLUSTER);
-      return;
-    }
-    // A dot on a cluster's page does what a dot on the line does: the event is
-    // picked inside its cluster and says itself (R-0168). An event with no
-    // place on the line opens in its own editor instead.
-    if (tap.target === Target.Dot) {
-      if (picture.onLine(tap.index)) this.apply(reduce(this.state, PicEvent.Tap, { kind: SelKind.Event, id: String(tap.index) }));
-      else this.hooks.edit(tap.index);
       return;
     }
     if (tap.target === Target.Shelf) {

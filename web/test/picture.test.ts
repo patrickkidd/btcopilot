@@ -3,7 +3,11 @@ import {
   CLUSTER_BOOK,
   CLUSTER_BOOK_TITLE,
   ClusterView,
+  Key,
+  Via,
+  chosen,
   clusterPage,
+  stand,
   VIEW_KEY,
   drawing,
   place,
@@ -481,16 +485,53 @@ describe("the drawing on a cluster's page", () => {
     expect(p.lanes).toEqual([]);
   });
 
-  // R-0850
-  it("draws the key line only at the opening event the cluster stores", () => {
-    expect(place(events, ClusterView.Row, 300, null).key).toBeNull();
-    const p = place(events, ClusterView.Row, 300, 2);
-    expect(p.key).toEqual({ x: p.dots[2].x, label: "Grandmother died" });
+  // R-0862
+  it("draws a solid line at every death, a dashed one at each illness found in someone other than the diagram's own person, and one at the stored opening when it is neither", () => {
+    const keys = (opening: number | null, you: number | null) =>
+      place(events, ClusterView.Row, 300, opening, people, you).keys.map((k) => [k.id, k.key, k.label]);
+    expect(keys(null, 1)).toEqual([[2, Key.Death, "Rose's death"]]);
+    expect(keys(null, 2)).toEqual([[1, Key.Illness, "Ada: event 1"], [2, Key.Death, "Rose's death"]]);
+    expect(keys(2, 1)).toEqual([[2, Key.Death, "Rose's death"]]);
+    expect(keys(3, 1)).toEqual([[2, Key.Death, "Rose's death"], [3, Key.Opening, "event 3"]]);
+    const p = place(events, ClusterView.Row, 300, 3, people, 2);
+    expect(p.keys.find((k) => k.id === 2)!.x).toBe(p.dots.find((d) => d.id === 2)!.x);
+    const svg = drawing(events, ClusterView.Row, 300, 3, people, 2);
+    expect(svg).toContain('<line class="ab-key ab-death"');
+    expect(svg).toContain('<line class="ab-key ab-illness"');
+    expect(svg).toContain('<line class="ab-key ab-opening"');
+    expect(svg).toContain(">Rose&#39;s death</text>");
+    expect(svg).toContain('ab-line ab-death"></span>death');
+    expect(svg).toContain('ab-line ab-illness"></span>illness found');
+    // the lanes draw the same lines through every lane
+    expect(place(events, ClusterView.Lanes, 300, 3, people, 2).keys.map((k) => k.key)).toEqual([Key.Illness, Key.Death, Key.Opening]);
+    expect(drawing(events, ClusterView.Lanes, 300, 3, people, 2)).toContain('<line class="ab-key ab-death"');
+  });
+
+  // R-0862
+  it("stands the lines' labels on rows so no two overlap and no line crosses a label, cutting one only when no row is clear", () => {
+    const lines = [100, 104, 110, 118, 290].map((x, i) => ({ id: i, key: Key.Death, x, label: `Grandmother number ${i}'s death` }));
+    const laid = stand(lines, 300);
+    expect(laid).toHaveLength(5);
+    for (const a of laid)
+      for (const b of laid) {
+        if (a === b) continue;
+        if (a.row === b.row) expect(a.to < b.from || b.to < a.from).toBe(true);
+        if (a.row < b.row) expect(a.x < b.from || a.x > b.to).toBe(true);
+      }
+    expect(new Set(laid.map((k) => k.row)).size).toBeGreaterThan(1);
+    const last = laid.find((k) => k.id === 4)!;
+    expect(last.to).toBeLessThan(last.x);
+    expect(laid.every((k) => k.label.length <= 22)).toBe(true);
+    // the dots move down under as many rows of labels as there are
+    const many = [ev(1, "1998-01-01", { kind: "death" }), ev(2, "1998-01-02", { kind: "death", person: 2 }), ev(3, "1999-01-01")];
+    const p = place(many, ClusterView.Row, 300, null, people, 1);
+    expect(p.keys.map((k) => k.row)).toEqual([0, 1]);
+    expect(p.top).toBeGreaterThan(place(events, ClusterView.Row, 300, null, people, 1).top);
   });
 
   // R-0850
   it("gives each person one lane by who they are, a two-person event in its first person's", () => {
-    const p = place(events, ClusterView.Lanes, 300, 2, people);
+    const p = place(events, ClusterView.Lanes, 300, 2, people, 1);
     expect(p.lanes.map((l) => l.name)).toEqual(["Ada", "Rose"]);
     expect(p.dots.find((d) => d.id === 3)!.y).toBe(p.lanes[0].y);
     expect(p.dots.find((d) => d.id === 2)!.y).toBe(p.lanes[1].y);
@@ -554,6 +595,27 @@ describe("the drawing on a cluster's page", () => {
     for (const d of p.dots) expect(p.dots.filter((o) => inside(o.hit, d)).map((o) => o.id)).toEqual([d.id]);
     const svg = drawing(all, ClusterView.Row, 360, null);
     expect(svg.match(/<rect class="ab-hit"/g)).toHaveLength(13);
+  });
+
+  // R-0861
+  it("selects a tapped row alone, a tapped dot with every event on its date, and nothing on a second tap", () => {
+    const { all } = period();
+    expect(chosen([], 104, Via.Row, all)).toEqual([104]);
+    expect(chosen([104], 104, Via.Row, all)).toEqual([]);
+    expect(chosen([], 104, Via.Dot, all)).toEqual([23, 104, 105]);
+    expect(chosen([23, 104, 105], 105, Via.Dot, all)).toEqual([]);
+    expect(chosen([23, 104, 105], 104, Via.Row, all)).toEqual([104]);
+    expect(chosen([104], 19, Via.Dot, all)).toEqual([19]);
+    expect(chosen([19], 19, Via.Row, all)).toEqual([]);
+  });
+
+  // R-0861
+  it("marks each row and each dot with its event, so a selection lights both", () => {
+    const { all, cluster } = period();
+    const page = clusterPage(cluster, all, [], ClusterView.Row, 360);
+    expect(page).toContain('<li data-event="104"><span class="ab-yr">2010</span>');
+    expect(page).toContain('<circle class="ab-dot" data-event="104"');
+    expect(page.match(/<li data-event=/g)).toHaveLength(13);
   });
 
   // R-0168

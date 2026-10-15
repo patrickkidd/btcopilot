@@ -44,3 +44,13 @@ it("keeps the cards still on the screen while a cluster chip opens the folded li
   expect(report).toContain("b.scrollTop = from + b.getBoundingClientRect().top - top;");
   expect(report).toContain("if (pic.getAnimations().length) requestAnimationFrame(keep);");
 });
+
+// R-0861
+it("answers a tap on a cluster's page row or dot with a selection, before anything that closes or opens, and keeps a long press for the event's editor", () => {
+  const picture = source("picture.ts");
+  expect(picture).toMatch(/const one = this\.aboutEvent\(e\.target as Element\);\s*if \(one !== null\) \{\s*e\.preventDefault\(\);\s*if \(this\.held\) this\.held = false;\s*else this\.choose\(one\.id, one\.via\);\s*return;/);
+  expect(picture.indexOf("this.aboutEvent(e.target as Element);")).toBeLessThan(picture.indexOf("this.handlers.onTap(this.tapAt(Target.Ground, e));"));
+  const lens = source("lens.ts");
+  expect(lens).toContain("onHold: (id) => hooks.edit(id),");
+  expect(lens).not.toContain("Target.Dot");
+});
