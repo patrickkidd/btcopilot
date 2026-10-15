@@ -35,7 +35,6 @@ from btcopilot.schema import CaseReportCard, ClusterSource, DiagramData
 from btcopilot.toolbox import CARDS
 
 TURN = "fd381-catchup:{}:{}"
-MARK = "fd381-catchup-report:{}:{}"
 PLANS = "fd381-catchup-plans"
 CARD = record.CARD
 SYNC = "clusters.sync(force=True)"
@@ -56,10 +55,17 @@ class Regroup(enum.StrEnum):
 
 class Mark(enum.StrEnum):
     Before = "the coach last wrote the report before the deploy"
-    Unlogged = "the change log holds no write of the report's cards"
     Retired = "an entry is on the choice card, which the coach no longer writes"
     After = "the coach wrote the report after the deploy"
+    # the page can show no mark on a report it cannot place in the change log
+    Unlogged = "the change log holds no write of the report's cards"
     Unwritten = "the coach never wrote a report"
+
+
+def marked(diagram_id: int, made: str) -> str:
+    """The turn id of the change row that marks a record's report out of date
+    under one plan, read at call time like the rest of casereport."""
+    return f"{casereport.OUT_OF_DATE}{diagram_id}:{made}"
 
 
 def regrouping(diagram: Diagram, data: DiagramData) -> Regroup:
@@ -137,7 +143,7 @@ def planned(diagram: Diagram, since: datetime.datetime, cost: float | None) -> d
         "owner": diagram.user.username if diagram.user else None,
         "regroup": regroup in (Regroup.Called, Regroup.Uncalled),
         "regroup_why": regroup.value,
-        "mark": mark in (Mark.Before, Mark.Unlogged, Mark.Retired),
+        "mark": mark in (Mark.Before, Mark.Retired),
         "mark_why": mark.value,
         "estimate_usd": (
             None if cost is None else cost if regroup is Regroup.Called else 0.0
@@ -290,7 +296,7 @@ def mark(diagram: Diagram, turn_id: str) -> None:
 def state(entry: dict, made: str) -> dict:
     """One planned record as it stands: what this plan's writes came to."""
     diagram = find(entry["diagram"])
-    turns = (TURN.format(diagram.id, made), MARK.format(diagram.id, made))
+    turns = (TURN.format(diagram.id, made), marked(diagram.id, made))
     changes = [*kept(diagram.id, turns[0]), *kept(diagram.id, turns[1])]
     spent = (
         db.session.query(db.func.sum(ModelCall.cost_usd))
@@ -327,9 +333,7 @@ def owed(entry: dict, made: str) -> tuple[bool, bool]:
         and not regrouped(diagram.id, TURN.format(diagram.id, made))
         and clusters.behind(diagram.id, diagram.get_diagram_data())
     )
-    return regroup, entry["mark"] and not kept(
-        diagram.id, MARK.format(diagram.id, made)
-    )
+    return regroup, entry["mark"] and not kept(diagram.id, marked(diagram.id, made))
 
 
 def caught_up(entry: dict, made: str, regroup: bool, marks: bool) -> None:
@@ -361,7 +365,7 @@ def caught_up(entry: dict, made: str, regroup: bool, marks: bool) -> None:
             )
         db.session.commit()
     if marks:
-        mark(diagram, MARK.format(diagram.id, made))
+        mark(diagram, marked(diagram.id, made))
 
 
 @click.command("apply")
@@ -452,7 +456,7 @@ def undo(path, diagram_id, yes):
         diagram = find(entry["diagram"])
         changes = [
             *kept(diagram.id, TURN.format(diagram.id, saved["made"])),
-            *kept(diagram.id, MARK.format(diagram.id, saved["made"])),
+            *kept(diagram.id, marked(diagram.id, saved["made"])),
         ]
         if not changes:
             continue

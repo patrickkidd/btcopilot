@@ -26,8 +26,9 @@ from btcopilot.models import (
     ObservationKind,
     Purpose,
 )
-from btcopilot.schema import Event, Person, asdict, from_dict
+from btcopilot.schema import Person, asdict
 from btcopilot.tests.test_casereport import card
+from btcopilot.tests.test_casereportrewrite import happened
 from btcopilot.tests.test_clustersync import (  # noqa: F401
     clusters_of,
     family,
@@ -122,6 +123,20 @@ def planned(flask_app, tmp_path) -> tuple[list[dict], str]:
     return rows, rows[0]["plan"]
 
 
+def filed(diagram, entry_id: str, value: str) -> None:
+    """A copy of the main guess on another card, written as the record holds
+    it, with no change row."""
+    stored = diagramjson.loads(diagram.data)
+    guess = next(q for q in stored["questions"] if q["id"] == "i1")
+    stored["questions"].append({**guess, "id": entry_id, "case_report_card": value})
+    diagram.data = diagramjson.dumps(stored)
+    db.session.commit()
+
+
+def marks(rows: list[dict]) -> list[tuple]:
+    return [(r["diagram"], r["mark"], r["mark_why"]) for r in rows]
+
+
 def stale(diagram) -> dict | None:
     db.session.expire_all()
     return casereport.stale(diagram.id, diagram.get_diagram_data())
@@ -199,10 +214,8 @@ def test_apply_regroups_only_the_planned_record_through_sync_and_never_refreshes
     assert not refreshed.called
     assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert clusters_of(old) == clusters_of(current) == {}
-    regroup = Change.query.filter(
-        Change.turn_id.like(f"fd381-catchup:{family.id}:%")
-    ).all()
-    assert len(regroup) == 1
+    regroup = Change.query.filter(Change.turn_id.like("fd381-catchup:%")).all()
+    assert [c.diagram_id for c in regroup] == [family.id]
     spent = ModelCall.query.filter_by(turn_id=regroup[0].turn_id).one()
     assert [
         (r["diagram"], r["done"], r["failed"], r["groups"], r["cost_usd"]) for r in rows
@@ -228,11 +241,12 @@ def test_apply_marks_only_the_planned_report_out_of_date(
 
     found = stale(old)
     assert found["change_id"] == rows[1]["changes"][0]
-    assert found["sentence"] == casereport.REWRITTEN
+    assert found["sentence"] == casereport.NEW_WAY
     assert stale(current) is None
     assert stale(family) is None
     assert (
-        Change.query.filter(Change.turn_id.like("fd381-catchup-report:%")).count() == 1
+        Change.query.filter(Change.turn_id.like(f"{casereport.OUT_OF_DATE}%")).count()
+        == 1
     )
 
 
@@ -341,3 +355,72 @@ def test_a_regroup_the_record_refuses_is_failed_written_down_and_the_rest_go_on(
     (seen,) = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).all()
     assert seen.diagram_id == family.id
     assert seen.detail["reason"].startswith("the record refused the regroup")
+
+
+def test_a_family_change_after_the_last_card_write_is_said_over_the_mark(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772, R-0827
+    _, path = planned(flask_app, tmp_path)
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        catchup(flask_app, "apply", "--plan", path)
+    happened(old, "noted", "2019-03-01", title="Moved to Leeds")
+
+    found = stale(old)
+    assert found["sentence"] == (
+        "Ada's “Moved to Leeds” in 2019 was added after the coach wrote this report."
+    )
+    assert found["change_id"] == Change.query.filter_by(turn_id="e1").one().id
+
+
+def test_a_card_written_after_the_mark_makes_the_report_current_again(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772, R-0827
+    _, path = planned(flask_app, tmp_path)
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        catchup(flask_app, "apply", "--plan", path)
+    assert stale(old)["sentence"] == casereport.NEW_WAY
+
+    impress(box(old, "r2"), text="When things get tense, she goes out.")
+    card(old, "i2", "main_guess", "c2")
+    assert stale(old) is None
+
+
+def test_an_entry_on_the_choice_card_marks_a_report_written_after_the_deploy(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772, R-0850
+    filed(current, "i2", "choice")
+
+    rows, _ = planned(flask_app, tmp_path)
+    assert marks(rows)[2] == (
+        current.id,
+        True,
+        "an entry is on the choice card, which the coach no longer writes",
+    )
+
+
+def test_a_report_the_change_log_cannot_place_is_not_marked(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772
+    Change.query.filter_by(diagram_id=current.id).delete()
+    db.session.commit()
+
+    rows, path = planned(flask_app, tmp_path)
+    assert marks(rows)[2] == (
+        current.id,
+        False,
+        "the change log holds no write of the report's cards",
+    )
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        catchup(flask_app, "apply", "--plan", path)
+    assert Change.query.filter_by(diagram_id=current.id).count() == 0
+    assert stale(current) is None
