@@ -201,6 +201,48 @@ Changes something: needs `--yes`.
 | `change_ids` | required |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin fd381-catchup`
+
+Put every record on FD-381's grouping rules and mark each case report the coach wrote before them out of date, after the deploy carrying them and a backup: plan, then apply that plan; undo takes it back.
+
+### `flask admin fd381-catchup apply`
+
+Write a saved plan: regroup each record it names through clusters.sync(force=True), the function a coach turn runs, one grouping call each, a second when the first answer is refused, each in the model-calls ledger; and mark each case report it names out of date, so the owner's next tap rewrites it, never calling the refresh itself. Each record's writes are change rows that `undo` takes back. A record already written under this plan is not written again, so a run cut short, or run with --limit, is finished by running it again. Prints each planned record with whether it is done and failed, its change rows and the dollars its calls cost, then whether every stored result is what a turn stores and whether every record was written.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--plan` | The plan file `plan` saved. |
+| `--diagram` | Only this record of the plan. |
+| `--limit` | Write at most this many of the plan's records not yet written. |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin fd381-catchup plan`
+
+Decide, for every record but the scratch copies, whether the catch-up regroups it (its grouping cache key differs from the stored one) and whether it marks its case report out of date (the coach last wrote it before the deploy, or an entry is on a card the coach no longer writes), with the grouping's cost estimated from the last grouping call in the model-calls ledger. Makes no model call and changes no record; saves the plan that `apply` and `undo` take, and prints one row per record.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--deployed` | When the deploy carrying FD-381 went out, as git prints a date (2026-10-15T14:02:00+00:00) or in UTC: a report the coach last wrote before it is marked. |
+| `--diagram` | Only this record. |
+| `--plans` | Where the plan is saved; left out, fd381-catchup-plans in the instance folder. |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin fd381-catchup undo`
+
+Take back every change row `apply` wrote under a plan, record by record, newest first, each logged as its own undo naming the row: the clusters and the grouping cache key as they were, and the case report no longer out of date for the catch-up. A record changed since is left as it is and says why; the rest go on. Without --yes it prints what each row would take back and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--plan` | The plan file `apply` wrote. |
+| `--diagram` | Only this record of the plan. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin flow`
 
 The conversational-flow numbers per model and prompt version.

@@ -10,6 +10,7 @@ from btcopilot.admin.coachmodels import coach_model
 from btcopilot.admin.database import database
 from btcopilot.admin.dates import dates
 from btcopilot.admin.diagrams import diagrams
+from btcopilot.admin.fd381catchup import fd381_catchup
 from btcopilot.admin.flow import flow_group
 from btcopilot.admin.guard import run
 from btcopilot.admin.imports import imports
@@ -48,6 +49,7 @@ for group in (
     titles_group,
     report_group,
     case_report_group,
+    fd381_catchup,
     imports,
     token_cap,
     coach_model,
