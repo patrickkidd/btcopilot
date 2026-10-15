@@ -633,10 +633,20 @@ def test_the_refresh_reads_what_each_person_is_to_the_person_and_whose_side_they
 def test_the_refresh_reads_the_brothers_and_sisters_of_the_person_and_each_parent_in_birth_order():
     # R-0850
     assert casereport.order_of_birth(_wrens()).splitlines() == [
-        "1 Wren (the person): 1 Wren 1978, 4 Bo about 1980",
-        "2 Ada (mother): 7 Ivy 1950, 2 Ada 1952",
+        "1 Wren (the person): born 1 of 2: 1 Wren 1978, 4 Bo about 1980",
+        "2 Ada (mother): born 2 of 2: 7 Ivy 1950, 2 Ada 1952",
         "3 Cal (father): no brothers or sisters in the diagram",
     ]
+
+
+def test_a_place_among_brothers_and_sisters_is_not_known_when_a_birth_has_no_date():
+    # R-0850, R-0855
+    wrens = _wrens()
+    next(e for e in wrens.events if e["id"] == 21)["dateCertainty"] = "unknown"
+
+    assert casereport.order_of_birth(wrens).splitlines()[0] == (
+        "1 Wren (the person): place not known, a birth among them has no date: 1 Wren 1978, 4 Bo date unknown"
+    )
 
 
 def test_the_refresh_reads_each_triangle_the_events_mark_with_who_was_inside_and_outside():
@@ -656,11 +666,14 @@ def test_the_refresh_reads_each_close_pairs_relationship_events_by_date_and_coun
     ]
 
 
-def test_the_refresh_reads_how_many_events_the_diagram_holds_on_each_side_of_the_family():
+def test_the_refresh_reads_each_side_of_the_family_its_events_its_deaths_and_the_persons_last_contact():
     # R-0850
     assert casereport.by_side(_wrens()).splitlines() == [
-        "the side of 2 Ada (mother): 7 events",
-        "the side of 3 Cal (father): 0 events",
+        "the side of 2 Ada (mother): 7 events; died: 5 Gran 1998; "
+        "no death in the diagram: 2 Ada, 6 Gramps, 7 Ivy, 15 Jo; "
+        "the person's last relationship event with each one on it: 2 Ada 2015 Wren cutoff “Cut off from her mother”",
+        "the side of 3 Cal (father): 0 events; died: none in the diagram; no death in the diagram: 3 Cal, 8 Nan; "
+        "the person's last relationship event with each one on it: none in the diagram",
     ]
 
 

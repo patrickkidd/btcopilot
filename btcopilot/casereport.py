@@ -77,7 +77,7 @@ KIN = "WHAT EACH PERSON IS TO THE PERSON"
 ORDER = "BROTHERS AND SISTERS IN BIRTH ORDER"
 TRIANGLES = "TRIANGLES THE EVENTS MARK"
 PAIRS = "RELATIONSHIP EVENTS BY PAIR"
-SIDES = "EVENTS ON EACH SIDE OF THE FAMILY"
+SIDES = "EACH SIDE OF THE FAMILY"
 # The relationship marks one person makes toward another, as against the
 # inside and outside marks of a triangle.
 TRIANGLE = (RelationshipKind.Inside, RelationshipKind.Outside)
@@ -428,12 +428,15 @@ def held(data: DiagramData) -> str:
     return "\n".join(lines)
 
 
+UNDATED = "date unknown"
+
+
 def _year(event: dict | None) -> str:
     """An event's year, no surer than its date is marked [Oracle: R-0855]."""
     when = parse_date(event.get("dateTime")) if event else None
     sure = enum_val(event.get("dateCertainty")) if event else None
     if when is None or sure == DateCertainty.Unknown.value:
-        return "date unknown"
+        return UNDATED
     return f"about {when.year}" if sure == DateCertainty.Approximate.value else str(when.year)
 
 
@@ -514,9 +517,17 @@ def kin(data: DiagramData) -> str:
     return "\n".join(f"{what}: {', '.join(people)}" for what, people in groups.items())
 
 
+def _place(data: DiagramData, kids: list[int], pid: int) -> str:
+    """Where one falls among their brothers and sisters, or that it is not
+    known when a birth among them has no date anyone is sure of."""
+    if any(_year(profile.birth(data, kid)) == UNDATED for kid in kids):
+        return "place not known, a birth among them has no date"
+    return f"born {kids.index(pid) + 1} of {len(kids)}"
+
+
 def order_of_birth(data: DiagramData) -> str:
     """The person's brothers and sisters and each parent's, in birth order,
-    for each one's place among them (FE 3221, 3461)."""
+    with each one's place among them (FE 3221, 3461; R-0850)."""
     own = profile.own(data)
     if own is None:
         return ""
@@ -527,7 +538,9 @@ def order_of_birth(data: DiagramData) -> str:
         if len(kids) == 1:
             said = "no brothers or sisters in the diagram"
         else:
-            said = ", ".join(f"{named[k]} {_year(profile.birth(data, k))}" for k in kids)
+            said = _place(data, kids, pid) + ": " + ", ".join(
+                f"{named[k]} {_year(profile.birth(data, k))}" for k in kids
+            )
         lines.append(f"{_who(data, pid)}: {said}")
     return "\n".join(lines)
 
@@ -612,12 +625,45 @@ def pairs(data: DiagramData) -> str:
 def by_side(data: DiagramData) -> str:
     """How many events the diagram holds about each parent's side of the
     family, so a side it knows little about reads as a fact toward cutoff,
-    held as the app's guess (FE 3115, 3205)."""
-    return "\n".join(
-        f"the side of {_who(data, parent)}: "
-        f"{sum(any(record.involves(e, pid) for pid in side) for e in data.events)} events"
-        for parent, side in coverage.sides(data).items()
-    )
+    held as the app's guess (FE 3115, 3205); who on it has died; and the
+    person's last relationship event with each one on it, the only contact
+    the diagram holds, so a card gives the contact now or says it is not
+    known (R-0850)."""
+    named = _named(data)
+    deaths = {e.get("person"): e for e in data.events if enum_val(e.get("kind")) == EventKind.Death.value}
+    lines = []
+    for parent, side in coverage.sides(data).items():
+        people = sorted(side)
+        count = sum(any(record.involves(e, pid) for pid in side) for e in data.events)
+        died = [f"{named[pid]} {_year(deaths[pid])}" for pid in people if pid in deaths]
+        living = [named[pid] for pid in people if pid not in deaths]
+        lines.append(
+            f"the side of {_who(data, parent)}: {count} events; "
+            f"died: {', '.join(died) or 'none in the diagram'}; "
+            f"no death in the diagram: {', '.join(living) or 'none'}; "
+            f"the person's last relationship event with each one on it: "
+            f"{_contact(data, side) or 'none in the diagram'}"
+        )
+    return "\n".join(lines)
+
+
+def _contact(data: DiagramData, side: set[int]) -> str:
+    """The last relationship event between the person and each one on a side
+    of the family, either way, by date."""
+    me = profile.own(data)["id"]
+    names = _names_of(data)
+    named = _named(data)
+    last = {}
+    for event in sorted(data.events, key=_dated):
+        mover = event.get("person")
+        kind = _marked(event)
+        if kind is None or mover is None:
+            continue
+        others = {*(event.get("relationshipTargets") or []), *(event.get("relationshipTriangles") or [])}
+        for pid in others if mover == me else [mover] if me in others else []:
+            if pid in side:
+                last[pid] = f"{_year(event)} {names.get(mover, mover)} {kind.value}{_words(event)}"
+    return "; ".join(f"{named[pid]} {said}" for pid, said in sorted(last.items()))
 
 
 def family(data: DiagramData) -> str:
