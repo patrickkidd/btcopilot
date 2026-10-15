@@ -39,7 +39,9 @@ told as how things always were, so recount without them before you keep a
 run. A run marked `default` has three or more: return
 a period holding its shifts, reshaped as the events read, or list it under
 `declined` with one sentence on what in the events says it is not a period,
-never its count of shifts alone. Any other run is weaker evidence: judge it, and return a period from it or
+never its count of shifts or of events alone. Never decline a run for being
+long, spread out or mixed: cut it down to the stretch around the change in the
+family inside it, return that, and leave the rest of its events out. Any other run is weaker evidence: judge it, and return a period from it or
 decline it the same way. Third, the people the
 events name, each with what they are to the person when the diagram says.
 Fourth, every event. One whose `dateCertainty` is `unknown` has a date nobody is sure of: it
@@ -49,7 +51,8 @@ never opens one (it is marked `neverOpens`) and is never an `openingId`;
 about a year. Fifth, the person's answers when asked when the most was going on in
 their life, with their birth date.
 
-**The person's own periods.** For each time the person says stood out or was
+**The person's own periods.** An answer often names more than one time: read
+every sentence of it. For each time the person says stood out or was
 hard in an answer, and not one they only wonder or ask about, that is not
 already listed as "the person drew this period", return one entry under
 `periods`: `messageId`, the answer it is in; `name`, a short phrase copied word
@@ -57,8 +60,8 @@ for word from their answer; `words`, their sentence that names it, copied word
 for word; and `startYear` and `endYear` as their words give them, an age read
 against their birth date, a single year given as both. Leave both years out
 when their words give none. Never rename, merge, split, shorten or widen a
-period of theirs, and never fold one into yours. Your periods never share their
-years. When there are no answers, return no `periods`.
+period of theirs, and never fold one into yours. Return each one even when a
+period of yours covers the same years: theirs stands and yours gives way. Your periods never share their years. When there are no answers, return no `periods`.
 
 **Name and reason.** Name each period of yours by the change that opened it and
 its years, in words this person would recognise; never by the person's own
