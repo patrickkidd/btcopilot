@@ -7,11 +7,12 @@
 
 Each builder's set is kept apart; with no set at all, any file goes. Refuses a
 commit with a second migration the base (origin/master unless --base) does
-not have, staged files no one builder's set holds all of, a stash entry made
+not have, a ruling citation added with a stale rulings index, staged files no one builder's set holds all of, a stash entry made
 since the install, or a conflict marker.
 """
 import argparse
 import fnmatch
+import re
 import subprocess
 import sys
 import time
@@ -19,6 +20,12 @@ from pathlib import Path
 
 VERSIONS = "btcopilot/migrations/versions/"
 MARKERS = (b"<<<<<<< ", b">>>>>>> ")
+CITATION = re.compile(rb"^\+(?!\+).*\bR-0\d+")
+INDEX = "private/oracle/rulings.md"
+STALE = (
+    "ruling citations changed: run `SOPS_AGE_KEY_FILE=$HOME/.config/sops/age/keys.txt "
+    f"uv run python bin/oracleindex.py` and stage {INDEX}"
+)
 BASE = "origin/master"
 
 
@@ -83,6 +90,16 @@ def staged() -> list[str]:
     return git("diff", "--cached", "--name-only", "--diff-filter=ACMR").split("\n")[:-1]
 
 
+def index_stale() -> bool:
+    added = blob("diff", "--cached", "-U0", "--diff-filter=ACMR", "--", ".", f":!{INDEX}")
+    if INDEX in staged() or not any(CITATION.match(l) for l in added.splitlines()):
+        return False
+    tool = Path(__file__).resolve().parent / "oracleindex.py"
+    return subprocess.run(
+        [sys.executable, str(tool), "--check"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    ).returncode != 0
+
+
 def refusals() -> list[str]:
     found = []
     new = migrations()
@@ -115,6 +132,8 @@ def refusals() -> list[str]:
     ]
     if marked:
         found.append(f"no conflict markers: {', '.join(marked)} still holds one")
+    if index_stale():
+        found.append(STALE)
     return found
 
 
