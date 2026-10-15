@@ -188,7 +188,7 @@ def test_the_timeline_says_what_put_the_report_out_of_date(web, written, family)
 # The cards guessed from the diagram, each parent's family twice, one a side;
 # with what brought the person in, every card a refresh writes.
 GUESSED = [
-    (ToolName.AddImpression, {"text": f"Guess for {name}{side}.", "state": "raised",
+    (ToolName.AddImpression, {"text": f"The app's guess for {name}{side}.", "state": "raised",
                               "evidence": [{"kind": "person", "id": "1"}], "case_report_card": name})
     for name, side in [*((n, "") for n in ("main_guess", "coach_guess", "couple", "own_part", "work_on", "family")),
                        ("sides", ", mother's side"), ("sides", ", father's side")]
@@ -464,14 +464,14 @@ def test_a_card_saying_one_event_created_a_period_is_refused_written_down_and_as
     # R-0864, R-0850, R-0569
     model = Model(
         calling(guessed("Your parents' separation and the symphony created a period of heightened anxiety.")),
-        calling(guessed("Your parents separated around the same time as the symphony auditions.")),
+        calling(guessed("The app's guess: your parents separated around the same time as the symphony auditions.")),
     )
     rewrite(web, model)
 
     assert len(model.histories) == 2
     (row,) = refusals(reason="case report rewrite: coach_guess: ")
     assert row.detail["refusal"].startswith("'created'")
-    assert texts(family)["coach_guess"] == "Your parents separated around the same time as the symphony auditions."
+    assert texts(family)["coach_guess"] == "The app's guess: your parents separated around the same time as the symphony auditions."
 
 
 def test_a_card_in_the_persons_voice_is_refused_and_their_quoted_words_pass(web, past, written, family):
@@ -526,7 +526,7 @@ def grouped(family, written):
 
 def test_the_coach_guess_gives_for_and_against_each_cluster_it_rests_on(web, past, grouped, family):
     # R-0850
-    text = "Distance between you and your mother, 2004.\nFor c1: the sleep trouble began that autumn.\nAgainst c1: one event."
+    text = "The app's guess: distance between you and your mother, 2004.\nFor c1: the sleep trouble began that autumn.\nAgainst c1: one event."
     rewrite(web, Model(calling(guessed(text, evidence=[{"kind": "cluster", "id": grouped}])), calling()))
 
     assert texts(family)["coach_guess"] == text
@@ -711,12 +711,55 @@ def test_a_prediction_off_what_to_work_on_is_refused_and_asked_for_once_more(web
 
 def test_an_executive_summary_longer_than_the_trouble_and_the_pattern_is_kept_and_observed(web, past, written, family):
     # R-0850
-    run = "You sleep badly. It began in 1998. Your grandmother died that year. You stopped calling your mother."
+    run = "You said you sleep badly. It began in 1998. Your grandmother died that year. You stopped calling your mother."
     model = Model(calling(guessed(run, "main_guess")))
     rewrite(web, model)
 
     assert texts(family)["main_guess"] == run
     assert refusals(refusal="has 4 sentences")[0].detail["sentences"] == 4
+
+
+def test_a_card_not_saying_whose_reading_it_is_is_refused_and_asked_for_once_more(web, past, written, family):
+    # R-0850
+    model = Model(
+        calling(guessed("Distance between you and your mother, 2004.")),
+        calling(guessed("The app's guess: distance between you and your mother, 2004.")),
+    )
+    rewrite(web, model)
+
+    assert "whose reading" in model.histories[1][-1]["content"][0]["content"]
+    assert texts(family)["coach_guess"] == "The app's guess: distance between you and your mother, 2004."
+    assert len(refusals(refusal="whose reading")) == 1
+
+
+def test_a_card_not_saying_whose_reading_it_is_twice_is_written_and_written_down(web, past, written, family):
+    # R-0850
+    bare = guessed("Distance between you and your mother, 2004.")
+    rewrite(web, Model(calling(bare), calling(bare)))
+
+    assert texts(family)["coach_guess"] == "Distance between you and your mother, 2004."
+    first, last = refusals(refusal="whose reading")
+    assert (first.detail["retried"], last.detail["retried"]) == (True, False)
+    assert last.detail["reason"].startswith("case report rewrite: coach_guess: kept: the card does not say")
+    assert last.detail["reason"].endswith("; first try: refused: " + first.detail["refusal"])
+
+
+@pytest.mark.parametrize(
+    "text, card",
+    [
+        ("Not enough in the diagram yet: your father's parents' names.", "sides"),
+        ('You said "I stopped calling her" in 2004.', "own_part"),
+        ("In 2004 you stopped calling your mother. The app's guess: distance.", "own_part"),
+    ],
+)
+def test_a_card_saying_whose_reading_it_is_or_how_little_the_diagram_holds_is_never_refused_for_it(
+    web, past, written, family, text, card
+):
+    # R-0850
+    rewrite(web, Model(calling(guessed(text, card)), calling()))
+
+    assert texts(family)[card] == text
+    assert refusals(refusal="whose reading") == []
 
 
 def test_a_for_or_against_on_a_cluster_the_guess_does_not_rest_on_is_refused(web, past, grouped, family):
@@ -729,7 +772,7 @@ def test_a_for_or_against_on_a_cluster_the_guess_does_not_rest_on_is_refused(web
 
 def test_the_choice_is_written_on_the_part_card_with_the_other_way_and_never_on_its_own(web, past, written, family):
     # R-0850
-    part = "In 2004 you stopped calling your mother.\nOther way: could contact have stayed light?"
+    part = "The app's guess: in 2004 you stopped calling your mother.\nOther way: could contact have stayed light?"
     rewrite(web, Model(calling(guessed(part, "own_part"), guessed("You could have called.", "choice")), calling()))
 
     assert texts(family) == {"main_guess": FELL, "own_part": part}
@@ -737,7 +780,7 @@ def test_the_choice_is_written_on_the_part_card_with_the_other_way_and_never_on_
 
 def test_what_to_work_on_carries_the_prognosis_and_the_aim(web, past, written, family):
     # R-0850, R-0868
-    work = "More contact with your mother.\nPrognosis: trouble may come again near the next loss.\nAim: call her weekly"
+    work = "The app's guess: more contact with your mother.\nPrognosis: trouble may come again near the next loss.\nAim: call her weekly"
     rewrite(web, Model(calling(guessed(work, "work_on")), calling()))
 
     assert texts(family)["work_on"] == work
@@ -778,7 +821,7 @@ def test_a_card_not_given_is_asked_for_once_more_and_still_missing_keeps_its_not
 
     asked = model.histories[1][-1]["content"][-1]["text"]
     assert "what_brought" in asked and "own_part" in asked and "main_guess" not in asked
-    assert texts(family)["work_on"] == "Guess for work_on."
+    assert texts(family)["work_on"] == "The app's guess for work_on."
     assert "what_brought" not in texts(family)
     first, last = refusals(refusal="no what_brought card")
     assert (first.detail["retried"], last.detail["retried"]) == (True, False)
@@ -786,7 +829,7 @@ def test_a_card_not_given_is_asked_for_once_more_and_still_missing_keeps_its_not
     assert last.detail["reason"] == "case report rewrite: what_brought: missing; first try: missing"
 
     rewrite(web, Model(calling(*every(past)[:1]), calling()))
-    assert texts(family)["main_guess"] == "Guess for main_guess."
+    assert texts(family)["main_guess"] == "The app's guess for main_guess."
 
 
 def catch_up(flask_app, *args, model=None) -> list[dict]:

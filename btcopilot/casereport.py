@@ -102,6 +102,11 @@ FORETOLD = re.compile(
 # The Executive Summary: who has the trouble and what it is in one or two
 # sentences, then the pattern of the coach's guess in one (R-0850).
 SUMMARY_SENTENCES = 3
+# Whose reading a card is: the person's ("You said ...") or the app's ("The
+# app's guess: ..."), unless the card is the one line saying the diagram holds
+# too little for it (R-0850).
+WHOSE = re.compile(r"\byou (?:said|told)\b|\bthe app['’]s guess\b", re.I)
+THIN = "Not enough in the diagram yet"
 class State(enum.StrEnum):
     Running = "running"
     Done = "done"
@@ -323,6 +328,19 @@ def overlong(call) -> int | None:
     said = record.QUOTED.sub("", call.args.get("text") or "")
     count = sum(1 for line in said.splitlines() for s in record.SENTENCE.split(line.strip()) if s)
     return count if count > SUMMARY_SENTENCES else None
+
+
+def unmarked(call) -> str | None:
+    """Why a card's words, outside the person's quoted ones, do not say whose
+    reading they are, or None; what brought the person is their own quoted
+    words (R-0850, R-0863)."""
+    text = call.args.get("text") or ""
+    if call.args.get(CARD) == CaseReportCard.WhatBrought or text.startswith(THIN):
+        return None
+    return None if WHOSE.search(record.QUOTED.sub("", text)) else (
+        "the card does not say whose reading it is: give what the person said as "
+        "\"You said ...\" and the rest as \"The app's guess: ...\""
+    )
 
 
 def misspoken(call) -> str | None:
@@ -738,19 +756,17 @@ def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool,
          first: dict[str, str] | None = None) -> dict[str, str]:
     """Each guess in through the coach's own tool unless it gives a cause or
     a why, speaks as the person, or the checks refuse it, every refusal written down with its card
-    and, on the second try, what came of the first (`first`, by card). Why
-    each refused call was refused, as the model reads it."""
+    and, on the second try, what came of the first (`first`, by card). A card
+    not saying whose reading it is is refused when it will be asked for again
+    (`retried`), else kept and written down. Why each refused call was
+    refused, as the model reads it."""
     refused = {}
     for call in calls:
-        told = refusal = misspoken(call) or checked(call)
+        told = refusal = misspoken(call) or checked(call) or (unmarked(call) if retried else None)
         if refusal is None:
             told, _, refusal = run_call(toolbox, call)
-            count = overlong(call)
-            if count and not refusal:
-                _observe(diagram.id, toolbox.turn_id, ObservationKind.ToolRefused,
-                         {"tool": call.name, "refusal": f"the Executive Summary has {count} sentences, "
-                          f"more than {SUMMARY_SENTENCES}; kept", "retried": retried, "sentences": count,
-                          "reason": _reason(CaseReportCard.MainGuess.value, f"kept: {count} sentences")})
+            if not refusal:
+                _kept(diagram.id, toolbox.turn_id, call, retried, first)
         if refusal:
             refused[call.id] = told
             card = call.args.get(CARD)
@@ -759,6 +775,24 @@ def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool,
                       "reason": _reason(card or call.name, f"refused: {refusal}",
                                         first and first[card])})
     return refused
+
+
+def _kept(diagram_id: int, turn_id: str, call, retried: bool, first: dict[str, str] | None) -> None:
+    """A card written though off its shape, written down: an Executive
+    Summary past its sentences, or, with no try left, a card not saying whose
+    reading it is (R-0850)."""
+    count = overlong(call)
+    if count:
+        _observe(diagram_id, turn_id, ObservationKind.ToolRefused,
+                 {"tool": call.name, "refusal": f"the Executive Summary has {count} sentences, "
+                  f"more than {SUMMARY_SENTENCES}; kept", "retried": retried, "sentences": count,
+                  "reason": _reason(CaseReportCard.MainGuess.value, f"kept: {count} sentences")})
+    whose = not retried and unmarked(call)
+    if whose:
+        card = call.args.get(CARD)
+        _observe(diagram_id, turn_id, ObservationKind.ToolRefused,
+                 {"tool": call.name, "refusal": f"{whose}; kept", "retried": retried,
+                  "reason": _reason(card, f"kept: {whose}", first and first.get(card))})
 
 
 def _reason(card: str, came: str, first: str | None = None) -> str:
@@ -836,11 +870,13 @@ def _again(turn, refused: dict[str, str], missing: list[str]) -> list[dict]:
 def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
     """One model call writes every card again (R-0825, R-0850). A card
     refused (a cause or a why, the person's voice outside quotation marks, a
-    prediction off what to work on, an Executive Summary past its shape, a
-    mark inside a line, an id in its words, or the coach's tool) and a card
-    not given are asked for once more; given again with a cause or in the
-    person's voice, a card is written with those sentences taken out, and one
-    still refused or missing keeps what it had, written down (R-0850, R-0860).
+    prediction off what to work on, not saying whose reading it is, a mark
+    inside a line, an id in its words, or the coach's tool) and a card not
+    given are asked for once more; given again with a cause or in the
+    person's voice, a card is written with those sentences taken out, given
+    again not saying whose reading it is, it is written and written down, and
+    one still refused or missing keeps what it had, written down (R-0850,
+    R-0860).
     Cards read from a family that changed during a call are not written, so
     the report stays out of date (R-0826)."""
     toolbox = box(diagram, user, turn_id)

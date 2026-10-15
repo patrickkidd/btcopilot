@@ -13,6 +13,7 @@ import re
 
 from btcopilot.schema import CardLine, Cluster, ClusterSource
 from btcopilot.tests.live.criterion import passes
+from btcopilot.tests.live.test_casereportrewrite import first_answer_refused
 from btcopilot.tests.live.test_casereportcards import (
     CLUSTERS,
     ILLNESS,
@@ -106,3 +107,11 @@ def test_the_prognosis_is_said_as_something_worth_watching_in_everyday_words(coa
     line = " ".join(marked(work, CardLine.Prognosis)).split(":", 1)[-1]
     assert re.search(r"\b(might|may|could)\b", line, re.I) and re.search(r"watch|keep an eye|see (whether|if)|notice", line, re.I), work["text"]
     assert not re.search(r"\b(will|predicts?|prediction|hypothes\w*|test\w*)\b", line, re.I), work["text"]
+
+
+@passes(2, of=3)
+def test_every_card_of_a_refresh_says_whose_reading_it_is_on_its_first_answer(coach):
+    # R-0850
+    # pass: no card of the first answer is refused for not saying whose reading it is
+    formulated(coach)
+    assert not first_answer_refused("whose reading"), first_answer_refused("whose reading")
