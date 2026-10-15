@@ -5,7 +5,7 @@
 # everything it writes in ~/btcopilot-sandbox/<name>/, outside every repo and
 # job folder, so several agents can run one each side by side.
 #
-#   sandbox up <name> <port> [--dev [port]] [--host name] [--build] [--real] [--model M] [--open-prompts] [--autologin email]
+#   sandbox up <name> <port> [--dev [port]] [--host name] [--build] [--real | --subscription] [--model M] [--open-prompts] [--autologin email]
 #   sandbox down <name> [--purge]     stop everything; --purge also deletes the data
 #   sandbox reset <name>              empty the database and put the fixtures back
 #   sandbox invite <name> <email>     a sign-in link (and the Mac's copy under --dev)
@@ -25,7 +25,11 @@
 # the main clone's root; ask Patrick before spending. With
 # BTCOPILOT_MODEL_PROVIDER=bedrock in the shell, --real goes through Bedrock with
 # the shell's AWS sign-in and AWS_REGION instead and needs no key; AWS_PROFILE,
-# AWS_REGION, AWS_CA_BUNDLE and ANTHROPIC_BEDROCK_BASE_URL reach the server and workers. Without a sops key, up
+# AWS_REGION, AWS_CA_BUNDLE and ANTHROPIC_BEDROCK_BASE_URL reach the server and workers.
+# --subscription answers every Claude call (coach turns, the case report
+# refresh, text calls) through `claude -p` on this machine's Claude Code
+# subscription at no API cost, and reads no Anthropic key; Gemini calls still
+# go to Google with the key from .env. Without a sops key, up
 # refuses to start unless --open-prompts says the open-source prompts will do.
 # --autologin signs every visitor with no session in as that account, so a
 # home-screen app needs no code; without it the sign-in page lists every
@@ -134,6 +138,12 @@ SETTINGS
 # needs none: its calls are signed with the AWS sign-in of this shell.
 keys() {
   [ -n "$REAL" ] || return 0
+  if [ "$PROVIDER" = subscription ]; then
+    command -v claude > /dev/null || die "--subscription answers Claude calls with claude -p, which is not on PATH"
+    GOOGLE_GEMINI_API_KEY=$( { grep '^GOOGLE_GEMINI_API_KEY=' "$DOTENV" 2>/dev/null || true; } | cut -d= -f2-)
+    export GOOGLE_GEMINI_API_KEY
+    return 0
+  fi
   if [ "$PROVIDER" = bedrock ]; then
     [ -n "${AWS_REGION:-}" ] || die "--real on Bedrock needs AWS_REGION in this shell"
     (cd "$REPO" && "$PY" -c "from btcopilot.provider import credentials; credentials()") \
@@ -307,6 +317,7 @@ cmd_up() {
       --host) DEV_HOST=${2:?--host takes a name}; shift ;;
       --build) build=1 ;;
       --real) REAL=1 ;;
+      --subscription) REAL=1 PROVIDER=subscription ;;
       --open-prompts) OPEN=1 ;;
       --model) MODEL=$2; shift ;;
       --autologin) AUTOLOGIN=${2:?--autologin takes an email}; shift ;;

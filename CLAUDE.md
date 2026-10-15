@@ -106,7 +106,7 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   `--real` puts the coach on Anthropic with the testing key from `.env` at the main clone's root; ask Patrick
   before spending. With `BTCOPILOT_MODEL_PROVIDER=bedrock` set, `--real` goes through Bedrock with
   the machine's AWS sign-in and `AWS_REGION`, needs no key, and answers Gemini-named calls with Haiku
-  (doc/SETUP.md section 6). `--build` rebuilds the page first; without it the page already built in the
+  (doc/SETUP.md section 6). `--subscription` answers every Claude call (coach turns, the case report refresh) through `claude -p` on this machine's Claude Code subscription at $0, reads no Anthropic key, and leaves Gemini calls on Google; prefer it to `--real` for testing. `--build` rebuilds the page first; without it the page already built in the
   worktree is served, so rebuilding under another agent's running sandbox is a choice, not a
   side effect. A turn on the local model takes one to several minutes.
 - **A session that sees "no sops key in ... the open-source prompts are in use" stops and tells

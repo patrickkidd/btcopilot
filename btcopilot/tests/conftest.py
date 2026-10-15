@@ -3,17 +3,21 @@ and names its own stubs (R-0332)."""
 
 import contextlib
 import datetime
+import json
 import logging
 import re
 import socket
+import subprocess
+from pathlib import Path
+from types import SimpleNamespace
 import flask.testing
 import pytest
 from mock import patch
 from sqlalchemy import text
 import btcopilot
-from btcopilot import provider
+from btcopilot import provider, subscription
 from btcopilot.extensions import db
-from btcopilot.llmutil import EXTRACTION_MODEL, Served, Spent, Text
+from btcopilot.llmutil import EXTRACTION_MODEL, LOCAL_URL, Served, Spent, Text
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.coachturn import SPEAK, run_call
 from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
@@ -137,6 +141,47 @@ def calling(*wanted: tuple[ToolName, dict], text: str = "") -> ModelTurn:
             {"type": "tool_use", "id": call.id, "name": call.name, "input": call.args}
         )
     return turn
+
+
+class ClaudeP:
+    """`claude -p` on the subscription, answering one message: the commands
+    it was run with and the tools each run was offered."""
+
+    def __init__(self, *content: dict):
+        self.content = list(content)
+        self.commands = []
+        self.offered = []
+
+    def __call__(self, command, **kwargs):
+        self.commands.append(command)
+        servers = json.loads(Path(command[command.index("--mcp-config") + 1]).read_text())
+        tools = Path(servers["mcpServers"][subscription.SERVER]["args"][-1])
+        self.offered.append([t["name"] for t in json.loads(tools.read_text())])
+        content = [
+            dict(b, name=subscription.PREFIX + b["name"]) if b["type"] == "tool_use" else b
+            for b in self.content
+        ]
+        lines = [
+            {"type": "assistant", "message": {"id": "msg_1", "model": SERVED, "content": content}},
+            {"type": "result", "subtype": "error_max_turns", "is_error": True},
+        ]
+        return subprocess.CompletedProcess(command, 0, "\n".join(map(json.dumps, lines)), "")
+
+
+@pytest.fixture
+def subscribed(monkeypatch, tmp_path):
+    """Claude calls go to the Claude Code subscription, with no API key."""
+    monkeypatch.setenv(provider.SETTING, provider.Provider.Subscription.value)
+    monkeypatch.delenv(LOCAL_URL, raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(subscription, "SESSIONS", tmp_path / "sessions")
+
+    def answering(*content: dict) -> ClaudeP:
+        claude = ClaudeP(*content)
+        monkeypatch.setattr(subscription, "subprocess", SimpleNamespace(run=claude))
+        return claude
+
+    return answering
 
 
 def run_then_stop(toolbox, call):

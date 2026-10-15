@@ -13,31 +13,14 @@ import json
 import sys
 from pathlib import Path
 
-from btcopilot.coachmodel import ModelTurn, ToolCall
-from btcopilot.llmutil import Served
+from btcopilot.coachmodel import message_turn
 from btcopilot.quality import Source
 from btcopilot.tests.live.replay import STORE, Mode, Replay
 
 
-def turn(message: dict) -> ModelTurn:
-    answered = ModelTurn(served=Served(message["model"]))
-    for block in message["content"]:
-        if block["type"] == "text":
-            answered.text += block["text"]
-            answered.blocks.append({"type": "text", "text": block["text"]})
-        elif block["type"] == "tool_use":
-            answered.calls.append(ToolCall(block["id"], block["name"], block["input"]))
-            answered.blocks.append(
-                {"type": "tool_use", "id": block["id"], "name": block["name"], "input": block["input"]}
-            )
-        else:
-            raise ValueError(f"an answer holds text and tool_use blocks, not {block['type']}")
-    return answered
-
-
 def saved(name: str, message: dict, store: Path = STORE, seal: bool = True) -> Path:
     path = store / name
-    Replay(Mode.Replay, store, seal).save(path, turn(message), Source.Subscription)
+    Replay(Mode.Replay, store, seal).save(path, message_turn(message), Source.Subscription)
     return path
 
 

@@ -16,6 +16,7 @@ from mock import patch
 
 from btcopilot import casereport, record, turnlog
 from btcopilot.admin import admin
+from btcopilot.coachmodel import CoachModel
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Discussion, ModelCall, Observation, ObservationKind, Purpose, TokenMeter
 from btcopilot.schema import Cluster, DiagramData, Person
@@ -228,6 +229,25 @@ def test_a_rewrite_writes_every_card_again_in_one_model_call(web, past, written,
     assert model.offered == [["add_impression"]]
     assert ModelCall.query.filter_by(purpose=Purpose.Coach, turn_id=turn_id).count() == 1
     assert TokenMeter.query.filter_by(user_id=family.user_id).count() == 1
+
+
+def test_on_the_subscription_a_rewrite_is_answered_by_claude_code_at_no_cost(
+    web, past, written, family, subscribed
+):
+    # R-0568, R-0825
+    claude = subscribed(*[
+        {"type": "tool_use", "id": f"tu_{index}", "name": tool.value, "input": args}
+        for index, (tool, args) in enumerate(every(past))
+    ])
+    turn_id = rewrite(web, CoachModel()).get_json()["id"]
+
+    assert [c[:2] for c in claude.commands] == [["claude", "-p"]]
+    assert claude.offered == [["add_impression"]]
+    row = ModelCall.query.filter_by(purpose=Purpose.Coach, turn_id=turn_id).one()
+    assert (row.model, row.cost_usd) == ("claude-opus-5-5", 0)
+    assert sorted(v for v in cards(family).values() if v) == [
+        "coach_guess", "main_guess", "own_part", "what_brought", "work_on"
+    ]
 
 
 def test_a_rewrite_refuses_any_other_tool_and_writes_it_down(web, past, written, family):

@@ -23,6 +23,7 @@ from btcopilot.provider import (
     require_bedrock_ids,
 )
 from btcopilot.schema import from_dict
+from btcopilot.subscription import asked
 
 _log = logging.getLogger(__name__)
 
@@ -513,6 +514,12 @@ def _bedrock() -> bool:
     return not os.environ.get(LOCAL_URL) and provider() is Provider.Bedrock
 
 
+def subscribed() -> bool:
+    """Whether Claude calls go to the Claude Code subscription: the local
+    server, when set, comes first."""
+    return not os.environ.get(LOCAL_URL) and provider() is Provider.Subscription
+
+
 def check_provider() -> None:
     """Run when the app starts: Bedrock calls need the machine's AWS sign-in."""
     if _bedrock():
@@ -615,6 +622,22 @@ async def claude_text(prompt=None, **kwargs):
     messages = _prepare_claude_messages(prompt=prompt, turns=kwargs.get("turns"))
 
     resolved_model = wire_model(kwargs.get("model", RESPONSE_MODEL))
+    if subscribed():
+        message = await asyncio.to_thread(
+            asked,
+            {
+                "model": resolved_model,
+                "effort": None
+                if resolved_model in NO_ADAPTIVE_THINKING
+                else TEXT_EFFORT,
+                "max_tokens": max_output_tokens,
+                "system": system_instruction or "",
+                "messages": messages,
+                "tools": [],
+            },
+        )
+        content = "".join(b["text"] for b in message["content"] if b["type"] == "text")
+        return Text(content, Spent(), Served(message["model"]))
     client = _anthropic_client()
     api_kwargs = {
         "model": resolved_model,

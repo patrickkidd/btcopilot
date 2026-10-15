@@ -21,9 +21,12 @@ from btcopilot.llmutil import (
     local_model,
     resolve_model,
     served,
+    Served,
+    subscribed,
     wire_model,
 )
 from btcopilot.modelturn import MAX_TOKENS, ModelTurn, Refusal, Spent, ToolCall
+from btcopilot.subscription import asked
 
 _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
@@ -73,6 +76,32 @@ def marked_ends(messages: list[dict], ends: list[int]) -> list[dict]:
     return marked
 
 
+def message_turn(message: dict) -> ModelTurn:
+    """A turn from an answer in the Anthropic response shape, text and tool
+    calls only: what the Claude Code subscription answers. Its tokens are not
+    known, so it is charged nothing."""
+    turn = ModelTurn(served=Served(message["model"]))
+    for block in message["content"]:
+        if block["type"] == "text":
+            turn.text += block["text"]
+            turn.blocks.append({"type": "text", "text": block["text"]})
+        elif block["type"] == "tool_use":
+            turn.calls.append(ToolCall(block["id"], block["name"], block["input"]))
+            turn.blocks.append(
+                {
+                    "type": "tool_use",
+                    "id": block["id"],
+                    "name": block["name"],
+                    "input": block["input"],
+                }
+            )
+        else:
+            raise ValueError(
+                f"an answer holds text and tool_use blocks, not {block['type']}"
+            )
+    return turn
+
+
 def marked_messages(messages: list[dict]) -> list[dict]:
     """The chat with its last block marked, so the next call in the same turn
     reads back everything this one sent."""
@@ -104,6 +133,26 @@ class CoachModel:
         No tools means the call cannot make one, which is how a turn is forced
         to end in words. A system prompt in parts keeps only the first.
         """
+        if subscribed():
+            turn = message_turn(
+                asked(
+                    {
+                        "model": self.model,
+                        "effort": self.effort,
+                        "max_tokens": MAX_TOKENS,
+                        "system": system,
+                        "messages": messages,
+                        "tools": tools,
+                    }
+                )
+            )
+            _log.info(
+                f"Coach model {turn.served.model} turn {turn_id}: answered on the "
+                f"Claude Code subscription, $0, {len(turn.calls)} tool calls"
+            )
+            if turn.text:
+                yield turn.text
+            return turn
         # Counts only: no prompt or message text, which is private health data.
         with _tracer.start_span(
             "coach.turn",

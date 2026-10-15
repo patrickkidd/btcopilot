@@ -42,12 +42,12 @@ calibration below, and the ruled run at the end of a batch, before its deploy.
 `bin/subscribe.py` runs the cases in `dump` mode, answers every call left unanswered through
 `claude -p`, saves each answer marked `source: subscription`, and runs again until nothing is
 left; the last run is the verdict. Each call goes to Claude Code as the coach's own call
-(`subscription.py`):
+(`btcopilot/subscription.py`):
 
 | Part of the call | How it reaches the model |
 |------------------|--------------------------|
 | System prompt | the coach's, whole, by `--system-prompt-file` (replaces Claude Code's own) |
-| Tools | the coach's 18, served by `toolserver.py` with the same descriptions and schemas; `--tools ""` removes Claude Code's own; `--strict-mcp-config` and `--setting-sources ""` keep out every other server, setting and CLAUDE.md |
+| Tools | the coach's 18, served by `btcopilot/toolserver.py` with the same descriptions and schemas; `--tools ""` removes Claude Code's own; `--strict-mcp-config` and `--setting-sources ""` keep out every other server, setting and CLAUDE.md |
 | The chat | earlier turns as a resumed session; the last tool call and its results on stdin |
 | Model, effort, output limit | the request's, by `--model`, `--effort` and `CLAUDE_CODE_MAX_OUTPUT_TOKENS` |
 | One message | `--max-turns 1`; the first message is the answer, tool names stripped of their prefix |

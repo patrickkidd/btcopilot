@@ -1,6 +1,6 @@
 """Runs live cases on the Claude Code subscription, $0: dumps every coach call
 that has no saved answer, answers each through `claude -p` with the coach's
-own system prompt and tools (btcopilot/tests/live/subscription.py), saves it
+own system prompt and tools (btcopilot/subscription.py), saves it
 to the replay store marked as the subscription's, and runs again until no
 call is left unanswered. The last run is the verdict.
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 from btcopilot.tests.live.answer import saved
 from btcopilot.tests.live.replay import REPO, Mode
-from btcopilot.tests.live.subscription import answer
+from btcopilot.subscription import answer
 
 ROUNDS = 12
 PARALLEL = 4

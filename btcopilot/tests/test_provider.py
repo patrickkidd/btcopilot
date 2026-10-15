@@ -17,7 +17,7 @@ from botocore.exceptions import UnauthorizedSSOTokenError
 from btcopilot import llmutil, provider
 from btcopilot.app import create_app
 from btcopilot.coachmodel import CoachModel, model_for
-from btcopilot.pricing import price
+from btcopilot.pricing import cost, price
 from btcopilot.models import Discussion
 from btcopilot.models.modelcall import ModelCall
 from btcopilot.provider import Provider
@@ -80,6 +80,17 @@ def test_the_provider_is_anthropic_unless_the_flag_says_bedrock(anthropic_machin
     anthropic_machine.setenv(provider.SETTING, "bedrok")
     with pytest.raises(ValueError):
         provider.provider()
+
+
+def test_on_the_subscription_a_text_call_is_answered_by_claude_code_at_no_cost(subscribed):
+    # R-0568
+    claude = subscribed({"type": "text", "text": "Ada moved to Leeds."})
+    said = llmutil.claude_text_sync("Who moved?", system_instruction="Answer in one line.")
+
+    assert said.words == "Ada moved to Leeds."
+    assert [c[:2] for c in claude.commands] == [["claude", "-p"]]
+    assert claude.offered == [[]]
+    assert cost(said.served.model, said.spent) == 0
 
 
 def test_a_bedrock_machine_builds_bedrock_clients_and_reads_no_key(bedrock_machine):
