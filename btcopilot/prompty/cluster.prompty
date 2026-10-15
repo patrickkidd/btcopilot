@@ -72,7 +72,10 @@ numbers: only where a run's or period's dates fall between their `startYear` and
 
 **Name and reason.** Name each period of yours by the change that opened it and
 its years, in words this person would recognise; never by the person's own
-trouble or symptom, never its length, and never its years alone. A listed
+trouble or symptom, never its length, and never its years alone. Never call a
+period "chronic anxiety" in its name, `reason` or `change`: chronic anxiety is
+not felt as something that starts and ends, so a period with dates is only a
+guess at a time when things ran higher. A listed
 period marked "named by the person's trouble" breaks this: rename it when you
 return it. `openingId` is
 the event that opened it, when one of its events did. The `reason` is one

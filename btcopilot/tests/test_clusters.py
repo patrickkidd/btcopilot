@@ -1018,6 +1018,7 @@ def test_the_prompt_holds_periods_as_hypotheses_with_the_silence_before_each_hin
         "Most events stay outside any period",
         "or decline it the same way",
         "never its length, and never its years alone",
+        'Never call a period "chronic anxiety" in its name, `reason` or `change`',
     ):
         assert sentence in asked, sentence
     for gone in (
