@@ -24,6 +24,7 @@ from btcopilot.schema import (
     ITEM_COLLECTIONS,
     CaseReportCard,
     CauseWord,
+    FirstPerson,
     LIST_FIELDS,
     MIN_CLUSTER_EVENTS,
     DateCertainty,
@@ -1625,6 +1626,40 @@ CAUSE = re.compile(
     r"|results? in|triggers?)\b",
     re.IGNORECASE,
 )
+
+# The coach writes as the coach; the person's own words appear only quoted
+# (R-0860). "I" alone is matched by case, so "i.e." is not the person.
+FIRST_PERSON = re.compile(
+    r"\b("
+    + "|".join(w.value if w is FirstPerson.I else f"(?i:{w.value})" for w in FirstPerson)
+    + r")\b"
+)
+QUOTED = re.compile(r'"[^"]*"|“[^”]*”')
+SENTENCE = re.compile(r"(?<=[.?!])\s+")
+
+
+def caused(text: str) -> str | None:
+    """The first word of the text that gives a cause or a why, or None."""
+    found = CAUSE.search(text)
+    return found and found.group(0)
+
+
+def voiced(text: str) -> str | None:
+    """The first word outside quotation marks in which the text speaks as the
+    person, or None (R-0860)."""
+    found = FIRST_PERSON.search(QUOTED.sub("", text))
+    return found and found.group(0)
+
+
+def plain(text: str) -> str:
+    """The text with every sentence taken out that gives a cause or a why or
+    speaks as the person (R-0850, R-0860)."""
+    kept = []
+    for line in text.splitlines():
+        sentences = [s for s in SENTENCE.split(line) if not caused(s) and not voiced(s)]
+        if sentences:
+            kept.append(" ".join(sentences))
+    return "\n".join(kept)
 
 
 # Words that point a person away from their own story to sources behind the

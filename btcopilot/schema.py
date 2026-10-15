@@ -562,7 +562,8 @@ class CardLine(enum.StrEnum):
 
 
 class CauseWord(enum.StrEnum):
-    """Words that give a cause or a why, never on a card (R-0850, R-0569)."""
+    """Words that give a cause or a why, never on a card or a cluster's
+    sentence (R-0850, R-0569, R-0864)."""
 
     Because = "because"
     Cause = "cause"
@@ -581,6 +582,20 @@ class CauseWord(enum.StrEnum):
     MadeHer = "made her"
     MadeThem = "made them"
     MadeYou = "made you"
+    Created = "created"
+    Appeared = "appeared"
+    Emerged = "emerged"
+
+
+class FirstPerson(enum.StrEnum):
+    """Words in which the coach would speak as the person, never outside
+    their quoted words (R-0860)."""
+
+    I = "I"
+    Me = "me"
+    My = "my"
+    Mine = "mine"
+    Myself = "myself"
 
 
 class Pushback(enum.StrEnum):

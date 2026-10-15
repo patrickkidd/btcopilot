@@ -446,6 +446,44 @@ def test_a_card_giving_a_cause_twice_is_written_without_that_sentence(web, past,
     assert texts(family)["coach_guess"] == "Your sleep and your mother's illness came the same winter."
 
 
+def test_a_card_saying_one_event_created_a_period_is_refused_written_down_and_asked_for_again(
+    web, past, written, family
+):
+    # R-0864, R-0850, R-0569
+    model = Model(
+        calling(guessed("Your parents' separation and the symphony created a period of heightened anxiety.")),
+        calling(guessed("Your parents separated around the same time as the symphony auditions.")),
+    )
+    rewrite(web, model)
+
+    assert len(model.histories) == 2
+    (row,) = refusals(reason="case report rewrite: coach_guess: ")
+    assert row.detail["refusal"].startswith("'created'")
+    assert texts(family)["coach_guess"] == "Your parents separated around the same time as the symphony auditions."
+
+
+def test_a_card_in_the_persons_voice_is_refused_and_their_quoted_words_pass(web, past, written, family):
+    # R-0860
+    model = Model(
+        calling(guessed("I remember my mother was ill that winter.")),
+        calling(guessed('You said "I remember my mother was ill" that winter.')),
+    )
+    rewrite(web, model)
+
+    result = model.histories[1][-1]["content"][0]
+    assert (result["is_error"], "'I' speaks as the person" in result["content"]) == (True, True)
+    assert refusals(refusal="speaks as the person")
+    assert texts(family)["coach_guess"] == 'You said "I remember my mother was ill" that winter.'
+
+
+def test_a_card_in_the_persons_voice_twice_is_written_without_that_sentence(web, past, written, family):
+    # R-0860
+    voice = guessed("Your mother was ill in 2004. I was scared then.")
+    rewrite(web, Model(calling(voice), calling(voice)))
+
+    assert texts(family)["coach_guess"] == "Your mother was ill in 2004."
+
+
 @pytest.fixture
 def grouped(family, written):
     data = family.get_diagram_data()

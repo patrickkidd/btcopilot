@@ -29,6 +29,7 @@ from decimal import Decimal
 
 from btcopilot.clusters import (
     Answer,
+    ClusterCheck,
     ClusterError,
     ClusterListResponse,
     ModelCluster,
@@ -246,3 +247,32 @@ def test_the_periods_the_person_names_come_back_as_hers():
         for h in hers
         if c.startDate < h.endDate and h.startDate < c.endDate
     ]
+
+
+def first_refused(said=()) -> tuple[list, list]:
+    """The checks the first answer failed, and the app's periods kept."""
+    seen = []
+    result = detect_clusters(HALE, ask, lambda n, err, _: seen.append((n, err.check)), said=said)
+    for cluster in result.clusters:
+        print(f"  {cluster.source} {span(cluster)} {cluster.name!r}: {cluster.reason}")
+    return seen, [c for c in result.clusters if c.source is ClusterSource.Model]
+
+
+@passes(8, of=10)
+def test_a_periods_words_are_the_coachs_even_beside_her_own_first_person_answer():
+    # R-0860
+    """Pass: with Nell's own answer in the first person in the prompt, no
+    period of the app's is refused on its first answer for speaking as her."""
+    said = [Answer(1, "When in your life was the most going on?", NELL_SAID)]
+    seen, _ = first_refused(said)
+    assert (1, ClusterCheck.FirstPerson) not in seen
+
+
+@passes(8, of=10)
+def test_a_periods_sentence_sets_its_events_side_by_side_never_one_creating_another():
+    # R-0864, R-0569
+    """Pass: no period's first answer is refused for saying one event created,
+    caused or led to another, and the app still keeps a period."""
+    seen, ours = first_refused()
+    assert (1, ClusterCheck.Cause) not in seen
+    assert ours

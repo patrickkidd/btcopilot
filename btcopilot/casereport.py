@@ -74,7 +74,6 @@ HELD = "THE SHIFTS THAT SUPPORT EACH CLUSTER"
 # How much of the first conversation the rewrite reads raw, when no note on
 # the what_brought card holds what brought the person in (R-0850).
 OPENING_CHARS = 2000
-SENTENCE = re.compile(r"(?<=[.?!])\s+")
 # A cluster's slot on the coach's guess: "For c3: ..." or "Against c3: ...".
 SLOT = re.compile(rf"^({CardLine.For.value}|{CardLine.Against.value}) (\S+):")
 # Every mark that opens a line of a card, which the page draws only at the
@@ -289,20 +288,22 @@ def checked(call) -> str | None:
     return None
 
 
-def caused(call) -> str | None:
-    """The first word in a card's text that gives a cause or a why, or None (R-0850)."""
-    found = record.CAUSE.search(call.args.get("text") or "")
-    return found and found.group(0)
-
-
-def uncaused(text: str) -> str:
-    """The text with every sentence that gives a cause or a why taken out."""
-    kept = []
-    for line in text.splitlines():
-        sentences = [s for s in SENTENCE.split(line) if not record.CAUSE.search(s)]
-        if sentences:
-            kept.append(" ".join(sentences))
-    return "\n".join(kept)
+def misspoken(call) -> str | None:
+    """Why a card's text cannot stand as the coach's words, or None: a word
+    that gives a cause or a why (R-0850, R-0864), or one that speaks as the
+    person outside their quoted words (R-0860)."""
+    text = call.args.get("text") or ""
+    word = record.caused(text)
+    if word:
+        return (
+            f"{word!r} gives a cause or a why; say what happened and when, side by "
+            "side, and how close in time"
+        )
+    word = record.voiced(text)
+    return word and (
+        f"{word!r} speaks as the person; write as the coach, calling them you, "
+        "and put their own words only inside quotation marks"
+    )
 
 
 def box(diagram: Diagram, user: User, turn_id: str) -> Toolbox:
@@ -439,17 +440,12 @@ def wrote(diagram: Diagram, toolbox: Toolbox, calls: list) -> list[str]:
 def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool,
          first: dict[str, str] | None = None) -> dict[str, str]:
     """Each guess in through the coach's own tool unless it gives a cause or
-    a why or the checks refuse it, every refusal written down with its card
+    a why, speaks as the person, or the checks refuse it, every refusal written down with its card
     and, on the second try, what came of the first (`first`, by card). Why
     each refused call was refused, as the model reads it."""
     refused = {}
     for call in calls:
-        word = caused(call)
-        told = refusal = (
-            f"{word!r} gives a cause or a why; state the pattern, what happened and when"
-            if word
-            else checked(call)
-        )
+        told = refusal = misspoken(call) or checked(call)
         if refusal is None:
             told, _, refusal = run_call(toolbox, call)
         if refusal:
@@ -536,10 +532,11 @@ def _again(turn, refused: dict[str, str], missing: list[str]) -> list[dict]:
 
 def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
     """One model call writes every card again (R-0825, R-0850). A card
-    refused (a cause or a why, a mark inside a line, an id in its words, or
-    the coach's tool) and a card not given are asked for once more; given
-    again with a cause, a card is written with those sentences taken out, and
-    one still refused or missing keeps what it had, written down (R-0850).
+    refused (a cause or a why, the person's voice outside quotation marks, a
+    mark inside a line, an id in its words, or the coach's tool) and a card
+    not given are asked for once more; given again with a cause or in the
+    person's voice, a card is written with those sentences taken out, and one
+    still refused or missing keeps what it had, written down (R-0850, R-0860).
     Cards read from a family that changed during a call are not written, so
     the report stays out of date (R-0826)."""
     toolbox = box(diagram, user, turn_id)
@@ -562,8 +559,8 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
         _unmoved(diagram, version)
         calls = [c for c in retry.calls if c.args.get(CARD) in again]
         for call in calls:
-            if caused(call):
-                call.args = {**call.args, "text": uncaused(call.args.get("text") or "")}
+            if misspoken(call):
+                call.args = {**call.args, "text": record.plain(call.args.get("text") or "")}
         given = [c for c in calls if c.args.get("text")]
         twice = _put(diagram, toolbox, given, retried=False, first=first)
         written = {c.args.get(CARD) for c in given if c.id in twice}

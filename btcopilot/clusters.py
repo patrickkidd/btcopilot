@@ -101,7 +101,9 @@ _log = logging.getLogger(__name__)
 # 16: the person's period read again from their answer replaces its stored
 # copy's events and sentence instead of being refused as overlapping it
 # [Oracle: R-0853].
-DETECTION_VERSION = 16
+# 17: a period's name and sentences never give a cause or speak as the person,
+# so every record regroups on its next event change [Oracle: R-0864, R-0860].
+DETECTION_VERSION = 17
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -214,6 +216,8 @@ class ClusterCheck(enum.StrEnum):
     CutOff = "cut_off"
     Unreadable = "unreadable"
     CallFailed = "call_failed"
+    Cause = "cause"
+    FirstPerson = "first_person"
 
 
 class ClusterError(Exception):
@@ -889,6 +893,23 @@ def _fault(
             "were given do not contain.",
             ClusterCheck.OutsideWords,
         )
+    words = " ".join([cluster.name, cluster.reason, cluster.change or ""])
+    word = record.caused(words)
+    if word:
+        return (
+            f"Period {cluster.name!r} says one event brought about another "
+            f"({word!r}): say which events fell close together and when, side by "
+            "side, never that one created, caused or led to another.",
+            ClusterCheck.Cause,
+        )
+    word = record.voiced(words)
+    if word:
+        return (
+            f"Period {cluster.name!r} speaks as the person ({word!r}): write as the "
+            "coach, calling them you, and put their own words only inside quotation "
+            "marks.",
+            ClusterCheck.FirstPerson,
+        )
     trouble = trouble_in(cluster.name, told)
     if trouble:
         return (
@@ -897,6 +918,22 @@ def _fault(
             ClusterCheck.SymptomName,
         )
     return None
+
+
+# What the coach's words on a period may not do: give a cause, or speak as
+# the person (R-0864, R-0860).
+SPOKEN = (ClusterCheck.Cause, ClusterCheck.FirstPerson)
+
+
+def _plain(cluster: ModelCluster, when: dict[int, datetime.date]) -> None:
+    """A period's sentences on the second answer with every one that gives a
+    cause or speaks as the person taken out, and a name that does either
+    replaced by its plain name; a reason left empty fails as none, and a
+    period with no events fails as empty."""
+    cluster.reason = record.plain(cluster.reason)
+    cluster.change = record.plain(cluster.change or "") or None
+    if cluster.eventIds and (record.caused(cluster.name) or record.voiced(cluster.name)):
+        cluster.name = plain_name(cluster, when)
 
 
 def _merged(
@@ -1228,6 +1265,10 @@ def _screen(
         if fault and fault[1] is ClusterCheck.UnknownDate:
             cleared.append(ClusterError(*fault, said=_said_of(cluster, when)))
             cluster.openingId = None
+            fault = _fault(cluster, known, stored, claimed, told, unsure_ids)
+        if fault and fault[1] in SPOKEN and last:
+            faults.append(ClusterError(*fault, said=_said_of(cluster, when)))
+            _plain(cluster, when)
             fault = _fault(cluster, known, stored, claimed, told, unsure_ids)
         if fault and fault[1] is ClusterCheck.SymptomName and last:
             faults.append(ClusterError(*fault, said=_said_of(cluster, when)))

@@ -19,7 +19,7 @@ Invented names only.
 
 import re
 
-from btcopilot import diagramjson
+from btcopilot import diagramjson, record
 from btcopilot.extensions import db
 from btcopilot.models import Observation, ObservationKind
 from btcopilot.schema import CardLine, Cluster, ClusterSource, asdict
@@ -127,6 +127,37 @@ def test_no_card_of_a_refresh_gives_a_cause_on_its_first_answer(coach):
     refused = Observation.query.filter_by(kind=ObservationKind.ToolRefused).all()
     assert not [o for o in refused if o.detail.get("retried")], [o.detail for o in refused]
     assert on(questions, "coach_guess")["text"].splitlines()[0].strip()
+
+
+# Told close together in her own first-person words: the cards must stay the
+# coach's and say only what happened and when.
+TOLD = ("My parents separated the spring I joined the youth orchestra.",
+        "I couldn't sleep before concerts that year, and I stopped calling my mother.")
+
+
+def first_answer_refused(word: str) -> list[dict]:
+    return [o.detail for o in Observation.query.filter_by(kind=ObservationKind.ToolRefused)
+            if o.detail.get("retried") and word in o.detail["refusal"]]
+
+
+@passes(2, of=3)
+def test_every_card_of_a_refresh_is_in_the_coachs_voice_on_its_first_answer(coach):
+    # R-0860
+    # pass: no card of the first answer is refused as speaking as the person, and no card keeps "I", "me" or "my" outside quotation marks
+    questions = refreshed(coach, *TOLD)
+    assert not first_answer_refused("speaks as the person"), first_answer_refused("speaks as the person")
+    spoken = {q["case_report_card"]: q["text"] for q in questions if q.get("case_report_card")}
+    assert {c: record.voiced(t) for c, t in spoken.items()} == dict.fromkeys(spoken), spoken
+
+
+@passes(2, of=3)
+def test_events_told_close_together_are_set_side_by_side_never_one_creating_another(coach):
+    # R-0864, R-0569
+    # pass: no card of the first answer is refused for a cause, and no card says one event created, caused or led to another
+    questions = refreshed(coach, *TOLD)
+    assert not first_answer_refused("gives a cause"), first_answer_refused("gives a cause")
+    spoken = {q["case_report_card"]: q["text"] for q in questions if q.get("case_report_card")}
+    assert {c: record.caused(t) for c, t in spoken.items()} == dict.fromkeys(spoken), spoken
 
 
 @passes(2, of=3)

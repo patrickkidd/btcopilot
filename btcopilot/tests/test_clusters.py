@@ -537,7 +537,7 @@ def named(
     *event_ids: int,
     cluster_id=None,
     name="A hard spring",
-    reason="one thing led to the next",
+    reason="these events fell close together",
     change=None,
 ):
     return ModelCluster(
@@ -724,7 +724,7 @@ def already(*event_ids: int, cluster_id="c1", name=SPRING) -> Cluster:
         title=name,
         name=name,
         summary="one thing led to the next",
-        reason="one thing led to the next",
+        reason="these events fell close together",
         eventIds=list(event_ids),
         source=ClusterSource.Model,
     )
@@ -1422,6 +1422,57 @@ def test_a_period_named_by_the_persons_trouble_is_refused_then_named_plainly():
     assert seen == [(1, ClusterCheck.SymptomName), (2, ClusterCheck.SymptomName)]
     assert "sleep" in ask.call_args_list[1].args[0]
     assert [c.name for c in result.clusters] == ["A change in the family, 1997–1998"]
+
+
+def test_a_period_saying_one_event_created_another_is_refused_then_kept_without_it():
+    # R-0864, R-0850, R-0569
+    caused = answers(
+        named(
+            1, 2, 3, 4,
+            name="After grandfather's death",
+            reason="The death and the pressure at work created a period of heightened "
+            "anxiety. Your poor sleep came within three months of the death.",
+        )
+    )
+    seen = []
+    with replies(caused, caused) as ask:
+        result = detect_clusters(SLEEP, ask, heard(seen))
+    assert seen == [(1, ClusterCheck.Cause), (2, ClusterCheck.Cause)]
+    assert "'created'" in ask.call_args_list[1].args[0]
+    assert [c.reason for c in result.clusters] == [
+        "Your poor sleep came within three months of the death."
+    ]
+
+
+def test_a_period_whose_events_fell_around_the_same_time_is_kept_on_one_ask():
+    # R-0864
+    near = answers(
+        named(
+            1, 2, 3, 4,
+            name="After grandfather's death",
+            reason="The death came around the same time as your poor sleep.",
+        )
+    )
+    seen = []
+    with replies(near) as ask:
+        result = detect_clusters(SLEEP, ask, heard(seen))
+    assert (seen, ask.call_count) == ([], 1)
+    assert [c.reason for c in result.clusters] == [
+        "The death came around the same time as your poor sleep."
+    ]
+
+
+def test_a_period_in_the_persons_voice_is_refused_and_their_quoted_words_pass():
+    # R-0860
+    seen = []
+    with replies(
+        answers(named(1, 2, 3, 4, name="After grandfather's death", reason="I remember my sleep went that winter.")),
+        answers(named(1, 2, 3, 4, name="After grandfather's death", reason='You said "my sleep went" that winter.')),
+    ) as ask:
+        result = detect_clusters(SLEEP, ask, heard(seen))
+    assert seen == [(1, ClusterCheck.FirstPerson)]
+    assert "speaks as the person" in ask.call_args_list[1].args[0]
+    assert [c.reason for c in result.clusters] == ['You said "my sleep went" that winter.']
 
 
 # The fictional Reed family: Cal (1) wears out at the mill after his aunt
