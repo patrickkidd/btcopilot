@@ -117,6 +117,15 @@ least half of the larger one's events. Each case's bar is `BARS` in `clusters/te
 rules beside F1 are in `clusters/score.py`. The answers, stored clusters and score go to
 `clusters/runs/<time>/` (git-ignored) and one line per case to the eval ledger.
 
+Two more checks run on every cluster the app made (the person's own are theirs), over its name, summary
+and sentence, by the server's own word lists in `btcopilot/record.py`, never copies [Oracle: R-0860,
+R-0864]. Voice: no first-person word outside quotation marks. Cause: no cause word. The table prints
+"voice" and "cause" counts per case, and a case fails its bar when either is above 0, beside the F1 bars.
+
+Loop rule: a prompt change is tuned by running this suite, reading the failing checks, changing the
+prompt by general rules only, and rerunning, up to a cap of runs and dollars stated before the first
+run. No run outside the suite until it passes.
+
 Free replay, $0, saved answers (any earlier run's folder under `clusters/runs/`, or one made of
 the newest answer per case):
 

@@ -119,6 +119,8 @@ def numbers(result: Score) -> dict:
         "clusters": asdict(result.clusters),
         "members": asdict(result.members),
         "openings": [agreed, of],
+        "voice": result.count(Rule.Voice),
+        "cause": result.count(Rule.Cause),
     }
 
 
@@ -130,7 +132,8 @@ def line(case: Case, stored, result: Score, refused: list[str], misses) -> str:
     return (
         f"{case.name:18}{len(case.expected):>5}{len(stored):>5}{len(result.pairs):>7}"
         f"{c.precision:>6.2f}{c.recall:>6.2f}{c.f1:>6.2f}{result.members.f1:>10.2f}"
-        f"{f'{agreed}/{of}':>9}{len(refused):>8}  {verdict}{tag}"
+        f"{f'{agreed}/{of}':>9}{len(refused):>8}"
+        f"{result.count(Rule.Voice):>6}{result.count(Rule.Cause):>6}  {verdict}{tag}"
     )
 
 
@@ -200,7 +203,7 @@ def test_grouping_matches_the_expected_clusters(case, board):
     ms = round((time.monotonic() - started) * 1000)
     result = score(stored, case.expected, case.data, case.theirs)
     bar = BARS[case.name]
-    misses = result.missed(bar.rules)
+    misses = result.missed(bar.rules | {Rule.Voice, Rule.Cause})
     if result.clusters.f1 < bar.clusters:
         misses.append(f"cluster F1 {result.clusters.f1:.2f} under {bar.clusters}")
     if result.members.f1 < bar.members:

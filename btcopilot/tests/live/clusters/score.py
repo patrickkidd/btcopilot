@@ -15,6 +15,10 @@ The rules that are not F1 are checked beside it, each miss named:
   person's run holds only that person's shifts [Oracle: R-0850].
 - The person's own periods come back as theirs, and no app period shares their
   days [Oracle: R-0853].
+- Voice and cause: no cluster the app made speaks as the person outside
+  their quoted words, and none gives a cause, in its name, summary or
+  sentence, by the server's own word lists (record.py) [Oracle: R-0860,
+  R-0864].
 - Openings: the expected opening of each paired cluster is the one stored;
   reported always, required only where a case's criterion says so.
 """
@@ -33,6 +37,7 @@ from btcopilot.clusters import (
     trouble_words,
     unsure,
 )
+from btcopilot.record import caused, voiced
 from btcopilot.matching import (
     F1Metrics,
     calculate_f1_from_counts,
@@ -53,6 +58,8 @@ class Rule(enum.StrEnum):
     UnknownOpening = "A9 opens at an unknown date"
     RunOf = "A9 not the one person's run"
     Theirs = "the person's period missing or changed"
+    Voice = "speaks as the person"
+    Cause = "gives a cause"
     Opening = "opening differs"
 
 
@@ -79,6 +86,9 @@ class Score:
     members: F1Metrics
     pairs: list[tuple[Cluster, Expected]]
     misses: list[tuple[Rule, str]] = field(default_factory=list)
+
+    def count(self, rule: Rule) -> int:
+        return sum(r is rule for r, _ in self.misses)
 
     def missed(self, rules: frozenset[Rule]) -> list[str]:
         return [why for rule, why in self.misses if rule in rules]
@@ -108,6 +118,10 @@ def within(data: DiagramData, period: Theirs) -> list[int]:
 
 def _as_cluster(index: int, name: str, ids: list[int]) -> Cluster:
     return Cluster(id=f"x{index}", title=name, summary="", eventIds=ids)
+
+
+def ours_of(stored: list[Cluster]) -> list[Cluster]:
+    return [c for c in stored if c.source is ClusterSource.Model]
 
 
 def score(
@@ -146,6 +160,12 @@ def score(
             result.misses.append(
                 (Rule.TroubleName, f"{c.name!r} is the plain name the code fell back to")
             )
+    for c in ours_of(stored):
+        for field_, text in (("name", c.name), ("summary", c.summary), ("reason", c.reason)):
+            if text and voiced(text):
+                result.misses.append((Rule.Voice, f"{field_} {text!r} says {voiced(text)!r}"))
+            if text and caused(text):
+                result.misses.append((Rule.Cause, f"{field_} {text!r} says {caused(text)!r}"))
     for c in stored:
         opening = every.get(c.openingEventId)
         if opening is not None and unsure(opening):

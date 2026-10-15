@@ -96,3 +96,31 @@ def test_the_persons_period_stored_as_theirs_holds_unless_an_app_period_shares_i
     assert scored(hers, stored(LEAVING), theirs=[period]).missed(frozenset({Rule.Theirs})) == []
     overlaid = scored(hers, stored([11, 12, 13]), theirs=[period])
     assert overlaid.missed(frozenset({Rule.Theirs}))
+
+
+@once
+def test_a_cause_word_in_a_sentence_is_a_cause_violation():
+    # R-0864
+    cluster = stored([21, 22, 23])
+    cluster.reason = "The move created a period of strain."
+    result = scored(stored(DEATH), stored(LEAVING), cluster)
+    assert result.count(Rule.Cause) == 1
+
+
+@once
+def test_first_person_outside_quotes_is_a_voice_violation():
+    # R-0860
+    cluster = stored([21, 22, 23])
+    cluster.summary = "I remember the move."
+    result = scored(stored(DEATH), stored(LEAVING), cluster)
+    assert result.count(Rule.Voice) == 1
+
+
+@once
+def test_time_closeness_and_quoted_words_pass():
+    # R-0860, R-0864
+    cluster = stored([21, 22, 23])
+    cluster.reason = 'Around the same time, "I couldn\'t sleep", she said.'
+    cluster.summary = "The move came around the same time."
+    result = scored(stored(DEATH), stored(LEAVING), cluster)
+    assert (result.count(Rule.Voice), result.count(Rule.Cause)) == (0, 0)
