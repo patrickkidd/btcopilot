@@ -129,6 +129,10 @@ Bowen's method. Each point names the book lines it comes from. [Oracle: R-0850]
 - Card 8, the choice, is no longer written or drawn; the page has nine cards, so what to work on
   is numbered 8 on it.
 
+## Catch-up
+
+After the deploy carrying FD-381, with a database backup first: `flask admin fd381-catchup plan` lists each report the coach wrote before the deploy, `apply --plan <file>` marks those out of date so the owner's next tap rewrites them (the catch-up never calls the refresh), and `undo --plan <file>` takes the marks back [Oracle: R-0772].
+
 ## Cluster rules
 
 - A1. A cluster is the app's opinion that shifts across the family belong to one span of time,
