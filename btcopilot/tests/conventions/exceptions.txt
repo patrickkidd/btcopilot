@@ -213,3 +213,5 @@ R-0854 | TEST OWED | not built: the first-conversation question about what bring
 R-0855 | TEST OWED | not built: the coach marking dates approximate, certain or unknown by what the person gave, and the features that read certainty
 R-0856 | TEST OWED | not built: the F1 suite of synthetic cases for cluster detection and the prompt tuning against it
 R-0857 | TEST OWED | not built: evaluating a cluster discrepancy by re-grounding in the literature and correcting the expected clusters and rules, a process with no behaviour to test
+R-0858 | TEST OWED | not built: the learning-pipeline skill that takes one prompt and runs re-grounding, evaluation and a ruling candidate
+R-0859 | TEST OWED | not built: the index of theory deep dives by research question, results and cost
