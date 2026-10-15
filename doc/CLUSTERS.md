@@ -155,7 +155,7 @@ event id, and whether it is set aside [Oracle: R-0205, R-0850].
 
 ## When a cluster looks wrong
 
-Patrick's ruling [Oracle: R-0857]: the expected clusters of the `patrick` case stand as drafted,
+Patrick's ruling [Oracle: R-0857]: the expected clusters of the `deep` case stand as drafted,
 provisionally. A session started on "evaluate this cluster discrepancy" follows these steps.
 
 1. Evidence: write Patrick's question and what he saw, quoted, into the session before anything
@@ -177,5 +177,6 @@ provisionally. A session started on "evaluate this cluster discrepancy" follows 
    before his answer.
 7. After his answer, correct the case file, re-tune the prompts until the suite passes, and log
    every real call's spend to the eval ledger. Real calls follow the spend rule: ask first.
-8. A new real case gets its own synthetic copy as a new file in `clusters/cases/`, built the way
-   `patrick.json` was (same shape, every name and wording changed), never a real diagram.
+8. A new real case gets its own fictional case as a new file in `clusters/cases/`, built the way
+   btcopilot/tests/live/README.md says under "Cluster F1" (dates shifted by one offset, structure
+   changed outside the clusters, every word rewritten), never a real diagram.

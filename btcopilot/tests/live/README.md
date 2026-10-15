@@ -103,9 +103,8 @@ The paid suite, as it would run:
 
 `clusters/` scores the app's grouping call against expected clusters [Oracle: R-0856]. Each case
 in `clusters/cases/` is a fictional diagram, the person's answer to when the most was going on, the
-clusters expected of it and the periods the person named; `patrick` is a fictional copy of
-Patrick's own diagram (same people, links, dates, date certainties and shifts, every name, place,
-job and wording changed) and is the case the prompts are tuned on; `addition`, `thin` and `dense`
+clusters expected of it and the periods the person named; `deep` is a fictional four-generation
+family and is the case the prompts are tuned on; `addition`, `thin` and `dense`
 are placeholders until real cases arrive. A case whose person answered also runs as
 `<name>-unasked`. The expected clusters are accepted provisionally [Oracle: R-0857]; when a cluster looks wrong, follow "When a cluster looks wrong" in doc/CLUSTERS.md.
 
@@ -138,7 +137,7 @@ Paid run, about half a cent per case on Gemini (calls the model):
         uv run pytest btcopilot/tests/live/clusters --e2e
 
 `LIVE_REPLAY=only` keeps the coach's machinery offline, so no Anthropic key or balance check is
-needed. Cost, at gemini-3.1-flash-lite's rates: `patrick` sends about 11,000 tokens, the
+needed. Cost, at gemini-3.1-flash-lite's rates: `deep` sends about 11,000 tokens, the
 placeholders about 3,000; a call costs about half a cent, never above 1.4 cents at its output
 limit, so a run of the five cases is 2 to 3 cents, at most about 13 when every first answer is
 refused. On a Bedrock machine the call goes to the Claude stand-in, so the run does not measure
@@ -146,10 +145,16 @@ Gemini. Free ways, $0 and no network: replay a run with `CLUSTER_ANSWERS=<its ru
 prove the runner on the hand-written answers with `CLUSTER_ANSWERS=btcopilot/tests/live/clusters/answers
 CLUSTER_LEDGER=<a scratch file>`; the scorer's own tests run in the same command.
 
-A real case: build its fictional copy (structure, dates, certainties and shifts kept, every name,
-place, job and wording changed, no quote kept), write it as `clusters/cases/<name>.json` in the
-shape of `patrick.json` with `"draft"` set until Patrick confirms its expected clusters, add its bar
-to `BARS`, and when it replaces a placeholder, delete that placeholder and its answers file.
+A real case: build a fictional case from it that someone who knows the family could not
+recognise. Shift every date by one constant offset of at least five years, so every gap and every
+expected cluster keeps its shape; change the structure where no expected cluster depends on it (the
+sex of people outside the clusters, siblings and cousins added or removed, birth order); rewrite
+every name, place, job, illness, description, note and answer so none shares five words in a row
+with the real diagram or the person's own words; name it by no person. Write it as
+`clusters/cases/<name>.json` in the shape of `deep.json` with `"draft"` set until Patrick confirms
+its expected clusters, add its bar to `BARS`, and when it replaces a placeholder, delete that
+placeholder and its answers file. A free replay has no saved answer for a new or changed case and
+fails naming it, until a paid run records one.
 
 ## Waiting list
 

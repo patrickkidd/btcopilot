@@ -1293,7 +1293,7 @@ Not yet measured: the model account was out of credit. [R-0482, R-0485]
 **Change**: stored questions read in the Questions tab away from the conversation,
 and real runs kept fragments such as "And how old are they now?". The coach now
 words a question it keeps so it names the person and the subject ("How old is
-Elizabeth's brother now?") and stores it in those words; the backfill may reword a
+Rosalind's brother now?") and stores it in those words; the backfill may reword a
 question that leans on its context, changing nothing else about what it asks. A
 live turn filed an intake question as food for thought, so food for thought is now
 a thinking question about patterns or meaning, and anything with a factual answer,

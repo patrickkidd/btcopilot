@@ -439,15 +439,15 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
             )
         ),
     ]
-    timeline = _named([(1, "Elizabeth"), (2, "Ray"), (3, "Nora")], events)
+    timeline = _named([(1, "Marguerite"), (2, "Ray"), (3, "Nora")], events)
     said = {
         e["id"]: (e["person_name"], e["label"])
         for e in build_timeline(timeline)["events"]
     }
-    assert said[10] == ("Elizabeth", "born · in Anchorage, AK")
+    assert said[10] == ("Marguerite", "born · in Anchorage, AK")
     assert said[11] == ("Ray & Nora", "divorced")
-    assert said[12] == ("Elizabeth & Nora", "Grew more anxious")
-    assert said[13] == ("Elizabeth → Ray", "Started fighting")
+    assert said[12] == ("Marguerite & Nora", "Grew more anxious")
+    assert said[13] == ("Marguerite → Ray", "Started fighting")
 
 
 @pytest.mark.parametrize(
@@ -455,8 +455,8 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
     [
         (
             EventKind.Death,
-            "died, possibly around July 4",
-            "died, possibly around July 4",
+            "died, perhaps late that summer",
+            "died, perhaps late that summer",
         ),
         (EventKind.Death, "Death of a heart attack", "Death of a heart attack"),
         (EventKind.Death, "Passed away at home", "Passed away at home"),
@@ -474,11 +474,11 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
         (EventKind.Birth, "reborn in faith", "born \u00b7 reborn in faith"),
         (
             EventKind.Death,
-            "Robert Belgard died, possibly around July 4",
-            "Robert Belgard died, possibly around July 4",
+            "Walter Finch died, perhaps late that summer",
+            "Walter Finch died, perhaps late that summer",
         ),
-        (EventKind.Married, "Robert married Ann", "Robert married Ann"),
-        (EventKind.Birth, "Robert was born at home", "Robert was born at home"),
+        (EventKind.Married, "Walter married Ann", "Walter married Ann"),
+        (EventKind.Birth, "Walter was born at home", "Walter was born at home"),
         (EventKind.Death, "Ann died", "died \u00b7 Ann died"),
         (EventKind.Death, "", "died"),
     ],
@@ -496,7 +496,7 @@ def test_a_label_says_the_kind_once(kind, description, label):
             )
         )
     ]
-    said = build_timeline(_named([(1, "Robert Belgard")], events))["events"][0]
+    said = build_timeline(_named([(1, "Walter Finch")], events))["events"][0]
     assert said["label"] == label
 
 
@@ -514,7 +514,7 @@ def test_a_noted_event_is_labelled_by_its_title_not_its_description():
             )
         )
     ]
-    said = build_timeline(_named([(1, "Robert Belgard")], events))["events"][0]
+    said = build_timeline(_named([(1, "Walter Finch")], events))["events"][0]
     assert said["label"] == "Moved to Anchorage"
 
 
@@ -522,8 +522,8 @@ def test_a_pair_bond_names_the_speaker_and_the_partner():
     # R-0457
     data = DiagramData(
         people=[
-            {**asdict(Person(id=1, name="Patrick")), "primary": True},
-            asdict(Person(id=2, name="Emily")),
+            {**asdict(Person(id=1, name="Jonah")), "primary": True},
+            asdict(Person(id=2, name="Marisol")),
         ],
         events=[
             asdict(
@@ -533,15 +533,15 @@ def test_a_pair_bond_names_the_speaker_and_the_partner():
                     person=1,
                     spouse=2,
                     dateTime="2019-03-01",
-                    description="together for about a year and a half",
+                    description="a couple for some eighteen months",
                 )
             )
         ],
     )
     event = build_timeline(data)["events"][0]
     assert (event["person_name"], event["label"]) == (
-        "Patrick & Emily",
-        "bonded \u00b7 together for about a year and a half",
+        "Jonah & Marisol",
+        "bonded \u00b7 a couple for some eighteen months",
     )
 
 

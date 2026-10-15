@@ -18,9 +18,9 @@ from btcopilot.toolbox import ToolError, ToolName, Toolbox
 FAMILY = {
     "people": [
         {"id": 1, "name": "Mary", "gender": "female"},
-        {"id": 3, "name": "Robert", "last_name": "Stinson", "gender": "male"},
-        {"id": 7, "name": "Robert", "gender": "male", "notes": "Took the pipeline job."},
-        {"id": 5, "name": "Catherine", "gender": "female", "parents": 20},
+        {"id": 3, "name": "Vernon", "last_name": "Haskell", "gender": "male"},
+        {"id": 7, "name": "Vernon", "gender": "male", "notes": "Took the pipeline job."},
+        {"id": 5, "name": "Rosalind", "gender": "female", "parents": 20},
         {"id": 8, "name": "Anne", "gender": "female", "parents": 21},
         {"id": 9, "name": "Sue", "gender": "female"},
     ],
@@ -37,8 +37,8 @@ FAMILY = {
         {"id": 34, "kind": "birth", "child": 8, "person": 7, "spouse": 1, "dateTime": "1982-02-01", "dateCertainty": "approximate"},
     ],
     "questions": [
-        {"id": "q1", "kind": "fact", "text": "When was Robert born?", "state": "held", "item_kind": "person", "item_id": 7},
-        {"id": "i1", "kind": "impression", "text": "Robert moves when it gets close.", "state": "held", "evidence": [{"kind": "person", "id": 7}]},
+        {"id": "q1", "kind": "fact", "text": "When was Vernon born?", "state": "held", "item_kind": "person", "item_id": 7},
+        {"id": "i1", "kind": "impression", "text": "Vernon moves when it gets close.", "state": "held", "evidence": [{"kind": "person", "id": 7}]},
     ],
     "lastItemId": 34,
 }
@@ -135,7 +135,7 @@ def test_a_merge_moves_everything_over_as_one_change_and_undo_puts_both_back(sub
     assert questions["i1"]["evidence"] == [{"kind": "person", "id": 3}]
     assert Change.query.filter_by(diagram_id=diagram.id, turn_id="t1").count() == 1
     assert "born 1944 dropped · 1942 kept" in text
-    assert "Joined 7 Robert (male)" in text
+    assert "Joined 7 Vernon (male)" in text
 
     Toolbox(diagram.id, "t2").call(ToolName.Undo.value, {})
     after = _data(diagram)
@@ -146,10 +146,10 @@ def test_a_merge_moves_everything_over_as_one_change_and_undo_puts_both_back(sub
 def test_a_fact_named_in_take_is_the_dropped_persons(subscriber):
     # R-0326
     diagram = _diagram(subscriber.user, FAMILY)
-    text, _ = _merge(diagram, take={"birth": "drop", "notes": "keep"}, name="Robert Louis")
+    text, _ = _merge(diagram, take={"birth": "drop", "notes": "keep"}, name="Vernon Edmund")
     data = _data(diagram)
     assert next(e for e in data.events if e["id"] == 30)["dateTime"] == "1944-01-01"
-    assert next(p for p in data.people if p["id"] == 3)["name"] == "Robert Louis"
+    assert next(p for p in data.people if p["id"] == 3)["name"] == "Vernon Edmund"
     assert "born 1942 dropped · 1944 kept" in text
 
 
@@ -168,8 +168,8 @@ def test_the_coach_is_told_of_a_pair_only_when_the_turn_touched_one_of_them():
     # R-0072
     data = _record()
     assert recordtext.pairs(data, "Sue called on Sunday.", set()) == ""
-    line = recordtext.pairs(data, "Robert moved to Fairbanks.", set())
-    assert line.startswith("Persons 3 Robert Stinson (male)")
+    line = recordtext.pairs(data, "Vernon moved to Fairbanks.", set())
+    assert line.startswith("Persons 3 Vernon Haskell (male)")
     assert "they differ on birth 1942-01-01 and 1944-01-01" in line
     assert line.endswith("Their card: [[merge:3,7]]")
     assert recordtext.pairs(data, "That one.", {"7"}) == line

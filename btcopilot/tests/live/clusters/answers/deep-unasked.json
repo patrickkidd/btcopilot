@@ -1,0 +1,94 @@
+{
+ "model": "hand-written",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "eventIds": [
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      171,
+      39
+     ],
+     "name": "Gordon's death",
+     "reason": "Gordon died in June 1991; Jonah's college year came apart over the next months and Winifred's first illness followed within a year.",
+     "openingId": 78
+    },
+    {
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Joelle, then the separation",
+     "reason": "A new partner in 1998 and the separation in mid-1999, with two of the shifts that count, fewer than three.",
+     "openingId": 11
+    },
+    {
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      177,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Winifred's illness and death",
+     "reason": "Winifred's illness from about 2001 to her death in February 2004, with Jonah's moves, the breakup and his distance from his parents in the same years.",
+     "openingId": null
+    },
+    {
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Lorna's and Clifford's deaths",
+     "reason": "Lorna died at the start of 2008; within seven months Jonah could not talk with his mother, shut her out and left.",
+     "openingId": 61
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "run": "r1",
+     "reason": "The 1987 shifts are told as how things already stood that year, not as a change at a known date."
+    },
+    {
+     "run": "r6",
+     "reason": "The shifts from 2017 on are spread over two and a half years with no date where they draw close together."
+    }
+   ]
+  }
+ ]
+}

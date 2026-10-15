@@ -1,8 +1,8 @@
 """The cluster F1 suite: the app's grouping call, `detect_clusters` on Gemini as
 production makes it, run once on each case and scored against the case's
 expected clusters (score.py) [Oracle: R-0856]. The cases are in cases/; the
-one built from Patrick's diagram is the one the prompts are tuned on, the
-others are placeholders until real cases arrive. How to run it, and what it
+four-generation one, `deep`, is the one the prompts are tuned on, the others
+are placeholders until real cases arrive. How to run it, and what it
 costs: README.md, "Cluster F1".
 
 CLUSTER_ANSWERS, when set, is a folder of answers served in place of Gemini,
@@ -68,8 +68,8 @@ class Bar:
 
 
 BARS = {
-    "patrick": Bar(0.8, 0.7),
-    "patrick-unasked": Bar(0.8, 0.7),
+    "deep": Bar(0.8, 0.7),
+    "deep-unasked": Bar(0.8, 0.7),
     # the birth must be named as the run's opening
     "addition": Bar(1.0, 0.8, frozenset(Rule)),
     # nothing stored: no cluster expected, so any stored one fails it
