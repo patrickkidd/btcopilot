@@ -133,6 +133,10 @@ change starts from that file, not from this summary, and improves it as the work
 - Card 8, the choice, is no longer written or drawn; the page has nine cards, so what to work on
   is numbered 8 on it.
 
+## Catch-up
+
+After the deploy carrying FD-381, with a database backup first: `flask admin fd381-catchup plan` lists each report with a card the coach last wrote before the deploy, `apply --plan <file>` marks those out of date so the owner's next tap rewrites them (the catch-up never calls the refresh), and `undo --plan <file>` takes the marks back [Oracle: R-0772]. The mark is the diagram's `case_report_forced_out_of_date` column, apart from the change-date check: the page says "The coach now writes this report a new way." while it is true and no family change since the last card write says more; only a Refresh that writes cards sets it back to false, never one card the coach writes in a turn.
+
 ## Cluster rules
 
 - A1. A cluster is the app's opinion that shifts across the family belong to one span of time,

@@ -162,6 +162,43 @@ def test_a_refresh_with_no_change_after_it_is_current_and_one_change_after_it_is
     )
 
 
+def forced(family, value: bool | None = None) -> bool:
+    db.session.expire_all()
+    if value is not None:
+        family.case_report_forced_out_of_date = value
+        db.session.commit()
+    return family.case_report_forced_out_of_date
+
+
+def test_a_report_forced_out_of_date_stays_so_through_a_card_write_until_a_refresh(
+    web, past, written, family
+):
+    # R-0772
+    forced(family, True)
+    found = out_of_date(family)
+    assert (found["sentence"], found["change_id"]) == (
+        casereport.NEW_WAY,
+        Change.query.filter_by(turn_id="c1").one().id,
+    )
+    impress(box(family, "r2"), text="A second guess.")
+    card(family, "i2", "main_guess", "c2")
+    assert out_of_date(family)["sentence"] == casereport.NEW_WAY
+    rewrite(web, Model(calling(*every(past))))
+    assert out_of_date(family) is None
+    assert not forced(family)
+
+
+def test_a_refresh_that_writes_no_card_leaves_the_report_forced_out_of_date(
+    web, past, written, family
+):
+    # R-0772
+    forced(family, True)
+    turn_id = rewrite(web, Model(calling(), calling())).get_json()["id"]
+
+    assert turnlog.read_from(turn_id, 0)[-1][1]["cards"] == []
+    assert forced(family)
+
+
 def test_an_entry_on_the_retired_choice_card_is_never_a_card_write(written, family):
     # R-0850
     happened(family, "death", "2019-03-01", person=2)
