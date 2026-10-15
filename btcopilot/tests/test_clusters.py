@@ -993,7 +993,7 @@ def test_a_stored_group_within_ten_years_is_still_handed_back():
 
 
 def test_the_prompt_holds_periods_as_hypotheses_with_the_silence_before_each_hint():
-    # R-0836, R-0841, R-0850
+    # R-0836, R-0841, R-0850, R-0846
     with replies(PROPOSED) as ask:
         detect_clusters(HALE, ask)
     # the prompt's lines wrap, so phrases are matched on its words alone
@@ -1008,7 +1008,9 @@ def test_the_prompt_holds_periods_as_hypotheses_with_the_silence_before_each_hin
         "a rise in symptom or anxiety, a fall in functioning, or a relationship shift",
         "A drop in anxiety or a rise in functioning does not",
         "The trouble may begin months before the change",
-        "about eighteen months either side is usual",
+        "It ends where the events show the family settled",
+        "judged against how close together the period's own events fall",
+        "Nothing longer than ten years is one period",
         "never by the person's own trouble or symptom",
         "infer it from what piles up",
         "no visible opening event and no definite end",

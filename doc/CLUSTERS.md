@@ -71,8 +71,13 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    more and one with fewer may stand when its events belong together, its
    reason saying so.
 2. The model gets every event, the stored periods (the person's own marked "the
-   person drew this period"), and the hint. The 548 days and the ten-year cap are
-   both given as suggestions (A3). It returns the app's periods: id when one grew
+   person drew this period"), and the hint. The 548 days only pick the hint's
+   events and are not in the prompt. The prompt gives no usual length: a period
+   ends where the events show the family settled, judged against how close
+   together its own events fall (weeks apart, a few quiet months end it; a year
+   apart, a longer quiet), as the theory review found no source derives a number
+   (research/clusters/theory.md 3.3, 3.6 in the corpus) [Oracle: R-0836]; nothing
+   over ten years is one period [Oracle: R-0846]. It returns the app's periods: id when one grew
    out of a stored app period, events, name, reason, `openingId` for the event
    that opened it, and a change sentence when it is not as given. The person's
    ids are never offered in the answer's shape.
