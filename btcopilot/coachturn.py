@@ -671,7 +671,8 @@ class CoachTurn:
         ends.append(_settled(messages))
         messages = marked_ends(messages, ends[-2:])
 
-        spoken = self.statement
+        # Its number, so a note can rest on the message being answered (R-0852).
+        spoken = f"[message {answered.id}] {self.statement}"
         pointed = chips.context(self.statement, self.data, self.discussion.diagram_id)
         if pointed:
             spoken = f"{spoken}\n\n{pointed}"
