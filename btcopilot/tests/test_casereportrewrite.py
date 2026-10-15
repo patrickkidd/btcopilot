@@ -526,7 +526,9 @@ def test_a_rewrite_reads_a_cluster_with_fewer_than_three_supporting_shifts(web, 
     rewrite(web, model)
 
     held = model.histories[0][0]["content"].split(casereport.HELD)[1]
-    assert held.split("\n\n")[0].strip().splitlines() == ["c1: 1 supporting shift, fewer than 3; all of them Wren's"]
+    assert held.split("\n\n")[0].strip().splitlines() == [
+        "c1: 1 supporting shift, fewer than 3; all of them Wren's; changes in the family in its years: none in the diagram"
+    ]
 
 
 def _gaps(first: str, last: str) -> str:
@@ -545,7 +547,7 @@ def _gaps(first: str, last: str) -> str:
         ],
         clusters=[asdict(Cluster(id="c1", title="After Ada's death", summary="", eventIds=[10, 11, 12, 13]))],
     )
-    return casereport.held(data)
+    return casereport.held(data).split("; changes")[0]
 
 
 def test_the_refresh_is_told_how_far_shifts_fall_from_an_opening_no_finer_than_their_dates():
@@ -559,6 +561,138 @@ def test_the_refresh_is_told_how_far_shifts_fall_from_an_opening_no_finer_than_t
         "the first shift within about a year of its opening, the last at a date nobody knows"
     )
     assert _gaps("certain", "approximate").endswith("the last about 3 years after its opening")
+
+
+def _wrens() -> DiagramData:
+    """Wren, her parents Ada and Cal, Ada's parents and sister Ivy and Ivy's
+    husband, Cal's mother, Wren's brother, her partner and their child, with
+    Wren's distance and cutoff toward Ada, a triangle of Ada, Ivy and Wren,
+    Ada's mother's death and Ivy's conflict with her husband."""
+    person = lambda id, name, gender, parents=None: {"id": id, "name": name, "gender": gender, "parents": parents}
+    born = lambda id, child, date, sure="certain": {
+        "id": id, "kind": "birth", "child": child, "dateTime": date, "dateCertainty": sure,
+    }
+    marked = lambda id, mover, kind, date, targets, words, triangles=(): {
+        "id": id, "kind": "shift", "person": mover, "relationship": kind, "dateTime": date,
+        "dateCertainty": "certain", "relationshipTargets": list(targets),
+        "relationshipTriangles": list(triangles), "description": words,
+    }
+    bond = lambda id, a, b: {"id": id, "person_a": a, "person_b": b}
+    return DiagramData(
+        people=[
+            person(1, "Wren", "female", 10), person(2, "Ada", "female", 11), person(3, "Cal", "male", 12),
+            person(4, "Bo", "male", 10), person(5, "Gran", "female"), person(6, "Gramps", "male"),
+            person(7, "Ivy", "female", 11), person(8, "Nan", "female"), person(9, "Rex", "male"),
+            person(14, "Kit", "female", 13), person(15, "Jo", "male"),
+        ],
+        pair_bonds=[bond(10, 2, 3), bond(11, 5, 6), bond(12, 8, None), bond(13, 1, 9), bond(16, 7, 15)],
+        events=[
+            born(20, 1, "1978-04-01"), born(21, 4, "1980-01-01", "approximate"), born(22, 2, "1952-06-01"),
+            born(23, 7, "1950-02-01"), born(24, 14, "2012-09-01"),
+            {"id": 25, "kind": "death", "person": 5, "dateTime": "1998-02-01", "dateCertainty": "certain"},
+            marked(30, 1, "distance", "1998-05-01", [2], "Stopped calling her mother"),
+            marked(31, 2, "inside", "2010-03-01", [7], "Took her sister in", triangles=[1]),
+            marked(32, 1, "cutoff", "2015-01-01", [2], "Cut off from her mother"),
+            marked(33, 7, "conflict", "2001-01-01", [15], "Fights over money"),
+            {"id": 34, "kind": "shift", "person": 1, "symptom": "up", "dateTime": "1998-07-01",
+             "dateCertainty": "certain"},
+        ],
+        clusters=[asdict(Cluster(id="c1", title="After Gran's death", summary="", eventIds=[25, 30, 34]))],
+    )
+
+
+def test_the_refresh_reads_what_each_person_is_to_the_person_and_whose_side_they_are_on():
+    # R-0850
+    assert casereport.kin(_wrens()).splitlines() == [
+        "the person: 1 Wren",
+        "mother: 2 Ada",
+        "father: 3 Cal",
+        "brother: 4 Bo",
+        "grandmother on the mother's side: 5 Gran",
+        "grandfather on the mother's side: 6 Gramps",
+        "aunt on the mother's side: 7 Ivy",
+        "grandmother on the father's side: 8 Nan",
+        "partner: 9 Rex",
+        "daughter: 14 Kit",
+        "a relative on the mother's side: 15 Jo",
+    ]
+
+
+def test_the_refresh_reads_the_brothers_and_sisters_of_the_person_and_each_parent_in_birth_order():
+    # R-0850
+    assert casereport.order_of_birth(_wrens()).splitlines() == [
+        "1 Wren (the person): 1 Wren 1978, 4 Bo about 1980",
+        "2 Ada (mother): 7 Ivy 1950, 2 Ada 1952",
+        "3 Cal (father): no brothers or sisters in the diagram",
+    ]
+
+
+def test_the_refresh_reads_each_triangle_the_events_mark_with_who_was_inside_and_outside():
+    # R-0850
+    assert casereport.triangles(_wrens()) == (
+        "1 Wren (the person), 2 Ada (mother), 7 Ivy (aunt): "
+        "2010 Ada and Ivy inside, Wren outside “Took her sister in”"
+    )
+
+
+def test_the_refresh_reads_each_close_pairs_relationship_events_by_date_and_counts_the_rest():
+    # R-0850, R-0864
+    assert casereport.pairs(_wrens()).splitlines() == [
+        "1 Wren (the person) and 2 Ada (mother): "
+        "1998 Wren distance “Stopped calling her mother”; 2015 Wren cutoff “Cut off from her mother”",
+        "1 more pair farther out in the family has relationship events",
+    ]
+
+
+def test_the_refresh_reads_how_many_events_the_diagram_holds_on_each_side_of_the_family():
+    # R-0850
+    assert casereport.by_side(_wrens()).splitlines() == [
+        "the side of 2 Ada (mother): 7 events",
+        "the side of 3 Cal (father): 0 events",
+    ]
+
+
+def test_the_refresh_reads_the_changes_in_a_clusters_years_and_who_its_opening_is_about():
+    # R-0850
+    assert casereport.held(_wrens()) == (
+        "c1: 2 supporting shifts, fewer than 3; all of them Wren's; opened by event 25, the first shift "
+        "89 days after its opening, the last 150 days after its opening; changes in the family in its years: 1998 death; "
+        "its opening is about 5 Gran (grandmother), partners: 6 Gramps (grandfather), "
+        "children: 2 Ada (mother) born 1952, 7 Ivy (aunt) born 1950"
+    )
+
+
+def test_a_rewrite_reads_the_family_blocks_after_the_events(web, past, written, family):
+    # R-0850
+    model = Model(calling(*every(past)))
+    rewrite(web, model)
+
+    opening = model.histories[0][0]["content"]
+    assert opening.index("EVENTS") < opening.index(casereport.KIN) < opening.index(casereport.SUMMARIES)
+
+
+def test_a_prediction_off_what_to_work_on_is_refused_and_asked_for_once_more(web, past, written, family):
+    # R-0850
+    model = Model(
+        calling(guessed("Distance with your mother, 2004. The next loss will bring more distance.")),
+        calling(guessed('Distance with your mother, 2004. You said "it will pass".')),
+    )
+    rewrite(web, model)
+
+    assert "Prognosis line of work_on" in model.histories[1][-1]["content"][0]["content"]
+    assert texts(family)["coach_guess"] == 'Distance with your mother, 2004. You said "it will pass".'
+    assert len(refusals(refusal="'will' says what will come")) == 1
+
+
+def test_an_executive_summary_longer_than_the_trouble_and_the_pattern_is_refused(web, past, written, family):
+    # R-0850
+    run = "You sleep badly. It began in 1998. Your grandmother died that year. You stopped calling your mother."
+    short = "You have trouble sleeping. The app's guess: distance from your mother's side, around each loss there."
+    model = Model(calling(guessed(run, "main_guess")), calling(guessed(short, "main_guess")))
+    rewrite(web, model)
+
+    assert "has 4 sentences" in model.histories[1][-1]["content"][0]["content"]
+    assert texts(family)["main_guess"] == short
 
 
 def test_a_for_or_against_on_a_cluster_the_guess_does_not_rest_on_is_refused(web, past, grouped, family):

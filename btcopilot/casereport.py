@@ -8,6 +8,7 @@ rewrite runs in the worker like a coach turn and ends in a done or failed
 event on the turn log; the page polls its state.
 """
 
+import datetime
 import enum
 import logging
 import re
@@ -47,6 +48,7 @@ from btcopilot.schema import (
     EventKind,
     ItemKind,
     QuestionState,
+    RelationshipKind,
     enum_val,
     parse_date,
 )
@@ -71,6 +73,15 @@ MOVED = "The diagram changed while the case report was being written; refresh it
 SUMMARIES = "ONE SUMMARY PER CONVERSATION (oldest first)"
 OPENING = "THE OPENING OF THE FIRST CONVERSATION"
 HELD = "THE SHIFTS THAT SUPPORT EACH CLUSTER"
+KIN = "WHAT EACH PERSON IS TO THE PERSON"
+ORDER = "BROTHERS AND SISTERS IN BIRTH ORDER"
+TRIANGLES = "TRIANGLES THE EVENTS MARK"
+PAIRS = "RELATIONSHIP EVENTS BY PAIR"
+SIDES = "EVENTS ON EACH SIDE OF THE FAMILY"
+# The relationship marks one person makes toward another, as against the
+# inside and outside marks of a triangle.
+TRIANGLE = (RelationshipKind.Inside, RelationshipKind.Outside)
+WORDS_CHARS = 60
 # How much of the first conversation the rewrite reads raw, when no note on
 # the what_brought card holds what brought the person in (R-0850).
 OPENING_CHARS = 2000
@@ -82,6 +93,15 @@ MARK = re.compile(
     rf"\b(?:(?:{CardLine.For.value}|{CardLine.Against.value}) \S+"
     rf"|{'|'.join(m.value for m in CardLine if m not in (CardLine.For, CardLine.Against))}):"
 )
+# Words that say what will come. Only what to work on predicts, on its
+# Prognosis line (FE 3117, 3463-3467; R-0850).
+FORETOLD = re.compile(
+    r"\b(will|won't|going to|expect(?:s|ed)?|predicts?|prediction|prognosis|(?:un)?likely)\b",
+    re.I,
+)
+# The Executive Summary: who has the trouble and what it is in one or two
+# sentences, then the pattern of the coach's guess in one (R-0850).
+SUMMARY_SENTENCES = 3
 # An id in a card's words: a cluster, question or impression key, a number in
 # brackets that is not a year, or a number after what it numbers.
 RAW_ID = re.compile(
@@ -266,6 +286,9 @@ def checked(call) -> str | None:
     card = call.args.get(CARD)
     if card not in {c.value for c in CaseReportCard}:
         return f"no case report card {card!r}"
+    shaped = _shaped(card, call.args.get("text") or "")
+    if shaped:
+        return shaped
     evidence = call.args.get("evidence") or []
     clusters = {str(one.get("id")) for one in evidence if one.get("kind") == EvidenceKind.Cluster}
     for line in (call.args.get("text") or "").splitlines():
@@ -285,6 +308,27 @@ def checked(call) -> str | None:
                 f"{raw.group(0)!r} is an id in the card's words: name the person, event or "
                 "cluster in words; a cluster's id goes only after For or Against"
             )
+    return None
+
+
+def _shaped(card: str, text: str) -> str | None:
+    """Why a card's words break its card's shape, outside the person's quoted
+    words, or None: a prediction off what to work on, or an Executive Summary
+    longer than the trouble and the pattern (R-0850)."""
+    said = record.QUOTED.sub("", text)
+    word = card != CaseReportCard.WorkOn and FORETOLD.search(said)
+    if word:
+        return (
+            f"{word.group(0)!r} says what will come; only the Prognosis line of "
+            f"{CaseReportCard.WorkOn.value} predicts"
+        )
+    sentences = [s for line in said.splitlines() for s in record.SENTENCE.split(line.strip()) if s]
+    if card == CaseReportCard.MainGuess and len(sentences) > SUMMARY_SENTENCES:
+        return (
+            f"the Executive Summary has {len(sentences)} sentences: give who has the "
+            "trouble and what it is, then the pattern of the coach's guess in one "
+            f"sentence, {SUMMARY_SENTENCES} at most, with no run of events"
+        )
     return None
 
 
@@ -382,8 +426,214 @@ def held(data: DiagramData) -> str:
                 f"{_days(read.toFirst, _sure(data, read.opening, first))}, "
                 f"the last {_days(read.toLast, _sure(data, read.opening, last))}"
             )
+        changes = _changes(data, cluster)
+        if changes:
+            parts.append(f"changes in the family in its years: {changes}")
+        if read.opening is not None:
+            parts.append(_opener(data, read.opening))
         lines.append(f"{cluster['id']}: " + "; ".join(parts))
     return "\n".join(lines)
+
+
+def _year(event: dict | None) -> str:
+    """An event's year, no surer than its date is marked [Oracle: R-0855]."""
+    when = parse_date(event.get("dateTime")) if event else None
+    sure = enum_val(event.get("dateCertainty")) if event else None
+    if when is None or sure == DateCertainty.Unknown.value:
+        return "date unknown"
+    return f"about {when.year}" if sure == DateCertainty.Approximate.value else str(when.year)
+
+
+def _who(data: DiagramData, pid) -> str:
+    return coverage.label(data, ItemKind.Person, pid)
+
+
+def _changes(data: DiagramData, cluster: dict) -> str:
+    """Every event other than a shift in the cluster's years, anyone's, by
+    year: the births, deaths, couplings, partings and noted events that piled
+    up then (FE 3109-3111)."""
+    dated = {e["id"]: parse_date(e.get("dateTime")) for e in data.events}
+    years = [dated[i].year for i in cluster.get("eventIds") or [] if dated.get(i)]
+    if not years:
+        return ""
+    by_year: dict[int, list[str]] = {}
+    for event in sorted(data.events, key=lambda e: (dated[e["id"]] or datetime.date.max, e["id"])):
+        when = dated[event["id"]]
+        kind = EventKind(enum_val(event.get("kind")) or EventKind.Shift.value)
+        if when and min(years) <= when.year <= max(years) and kind.isLead():
+            by_year.setdefault(when.year, []).append(kind.value)
+    return "; ".join(f"{year} {', '.join(kinds)}" for year, kinds in by_year.items()) or "none in the diagram"
+
+
+def _opener(data: DiagramData, event_id: int) -> str:
+    """Who the cluster's opening event is about, with their partners and
+    their children, so the coach can say who was rearranged around it."""
+    event = next(e for e in data.events if e["id"] == event_id)
+    pid = event.get("person")
+    if pid is None:
+        return "its opening names no person"
+    partners = [
+        _who(data, other)
+        for b in data.pair_bonds
+        if pid in (b.get("person_a"), b.get("person_b"))
+        for other in (b.get("person_a"), b.get("person_b"))
+        if other not in (pid, None)
+    ]
+    children = [
+        f"{_who(data, p['id'])} born {_year(profile.birth(data, p['id']))}"
+        for b in data.pair_bonds
+        if pid in (b.get("person_a"), b.get("person_b"))
+        for p in data.people
+        if p.get("parents") == b["id"]
+    ]
+    return (
+        f"its opening is about {_who(data, pid)}, "
+        f"partners: {', '.join(partners) or 'none in the diagram'}, "
+        f"children: {', '.join(children) or 'none in the diagram'}"
+    )
+
+
+def _named(data: DiagramData) -> dict:
+    return {p["id"]: f"{p['id']} {p.get('name') or 'unnamed'}" for p in data.people}
+
+
+def kin(data: DiagramData) -> str:
+    """Everyone the record places, grouped by what they are to the person and,
+    in a parent's family, whose side they are on, so a card names the side of
+    the family a fact comes from (R-0850)."""
+    side = {pid: parent for parent, people in coverage.sides(data).items() for pid in people}
+    named = _named(data)
+    groups: dict[str, list[str]] = {}
+    for person in data.people:
+        pid = person["id"]
+        role, parent = coverage.role(data, pid), side.get(pid)
+        if role is None and parent is None:
+            continue
+        what = role or "a relative"
+        if parent is not None and parent != pid:
+            what += f" on the {coverage.role(data, parent) or 'parent'}'s side"
+        groups.setdefault(what, []).append(named[pid])
+    return "\n".join(f"{what}: {', '.join(people)}" for what, people in groups.items())
+
+
+def order_of_birth(data: DiagramData) -> str:
+    """The person's brothers and sisters and each parent's, in birth order,
+    for each one's place among them (FE 3221, 3461)."""
+    own = profile.own(data)
+    if own is None:
+        return ""
+    named = _named(data)
+    lines = []
+    for pid in [own["id"], *coverage.sides(data)]:
+        kids = coverage.in_birth_order(data, pid)
+        if len(kids) == 1:
+            said = "no brothers or sisters in the diagram"
+        else:
+            said = ", ".join(f"{named[k]} {_year(profile.birth(data, k))}" for k in kids)
+        lines.append(f"{_who(data, pid)}: {said}")
+    return "\n".join(lines)
+
+
+def _words(event: dict) -> str:
+    said = (event.get("title") or event.get("description") or "").strip()
+    return f" “{said[:WORDS_CHARS]}”" if said else ""
+
+
+def _dated(event: dict) -> tuple:
+    when = parse_date(event.get("dateTime"))
+    return (when is None, when or datetime.date.min, event["id"])
+
+
+def _marked(event: dict) -> RelationshipKind | None:
+    value = enum_val(event.get("relationship"))
+    return RelationshipKind(value) if value else None
+
+
+def _names(named: dict, ids) -> str:
+    return " and ".join(named.get(i, str(i)) for i in ids)
+
+
+def triangles(data: DiagramData) -> str:
+    """One line per three people the inside and outside marks put together,
+    each mark dated with who was inside and who outside, so a card names a
+    triangle only when the events mark it (R-0850)."""
+    named = {p["id"]: p.get("name") or "unnamed" for p in data.people}
+    marked: dict[frozenset, list[str]] = {}
+    for event in sorted(data.events, key=_dated):
+        kind = _marked(event)
+        if kind not in TRIANGLE or event.get("person") is None:
+            continue
+        mover = event["person"]
+        others = [*(event.get("relationshipTargets") or []), *(event.get("relationshipTriangles") or [])]
+        if kind is RelationshipKind.Inside:
+            inside = [mover, *(event.get("relationshipTargets") or [])]
+            outside = event.get("relationshipTriangles") or []
+        else:
+            inside = others
+            outside = [mover]
+        marked.setdefault(frozenset([mover, *others]), []).append(
+            f"{_year(event)} {_names(named, inside)} inside, {_names(named, outside)} outside{_words(event)}"
+        )
+    return "\n".join(
+        f"{', '.join(_who(data, pid) for pid in sorted(three))}: {'; '.join(marks)}"
+        for three, marks in marked.items()
+    )
+
+
+def pairs(data: DiagramData) -> str:
+    """One line per two people, one of them in the person's own family or
+    their parents' or grandparents', with every relationship mark between
+    them by date, who made it, and its words, from the stored events alone,
+    so a card lays the people out in time order (R-0850, R-0864). Pairs
+    farther out are counted; their marks are on the event lines."""
+    named = {p["id"]: p.get("name") or "unnamed" for p in data.people}
+    near = coverage.nearest(data)
+    marked: dict[frozenset, list[str]] = {}
+    for event in sorted(data.events, key=_dated):
+        kind = _marked(event)
+        if kind is None or kind in TRIANGLE or event.get("person") is None:
+            continue
+        mover = event["person"]
+        for target in event.get("relationshipTargets") or []:
+            marked.setdefault(frozenset([mover, target]), []).append(
+                f"{_year(event)} {named.get(mover, mover)} {kind.value}{_words(event)}"
+            )
+    lines = [
+        f"{' and '.join(_who(data, pid) for pid in sorted(two))}: {'; '.join(marks)}"
+        for two, marks in marked.items()
+        if two & near
+    ]
+    farther = sum(1 for two in marked if not two & near)
+    if farther:
+        lines.append(
+            f"{farther} more pair{'' if farther == 1 else 's'} farther out in the family "
+            f"{'has' if farther == 1 else 'have'} relationship events"
+        )
+    return "\n".join(lines)
+
+
+def by_side(data: DiagramData) -> str:
+    """How many events the diagram holds about each parent's side of the
+    family, so a side it knows little about reads as a fact toward cutoff,
+    held as the app's guess (FE 3115, 3205)."""
+    return "\n".join(
+        f"the side of {_who(data, parent)}: "
+        f"{sum(any(record.involves(e, pid) for pid in side) for e in data.events)} events"
+        for parent, side in coverage.sides(data).items()
+    )
+
+
+def family(data: DiagramData) -> str:
+    """The blocks the refresh reads beside the events, each left out when the
+    diagram holds nothing for it (R-0850)."""
+    blocks = [
+        (KIN, kin(data)),
+        (ORDER, order_of_birth(data)),
+        (SIDES, by_side(data)),
+        (TRIANGLES, triangles(data)),
+        (PAIRS, pairs(data)),
+    ]
+    return "".join(f"\n\n{title}\n{body}" for title, body in blocks if body)
 
 
 def opening(data: DiagramData, first: Discussion) -> str:
@@ -406,7 +656,10 @@ def opening(data: DiagramData, first: Discussion) -> str:
 def asked(diagram: Diagram, user: User, toolbox: Toolbox, meter: Metered) -> tuple[str, list[dict]]:
     """The one call's system prompt, the coach's own, and its opening message
     with every event's words and notes, the shifts that support each drawn
-    cluster, one summary per conversation, and, with no note on what brought
+    cluster with the changes in the family in its years and who its opening
+    is about, what each person is to the person, the brothers and sisters in
+    birth order, the events on each side of the family, the triangles and the
+    relationship events by pair, one summary per conversation, and, with no note on what brought
     the person, the first conversation's opening read raw, so it reads nothing
     (R-0850)."""
     data = diagram.get_diagram_data()
@@ -421,6 +674,7 @@ def asked(diagram: Diagram, user: User, toolbox: Toolbox, meter: Metered) -> tup
     support = held(data)
     if support:
         content += f"\n\n{HELD}\n{support}"
+    content += family(data)
     content += f"\n\n{SUMMARIES}\n{summaries(diagram, meter)}"
     raw = opening(data, sessions(diagram)[0])
     if raw:
@@ -533,6 +787,7 @@ def _again(turn, refused: dict[str, str], missing: list[str]) -> list[dict]:
 def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[str]:
     """One model call writes every card again (R-0825, R-0850). A card
     refused (a cause or a why, the person's voice outside quotation marks, a
+    prediction off what to work on, an Executive Summary past its shape, a
     mark inside a line, an id in its words, or the coach's tool) and a card
     not given are asked for once more; given again with a cause or in the
     person's voice, a card is written with those sentences taken out, and one

@@ -418,6 +418,77 @@ def label(data: DiagramData, kind: ItemKind, iid: int) -> str:
     return _label(data, kind, iid, _role_of(data, kind, iid))
 
 
+def role(data: DiagramData, pid: int) -> str | None:
+    """What a person is to the person, when the record says."""
+    return _role_of(data, ItemKind.Person, pid)
+
+
+def in_birth_order(data: DiagramData, pid: int) -> list[int]:
+    """The person and their brothers and sisters, full, half and step, in
+    birth order; one with no dated birth comes last."""
+
+    def when(kid: int) -> tuple:
+        birth = profile.birth(data, kid)
+        date = parse_date(birth["dateTime"]) if birth and _dated(birth) else None
+        return (date is None, date or datetime.date.min)
+
+    return sorted(dict.fromkeys([pid, *_siblings(data, pid)]), key=when)
+
+
+def nearest(data: DiagramData) -> set[int]:
+    """The person, their partners and children, their parents, brothers and
+    sisters, and grandparents."""
+    own = profile.own(data)
+    if own is None:
+        return set()
+    me = own["id"]
+    mine = _couples(data, me)
+    parents = _partners(data, _parents(data, me))
+    return {
+        me,
+        *(_other(data, bid, me) for bid in mine),
+        *(kid for bid in mine for kid in _children(data, bid)),
+        *parents,
+        *_siblings(data, me),
+        *(pid for parent in parents for pid in _partners(data, _parents(data, parent))),
+    }
+
+
+def sides(data: DiagramData) -> dict[int, set[int]]:
+    """Each of the person's parents with everyone on that side of the family:
+    the parent, their forebears, every child of a forebear's couples and the
+    children's own lines and partners, never the person's parents' couple's
+    line."""
+    own = profile.own(data)
+    if own is None:
+        return {}
+    out = {}
+    for parent in _partners(data, _parents(data, own["id"])):
+        side: set[int] = set()
+
+        def down(bid: int | None):
+            for kid in _children(data, bid):
+                if kid in side:
+                    continue
+                side.add(kid)
+                for couple in _couples(data, kid):
+                    side.update(_partners(data, couple))
+                    down(couple)
+
+        up, climbed = [parent], set()
+        while up:
+            pid = up.pop()
+            if pid in climbed:
+                continue
+            climbed.add(pid)
+            side.add(pid)
+            home = _parents(data, pid)
+            up.extend(_partners(data, home))
+            down(home)
+        out[parent] = side
+    return out
+
+
 def spoken_as(data: DiagramData, kind: ItemKind, iid: int) -> list[str] | None:
     """The words a message about a person or couple carries: their first name
     and what they are called for what they are to the person. None for the
