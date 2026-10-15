@@ -51,15 +51,16 @@ never opens one (it is marked `neverOpens`) and is never an `openingId`;
 about a year. Fifth, the person's answers when asked when the most was going on in
 their life, with their birth date.
 
-**The person's own periods.** An answer often names more than one time: read
-every sentence of it. For each time the person says stood out or was
+**The person's own periods.** An answer often names more than one time, and may say how
+many: read every sentence of it for each one. For each time the person says stood out or was
 hard in an answer, and not one they only wonder or ask about, that is not
 already listed as "the person drew this period", return one entry under
 `periods`: `messageId`, the answer it is in; `name`, a short phrase copied word
 for word from their answer; `words`, their sentence that names it, copied word
 for word; and `startYear` and `endYear` as their words give them, an age read
 against their birth date, a single year given as both. Leave both years out
-when their words give none. Never rename, merge, split, shorten or widen a
+when their words give none. Their `name` and `words` keep "I", "me" and "my"
+as they said them; the coach's voice below is for your periods only. Never rename, merge, split, shorten or widen a
 period of theirs, and never fold one into yours. Return each one even when a
 period of yours covers the same years: theirs stands and yours gives way. Your periods never share their years. When there are no answers, return no `periods`.
 
