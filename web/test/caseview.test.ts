@@ -586,6 +586,14 @@ function cluster(tl: Timeline, id: string, title: string, start: string, end: st
   };
 }
 
+// R-0853
+it("writes an app period's years once on its hypothesis chip, though its stored name ends in them", () => {
+  const tl = halloran();
+  tl.clusters = [cluster(tl, "c1", "The move north, 2004", "2004-03-01", "2004-11-01"), cluster(tl, "c2", "After Walter's death, 2011\u20132013", "2011-02-01", "2013-05-01")];
+  const v = caseView(tl, ONE, "");
+  expect(v.hypotheses.map((c) => c.label)).toEqual(["Hypothesis: The move north \u00b7 2004", "Hypothesis: After Walter's death \u00b7 2011\u20132013"]);
+});
+
 // R-0698, R-0201
 it("adds every cluster to the coach's guess card as a hypothesis chip, in date order, that opens it", () => {
   const tl = halloran();

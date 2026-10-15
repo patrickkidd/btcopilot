@@ -50,11 +50,19 @@ export const ORDER: Card[] = [
   Card.Effort,
 ];
 
+/** A period's name without the years the server ends an app period's name
+ * with, "When Lily came, 2009\u20132011", for a screen that writes those
+ * years beside it, so they are written once (R-0853). */
+export const nameOnly = (c: { title: string; label?: string }) =>
+  c.label && c.title.endsWith(`, ${c.label}`) ? c.title.slice(0, -c.label.length - 2) : c.title;
+
 /** A period on a chip: its name, then the years the server stored for it,
  * "When Lily came \u00b7 2009\u20132011"; a period with no name of its own has its
  * years as its title, and they are written once (R-0853). */
-export const periodName = (c: Pick<Cluster, "title" | "label">) =>
-  c.title !== c.label ? `${c.title} \u00b7 ${c.label}` : c.label;
+export const periodName = (c: Pick<Cluster, "title" | "label">) => {
+  const name = nameOnly(c);
+  return name !== c.label ? `${name} \u00b7 ${c.label}` : c.label;
+};
 
 /** The guess cards: with nothing on them they say so in the coach's bubble (R-0699). */
 export const GUESS_CARDS = new Set([Card.Main, Card.Guesses, Card.OwnPart, Card.WorkOn]);

@@ -1,4 +1,5 @@
 import { book } from "./case";
+import { nameOnly } from "./caseview";
 import { DateCertainty } from "./certainty";
 import { closeX, esc, pan, still } from "./dom";
 // this line draws pills, dots and the wire
@@ -339,12 +340,12 @@ const MODE: Partial<Record<Level, string>> = {
   [Level.Compare]: "compare",
 };
 
-type Named = { title: string; start: string; end: string };
+type Named = { title: string; label?: string; start: string; end: string };
 
 /** The open cluster as the path names it: its name alone, "Every mark", the
  * years alone for a cluster with no name (R-0767); the years go under
  * the line, so neither is on the screen twice. */
-export const clusterStep = (c: Named) => c.title || spanYears(c.start, c.end);
+export const clusterStep = (c: Named) => nameOnly(c) || spanYears(c.start, c.end);
 
 /** The words under the line with a cluster open and nothing picked: its years
  * and how many events it holds, "1981\u20132003 \u00b7 3 events" (R-0583, R-0767);

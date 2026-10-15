@@ -531,6 +531,16 @@ describe("the drawing on a cluster's page", () => {
     expect(periodName({ ...cluster, title: "When Lily came" })).toBe("When Lily came \u00b7 2009\u20132011");
   });
 
+  // R-0853, R-0767
+  it("writes an app period's years once beside its name, though its stored name ends in them", () => {
+    const { cluster } = period();
+    const app = { ...cluster, title: "When Lily came, 2009\u20132011" };
+    expect(periodName(app)).toBe("When Lily came \u00b7 2009\u20132011");
+    expect(clusterStep(app)).toBe("When Lily came");
+    expect(trail(Level.About, app, null)).toEqual(["Timeline", "When Lily came", "about"]);
+    expect(periodName({ ...cluster, title: "When Lily came, 2007" })).toBe("When Lily came, 2007 \u00b7 2009\u20132011");
+  });
+
   // R-0168, R-0850
   it("stacks events on one date a few pixels apart in the one row, each dot answering its own tap", () => {
     const { all } = period();
