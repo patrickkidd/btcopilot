@@ -173,8 +173,8 @@ export interface CaseView {
   family: Stated;
   /** The coach's card on what brought the person (R-0850), or null when not asked yet. */
   brought: Guess | null;
-  /** Whether the person is married now, as the picture draws it (R-0694). */
-  married: boolean;
+  /** Whether the person has a pair-bond of their own (R-0866). */
+  bonded: boolean;
   /** The coach's one statement on the person's own couple from its early years,
    * and what the diagram still needs when it holds too little for one (R-0850). */
   couple: Stated;
@@ -353,16 +353,6 @@ class Reader {
     } catch (e) {
       return { layout: null, fault: (e as Error).message };
     }
-  }
-
-  /** The person's marriage now (R-0694): the bond the picture draws solid,
-   * with no later separation or divorce, and both partners alive. */
-  marriage(): PairBond | undefined {
-    const s = this.subject.id;
-    return this.bondsOf(s).find((b) => {
-      const other = this.other(b, s);
-      return other != null && this.tie(b).st === Tie.Married && !this.dead(s) && !this.dead(other);
-    });
   }
 
   /** The person, their partners now, their children, their parents with the
@@ -555,7 +545,7 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     main: main && r.guess(main),
     family: r.stated(guessOn(CaseReportCard.Family)),
     brought: brought && r.guess(brought),
-    married: !!r.marriage(),
+    bonded: r.bondsOf(s.id).length > 0,
     couple: r.stated(guessOn(CaseReportCard.Couple)),
     sides: r.sides().map(({ label, still }) => ({ label, still })),
     sideNotes: r.sideNotes(guesses.filter(onCard(CaseReportCard.Sides)).slice(-SIDE_NOTES)),

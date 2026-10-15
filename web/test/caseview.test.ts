@@ -462,16 +462,16 @@ it("never tells the sides apart by a word in the note: a note resting on no side
   expect(caseView(tl, ONE, "").sideNotes.map((s) => s.note.guess?.text)).toEqual(["The other side.", "One side."]);
 });
 
-// R-0694, R-0716, R-0866
-it("titles card four for the couple only when the person is married now, else for the parents and partners", () => {
-  const married = caseView(halloran(), ONE, "");
-  expect(cards(married, false)).toContain(`<p class="label">4 · The couple since they met</p>`);
-  expect(rail(married)).toContain(`<b>4</b>The couple</button>`);
+// R-0866
+it("titles card four for the couple since they met only when the person has a pair-bond of their own, else the couple", () => {
+  const bonded = caseView(halloran(), ONE, "");
+  expect(cards(bonded, false)).toContain(`<p class="label">4 · The couple since they met</p>`);
+  expect(rail(bonded)).toContain(`<b>4</b>The couple</button>`);
   const tl = halloran();
   tl.pair_bonds = tl.pair_bonds.filter((b) => b.id !== 33);
   const single = caseView(tl, ONE, "");
-  expect(cards(single, false)).toContain(`<p class="label">4 · Nora&#39;s parents and partners, stage by stage</p>`);
-  expect(rail(single)).toContain(`<b>4</b>Parents and partners</button>`);
+  expect(cards(single, false)).toContain(`<p class="label">4 · The couple</p>`);
+  expect(rail(single)).toContain(`<b>4</b>The couple</button>`);
 });
 
 // R-0850

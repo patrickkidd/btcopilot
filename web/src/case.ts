@@ -21,7 +21,7 @@ export function title(card: Card, v: CaseView): string {
     case Card.Brought:
       return `What brought ${v.name}`;
     case Card.Couple:
-      return v.married ? "The couple since they met" : `${v.name}'s parents and partners, stage by stage`;
+      return v.bonded ? "The couple since they met" : "The couple";
     case Card.Sides:
       return "Each parent's own family";
     case Card.Guesses:
@@ -45,7 +45,7 @@ function short(card: Card, v: CaseView): string {
     case Card.Brought:
       return `What brought ${v.him}`;
     case Card.Couple:
-      return v.married ? "The couple" : "Parents and partners";
+      return "The couple";
     case Card.Sides:
       return "Each parent's family";
     case Card.Guesses:
