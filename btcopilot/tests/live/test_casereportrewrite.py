@@ -124,8 +124,7 @@ def test_no_card_of_a_refresh_gives_a_cause_on_its_first_answer(coach):
     # R-0850, R-0569
     # pass: the refresh needed no second ask for a cause, and the coach's guess holds a pattern
     questions = refreshed(coach, *OPENING)
-    refused = Observation.query.filter_by(kind=ObservationKind.ToolRefused).all()
-    assert not [o for o in refused if o.detail.get("retried")], [o.detail for o in refused]
+    assert not first_answer_refused("gives a cause"), first_answer_refused("gives a cause")
     assert on(questions, "coach_guess")["text"].splitlines()[0].strip()
 
 
