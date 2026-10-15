@@ -2016,6 +2016,8 @@ class Toolbox:
             Statement.query.join(Discussion)
             .filter(Statement.id == int(one["id"]), Discussion.diagram_id == self.diagram_id)
             .one_or_none()
+            if str(one["id"]).isdigit()
+            else None
         )
         if statement is None:
             raise ToolError(f"No message {one['id']} in this family's sessions", GONE)
