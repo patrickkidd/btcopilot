@@ -212,3 +212,4 @@ R-0853 | TEST OWED | not built: the grouping step writing user clusters from the
 R-0854 | TEST OWED | not built: the first-conversation question about what brings the person in; the limit of ten replies is a placeholder until the production count is read
 R-0855 | TEST OWED | not built: the coach marking dates approximate, certain or unknown by what the person gave, and the features that read certainty
 R-0856 | TEST OWED | not built: the F1 suite of synthetic cases for cluster detection and the prompt tuning against it
+R-0857 | TEST OWED | not built: evaluating a cluster discrepancy by re-grounding in the literature and correcting the expected clusters and rules, a process with no behaviour to test

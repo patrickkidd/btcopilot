@@ -150,3 +150,30 @@ regroup; the next event change or `regroup` writes the person's periods.
 
 Name, reason, source (model or user), event ids, the dates they span, the opening
 event id, and whether it is set aside [Oracle: R-0205, R-0850].
+
+## When a cluster looks wrong
+
+Patrick's ruling [Oracle: R-0857]: the expected clusters of the `patrick` case stand as drafted,
+provisionally. A session started on "evaluate this cluster discrepancy" follows these steps.
+
+1. Evidence: write Patrick's question and what he saw, quoted, into the session before anything
+   else (diagram, dates, the clusters shown, the clusters he expected). A new real case is evidence
+   too.
+2. Re-ground: read btcopilot-sources `research/clusters/rules-2026-10-14.html`, then
+   `research/case-report-cards/THEORY-HANDOVER-2026-10-14.md` and `CONTEXT-BUNDLE-2026-10-14.md`,
+   then `theory/CORRECTIONS.md`. Pull each passage a rule cites in full from `bowentheory/`
+   with `sed -n`, never from memory of it.
+3. Mark each rule as theory (the books say it), hypothesis (a guess the books support in part),
+   his ruling (cite the id) or design choice (ours, no book behind it).
+4. Run the suite as it stands (the command in btcopilot/tests/live/README.md, "Cluster F1") and
+   read where the discrepancy shows: which expected cluster, which stored one, which events.
+5. Decide where the fault lies, with the passages: the expected clusters, a rule, the prompt,
+   or the data (a date certainty label, a missing event). Only the first two are corrections to
+   the standard; the last two are fixes.
+6. A correction to the expected clusters or to a rule goes to Patrick as a ruling candidate
+   first, with the passage quoted word for word. Nothing in the case files or rules changes
+   before his answer.
+7. After his answer, correct the case file, re-tune the prompts until the suite passes, and log
+   every real call's spend to the eval ledger. Real calls follow the spend rule: ask first.
+8. A new real case gets its own synthetic copy as a new file in `clusters/cases/`, built the way
+   `patrick.json` was (same shape, every name and wording changed), never a real diagram.

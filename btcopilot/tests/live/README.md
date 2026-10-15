@@ -107,7 +107,7 @@ clusters expected of it and the periods the person named; `patrick` is a fiction
 Patrick's own diagram (same people, links, dates, date certainties and shifts, every name, place,
 job and wording changed) and is the case the prompts are tuned on; `addition`, `thin` and `dense`
 are placeholders until real cases arrive. A case whose person answered also runs as
-`<name>-unasked`. The expected clusters are a draft until Patrick confirms them.
+`<name>-unasked`. The expected clusters are accepted provisionally [Oracle: R-0857]; when a cluster looks wrong, follow "When a cluster looks wrong" in doc/CLUSTERS.md.
 
 Each run makes the production call, `detect_clusters` on Gemini, once per case (twice when the
 first answer is refused), and prints a table: clusters expected and stored, cluster precision,
