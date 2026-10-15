@@ -20,7 +20,9 @@ The rules as built (FD-381, 2026-10-14) are the approved rules page,
 - A shift supports a cluster only when it is a rise in symptom or anxiety, a
   fall in functioning, or a relationship shift; a drop in anxiety or a rise in
   functioning does not. The shifts may be anyone's in the extended family. An
-  event whose date is unknown opens nothing and supports nothing (A4, A9).
+  event whose date is unknown opens nothing: it is never a cluster's opening
+  event, and is otherwise offered, held and counted as support like any dated
+  event, its certainty shown to the grouping call (A9).
 - A cluster is named by the change that opened it and its years, never by the
   person's trouble (A6). The family is one unit: two of the app's periods never
   share days [Oracle: R-0845].
@@ -75,8 +77,11 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    that opened it, and a change sentence when it is not as given. The person's
    ids are never offered in the answer's shape.
 3. The code backstops: known events, a name, a reason, the opening among its
-   events, no outside vocabulary, no word the person's trouble is told in (the
-   words of symptom events' descriptions not used elsewhere), no days shared with
+   events, an opening whose date is known, no outside vocabulary, no word the
+   person's trouble is told in (the words of the descriptions of the person's
+   own rises in symptom or anxiety and falls in functioning, compared by their
+   first four letters, less those another event, an event kind, a name, a word
+   for a relative or a common word also uses), no days shared with
    the person's own period. Then the app's periods sharing a day or an event are
    merged into the one holding more. Then at least three events and no more than
    ten years [Oracle: R-0846, R-0837]. Fewer than three supporting shifts never
@@ -84,7 +89,10 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    the coach's guess (step 8) [Oracle: R-0850]. A first answer with any fault is
    asked once more with the reasons; on the second, a failing period is dropped,
    except one still named by the trouble, which is kept as "A change in the
-   family, <years>".
+   family, <years>", and one still opening at an event of unknown date, which is
+   kept with no opening. A stored app period whose name breaks the naming check
+   is handed to the call marked "named by the person's trouble", and the call
+   renames it under its id (A6).
 4. Every refused answer, dropped period and merged period is a cluster_refused
    row in the observations table with the model's own answer [Oracle: R-0844].
 5. Before the call, every stored app period meets the same checks as a returned
@@ -100,7 +108,9 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    own are never changed by a regroup.
 7. The person's periods [Oracle: R-0853]. The call also gets the person's
    answers to the `most_going_on` item (each closed question's `answer`, the
-   message it cites) and their birth date. For each period named there it
+   message it cites; for a question closed as answered before that link was
+   written, the person's message in the turn whose change row closed it) and
+   their birth date. For each period named there it
    returns their name for it and their sentence, both copied from the message,
    and its first and last year. The code writes it as a cluster with source
    `user` holding every dated event in the family inside those years, its dates
@@ -126,11 +136,13 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
 
 After any coach turn that adds or changes an event, when the cache key (the
 events' dates, date certainty and shifts, the message ids of the person's
-answers to when the most was going on, plus `DETECTION_VERSION`, now 13)
+answers to when the most was going on, plus `DETECTION_VERSION`, now 14)
 differs from the stored one; `flask admin diagrams regroup` reruns diagrams that
 are behind. Version 12 regroups every diagram on its next event change, so
 periods set aside only for too few supporting shifts are offered again; version
-13 does again, with runs of fewer than three supporting shifts in the hint. A turn
+13 does again, with runs of fewer than three supporting shifts in the hint;
+version 14 does again, with events of unknown date offered, the wider naming
+check, and answers found through the change log. A turn
 that only closes the `most_going_on` question, with no event change, does not
 regroup; the next event change or `regroup` writes the person's periods.
 

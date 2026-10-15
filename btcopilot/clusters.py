@@ -34,11 +34,12 @@ from btcopilot.llmutil import (
     Unreadable,
     dataclass_to_json_schema,
 )
+from btcopilot.matching import TITLE_PREFIXES
 from btcopilot.metered import Metered
 from btcopilot import record
 from btcopilot.models import Author, Change, Observation, ObservationKind, Purpose
 from btcopilot import profile, prompts
-from btcopilot.models import Diagram, Statement
+from btcopilot.models import Diagram, Discussion, Statement
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     DateCertainty,
@@ -51,6 +52,7 @@ from btcopilot.schema import (
     EventKind,
     Fact,
     ItemKind,
+    QuestionOutcome,
     asdict,
     from_dict,
     hash_sarf_dicts,
@@ -83,7 +85,13 @@ _log = logging.getLogger(__name__)
 # shifts, each with its count, and the prompt lets such a period stand with its
 # shortfall noted, so every record regroups on its next event change
 # [Oracle: R-0850].
-DETECTION_VERSION = 13
+# 14: an event whose date is unknown is offered, may belong to a period and
+# support it, and never opens one; a period's name is checked against every
+# word the person's own trouble is told in; the person's answer to when the
+# most was going on is found for a question closed before the answer was
+# written on it, so every record regroups on its next event change
+# [Oracle: R-0850, R-0853, R-0376].
+DETECTION_VERSION = 14
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -149,11 +157,26 @@ OUTSIDE_WORDS = (
 )
 
 
+# How many letters of a word the naming check compares, and the words it never
+# reads as the person's trouble whatever their descriptions say.
+STEM = 4
+COMMON_WORDS = frozenset(
+    {
+        "about", "after", "again", "another", "away", "back", "became", "been",
+        "before", "could", "during", "family", "from", "have", "home", "into",
+        "life", "only", "over", "period", "since", "that", "their", "them",
+        "then", "they", "this", "time", "until", "were", "when", "while", "with",
+        "would", "year", "years",
+    }
+)
+
+
 class ClusterCheck(enum.StrEnum):
     """Which check refused a grouping, so refusals are counted by kind."""
 
     Missing = "missing"
     UnknownEvent = "unknown_event"
+    UnknownDate = "unknown_date"
     TooSmall = "too_small"
     NoName = "no_name"
     NoReason = "no_reason"
@@ -191,10 +214,21 @@ def _enum_value(val):
 def supports(event: Event) -> bool:
     """A rise in symptom or anxiety, a fall in functioning, or a relationship
     shift; a drop in anxiety or a rise in functioning does not [Oracle: R-0850]."""
+    return troubled(event) or event.relationship is not None
+
+
+def unsure(event: Event) -> bool:
+    """Whether nobody knows the event's date: it may belong to a period and
+    support it, and it opens nothing [Oracle: R-0850]."""
+    return event.dateCertainty == DateCertainty.Unknown
+
+
+def troubled(event: Event) -> bool:
+    """A rise in symptom or anxiety or a fall in functioning: the person's
+    trouble when it is theirs."""
     return (
         any(_enum_value(getattr(event, name)) == way for name, way in RISES)
         or _enum_value(event.functioning) == VariableShift.Down
-        or event.relationship is not None
     )
 
 
@@ -287,23 +321,17 @@ def silence(gap: datetime.timedelta) -> str:
 
 
 def _dated(data: DiagramData) -> list[Event]:
-    events = [
-        from_dict(Event, chunk)
-        for chunk in data.events
-        if isinstance(chunk, dict) and chunk.get("id") is not None
-    ]
-    dated = [
-        e
-        for e in events
-        if parse_date(e.dateTime) and e.dateCertainty != DateCertainty.Unknown
-    ]
+    """Every event with a date, however sure: one whose date is unknown is
+    grouped like any other and only opens nothing [Oracle: R-0850]."""
+    dated = [e for e in _events(data) if parse_date(e.dateTime)]
     return sorted(dated, key=lambda e: (parse_date(e.dateTime), e.id))
 
 
 def joinable(data: DiagramData) -> list[Event]:
-    """Every dated event a cluster may hold: the scaffolding is held out."""
+    """Every dated event a cluster may hold: the scaffolding before the
+    first supporting shift of a known date is held out."""
     events = _dated(data)
-    marked = [e for e in events if supports(e)]
+    marked = [e for e in events if supports(e) and not unsure(e)]
     if not marked:
         return []
     opens = parse_date(marked[0].dateTime)
@@ -419,8 +447,8 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
     shifts = [e for e in held if supports(e)]
     people = {e.person for e in shifts}
     named = cluster.get("openingEventId")
-    changes = [e for e in held if e.id == named] or [
-        e for e in held if e.kind.isStructural()
+    changes = [e for e in held if e.id == named and not unsure(e)] or [
+        e for e in held if e.kind.isStructural() and not unsure(e)
     ]
     opening = changes[0] if changes else None
 
@@ -438,21 +466,36 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
     )
 
 
-def symptom_words(data: DiagramData) -> set[str]:
-    """The words the person's trouble is told in: those of the descriptions of
-    events with a symptom shift, less any a change in the family or a name
-    also uses, so a name says the loss and not the trouble [Oracle: R-0850]."""
+def _stems(text: str | None) -> set[str]:
+    """Each word of four letters or more by its first four, so "moved" and
+    "move", or "burnout" and "burn", are one word."""
+    return {w[:STEM] for w in re.findall(r"[a-z]{4,}", (text or "").lower())}
 
-    def words(text: str | None) -> set[str]:
-        return {w for w in re.findall(r"[a-z]{4,}", (text or "").lower())}
 
+def trouble_words(data: DiagramData) -> set[str]:
+    """The words the person's own trouble is told in, by stem: those of the
+    descriptions of their rises in symptom or anxiety and falls in functioning,
+    less any another event, an event's kind, a name, a word for a relative or
+    a common word also uses, so a name says the loss and not the trouble
+    [Oracle: R-0376, R-0850]."""
+    me = (profile.own(data) or {}).get("id")
     events = _dated(data)
-    told = set().union(*(words(e.description) for e in events if e.symptom))
+    theirs = {e.id for e in events if me is not None and e.person == me and troubled(e)}
+    told = set().union(*(_stems(e.description) for e in events if e.id in theirs))
     plain = set().union(
-        *(words(e.description) for e in events if not e.symptom),
-        *(words(p.get("name")) for p in data.people if isinstance(p, dict)),
+        *(_stems(e.description) for e in events if e.id not in theirs),
+        *(_stems(kind.value) for kind in EventKind),
+        *(_stems(p.get("name")) for p in data.people if isinstance(p, dict)),
+        _stems(" ".join(TITLE_PREFIXES | COMMON_WORDS)),
     )
     return told - plain
+
+
+def trouble_in(name: str, told: set[str]) -> list[str]:
+    """The words of a name that tell the person's trouble."""
+    return sorted(
+        w for w in re.findall(r"[a-z]{4,}", name.lower()) if w[:STEM] in told
+    )
 
 
 def plain_name(cluster: "ModelCluster", when: dict[int, datetime.date]) -> str:
@@ -501,24 +544,80 @@ class Answer:
     words: str
 
 
-def _asked(data: DiagramData) -> dict[int, str]:
+def _closes(delta: dict, question_id: str) -> bool:
+    after = delta.get("after")
+    return (
+        delta.get("item_kind") == ItemKind.Question.value
+        and str(delta.get("item_id")) == question_id
+        and (
+            (delta.get("field") == "outcome" and after == QuestionOutcome.Answered)
+            or (
+                delta.get("field") is None
+                and isinstance(after, dict)
+                and after.get("outcome") == QuestionOutcome.Answered
+            )
+        )
+    )
+
+
+def _closed_by(diagram_id: int, question_id: str) -> int | None:
+    """The person's message in the turn whose change closed the question as
+    answered: a question closed before the answer was written on it carries
+    no link, and the change log still holds the turn."""
+    change = next(
+        (
+            change
+            for change in Change.query.filter_by(diagram_id=diagram_id).order_by(
+                Change.id.desc()
+            )
+            if any(_closes(delta, question_id) for delta in change.deltas)
+        ),
+        None,
+    )
+    said = change and (
+        Statement.query.join(Discussion, Statement.discussion_id == Discussion.id)
+        .filter(
+            Statement.turn_id == change.turn_id,
+            Statement.speaker_id == Discussion.chat_user_speaker_id,
+        )
+        .order_by(Statement.order, Statement.id)
+        .first()
+    )
+    if said is None:
+        _log.warning(
+            f"Question {question_id} on diagram {diagram_id} is answered with no "
+            "message of the person's behind it"
+        )
+        return None
+    return said.id
+
+
+def _asked(diagram_id: int, data: DiagramData) -> dict[int, str]:
     """The person's answers to when the most was going on, by message id, each
-    with the question it answered."""
-    return {
-        question["answer"]["id"]: question.get("text") or ""
-        for question in data.questions
-        if question.get("fact") == Fact.MostGoingOn and question.get("answer")
-    }
+    with the question it answered [Oracle: R-0853]."""
+    asked = {}
+    for question in data.questions:
+        if question.get("fact") != Fact.MostGoingOn:
+            continue
+        if question.get("answer"):
+            said = question["answer"]["id"]
+        elif question.get("outcome") == QuestionOutcome.Answered:
+            said = _closed_by(diagram_id, question["id"])
+        else:
+            continue
+        if said is not None:
+            asked[said] = question.get("text") or ""
+    return asked
 
 
-def told_ids(data: DiagramData) -> tuple[int, ...]:
-    return tuple(sorted(_asked(data)))
+def told_ids(diagram_id: int, data: DiagramData) -> tuple[int, ...]:
+    return tuple(sorted(_asked(diagram_id, data)))
 
 
-def most_going_on(data: DiagramData) -> list[Answer]:
+def most_going_on(diagram_id: int, data: DiagramData) -> list[Answer]:
     return [
         Answer(messageId=i, question=text, words=db.session.get(Statement, i).spoken)
-        for i, text in sorted(_asked(data).items())
+        for i, text in sorted(_asked(diagram_id, data).items())
     ]
 
 
@@ -552,6 +651,8 @@ def _event_json(event: Event) -> dict:
         value = getattr(event, name)
         if value is not None:
             chunk[name] = _enum_value(value)
+    if event.dateCertainty != DateCertainty.Certain:
+        chunk["dateCertainty"] = _enum_value(event.dateCertainty)
     if event.notes:
         chunk["notes"] = event.notes
     return chunk
@@ -569,6 +670,7 @@ def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
 
 
 THEIRS = "the person drew this period"
+TROUBLE = "named by the person's trouble"
 
 
 def _prompt(
@@ -577,8 +679,10 @@ def _prompt(
     stored: dict[str, dict],
     said: list[Answer],
     born: str | None,
+    told: set[str] = frozenset(),
 ) -> str:
     when = {e.id: parse_date(e.dateTime) for e in free}
+    sure = {e.id for e in free if not unsure(e)}
     existing = []
     for cluster_id, cluster in stored.items():
         shown = {
@@ -587,10 +691,12 @@ def _prompt(
             "reason": cluster.get("reason") or cluster.get("summary") or "",
             "eventIds": [i for i in cluster.get("eventIds") or [] if i in when],
         }
-        if cluster.get("openingEventId") is not None:
+        if cluster.get("openingEventId") in sure:
             shown["openingId"] = cluster["openingEventId"]
         if not _regroupable(cluster):
             shown["note"] = THEIRS
+        elif trouble_in(_title(cluster), told):
+            shown["note"] = TROUBLE
         existing.append(shown)
     return prompts.CLUSTER_PROMPT.format(
         existing=json.dumps(existing, indent=2),
@@ -648,6 +754,7 @@ def _fault(
     stored: dict[str, dict],
     claimed: set[str],
     told: set[str],
+    unsure_ids: set[int] = frozenset(),
 ) -> tuple[str, ClusterCheck] | None:
     """What makes one returned cluster unusable before any merge, or nothing."""
     unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
@@ -662,6 +769,12 @@ def _fault(
             f"Period {cluster.name!r} opens at event {cluster.openingId}, which is "
             "not one of its events.",
             ClusterCheck.UnknownEvent,
+        )
+    if cluster.openingId in unsure_ids:
+        return (
+            f"Period {cluster.name!r} opens at event {cluster.openingId}, whose date "
+            "is unknown; an event of unknown date opens nothing.",
+            ClusterCheck.UnknownDate,
         )
     if not cluster.reason.strip():
         return "Every period needs a reason.", ClusterCheck.NoReason
@@ -680,7 +793,7 @@ def _fault(
             "were given do not contain.",
             ClusterCheck.OutsideWords,
         )
-    trouble = sorted(told & set(re.findall(r"[a-z]{4,}", cluster.name.lower())))
+    trouble = trouble_in(cluster.name, told)
     if trouble:
         return (
             f"Period {cluster.name!r} is named by the person's trouble ({trouble}); "
@@ -875,12 +988,14 @@ def _screen(
     last: bool = False,
 ) -> Screened:
     """`last` is the second answer: a period still named by the person's
-    trouble is kept under a plain name instead of dropped. The person's
+    trouble is kept under a plain name, and one still opening at an event of
+    unknown date is kept with no opening, instead of dropped. The person's
     periods are read first, so the app's never share their days."""
     if response is None:
         raise ClusterError("No grouping came back.", ClusterCheck.Missing)
     named, unnamed = _read_theirs(response.periods, said, data)
     known = {e.id for e in free}
+    unsure_ids = {e.id for e in free if unsure(e)}
     when = {e.id: parse_date(e.dateTime) for e in free}
     full = {e.id: parse_date(e.dateTime) for e in _dated(data)}
     theirs = [
@@ -896,7 +1011,11 @@ def _screen(
     usable: list[ModelCluster] = []
     claimed: set[str] = set()
     for cluster in response.clusters:
-        fault = _fault(cluster, known, stored, claimed, told)
+        fault = _fault(cluster, known, stored, claimed, told, unsure_ids)
+        if fault and fault[1] is ClusterCheck.UnknownDate and last:
+            faults.append(ClusterError(*fault, said=_said_of(cluster, when)))
+            cluster.openingId = None
+            fault = _fault(cluster, known, stored, claimed, told, unsure_ids)
         if fault and fault[1] is ClusterCheck.SymptomName and last:
             faults.append(ClusterError(*fault, said=_said_of(cluster, when)))
             cluster.name = plain_name(cluster, when)
@@ -1076,7 +1195,9 @@ def detect_clusters(
     the second, a cluster that still fails is dropped and the rest kept; an
     answer that cannot be read, or keeps nothing out of what it returned,
     raises [Oracle: R-0846, R-0844]."""
-    cache_key = compute_cache_key(_dated(data), told_ids(data))
+    cache_key = compute_cache_key(
+        _events(data), tuple(sorted(one.messageId for one in said))
+    )
     cands = candidates(data)
     if not cands and not said:
         return ClusterResult(clusters=[], cacheKey=cache_key)
@@ -1086,10 +1207,10 @@ def detect_clusters(
         str(c["id"]) for c in data.clusters if isinstance(c, dict) and c.get("id")
     }
     existing = mine(data)
-    told = symptom_words(data)
+    told = trouble_words(data)
     own = profile.own(data)
     born = own and profile.birth(data, own["id"])
-    prompt = _prompt(cands, free, existing, said, born and born["dateTime"])
+    prompt = _prompt(cands, free, existing, said, born and born["dateTime"], told)
     schema = answer_schema(existing, said)
     limit = THINKING_ROOM + PER_EVENT * len(free) + PER_ANSWER * len(said)
     _log.info(
@@ -1153,8 +1274,8 @@ def detect_clusters(
         cluster_id = cluster.id or next_id(taken)
         taken.add(cluster_id)
         was = existing.get(cluster.id) if cluster.id else None
-        # An event of unknown date is never offered, so one a stored period
-        # holds stays on it as it was [Oracle: R-0850].
+        # An event with no date, or scaffolding, is never offered, so one a
+        # stored period holds stays on it as it was [Oracle: R-0850].
         held = [i for i in (was or {}).get("eventIds") or [] if i not in known]
         clusters.append(
             Cluster(
@@ -1233,8 +1354,8 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     """The model's grouping, each cluster under its own id: the model's own
     statement of which stored cluster it is, so what the coach said about it
     last turn still points at something the diagram holds. `dates` are the
-    events of known date; the span is theirs, and an event of unknown date a
-    stored period held stays on it [Oracle: R-0850]. A grouping under the
+    dated events, however sure; the span is theirs, and an event with no date
+    a stored period held stays on it [Oracle: R-0850]. A grouping under the
     minimum is a bug in whatever produced it and raises."""
     taken = {str(c["id"]) for c in stored}
     kept: dict[str, Cluster] = {}
@@ -1324,10 +1445,13 @@ def _events(data: DiagramData) -> list[Event]:
     ]
 
 
-def behind(data: DiagramData) -> bool:
+def behind(diagram_id: int, data: DiagramData) -> bool:
     """Whether the record's events, or the person's answers to when the most
     was going on, changed since its last grouping."""
-    return compute_cache_key(_events(data), told_ids(data)) != data.clusterCacheKey
+    return (
+        compute_cache_key(_events(data), told_ids(diagram_id, data))
+        != data.clusterCacheKey
+    )
 
 
 def sync(
@@ -1350,7 +1474,8 @@ def sync(
     diagram = db.session.get(Diagram, diagram_id)
     data = diagram.get_diagram_data()
     events = _events(data)
-    cache_key = compute_cache_key(events, told_ids(data))
+    said = most_going_on(diagram_id, data)
+    cache_key = compute_cache_key(events, tuple(one.messageId for one in said))
     if not force and cache_key == data.clusterCacheKey:
         return None
 
@@ -1400,7 +1525,7 @@ def sync(
                 prompt, ClusterListResponse, schema, limit
             ),
             refused,
-            most_going_on(data),
+            said,
         )
     except ClusterError as failed:
         # No usable answer: the clusters that pass stay, a stored model cluster

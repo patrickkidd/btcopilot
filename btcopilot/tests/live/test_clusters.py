@@ -10,7 +10,7 @@ weighs against a period and never keeps it out: the 1994 run, offered with its
 two, may come back with its shortfall said in its reason (R-0850). Invented
 names only; no real record is involved. Pass criteria are k of n runs on the
 stored clusters, stated on each test; none has been run against the prompt of
-DETECTION_VERSION 13 yet (real-model spend waits on Patrick).
+DETECTION_VERSION 14 yet (real-model spend waits on Patrick).
 
 The app's grouping model is Gemini, and this suite's machine may have no key
 for it, so the call goes through Claude Code (`claude -p` with the answer's
@@ -35,7 +35,7 @@ from btcopilot.clusters import (
     TheirPeriod,
     detect_clusters,
     judge,
-    symptom_words,
+    trouble_words,
 )
 from btcopilot.schema import ClusterSource
 from btcopilot.tests.live.criterion import once, passes
@@ -190,7 +190,7 @@ def test_a_period_is_named_by_its_change_and_holds_the_death_it_follows():
     grandfather's 1998 death, offered in the run around Nell and Theo's
     trouble, is held by the period over those years."""
     result = detect_clusters(HALE, ask)
-    told = symptom_words(HALE)
+    told = trouble_words(HALE)
     for cluster in result.clusters:
         print(f"  {span(cluster)} {cluster.eventIds} {cluster.name!r}")
     assert not [

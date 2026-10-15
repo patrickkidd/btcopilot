@@ -28,9 +28,9 @@ class Why(enum.StrEnum):
 
 def why(diagram: Diagram) -> Why | None:
     data = diagram.get_diagram_data()
-    if not clusters.candidates(data) and not clusters.told_ids(data):
+    if not clusters.candidates(data) and not clusters.told_ids(diagram.id, data):
         return None
-    if clusters.behind(data):
+    if clusters.behind(diagram.id, data):
         return Why.Changed
     if not data.clusters:
         return Why.Ungrouped

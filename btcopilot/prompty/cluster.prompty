@@ -31,7 +31,10 @@ one as the events now read, returning it under its id. A period you leave out
 is set aside. Second, runs of events the app's rules found close in time, each
 with the silence before it and `supportingShifts`, how many of its events are
 shifts that count: a hint only, never a period by itself. Third, every
-event. Fourth, the person's answers when asked when the most was going on in
+event. One whose `dateCertainty` is `unknown` has a date nobody is sure of: it
+may belong to a period and count toward it, weighed as the guess it is, but it
+never opens one and is never an `openingId`; `approximate` is a date within
+about a year. Fourth, the person's answers when asked when the most was going on in
 their life, with their birth date.
 
 **The person's own periods.** For each time the person names in an answer that
@@ -46,7 +49,9 @@ years. When there are no answers, return no `periods`.
 
 **Name and reason.** Name each period of yours by the change that opened it and
 its years, in words this person would recognise; never by the person's own
-trouble or symptom, never its length, and never its years alone. `openingId` is
+trouble or symptom, never its length, and never its years alone. A listed
+period marked "named by the person's trouble" breaks this: rename it when you
+return it. `openingId` is
 the event that opened it, when one of its events did. The `reason` is one
 sentence: which events pile up and what you suspect shifted. When a period is
 not exactly as you were given it, `change` says in one sentence what in the
