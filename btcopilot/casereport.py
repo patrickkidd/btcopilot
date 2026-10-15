@@ -312,14 +312,17 @@ def _shaped(card: str, text: str) -> str | None:
             f"{word.group(0)!r} says what will come; only the Prognosis line of "
             f"{CaseReportCard.WorkOn.value} predicts"
         )
-    sentences = [s for line in said.splitlines() for s in record.SENTENCE.split(line.strip()) if s]
-    if card == CaseReportCard.MainGuess and len(sentences) > SUMMARY_SENTENCES:
-        return (
-            f"the Executive Summary has {len(sentences)} sentences: give who has the "
-            "trouble and what it is, then the pattern of the coach's guess in one "
-            f"sentence, {SUMMARY_SENTENCES} at most, with no run of events"
-        )
     return None
+
+
+def overlong(call) -> int | None:
+    """The sentence count of an Executive Summary past SUMMARY_SENTENCES, or
+    None; kept and observed, never refused (R-0850)."""
+    if call.args.get(CARD) != CaseReportCard.MainGuess:
+        return None
+    said = record.QUOTED.sub("", call.args.get("text") or "")
+    count = sum(1 for line in said.splitlines() for s in record.SENTENCE.split(line.strip()) if s)
+    return count if count > SUMMARY_SENTENCES else None
 
 
 def misspoken(call) -> str | None:
@@ -692,6 +695,12 @@ def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool,
         told = refusal = misspoken(call) or checked(call)
         if refusal is None:
             told, _, refusal = run_call(toolbox, call)
+            count = overlong(call)
+            if count and not refusal:
+                _observe(diagram.id, toolbox.turn_id, ObservationKind.ToolRefused,
+                         {"tool": call.name, "refusal": f"the Executive Summary has {count} sentences, "
+                          f"more than {SUMMARY_SENTENCES}; kept", "retried": retried, "sentences": count,
+                          "reason": _reason(CaseReportCard.MainGuess.value, f"kept: {count} sentences")})
         if refusal:
             refused[call.id] = told
             card = call.args.get(CARD)

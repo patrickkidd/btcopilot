@@ -696,15 +696,14 @@ def test_a_prediction_off_what_to_work_on_is_refused_and_asked_for_once_more(web
     assert len(refusals(refusal="'will' says what will come")) == 1
 
 
-def test_an_executive_summary_longer_than_the_trouble_and_the_pattern_is_refused(web, past, written, family):
+def test_an_executive_summary_longer_than_the_trouble_and_the_pattern_is_kept_and_observed(web, past, written, family):
     # R-0850
     run = "You sleep badly. It began in 1998. Your grandmother died that year. You stopped calling your mother."
-    short = "You have trouble sleeping. The app's guess: distance from your mother's side, around each loss there."
-    model = Model(calling(guessed(run, "main_guess")), calling(guessed(short, "main_guess")))
+    model = Model(calling(guessed(run, "main_guess")))
     rewrite(web, model)
 
-    assert "has 4 sentences" in model.histories[1][-1]["content"][0]["content"]
-    assert texts(family)["main_guess"] == short
+    assert texts(family)["main_guess"] == run
+    assert refusals(refusal="has 4 sentences")[0].detail["sentences"] == 4
 
 
 def test_a_for_or_against_on_a_cluster_the_guess_does_not_rest_on_is_refused(web, past, grouped, family):
