@@ -1,7 +1,7 @@
 """A refresh of the case report writes every card the coach writes again, from
 the diagram as it stands, in one coach turn (R-0825): each of the four cards
 holds a new guess afterwards, none of the ones it held before, and the new
-Executive Summary reads the family as the summary eval asks (R-0820). Then the
+Executive Summary opens on the symptom and its person and then names the pattern (R-0850). Then the
 formulation framing (R-0850): what brought the person is decided from the
 opening of their first conversation, in their own words; no card gives a
 cause; the part card states the other way it could have gone; a cluster with
@@ -10,7 +10,7 @@ line, and the Open line asks about the others in the family.
 
 The family is the summary eval's, plus the speaker twice stopping calling her
 mother and saying she is working on calling her every week. A pass is all four
-cards rewritten and the summary passing the summary eval's four checks; each
+cards rewritten and the summary passing the summary eval's three checks; each
 framing eval states its own pass. Two runs of three: the cards are the
 coach's judgement. Written, not yet run: real spend needs Patrick's yes.
 
@@ -73,8 +73,8 @@ def seeded(coach, clusters=()) -> None:
 
 
 @passes(2, of=3)
-def test_a_refresh_writes_all_four_cards_again_and_the_summary_reads_the_family(coach):
-    # R-0825, R-0820
+def test_a_refresh_writes_all_four_cards_again_and_the_summary_opens_on_the_symptom(coach):
+    # R-0825, R-0850
     seeded(coach)
     coach.turn("I'm trying to call my mother every week now, even when things are tense.")
     response = coach.web.post("/app/case-report-rewrites", headers={"X-CSRFToken": coach.token})
@@ -86,7 +86,7 @@ def test_a_refresh_writes_all_four_cards_again_and_the_summary_reads_the_family(
     held = {card: [q for q in now if q.get("case_report_card") == card] for card in CARDS}
     stale = {q["id"] for q in BEFORE}
     assert {c: bool(qs) and not {q["id"] for q in qs} & stale for c, qs in held.items()} == dict.fromkeys(CARDS, True), held
-    assert reads(held["main_guess"][-1], coach.events) == (True,) * 4, held["main_guess"]
+    assert reads(held["main_guess"][-1], coach.events) == (True,) * 3, held["main_guess"]
 
 
 # Said first, but not where her focus landed; the second message is.
