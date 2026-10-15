@@ -824,6 +824,18 @@ def test_a_for_or_against_on_a_cluster_the_guess_does_not_rest_on_is_refused(web
     assert len(refusals(refusal="c9")) == 1
 
 
+def test_evidence_given_as_bare_ids_is_refused_and_asked_for_once_more(web, past, grouped, family):
+    # R-0850, R-0517
+    text = "The app's guess: distance, 2004.\nFor c1: the sleep trouble began that autumn."
+    model = Model(calling(guessed(text, evidence=["c1"])),
+                  calling(guessed(text, evidence=[{"kind": "cluster", "id": grouped}])))
+    response = rewrite(web, model)
+
+    assert response.status_code == 202
+    assert texts(family)["coach_guess"] == text
+    assert len(refusals(refusal="an object with its kind")) == 1
+
+
 def test_the_choice_is_written_on_the_part_card_with_the_other_way_and_never_on_its_own(web, past, written, family):
     # R-0850
     part = "The app's guess: in 2004 you stopped calling your mother.\nOther way: could contact have stayed light?"

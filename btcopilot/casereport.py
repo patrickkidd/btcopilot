@@ -313,6 +313,8 @@ def checked(call) -> str | None:
     if shaped:
         return shaped
     evidence = call.args.get("evidence") or []
+    if not all(isinstance(one, dict) for one in evidence):
+        return "give each piece of evidence as an object with its kind and its id"
     clusters = {str(one.get("id")) for one in evidence if one.get("kind") == EvidenceKind.Cluster}
     for line in (call.args.get("text") or "").splitlines():
         line = line.strip()
