@@ -38,7 +38,7 @@ from btcopilot.matching import TITLE_PREFIXES
 from btcopilot.metered import Metered
 from btcopilot import record
 from btcopilot.models import Author, Change, Observation, ObservationKind, Purpose
-from btcopilot import profile, prompts
+from btcopilot import coverage, profile, prompts
 from btcopilot.models import Diagram, Discussion, Statement
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
@@ -91,7 +91,11 @@ _log = logging.getLogger(__name__)
 # most was going on is found for a question closed before the answer was
 # written on it, so every record regroups on its next event change
 # [Oracle: R-0850, R-0853, R-0376].
-DETECTION_VERSION = 14
+# 15: a run is seeded only at a shift whose date is known, the people are
+# offered with what each is to the person, and a run with three or more
+# supporting shifts comes back as a period or is declined with a reason, so
+# every record regroups on its next event change [Oracle: R-0850, R-0856].
+DETECTION_VERSION = 15
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -191,6 +195,8 @@ class ClusterCheck(enum.StrEnum):
     Renamed = "renamed"
     UnknownMessage = "unknown_message"
     Merged = "merged"
+    Unanswered = "unanswered"
+    Declined = "declined"
     CutOff = "cut_off"
     Unreadable = "unreadable"
     CallFailed = "call_failed"
@@ -371,6 +377,13 @@ class Candidate:
     shiftIds: list[int]
     startDate: str
     endDate: str
+    id: str = ""
+
+    @property
+    def strong(self) -> bool:
+        """Three supporting shifts or more: the call returns it as a period or
+        declines it with a reason [Oracle: R-0856]."""
+        return len(self.shiftIds) >= MIN_CLUSTER_EVENTS
 
 
 def candidates(data: DiagramData) -> list[Candidate]:
@@ -378,16 +391,19 @@ def candidates(data: DiagramData) -> list[Candidate]:
     cluster, anyone's in the extended family, with no model in the loop. Any
     event near a run may be its opening; which ones matter is the grouping
     call's judgement, never a list of kinds. A run with fewer than three
-    supporting shifts is offered too, its count beside it [Oracle: R-0850]."""
+    supporting shifts is offered too, its count beside it [Oracle: R-0850].
+    Only a shift whose date is known seeds a run: a placeholder date shows
+    nothing close in time, and may only join a run seeded near it."""
     free = joinable(data)
     marked = [e for e in free if supports(e)]
-    if not marked:
+    seeds = [e for e in marked if not unsure(e)]
+    if not seeds:
         return []
 
     when = {e.id: parse_date(e.dateTime) for e in free}
 
     groups: list[set[int]] = []
-    for seed in marked:
+    for seed in seeds:
         near = {
             e.id
             for e in free
@@ -415,7 +431,10 @@ def candidates(data: DiagramData) -> list[Candidate]:
         )
         if marked_ids & set(ids) and len(ids) >= MIN_CLUSTER_EVENTS
     ]
-    return sorted(kept, key=lambda c: (c.startDate, c.eventIds[0]))
+    kept.sort(key=lambda c: (c.startDate, c.eventIds[0]))
+    for n, candidate in enumerate(kept, 1):
+        candidate.id = f"r{n}"
+    return kept
 
 
 @dataclass
@@ -529,9 +548,19 @@ class TheirPeriod:
 
 
 @dataclass
+class Declined:
+    """A run with three or more supporting shifts the call does not make a
+    period, with its one sentence why."""
+
+    run: str
+    reason: str
+
+
+@dataclass
 class ClusterListResponse:
     clusters: list[ModelCluster] = field(default_factory=list)
     periods: list[TheirPeriod] = field(default_factory=list)
+    declined: list[Declined] = field(default_factory=list)
 
 
 @dataclass
@@ -680,6 +709,7 @@ def _prompt(
     said: list[Answer],
     born: str | None,
     told: set[str] = frozenset(),
+    people: list[str] = (),
 ) -> str:
     when = {e.id: parse_date(e.dateTime) for e in free}
     sure = {e.id for e in free if not unsure(e)}
@@ -703,14 +733,17 @@ def _prompt(
         candidates=json.dumps(
             [
                 {
+                    "id": candidate.id,
                     "before": _before(candidate, when),
                     "supportingShifts": len(candidate.shiftIds),
+                    "default": candidate.strong,
                     "eventIds": candidate.eventIds,
                 }
                 for candidate in cands
             ],
             indent=2,
         ),
+        people=json.dumps(list(people), indent=2),
         events=json.dumps([_event_json(e) for e in free], indent=2),
         told=json.dumps(
             {
@@ -727,6 +760,14 @@ def _prompt(
 
 def _title(cluster: dict) -> str:
     return cluster.get("name") or cluster.get("title") or ""
+
+
+def _cast(data: DiagramData, free: list[Event]) -> list[str]:
+    """Everyone the offered events name, with what each is to the person when
+    the diagram says, so which change mattered is judged by who changed and a
+    period is named in words the person knows [Oracle: R-0426, R-0376]."""
+    ids = sorted(set().union(*(_people(e) for e in free)))
+    return [coverage.label(data, ItemKind.Person, pid) for pid in ids]
 
 
 def _sculpted(cluster: ModelCluster, was: dict, known: set[int]) -> bool:
@@ -976,6 +1017,7 @@ class Screened:
     absorbed: list[tuple[ModelCluster, ModelCluster]]
     named: list[Named] = field(default_factory=list)
     unnamed: list[ClusterError] = field(default_factory=list)
+    declined: list[ClusterError] = field(default_factory=list)
 
 
 def _screen(
@@ -986,6 +1028,7 @@ def _screen(
     data: DiagramData,
     said: list[Answer],
     last: bool = False,
+    runs: list[Candidate] = (),
 ) -> Screened:
     """`last` is the second answer: a period still named by the person's
     trouble is kept under a plain name, and one still opening at an event of
@@ -1074,9 +1117,65 @@ def _screen(
             )
         else:
             kept.append(cluster)
+    unanswered, declined = _answered_runs(response, runs, named, stored)
     return Screened(
-        kept=kept, faults=faults, absorbed=absorbed, named=named, unnamed=unnamed
+        kept=kept,
+        faults=faults + unanswered,
+        absorbed=absorbed,
+        named=named,
+        unnamed=unnamed,
+        declined=declined,
     )
+
+
+def _answered_runs(
+    response: ClusterListResponse,
+    runs: list[Candidate],
+    named: list[Named],
+    stored: dict[str, dict],
+) -> tuple[list[ClusterError], list[ClusterError]]:
+    """Each run with three or more supporting shifts that no period holds a
+    shift of, the app's as returned or the person's: declined with a reason,
+    it is kept as an observation; neither returned nor declined, it is a
+    fault, asked again [Oracle: R-0856, R-0850]."""
+    held = [set(c.eventIds) for c in response.clusters]
+    held += [set(one.eventIds) for one in named]
+    held += [
+        set(c.get("eventIds") or []) for c in stored.values() if not _regroupable(c)
+    ]
+    why = {d.run: d.reason.strip() for d in response.declined if d.reason.strip()}
+    unanswered, declined = [], []
+    for run in runs:
+        if not run.strong or any(set(run.shiftIds) & ids for ids in held):
+            continue
+        said = {
+            "run": run.id,
+            "eventIds": run.eventIds,
+            "start": run.startDate,
+            "end": run.endDate,
+        }
+        line = (
+            f"Run {run.id} ({run.startDate} to {run.endDate}) has "
+            f"{len(run.shiftIds)} shifts that count"
+        )
+        if run.id in why:
+            declined.append(
+                ClusterError(
+                    f"{line} and was declined: {why[run.id]}",
+                    ClusterCheck.Declined,
+                    {**said, "reason": why[run.id]},
+                )
+            )
+        else:
+            unanswered.append(
+                ClusterError(
+                    f"{line} and came back neither as a period nor under "
+                    "`declined` with a reason.",
+                    ClusterCheck.Unanswered,
+                    said,
+                )
+            )
+    return unanswered, declined
 
 
 def _judged(
@@ -1130,7 +1229,9 @@ def broken(data: DiagramData) -> list[tuple[dict, ClusterCheck, str]]:
     return _judged(data)[1]
 
 
-def answer_schema(stored: dict[str, dict], said: list[Answer] = ()) -> dict:
+def answer_schema(
+    stored: dict[str, dict], said: list[Answer] = (), runs: list[Candidate] = ()
+) -> dict:
     """The answer's shape, with `id` limited to the groups the record holds and
     left out when it holds none (the person's own are never the model's to
     hand back), and every group's events, name and reason
@@ -1138,7 +1239,8 @@ def answer_schema(stored: dict[str, dict], said: list[Answer] = ()) -> dict:
     new group, and the check refused each answer; with nothing required, it
     once left out every group's events. The person's periods are asked for
     only when they answered, each under one of their messages, its years left
-    out when their words give none."""
+    out when their words give none; a run may be declined only when it has
+    three or more supporting shifts."""
     schema = dataclass_to_json_schema(
         ClusterListResponse, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
     )
@@ -1150,6 +1252,13 @@ def answer_schema(stored: dict[str, dict], said: list[Answer] = ()) -> dict:
         fields["id"]["enum"] = ours
     else:
         del fields["id"]
+    strong = [run.id for run in runs if run.strong]
+    if strong:
+        declined = schema["properties"]["declined"]["items"]
+        declined["required"] = ["run", "reason"]
+        declined["properties"]["run"]["enum"] = strong
+    else:
+        del schema["properties"]["declined"]
     if not said:
         del schema["properties"]["periods"]
         return schema
@@ -1209,9 +1318,15 @@ def detect_clusters(
     told = trouble_words(data)
     own = profile.own(data)
     born = own and profile.birth(data, own["id"])
-    prompt = _prompt(cands, free, existing, said, born and born["dateTime"], told)
-    schema = answer_schema(existing, said)
-    limit = THINKING_ROOM + PER_EVENT * len(free) + PER_ANSWER * len(said)
+    prompt = _prompt(
+        cands, free, existing, said, born and born["dateTime"], told, _cast(data, free)
+    )
+    schema = answer_schema(existing, said, cands)
+    limit = (
+        THINKING_ROOM
+        + PER_EVENT * len(free)
+        + PER_ANSWER * (len(said) + sum(run.strong for run in cands))
+    )
     _log.info(
         f"Grouping {len(free)} events: {len(existing)} groups already there, "
         f"{len(cands)} proposed as a hint"
@@ -1226,7 +1341,9 @@ def detect_clusters(
         answer = None
         try:
             answer = _answered(ask, words, schema, limit)
-            screened = _screen(answer, free, existing, told, data, said, last=n == 2)
+            screened = _screen(
+                answer, free, existing, told, data, said, last=n == 2, runs=cands
+            )
         except ClusterError as failed:
             heard(n, failed, answer)
             raise
@@ -1264,6 +1381,8 @@ def detect_clusters(
         screened = attempt(2, prompt + prompts.CLUSTER_REJECTED.format(why=why))
     for fault in screened.unnamed:
         heard(2 if retry else 1, fault, None)
+    for declined in screened.declined:
+        heard(2 if retry else 1, declined, None)
 
     when = {e.id: e.dateTime for e in free}
     known = set(when)

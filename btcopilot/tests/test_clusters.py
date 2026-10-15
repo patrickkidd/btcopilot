@@ -20,6 +20,7 @@ from btcopilot.clusters import (
     ClusterCheck,
     ClusterError,
     ClusterListResponse,
+    Declined,
     ModelCluster,
     TheirPeriod,
     _deltas,
@@ -312,10 +313,68 @@ def test_a_run_with_fewer_than_three_supporting_shifts_is_offered_with_its_count
     proposed = candidates(data)
     assert [(c.eventIds, c.shiftIds) for c in proposed] == [([1, 2, 3], [2, 3])]
     prompt = clusters._prompt(proposed, joinable(data), {}, [], None)
-    hint = prompt.split("RUNS THE APP'S RULES FOUND (A HINT ONLY)")[1].split("EVERY EVENT")[0]
-    assert [(run["supportingShifts"], run["eventIds"]) for run in json.loads(hint)] == [
-        (2, [1, 2, 3])
-    ]
+    hint = prompt.split("RUNS THE APP'S RULES FOUND (A HINT ONLY)")[1].split("THE PEOPLE")[0]
+    assert [
+        (run["supportingShifts"], run["default"], run["eventIds"])
+        for run in json.loads(hint)
+    ] == [(2, False, [1, 2, 3])]
+
+
+def test_a_shift_of_unknown_date_alone_seeds_no_run():
+    # R-0850
+    """A placeholder date shows nothing close in time: shifts whose dates
+    nobody knows join a run seeded near them and never seed one."""
+    unknown = DateCertainty.Unknown
+    data = record(
+        moment(1, "1955-01-01", person=1, dateCertainty=unknown),
+        moment(2, "1955-03-01", person=1, dateCertainty=unknown),
+        moment(3, "1955-06-01", person=2, dateCertainty=unknown),
+    )
+    assert grouped(data) == []
+    data.events.append(moment(4, "1955-09-01", person=2))
+    assert grouped(data) == [[1, 2, 3, 4]]
+
+
+def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reason():
+    # R-0856, R-0850
+    """A run with three or more supporting shifts is the app's default: an
+    answer that neither returns it nor declines it is asked again with the
+    reason; a run declined with a reason is heard, the rest kept."""
+    data = record(
+        moment(1, "1994-01-01", person=1),
+        moment(2, "1994-03-01", person=1),
+        moment(3, "1994-05-01", person=2),
+        moment(10, "2010-01-01", person=1),
+        moment(11, "2010-02-01", person=2),
+        moment(12, "2010-04-01", person=3),
+    )
+    assert [(c.id, c.strong) for c in candidates(data)] == [("r1", True), ("r2", True)]
+    first = answers(named(1, 2, 3))
+    second = answers(named(1, 2, 3))
+    second.declined = [Declined(run="r2", reason="three reactions to one storm")]
+    seen = []
+    with replies(first, second) as ask:
+        result = detect_clusters(data, ask, heard(seen))
+    assert seen == [(1, ClusterCheck.Unanswered), (2, ClusterCheck.Declined)]
+    assert "Run r2 (2010-01-01 to 2010-04-01) has 3 shifts" in ask.call_args_list[1].args[0]
+    assert [c.eventIds for c in result.clusters] == [[1, 2, 3]]
+    assert answer_schema({}, [], candidates(data))["properties"]["declined"]["items"][
+        "properties"
+    ]["run"]["enum"] == ["r1", "r2"]
+
+
+def test_the_people_are_offered_with_what_each_is_to_the_person():
+    # R-0426, R-0376
+    """Which change mattered is judged by who changed, so the call is told who
+    each person the events name is to the person."""
+    data = record(
+        moment(1, "1994-01-01", person=2),
+        moment(2, "1994-03-01", person=3),
+        bonds=[PairBond(id=9, person_a=2, person_b=3)],
+    )
+    data.people[0]["parents"] = 9
+    data.people[1]["gender"] = "female"
+    assert clusters._cast(data, joinable(data)) == ["2 P2 (mother)", "3 P3 (parent)"]
 
 
 def test_a_calmer_shift_supports_nothing_and_an_unknown_date_still_supports():
@@ -1276,6 +1335,7 @@ def test_a_stored_period_with_too_few_shifts_is_handed_back_and_stays_drawn(
         named(50, 51, 52, cluster_id="c1", name="A breakup and the first symptoms"),
         named(60, 61, 62, cluster_id="c2", name="Back home and the family grows"),
     )
+    kept.declined = [Declined(run="r2", reason="three reactions with nothing around them")]
     with patch(
         "btcopilot.metered.gemini_structured_sync", side_effect=[parsed(kept)]
     ) as asked:

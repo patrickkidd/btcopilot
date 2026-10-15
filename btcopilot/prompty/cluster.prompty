@@ -29,12 +29,16 @@ the person's own: it stays as they drew it, you never return it, and your
 periods never share its days. Keep, rename, reshape, merge or drop any other
 one as the events now read, returning it under its id. A period you leave out
 is set aside. Second, runs of events the app's rules found close in time, each
-with the silence before it and `supportingShifts`, how many of its events are
-shifts that count: a hint only, never a period by itself. Third, every
-event. One whose `dateCertainty` is `unknown` has a date nobody is sure of: it
+with its `id`, the silence before it and `supportingShifts`, how many of its
+events are shifts that count. A run marked `default` has three or more: return
+a period holding its shifts, reshaped as the events read, or list it under
+`declined` with one sentence on what in the events says it is not a period.
+Any other run is a hint only, never a period by itself. Third, the people the
+events name, each with what they are to the person when the diagram says.
+Fourth, every event. One whose `dateCertainty` is `unknown` has a date nobody is sure of: it
 may belong to a period and count toward it, weighed as the guess it is, but it
 never opens one and is never an `openingId`; `approximate` is a date within
-about a year. Fourth, the person's answers when asked when the most was going on in
+about a year. Fifth, the person's answers when asked when the most was going on in
 their life, with their birth date.
 
 **The person's own periods.** For each time the person names in an answer that
@@ -59,13 +63,19 @@ events made you see it so.
 
 Every period of yours holds at least three events. A period is stronger with
 three or more of the shifts that count; one with fewer may still be proposed
-when its events belong together, and its `reason` then says so. Never write
+when its events belong together, and its `reason` then says so. With fewer
+than three, propose it only when a change in who is in the family, or in how a
+key member functions, sits among its shifts and the person it touched matters
+to this family. One shift alone is a reaction, not a period: there is not
+enough in the diagram to choose a reading. Events whose dates are all unknown
+never make a period by themselves: nothing shows they were close in time. Never write
 an id that is not listed below, and never add a detail that is not on the events
 you were given.
 
 Return one entry under `clusters` per period of yours: `id` when it grew out of
 a listed one, `eventIds`, `name`, `reason`, `openingId` when an event opened it,
-and `change` when it is not exactly as given.
+and `change` when it is not exactly as given. List under `declined` each
+`default` run you do not return, with its `run` id and `reason`.
 
 PERIODS THIS DIAGRAM HAS
 
@@ -74,6 +84,10 @@ PERIODS THIS DIAGRAM HAS
 RUNS THE APP'S RULES FOUND (A HINT ONLY)
 
 {candidates}
+
+THE PEOPLE
+
+{people}
 
 EVERY EVENT
 
