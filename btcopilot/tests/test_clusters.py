@@ -21,6 +21,7 @@ from btcopilot.clusters import (
     ClusterError,
     ClusterListResponse,
     Declined,
+    DeclineKind,
     ModelCluster,
     TheirPeriod,
     _deltas,
@@ -375,7 +376,9 @@ def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reas
     assert [(c.id, c.strong) for c in candidates(data)] == [("r1", True), ("r2", True)]
     first = answers(named(1, 2, 3))
     second = answers(named(1, 2, 3))
-    second.declined = [Declined(run="r2", reason="three reactions to one storm")]
+    second.declined = [
+        Declined(run="r2", reason="nobody in the family changed", kind=DeclineKind.NoChange)
+    ]
     seen = []
     with replies(first, second) as ask:
         result = detect_clusters(data, ask, heard(seen))
@@ -531,7 +534,10 @@ RECORD = record(
 def answers(*clusters: ModelCluster, declined=()) -> ClusterListResponse:
     return ClusterListResponse(
         clusters=list(clusters),
-        declined=[Declined(run=run, reason="nothing piles up") for run in declined],
+        declined=[
+            Declined(run=run, reason="nothing piles up", kind=DeclineKind.NoChange)
+            for run in declined
+        ],
     )
 
 
@@ -1371,7 +1377,9 @@ def test_a_stored_period_with_too_few_shifts_is_handed_back_and_stays_drawn(
         named(50, 51, 52, cluster_id="c1", name="A breakup and the first symptoms"),
         named(60, 61, 62, cluster_id="c2", name="Back home and the family grows"),
     )
-    kept.declined = [Declined(run="r2", reason="three reactions with nothing around them")]
+    kept.declined = [
+        Declined(run="r2", reason="nothing around them changed", kind=DeclineKind.NoChange)
+    ]
     with patch(
         "btcopilot.metered.gemini_structured_sync", side_effect=[parsed(kept)]
     ) as asked:
@@ -1862,7 +1870,13 @@ def test_a_period_of_theirs_keeps_the_ages_they_gave_and_is_told_in_their_own_se
     assert clusters.their_sentence("the divorce", LATE, MOST) == LATE
 
 
-DECLINED = [Declined(run="r1", reason="the person's own reading is the one to hear")]
+DECLINED = [
+    Declined(
+        run="r1",
+        reason="nobody joined or left the family around these shifts",
+        kind=DeclineKind.NoChange,
+    )
+]
 
 
 def test_a_period_in_other_words_than_theirs_is_not_written():
@@ -2098,3 +2112,56 @@ def test_the_note_on_what_brought_them_in_tells_their_trouble_too():
     ]
     assert clusters.trouble_words(data) == {"burnout", "insomnia", "sleepless"}
 
+
+
+THREE_RUNS = record(
+    moment(1, "1994-01-01", person=1),
+    moment(2, "1994-03-01", person=1),
+    moment(3, "1994-05-01", person=2),
+    moment(10, "2010-01-01", person=1),
+    moment(11, "2010-02-01", person=2),
+    moment(12, "2010-04-01", person=3),
+    moment(20, "2020-01-01", person=1),
+    moment(21, "2020-02-01", person=2),
+    moment(22, "2020-04-01", person=3),
+)
+NOBODY = "nobody joined or left the family and no one's functioning changed"
+
+
+def test_a_run_declined_for_its_count_or_its_spread_is_asked_again():
+    # R-0856, R-0857
+    """A decline says what in the run's events says no. One that counts its
+    shifts, judges it spread out, or says the person's own period covers days
+    none covers is refused like a bad period, all in one answer again."""
+    bad = ClusterListResponse(
+        declined=[
+            Declined(
+                run="r1",
+                reason="it holds only three shifts that count",
+                kind=DeclineKind.NoChange,
+            ),
+            Declined(run="r2", reason="too sparse and spread out", kind=DeclineKind.NoChange),
+            Declined(
+                run="r3", reason="the person's own reading covers it", kind=DeclineKind.Theirs
+            ),
+        ]
+    )
+    good = ClusterListResponse(
+        declined=[
+            Declined(run=run, reason=NOBODY, kind=DeclineKind.NoChange)
+            for run in ("r1", "r2", "r3")
+        ]
+    )
+    seen = []
+    with replies(bad, good) as ask:
+        result = detect_clusters(THREE_RUNS, ask, heard(seen))
+    assert seen == [(1, ClusterCheck.DeclineReason)] * 3 + [(2, ClusterCheck.Declined)] * 3
+    again = ask.call_args_list[1].args[0]
+    assert "its reason says 'three shifts'" in again
+    assert "its reason says 'sparse'" in again
+    assert "no period of the person's own shares its days" in again
+    assert result.clusters == []
+    schema = answer_schema({}, [], candidates(THREE_RUNS))
+    declined = schema["properties"]["declined"]["items"]
+    assert declined["required"] == ["run", "kind", "reason"]
+    assert declined["properties"]["kind"]["enum"] == [kind.value for kind in DeclineKind]

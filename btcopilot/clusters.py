@@ -256,6 +256,46 @@ class ClusterCheck(enum.StrEnum):
     Cause = "cause"
     FirstPerson = "first_person"
     RawId = "raw_id"
+    DeclineReason = "decline_reason"
+
+
+class DeclineKind(enum.StrEnum):
+    """What in a run's events may say it is not a period. Its count of shifts
+    or events, its length, and how spread out or mixed it is never do: a long
+    or mixed run is cut down instead [Oracle: R-0856, R-0850]."""
+
+    NoChange = "no_change"
+    MattersLittle = "matters_little"
+    OrdinaryLevel = "ordinary_level"
+    Theirs = "theirs"
+
+
+DECLINE_KINDS = {
+    DeclineKind.NoChange: "around its shifts nobody joins or leaves the family "
+    "and no key member's functioning changes",
+    DeclineKind.MattersLittle: "the change among its shifts is in someone whose "
+    "place in this family is small",
+    DeclineKind.OrdinaryLevel: "its shifts are told as how things always were, "
+    "this family's ordinary level",
+    DeclineKind.Theirs: "a period of the person's own covers its days",
+}
+
+# A decline's reason that counts shifts or events, or judges the run's length
+# or spread, which the decline kinds leave out. "1987 shifts" names a year, so
+# a count is one to three digits or a number word.
+COUNTED = re.compile(
+    r"\b(?:\d{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|few|fewer|"
+    r"several|many|enough)\s+(?:[a-z-]+\s+){0,3}?(?:shifts?|events?)\b"
+    r"|\btoo few\b|\bfewer than\b|\bnot enough\b|\binsufficient\b",
+    re.IGNORECASE,
+)
+SPREAD = re.compile(
+    r"\bspread|\bsparse|\bscatter|\bdisconnected|\bdispar|\bmixed\b|\baggregat"
+    r"|\bspan(?:s|ned|ning)?\b|\btoo (?:long|broad|wide|many)\b"
+    r"|\b(?:several|many) years\b|\bmultiple distinct\b|\bseparate periods\b"
+    r"|\blong,? (?:disconnected|series|stretch|run)\b",
+    re.IGNORECASE,
+)
 
 
 class ClusterError(Exception):
@@ -640,11 +680,12 @@ class TheirPeriod:
 
 @dataclass
 class Declined:
-    """A run with three or more supporting shifts the call does not make a
-    period, with its one sentence why."""
+    """A run the call does not make a period, with what in its events says no
+    and its one sentence why."""
 
     run: str
     reason: str
+    kind: DeclineKind | None = None
 
 
 @dataclass
@@ -796,7 +837,12 @@ def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
 # for its count and read a time the person only wondered about as theirs.
 DECLINED_REASON = (
     "What in the events says this run is not a period; never its count of shifts "
-    "alone, since two shifts around a change in the family's membership are enough"
+    "or events, since two shifts around a change in the family's membership are "
+    "enough, and never its length or how spread out or mixed it is, since a long "
+    "or mixed run is cut down to the stretch around the change instead"
+)
+DECLINED_KIND = "What in the events says no: " + "; ".join(
+    f"{kind}, {meaning}" for kind, meaning in DECLINE_KINDS.items()
 )
 THEIR_PERIOD = (
     "A time the person says stood out or was hard; never one they only wonder "
@@ -1310,12 +1356,15 @@ def _screen(
     when = {e.id: parse_date(e.dateTime) for e in free}
     full = {e.id: parse_date(e.dateTime) for e in _dated(data)}
     replaced = {one.replaces for one in named}
+    drawn = [
+        cluster
+        for cluster_id, cluster in stored.items()
+        if cluster_id not in replaced and not _regroupable(cluster)
+    ]
     theirs = [
         (cluster, span)
-        for cluster_id, cluster in stored.items()
-        if cluster_id not in replaced
-        and not _regroupable(cluster)
-        and (span := span_of([when[i] for i in cluster.get("eventIds") or [] if i in when]))
+        for cluster in drawn
+        if (span := span_of([when[i] for i in cluster.get("eventIds") or [] if i in when]))
     ] + [
         ({"name": one.period.name}, span_of([full[i] for i in one.eventIds]))
         for one in named
@@ -1351,12 +1400,12 @@ def _screen(
             )
             continue
         span = span_of([when[i] for i in cluster.eventIds])
-        drawn = next((c for c, s in theirs if overlapping(s, span)), None)
-        if drawn is not None:
+        over = next((c for c, s in theirs if overlapping(s, span)), None)
+        if over is not None:
             faults.append(
                 ClusterError(
                     f"Period {cluster.name!r} shares days with the person's own "
-                    f"period {_title(drawn)!r}, which stays as they drew it; leave "
+                    f"period {_title(over)!r}, which stays as they drew it; leave "
                     "yours out unless the days outside theirs make a period by "
                     "themselves.",
                     ClusterCheck.Theirs,
@@ -1394,10 +1443,15 @@ def _screen(
             )
         else:
             kept.append(cluster)
-    unanswered, declined = _answered_runs(response, runs, named, stored)
+    held = [set(c.eventIds) for c in response.clusters]
+    held += [set(one.eventIds) for one in named]
+    held += [set(c.get("eventIds") or []) for c in drawn]
+    unanswered, declined, undeclined = _answered_runs(
+        response.declined, runs, held, [span for _, span in theirs]
+    )
     return Screened(
         kept=kept,
-        faults=faults + unanswered,
+        faults=faults + unanswered + undeclined,
         absorbed=absorbed,
         named=named,
         unnamed=unnamed,
@@ -1406,26 +1460,40 @@ def _screen(
     )
 
 
+def _decline_fault(declined: Declined, run: Candidate, theirs: list[Span]) -> str | None:
+    """Why a decline does not stand, or nothing: it names no kind of what in
+    the run's events says no, counts its shifts or events, judges its length
+    or spread, or says a period of the person's covers days none covers."""
+    if declined.kind is None:
+        return "it names no `kind`, what in its events says it is not a period"
+    word = COUNTED.search(declined.reason) or SPREAD.search(declined.reason)
+    if word:
+        return (
+            f"its reason says {word.group(0)!r}: a run is never declined for its "
+            "count of shifts or events, its length, or how spread out or mixed it "
+            "is; cut it down to the stretch around the change in the family inside "
+            "it and return that, or say what in its events says no"
+        )
+    days = (parse_date(run.startDate), parse_date(run.endDate))
+    if declined.kind is DeclineKind.Theirs and not any(overlapping(days, s) for s in theirs):
+        return "no period of the person's own shares its days"
+    return None
+
+
 def _answered_runs(
-    response: ClusterListResponse,
+    declines: list[Declined],
     runs: list[Candidate],
-    named: list[Named],
-    stored: dict[str, dict],
-) -> tuple[list[ClusterError], list[ClusterError]]:
+    held: list[set[int]],
+    theirs: list[Span],
+) -> tuple[list[ClusterError], list[ClusterError], list[ClusterError]]:
     """Each run that no period holds a shift of, the app's as returned or the
-    person's: declined with a reason, it is kept as an observation; neither
-    returned nor declined, it is a fault, asked again, so every run offered is
-    judged [Oracle: R-0856, R-0850]."""
-    held = [set(c.eventIds) for c in response.clusters]
-    held += [set(one.eventIds) for one in named]
-    replaced = {one.replaces for one in named}
-    held += [
-        set(c.get("eventIds") or [])
-        for cluster_id, c in stored.items()
-        if cluster_id not in replaced and not _regroupable(c)
-    ]
-    why = {d.run: d.reason.strip() for d in response.declined if d.reason.strip()}
-    unanswered, declined = [], []
+    person's: declined for what in its events says no, it is kept as an
+    observation; declined for anything else, or neither returned nor
+    declined, it is a fault, asked again, so every run offered is judged
+    [Oracle: R-0856, R-0857, R-0850]. Returns the runs unanswered, those
+    declined and those whose decline does not stand."""
+    why = {d.run: d for d in declines if d.reason.strip()}
+    unanswered, declined, refused = [], [], []
     for run in runs:
         if any(set(run.shiftIds) & ids for ids in held):
             continue
@@ -1439,15 +1507,8 @@ def _answered_runs(
             f"Run {run.id} ({run.startDate} to {run.endDate}) has "
             f"{len(run.shiftIds)} shifts that count"
         )
-        if run.id in why:
-            declined.append(
-                ClusterError(
-                    f"{line} and was declined: {why[run.id]}",
-                    ClusterCheck.Declined,
-                    {**said, "reason": why[run.id]},
-                )
-            )
-        else:
+        decline = why.get(run.id)
+        if decline is None:
             unanswered.append(
                 ClusterError(
                     f"{line} and came back neither as a period nor under "
@@ -1456,7 +1517,28 @@ def _answered_runs(
                     said,
                 )
             )
-    return unanswered, declined
+            continue
+        noted = {**said, "reason": decline.reason.strip(), "kind": decline.kind}
+        fault = _decline_fault(decline, run, theirs)
+        if fault:
+            kinds = "; ".join(f"`{kind}`: {meaning}" for kind, meaning in DECLINE_KINDS.items())
+            refused.append(
+                ClusterError(
+                    f"{line} and its decline does not stand: {fault}. A decline "
+                    f"names one of these kinds: {kinds}.",
+                    ClusterCheck.DeclineReason,
+                    noted,
+                )
+            )
+        else:
+            declined.append(
+                ClusterError(
+                    f"{line} and was declined: {decline.reason.strip()}",
+                    ClusterCheck.Declined,
+                    noted,
+                )
+            )
+    return unanswered, declined, refused
 
 
 def _judged(
@@ -1534,8 +1616,9 @@ def answer_schema(
         del fields["id"]
     if runs:
         declined = schema["properties"]["declined"]["items"]
-        declined["required"] = ["run", "reason"]
+        declined["required"] = ["run", "kind", "reason"]
         declined["properties"]["run"]["enum"] = [run.id for run in runs]
+        declined["properties"]["kind"]["description"] = DECLINED_KIND
         declined["properties"]["reason"]["description"] = DECLINED_REASON
     else:
         del schema["properties"]["declined"]

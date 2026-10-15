@@ -82,11 +82,13 @@
    "declined": [
     {
      "run": "r1",
-     "reason": "The 1987 shifts are told as how things already stood that year, not as a change at a known date."
+     "reason": "The 1987 shifts are told as how things already stood that year, not as a change at a known date.",
+     "kind": "ordinary_level"
     },
     {
      "run": "r6",
-     "reason": "The shifts from 2017 on are spread over two and a half years with no date where they draw close together."
+     "reason": "His shifts from 2017 on are told as how he usually is: forever pushing his projects forward and anxious at family occasions after no sleep.",
+     "kind": "ordinary_level"
     }
    ]
   }

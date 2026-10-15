@@ -41,7 +41,8 @@ events are shifts that count. `supportingShifts` is the app's count; it does not
 told as how things always were, so recount without them before you keep a
 run. A run marked `default` has three or more: return
 a period holding its shifts, reshaped as the events read, or list it under
-`declined` with one sentence on what in the events says it is not a period,
+`declined` with its `kind` and one sentence on what in the events says it is
+not a period,
 never its count of shifts or of events alone. Never decline a run for being
 long, spread out or mixed: cut it down to the stretch around the change in the
 family inside it, return that, and leave the rest of its events out. Any other run is weaker evidence: judge it, and return a period from it or
@@ -108,7 +109,7 @@ you were given.
 Return one entry under `clusters` per period of yours: `id` when it grew out of
 a listed one, `eventIds`, `name`, `reason`, `openingId` when an event opened it,
 and `change` when it is not exactly as given. List under `declined` each
-run you do not return, with its `run` id and `reason`. Before you decline a
+run you do not return, with its `run` id, `kind` and `reason`. Before you decline a
 run with fewer than three shifts that count, look among its events for someone
 joining or leaving the family, or for a key member whose functioning changes,
 and when you find one, return the run as a period. A `reason` says what in the run's events
