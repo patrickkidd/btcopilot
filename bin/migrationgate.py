@@ -4,6 +4,9 @@ it must keep true.
 
   PYTHONPATH=<worktree> uv run python bin/migrationgate.py <pg_dump -Fc file>
 
+create_app needs the settings the app reads at start, so FLASK_VAPID_PUBLIC_KEY
+and FLASK_VAPID_PRIVATE_KEY must be set (dummy values do; the gate sends no push).
+
 Exits non-zero when any check fails. The container is removed either way.
 """
 import contextlib
@@ -192,7 +195,12 @@ def gone(call: dict, arg: str) -> list[tuple[str, str]]:
         return [(ARGS[arg].value, str(i)) for i in ids]
     if call["name"] == ToolName.Remove.value:
         return [(args["item_kind"], str(args["item_id"]))]
-    return [(SUBJECT[ToolName(call["name"])].value, str(args.get("id")))]
+    tool = ToolName(call["name"])
+    if tool == ToolName.Navigate:
+        return []
+    if tool not in SUBJECT:
+        raise SystemExit(f"tool call {call['name']!r} names an item under 'it' and has no subject kind")
+    return [(SUBJECT[tool].value, str(args.get("id")))]
 
 
 def name_checks(conn) -> list[tuple]:

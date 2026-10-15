@@ -32,3 +32,13 @@ Each needs a test that fails before its fix, citing its ruling once the queued i
 | — | The reports route's limit of 20 an hour per sender is held in the server's memory, so every restart resets it. | |
 | R-0613 (queued) | Someone who joins a notice's audience after it was sent gets it in the app only, never by push or email, so a pricing notice sent by email misses them. | |
 | R-0628 | The persona generator, the simulated client and the realism scorer call Gemini without writing a row in the model-calls table. | a decision: which purpose those rows carry (a new one needs a migration of the purpose enum) and whose user id, since the column is required and these calls have no user |
+
+## Observed 2026-10-15 on a fresh production dump by the migration gate (no migration had run)
+
+Cause unknown, predates FD-381, no fix attempted.
+
+| Ruling | What is wrong today | What it needs |
+|---|---|---|
+| R-0487 | 104 coach change rows are claimed by no statement. | the cause found |
+| R-0487 | 4 failed turns matched where 5 were expected. | the cause found |
+| R-0487 | 1629 of 1665 live write calls had their item in the turn's change rows. | the cause found |
