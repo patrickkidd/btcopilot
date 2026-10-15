@@ -1976,3 +1976,16 @@ def test_a_stored_period_with_undated_events_regroups_and_keeps_them(test_user):
         51,
     )
     assert (cluster["startDate"], cluster["endDate"]) == ("1994-01-01", "1994-08-01")
+
+
+def test_an_illness_the_grouping_names_opens_the_period_without_it_the_marriage_does():
+    # R-0853, R-0850
+    data = record(
+        asdict(Event(id=1, kind=EventKind.Married, person=1, spouse=2, dateTime="1994-01-01")),
+        moment(2, "1994-06-01", person=1),
+        moment(3, "1994-09-01", person=1, kind=EventKind.Shift, functioning=VariableShift.Down, description="illness found"),
+        moment(4, "1995-01-01", person=1),
+    )
+    cluster = {"eventIds": [1, 2, 3, 4]}
+    assert clusters.judge(cluster, data).opening == 1
+    assert clusters.judge({**cluster, "openingEventId": 3}, data).opening == 3
