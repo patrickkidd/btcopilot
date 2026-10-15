@@ -92,7 +92,7 @@ it("says the chosen kind of talk as plain words, with every possible kind muted 
 
 // R-0535, R-0536
 it("lists the kinds of talk the server's Register holds, no more and no fewer", () => {
-  const source = readFileSync("../btcopilot/toolbox.py", "utf8");
+  const source = readFileSync(new URL("../../btcopilot/toolbox.py", import.meta.url), "utf8");
   const block = /class Register\(enum\.StrEnum\):\n((?:    .*\n)+)/.exec(source)![1];
   const server = [...block.matchAll(/= "([^"]*)"/g)].map((m) => m[1]);
   expect(Object.values(Register)).toEqual(server);
