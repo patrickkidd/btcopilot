@@ -320,6 +320,28 @@ def test_a_run_with_fewer_than_three_supporting_shifts_is_offered_with_its_count
     ] == [(2, False, [1, 2, 3])]
 
 
+def test_a_run_around_a_single_shift_is_not_offered():
+    # R-0850
+    """One shift alone is a reaction: a death, the funeral and one rise in
+    anxiety after it are no run; a second shift makes them one."""
+    data = record(
+        asdict(Event(id=1, kind=EventKind.Death, person=2, dateTime="2026-08-14")),
+        moment(2, "2026-08-22", person=1, kind=EventKind.Noted, description="funeral"),
+        moment(3, "2026-09-15", person=1),
+    )
+    assert grouped(data) == []
+    data.events.append(moment(4, "2026-10-01", person=3))
+    assert grouped(data) == [[1, 2, 3, 4]]
+
+
+def test_an_event_of_unknown_date_is_offered_marked_as_opening_nothing():
+    # R-0850
+    unknown = moment(1, "1994-06-01", person=1, dateCertainty=DateCertainty.Unknown)
+    sure = moment(2, "1994-07-01", person=1)
+    shown = [clusters._event_json(e) for e in joinable(record(unknown, sure))]
+    assert [one.get("neverOpens") for one in shown] == [True, None]
+
+
 def test_a_shift_of_unknown_date_alone_seeds_no_run():
     # R-0850
     """A placeholder date shows nothing close in time: shifts whose dates

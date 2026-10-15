@@ -34,7 +34,9 @@ periods never share its days. Keep, rename, reshape, merge or drop any other
 one as the events now read, returning it under its id. A period you leave out
 is set aside. Second, runs of events the app's rules found close in time, each
 with its `id`, the silence before it and `supportingShifts`, how many of its
-events are shifts that count. A run marked `default` has three or more: return
+events are shifts that count. `supportingShifts` is the app's count; it does not leave out the shifts
+told as how things always were, so recount without them before you keep a
+run. A run marked `default` has three or more: return
 a period holding its shifts, reshaped as the events read, or list it under
 `declined` with one sentence on what in the events says it is not a period.
 Any other run is weaker evidence: judge it, and return a period from it or
@@ -42,7 +44,8 @@ decline it the same way. Third, the people the
 events name, each with what they are to the person when the diagram says.
 Fourth, every event. One whose `dateCertainty` is `unknown` has a date nobody is sure of: it
 may belong to a period and count toward it, weighed as the guess it is, but it
-never opens one and is never an `openingId`; `approximate` is a date within
+never opens one (it is marked `neverOpens`) and is never an `openingId`;
+`approximate` is a date within
 about a year. Fifth, the person's answers when asked when the most was going on in
 their life, with their birth date.
 

@@ -119,6 +119,10 @@ PER_EVENT = 24
 # asks for two or three times, each a name, a sentence of theirs and two years.
 PER_ANSWER = 160
 CALM_GAP_DAYS = 730
+# The fewest supporting shifts a run is offered with: one shift alone is a
+# reaction, nothing piled up, so it is never offered; fewer than three still
+# counts against a run, never keeps it from the hint [Oracle: R-0850].
+PILE = 2
 # A returned group whose dated events span more than this is refused and the
 # model is asked again with the reason; on the second answer it is dropped and
 # the rest kept [Oracle: R-0837, R-0846]. It only catches an answer that draws
@@ -390,8 +394,9 @@ def candidates(data: DiagramData) -> list[Candidate]:
     """Runs of events close in time around the shifts that support a
     cluster, anyone's in the extended family, with no model in the loop. Any
     event near a run may be its opening; which ones matter is the grouping
-    call's judgement, never a list of kinds. A run with fewer than three
-    supporting shifts is offered too, its count beside it [Oracle: R-0850].
+    call's judgement, never a list of kinds. A run with two supporting shifts
+    is offered too, its count beside it; one with a single shift is not
+    [Oracle: R-0850].
     Only a shift whose date is known seeds a run: a placeholder date shows
     nothing close in time, and may only join a run seeded near it."""
     free = joinable(data)
@@ -429,7 +434,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
             when,
             marked_ids,
         )
-        if marked_ids & set(ids) and len(ids) >= MIN_CLUSTER_EVENTS
+        if len(marked_ids & set(ids)) >= PILE and len(ids) >= MIN_CLUSTER_EVENTS
     ]
     kept.sort(key=lambda c: (c.startDate, c.eventIds[0]))
     for n, candidate in enumerate(kept, 1):
@@ -682,6 +687,8 @@ def _event_json(event: Event) -> dict:
             chunk[name] = _enum_value(value)
     if event.dateCertainty != DateCertainty.Certain:
         chunk["dateCertainty"] = _enum_value(event.dateCertainty)
+    if unsure(event):
+        chunk["neverOpens"] = True
     if event.notes:
         chunk["notes"] = event.notes
     return chunk
@@ -1081,7 +1088,9 @@ def _screen(
             faults.append(
                 ClusterError(
                     f"Period {cluster.name!r} shares days with the person's own "
-                    f"period {_title(drawn)!r}, which stays as they drew it.",
+                    f"period {_title(drawn)!r}, which stays as they drew it; leave "
+                    "yours out unless the days outside theirs make a period by "
+                    "themselves.",
                     ClusterCheck.Theirs,
                     _said_of(cluster, when),
                 )
