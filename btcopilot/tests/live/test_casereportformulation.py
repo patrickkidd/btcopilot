@@ -61,3 +61,20 @@ def test_the_family_card_gives_the_persons_own_place_among_her_brothers_and_sist
     formulated(coach, events=PLACED, people=[FINN])
     family = " ".join(words(n) for n in notes(coach, "family"))
     assert re.search(r"\b(eldest|oldest|elder|older of|first of|first-born|firstborn|first child)\b", family, re.I), family
+
+
+ANXIOUS = [
+    Cluster(id="c1", title="Chronic anxiety around Ruth's illness", summary="A time of chronic anxiety as Ruth was ill and died.",
+            name="Chronic anxiety around Ruth's illness", eventIds=[60, 61, 62, 63, 64], source=ClusterSource.User,
+            startDate="1997-11-01", endDate="1999-02-01"),
+    CLUSTERS[1],
+]
+
+
+@passes(2, of=3)
+def test_no_card_calls_a_cluster_chronic_anxiety(coach):
+    # R-0850
+    # pass: outside the person's quoted words, no card says "chronic anxiety", though a stored cluster's name and the person do
+    cards = formulated(coach, "Ever since my grandmother got sick I've had chronic anxiety.", clusters=ANXIOUS)
+    said = {c: words(q) for c, q in cards.items()}
+    assert not any(re.search(r"chronic anxiety", s, re.I) for s in said.values()), said
