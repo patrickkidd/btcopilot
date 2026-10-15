@@ -43,7 +43,7 @@ const GLIDE_MS = 2000;
 /** How often the rewrite is asked whether the coach has finished, as the chat's vote asks of shadow replies. */
 const POLL_MS = 2000;
 /** The cards the coach writes; the rest are drawn from the diagram each time and never go out of date. */
-const WRITTEN = new Set<Card>([Card.Main, Card.Brought, Card.Guesses, Card.OwnPart, Card.WorkOn]);
+const WRITTEN = new Set<Card>([Card.Main, Card.Brought, Card.Couple, Card.Guesses, Card.OwnPart, Card.WorkOn]);
 
 const q = (root: HTMLElement, id: string): HTMLElement => {
   const found = root.querySelector<HTMLElement>(`#${id}`);

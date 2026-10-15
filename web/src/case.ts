@@ -1,7 +1,7 @@
 import { pill } from "./chips";
 import { draw, leastScale } from "./diagram";
 import { closeX, esc } from "./dom";
-import { Card, GUESS_CARDS, ORDER, type CaseView, type Fact, type Guess, type Held, type Still, type Who } from "./caseview";
+import { Card, GUESS_CARDS, ORDER, TOO_LITTLE, type CaseView, type Fact, type Guess, type Held, type Still, type Who } from "./caseview";
 import { ChipKind, ChipTone, type Passages } from "./types";
 
 /** The case report's markup, card by card, as the approved proposal draws it
@@ -21,7 +21,7 @@ export function title(card: Card, v: CaseView): string {
     case Card.Brought:
       return `What brought ${v.name}`;
     case Card.Couple:
-      return v.married ? "The couple since they met" : `${v.name}'s parents and partners, stage by stage`;
+      return "The couple since they met";
     case Card.Sides:
       return "Each parent's own family";
     case Card.Guesses:
@@ -45,7 +45,7 @@ function short(card: Card, v: CaseView): string {
     case Card.Brought:
       return `What brought ${v.him}`;
     case Card.Couple:
-      return v.married ? "The couple" : "Parents and partners";
+      return "The couple";
     case Card.Sides:
       return "Each parent's family";
     case Card.Guesses:
@@ -60,7 +60,7 @@ function short(card: Card, v: CaseView): string {
 }
 
 /** Which passages a card's book raises (the keys of the passages file). */
-function bookOf(card: Card, v: CaseView): string {
+function bookOf(card: Card): string {
   switch (card) {
     case Card.Main:
       return "why";
@@ -69,7 +69,7 @@ function bookOf(card: Card, v: CaseView): string {
     case Card.Brought:
       return "2";
     case Card.Couple:
-      return v.married ? "3" : "3s";
+      return "3";
     case Card.Sides:
       return "4";
     case Card.Guesses:
@@ -205,17 +205,13 @@ function body(card: Card, v: CaseView): string {
       if (!b) return lead(NOT_ASKED) + needs(BRINGS);
       return b.said ? said(b.text) + faint(b.said) : guessBlock(b);
     }
-    case Card.Couple:
-      // married: Bowen's stages, each head a chip with its events under it (R-0835), then what the card still needs
-      if (v.married)
-        return (
-          lead(v.couple.lead) +
-          (v.couple.stages.length ? `<div class="stage">${v.couple.stages.map((st) => chips([factChip(st.head), ...st.facts.map(factChip)])).join("")}</div>` : "") +
-          lead(v.couple.needs)
-        );
-      return v.stages
-        .map((row) => `<div class="stage">${sublabel(row.label)}${row.stages.map((st) => chips([factChip(st.head), ...st.facts.map(factChip)])).join("")}</div>`)
-        .join("");
+    case Card.Couple: {
+      // the coach's one statement on the person's own couple, one chip per event it rests on;
+      // with too little, what it still needs as the dashed amber chip (R-0850)
+      const c = v.couple;
+      if (c.needs !== null) return `<div class="gbub">${bubble(`${TOO_LITTLE}.`)}</div>${c.needs ? needs(c.needs) : ""}`;
+      return c.guess ? `<div class="gbub">${bubble(c.guess.text, c.guess.facts)}${chips(c.guess.facts.map(factChip))}</div>` : notEnough();
+    }
     case Card.Sides:
       return v.sides.map((s) => fold(s.label, lead(s.lead) + picture(v, s.still, s.label))).join("");
     case Card.Guesses: {
@@ -252,7 +248,7 @@ export function card(card: Card, v: CaseView, more = ""): string {
   const name = title(card, v);
   return (
     `<section class="level${GUESS_CARDS.has(card) ? " guess" : ""}" data-card="${card}">` +
-    `<p class="label">${n} · ${esc(name)}</p>${body(card, v)}${more}${book(bookOf(card, v), name)}</section>`
+    `<p class="label">${n} · ${esc(name)}</p>${body(card, v)}${more}${book(bookOf(card), name)}</section>`
   );
 }
 

@@ -47,7 +47,11 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
 2. The family: one line per household the person grew up in and lives in now, with the one fact
    that turns the list into a reading.
 3. What brought the person: their own words, quoted, with the date.
-4. The couple: one statement on the couple from its early years, with the facts as chips.
+4. The couple: one statement by the coach on the person's own couple (them and their partner
+   now, never their parents) from its early years: when they met, when they married, what
+   changed in contact with each one's family after, with each event it rests on as a dated chip.
+   With too little it is one line, "Not enough in the diagram yet:" and what it still needs,
+   shown as the dashed amber chip. [Oracle: R-0850] FE 3165.
 5. Each parent's family: one statement per side, with its chips.
 6. The coach's guess: one pattern statement (what bound the anxiety, through whom, when), one chip
    per cluster with "For" and "Against", and the open question naming what it needs to know.
@@ -60,8 +64,10 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
 
 ## How the refresh writes them (as built)
 
-- One model call, the coach's own prompt, offered only add_impression; it writes cards 1, 3, 6, 7
-  and 9; the page draws the rest from the diagram. [Oracle: R-0825, R-0850]
+- One model call, the coach's own prompt, offered only add_impression; it writes cards 1, 3, 4,
+  6, 7 and 9 (`main_guess`, `what_brought`, `couple`, `coach_guess`, `own_part`, `work_on`); a
+  card not given is asked for once more; the page draws the rest from the diagram.
+  [Oracle: R-0825, R-0850]
 - Its inputs: every event with its words and notes, the coach's notes and questions, one summary
   per conversation (the stored one; a conversation with none gets one written then, one extra
   call each), and, while no note is on card 3, the first conversation's opening read raw, each

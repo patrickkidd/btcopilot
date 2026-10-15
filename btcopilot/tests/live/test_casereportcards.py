@@ -134,3 +134,42 @@ def test_the_coachs_guess_card_holds_only_the_parts_that_matter_most(coach):
     coach.turn("Of everything you have noticed about me, which parts matter most for me to look at?")
     marked = [i for i, q in stored(coach).items() if q.get("case_report_card") == "coach_guess"]
     assert 1 <= len(marked) <= 2 and "i3" not in marked, marked
+
+
+OWEN = {"id": 20, "name": "Owen", "last_name": "Reyes", "gender": "male"}
+WED = {"id": 21, "person_a": 1, "person_b": 20, "married": True}
+PARENTS_WED = {"id": 50, "kind": "married", "person": 2, "spouse": 3, "dateTime": "1981-06-01",
+               "dateCertainty": "certain"}
+COUPLE = [
+    {"id": 51, "kind": "bonded", "person": 1, "spouse": 20, "dateTime": "2006-05-01", "dateCertainty": "approximate"},
+    {"id": 52, "kind": "married", "person": 1, "spouse": 20, "dateTime": "2009-09-12", "dateCertainty": "certain"},
+    shift(53, "2010-03-01", 1, "Stopped calling her mother", relationship="distance", relationshipTargets=[2]),
+    shift(54, "2010-08-01", 20, "Visited his brother every weekend", relationship="toward"),
+]
+
+
+def refreshed(coach, said: str) -> dict | None:
+    coach.turn(said)
+    response = coach.web.post("/app/case-report-rewrites", headers={"X-CSRFToken": coach.token})
+    assert response.status_code == 202, response.get_data(as_text=True)
+    assert coach.web.get(f"/app/case-report-rewrites/{response.get_json()['id']}").get_json()["state"] == "done"
+    return next((q for q in reversed(list(stored(coach).values())) if q.get("case_report_card") == "couple"), None)
+
+
+@passes(2, of=3)
+def test_a_refresh_writes_the_couple_card_on_the_persons_own_couple_not_their_parents(coach):
+    # R-0850
+    # pass: the couple card rests on Wren and Owen's own events and never on her parents' wedding
+    coach.record(people=[OWEN], pair_bonds=[WED], events=[PARENTS_WED, *COUPLE])
+    card = refreshed(coach, "Owen and I met in 2006 and married three years later; after that I called my mother less.")
+    rests = {str(e["id"]) for e in (card or {}).get("evidence", []) if e["kind"] == "event"}
+    assert card and rests & {"51", "52", "53", "54"} and "50" not in rests, card
+
+
+@passes(2, of=3)
+def test_with_no_partner_on_the_diagram_the_couple_card_says_what_it_still_needs(coach):
+    # R-0850
+    # pass: the couple card is the one line saying there is not enough in the diagram yet
+    coach.record(events=[PARENTS_WED])
+    card = refreshed(coach, "I've been thinking about my family a lot lately.")
+    assert card and card["text"].startswith("Not enough in the diagram yet"), card
