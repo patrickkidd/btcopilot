@@ -4,7 +4,6 @@ time may be with a different person; what repeats is the person and the
 variable. The two events are set side by side for their nearness only, never
 as cause and effect."""
 
-import calendar
 import datetime
 import enum
 from dataclasses import dataclass
@@ -62,20 +61,15 @@ Span = tuple[datetime.date, datetime.date]
 
 
 def span(event: dict) -> Span | None:
-    """The days the event may have fallen on: the day itself when certain, the
-    calendar month when approximate. A year-only date (approximate on the
-    first of January, R-0326) and an unknown one give no span."""
+    """The day a certain date fell on. An approximate date is known no finer
+    than its year, too coarse for the window, so it gives no span, nor does an
+    unknown one [Oracle: R-0855]."""
     written = date_text(event.get("dateTime"))
     certainty = DateCertainty(enum_val(event["dateCertainty"]))
-    if not written or certainty is DateCertainty.Unknown:
+    if not written or certainty is not DateCertainty.Certain:
         return None
     day = datetime.date.fromisoformat(written)
-    if certainty is DateCertainty.Certain:
-        return day, day
-    if (day.month, day.day) == (1, 1):
-        return None
-    last = calendar.monthrange(day.year, day.month)[1]
-    return day.replace(day=1), day.replace(day=last)
+    return day, day
 
 
 def near(loss: Span, shift: Span) -> bool:
