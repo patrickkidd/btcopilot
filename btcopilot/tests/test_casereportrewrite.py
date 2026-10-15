@@ -736,7 +736,7 @@ def test_the_choice_is_written_on_the_part_card_with_the_other_way_and_never_on_
 
 
 def test_what_to_work_on_carries_the_prognosis_and_the_aim(web, past, written, family):
-    # R-0850
+    # R-0850, R-0868
     work = "More contact with your mother.\nPrognosis: trouble may come again near the next loss.\nAim: call her weekly"
     rewrite(web, Model(calling(guessed(work, "work_on")), calling()))
 

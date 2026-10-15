@@ -96,3 +96,13 @@ def test_the_coachs_guess_names_the_period_its_pattern_does_not_fit(coach):
     guess = statement(formulated(coach, events=[IVY_BORN, *ILLNESS, SIDED, *LOSS, *COLLEGE],
                                  clusters=[*CLUSTERS, MISFIT])["coach_guess"])
     assert "2005" in guess and re.search(r"not fit|n't fit|exception|except|no loss|apart from|outside", guess, re.I), guess
+
+
+@passes(2, of=3)
+def test_the_prognosis_is_said_as_something_worth_watching_in_everyday_words(coach):
+    # R-0868
+    # pass: what to work on's Prognosis line hedges (might, may, could), says to watch or see, and never says "will", "predict", "hypothesis" or "test"
+    work = formulated(coach)["work_on"]
+    line = " ".join(marked(work, CardLine.Prognosis)).split(":", 1)[-1]
+    assert re.search(r"\b(might|may|could)\b", line, re.I) and re.search(r"watch|keep an eye|see (whether|if)|notice", line, re.I), work["text"]
+    assert not re.search(r"\b(will|predicts?|prediction|hypothes\w*|test\w*)\b", line, re.I), work["text"]

@@ -296,7 +296,7 @@ def test_only_what_to_work_on_says_what_will_come(coach):
 
 @passes(2, of=3)
 def test_the_prognosis_says_in_plain_words_what_it_rests_on(coach):
-    # R-0850
+    # R-0850, R-0868
     # pass: the Prognosis line names its basis: the pile-up against how the family held up, one way or several, or fast or slow onset
     work = formulated(coach)["work_on"]
     basis = re.compile(r"piled|held up|holding up|one way|several|came on|built|slowly|quickly|fast|across the years", re.I)
