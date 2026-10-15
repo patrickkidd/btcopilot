@@ -97,7 +97,11 @@ you were given.
 Return one entry under `clusters` per period of yours: `id` when it grew out of
 a listed one, `eventIds`, `name`, `reason`, `openingId` when an event opened it,
 and `change` when it is not exactly as given. List under `declined` each
-run you do not return, with its `run` id and `reason`.
+run you do not return, with its `run` id and `reason`. Before you decline a
+run with fewer than three shifts that count, look among its events for a change
+in who is in the family or in how a key member functions, and when one is
+there, return the run as a period. A `reason` says what in the run's events
+shows it is not a period, never how many shifts or events it has.
 
 PERIODS THIS DIAGRAM HAS
 
