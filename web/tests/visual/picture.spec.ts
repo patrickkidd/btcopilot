@@ -197,6 +197,19 @@ const BEFORE: Record<number, Partial<Record<Key, { width: number; start: number 
     editable: { width: 390, start: 0 },
     whitlock: { width: 780, start: 390 },
   },
+  // the iPhone 14 Pro every phone mockup is drawn at, as the WebKit phone runs
+  393: {
+    one: { width: 393, start: 0 },
+    three40: { width: 393, start: 0 },
+    dense60: { width: 786, start: 393 },
+    hostile: { width: 393, start: 0 },
+    moves: { width: 393, start: 0 },
+    play: { width: 393, start: 0 },
+    longmove: { width: 393, start: 0 },
+    longname: { width: 393, start: 0 },
+    editable: { width: 393, start: 0 },
+    whitlock: { width: 786, start: 393 },
+  },
   1280: {
     one: { width: 538, start: 0 },
     three40: { width: 538, start: 0 },

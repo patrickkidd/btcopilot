@@ -17,7 +17,7 @@ import {
   Target,
   aboutMarkup,
   centredOn,
-  clusterLabel,
+  clusterName,
   clusterStep,
   dotLayers,
   inSight,
@@ -340,20 +340,17 @@ describe("the path row over the line", () => {
   const cluster = { title: "", start: "2009-03-01", end: "2010-11-20" };
 
   // R-0767
-  it("names an open cluster by its name alone, its years going under the line", () => {
-    const named = { title: "Every mark", start: "1972-06-10", end: "1999-02-01" };
-    expect(trail(Level.Wire, named, null)).toEqual(["Timeline", "Every mark"]);
-    expect(trail(Level.About, named, null)).toEqual(["Timeline", "Every mark", "about"]);
+  it("names an open cluster in the path by its name and years", () => {
+    const named = { title: "Every mark", label: "1972–1999", start: "1972-06-10", end: "1999-02-01" };
+    expect(trail(Level.Wire, named, null)).toEqual(["Timeline", "Every mark · 1972–1999"]);
+    expect(trail(Level.About, named, null)).toEqual(["Timeline", "Every mark · 1972–1999", "about"]);
   });
 
   // R-0583, R-0767
-  it("writes the years and the count once under the line, the name once above it", () => {
+  it("names the open cluster under the line by its name, the count beside it", () => {
     const open = { title: "Every mark", label: "1972–1999", start: "1972-06-10", end: "1999-02-01", count: 12 };
-    expect(clusterLabel(open)).toBe("1972–1999 · 12 events");
-    expect(clusterLabel({ ...open, label: "1972", count: 1 })).toBe("1972 · 1 event");
-    expect(clusterLabel(open)).not.toContain("Every mark");
-    expect(clusterStep(open)).toBe("Every mark");
-    expect(clusterStep(open)).not.toMatch(/\d{4}/);
+    expect(clusterName(open)).toBe("Every mark");
+    expect(clusterName({ ...open, title: "" })).toBe("1972–1999");
   });
 
   // R-0540
@@ -563,11 +560,11 @@ describe("the drawing on a cluster's page", () => {
   };
 
   // R-0853, R-0850
-  it("writes a period's years one way, the years the server stored for it, on its page, under the line and on a detail chip", () => {
+  it("writes a period's years one way, the years the server stored for it, on its page, in the path and on a detail chip", () => {
     const { all, cluster } = period();
     expect(clusterPage(cluster, all, [], ClusterView.Row, 360)).toContain("2009\u20132011 · 13 events");
     expect(place(all, ClusterView.Row, 360, null).years).toEqual(["2009", "2011"]);
-    expect(clusterLabel(cluster)).toBe("2009\u20132011 · 13 events");
+    expect(clusterStep(cluster)).toBe("2009\u20132011");
     expect(periodName(cluster)).toBe("2009\u20132011");
     expect(periodName({ ...cluster, title: "When Lily came" })).toBe("When Lily came \u00b7 2009\u20132011");
   });
@@ -577,8 +574,8 @@ describe("the drawing on a cluster's page", () => {
     const { cluster } = period();
     const app = { ...cluster, title: "When Lily came, 2009\u20132011" };
     expect(periodName(app)).toBe("When Lily came \u00b7 2009\u20132011");
-    expect(clusterStep(app)).toBe("When Lily came");
-    expect(trail(Level.About, app, null)).toEqual(["Timeline", "When Lily came", "about"]);
+    expect(clusterStep(app)).toBe("When Lily came · 2009\u20132011");
+    expect(trail(Level.About, app, null)).toEqual(["Timeline", "When Lily came · 2009\u20132011", "about"]);
     expect(periodName({ ...cluster, title: "When Lily came, 2007" })).toBe("When Lily came, 2007 \u00b7 2009\u20132011");
   });
 
