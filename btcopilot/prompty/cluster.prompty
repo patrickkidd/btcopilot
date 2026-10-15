@@ -38,8 +38,8 @@ events are shifts that count. `supportingShifts` is the app's count; it does not
 told as how things always were, so recount without them before you keep a
 run. A run marked `default` has three or more: return
 a period holding its shifts, reshaped as the events read, or list it under
-`declined` with one sentence on what in the events says it is not a period.
-Any other run is weaker evidence: judge it, and return a period from it or
+`declined` with one sentence on what in the events says it is not a period,
+never its count of shifts alone. Any other run is weaker evidence: judge it, and return a period from it or
 decline it the same way. Third, the people the
 events name, each with what they are to the person when the diagram says.
 Fourth, every event. One whose `dateCertainty` is `unknown` has a date nobody is sure of: it
