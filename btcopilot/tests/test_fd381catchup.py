@@ -19,6 +19,7 @@ from btcopilot.admin import admin
 from btcopilot.clusters import ClusterListResponse, ModelCluster, compute_cache_key
 from btcopilot.extensions import db
 from btcopilot.models import (
+    Author,
     Change,
     Diagram,
     ModelCall,
@@ -424,3 +425,36 @@ def test_a_report_the_change_log_cannot_place_is_not_marked(
         catchup(flask_app, "apply", "--plan", path)
     assert Change.query.filter_by(diagram_id=current.id).count() == 0
     assert stale(current) is None
+
+
+def test_undo_leaves_a_record_changed_since_as_it_is_and_takes_the_rest_back(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772
+    _, path = planned(flask_app, tmp_path)
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        catchup(flask_app, "apply", "--plan", path)
+    (cluster_id,) = clusters_of(family)
+    record.apply(
+        family.id,
+        [
+            {
+                "item_kind": "cluster",
+                "item_id": cluster_id,
+                "field": "title",
+                "after": "Renamed",
+            }
+        ],
+        author=Author.User,
+        turn_id="u1",
+    )
+
+    rows, _ = catchup(flask_app, "undo", "--plan", path, "--yes")
+    assert [(r["diagram"], r["undone"], bool(r["refused"])) for r in rows] == [
+        (family.id, False, True),
+        (old.id, True, False),
+    ]
+    assert clusters_of(family)[cluster_id]["title"] == "Renamed"
+    assert stale(old) is None

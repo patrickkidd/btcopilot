@@ -129,7 +129,7 @@ def utc(value: str | None) -> datetime.datetime | None:
     try:
         when = datetime.datetime.fromisoformat(value)
     except ValueError:
-        raise click.BadParameter(f"{value} is not a date and time")
+        raise click.BadParameter(f"{value} is not a date and time") from None
     if when.tzinfo is not None:
         when = when.astimezone(datetime.UTC).replace(tzinfo=None)
     return when
@@ -391,17 +391,20 @@ def apply(path, diagram_id, limit, as_json):
     owner's next tap rewrites it, never calling the refresh itself. Each
     record's writes are change rows that `undo` takes back. A record already
     written under this plan is not written again, so a run cut short, or run
-    with --limit, is finished by running it again. Prints each planned
-    record with whether it is done and failed, its change rows and the
-    dollars its calls cost, then whether every stored result is what a turn
-    stores and whether every record was written."""
+    with --limit, is finished by running it again; a record a turn regrouped
+    since the plan is done with no change row of the catch-up's. Each write
+    moves the record's version, as a turn's does, so run it while no one is
+    editing. Prints each planned record with whether it is done and failed,
+    its change rows and the dollars its calls cost, then whether every stored
+    result is what a turn stores and whether every record was written."""
     saved = loaded(path)
     entries = touched(saved, diagram_id)
     pending = [(e, owed(e, saved["made"])) for e in entries]
     pending = [(e, left) for e, left in pending if any(left)]
     for entry, left in pending[:limit] if limit else pending:
         caught_up(entry, saved["made"], *left)
-    rows = [state(e, saved["made"]) for e in entries]
+    whole = {e["diagram"]: state(e, saved["made"]) for e in touched(saved, None)}
+    rows = [whole[e["diagram"]] for e in entries]
     columns = [
         "diagram",
         "owner",
@@ -414,9 +417,8 @@ def apply(path, diagram_id, limit, as_json):
         "cost_usd",
     ]
     emit(rows, columns, as_json)
-    whole = [state(e, saved["made"]) for e in touched(saved, None)]
-    done = sum(r["done"] for r in whole)
-    lost = sum(bool(r["failed"]) for r in whole)
+    done = sum(r["done"] for r in whole.values())
+    lost = sum(bool(r["failed"]) for r in whole.values())
     said_to(
         as_json,
         f"same as a turn: yes, by construction: each regroup ran {SYNC}, the function a "
@@ -460,7 +462,7 @@ def undo(path, diagram_id, yes):
         ]
         if not changes:
             continue
-        refused = None
+        earlier, refused = record.undone(diagram.id), None
         try:
             back = record.taking_back(diagramjson.loads(diagram.data), changes)
             if yes:
@@ -468,19 +470,21 @@ def undo(path, diagram_id, yes):
                     diagram.id, [c.id for c in changes], author=Author.Coach
                 )
         except record.Conflict as e:
-            back, refused = [
-                (c, []) for c in sorted(changes, key=lambda c: -c.id)
-            ], str(e)
+            # rows are written one at a time, so a write between them can stop
+            # the rest after some were taken back
+            back = [(c, []) for c in sorted(changes, key=lambda c: -c.id)]
+            refused = f"changed since it was written: {e}"
+        done = record.undone(diagram.id) - earlier
         rows += [
             {
                 "diagram": diagram.id,
                 "change": change.id,
                 "turn": change.turn_id,
-                "undone": yes and refused is None,
+                "undone": change.id in done,
                 "taken_back": ", ".join(
                     f"{d['item_kind']} {d['item_id']} {said(d)}" for d in deltas
                 ),
-                "refused": refused and f"changed since it was written: {refused}",
+                "refused": None if change.id in done else refused,
             }
             for change, deltas in back
         ]
