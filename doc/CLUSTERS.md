@@ -128,7 +128,11 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    period: the new reading replaces the stored copy's events, dates and
    sentence under its id. The app's periods never share their days. Once
    written it is the person's like any other: never reshaped by the app,
-   judged by `judge` with the same checks, kept and shown when unsupported.
+   judged by `judge` with the same checks, kept and shown when unsupported. A
+   dated event told later inside its days joins it at the next regroup, so it
+   is judged against the data as it grows (rule A1 counts the shifts added
+   later against a cluster's span); its name, sentence and days stay as
+   written [Oracle: R-0853, R-0850].
 8. `judge(cluster, data)` reads any stored period against the data: its
    supporting shifts, whether they are one person's run, its opening (the stored
    `openingEventId`, else its first change in the family), and the days from the

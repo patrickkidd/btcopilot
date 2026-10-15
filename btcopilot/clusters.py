@@ -1671,7 +1671,29 @@ def detect_clusters(
             )
         )
         _log.info(f"Wrote the person's period {one.period.name!r}")
+    clusters += _grown(data, {one.replaces for one in screened.named})
     return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=changes)
+
+
+def _grown(data: DiagramData, replaced: set[str | None]) -> list[Cluster]:
+    """The person's periods with every dated event added since inside their
+    days: the data they are judged against grows, their name, sentence and
+    days stay as written [Oracle: R-0853, R-0850]."""
+    when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
+    grown = []
+    for cluster in data.drawn_clusters():
+        if _source(cluster) is not ClusterSource.User or str(cluster["id"]) in replaced:
+            continue
+        held = cluster["eventIds"]
+        span = span_of([when[i] for i in held if i in when])
+        added = [
+            i
+            for i, day in when.items()
+            if span and span[0] <= day <= span[1] and i not in held
+        ]
+        if added:
+            grown.append(from_dict(Cluster, {**cluster, "eventIds": [*held, *added]}))
+    return grown
 
 
 STORED_FIELDS = (

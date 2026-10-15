@@ -1784,6 +1784,38 @@ def test_a_regroup_reads_the_persons_period_again_in_place_of_its_stored_copy():
     }
 
 
+def test_an_event_told_later_inside_their_period_joins_it_as_they_named_it():
+    # R-0853, R-0850
+    stored = Cluster(
+        id="c1",
+        title=CRAWL,
+        name=CRAWL,
+        summary=CRAWL_SAID,
+        reason=CRAWL_SAID,
+        eventIds=[52, 53],
+        startDate="2010-01-01",
+        endDate="2011-02-07",
+        source=ClusterSource.User,
+    )
+    calm = {"functioning": VariableShift.Up}
+    data = asked(
+        record(
+            moment(52, "2010-01-01", **calm),
+            moment(53, "2011-02-07", **calm),
+            moment(54, "2010-06-01", **calm),
+            moment(55, "2012-03-01", **calm),
+            clusters=[stored],
+        ),
+        7,
+    )
+    with replies(ClusterListResponse()) as ask:
+        result = detect_clusters(data, ask, said=[Answer(7, MOST, CRAWL_SAID)])
+    dates = {e["id"]: e["dateTime"] for e in data.events}
+    assert _deltas(data.clusters, result.clusters, dates) == [
+        {"item_kind": "cluster", "item_id": "c1", "field": "eventIds", "after": [52, 53, 54]}
+    ]
+
+
 def test_an_unsupported_period_of_theirs_is_kept_and_judged_unsupported():
     # R-0853
     with replies(ClusterListResponse(periods=[period(7)])) as ask:
