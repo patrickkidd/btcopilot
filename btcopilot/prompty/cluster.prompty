@@ -72,10 +72,11 @@ events made you see it so.
 
 Every period of yours holds at least three events. A period is stronger with
 three or more of the shifts that count; one with fewer may still be proposed
-when its events belong together, and its `reason` then says so. With fewer
-than three, propose it only when a change in the family's membership, or in how a
-key member functions, sits among its shifts and the person it touched matters
-to this family. Events whose dates are all unknown
+when its events belong together, and its `reason` then says so. With fewer than three, a run is a period when a change in the family's
+membership, or in how a key member functions, sits among its shifts and the
+person it touched matters to this family, unless the events say otherwise; two
+shifts are then enough, and a period is never declined for its count alone.
+Without such a change it is not one. Events whose dates are all unknown
 never make a period by themselves: nothing shows they were close in time. Never write
 an id that is not listed below, and never add a detail that is not on the events
 you were given.

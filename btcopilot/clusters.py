@@ -1016,8 +1016,9 @@ def _read_theirs(
 @dataclass
 class Screened:
     """One answer read against the checks: the periods that pass, each period
-    that fails with why, each period merged into another, and the person's
-    periods read from their answers with those not written."""
+    that fails with why, each period merged into another, the person's
+    periods read from their answers with those not written, the runs declined
+    and the openings of unknown date cleared."""
 
     kept: list[ModelCluster]
     faults: list[ClusterError]
@@ -1025,6 +1026,7 @@ class Screened:
     named: list[Named] = field(default_factory=list)
     unnamed: list[ClusterError] = field(default_factory=list)
     declined: list[ClusterError] = field(default_factory=list)
+    cleared: list[ClusterError] = field(default_factory=list)
 
 
 def _screen(
@@ -1038,9 +1040,11 @@ def _screen(
     runs: list[Candidate] = (),
 ) -> Screened:
     """`last` is the second answer: a period still named by the person's
-    trouble is kept under a plain name, and one still opening at an event of
-    unknown date is kept with no opening, instead of dropped. The person's
-    periods are read first, so the app's never share their days."""
+    trouble is kept under a plain name instead of dropped. A period opening
+    at an event of unknown date is kept with no opening on either answer and
+    never asked again, since asking reshapes the whole reading and cannot make
+    the date known [Oracle: R-0850]. The person's periods are read first, so
+    the app's never share their days."""
     if response is None:
         raise ClusterError("No grouping came back.", ClusterCheck.Missing)
     named, unnamed = _read_theirs(response.periods, said, data)
@@ -1058,12 +1062,13 @@ def _screen(
         for one in named
     ]
     faults: list[ClusterError] = []
+    cleared: list[ClusterError] = []
     usable: list[ModelCluster] = []
     claimed: set[str] = set()
     for cluster in response.clusters:
         fault = _fault(cluster, known, stored, claimed, told, unsure_ids)
-        if fault and fault[1] is ClusterCheck.UnknownDate and last:
-            faults.append(ClusterError(*fault, said=_said_of(cluster, when)))
+        if fault and fault[1] is ClusterCheck.UnknownDate:
+            cleared.append(ClusterError(*fault, said=_said_of(cluster, when)))
             cluster.openingId = None
             fault = _fault(cluster, known, stored, claimed, told, unsure_ids)
         if fault and fault[1] is ClusterCheck.SymptomName and last:
@@ -1134,6 +1139,7 @@ def _screen(
         named=named,
         unnamed=unnamed,
         declined=declined,
+        cleared=cleared,
     )
 
 
@@ -1357,7 +1363,7 @@ def detect_clusters(
         except ClusterError as failed:
             heard(n, failed, answer)
             raise
-        for fault in screened.faults:
+        for fault in [*screened.faults, *screened.cleared]:
             heard(n, fault, answer)
         for lost, into in screened.absorbed:
             heard(

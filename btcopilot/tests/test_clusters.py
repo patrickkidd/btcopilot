@@ -442,18 +442,17 @@ BROOK = record(
 def test_an_event_of_unknown_date_is_offered_belongs_and_supports_but_opens_nothing():
     # R-0850
     """The undatable diagnosis is offered with its certainty, held by the
-    period and counted as support; named as its opening it is refused, then
-    kept with no opening; read against the data, the death opens it."""
+    period and counted as support; named as its opening it is heard and kept
+    with no opening, never asked again, since asking cannot make the date
+    known; read against the data, the death opens it."""
     opened = named(60, 61, 62, 63, name="Lou's illness and death")
     opened.openingId = 60
-    again = named(60, 61, 62, 63, name="Lou's illness and death")
-    again.openingId = 60
     seen = []
-    with replies(answers(opened), answers(again)) as ask:
+    with replies(answers(opened)) as ask:
         result = detect_clusters(BROOK, ask, heard(seen))
     events = ask.call_args_list[0].args[0].split("EVERY EVENT")[1].split("WHEN THE")[0]
     assert json.loads(events)[0]["dateCertainty"] == "unknown"
-    assert seen == [(1, ClusterCheck.UnknownDate), (2, ClusterCheck.UnknownDate)]
+    assert seen == [(1, ClusterCheck.UnknownDate)]
     [cluster] = result.clusters
     assert (cluster.eventIds, cluster.openingEventId) == ([60, 61, 62, 63], None)
     assert (cluster.startDate, cluster.endDate) == ("2003-01-01", "2004-03-01")
