@@ -1,8 +1,9 @@
 """The FD-381 catch-up: the plan says, for every record, whether it is
 regrouped and whether its case report is marked out of date, and makes no
 model call; the apply writes exactly that plan, each regroup through the
-function a coach turn runs and never the case report's refresh, as change
-rows the undo takes back.
+function a coach turn runs and never the case report's refresh, each regroup
+as change rows and each mark as the diagram's case_report_forced_out_of_date,
+both of which the undo takes back.
 
 Invented names only.
 """
@@ -190,6 +191,15 @@ def calmed(user) -> Diagram:
     return calmer
 
 
+def forced(diagram) -> bool:
+    db.session.expire_all()
+    return db.session.get(Diagram, diagram.id).case_report_forced_out_of_date
+
+
+def kept(path: str) -> dict:
+    return json.loads(open(path.replace(".json", ".marks.json")).read())
+
+
 def filed(diagram, entry_id: str, value: str) -> None:
     """A copy of the main guess on another card, written as the record holds
     it, with no change row."""
@@ -246,7 +256,7 @@ def test_the_plan_shows_each_record_and_makes_no_model_call(
             False,
             CURRENT,
             True,
-            "the coach last wrote the report before the deploy",
+            "a card on the report was last written before the deploy",
             0.0,
         ),
         (
@@ -255,7 +265,7 @@ def test_the_plan_shows_each_record_and_makes_no_model_call(
             False,
             CURRENT,
             False,
-            "the coach wrote the report after the deploy",
+            "the coach wrote every card on the report after the deploy",
             0.0,
         ),
     ]
@@ -307,14 +317,13 @@ def test_apply_marks_only_the_planned_report_out_of_date(
         rows, _ = catchup(flask_app, "apply", "--plan", path)
 
     found = stale(old)
-    assert found["change_id"] == rows[1]["changes"][0]
+    assert found["change_id"] == Change.query.filter_by(turn_id="c1", diagram_id=old.id).one().id
     assert found["sentence"] == casereport.NEW_WAY
+    assert [forced(d) for d in (family, old, current)] == [False, True, False]
     assert stale(current) is None
     assert stale(family) is None
-    assert (
-        Change.query.filter(Change.turn_id.like(f"{casereport.OUT_OF_DATE}%")).count()
-        == 1
-    )
+    assert (rows[1]["marked"], rows[1]["changes"]) == ("set", [])
+    assert kept(path) == {str(old.id): "set"}
 
 
 def test_undo_takes_back_the_regroup_and_the_mark(
@@ -343,6 +352,8 @@ def test_undo_takes_back_the_regroup_and_the_mark(
     assert clusters_of(family) == {}
     assert family.get_diagram_data().clusterCacheKey is None
     assert stale(old) is None
+    assert not forced(old)
+    assert kept(path) == {str(old.id): "cleared"}
 
 
 def test_limit_writes_that_many_records_and_the_next_run_finishes(
@@ -446,7 +457,7 @@ def test_a_family_change_after_the_last_card_write_is_said_over_the_mark(
     assert found["change_id"] == Change.query.filter_by(turn_id="e1").one().id
 
 
-def test_a_card_written_after_the_mark_makes_the_report_current_again(
+def test_a_card_the_coach_writes_in_a_turn_leaves_the_mark(
     flask_app, tmp_path, family, old, current
 ):
     # R-0772, R-0827
@@ -459,21 +470,28 @@ def test_a_card_written_after_the_mark_makes_the_report_current_again(
 
     impress(box(old, "r2"), text="When things get tense, she goes out.")
     card(old, "i2", "main_guess", "c2")
-    assert stale(old) is None
+    found = stale(old)
+    assert found["sentence"] == casereport.NEW_WAY
+    assert found["change_id"] == Change.query.filter_by(turn_id="c2", diagram_id=old.id).one().id
 
 
-def test_an_entry_on_the_choice_card_marks_a_report_written_after_the_deploy(
+def test_one_card_written_before_the_deploy_marks_the_report_and_the_choice_card_never_does(
     flask_app, tmp_path, family, old, current
 ):
     # R-0772, R-0850
+    impress(box(old, "r2"), text="She goes quiet and he steps in.")
+    card(old, "i2", "coach_guess", "c2")
     filed(current, "i2", "choice")
 
     rows, _ = planned(flask_app, tmp_path)
-    assert marks(rows)[2] == (
-        current.id,
-        True,
-        "an entry is on the choice card, which the coach no longer writes",
-    )
+    assert marks(rows)[1:] == [
+        (old.id, True, "a card on the report was last written before the deploy"),
+        (
+            current.id,
+            False,
+            "the coach wrote every card on the report after the deploy",
+        ),
+    ]
 
 
 def test_a_report_the_change_log_cannot_place_is_not_marked(
@@ -495,6 +513,20 @@ def test_a_report_the_change_log_cannot_place_is_not_marked(
         catchup(flask_app, "apply", "--plan", path)
     assert Change.query.filter_by(diagram_id=current.id).count() == 0
     assert stale(current) is None
+
+
+def test_a_card_the_change_log_holds_no_write_of_beside_a_logged_one_is_marked(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772
+    filed(current, "i2", "coach_guess")
+
+    rows, _ = planned(flask_app, tmp_path)
+    assert marks(rows)[2] == (
+        current.id,
+        True,
+        "a card on the report was last written before the deploy",
+    )
 
 
 def test_undo_leaves_a_record_changed_since_as_it_is_and_takes_the_rest_back(
@@ -546,10 +578,8 @@ def test_an_undone_plan_is_not_written_again_and_no_grouping_is_paid_twice(
 
     assert asked.call_count == 1
     assert ModelCall.query.count() == 1
-    assert (
-        Change.query.filter(Change.turn_id.like(f"{casereport.OUT_OF_DATE}%")).count()
-        == 1
-    )
+    assert not forced(old)
+    assert kept(path) == {str(old.id): "cleared"}
     assert clusters_of(family) == {}
     assert stale(old) is None
     assert [(r["done"], r["undone"]) for r in rows] == [(False, True), (False, True)]
@@ -569,13 +599,11 @@ def test_a_report_the_coach_wrote_again_since_the_plan_is_not_marked(
         rows, said = catchup(flask_app, "apply", "--plan", path)
 
     assert stale(old) is None
-    assert (
-        Change.query.filter(Change.turn_id.like(f"{casereport.OUT_OF_DATE}%")).count()
-        == 0
-    )
-    assert (rows[1]["done"], rows[1]["skipped"]) == (
+    assert not forced(old)
+    assert (rows[1]["done"], rows[1]["marked"], rows[1]["skipped"]) == (
         True,
-        "the coach wrote the report again since the plan",
+        None,
+        "the coach wrote every card again since the plan",
     )
     assert said.splitlines()[1] == done(done=2)
 
@@ -615,12 +643,14 @@ def test_undo_takes_the_mark_back_when_the_regroup_changed_since(
         flask_app, "undo", "--plan", path, "--diagram", str(family.id), "--yes"
     )
     assert [
-        (r["turn"].split(":")[0], r["undone"], bool(r["refused"])) for r in rows
+        (r["turn"] and r["turn"].split(":")[0], r["undone"], bool(r["refused"]))
+        for r in rows
     ] == [
-        ("case-report-out-of-date", True, False),
+        (None, True, False),
         ("fd381-catchup", False, True),
     ]
     assert stale(family) is None
+    assert not forced(family)
     assert clusters_of(family)[cluster_id]["name"] == "My own name"
 
 
@@ -637,6 +667,7 @@ def test_a_plan_entry_whose_owner_is_not_the_diagrams_is_not_written(
         rows, said = catchup(flask_app, "apply", "--plan", path)
 
     assert stale(old) is None
+    assert not forced(old)
     assert Change.query.filter(Change.turn_id.like(f"%:{old.id}:%")).count() == 0
     assert (rows[1]["done"], rows[1]["skipped"]) == (
         False,
@@ -664,8 +695,12 @@ def test_a_deployed_time_with_an_offset_is_read_as_utc(
 
     assert marks(rows) == [
         (family.id, False, "the coach never wrote a report"),
-        (old.id, True, "the coach last wrote the report before the deploy"),
-        (current.id, False, "the coach wrote the report after the deploy"),
+        (old.id, True, "a card on the report was last written before the deploy"),
+        (
+            current.id,
+            False,
+            "the coach wrote every card on the report after the deploy",
+        ),
     ]
 
 
@@ -746,9 +781,9 @@ def test_undo_stopped_partway_says_which_rows_it_took_back(
     ):
         catchup(flask_app, "apply", "--plan", path)
     (first,) = Change.query.filter(
-        Change.turn_id.like(f"{casereport.OUT_OF_DATE}{old.id}:%")
+        Change.turn_id.like(f"fd381-catchup:{family.id}:%")
     ).all()
-    second = record.apply(old.id, [], author=Author.Coach, turn_id=first.turn_id)
+    second = record.apply(family.id, [], author=Author.Coach, turn_id=first.turn_id)
     real, calls = record.taking_back, []
 
     def written_between(data, changes):
@@ -764,7 +799,7 @@ def test_undo_stopped_partway_says_which_rows_it_took_back(
 
     with patch("btcopilot.record.taking_back", side_effect=written_between):
         rows, _ = catchup(
-            flask_app, "undo", "--plan", path, "--diagram", str(old.id), "--yes"
+            flask_app, "undo", "--plan", path, "--diagram", str(family.id), "--yes"
         )
 
     assert [(r["change"], r["undone"], bool(r["refused"])) for r in rows] == [

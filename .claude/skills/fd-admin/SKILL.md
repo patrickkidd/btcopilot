@@ -207,7 +207,7 @@ Put every record on FD-381's grouping rules and mark each case report the coach 
 
 ### `flask admin fd381-catchup apply`
 
-Write a saved plan: regroup each record it names through clusters.sync(force=True), the function a coach turn runs, one grouping call each, a second when the first answer is refused, each in the model-calls ledger; and mark each case report it names out of date, so the owner's next tap rewrites it, never calling the refresh itself. Each record's writes are change rows that `undo` takes back. Each write is made once per plan, even after an undo, so a run cut short, or run with --limit, is finished by running it again, and no grouping is paid for twice. Just before each record's write it is read again: a record a turn regrouped since the plan is not regrouped, a report the coach wrote again since is not marked, and a record whose owner is not the plan's is not written at all. Each write moves the record's version, as a turn's does, so run it while no one is editing. Prints each planned record with what came of it, its change rows and the dollars its calls cost, then whether every stored grouping is what a turn stores and whether every record was written.
+Write a saved plan: regroup each record it names through clusters.sync(force=True), the function a coach turn runs, one grouping call each, a second when the first answer is refused, each in the model-calls ledger; and mark each case report it names out of date, its diagram's case_report_forced_out_of_date set true until a Refresh writes the cards, so the owner's next tap rewrites it, never calling the refresh itself. Each regroup is change rows and each mark is kept beside the plan, and `undo` takes both back. Each write is made once per plan, even after an undo, so a run cut short, or run with --limit, is finished by running it again, and no grouping is paid for twice. Just before each record's write it is read again: a record a turn regrouped since the plan is not regrouped, a report whose every card the coach wrote again since is not marked, and a record whose owner is not the plan's is not written at all. Each write moves the record's version, as a turn's does, so run it while no one is editing. Prints each planned record with what came of it, its change rows and the dollars its calls cost, then whether every stored grouping is what a turn stores and whether every record was written.
 
 Changes something: needs `--yes`.
 
@@ -220,7 +220,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin fd381-catchup plan`
 
-Decide, for every record but the scratch copies, whether the catch-up regroups it (its grouping cache key differs from the stored one) and whether it marks its case report out of date (the coach last wrote it before the deploy, or an entry is on a card the coach no longer writes), with the grouping's cost estimated from the last grouping call in the model-calls ledger. Makes no model call and changes no record; saves the plan that `apply` and `undo` take, and prints one row per record.
+Decide, for every record but the scratch copies, whether the catch-up regroups it (its grouping cache key differs from the stored one) and whether it marks its case report out of date (a card on it was last written before the deploy), with the grouping's cost estimated from the last grouping call in the model-calls ledger. Makes no model call and changes no record; saves the plan that `apply` and `undo` take, and prints one row per record.
 
 Changes something: needs `--yes`.
 
@@ -233,7 +233,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin fd381-catchup undo`
 
-Take back every change row `apply` wrote under a plan, record by record, newest first, each logged as its own undo naming the row: the case report's mark, which no later change can stop, then the clusters and the grouping cache key as they were. A regroup changed since is left as it is and says why; the rest go on. An undone plan is not written again; a new plan is. Without --yes it prints what each row would take back and writes nothing.
+Take back what `apply` wrote under a plan, record by record: the case report's mark, its diagram's case_report_forced_out_of_date set back to false, which no later change can stop, then each change row of the regroup, newest first, each logged as its own undo naming the row, the clusters and the grouping cache key as they were. A regroup changed since is left as it is and says why; the rest go on. An undone plan is not written again; a new plan is. Without --yes it prints what each row would take back and writes nothing.
 
 Changes something: needs `--yes`.
 

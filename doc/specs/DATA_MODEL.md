@@ -340,8 +340,13 @@ class Diagram(db.Model, ModelMixin):
     name = Column(String)
     data = Column(LargeBinary)  # Pickled DiagramData dict
     version = Column(Integer)
+    case_report_forced_out_of_date = Column(Boolean)
     # ...
 ```
+
+`case_report_forced_out_of_date`: true while the FD-381 catch-up has marked the
+case report out of date, apart from the change-date check, until a Refresh writes
+its cards [Oracle: R-0772].
 
 `get_diagram_data()` / `set_diagram_data()` handle pickle
 serialization/deserialization. Version tracking and transport mechanics are in

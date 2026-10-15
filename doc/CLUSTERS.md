@@ -159,7 +159,7 @@ regroup; the next event change or `regroup` writes the person's periods.
 
 ## Catch-up
 
-After the deploy carrying FD-381, with a database backup first: `flask admin fd381-catchup plan` saves a plan with no model call, `apply --plan <file>` regroups each diagram the plan names through `clusters.sync(force=True)`, the function a turn runs, and `undo --plan <file>` takes it back [Oracle: R-0772].
+After the deploy carrying FD-381, with a database backup first: `flask admin fd381-catchup plan` saves a plan with no model call, `apply --plan <file>` regroups each diagram the plan names through `clusters.sync(force=True)`, the function a turn runs, and sets the diagram's `case_report_forced_out_of_date` where the plan marks the case report (doc/CASE_REPORT.md), and `undo --plan <file>` takes both back [Oracle: R-0772].
 
 ## What a stored cluster holds
 

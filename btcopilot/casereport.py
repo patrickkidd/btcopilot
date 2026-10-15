@@ -65,9 +65,7 @@ MARKED = {EventKind.Death: "death", EventKind.Married: "marriage",
 # What a change must touch to put the report out of date (R-0825).
 FAMILY = {ItemKind.Person.value, ItemKind.Event.value, ItemKind.PairBond.value}
 SINCE = "after the coach wrote this report."
-# A catch-up's change row that marks the report out of date opens its turn id
-# with this, and the page says why in the sentence after it (R-0772).
-OUT_OF_DATE = "case-report-out-of-date:"
+# What the page says of a report the catch-up marked out of date (R-0772).
 NEW_WAY = "The coach now writes this report a new way."
 FIELDS = ("text", "evidence", "state", CARD)
 CLOSED = "CLOSED QUESTIONS"
@@ -179,24 +177,31 @@ def _said(delta: dict, events: dict, people: dict) -> str:
     return f"{label[0].upper()}{label[1:]} changed {SINCE}"
 
 
-def written(diagram_id: int, data: DiagramData) -> tuple[list[Change], int | None]:
-    """The change rows the report is read against, oldest first, and the
-    place among them of the newest that put an entry on a card the page
-    shows, a refresh or one card, or None. The retired choice card never
-    counts as a write. A change taken back, and the undo itself, count for
-    nothing."""
+def _logged(diagram_id: int) -> list[Change]:
+    """The change rows the report is read against, oldest first: a change
+    taken back, and the undo itself, count for nothing."""
     taken = record.undone(diagram_id)
-    rows = [
+    return [
         c
         for c in Change.query.filter_by(diagram_id=diagram_id).order_by(Change.id)
         if c.id not in taken and not c.turn_id.startswith("undo:")
     ]
-    shown = {q[CARD] for q in data.questions if q.get(CARD)} & set(CARDS)
-    last = None
-    for i, change in enumerate(rows):
-        if shown.intersection(map(_carded, change.deltas)):
-            last = i
-    return rows, last
+
+
+def _shown(data: DiagramData) -> set[str]:
+    """The cards the page shows an entry on; the retired choice card is not one."""
+    return {q[CARD] for q in data.questions if q.get(CARD)} & set(CARDS)
+
+
+def written(diagram_id: int, data: DiagramData) -> dict[str, datetime.datetime | None]:
+    """When the coach last wrote each card the page shows, a refresh or one
+    card, or None for a card the change log holds no write of."""
+    shown = _shown(data)
+    when = dict.fromkeys(shown)
+    for change in _logged(diagram_id):
+        for card in shown.intersection(map(_carded, change.deltas)):
+            when[card] = change.created_at
+    return when
 
 
 def stale(diagram_id: int, data: DiagramData) -> dict | None:
@@ -204,10 +209,15 @@ def stale(diagram_id: int, data: DiagramData) -> dict | None:
     coach last wrote a card on the report, a refresh or one card, or None:
     its change row id, when, and one sentence naming it, or how many when
     there are several: one item in one turn is one change, and a pair-bond
-    written with an event is part of that event. With none, a catch-up's
-    mark made after that write, saying the coach now writes the report a new
-    way (R-0772). The rows and the write are read as `written` reads them."""
-    rows, last = written(diagram_id, data)
+    written with an event is part of that event. With none, a report the
+    catch-up marked out of date until a Refresh says the coach now writes it
+    a new way, against that last write (R-0772)."""
+    rows = _logged(diagram_id)
+    shown = _shown(data)
+    last = None
+    for i, change in enumerate(rows):
+        if shown.intersection(map(_carded, change.deltas)):
+            last = i
     if last is None:
         return None
     since = {}
@@ -222,10 +232,9 @@ def stale(diagram_id: int, data: DiagramData) -> dict | None:
         if not (kind == ItemKind.PairBond.value and turn in with_event)
     ]
     if not since:
-        marked = [c for c in rows[last + 1 :] if c.turn_id.startswith(OUT_OF_DATE)]
-        if not marked:
+        if not db.session.get(Diagram, diagram_id).case_report_forced_out_of_date:
             return None
-        return {"change_id": marked[-1].id, "at": marked[-1].created_at.isoformat(), "sentence": NEW_WAY}
+        return {"change_id": rows[last].id, "at": rows[last].created_at.isoformat(), "sentence": NEW_WAY}
     change = max((c for c, _ in since), key=lambda c: c.id)
     if len(since) == 1:
         events = {str(e["id"]): e for e in data.events}
@@ -974,6 +983,8 @@ def run(turn_id: str, diagram_id: int, user_id: int) -> dict:
         _end(diagram_id, turn_id, {"type": TurnEventKind.Failed.value, "message": BROKE})
         raise
     TokenMeter.charge(user_id, meter.spent)
+    if cards:
+        diagram.case_report_forced_out_of_date = False
     db.session.commit()
     db.session.refresh(diagram)
     return _end(
