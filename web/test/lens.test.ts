@@ -26,3 +26,12 @@ it("opens a cluster's view one way, from its info button and from a chip naming 
   expect(report).toContain("if (chip.kind === ChipKind.Cluster) return this.lens.about();");
   expect(report).not.toContain("picture.about(");
 });
+
+// R-0850, R-0845
+it("grows the case report's picture region with a cluster's about page, so it never hangs over the cards", () => {
+  const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  expect(page).toContain('<div class="view grows" id="case-view"></div>');
+  expect(page).toContain('<div class="view" id="view"></div>');
+  expect(source("picture.ts")).toContain('if (this.host.classList.contains("grows")) this.host.style.height = "";');
+  expect(source("casereport.css")).toContain(".screen.report .view.grows > .card { position: relative; }");
+});

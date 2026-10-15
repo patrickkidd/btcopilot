@@ -1246,10 +1246,13 @@ export class Picture {
 
   /** A mode of the cluster, as a card laid over the chat from the top of the
    * picture: as tall as what it holds, while the picture and the header keep
-   * their height and the bubbles stay where they are under it (R-0460). */
+   * their height and the bubbles stay where they are under it (R-0460). On a
+   * region that grows (the case report's), the region takes the card's
+   * height and what is under it moves down rather than lie covered. */
   private card(markup: string): void {
     this.laid = { zones: [], rows: [] };
-    this.pin(PIC_H);
+    if (this.host.classList.contains("grows")) this.host.style.height = "";
+    else this.pin(PIC_H);
     this.host.innerHTML = `<div class="card">${markup}</div>`;
   }
 

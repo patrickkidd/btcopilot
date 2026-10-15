@@ -25,6 +25,9 @@
   .screen.report .chat > .case { width: 100%; max-width: 600px; margin: 0 auto; box-sizing: border-box; }
   .screen.report .pbp { left: auto; width: 393px; border-left: 1px solid var(--line); box-shadow: -8px 0 24px var(--shadow); }
 }
+/* the cluster's about page stands in the picture region, which grows to hold
+   it, so it never hangs past the region over the cards */
+.screen.report .view.grows > .card { position: relative; }
 .screen.report .fault { margin: 12px; font: 400 15px/1.45 var(--sans); color: var(--remove); }
 
 /* the strip: one item per card, one button high, scrolled sideways (Patrick, 2026-10-04) */
