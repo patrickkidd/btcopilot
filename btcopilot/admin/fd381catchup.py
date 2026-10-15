@@ -31,16 +31,17 @@ from btcopilot.models import (
     ObservationKind,
     Purpose,
 )
-from btcopilot.schema import CaseReportCard, ClusterSource, DiagramData
+from btcopilot.schema import CaseReportCard, ClusterSource, DiagramData, ItemKind
 from btcopilot.toolbox import CARDS
 
 TURN = "fd381-catchup:{}:{}"
 PLANS = "fd381-catchup-plans"
 CARD = record.CARD
 SYNC = "clusters.sync(force=True)"
+REFUSED = "the record refused the regroup"
 
 
-class Regroup(enum.StrEnum):
+class RegroupWhy(enum.StrEnum):
     Called = (
         "the grouping cache key differs from the stored one: one grouping call, a "
         "second when the first answer is refused"
@@ -53,7 +54,7 @@ class Regroup(enum.StrEnum):
     Empty = "nothing to group and no cluster of the app's drawn"
 
 
-class Mark(enum.StrEnum):
+class MarkWhy(enum.StrEnum):
     Before = "the coach last wrote the report before the deploy"
     Retired = "an entry is on the choice card, which the coach no longer writes"
     After = "the coach wrote the report after the deploy"
@@ -62,54 +63,50 @@ class Mark(enum.StrEnum):
     Unwritten = "the coach never wrote a report"
 
 
+REGROUPS = (RegroupWhy.Called, RegroupWhy.Uncalled)
+MARKS = (MarkWhy.Before, MarkWhy.Retired)
+
+
+class Skipped(enum.StrEnum):
+    Gone = "the diagram is gone"
+    Owner = "its owner is not the plan's"
+    Regrouped = "a turn regrouped it since the plan"
+    Rewritten = "the coach wrote the report again since the plan"
+
+
 def marked(diagram_id: int, made: str) -> str:
     """The turn id of the change row that marks a record's report out of date
     under one plan, read at call time like the rest of casereport."""
     return f"{casereport.OUT_OF_DATE}{diagram_id}:{made}"
 
 
-def regrouping(diagram: Diagram, data: DiagramData) -> Regroup:
+def regrouping(diagram: Diagram, data: DiagramData) -> RegroupWhy:
     """Whether `sync` would group this diagram anew, and with a call: it
     calls the model only when the rules find a run or the person named when
     the most was going on (`clusters.detect_clusters`)."""
     if not clusters.behind(diagram.id, data):
-        return Regroup.Current
+        return RegroupWhy.Current
     if clusters.candidates(data) or clusters.told_ids(diagram.id, data):
-        return Regroup.Called
+        return RegroupWhy.Called
     if any(c.get("source") == ClusterSource.Model for c in data.drawn_clusters()):
-        return Regroup.Uncalled
-    return Regroup.Empty
+        return RegroupWhy.Uncalled
+    return RegroupWhy.Empty
 
 
-def last_written(diagram_id: int, data: DiagramData) -> Change | None:
-    """The newest change row that put an entry on a card the page shows, read
-    the way `casereport.stale` reads the log: a row taken back, and the undo
-    itself, count for nothing."""
-    shown = {q[CARD] for q in data.questions if q.get(CARD)} & set(CARDS)
-    taken = record.undone(diagram_id)
-    last = None
-    for change in Change.query.filter_by(diagram_id=diagram_id).order_by(Change.id):
-        if change.id in taken or change.turn_id.startswith("undo:"):
-            continue
-        if shown.intersection(map(casereport._carded, change.deltas)):
-            last = change
-    return last
-
-
-def marking(diagram: Diagram, data: DiagramData, since: datetime.datetime) -> Mark:
+def marking(diagram: Diagram, data: DiagramData, since: datetime.datetime) -> MarkWhy:
     """Whether the report is in the shape the coach wrote before the deploy:
     written before it, or holding an entry on a card the coach no longer
     writes. A report with no card the page shows was never written."""
     if not {q[CARD] for q in data.questions if q.get(CARD)} & set(CARDS):
-        return Mark.Unwritten
-    last = last_written(diagram.id, data)
+        return MarkWhy.Unwritten
+    rows, last = casereport.written(diagram.id, data)
     if last is None:
-        return Mark.Unlogged
-    if last.created_at < since:
-        return Mark.Before
+        return MarkWhy.Unlogged
+    if rows[last].created_at < since:
+        return MarkWhy.Before
     if any(q.get(CARD) == CaseReportCard.Choice for q in data.questions):
-        return Mark.Retired
-    return Mark.After
+        return MarkWhy.Retired
+    return MarkWhy.After
 
 
 def per_call() -> ModelCall | None:
@@ -135,18 +132,22 @@ def utc(value: str | None) -> datetime.datetime | None:
     return when
 
 
+def owner_of(diagram: Diagram) -> str | None:
+    return diagram.user.username if diagram.user else None
+
+
 def planned(diagram: Diagram, since: datetime.datetime, cost: float | None) -> dict:
     data = diagram.get_diagram_data()
     regroup, mark = regrouping(diagram, data), marking(diagram, data, since)
     return {
         "diagram": diagram.id,
-        "owner": diagram.user.username if diagram.user else None,
-        "regroup": regroup in (Regroup.Called, Regroup.Uncalled),
+        "owner": owner_of(diagram),
+        "regroup": regroup in REGROUPS,
         "regroup_why": regroup.value,
-        "mark": mark in (Mark.Before, Mark.Retired),
+        "mark": mark in MARKS,
         "mark_why": mark.value,
         "estimate_usd": (
-            None if cost is None else cost if regroup is Regroup.Called else 0.0
+            None if cost is None else cost if regroup is RegroupWhy.Called else 0.0
         ),
     }
 
@@ -215,7 +216,7 @@ def plan(deployed, diagram_id, plans, as_json):
         "estimate_usd",
     ]
     emit([{**row, "plan": str(path)} for row in rows], [*columns, "plan"], as_json)
-    calls = sum(row["regroup_why"] == Regroup.Called for row in rows)
+    calls = sum(row["regroup_why"] == RegroupWhy.Called for row in rows)
     said_to(
         as_json,
         f"saved {path}",
@@ -234,7 +235,7 @@ plan = writes(plan)
 
 def loaded(path: pathlib.Path) -> dict:
     saved = json.loads(path.read_text())
-    if not {"made", "diagrams"} <= set(saved):
+    if not {"made", "deployed", "diagrams"} <= set(saved):
         raise click.ClickException(f"{path} is not a plan this command saved")
     return saved
 
@@ -261,27 +262,64 @@ def failed(turn_id: str) -> bool:
     )
 
 
-def kept(diagram_id: int, turn_id: str) -> list[Change]:
-    """The change rows written under a turn id and not taken back."""
-    taken = record.undone(diagram_id)
-    return [
-        c
-        for c in Change.query.filter_by(
-            diagram_id=diagram_id, turn_id=turn_id
-        ).order_by(Change.id)
-        if c.id not in taken
-    ]
+def logged(diagram_id: int, turn_id: str) -> list[Change]:
+    """Every change row written under a turn id, taken back since or not."""
+    return (
+        Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)
+        .order_by(Change.id)
+        .all()
+    )
 
 
-def regrouped(diagram_id: int, turn_id: str) -> bool:
-    """Whether this plan's regroup of the record already ran: every run ends
-    in a change row or a failure written down."""
-    return bool(kept(diagram_id, turn_id)) or (
-        Observation.query.filter_by(
+def ran(diagram_id: int, turn_id: str) -> bool:
+    """Whether this plan's regroup of the record ran, taken back since or
+    not: every run ends in a change row or a failure written down, and a run
+    stopped after a paid call left its ledger row. A regroup runs once per
+    plan, so it is never paid for twice."""
+    return bool(
+        logged(diagram_id, turn_id)
+        or Observation.query.filter_by(
             turn_id=turn_id, kind=ObservationKind.ClusterFailed
         ).count()
-        > 0
+        or ModelCall.query.filter_by(turn_id=turn_id).count()
     )
+
+
+def deployed_of(saved: dict) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(saved["deployed"])
+
+
+def unowned(entry: dict, diagram: Diagram | None) -> Skipped | None:
+    """Why a plan entry is not written at all: its diagram is gone, or is
+    not the one the plan was made on, as a plan from another database."""
+    if diagram is None:
+        return Skipped.Gone
+    if owner_of(diagram) != entry["owner"]:
+        return Skipped.Owner
+    return None
+
+
+def owed(entry: dict, saved: dict) -> tuple[bool, bool]:
+    """What of a planned record is still to write under this plan, read just
+    before its write: its regroup, unless it ran or a turn regrouped the
+    record since the plan; its mark, unless it is written or the coach wrote
+    the report again since the plan."""
+    diagram = db.session.get(Diagram, entry["diagram"])
+    if unowned(entry, diagram):
+        return False, False
+    data = diagram.get_diagram_data()
+    turn_id = TURN.format(diagram.id, saved["made"])
+    regroup = (
+        entry["regroup"]
+        and not ran(diagram.id, turn_id)
+        and clusters.behind(diagram.id, data)
+    )
+    mark = (
+        entry["mark"]
+        and not logged(diagram.id, marked(diagram.id, saved["made"]))
+        and marking(diagram, data, deployed_of(saved)) in MARKS
+    )
+    return regroup, mark
 
 
 def mark(diagram: Diagram, turn_id: str) -> None:
@@ -291,49 +329,6 @@ def mark(diagram: Diagram, turn_id: str) -> None:
     record.apply(
         diagram.id, [], author=Author.Coach, turn_id=turn_id, user_id=diagram.user_id
     )
-
-
-def state(entry: dict, made: str) -> dict:
-    """One planned record as it stands: what this plan's writes came to."""
-    diagram = find(entry["diagram"])
-    turns = (TURN.format(diagram.id, made), marked(diagram.id, made))
-    changes = [*kept(diagram.id, turns[0]), *kept(diagram.id, turns[1])]
-    spent = (
-        db.session.query(db.func.sum(ModelCall.cost_usd))
-        .filter(ModelCall.turn_id == turns[0])
-        .scalar()
-    )
-    lost = entry["regroup"] and failed(turns[0])
-    ran = (
-        not entry["regroup"]
-        or regrouped(diagram.id, turns[0])
-        or not clusters.behind(diagram.id, diagram.get_diagram_data())
-    )
-    shown = not entry["mark"] or bool(kept(diagram.id, turns[1]))
-    return {
-        "diagram": diagram.id,
-        "owner": entry["owner"],
-        "regroup": entry["regroup"],
-        "mark": entry["mark"],
-        "done": bool(ran and shown) and not lost,
-        "failed": lost if entry["regroup"] else None,
-        "groups": len(diagram.get_diagram_data().drawn_clusters()),
-        "changes": [c.id for c in changes],
-        "cost_usd": float(spent or 0),
-    }
-
-
-def owed(entry: dict, made: str) -> tuple[bool, bool]:
-    """What of a planned record is still to write under this plan: its
-    regroup, unless it ran or a turn regrouped the record since the plan; its
-    mark, unless it is written."""
-    diagram = find(entry["diagram"])
-    regroup = (
-        entry["regroup"]
-        and not regrouped(diagram.id, TURN.format(diagram.id, made))
-        and clusters.behind(diagram.id, diagram.get_diagram_data())
-    )
-    return regroup, entry["mark"] and not kept(diagram.id, marked(diagram.id, made))
 
 
 def caught_up(entry: dict, made: str, regroup: bool, marks: bool) -> None:
@@ -359,13 +354,132 @@ def caught_up(entry: dict, made: str, regroup: bool, marks: bool) -> None:
                         **({"check": check.value} if check else {}),
                         "detail": str(refused),
                         "fallback": False,
-                        "reason": f"the record refused the regroup: {refused}",
+                        "reason": REFUSED,
                     },
                 )
             )
         db.session.commit()
     if marks:
         mark(diagram, marked(diagram.id, made))
+
+
+def changed_since(diagram_id: int, change: Change) -> bool:
+    """Whether a cluster was written after the catch-up's regroup row, so
+    the clusters stored are no longer the ones it wrote."""
+    return any(
+        d["item_kind"] == ItemKind.Cluster.value
+        for later in Change.query.filter(
+            Change.diagram_id == diagram_id, Change.id > change.id
+        )
+        for d in later.deltas
+    )
+
+
+def state(entry: dict, saved: dict) -> dict:
+    """One planned record as it stands: what this plan's writes came to, and
+    whether its stored grouping is what `sync` stores on its own path: the
+    grouping cache key sync computes now, and no cluster written by anything
+    else after it."""
+    made = saved["made"]
+    diagram = db.session.get(Diagram, entry["diagram"])
+    row = {
+        "diagram": entry["diagram"],
+        "owner": entry["owner"],
+        "regroup": entry["regroup"],
+        "mark": entry["mark"],
+        "done": False,
+        "failed": None,
+        "undone": False,
+        "same_as_turn": None,
+        "groups": None,
+        "changes": [],
+        "cost_usd": 0.0,
+        "skipped": None,
+    }
+    skipped = unowned(entry, diagram)
+    if skipped:
+        return {**row, "skipped": skipped.value}
+    data = diagram.get_diagram_data()
+    turn_id, mark_id = TURN.format(diagram.id, made), marked(diagram.id, made)
+    regrouped, marks = logged(diagram.id, turn_id), logged(diagram.id, mark_id)
+    taken = record.undone(diagram.id)
+    undone = any(c.id in taken for c in regrouped + marks)
+    notes, lost, regroup_done, same = [], None, True, None
+    if entry["regroup"]:
+        behind = clusters.behind(diagram.id, data)
+        if ran(diagram.id, turn_id):
+            lost = failed(turn_id) or not regrouped
+        else:
+            lost = False
+            if not behind:
+                notes.append(Skipped.Regrouped.value)
+        regroup_done = not lost and (bool(regrouped) or not behind)
+        if regroup_done or lost:
+            same = (
+                regroup_done
+                and not undone
+                and not behind
+                and not (regrouped and changed_since(diagram.id, regrouped[-1]))
+            )
+    mark_done = True
+    if entry["mark"] and not marks:
+        mark_done = marking(diagram, data, deployed_of(saved)) not in MARKS
+        if mark_done:
+            notes.append(Skipped.Rewritten.value)
+    spent = (
+        db.session.query(db.func.sum(ModelCall.cost_usd))
+        .filter(ModelCall.turn_id == turn_id)
+        .scalar()
+    )
+    return {
+        **row,
+        "done": regroup_done and mark_done and not undone,
+        "failed": lost,
+        "undone": undone,
+        "same_as_turn": same,
+        "groups": len(data.drawn_clusters()),
+        "changes": [c.id for c in regrouped + marks],
+        "cost_usd": float(spent or 0),
+        "skipped": "; ".join(notes) or None,
+    }
+
+
+def same_as_turn(rows: list[dict]) -> str:
+    """R-0772's first statement, record by record."""
+    judged = [r for r in rows if r["same_as_turn"] is not None]
+    unlike = [str(r["diagram"]) for r in judged if not r["same_as_turn"]]
+    said = (
+        f"same as a turn: yes for {len(judged) - len(unlike)} of {len(judged)} "
+        f"regrouped records: each ran {SYNC}, the function a coach turn runs, on the "
+        "record as stored and the person's answers, and holds the grouping cache key "
+        "sync computes now"
+    )
+    if unlike:
+        said += (
+            f"; no for diagrams {', '.join(unlike)}: failed, refused, taken back or "
+            "changed since"
+        )
+    return said
+
+
+def outcome(row: dict) -> str:
+    """What came of one planned record, one outcome each."""
+    if row["skipped"] in (Skipped.Gone, Skipped.Owner):
+        return "skipped"
+    if row["undone"]:
+        return "taken back"
+    if row["failed"]:
+        return "failed"
+    return "done" if row["done"] else "not yet written"
+
+
+def completed(rows: list[dict]) -> str:
+    """R-0772's second statement: every record the plan writes to."""
+    counts = [outcome(r) for r in rows]
+    return f"completed: {len(rows)} planned, " + ", ".join(
+        f"{counts.count(one)} {one}"
+        for one in ("done", "failed", "taken back", "skipped", "not yet written")
+    )
 
 
 @click.command("apply")
@@ -389,22 +503,28 @@ def apply(path, diagram_id, limit, as_json):
     call each, a second when the first answer is refused, each in the
     model-calls ledger; and mark each case report it names out of date, so the
     owner's next tap rewrites it, never calling the refresh itself. Each
-    record's writes are change rows that `undo` takes back. A record already
-    written under this plan is not written again, so a run cut short, or run
-    with --limit, is finished by running it again; a record a turn regrouped
-    since the plan is done with no change row of the catch-up's. Each write
-    moves the record's version, as a turn's does, so run it while no one is
-    editing. Prints each planned record with whether it is done and failed,
-    its change rows and the dollars its calls cost, then whether every stored
-    result is what a turn stores and whether every record was written."""
+    record's writes are change rows that `undo` takes back. Each write is
+    made once per plan, even after an undo, so a run cut short, or run with
+    --limit, is finished by running it again, and no grouping is paid for
+    twice. Just before each record's write it is read again: a record a turn
+    regrouped since the plan is not regrouped, a report the coach wrote again
+    since is not marked, and a record whose owner is not the plan's is not
+    written at all. Each write moves the record's version, as a turn's does,
+    so run it while no one is editing. Prints each planned record with what
+    came of it, its change rows and the dollars its calls cost, then whether
+    every stored grouping is what a turn stores and whether every record was
+    written."""
     saved = loaded(path)
     entries = touched(saved, diagram_id)
-    pending = [(e, owed(e, saved["made"])) for e in entries]
-    pending = [(e, left) for e, left in pending if any(left)]
-    for entry, left in pending[:limit] if limit else pending:
-        caught_up(entry, saved["made"], *left)
-    whole = {e["diagram"]: state(e, saved["made"]) for e in touched(saved, None)}
-    rows = [whole[e["diagram"]] for e in entries]
+    written = 0
+    for entry in entries:
+        if limit and written >= limit:
+            break
+        left = owed(entry, saved)
+        if any(left):
+            caught_up(entry, saved["made"], *left)
+            written += 1
+    whole = {e["diagram"]: state(e, saved) for e in touched(saved, None)}
     columns = [
         "diagram",
         "owner",
@@ -412,24 +532,51 @@ def apply(path, diagram_id, limit, as_json):
         "mark",
         "done",
         "failed",
+        "undone",
+        "same_as_turn",
         "groups",
         "changes",
         "cost_usd",
+        "skipped",
     ]
-    emit(rows, columns, as_json)
-    done = sum(r["done"] for r in whole.values())
-    lost = sum(bool(r["failed"]) for r in whole.values())
-    said_to(
-        as_json,
-        f"same as a turn: yes, by construction: each regroup ran {SYNC}, the function a "
-        "coach turn runs, on the record as stored, the person's answers and the same "
-        "grouping call; only the turn id differs, and no monthly token cap is asked",
-        f"completed: {len(whole)} planned, {done} done, {lost} failed, "
-        f"{len(whole) - done - lost} not yet written",
-    )
+    emit([whole[e["diagram"]] for e in entries], columns, as_json)
+    rows = list(whole.values())
+    said_to(as_json, same_as_turn(rows), completed(rows))
 
 
 apply = writes(apply)
+
+
+def taken_back(diagram: Diagram, changes: list[Change], yes: bool) -> list[dict]:
+    """One group of a record's catch-up rows taken back, newest first, or
+    only previewed; a value changed since stops the group and says so, with
+    the rows it took back before the change marked undone."""
+    earlier, refused = record.undone(diagram.id), None
+    try:
+        back = record.taking_back(diagramjson.loads(diagram.data), changes)
+        if yes:
+            record.undo_changes(
+                diagram.id, [c.id for c in changes], author=Author.Coach
+            )
+    except record.Conflict as e:
+        # rows are written one at a time, so a write between them can stop
+        # the rest after some were taken back
+        back = [(c, []) for c in sorted(changes, key=lambda c: -c.id)]
+        refused = f"changed since it was written: {e}"
+    done = record.undone(diagram.id) - earlier
+    return [
+        {
+            "diagram": diagram.id,
+            "change": change.id,
+            "turn": change.turn_id,
+            "undone": change.id in done,
+            "taken_back": ", ".join(
+                f"{d['item_kind']} {d['item_id']} {said(d)}" for d in deltas
+            ),
+            "refused": None if change.id in done else refused,
+        }
+        for change, deltas in back
+    ]
 
 
 @click.command("undo")
@@ -438,7 +585,7 @@ apply = writes(apply)
     "path",
     required=True,
     type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
-    help="The plan file `apply` wrote.",
+    help="The plan file `plan` saved.",
 )
 @click.option("--diagram", "diagram_id", type=int, help="Only this record of the plan.")
 @click.option(
@@ -448,46 +595,25 @@ apply = writes(apply)
 def undo(path, diagram_id, yes):
     """Take back every change row `apply` wrote under a plan, record by
     record, newest first, each logged as its own undo naming the row: the
-    clusters and the grouping cache key as they were, and the case report no
-    longer out of date for the catch-up. A record changed since is left as it
-    is and says why; the rest go on. Without --yes it prints what each row
-    would take back and writes nothing."""
+    case report's mark, which no later change can stop, then the clusters and
+    the grouping cache key as they were. A regroup changed since is left as
+    it is and says why; the rest go on. An undone plan is not written again;
+    a new plan is. Without --yes it prints what each row would take back and
+    writes nothing."""
     saved = loaded(path)
     rows = []
     for entry in touched(saved, diagram_id):
-        diagram = find(entry["diagram"])
-        changes = [
-            *kept(diagram.id, TURN.format(diagram.id, saved["made"])),
-            *kept(diagram.id, marked(diagram.id, saved["made"])),
-        ]
-        if not changes:
+        diagram = db.session.get(Diagram, entry["diagram"])
+        if diagram is None:
             continue
-        earlier, refused = record.undone(diagram.id), None
-        try:
-            back = record.taking_back(diagramjson.loads(diagram.data), changes)
-            if yes:
-                record.undo_changes(
-                    diagram.id, [c.id for c in changes], author=Author.Coach
-                )
-        except record.Conflict as e:
-            # rows are written one at a time, so a write between them can stop
-            # the rest after some were taken back
-            back = [(c, []) for c in sorted(changes, key=lambda c: -c.id)]
-            refused = f"changed since it was written: {e}"
-        done = record.undone(diagram.id) - earlier
-        rows += [
-            {
-                "diagram": diagram.id,
-                "change": change.id,
-                "turn": change.turn_id,
-                "undone": change.id in done,
-                "taken_back": ", ".join(
-                    f"{d['item_kind']} {d['item_id']} {said(d)}" for d in deltas
-                ),
-                "refused": None if change.id in done else refused,
-            }
-            for change, deltas in back
-        ]
+        taken = record.undone(diagram.id)
+        for turn_id in (
+            marked(diagram.id, saved["made"]),
+            TURN.format(diagram.id, saved["made"]),
+        ):
+            changes = [c for c in logged(diagram.id, turn_id) if c.id not in taken]
+            if changes:
+                rows += taken_back(diagram, changes, yes)
     return ["diagram", "change", "turn", "undone", "taken_back", "refused"], rows
 
 

@@ -207,7 +207,7 @@ Put every record on FD-381's grouping rules and mark each case report the coach 
 
 ### `flask admin fd381-catchup apply`
 
-Write a saved plan: regroup each record it names through clusters.sync(force=True), the function a coach turn runs, one grouping call each, a second when the first answer is refused, each in the model-calls ledger; and mark each case report it names out of date, so the owner's next tap rewrites it, never calling the refresh itself. Each record's writes are change rows that `undo` takes back. A record already written under this plan is not written again, so a run cut short, or run with --limit, is finished by running it again; a record a turn regrouped since the plan is done with no change row of the catch-up's. Each write moves the record's version, as a turn's does, so run it while no one is editing. Prints each planned record with whether it is done and failed, its change rows and the dollars its calls cost, then whether every stored result is what a turn stores and whether every record was written.
+Write a saved plan: regroup each record it names through clusters.sync(force=True), the function a coach turn runs, one grouping call each, a second when the first answer is refused, each in the model-calls ledger; and mark each case report it names out of date, so the owner's next tap rewrites it, never calling the refresh itself. Each record's writes are change rows that `undo` takes back. Each write is made once per plan, even after an undo, so a run cut short, or run with --limit, is finished by running it again, and no grouping is paid for twice. Just before each record's write it is read again: a record a turn regrouped since the plan is not regrouped, a report the coach wrote again since is not marked, and a record whose owner is not the plan's is not written at all. Each write moves the record's version, as a turn's does, so run it while no one is editing. Prints each planned record with what came of it, its change rows and the dollars its calls cost, then whether every stored grouping is what a turn stores and whether every record was written.
 
 Changes something: needs `--yes`.
 
@@ -233,13 +233,13 @@ Changes something: needs `--yes`.
 
 ### `flask admin fd381-catchup undo`
 
-Take back every change row `apply` wrote under a plan, record by record, newest first, each logged as its own undo naming the row: the clusters and the grouping cache key as they were, and the case report no longer out of date for the catch-up. A record changed since is left as it is and says why; the rest go on. Without --yes it prints what each row would take back and writes nothing.
+Take back every change row `apply` wrote under a plan, record by record, newest first, each logged as its own undo naming the row: the case report's mark, which no later change can stop, then the clusters and the grouping cache key as they were. A regroup changed since is left as it is and says why; the rest go on. An undone plan is not written again; a new plan is. Without --yes it prints what each row would take back and writes nothing.
 
 Changes something: needs `--yes`.
 
 | Argument | What it is |
 |---|---|
-| `--plan` | The plan file `apply` wrote. |
+| `--plan` | The plan file `plan` saved. |
 | `--diagram` | Only this record of the plan. |
 | `--json` | Print JSON, not a table. |
 

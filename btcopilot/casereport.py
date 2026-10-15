@@ -172,15 +172,12 @@ def _said(delta: dict, events: dict, people: dict) -> str:
     return f"{label[0].upper()}{label[1:]} changed {SINCE}"
 
 
-def stale(diagram_id: int, data: DiagramData) -> dict | None:
-    """The newest change to a person, an event or a pair-bond made after the
-    coach last wrote a card on the report, a refresh or one card, or None:
-    its change row id, when, and one sentence naming it, or how many when
-    there are several: one item in one turn is one change, and a pair-bond
-    written with an event is part of that event. With none, a catch-up's
-    mark made after that write, saying the coach now writes the report a new
-    way (R-0772). The retired choice card never counts as a write. A change
-    taken back, and the undo itself, count for nothing."""
+def written(diagram_id: int, data: DiagramData) -> tuple[list[Change], int | None]:
+    """The change rows the report is read against, oldest first, and the
+    place among them of the newest that put an entry on a card the page
+    shows, a refresh or one card, or None. The retired choice card never
+    counts as a write. A change taken back, and the undo itself, count for
+    nothing."""
     taken = record.undone(diagram_id)
     rows = [
         c
@@ -192,6 +189,18 @@ def stale(diagram_id: int, data: DiagramData) -> dict | None:
     for i, change in enumerate(rows):
         if shown.intersection(map(_carded, change.deltas)):
             last = i
+    return rows, last
+
+
+def stale(diagram_id: int, data: DiagramData) -> dict | None:
+    """The newest change to a person, an event or a pair-bond made after the
+    coach last wrote a card on the report, a refresh or one card, or None:
+    its change row id, when, and one sentence naming it, or how many when
+    there are several: one item in one turn is one change, and a pair-bond
+    written with an event is part of that event. With none, a catch-up's
+    mark made after that write, saying the coach now writes the report a new
+    way (R-0772). The rows and the write are read as `written` reads them."""
+    rows, last = written(diagram_id, data)
     if last is None:
         return None
     since = {}

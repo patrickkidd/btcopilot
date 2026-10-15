@@ -27,7 +27,15 @@ from btcopilot.models import (
     ObservationKind,
     Purpose,
 )
-from btcopilot.schema import Person, asdict
+from btcopilot.schema import (
+    Cluster,
+    ClusterSource,
+    DateCertainty,
+    Event,
+    EventKind,
+    Person,
+    asdict,
+)
 from btcopilot.tests.test_casereport import card
 from btcopilot.tests.test_casereportrewrite import happened
 from btcopilot.tests.test_clustersync import (  # noqa: F401
@@ -52,6 +60,20 @@ CALLED = (
     "when the first answer is refused"
 )
 CURRENT = "the grouping cache key is the stored one"
+SAME = (
+    "same as a turn: yes for {} of {} regrouped records: each ran "
+    "clusters.sync(force=True), the function a coach turn runs, on the record as "
+    "stored and the person's answers, and holds the grouping cache key sync computes now"
+)
+UNLIKE = "; no for diagrams {}: failed, refused, taken back or changed since"
+
+
+def done(done=0, failed=0, back=0, skipped=0, left=0) -> str:
+    planned = done + failed + back + skipped + left
+    return (
+        f"completed: {planned} planned, {done} done, {failed} failed, {back} taken back, "
+        f"{skipped} skipped, {left} not yet written"
+    )
 
 
 def reported(user, name: str) -> Diagram:
@@ -122,6 +144,45 @@ def planned(flask_app, tmp_path) -> tuple[list[dict], str]:
         flask_app, "plan", "--deployed", DEPLOYED, "--plans", str(tmp_path)
     )
     return rows, rows[0]["plan"]
+
+
+def calmed(user) -> Diagram:
+    """A record whose events support no cluster, with a cluster of the app's
+    stored from before the rules changed."""
+    calmer = Diagram(user_id=user.id, name="Calmer", data=diagramjson.dumps({}))
+    db.session.add(calmer)
+    db.session.commit()
+    data = calmer.get_diagram_data()
+    data.people = [asdict(Person(id=1, name="Bea"))]
+    data.events = [
+        asdict(
+            Event(
+                id=20 + n,
+                kind=EventKind.Shift,
+                person=1,
+                dateTime=f"1999-0{n + 1}-01",
+                dateCertainty=DateCertainty.Certain,
+                description=f"calmer {n}",
+                anxiety="down",
+            )
+        )
+        for n in range(3)
+    ]
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="c1",
+                title="A calmer year",
+                summary="r",
+                eventIds=[20, 21, 22],
+                source=ClusterSource.Model,
+            )
+        )
+    ]
+    data.lastItemId = 22
+    calmer.set_diagram_data(data)
+    db.session.commit()
+    return calmer
 
 
 def filed(diagram, entry_id: str, value: str) -> None:
@@ -225,8 +286,8 @@ def test_apply_regroups_only_the_planned_record_through_sync_and_never_refreshes
         (old.id, True, None, 0, 0.0),
     ]
     assert rows[0]["changes"] == [regroup[0].id]
-    assert "clusters.sync(force=True)" in said
-    assert "completed: 2 planned, 2 done, 0 failed, 0 not yet written" in said
+    assert [r["same_as_turn"] for r in rows] == [True, None]
+    assert said.splitlines() == [SAME.format(1, 1), done(done=2)]
 
 
 def test_apply_marks_only_the_planned_report_out_of_date(
@@ -292,13 +353,13 @@ def test_limit_writes_that_many_records_and_the_next_run_finishes(
             (family.id, True),
             (old.id, False),
         ]
-        assert "completed: 2 planned, 1 done, 0 failed, 1 not yet written" in said
+        assert said.splitlines()[1] == done(done=1, left=1)
         assert stale(old) is None
 
         rows, said = catchup(flask_app, "apply", "--plan", path)
     assert asked.call_count == 1
     assert [r["done"] for r in rows] == [True, True]
-    assert "completed: 2 planned, 2 done, 0 failed, 0 not yet written" in said
+    assert said.splitlines()[1] == done(done=2)
     assert stale(old)
 
 
@@ -314,7 +375,7 @@ def test_diagram_writes_only_that_record(flask_app, tmp_path, family, old, curre
     assert [r["diagram"] for r in rows] == [old.id]
     assert clusters_of(family) == {}
     assert stale(old)
-    assert "completed: 2 planned, 1 done, 0 failed, 1 not yet written" in said
+    assert said.splitlines()[1] == done(done=1, left=1)
 
 
 def test_a_grouping_with_no_answer_is_failed_and_not_called_again(
@@ -330,7 +391,10 @@ def test_a_grouping_with_no_answer_is_failed_and_not_called_again(
         assert [(r["diagram"], r["done"], r["failed"]) for r in rows[:1]] == [
             (family.id, False, True)
         ]
-        assert "completed: 2 planned, 1 done, 1 failed, 0 not yet written" in said
+        assert said.splitlines() == [
+            SAME.format(0, 1) + UNLIKE.format(family.id),
+            done(done=1, failed=1),
+        ]
 
         catchup(flask_app, "apply", "--plan", path)
     assert asked.call_count == 2
@@ -352,10 +416,11 @@ def test_a_regroup_the_record_refuses_is_failed_written_down_and_the_rest_go_on(
         (family.id, False, True),
         (old.id, True, None),
     ]
-    assert "completed: 2 planned, 1 done, 1 failed, 0 not yet written" in said
+    assert said.splitlines()[1] == done(done=1, failed=1)
     (seen,) = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).all()
     assert seen.diagram_id == family.id
-    assert seen.detail["reason"].startswith("the record refused the regroup")
+    assert seen.detail["reason"] == "the record refused the regroup"
+    assert "fewer than 3 events" in seen.detail["detail"]
 
 
 def test_a_family_change_after_the_last_card_write_is_said_over_the_mark(
@@ -458,3 +523,192 @@ def test_undo_leaves_a_record_changed_since_as_it_is_and_takes_the_rest_back(
     ]
     assert clusters_of(family)[cluster_id]["title"] == "Renamed"
     assert stale(old) is None
+    _, said = catchup(flask_app, "apply", "--plan", path)
+    assert said.splitlines()[0] == SAME.format(0, 1) + UNLIKE.format(family.id)
+
+
+def test_an_undone_plan_is_not_written_again_and_no_grouping_is_paid_twice(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772
+    _, path = planned(flask_app, tmp_path)
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ) as asked:
+        catchup(flask_app, "apply", "--plan", path)
+        catchup(flask_app, "undo", "--plan", path, "--yes")
+        rows, said = catchup(flask_app, "apply", "--plan", path)
+
+    assert asked.call_count == 1
+    assert ModelCall.query.count() == 1
+    assert (
+        Change.query.filter(Change.turn_id.like(f"{casereport.OUT_OF_DATE}%")).count()
+        == 1
+    )
+    assert clusters_of(family) == {}
+    assert stale(old) is None
+    assert [(r["done"], r["undone"]) for r in rows] == [(False, True), (False, True)]
+    assert said.splitlines()[1] == done(back=2)
+
+
+def test_a_report_the_coach_wrote_again_since_the_plan_is_not_marked(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772, R-0827
+    _, path = planned(flask_app, tmp_path)
+    impress(box(old, "r2"), text="When things get tense, she goes out.")
+    card(old, "i2", "main_guess", "c2")
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        rows, said = catchup(flask_app, "apply", "--plan", path)
+
+    assert stale(old) is None
+    assert (
+        Change.query.filter(Change.turn_id.like(f"{casereport.OUT_OF_DATE}%")).count()
+        == 0
+    )
+    assert (rows[1]["done"], rows[1]["skipped"]) == (
+        True,
+        "the coach wrote the report again since the plan",
+    )
+    assert said.splitlines()[1] == done(done=2)
+
+
+def test_undo_takes_the_mark_back_when_the_regroup_changed_since(
+    flask_app, tmp_path, test_user, family, current
+):
+    # R-0772, R-0827
+    impress(box(family, "r1"), text="When things get tense, she goes quiet.")
+    card(family, "i1", "main_guess", "c1")
+    Change.query.filter_by(diagram_id=family.id).update({"created_at": BEFORE})
+    db.session.commit()
+    rows, path = planned(flask_app, tmp_path)
+    assert (rows[0]["regroup"], rows[0]["mark"]) == (True, True)
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        catchup(flask_app, "apply", "--plan", path)
+    assert stale(family)["sentence"] == casereport.NEW_WAY
+    (cluster_id,) = clusters_of(family)
+    record.apply(
+        family.id,
+        [
+            {
+                "item_kind": "cluster",
+                "item_id": cluster_id,
+                "field": "name",
+                "after": "My own name",
+            }
+        ],
+        author=Author.User,
+        turn_id="u1",
+        user_id=test_user.id,
+    )
+
+    rows, _ = catchup(
+        flask_app, "undo", "--plan", path, "--diagram", str(family.id), "--yes"
+    )
+    assert [
+        (r["turn"].split(":")[0], r["undone"], bool(r["refused"])) for r in rows
+    ] == [
+        ("case-report-out-of-date", True, False),
+        ("fd381-catchup", False, True),
+    ]
+    assert stale(family) is None
+    assert clusters_of(family)[cluster_id]["name"] == "My own name"
+
+
+def test_a_plan_entry_whose_owner_is_not_the_diagrams_is_not_written(
+    flask_app, tmp_path, test_user, family, old, current
+):
+    # R-0772
+    _, path = planned(flask_app, tmp_path)
+    old.user_id = test_user.id
+    db.session.commit()
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        rows, said = catchup(flask_app, "apply", "--plan", path)
+
+    assert stale(old) is None
+    assert Change.query.filter(Change.turn_id.like(f"%:{old.id}:%")).count() == 0
+    assert (rows[1]["done"], rows[1]["skipped"]) == (
+        False,
+        "its owner is not the plan's",
+    )
+    assert said.splitlines()[1] == done(done=1, skipped=1)
+
+
+def test_a_deployed_time_with_an_offset_is_read_as_utc(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772
+    Change.query.filter_by(diagram_id=current.id).update(
+        {"created_at": datetime.datetime(2026, 6, 1, 1, 0)}
+    )
+    db.session.commit()
+    rows, _ = catchup(
+        flask_app,
+        "plan",
+        "--deployed",
+        "2026-06-01T02:00:00+02:00",
+        "--plans",
+        str(tmp_path),
+    )
+
+    assert marks(rows) == [
+        (family.id, False, "the coach never wrote a report"),
+        (old.id, True, "the coach last wrote the report before the deploy"),
+        (current.id, False, "the coach wrote the report after the deploy"),
+    ]
+
+
+def test_a_scratch_copy_is_never_planned(flask_app, tmp_path, family, old, current):
+    # R-0772
+    old.scratch = True
+    db.session.commit()
+
+    rows, _ = planned(flask_app, tmp_path)
+    assert [r["diagram"] for r in rows] == [family.id, current.id]
+
+
+def test_with_nothing_left_to_group_the_apps_clusters_are_set_aside_with_no_call(
+    flask_app, tmp_path, test_user_2, family, old, current
+):
+    # R-0772, R-0850
+    calmer = calmed(test_user_2)
+    empty = Diagram(user_id=test_user_2.id, name="Empty", data=diagramjson.dumps({}))
+    db.session.add(empty)
+    db.session.commit()
+
+    rows, path = planned(flask_app, tmp_path)
+    assert [(r["diagram"], r["regroup"], r["regroup_why"]) for r in rows[3:]] == [
+        (
+            calmer.id,
+            True,
+            "the grouping cache key differs from the stored one and nothing is left "
+            "to group: the app's clusters are set aside with no call",
+        ),
+        (empty.id, False, "nothing to group and no cluster of the app's drawn"),
+    ]
+    with patch("btcopilot.metered.gemini_structured_sync") as asked:
+        catchup(flask_app, "apply", "--plan", path, "--diagram", str(calmer.id))
+    assert not asked.called
+    assert clusters_of(calmer)["c1"]["setAside"]
+
+
+def test_an_undone_regroup_with_no_call_is_not_written_again(
+    flask_app, tmp_path, test_user_2, family, old, current
+):
+    # R-0772
+    calmer = calmed(test_user_2)
+    _, path = planned(flask_app, tmp_path)
+    for step in (["apply"], ["undo", "--yes"], ["apply"]):
+        catchup(
+            flask_app, step[0], "--plan", path, "--diagram", str(calmer.id), *step[1:]
+        )
+
+    regroups = Change.query.filter(Change.turn_id.like(f"fd381-catchup:{calmer.id}:%"))
+    assert regroups.count() == 1
+    assert not clusters_of(calmer)["c1"].get("setAside")
