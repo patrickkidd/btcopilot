@@ -35,6 +35,7 @@ from btcopilot.llmutil import (
     dataclass_to_json_schema,
 )
 from btcopilot.matching import TITLE_PREFIXES
+from btcopilot.refs import cluster_years
 from btcopilot.metered import Metered
 from btcopilot import record
 from btcopilot.models import Author, Change, Observation, ObservationKind, Purpose
@@ -172,11 +173,15 @@ OUTSIDE_WORDS = (
 STEM = 4
 COMMON_WORDS = frozenset(
     {
-        "about", "after", "again", "another", "away", "back", "became", "been",
-        "before", "could", "during", "family", "from", "have", "home", "into",
-        "life", "only", "over", "period", "since", "that", "their", "them",
-        "then", "they", "this", "time", "until", "were", "when", "while", "with",
+        "about", "after", "again", "always", "another", "away", "back", "became",
+        "been", "before", "could", "during", "family", "from", "going", "have",
+        "home", "into", "less", "life", "more", "never", "only", "onto", "over",
+        "period", "said", "since", "than", "that", "their", "them", "then",
+        "they", "this", "time", "until", "were", "when", "while", "with",
         "would", "year", "years",
+        # Words for relatives, which name who changed, never the trouble.
+        "child", "children", "daughter", "husband", "parent", "parents",
+        "partner", "sibling", "siblings", "spouse", "wife",
     }
 )
 
@@ -500,14 +505,22 @@ def _stems(text: str | None) -> set[str]:
 
 def trouble_words(data: DiagramData) -> set[str]:
     """The words the person's own trouble is told in, by stem: those of the
-    descriptions of their rises in symptom or anxiety and falls in functioning,
-    less any another event, an event's kind, a name, a word for a relative or
-    a common word also uses, so a name says the loss and not the trouble
-    [Oracle: R-0376, R-0850]."""
+    descriptions of their rises in symptom or anxiety, falls in functioning
+    and relationship shifts, with each relationship shift's own word (a
+    cutoff, a distance), less any another event, an event's kind, a name, a
+    word for a relative or a common word also uses, so a name says the loss
+    and not the trouble [Oracle: R-0376, R-0850]."""
     me = (profile.own(data) or {}).get("id")
     events = _dated(data)
-    theirs = {e.id for e in events if me is not None and e.person == me and troubled(e)}
-    told = set().union(*(_stems(e.description) for e in events if e.id in theirs))
+    theirs = {
+        e.id: e
+        for e in events
+        if me is not None and e.person == me and (troubled(e) or e.relationship)
+    }
+    told = set().union(
+        *(_stems(e.description) for e in theirs.values()),
+        *(_stems(_enum_value(e.relationship)) for e in theirs.values() if e.relationship),
+    )
     plain = set().union(
         *(_stems(e.description) for e in events if e.id not in theirs),
         *(_stems(kind.value) for kind in EventKind),
@@ -524,11 +537,25 @@ def trouble_in(name: str, told: set[str]) -> list[str]:
     )
 
 
+# A year or a run of years in a name, with what sets it off: "(2014)",
+# ", 2014–2015", " 1998 to 99".
+YEARS_IN_NAME = re.compile(
+    r"[\s,;:(]*\b(?:19|20)\d{2}\b"
+    r"(?:\s*(?:[-\u2013\u2014]|to)\s*(?:(?:19|20)\d{2}|\d{2})\b)?\)?"
+)
+
+
+def with_years(name: str, start, end) -> str:
+    """An app period's name with the years every screen writes for it, from
+    its stored start and end [Oracle: R-0853]; years the grouping wrote in
+    the name are dropped, so the name never says other years than its span."""
+    bare = YEARS_IN_NAME.sub("", name).strip(" ,;:-\u2013\u2014")
+    return f"{bare}, {cluster_years({'startDate': start, 'endDate': end}, [])}"
+
+
 def plain_name(cluster: "ModelCluster", when: dict[int, datetime.date]) -> str:
     """The name a period gets when its name twice told the person's trouble."""
-    first, last = span_of([when[i] for i in cluster.eventIds])
-    years = str(first.year) if first.year == last.year else f"{first.year}\u2013{last.year}"
-    return f"A change in the family, {years}"
+    return with_years("A change in the family", *span_of([when[i] for i in cluster.eventIds]))
 
 
 @dataclass
@@ -727,7 +754,7 @@ def _prompt(
     free: list[Event],
     stored: dict[str, dict],
     said: list[Answer],
-    born: str | None,
+    born: datetime.date | None,
     told: set[str] = frozenset(),
     people: list[str] = (),
 ) -> str:
@@ -767,9 +794,14 @@ def _prompt(
         events=json.dumps([_event_json(e) for e in free], indent=2),
         told=json.dumps(
             {
-                "personBorn": born,
+                "personBorn": born and born.isoformat(),
                 "answers": [
-                    {"messageId": one.messageId, "question": one.question, "said": one.words}
+                    {
+                        "messageId": one.messageId,
+                        "question": one.question,
+                        "said": one.words,
+                        "agesAsYears": [asdict(age) for age in ages(one.words, born)],
+                    }
                     for one in said
                 ],
             },
@@ -910,6 +942,91 @@ def _words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", text.lower())
 
 
+@dataclass
+class Age:
+    """Ages the person gave, "my late 20s", as the years they ran from their
+    birth date."""
+
+    said: str
+    startYear: int
+    endYear: int
+
+
+DECADES = {
+    "teens": 10, "twenties": 20, "thirties": 30, "forties": 40, "fifties": 50,
+    "sixties": 60, "seventies": 70, "eighties": 80, "nineties": 90,
+}
+# The ages in a part of a decade; the teens start at thirteen.
+PARTS = {"early": (0, 3), "mid": (4, 6), "late": (7, 9), None: (0, 9)}
+TEENS = {"early": (13, 15), "mid": (14, 16), "late": (17, 19), None: (13, 19)}
+DECADE_SAID = re.compile(
+    r"\b(?:my|his|her|their)\s+(?:(early|mid|late)[\s-]*)?"
+    r"(\d0\s*'?s|" + "|".join(DECADES) + r")\b",
+    re.IGNORECASE,
+)
+AGES_SAID = re.compile(
+    r"\b(?:ages?|aged)\s+(\d{1,2})(?:\s*(?:-|\u2013|to|through|and)\s*(\d{1,2}))?\b"
+    r"|\b(\d{1,2})(?:\s*(?:-|\u2013|to|through)\s*(\d{1,2}))?\s+years?\s+old\b"
+    r"|\bwhen\s+i\s+was\s+(\d{1,2})\b",
+    re.IGNORECASE,
+)
+
+
+def birth(data: DiagramData) -> datetime.date | None:
+    """The person's own birth date, when the diagram has it."""
+    own = profile.own(data)
+    born = own and profile.birth(data, own["id"])
+    return parse_date(born["dateTime"]) if born else None
+
+
+def _aged(said: str, first: int, last: int, born: datetime.date) -> Age:
+    end = _years_after(born, last + 1) - datetime.timedelta(days=1)
+    return Age(said=said, startYear=_years_after(born, first).year, endYear=end.year)
+
+
+def ages(text: str, born: datetime.date | None) -> list[Age]:
+    """Every age or run of ages the person's words give, "my late 20s",
+    "aged 18 to 21", "when I was 15", as years from their birth date, so
+    their period is never cut short of what they said [Oracle: R-0853]. A
+    decade counts only as theirs ("my 30s"), never "the 80s"."""
+    if born is None:
+        return []
+    found = []
+    for match in DECADE_SAID.finditer(text):
+        part, decade = match.group(1) and match.group(1).lower(), match.group(2).lower()
+        start = DECADES.get(decade) or int(decade[:2])
+        first, last = TEENS[part] if start == 10 else (start + n for n in PARTS[part])
+        found.append((match.start(), _aged(match.group(0), first, last, born)))
+    for match in AGES_SAID.finditer(text):
+        numbers = [int(n) for n in match.groups() if n is not None]
+        found.append((match.start(), _aged(match.group(0), min(numbers), max(numbers), born)))
+    return [age for _, age in sorted(found, key=lambda one: one[0])]
+
+
+def _echoes(sentence: str, question: str, run: int = 4) -> bool:
+    """Whether a sentence repeats the question, four of its words in a row:
+    the answer's opener ("The two or three times that stand out...")."""
+    asked = _words(question)
+    return any(
+        _in_their_words(" ".join(asked[i : i + run]), sentence)
+        for i in range(len(asked) - run + 1)
+    )
+
+
+def their_sentence(name: str, said: str, question: str) -> str:
+    """The person's own sentence about a period of theirs: the one naming it,
+    never the opener that repeats the question while another sentence
+    follows; a period named only in the opener is told in the sentence after
+    it [Oracle: R-0853]."""
+    sentences = [one for one in re.split(r"(?<=[.!?])\s+", said.strip()) if one]
+    opener = len(sentences) > 1 and _echoes(sentences[0], question)
+    naming = [i for i, one in enumerate(sentences) if _in_their_words(name, one)]
+    found = next((i for i in naming if not (opener and i == 0)), None)
+    if found is None:
+        found = 1 if opener else (naming or [0])[0]
+    return sentences[found]
+
+
 def _in_their_words(text: str, said: str) -> bool:
     """Whether a phrase is the person's own: its words side by side, in order,
     in their message."""
@@ -925,12 +1042,22 @@ def _years(period: TheirPeriod) -> Span | None:
     return datetime.date(period.startYear, 1, 1), datetime.date(period.endYear, 12, 31)
 
 
+def _stated(years: Span | None, said: list[Age]) -> Span | None:
+    """A period's years never short of the ages the person gave for it."""
+    if not said:
+        return years
+    first = datetime.date(min(age.startYear for age in said), 1, 1)
+    last = datetime.date(max(age.endYear for age in said), 12, 31)
+    return (min(years[0], first), max(years[1], last)) if years else (first, last)
+
+
 @dataclass
 class Named:
     """A period the person named, with the events inside its years."""
 
     period: TheirPeriod
     eventIds: list[int]
+    sentence: str
 
 
 def _read_theirs(
@@ -945,7 +1072,8 @@ def _read_theirs(
     a fault, never asked again, since asking cannot add years to their words."""
     events = _dated(data)
     when = {e.id: parse_date(e.dateTime) for e in events}
-    messages = {one.messageId: one.words for one in said}
+    messages = {one.messageId: one for one in said}
+    born = birth(data)
     taken = [
         span
         for cluster in data.clusters
@@ -982,7 +1110,8 @@ def _read_theirs(
                 [],
             )
             continue
-        words = messages[period.messageId]
+        answer = messages[period.messageId]
+        words = answer.words
         if not (_in_their_words(period.name, words) and _in_their_words(period.words, words)):
             fault(
                 f"The person's period {period.name!r} is not in their own words.",
@@ -991,7 +1120,8 @@ def _read_theirs(
                 [],
             )
             continue
-        years = _years(period)
+        sentence = their_sentence(period.name, words, answer.question)
+        years = _stated(_years(period), ages(sentence, born))
         if years is None:
             fault(
                 f"The person's period {period.name!r} has no years their words "
@@ -1022,7 +1152,7 @@ def _read_theirs(
             )
             continue
         taken.append(span)
-        kept.append(Named(period=period, eventIds=ids))
+        kept.append(Named(period=period, eventIds=ids, sentence=sentence))
     return kept, faults
 
 
@@ -1344,11 +1474,7 @@ def detect_clusters(
     }
     existing = mine(data)
     told = trouble_words(data)
-    own = profile.own(data)
-    born = own and profile.birth(data, own["id"])
-    prompt = _prompt(
-        cands, free, existing, said, born and born["dateTime"], told, _cast(data, free)
-    )
+    prompt = _prompt(cands, free, existing, said, birth(data), told, _cast(data, free))
     schema = answer_schema(existing, said, cands)
     limit = (
         THINKING_ROOM
@@ -1433,11 +1559,12 @@ def detect_clusters(
         # An event with no date, or scaffolding, is never offered, so one a
         # stored period holds stays on it as it was [Oracle: R-0850].
         held = [i for i in (was or {}).get("eventIds") or [] if i not in known]
+        name = with_years(cluster.name, spanned[0], spanned[-1])
         clusters.append(
             Cluster(
                 id=cluster_id,
-                title=cluster.name,
-                name=cluster.name,
+                title=name,
+                name=name,
                 summary=cluster.reason,
                 reason=cluster.reason,
                 eventIds=[*cluster.eventIds, *held],
@@ -1463,8 +1590,8 @@ def detect_clusters(
                 id=cluster_id,
                 title=one.period.name,
                 name=one.period.name,
-                summary=one.period.words,
-                reason=one.period.words,
+                summary=one.sentence,
+                reason=one.sentence,
                 eventIds=one.eventIds,
                 startDate=dated[one.eventIds[0]],
                 endDate=dated[one.eventIds[-1]],

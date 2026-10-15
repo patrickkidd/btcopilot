@@ -569,7 +569,7 @@ def test_the_model_names_the_candidates_it_was_given():
     ) as ask:
         result = detect_clusters(RECORD, ask)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3], [4, 5, 6]]
-    assert [c.name for c in result.clusters] == ["A hard spring", "The winter after"]
+    assert [c.name for c in result.clusters] == ["A hard spring, 1994", "The winter after, 1997"]
     assert all(c.reason for c in result.clusters)
 
 
@@ -648,8 +648,8 @@ def test_a_contaminated_name_that_is_corrected_on_the_second_ask_is_stored():
         result = detect_clusters(RECORD, ask)
     assert ask.call_count == 2
     assert [c.name for c in result.clusters] == [
-        "The spring they argued",
-        "A hard spring",
+        "The spring they argued, 1994",
+        "A hard spring, 1997",
     ]
 
 
@@ -742,7 +742,7 @@ def test_a_grouping_already_there_is_handed_back_and_kept():
     # R-0842, R-0371
     with replies(answers(named(1, 2, 3, cluster_id="c1", name=SPRING))) as ask:
         result = detect_clusters(KEPT, ask)
-    assert [(c.id, c.name) for c in result.clusters] == [("c1", SPRING)]
+    assert [(c.id, c.name) for c in result.clusters] == [("c1", f"{SPRING}, 1994")]
     assert result.changes == []
     assert SPRING in ask.call_args_list[0].args[0]
 
@@ -764,7 +764,7 @@ def test_a_renamed_grouping_with_no_change_sentence_is_kept():
     with replies(renamed) as ask:
         result = detect_clusters(KEPT, ask)
     assert ask.call_count == 1
-    assert [(c.id, c.name) for c in result.clusters] == [("c1", "After the move")]
+    assert [(c.id, c.name) for c in result.clusters] == [("c1", "After the move, 1994")]
 
 
 def test_changing_a_grouping_already_there_passes_its_sentence_on():
@@ -774,7 +774,7 @@ def test_changing_a_grouping_already_there_passes_its_sentence_on():
         answers(named(1, 2, 3, cluster_id="c1", name="The autumn after", change=moved))
     ) as ask:
         result = detect_clusters(KEPT, ask)
-    assert [(c.id, c.name) for c in result.clusters] == [("c1", "The autumn after")]
+    assert [(c.id, c.name) for c in result.clusters] == [("c1", "The autumn after, 1994")]
     assert result.changes == [moved]
 
 
@@ -878,7 +878,7 @@ def test_a_ten_year_period_is_dropped_and_the_rest_kept():
     with replies(long, long) as ask:
         result = detect_clusters(HALE, ask)
     assert ask.call_count == 2
-    assert [c.name for c in result.clusters] == ["Nell and Theo"]
+    assert [c.name for c in result.clusters] == ["Nell and Theo, 1996–2001"]
 
 
 def test_without_the_ten_year_check_the_merged_answer_is_accepted():
@@ -1176,7 +1176,7 @@ def test_two_periods_sharing_days_are_merged_into_the_one_holding_more():
         )
     assert ask.call_count == 1
     assert [(c.name, c.eventIds) for c in result.clusters] == [
-        ("The years she was unwell", WIDER)
+        ("The years she was unwell, 2008–2011", WIDER)
     ]
     assert seen == [
         (
@@ -1218,7 +1218,7 @@ def test_a_period_inside_anothers_years_is_merged_not_refused():
         result = detect_clusters(INSIDE, ask)
     assert ask.call_count == 1
     assert [(c.name, c.eventIds) for c in result.clusters] == [
-        ("Nine years of it", [40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 47])
+        ("Nine years of it, 2017–2026", [40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 47])
     ]
 
 
@@ -1469,7 +1469,58 @@ def test_a_name_from_the_persons_anxiety_or_functioning_is_their_trouble():
     ) as ask:
         result = detect_clusters(REED, ask, heard(seen))
     assert seen == [(1, ClusterCheck.SymptomName)]
-    assert [c.name for c in result.clusters] == ["Aunt Bea's illness and death"]
+    assert [c.name for c in result.clusters] == ["Aunt Bea's illness and death, 2001–2002"]
+
+
+# The fictional Lowe family: Ida (2), Gus's (1) mother, dies; Gus stops
+# calling his brother; the cutoff is his own relationship shift.
+LOWE = record(
+    moment(80, "2003-01-01", person=2, symptom=VariableShift.Up, description="Ida's stroke"),
+    asdict(Event(id=81, kind=EventKind.Death, person=2, dateTime="2003-06-01")),
+    moment(
+        82,
+        "2003-08-01",
+        person=1,
+        relationship=RelationshipKind.Cutoff,
+        description="stopped calling his brother",
+    ),
+    moment(83, "2003-10-01", person=1, anxiety=VariableShift.Up, description="restless"),
+)
+
+
+def test_a_name_from_the_persons_relationship_shift_is_refused_once_and_renamed():
+    # R-0850
+    told = clusters.trouble_words(LOWE)
+    assert clusters.trouble_in("Ida's death and the cutoff from family, 2003", told) == [
+        "cutoff"
+    ]
+    assert clusters.trouble_in("Ida's death and the stopped calling, 2003", told) == [
+        "calling",
+        "stopped",
+    ]
+    assert clusters.trouble_in("Ida's stroke and death, 2003", told) == []
+    seen = []
+    with replies(
+        answers(named(80, 81, 82, 83, name="Ida's death and the cutoff from family, 2003")),
+        answers(named(80, 81, 82, 83, name="Ida's stroke and death, 2003")),
+    ) as ask:
+        result = detect_clusters(LOWE, ask, heard(seen))
+    assert seen == [(1, ClusterCheck.SymptomName)]
+    assert [c.name for c in result.clusters] == ["Ida's stroke and death, 2003"]
+
+
+def test_a_returned_name_with_other_years_than_its_span_is_stored_with_its_span():
+    # R-0853
+    with replies(
+        answers(named(80, 81, 82, 83, name="Ida's stroke and death, 2001\u20132002"))
+    ) as ask:
+        result = detect_clusters(LOWE, ask)
+    assert [(c.name, c.startDate, c.endDate) for c in result.clusters] == [
+        ("Ida's stroke and death, 2003", "2003-01-01", "2003-10-01")
+    ]
+    assert clusters.with_years("After the move (1994 to 96)", "1994-02-01", "1997-01-01") == (
+        "After the move, 1994\u20131997"
+    )
 
 
 def test_a_stored_period_named_by_the_persons_trouble_is_renamed_under_its_id():
@@ -1494,7 +1545,7 @@ def test_a_stored_period_named_by_the_persons_trouble_is_renamed_under_its_id():
         (d["item_id"], d["after"])
         for d in _deltas(data.clusters, result.clusters, dates)
         if d["field"] == "name"
-    ] == [("c1", "Aunt Bea's illness and death")]
+    ] == [("c1", "Aunt Bea's illness and death, 2001–2002")]
 
 
 def test_a_period_with_two_shifts_that_count_is_kept_with_its_opening():
@@ -1659,6 +1710,41 @@ def test_an_unsupported_period_of_theirs_is_kept_and_judged_unsupported():
     [theirs] = result.clusters
     assert theirs.source is ClusterSource.User
     assert not clusters.judge(asdict(theirs), ASH).supported
+
+
+def test_ages_the_person_gives_are_read_as_years_from_their_birth_date():
+    # R-0853
+    born = datetime.date(1978, 4, 1)
+    said = "In my late 20s, and when I was 15, not the late 80s, aged 18 to 21"
+    assert [(a.said, a.startYear, a.endYear) for a in clusters.ages(said, born)] == [
+        ("my late 20s", 2005, 2008),
+        ("when I was 15", 1993, 1994),
+        ("aged 18 to 21", 1996, 2000),
+    ]
+    assert clusters.ages(said, None) == []
+
+
+# Rowan, born in April 1978, opens by repeating the question, then tells the
+# period in her own sentence with her ages.
+MOST = "Looking back, what were the two or three times when the most was going on?"
+OPENER = "The two or three times that stand out to me were the divorce."
+LATE = "My late 20s, after the divorce, were the worst, and I barely slept."
+
+
+def test_a_period_of_theirs_keeps_the_ages_they_gave_and_is_told_in_their_own_sentence():
+    # R-0853
+    born = asdict(Event(id=39, kind=EventKind.Birth, child=1, dateTime="1978-04-01"))
+    data = record(born, *ASH.events)
+    shortened = period(7, name="the divorce", words=OPENER, years=(2006, 2006))
+    with replies(ClusterListResponse(periods=[shortened])) as ask:
+        result = detect_clusters(data, ask, said=[Answer(7, MOST, f"{OPENER} {LATE}")])
+    told = json.loads(ask.call_args_list[0].args[0].split("WHEN THE PERSON SAID THE MOST WAS GOING ON")[1])
+    assert told["answers"][0]["agesAsYears"] == [
+        {"said": "My late 20s", "startYear": 2005, "endYear": 2008}
+    ]
+    [theirs] = result.clusters
+    assert (theirs.eventIds, theirs.summary) == ([40, 41, 42], LATE)
+    assert clusters.their_sentence("the divorce", LATE, MOST) == LATE
 
 
 DECLINED = [Declined(run="r1", reason="the person's own reading is the one to hear")]

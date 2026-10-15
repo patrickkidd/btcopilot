@@ -701,7 +701,7 @@ def test_a_refused_grouping_answer_is_written_down_with_the_models_answer(family
     assert (row.turn_id, row.diagram_id) == ("t1", family.id)
     assert (row.detail["name"], row.detail["eventIds"]) == ("A pair", [10, 11])
     assert (row.detail["start"], row.detail["end"]) == ("1994-01-01", "1994-02-01")
-    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert not Observation.query.filter_by(kind=ObservationKind.ClusterFailed).count()
 
 
@@ -734,7 +734,7 @@ def test_a_model_that_fills_every_offered_field_still_groups_a_new_record(family
     The answer's schema now offers no id when the record holds no groups."""
     with flashlite(GROUPED, GROUPED):
         sync(family.id, turn_id="t1", user_id=family.user_id)
-    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert Observation.query.count() == 0
 
 
@@ -753,7 +753,7 @@ def test_an_answer_cut_off_at_its_limit_is_refused_and_asked_again(family):
         sync(family.id, turn_id="t1", user_id=family.user_id)
     assert [c.kwargs["limit"] for c in asked.call_args_list] == [4096 + 24 * 6 + 160] * 2
     assert noted(ObservationKind.ClusterRefused) == [(1, "cut_off", 0, 0)]
-    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert ModelCall.query.filter_by(purpose=Purpose.Cluster).count() == 2
 
 

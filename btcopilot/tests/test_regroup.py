@@ -112,7 +112,7 @@ def test_apply_regroups_as_one_change_that_undo_takes_back(flask_app, family):
     ):
         rows = regroup(flask_app, "--apply")
     assert [(r["regrouped"], r["failed"]) for r in rows] == [(1, False)]
-    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert ModelCall.query.count() == 1
     assert regroup(flask_app) == []
 
