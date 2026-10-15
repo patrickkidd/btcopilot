@@ -382,9 +382,9 @@ def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reas
     assert "Run r2 (2010-01-01 to 2010-04-01) has 3 shifts" in again
     assert 'Your last answer was: {"clusters": [{"id": null, "eventIds": [1, 2, 3]' in again
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3]]
-    assert answer_schema({}, [], candidates(data))["properties"]["declined"]["items"][
-        "properties"
-    ]["run"]["enum"] == ["r1", "r2"]
+    declined = answer_schema({}, [], candidates(data))["properties"]["declined"]["items"]
+    assert declined["properties"]["run"]["enum"] == ["r1", "r2"]
+    assert "never its count of shifts" in declined["properties"]["reason"]["description"]
 
 
 def test_the_people_are_offered_with_what_each_is_to_the_person():
@@ -823,6 +823,7 @@ def test_gemini_takes_the_answer_shape_when_the_person_answered():
     said = [Answer(messageId=7, question="When?", words="In my late 20s.")]
     schema = answer_schema({"c1": {"source": "model"}}, said)
     assert _transformers.t_schema(None, schema) is not None
+    assert "only wonder" in schema["properties"]["periods"]["items"]["description"]
 
 
 # The Hale record: the rules' proposal, the scripted answers the check refuses

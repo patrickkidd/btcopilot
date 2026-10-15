@@ -705,6 +705,17 @@ def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
     return f"{silence(first - max(earlier))} with nothing recorded before this group"
 
 
+# Read beside each field of the answer, where the grouping call weighs them
+# more than the same words in the prompt: on Patrick's copy it declined a run
+# for its count and read a time the person only wondered about as theirs.
+DECLINED_REASON = (
+    "What in the events says this run is not a period; never its count of shifts "
+    "alone, since two shifts around a change in the family's membership are enough"
+)
+THEIR_PERIOD = (
+    "A time the person says stood out or was hard; never one they only wonder "
+    "or ask about"
+)
 THEIRS = "the person drew this period"
 TROUBLE = "named by the person's trouble"
 
@@ -1270,6 +1281,7 @@ def answer_schema(
         declined = schema["properties"]["declined"]["items"]
         declined["required"] = ["run", "reason"]
         declined["properties"]["run"]["enum"] = [run.id for run in runs]
+        declined["properties"]["reason"]["description"] = DECLINED_REASON
     else:
         del schema["properties"]["declined"]
     if not said:
@@ -1277,6 +1289,7 @@ def answer_schema(
         return schema
     period = schema["properties"]["periods"]["items"]
     period["required"] = ["messageId", "name", "words"]
+    period["description"] = THEIR_PERIOD
     return schema
 
 
