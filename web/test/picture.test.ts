@@ -526,6 +526,19 @@ describe("the drawing on a cluster's page", () => {
     expect(p.top).toBeGreaterThan(place(events, ClusterView.Row, 300, null, people, 1).top);
   });
 
+  // R-0861
+  it("makes a lane as tall as its largest stack of same-date dots, so no dot rises into the labels or the lane above", () => {
+    const seven = [1, 2, 3, 4, 5, 6, 7].map((id) => ev(id, "2001-05-01"));
+    const row = place([...seven, ev(8, "2003-01-01")], ClusterView.Row, 300, null);
+    expect(Math.min(...row.dots.map((d) => d.y - 5))).toBeGreaterThanOrEqual(row.top);
+    const plain = place(events, ClusterView.Row, 300, null);
+    expect(row.height - row.lines[0]).toBe(plain.height - plain.lines[0]);
+    const rose = [9, 10, 11, 12, 13].map((id) => ev(id, "2001-05-01", { person: 2, person_name: "Rose" }));
+    const lanes = place([ev(14, "2000-01-01"), ...rose], ClusterView.Lanes, 300, null, people, 1);
+    const top = Math.min(...lanes.dots.filter((d) => d.id !== 14).map((d) => d.y - 5));
+    expect(top).toBeGreaterThan(lanes.lines[0]);
+  });
+
   // R-0850
   it("gives each person one lane by who they are, a two-person event in its first person's", () => {
     const p = place(events, ClusterView.Lanes, 300, 2, people, 1);

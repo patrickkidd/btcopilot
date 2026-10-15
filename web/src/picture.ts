@@ -706,6 +706,8 @@ export interface Placed {
   /** Where the dots start under the rows of labels. */
   top: number;
   lanes: { name: string; y: number }[];
+  /** Where each lane's line is drawn, the one row's alone in the one-row view. */
+  lines: number[];
   years: [string, string];
   height: number;
 }
@@ -733,11 +735,21 @@ export function place(
     width,
   );
   const top = TOP + KEY_ROW * Math.max(0, ...keys.map((k) => k.row));
-  const laneY = (i: number) => top + LANE_H * (i + 1) - 8;
+  const laneAt = (e: TimelineEvent) => (view === ClusterView.Lanes ? lanes.indexOf(laneOf(e)) : 0);
+  const slotOf = (e: TimelineEvent) => `${laneAt(e)}:${e.dateTime!.slice(0, 10)}`;
+  const counts = new Map<string, number>();
+  for (const e of dated) counts.set(slotOf(e), (counts.get(slotOf(e)) ?? 0) + 1);
+  // A lane is as tall as its largest stack of same-date dots needs, so the top
+  // dot stays under the labels and the lane above.
+  const bands = lanes.map((_, i) => {
+    const most = Math.max(...dated.filter((e) => laneAt(e) === i).map((e) => counts.get(slotOf(e))!));
+    return LANE_H + Math.max(0, (most - 1) * STACK + 5 - (LANE_H - 8));
+  });
+  const laneY = (i: number) => top + bands.slice(0, i + 1).reduce((a, b) => a + b, 0) - 8;
   const stacked = new Map<string, number>();
   const dots = dated.map((e) => {
-    const lane = view === ClusterView.Lanes ? lanes.indexOf(laneOf(e)) : 0;
-    const slot = `${lane}:${e.dateTime!.slice(0, 10)}`;
+    const lane = laneAt(e);
+    const slot = slotOf(e);
     const n = stacked.get(slot) ?? 0;
     stacked.set(slot, n + 1);
     return {
@@ -757,8 +769,9 @@ export function place(
       view === ClusterView.Lanes
         ? lanes.map((id, i) => ({ name: cut(people.get(id) ?? "", 9), y: laneY(i) }))
         : [],
+    lines: lanes.map((_, i) => laneY(i)),
     years: [dated[0].dateTime!.slice(0, 4), dated[dated.length - 1].dateTime!.slice(0, 4)],
-    height: top + LANE_H * lanes.length + 18,
+    height: laneY(lanes.length - 1) + 26,
   };
 }
 
@@ -783,9 +796,8 @@ export function drawing(
     p.lanes
       .map((l) => `<text class="ab-name" x="0" y="${f(l.y + 4)}">${esc(l.name)}</text>`)
       .join("") +
-    p.lanes
-      .concat(p.lanes.length ? [] : [{ name: "", y: p.top + LANE_H - 8 }])
-      .map((l) => `<line class="ab-lane" x1="${f(p.lanes.length ? NAME_W + 8 : 8)}" x2="${f(width - 8)}" y1="${f(l.y)}" y2="${f(l.y)}"/>`)
+    p.lines
+      .map((y) => `<line class="ab-lane" x1="${f(p.lanes.length ? NAME_W + 8 : 8)}" x2="${f(width - 8)}" y1="${f(y)}" y2="${f(y)}"/>`)
       .join("") +
     p.keys
       .map(
