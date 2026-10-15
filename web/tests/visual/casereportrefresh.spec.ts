@@ -3,12 +3,12 @@ import { stateFor } from "./setup";
 
 /** A case report out of date (Patrick's approved mockup, 2026-10-07): the
  * sheet that asks on opening, the grey line at the top of the cards, and the
- * coach's six cards dimmed while it rewrites them. The server's answers are
+ * coach's eight cards dimmed while it rewrites them. The server's answers are
  * stubbed to doc/API.md's shapes, since a rewrite on the sandbox's local model
  * takes minutes. */
 
 const SENTENCE = "Delphine's 1995 diagnosis was added after the coach wrote this report.";
-const WRITTEN = ["main", "brought", "couple", "guesses", "own_part", "work_on"];
+const WRITTEN = ["main", "family", "brought", "couple", "sides", "guesses", "own_part", "work_on"];
 
 /** The report's record, out of date until `current` says otherwise. */
 async function answer(page: Page, current: () => boolean): Promise<void> {
@@ -51,7 +51,7 @@ test.describe("a case report out of date", () => {
     await expect(sheet(page)).toBeVisible();
     await expect(sheet(page).locator(".cf-t")).toHaveText("This report is out of date");
     await expect(sheet(page)).toContainText(SENTENCE);
-    await expect(sheet(page)).toContainText("The coach can rewrite its six cards now. Or you can read the report as it was last written.");
+    await expect(sheet(page)).toContainText("The coach can rewrite its eight cards now. Or you can read the report as it was last written.");
     await expect(sheet(page).locator("button")).toHaveText(["Refresh the report", "Show the last report"]);
     // the scrim does not put it away
     await page.mouse.click(10, 10);
@@ -103,7 +103,7 @@ test.describe("a case report out of date", () => {
   });
 
   // R-0825
-  test("Refresh the report dims the coach's six cards until the rewrite is done, then reads the report again with the line gone", async ({ page }) => {
+  test("Refresh the report dims the coach's eight cards until the rewrite is done, then reads the report again with the line gone", async ({ page }) => {
     let done = false;
     await answer(page, () => done);
     await rewrite(page, ["running", "done"], () => (done = true));
@@ -111,9 +111,9 @@ test.describe("a case report out of date", () => {
     await sheet(page).getByText("Refresh the report").click();
     await expect(sheet(page)).toBeHidden();
     for (const card of WRITTEN) await expect(page.locator(`#case-body .level[data-card="${card}"]`)).toHaveClass(/\bdim\b/);
-    // the family is a card in the list on the phone, and stands in the column beside the cards on a wide window
-    await expect(page.locator("#case-body, #case-dash").locator('.level[data-card="family"]')).not.toHaveClass(/\bdim\b/);
-    await expect(line(page)).toHaveText("The coach is rewriting its six cards from the diagram as it stands now.");
+    // the effort is counted from the sessions, never written by the coach
+    await expect(page.locator('#case-body .level[data-card="effort"]')).not.toHaveClass(/\bdim\b/);
+    await expect(line(page)).toHaveText("The coach is rewriting its eight cards from the diagram as it stands now.");
     await expect(line(page)).toHaveCount(0, { timeout: 15_000 });
     await expect(dimmed(page)).toHaveCount(0);
     await expect(sheet(page)).toBeHidden();

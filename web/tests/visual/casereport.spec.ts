@@ -61,7 +61,7 @@ for (const key of FIXTURES)
             const chips = [...document.querySelectorAll<HTMLElement>("#case-body .chips .chip")];
             return {
               strip: [...document.querySelectorAll<HTMLElement>("#case-rail [data-jump]")].map((b) => b.dataset.jump),
-              cards: [...document.querySelectorAll<HTMLElement>("#case-body .level, #case-dash .level")].map((l) => l.dataset.card),
+              cards: [...document.querySelectorAll<HTMLElement>("#case-body .level")].map((l) => l.dataset.card),
               // a stored title shows whole: no chip cut short, none with an ellipsis
               ellipsis: chips.filter((c) => getComputedStyle(c).textOverflow === "ellipsis").length,
               cut: chips
@@ -77,9 +77,7 @@ for (const key of FIXTURES)
               stripRows: new Set([...document.querySelectorAll<HTMLElement>("#case-rail [data-jump]")].map((b) => b.offsetTop)).size,
               text: document.querySelector("#case-screen")!.textContent ?? "",
               folds: document.querySelectorAll("#case-body details").length,
-              sides: document.querySelectorAll("#case-body details.side").length,
-              sideCount: document.querySelectorAll("#case-body details.side").length,
-              sidePictures: document.querySelectorAll("#case-body details.side .fam").length,
+              bodyPictures: document.querySelectorAll("#case-body .fam").length,
             };
           });
           expect([...seen.cards].sort()).toEqual([...seen.strip].sort());
@@ -92,11 +90,11 @@ for (const key of FIXTURES)
           expect(seen.text).not.toMatch(/NaN|undefined|not in the record|From the record/);
           // stored words show as written: an apostrophe is never escaped code
           expect(seen.text).not.toMatch(/&#39;|&#x27;|&apos;|&amp;|&quot;/);
-          // every family picture is drawn; each side is one picture (R-0733)
+          // every family picture is drawn (R-0733), and only behind the family button or beside the cards (R-0866)
           expect(seen.text).not.toContain("cannot be drawn");
-          expect(seen.sidePictures).toEqual(seen.sideCount);
-          // only each side of the family folds (R-0689)
-          expect(seen.folds).toBe(seen.sides);
+          expect(seen.bodyPictures).toBe(0);
+          // the sides are the coach's notes now, so nothing on the report folds (R-0866)
+          expect(seen.folds).toBe(0);
           expect(errors).toEqual([]);
         });
       });
@@ -200,11 +198,12 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-body")).not.toContainText(/A guess, yours to reject|Rests on|The record covers|open questions|Left off this page/i);
   });
 
-  // R-0702
-  test("the family card is one button, the same as the strip's family item", async ({ page }) => {
+  // R-0702, R-0866
+  test("the family card is the coach's lines and the picture button, the same as the strip's family item", async ({ page }) => {
     await open(page);
     const card = page.locator('#case-body .level[data-card="family"]');
-    await expect(card.locator("> *")).toHaveCount(1);
+    await expect(card.locator(".bub.coach")).toHaveCount(1);
+    await expect(card.locator(".fam")).toHaveCount(0);
     await expect(card.locator("button.famcard")).toHaveText((await page.locator('#case-rail [data-jump="family"]').textContent())!);
     await card.locator("button.famcard").click();
     await expect(page.locator("#case-famout")).toHaveClass(/in/);
@@ -330,13 +329,10 @@ test.describe("the case report's family pictures of a family many phones wide", 
   // R-0759, R-0744
   test("draw names at 13px or more and pan in their own frames, every word inside what the frame scrolls to", async ({ page }) => {
     const errors = await open(page);
-    const pictures = "#case-body .fam svg";
-    expect(await leastName(page, pictures)).toBeGreaterThanOrEqual(NAME_PX);
-    expect(await wordsOutside(page, pictures)).toEqual([]);
-    expect(await page.locator("#case-body .fam").evaluateAll((f) => f.some((d) => d.scrollWidth > d.clientWidth))).toBe(true);
     await page.locator("#case-family").click();
     await expect(page.locator("#case-famout")).toHaveClass(/in/);
     const slid = "#case-famout .fam svg";
+    expect(await page.locator("#case-famout .fam").evaluateAll((f) => f.some((d) => d.scrollWidth > d.clientWidth))).toBe(true);
     // R-0759: the record's own person and their words whole in the frame, as the Family drawer opens
     const own = await page.locator("#case-famout .fam[data-who]").first().getAttribute("data-who");
     expect(await page.locator(`#case-famout .fam .pt[data-id="${own}"]`).first().textContent()).toContain("Margaret-Anne");

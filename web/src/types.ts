@@ -262,8 +262,10 @@ export interface AskedQuestion {
  * `CaseReportCard` on the server (R-0709). */
 export enum CaseReportCard {
   MainGuess = "main_guess",
+  Family = "family",
   WhatBrought = "what_brought",
   Couple = "couple",
+  Sides = "sides",
   OwnPart = "own_part",
   /** Merged into own_part (R-0850): never shown. */
   Choice = "choice",

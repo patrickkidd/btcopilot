@@ -418,13 +418,14 @@ def _apply(data: dict, delta: dict) -> list[dict]:
 
 # The case report card a guess or a question is on: the newest on a card
 # replaces the one before it, except that up to three guesses are on what to
-# work on and on the coach's guess (R-0709, R-0732).
+# work on and on the coach's guess (R-0709, R-0732), and two, one a parent's
+# side, on each parent's family (R-0866).
 CARD = "case_report_card"
 # The days the coach put a question to the person again after the first ask (R-0774).
 ASKED_AGAIN = "asked_again_on"
 # Asked again this many times and passed over, it is no longer waiting.
 PASSES = 2
-CARD_HOLDS = {CaseReportCard.WorkOn: 3, CaseReportCard.CoachGuess: 3}
+CARD_HOLDS = {CaseReportCard.WorkOn: 3, CaseReportCard.CoachGuess: 3, CaseReportCard.Sides: 2}
 QUESTION_CARDS = (CaseReportCard.OwnPart,)
 
 

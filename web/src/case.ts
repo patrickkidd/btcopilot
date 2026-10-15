@@ -1,7 +1,7 @@
 import { pill } from "./chips";
 import { draw, leastScale } from "./diagram";
 import { closeX, esc } from "./dom";
-import { Card, GUESS_CARDS, ORDER, TOO_LITTLE, type CaseView, type Fact, type Guess, type Held, type Still, type Who } from "./caseview";
+import { Card, GUESS_CARDS, ORDER, TOO_LITTLE, type CaseView, type Fact, type Guess, type Held, type Stated, type Still, type Who } from "./caseview";
 import { ChipKind, ChipTone, type Passages } from "./types";
 
 /** The case report's markup, card by card, as the approved proposal draws it
@@ -170,6 +170,16 @@ function said(text: string): string {
 
 const notEnough = (words = NOT_ENOUGH) => `<div class="gbub">${bubble(words)}</div>`;
 
+/** A card the coach writes as one statement: its words, one chip per event and,
+ * with `people`, per person it rests on; with too little, what it still needs
+ * as the dashed amber chip (R-0850, R-0866). */
+function stated(s: Stated, people = true): string {
+  if (s.needs !== null) return `<div class="gbub">${bubble(`${TOO_LITTLE}.`)}</div>${s.needs ? needs(s.needs) : ""}`;
+  const g = s.guess;
+  if (!g) return notEnough();
+  return `<div class="gbub">${bubble(g.text, g.facts)}${chips([...g.facts.map(factChip), ...(people ? g.people.map(personChip) : [])])}</div>`;
+}
+
 /** The top padding of a family's frame on the report, as casereport.css gives it. */
 const FAM_PAD = 4;
 
@@ -188,32 +198,23 @@ export function picture(v: CaseView, still: Still, label: string): string {
   return `<div class="fam" style="--least:${least}px"${who}>${svg}</div>${unknown ? faint(UNKNOWN_NOTE) : ""}`;
 }
 
-/** One side of the family: the one fold on the report (R-0689), its words
- * under its heading, then its pictures. */
-const fold = (label: string, inner: string) =>
-  `<details class="side" open><summary class="sub">${esc(label)}</summary><div class="sidein">${inner}</div></details>`;
-
 function body(card: Card, v: CaseView): string {
   switch (card) {
     case Card.Main:
       return v.main ? guessBlock(v.main) : notEnough();
     case Card.Family:
-      return picture(v, v.household, `${v.name}'s family`);
+      return stated(v.family);
     case Card.Brought: {
       // the person's own words with whose and when, else the coach's reading, else what it still needs (R-0850)
       const b = v.brought;
       if (!b) return lead(NOT_ASKED) + needs(BRINGS);
       return b.said ? said(b.text) + faint(b.said) : guessBlock(b);
     }
-    case Card.Couple: {
-      // the coach's one statement on the person's own couple, one chip per event it rests on;
-      // with too little, what it still needs as the dashed amber chip (R-0850)
-      const c = v.couple;
-      if (c.needs !== null) return `<div class="gbub">${bubble(`${TOO_LITTLE}.`)}</div>${c.needs ? needs(c.needs) : ""}`;
-      return c.guess ? `<div class="gbub">${bubble(c.guess.text, c.guess.facts)}${chips(c.guess.facts.map(factChip))}</div>` : notEnough();
-    }
+    case Card.Couple:
+      return stated(v.couple, false);
     case Card.Sides:
-      return v.sides.map((s) => fold(s.label, lead(s.lead) + picture(v, s.still, s.label))).join("");
+      // the coach's statement on each side under that side's name (R-0866)
+      return v.sideNotes.length ? v.sideNotes.map((s) => (s.label ? sublabel(s.label) : "") + stated(s.note)).join("") : notEnough();
     case Card.Guesses: {
       // the pattern, then each cluster with its for and against, each opening its cluster, then what it still needs (R-0850, R-0698, R-0201)
       const lead = v.guess ? `<div class="gbub">${bubble(v.guess.text, v.guess.facts)}</div>` : notEnough();
@@ -252,21 +253,20 @@ export function card(card: Card, v: CaseView, more = ""): string {
   );
 }
 
-/** The cards in order. On the phone the family card holds one control, the
- * strip's own family item, which opens the picture; on a wide window the
- * family stands in the column beside the cards instead (R-0697). */
+/** The cards in order. On the phone the family card ends on the strip's own
+ * family item, which opens the picture; on a wide window the picture stands
+ * in the column beside the cards instead (R-0697, R-0866). */
 export function cards(v: CaseView, wide: boolean): string {
-  const family = wide
-    ? ""
-    : `<section class="level fam1" data-card="${Card.Family}"><button type="button" class="famcard">${face(Card.Family, v)}</button></section>`;
-  return `<div class="case">${ORDER.map((c) => (c === Card.Family ? family : card(c, v))).join("")}</div>`;
+  const button = wide ? "" : `<button type="button" class="famcard">${face(Card.Family, v)}</button>`;
+  return `<div class="case">${ORDER.map((c) => card(c, v, c === Card.Family ? button : "")).join("")}</div>`;
 }
 
-/** The family card for the column or the slide-out, as the approved proposal
- * draws it: the person's family, then each parent's side (R-0697). */
+/** The family picture for the column or the slide-out, as the approved
+ * proposal draws it: the person's family, then each parent's side (R-0697). */
 export function dashboard(v: CaseView): string {
   const sides = v.sides.map((s) => `<div class="side"><p class="sub">${esc(s.label)}</p>${picture(v, s.still, s.label)}</div>`);
-  return `<div class="case dash">${card(Card.Family, v, sides.join(""))}</div>`;
+  const name = `${ORDER.indexOf(Card.Family) + 1} · ${title(Card.Family, v)}`;
+  return `<div class="case dash"><section class="level"><p class="label">${esc(name)}</p>${picture(v, v.household, `${v.name}'s family`)}${sides.join("")}</section></div>`;
 }
 
 /** A strip item's face: its number, the family button's icon on the family's, its name. */

@@ -221,4 +221,3 @@ R-0862 | TEST OWED | not built: the dashed vertical line at the major event in t
 R-0863 | TEST OWED | not built: only the quoted words sit in the statement bubble on the What brought card
 R-0864 | TEST OWED | not built: card and cluster sentences state events as memories side by side, never as causes or appearing shifts
 R-0865 | TEST OWED | not built: the label Your suggestion on the person's own periods
-R-0866 | TEST OWED | not built: the couple, family and sides card values written by the coach as notes of one shape, the card-value cleanup deferred

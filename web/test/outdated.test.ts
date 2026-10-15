@@ -31,7 +31,7 @@ it("asks with the change's own sentence, Refresh the report and Show the last re
   const sheet = ask(out.sentence, (s) => s);
   expect(sheet).toContain("This report is out of date");
   expect(sheet).toContain(out.sentence);
-  expect(sheet).toContain("The coach can rewrite its five cards now. Or you can read the report as it was last written.");
+  expect(sheet).toContain("The coach can rewrite its eight cards now. Or you can read the report as it was last written.");
   expect(sheet).toContain(">Refresh the report<");
   expect(sheet).toContain(">Show the last report<");
   expect(sheet).not.toContain("cardx");

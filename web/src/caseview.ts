@@ -70,7 +70,7 @@ export const TOO_LITTLE = "Not enough in the diagram yet";
 const LITTLE = new RegExp(`^${TOO_LITTLE}[:.]?\\s*(.*?)\\.?$`, "s");
 
 /** The guess cards: with nothing on them they say so in the coach's bubble (R-0699). */
-export const GUESS_CARDS = new Set([Card.Main, Card.Couple, Card.Guesses, Card.OwnPart, Card.WorkOn]);
+export const GUESS_CARDS = new Set([Card.Main, Card.Family, Card.Couple, Card.Sides, Card.Guesses, Card.OwnPart, Card.WorkOn]);
 
 /** A dated event on a chip: its date, then its words. An undated event is never a chip. */
 export interface Fact {
@@ -139,8 +139,22 @@ export interface Still {
  * sisters under their own parents, their partners joined to them (R-0733). */
 export interface Side {
   label: string;
-  lead: string;
   still: Still;
+}
+
+/** A card the coach writes as one statement: its words with the facts and
+ * people it rests on, or what the diagram still needs when it holds too
+ * little for one (R-0850). */
+export interface Stated {
+  guess: Guess | null;
+  needs: string | null;
+}
+
+/** The coach's statement on one parent's own family, under that side's name,
+ * or under none when the diagram names no parents (R-0866). */
+export interface SideNote {
+  label: string | null;
+  note: Stated;
 }
 
 export interface CaseView {
@@ -153,12 +167,17 @@ export interface CaseView {
   now: number;
   household: Still;
   main: Guess | null;
+  /** The coach's lines on the households the person grew up in and lives in now (R-0866). */
+  family: Stated;
   /** The coach's card on what brought the person (R-0850), or null when not asked yet. */
   brought: Guess | null;
   /** The coach's one statement on the person's own couple from its early years,
    * and what the diagram still needs when it holds too little for one (R-0850). */
-  couple: { guess: Guess | null; needs: string | null };
+  couple: Stated;
+  /** The pictures of each parent's side, for the family picture. */
   sides: Side[];
+  /** The coach's statement on each parent's side, told apart by the people it rests on (R-0866). */
+  sideNotes: SideNote[];
   /** The coach's one pattern statement (R-0850). */
   guess: Guess | null;
   /** Every stored cluster in date order, worded as the hypothesis it is (R-0698, R-0841), with its for and against. */
@@ -173,6 +192,8 @@ export interface CaseView {
 
 /** The most guesses the card on what to work on holds (R-0709). */
 const WORK_ON_MAX = 3;
+/** The notes each parent's family holds, one a side (R-0866). */
+const SIDE_NOTES = 2;
 
 const MARKS = Object.values(CardLine).join("|");
 /** "For c3: ..." or "Open: ...": a marked line of a card (R-0850). */
@@ -187,9 +208,6 @@ const SELF_DESCRIBING = new Set<string>([
   EventKind.Bonded,
   EventKind.Death,
 ]);
-const COUPLE = new Set<string>([EventKind.Married, EventKind.Bonded, EventKind.Separated, EventKind.Divorced]);
-const BIRTHS = new Set<string>([EventKind.Birth, EventKind.Adopted]);
-const OPENERS = new Set<string>([...COUPLE, ...BIRTHS, EventKind.Death]);
 
 const byDate = (a: TimelineEvent, b: TimelineEvent) => a.dateTime!.localeCompare(b.dateTime!);
 
@@ -318,26 +336,11 @@ class Reader {
 
   births = (ids: number[]) => ids.map((id) => this.people.get(id)!);
 
-  died(p: Person): string {
-    const e = p.death_event == null ? undefined : this.event(p.death_event);
-    return e?.dateTime ? dateText(e.dateTime, e.dateCertainty) : "";
-  }
-
-  /** A parent in a few words, beside what the pictures under it draw: whether
-   * they have died, and how much the record holds about the people on this
-   * side. The dates are on the pictures and the chips, never in the words. */
-  personLine(p: Person, side: number[]): string {
-    const bits = this.died(p) ? ["who has died"] : [];
-    const told = this.tl.events.filter((e) => e.dateTime && !OPENERS.has(e.kind ?? "") && e.person != null && side.includes(e.person));
-    const held = told.length ? ` The diagram holds ${told.length === 1 ? "one event" : `${told.length} events`} about this side of the family.` : "";
-    return bits.length || held ? `${p.name}${bits.length ? `, ${bits.join(", ")}` : ""}.${held}` : "";
-  }
-
   /** Each parent's own family, one picture a side: the parent's parents and
    * their children, and the parent's partners joined to the parent, the other
    * parent among them, so no one is drawn twice (R-0733). A partner's own
    * parents are on no side's picture. */
-  sides(): Side[] {
+  sides(): (Side & { parent: Person })[] {
     const s = this.subject;
     const pb = this.parentsOf(s.id);
     if (!pb) return [];
@@ -353,12 +356,54 @@ class Reader {
         const partners = this.bondsOf(parent.id)
           .map((b) => this.other(b, parent.id))
           .filter((id): id is number => id != null);
-        return {
-          label: `${His} ${role}'s side`,
-          lead: this.personLine(parent, [...kin]),
-          still: this.still([...kin, ...partners], parent.id),
-        };
+        return { parent, label: `${His} ${role}'s side`, still: this.still([...kin, ...partners], parent.id) };
       });
+  }
+
+  /** The people of one parent's own family: the parent, everyone above them,
+   * and everyone descended from those above but the parent's own children. */
+  lineage(id: number): Set<number> {
+    const above = (p: number): number[] => {
+      const b = this.parentsOf(p);
+      return b ? this.pair(b).flatMap((a) => [a, ...above(a)]) : [];
+    };
+    const below = (p: number): number[] => this.bondsOf(p).flatMap((b) => this.childrenOf(b).flatMap((c) => [c.id, ...below(c.id)]));
+    const side = new Set<number>(above(id).flatMap((a) => [a, ...below(a)]));
+    below(id).forEach((d) => side.delete(d));
+    return side.add(id);
+  }
+
+  /** A card's one statement, or what the diagram still needs for it. */
+  stated(q: AskedQuestion | null): Stated {
+    const little = q && LITTLE.exec(q.text.trim());
+    return { guess: q && !little ? this.guess(q) : null, needs: little ? little[1] : null };
+  }
+
+  /** The coach's notes on each parent's family put under the side whose
+   * people they rest on, never by a word in their text; the newest note on a
+   * side wins, and a note whose people point to neither side, or to both,
+   * takes a side left open in the order the coach writes them, the mother's
+   * first (R-0866). */
+  sideNotes(notes: AskedQuestion[]): SideNote[] {
+    const sides = this.sides();
+    if (!sides.length) return notes.map((q) => ({ label: null, note: this.stated(q) }));
+    const lines = sides.map((s) => this.lineage(s.parent.id));
+    const placed = new Map<number, AskedQuestion>();
+    const loose: AskedQuestion[] = [];
+    for (const q of [...notes].reverse()) {
+      const named = new Set(this.guess(q).people.map((p) => p.id));
+      const counts = lines.map((line) => [...named].filter((id) => line.has(id)).length);
+      const most = Math.max(...counts);
+      const at = most > 0 && counts.filter((n) => n === most).length === 1 ? counts.indexOf(most) : -1;
+      if (at < 0) loose.unshift(q);
+      else if (!placed.has(at)) placed.set(at, q);
+    }
+    const mothersFirst = sides.map((_, i) => i).sort((a, b) => (sides[a].parent.gender === "female" ? 0 : 1) - (sides[b].parent.gender === "female" ? 0 : 1));
+    for (const q of loose) {
+      const open = mothersFirst.find((i) => !placed.has(i));
+      if (open !== undefined) placed.set(open, q);
+    }
+    return sides.map((s, i) => ({ label: s.label, note: this.stated(placed.get(i) ?? null) }));
   }
 
   /** A guess as the case report shows it: the stored words whole, the dated
@@ -428,8 +473,6 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
   const own = guessOn(CaseReportCard.OwnPart);
   const brought = guessOn(CaseReportCard.WhatBrought);
   const coach = guessOn(CaseReportCard.CoachGuess);
-  const coupled = guessOn(CaseReportCard.Couple);
-  const little = coupled && LITTLE.exec(coupled.text.trim());
   const pattern = coach && r.guess(coach);
   const workOn = guesses.filter(onCard(CaseReportCard.WorkOn)).slice(-WORK_ON_MAX);
   const work = workOn.map((q) => r.guess(q));
@@ -447,9 +490,11 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     now: r.now,
     household: r.still(r.household(), s.id),
     main: main && r.guess(main),
+    family: r.stated(guessOn(CaseReportCard.Family)),
     brought: brought && r.guess(brought),
-    couple: { guess: coupled && !little ? r.guess(coupled) : null, needs: little ? little[1] : null },
-    sides: r.sides(),
+    couple: r.stated(guessOn(CaseReportCard.Couple)),
+    sides: r.sides().map(({ label, still }) => ({ label, still })),
+    sideNotes: r.sideNotes(guesses.filter(onCard(CaseReportCard.Sides)).slice(-SIDE_NOTES)),
     // only what the coach chose for this card, never every guess it holds (Patrick, 2026-10-04)
     guess: pattern,
     hypotheses: [...tl.clusters]

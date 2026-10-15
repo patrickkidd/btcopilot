@@ -43,7 +43,7 @@ const GLIDE_MS = 2000;
 /** How often the rewrite is asked whether the coach has finished, as the chat's vote asks of shadow replies. */
 const POLL_MS = 2000;
 /** The cards the coach writes; the rest are drawn from the diagram each time and never go out of date. */
-const WRITTEN = new Set<Card>([Card.Main, Card.Brought, Card.Couple, Card.Guesses, Card.OwnPart, Card.WorkOn]);
+const WRITTEN = new Set<Card>([Card.Main, Card.Family, Card.Brought, Card.Couple, Card.Sides, Card.Guesses, Card.OwnPart, Card.WorkOn]);
 
 const q = (root: HTMLElement, id: string): HTMLElement => {
   const found = root.querySelector<HTMLElement>(`#${id}`);
@@ -242,7 +242,7 @@ export class CaseReport implements View {
     this.render();
   }
 
-  /** The coach rewrites its five cards (R-0825); the report is read again
+  /** The coach rewrites its eight cards (R-0825); the report is read again
    * when it is done. One the server will not start now (already running, or
    * no session yet) says so; a failed one, or one the server no longer knows,
    * says so and puts the cards back as they were. Kept per diagram, so
@@ -361,17 +361,10 @@ export class CaseReport implements View {
 
   /** To a card: the cards glide to it and it is ringed, the app's own light
    * for what a jump points at (Patrick, 2026-10-03: a strip tap animates the
-   * scroll). The family on a wide window is in the column; on the phone the
-   * family button's picture slides out. */
+   * scroll). */
   private jump(card: Card): void {
     this.drawer.close();
     const at = this.body.querySelector<HTMLElement>(`.level[data-card="${card}"]`);
-    if (card === Card.Family && this.hooks.wide()) {
-      const pinned = this.column.querySelector<HTMLElement>(".level");
-      if (pinned) flash(pinned, true);
-      return;
-    }
-    if (card === Card.Family) return this.family();
     if (!at) return;
     this.asked = card;
     // the glide passes other cards on its way; the one asked for stays lit

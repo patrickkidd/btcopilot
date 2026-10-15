@@ -62,15 +62,25 @@ Bowen's method. Each point names the book lines it comes from. [Oracle: R-0850]
 
 1. Executive Summary: who has the trouble and what it is, then the pattern from card 6 in one
    sentence; three sentences at most, no run of events.
-2. The family: one line per household the person grew up in and lives in now, with the one fact
-   that turns the list into a reading.
+2. The family: one note by the coach, one line per household the person grew up in and lives in
+   now, with the one fact that turns the list into a reading (who left, who died, when), never a
+   head count; a chip per person and event it rests on, then the family picture button on the
+   phone (on a wide window the picture stands beside the cards). With too little, the "Not enough
+   in the diagram yet:" line. [Oracle: R-0850, R-0866]
 3. What brought the person: their own words, quoted, with the date.
 4. The couple: one statement by the coach on the person's own couple (them and their partner
    now, never their parents) from its early years: when they met, when they married, what
    changed in contact with each one's family after, with each event it rests on as a dated chip.
    With too little it is one line, "Not enough in the diagram yet:" and what it still needs,
    shown as the dashed amber chip. [Oracle: R-0850] FE 3165.
-5. Each parent's family: one statement per side, with its chips.
+5. Each parent's family: two notes by the coach on the one card value `sides`, one per side, each
+   one statement that turns the side's list into a reading (what repeats on that side, or a loss
+   and when) with its chips, or that side's "Not enough in the diagram yet:" line. The page puts
+   each under the side whose people it rests on (the parent, everyone above them, and their
+   descendants but the parent's own children), never by a word in its text; a note resting on
+   neither side, or on both equally, takes the side left open in the order written, the mother's
+   first, as the prompt asks. The pictures of each side are behind the family button.
+   [Oracle: R-0850, R-0866]
 6. The coach's guess: one pattern statement (what bound the anxiety, in which nuclear family,
    through whom, when, the people in time order), one chip per cluster with "For" and "Against",
    and the open question naming what it needs to know; it says nothing of what will come.
@@ -84,10 +94,10 @@ Bowen's method. Each point names the book lines it comes from. [Oracle: R-0850]
 
 ## How the refresh writes them (as built)
 
-- One model call, the coach's own prompt, offered only add_impression; it writes cards 1, 3, 4,
-  6, 7 and 9 (`main_guess`, `what_brought`, `couple`, `coach_guess`, `own_part`, `work_on`); a
-  card not given is asked for once more; the page draws the rest from the diagram.
-  [Oracle: R-0825, R-0850]
+- One model call, the coach's own prompt, offered only add_impression; it writes cards 1 to 7 and
+  9 (`main_guess`, `family`, `what_brought`, `couple`, `sides` twice, `coach_guess`, `own_part`,
+  `work_on`); a card not given is asked for once more; the page draws the effort from the
+  sessions. [Oracle: R-0825, R-0850, R-0866]
 - Its inputs: every event with its words and notes, the coach's notes and questions, one summary
   per conversation (the stored one; a conversation with none gets one written then, one extra
   call each), and, while no note is on card 3, the first conversation's opening read raw, each

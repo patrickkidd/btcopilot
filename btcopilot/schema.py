@@ -540,8 +540,10 @@ class CaseReportCard(enum.StrEnum):
     """The case report card a question or an impression is on (R-0709)."""
 
     MainGuess = "main_guess"
+    Family = "family"
     WhatBrought = "what_brought"
     Couple = "couple"
+    Sides = "sides"
     OwnPart = "own_part"
     # Merged into own_part (R-0850): never written or shown, kept so stored entries still read.
     Choice = "choice"

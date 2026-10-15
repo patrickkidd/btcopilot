@@ -107,7 +107,7 @@ const ONE: Session[] = [];
 it("draws the cards in the proposal's order, each with its strip item in the same place", () => {
   const v = caseView(halloran(), ONE, "Patrick");
   const order = (html: string, attr: string) => [...html.matchAll(new RegExp(`data-${attr}="([a-z_]+)"`, "g"))].map((m) => m[1]);
-  expect(order(cards(v, true), "card")).toEqual(ORDER.filter((c) => c !== Card.Family));
+  expect(order(cards(v, true), "card")).toEqual(ORDER);
   expect(order(cards(v, false), "card")).toEqual(ORDER);
   expect(order(rail(v), "jump")).toEqual(ORDER);
 });
@@ -136,7 +136,7 @@ it("says on every guess card that there is not enough yet, and never picks a mai
   const v = caseView(tl, ONE, "");
   expect(v.main).toBeNull();
   const html = cards(v, false);
-  const guessCards = [Card.Main, Card.Couple, Card.OwnPart];
+  const guessCards = [Card.Main, Card.Family, Card.Couple, Card.Sides, Card.OwnPart];
   for (const card of guessCards) expect(html.split(`data-card="${card}"`)[1].split("</section>")[0]).toContain(NOT_ENOUGH);
 });
 
@@ -208,8 +208,7 @@ it("keeps every date inside a chip: no lead line names a year or a month", () =>
   const tl = halloran();
   tl.people.find((p) => p.id === 2)!.birth_event = 106;
   const v = caseView(tl, [{ kind: SessionKind.Chat, last_activity: "2026-10-01T10:00:00" } as Session], "");
-  const leads = [v.effort, ...v.sides.map((s) => s.lead)];
-  for (const line of leads) expect(line).not.toMatch(/\b(1[89]|20)\d\d\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/);
+  for (const line of [v.effort]) expect(line).not.toMatch(/\b(1[89]|20)\d\d\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/);
 });
 
 const on = (text: string, card: CaseReportCard, evidence: AskedQuestion["evidence"]) => ({ ...guess("n1", text, card), evidence });
@@ -404,4 +403,61 @@ it("labels a period the person named as their suggestion, never as their period"
   expect(labels[0]).toMatch(/^Your suggestion: A hard time/);
   expect(labels[1]).toMatch(/^Hypothesis: /);
   expect(labels.join(" ")).not.toContain("Your period");
+});
+
+const side = (id: string, text: string, people: number[], events: number[] = []): AskedQuestion => ({
+  ...guess(id, text, CaseReportCard.Sides, events),
+  evidence: [
+    ...people.map((p) => ({ kind: EvidenceKind.Person, id: p, label: "" })),
+    ...events.map((e) => ({ kind: EvidenceKind.Event, id: e, label: "" })),
+  ],
+});
+
+// R-0850, R-0866
+it("shows on the family card the coach's line per household with a chip per person and event it rests on, and keeps the picture button on the phone", () => {
+  const tl = halloran();
+  tl.events = tl.events.map((e) => (e.id === 112 ? { ...e, dateCertainty: "approximate" } : e));
+  const text = "You grew up with Frank, Elaine and Sean.\nYou live with Daniel and Lily; Lily was born around 2012.";
+  tl.asked_questions = [{ ...guess("f1", text, CaseReportCard.Family, [112]), evidence: [{ kind: EvidenceKind.Person, id: 8, label: "" }, { kind: EvidenceKind.Event, id: 112, label: "" }] }];
+  const v = caseView(tl, ONE, "");
+  const card = body(cards(v, false), Card.Family);
+  expect(card).toContain(`${esc(text)}</div>`);
+  expect(card.split(`data-kind="event" data-target="112"`)[1].split("</button>")[0]).toContain(UNSURE);
+  expect(card).toContain('data-kind="person" data-target="8"');
+  expect(card).toContain('class="famcard"');
+  expect(card).not.toContain(`class="fam"`);
+  expect(body(cards(v, true), Card.Family)).not.toContain('class="famcard"');
+});
+
+// R-0850, R-0866
+it("puts each note on each parent's family under the side whose people it rests on, whatever order the coach wrote them in", () => {
+  const tl = halloran();
+  tl.asked_questions = [
+    side("s1", "On your father's side, Walter and June married young.", [4, 5]),
+    side("s2", "On your mother's side, little is known.", [3]),
+  ];
+  const v = caseView(tl, ONE, "");
+  expect(v.sideNotes.map((s) => [s.label, s.note.guess?.text])).toEqual([
+    ["Her father's side", "On your father's side, Walter and June married young."],
+    ["Her mother's side", "On your mother's side, little is known."],
+  ]);
+  const card = body(cards(v, false), Card.Sides);
+  expect(card).toContain('<p class="sublabel">Her father&#39;s side</p>');
+  expect(card).toContain('data-kind="person" data-target="4"');
+  expect(card).not.toContain(`class="fam"`);
+  expect(card).not.toContain("<details");
+});
+
+// R-0850, R-0866
+it("never tells the sides apart by a word in the note: a note resting on no side's people takes the side left open, the mother's first in the order written", () => {
+  const tl = halloran();
+  tl.asked_questions = [
+    side("s1", `${TOO_LITTLE}: your mother's parents' names.`, []),
+    side("s2", "On your father's side, Walter and June married young.", [4]),
+  ];
+  const placed = caseView(tl, ONE, "").sideNotes;
+  expect(placed[0].note.guess?.text).toBe("On your father's side, Walter and June married young.");
+  expect(placed[1].note).toEqual({ guess: null, needs: "your mother's parents' names" });
+  tl.asked_questions = [side("s1", "One side.", []), side("s2", "The other side.", [2, 3])];
+  expect(caseView(tl, ONE, "").sideNotes.map((s) => s.note.guess?.text)).toEqual(["The other side.", "One side."]);
 });

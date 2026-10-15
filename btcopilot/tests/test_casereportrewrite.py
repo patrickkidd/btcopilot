@@ -185,17 +185,19 @@ def test_the_timeline_says_what_put_the_report_out_of_date(web, written, family)
     assert found["sentence"] == "Ada's death in 2019 was added after the coach wrote this report."
 
 
-# The five cards guessed from the diagram; with what brought the person in,
-# every card a refresh writes.
-FIVE = [
-    (ToolName.AddImpression, {"text": f"Guess for {name}.", "state": "raised",
+# The cards guessed from the diagram, each parent's family twice, one a side;
+# with what brought the person in, every card a refresh writes.
+GUESSED = [
+    (ToolName.AddImpression, {"text": f"Guess for {name}{side}.", "state": "raised",
                               "evidence": [{"kind": "person", "id": "1"}], "case_report_card": name})
-    for name in ("main_guess", "coach_guess", "couple", "own_part", "work_on")
+    for name, side in [*((n, "") for n in ("main_guess", "coach_guess", "couple", "own_part", "work_on", "family")),
+                       ("sides", ", mother's side"), ("sides", ", father's side")]
 ]
+CARDS_WRITTEN = sorted(["coach_guess", "couple", "family", "main_guess", "own_part", "sides", "sides", "what_brought", "work_on"])
 
 
 def every(past) -> list:
-    return [brought(past["user"]), *FIVE]
+    return [brought(past["user"]), *GUESSED]
 
 
 def refusals(**detail) -> list[Observation]:
@@ -220,12 +222,12 @@ def test_a_rewrite_writes_every_card_again_in_one_model_call(web, past, written,
     turn_id = response.get_json()["id"]
     assert web.get(f"/app/case-report-rewrites/{turn_id}").get_json() == {"id": turn_id, "state": "done"}
     done = turnlog.read_from(turn_id, 0)[-1][1]
-    assert done["cards"] == ["what_brought", "main_guess", "coach_guess", "couple", "own_part", "work_on"]
+    assert done["cards"] == [
+        "what_brought", "main_guess", "coach_guess", "couple", "own_part", "work_on", "family", "sides"
+    ]
     now = cards(family)
     assert now["i1"] is None
-    assert sorted(v for v in now.values() if v) == [
-        "coach_guess", "couple", "main_guess", "own_part", "what_brought", "work_on"
-    ]
+    assert sorted(v for v in now.values() if v) == CARDS_WRITTEN
     assert model.offered == [["add_impression"]]
     assert ModelCall.query.filter_by(purpose=Purpose.Coach, turn_id=turn_id).count() == 1
     assert TokenMeter.query.filter_by(user_id=family.user_id).count() == 1
@@ -245,15 +247,13 @@ def test_on_the_subscription_a_rewrite_is_answered_by_claude_code_at_no_cost(
     assert claude.offered == [["add_impression"]]
     row = ModelCall.query.filter_by(purpose=Purpose.Coach, turn_id=turn_id).one()
     assert (row.model, row.cost_usd) == ("claude-opus-5-5", 0)
-    assert sorted(v for v in cards(family).values() if v) == [
-        "coach_guess", "couple", "main_guess", "own_part", "what_brought", "work_on"
-    ]
+    assert sorted(v for v in cards(family).values() if v) == CARDS_WRITTEN
 
 
 def test_a_rewrite_refuses_any_other_tool_and_writes_it_down(web, past, written, family):
     # R-0825
     asked = (ToolName.AddQuestion, {"text": "What happened?", "kind": "thought", "state": "asked"})
-    rewrite(web, Model(calling(FIVE[0], asked), calling()))
+    rewrite(web, Model(calling(GUESSED[0], asked), calling()))
 
     assert cards(family)["i1"] is None
     assert len(refusals(tool="add_question")) == 1
@@ -393,11 +393,23 @@ def test_what_brought_is_written_from_the_persons_own_message_and_then_no_openin
     assert casereport.OPENING not in model.histories[0][0]["content"]
 
 
+def test_the_family_and_each_parents_family_not_given_are_asked_for_once_more(web, past, written, family):
+    # R-0850, R-0866
+    model = Model(calling(*every(past)[:-3]), calling(*GUESSED[-3:]))
+    rewrite(web, model)
+
+    asked = model.histories[1][-1]["content"][-1]["text"]
+    assert "family" in asked and "sides" in asked and "couple" not in asked
+    written = sorted(v for v in cards(family).values() if v)
+    assert written == CARDS_WRITTEN
+    assert refusals(refusal="no family card") and refusals(refusal="no sides card")
+
+
 def test_what_brought_resting_on_no_message_of_the_person_is_refused_and_asked_for_once_more(
     web, past, written, family
 ):
     # R-0850, R-0852
-    model = Model(calling(guessed("They came about sleep.", "what_brought"), *FIVE), calling(brought(past["user"])))
+    model = Model(calling(guessed("They came about sleep.", "what_brought"), *GUESSED), calling(brought(past["user"])))
     rewrite(web, model)
 
     assert texts(family)["what_brought"] == "“My grandmother raised me.”"
@@ -405,7 +417,7 @@ def test_what_brought_resting_on_no_message_of_the_person_is_refused_and_asked_f
     assert refused.detail["retried"] is True
     assert "statement" in model.histories[1][-1]["content"][0]["content"]
 
-    rewrite(web, Model(calling(guessed("They came about sleep.", "what_brought"), *FIVE), calling()))
+    rewrite(web, Model(calling(guessed("They came about sleep.", "what_brought"), *GUESSED), calling()))
     assert texts(family)["what_brought"] == "“My grandmother raised me.”"
     assert [o.detail["retried"] for o in refusals(refusal="statement")] == [True, True]
     (still,) = refusals(refusal="no what_brought card")
@@ -416,7 +428,7 @@ def test_what_brought_resting_on_no_message_of_the_person_is_refused_and_asked_f
 def test_a_card_refused_on_both_tries_is_written_down_once_per_try(web, past, written, family):
     # R-0850
     sleep = guessed("They came about sleep.", "what_brought")
-    rewrite(web, Model(calling(sleep, *FIVE), calling(sleep)))
+    rewrite(web, Model(calling(sleep, *GUESSED), calling(sleep)))
 
     rows = refusals(reason="case report rewrite: what_brought: ")
     assert [o.detail["reason"].split("; ")[0] for o in rows] == [
@@ -749,7 +761,7 @@ def test_an_id_in_a_cards_words_is_refused_and_asked_for_once_more(web, past, gr
 
 def test_a_card_not_given_is_asked_for_once_more_and_still_missing_keeps_its_note(web, past, written, family):
     # R-0850
-    model = Model(calling(*every(past)[1:3]), calling(*FIVE[2:]))
+    model = Model(calling(*every(past)[1:3]), calling(*GUESSED[2:]))
     rewrite(web, model)
 
     asked = model.histories[1][-1]["content"][-1]["text"]
@@ -776,7 +788,7 @@ def test_the_catch_up_dry_run_saves_the_plan_and_writes_nothing(flask_app, tmp_p
     # R-0820, R-0825
     before = stored(family)
     with patch.object(TokenMeter, "charge") as charge:
-        rows = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*FIVE)))
+        rows = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*GUESSED)))
 
     assert (rows[0]["card"], rows[0]["before"]) == ("main_guess", FELL)
     assert stored(family) == before
@@ -788,10 +800,10 @@ def test_the_catch_up_writes_the_plan_and_names_the_changes_undo_takes_back(
     flask_app, tmp_path, past, written, family
 ):
     # R-0820, R-0825
-    plan = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*FIVE)))[0]["plan"]
+    plan = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*GUESSED)))[0]["plan"]
     (done,) = catch_up(flask_app, "--apply", "--plan", plan)
 
-    assert done["cards"] == "main_guess, coach_guess, couple, own_part, work_on"
+    assert done["cards"] == "main_guess, coach_guess, couple, own_part, work_on, family, sides"
     assert cards(family)["i1"] is None
     result = flask_app.test_cli_runner().invoke(
         admin, ["diagrams", "undo", str(family.id), *done["changes"].split(), "--yes"]
@@ -802,7 +814,7 @@ def test_the_catch_up_writes_the_plan_and_names_the_changes_undo_takes_back(
 
 def test_the_catch_up_refuses_a_plan_the_record_moved_past(flask_app, tmp_path, past, written, family):
     # R-0825
-    plan = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*FIVE)))[0]["plan"]
+    plan = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*GUESSED)))[0]["plan"]
     happened(family, "death", "2019-03-01", person=2)
     result = flask_app.test_cli_runner().invoke(admin, ["case-report", "rewrite", "--apply", "--plan", plan])
 
@@ -822,12 +834,12 @@ def test_the_catch_up_saves_requests_for_the_subscription_and_takes_its_answers(
     answers.mkdir()
     blocks = [
         {"type": "tool_use", "id": f"a{n}", "name": "add_impression", "input": args}
-        for n, (_, args) in enumerate(FIVE)
+        for n, (_, args) in enumerate(GUESSED)
     ]
     (answers / f"case-report-{family.id}.json").write_text(json.dumps({"model": "m", "content": blocks}))
     rows = catch_up(flask_app, "--plans", str(tmp_path / "plans"), "--saved-answers", str(answers))
 
-    assert len(rows) == 5
+    assert len(rows) == len(GUESSED)
     assert ModelCall.query.filter_by(purpose=Purpose.Backfill).count() == 0
 
 
