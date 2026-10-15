@@ -41,6 +41,7 @@ from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     CardLine,
     CaseReportCard,
+    DateCertainty,
     DiagramData,
     EvidenceKind,
     EventKind,
@@ -328,10 +329,34 @@ def summaries(diagram: Diagram, meter: Metered) -> str:
     return "\n".join(lines)
 
 
-def _days(gap: int) -> str:
+SURENESS = (DateCertainty.Unknown, DateCertainty.Approximate, DateCertainty.Certain)
+
+
+def _sure(data: DiagramData, *ids: int) -> DateCertainty:
+    """The least sure date among these events."""
+    marks = {
+        e["id"]: DateCertainty(enum_val(e.get("dateCertainty")) or DateCertainty.Certain)
+        for e in data.events
+        if e.get("id") in ids
+    }
+    return min(marks.values(), key=SURENESS.index)
+
+
+def _days(gap: int, sure: DateCertainty) -> str:
+    """How far a shift falls from its cluster's opening, no finer than the
+    two dates hold: days when both are certain, years when either is
+    approximate, nothing when either is a guess [Oracle: R-0855]."""
+    if sure is DateCertainty.Unknown:
+        return "at a date nobody knows"
+    side = "after" if gap > 0 else "before"
+    if sure is DateCertainty.Approximate:
+        years = round(abs(gap) / 365)
+        if years == 0:
+            return "within about a year of its opening"
+        return f"about {years} year{'' if years == 1 else 's'} {side} its opening"
     if gap == 0:
         return "on the day of its opening"
-    return f"{abs(gap)} days {'after' if gap > 0 else 'before'} its opening"
+    return f"{abs(gap)} days {side} its opening"
 
 
 def held(data: DiagramData) -> str:
@@ -350,8 +375,12 @@ def held(data: DiagramData) -> str:
         if read.runOf is not None:
             parts.append(f"all of them {_name(people, read.runOf) or 'one person'}'s")
         if read.opening is not None and read.toFirst is not None:
-            parts.append(f"opened by event {read.opening}, the first shift {_days(read.toFirst)}, "
-                         f"the last {_days(read.toLast)}")
+            first, last = read.shiftIds[0], read.shiftIds[-1]
+            parts.append(
+                f"opened by event {read.opening}, the first shift "
+                f"{_days(read.toFirst, _sure(data, read.opening, first))}, "
+                f"the last {_days(read.toLast, _sure(data, read.opening, last))}"
+            )
         lines.append(f"{cluster['id']}: " + "; ".join(parts))
     return "\n".join(lines)
 

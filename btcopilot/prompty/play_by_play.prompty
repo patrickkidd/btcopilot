@@ -16,6 +16,9 @@ in pictures, one picture per date, by calling play_by_play once.
 - For each picture give the ids of the listed events it covers, a fact line in
   the person's own words, and, only when you have one, a line that starts
   "My guess:". The listed events are the only ones that exist.
+- A date marked (approximate) or (unknown) on an event's line is one nobody is
+  sure of: say "around" its year, or give no date when it is unknown, and rest
+  the point on no order or distance finer than those dates hold.
 - End with one question about the biggest gap in what is known, never a list.
 
 THE CLUSTER

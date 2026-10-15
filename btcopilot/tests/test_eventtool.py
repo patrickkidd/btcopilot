@@ -180,7 +180,7 @@ def test_a_same_day_shift_moving_the_same_variable_is_refused(subscriber):
 
 
 def test_a_date_with_no_certainty_is_refused_and_a_change_leaves_it(subscriber):
-    # R-0438
+    # R-0438, R-0855
     diagram = _diagram(subscriber.user)
     added = _event(
         diagram,
@@ -200,8 +200,9 @@ def test_a_date_with_no_certainty_is_refused_and_a_change_leaves_it(subscriber):
         with pytest.raises(ToolError) as refused:
             Toolbox(diagram.id, "t1").call(ToolName.EditEvent.value, args)
         assert refused.value.plain == (
-            "Say how sure the date is: certain for an exact day, approximate for a "
-            'month or a year only, unknown for "sometime around" or any hedge.'
+            "Say how sure the date is: certain only for the day or close to it; "
+            "approximate for a month, a season, a year, an age or a range of about "
+            "two years or less; unknown only for a guess with nothing to anchor it."
         )
     assert diagram.get_diagram_data().events[-1]["dateTime"] == "2019-03-01"
 

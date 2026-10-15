@@ -941,13 +941,16 @@ def test_the_coach_is_told_how_to_raise_an_impression():
 
 
 def test_the_coach_is_told_to_give_every_date_its_certainty():
-    # R-0482
+    # R-0482, R-0855
     prompt = " ".join(get_agent_prompt().split())
     assert "Whenever you add an event or change its date" in prompt
-    assert "date_certainty" in prompt
-    assert re.search(r"certain (when they gave the exact day|only when the day is known)", prompt)
-    assert re.search(r'approximate when they g[ai]ve only the month, as "June 1998"', prompt)
-    assert 'unknown when they hedge, as "sometime around 1998"' in prompt
+    assert "date_certainty too, as sure as what they told you and no surer" in prompt
+    assert re.search(r"certain only when they g[ai]ve the day or close to it", prompt)
+    assert re.search(r"a day they g[ai]ve is never unknown", prompt)
+    assert re.search(r"approximate when they g[ai]ve a month, a season, a year, an age or a range of about two years or less", prompt)
+    assert '"in 2008 or 2009"' in prompt
+    assert "unknown only when the date is a guess" in prompt
+    assert '"sometime around 1998"' not in prompt
 
 
 def test_the_coach_is_told_how_to_keep_its_questions():

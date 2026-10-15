@@ -178,8 +178,9 @@ CLEARABLE = {
 }
 
 CERTAINTY = (
-    "certain for an exact day, approximate for a month or a year only, unknown "
-    'for "sometime around" or any hedge'
+    "certain only for the day or close to it; approximate for a month, a season, "
+    "a year, an age or a range of about two years or less; unknown only for a "
+    "guess with nothing to anchor it"
 )
 
 # The number of children the person said, given when how many children a couple

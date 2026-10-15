@@ -18,7 +18,7 @@ from btcopilot import casereport, turnlog
 from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.models import Change, Discussion, ModelCall, Observation, ObservationKind, Purpose, TokenMeter
-from btcopilot.schema import Cluster, Person
+from btcopilot.schema import Cluster, DiagramData, Person
 from btcopilot.tests.conftest import Model, calling, csrf_token, version
 from btcopilot.tests.test_casereport import card, cards
 from btcopilot.tests.test_impressions import impress
@@ -425,6 +425,38 @@ def test_a_rewrite_reads_a_cluster_with_fewer_than_three_supporting_shifts(web, 
 
     held = model.histories[0][0]["content"].split(casereport.HELD)[1]
     assert held.split("\n\n")[0].strip().splitlines() == ["c1: 1 supporting shift, fewer than 3; all of them Wren's"]
+
+
+def _gaps(first: str, last: str) -> str:
+    """What the refresh is told of one cluster opened by a death on a known
+    day, its first shift's date marked `first` and its last `last`."""
+    shift = lambda id, date, sure: {
+        "id": id, "kind": "shift", "person": 1, "symptom": "up", "dateTime": date, "dateCertainty": sure,
+    }
+    data = DiagramData(
+        people=[{"id": 1, "name": "Wren"}, {"id": 2, "name": "Ada"}],
+        events=[
+            {"id": 10, "kind": "death", "person": 2, "dateTime": "1998-03-01", "dateCertainty": "certain"},
+            shift(11, "1998-07-01", first),
+            shift(12, "1998-09-01", "certain"),
+            shift(13, "2001-02-01", last),
+        ],
+        clusters=[asdict(Cluster(id="c1", title="After Ada's death", summary="", eventIds=[10, 11, 12, 13]))],
+    )
+    return casereport.held(data)
+
+
+def test_the_refresh_is_told_how_far_shifts_fall_from_an_opening_no_finer_than_their_dates():
+    # R-0855
+    assert _gaps("certain", "certain") == (
+        "c1: 3 supporting shifts; all of them Wren's; opened by event 10, "
+        "the first shift 122 days after its opening, the last 1068 days after its opening"
+    )
+    assert _gaps("approximate", "unknown") == (
+        "c1: 3 supporting shifts; all of them Wren's; opened by event 10, "
+        "the first shift within about a year of its opening, the last at a date nobody knows"
+    )
+    assert _gaps("certain", "approximate").endswith("the last about 3 years after its opening")
 
 
 def test_a_for_or_against_on_a_cluster_the_guess_does_not_rest_on_is_refused(web, past, grouped, family):
