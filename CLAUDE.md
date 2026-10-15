@@ -170,9 +170,9 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 - **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
 - **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
   https://turin:8891/app/ (`bin/sandbox/sandbox up <name> <port> --dev`).
-- **Every question mark is a question (2026-09-11).** Each "?" he types is covered somewhere,
+- **Every question mark is a question (2026-09-11); a "?" is something to verify (2026-10-15).** Each "?" he types is covered somewhere,
   explicitly or implicitly, never recited one by one and never repeated between the reply and
-  the drawing.
+  the drawing. A "?" marks a fact he needs checked against the code or the data, with the evidence, never answered from memory (verified failure 2026-10-14: "is cluster detection run on every edit of the diagram?" went unanswered until he asked again).
 - **Artifacts are UI drawings in the app's own style, never text documents (2026-09-11).** The
   open decisions go on the drawing, one numbered list in one place, each self-contained with its
   example, and are never repeated in the reply. The reply is a link and a few lines.
