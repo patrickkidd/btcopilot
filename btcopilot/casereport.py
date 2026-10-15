@@ -94,9 +94,11 @@ MARK = re.compile(
     rf"|{'|'.join(m.value for m in CardLine if m not in (CardLine.For, CardLine.Against))}):"
 )
 # Words that say what will come. Only what to work on predicts, on its
-# Prognosis line (FE 3117, 3463-3467; R-0850).
+# Prognosis line (FE 3117, 3463-3467; R-0850). "Going to" says what will come
+# only after a present "is", "are" or "am", never in "stopped going to class".
 FORETOLD = re.compile(
-    r"\b(will|won't|going to|expect(?:s|ed)?|predicts?|prediction|prognosis|(?:un)?likely)\b",
+    r"\b(will|won't|(?:is|are|am|'s|’s|'re|’re) going to|expect(?:s|ed)?|predicts?|prediction"
+    r"|prognosis|(?:un)?likely)\b",
     re.I,
 )
 # The Executive Summary: who has the trouble and what it is in one or two

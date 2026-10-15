@@ -709,6 +709,23 @@ def test_a_prediction_off_what_to_work_on_is_refused_and_asked_for_once_more(web
     assert len(refusals(refusal="'will' says what will come")) == 1
 
 
+@pytest.mark.parametrize(
+    "said, refused",
+    [
+        ("The app's guess: in 2009 you stopped going to classes.", False),
+        ("The app's guess: you were going to visit her that spring.", False),
+        ("The app's guess: your sleep is going to go again at the next loss.", True),
+        ("The app's guess: it's going to come back.", True),
+    ],
+)
+def test_going_to_says_what_will_come_only_after_is_or_are(web, past, written, family, said, refused):
+    # R-0850
+    rewrite(web, Model(calling(guessed(said)), calling()))
+
+    assert (texts(family).get("coach_guess") != said) == refused
+    assert bool(refusals(refusal="says what will come")) == refused
+
+
 def test_an_executive_summary_longer_than_the_trouble_and_the_pattern_is_kept_and_observed(web, past, written, family):
     # R-0850
     run = "You said you sleep badly. It began in 1998. Your grandmother died that year. You stopped calling your mother."
