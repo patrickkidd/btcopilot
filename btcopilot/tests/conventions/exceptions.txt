@@ -210,3 +210,5 @@ R-0851 | TEST OWED | built on FD-381: the what_brought card value and the setAsi
 R-0852 | TEST OWED | not built: the what_brought coverage item and the coach writing the card note during the chat turn; waits on the coach build
 R-0853 | TEST OWED | not built: the grouping step writing user clusters from the answers to the most_going_on item; waits on that build
 R-0854 | TEST OWED | not built: the first-conversation question about what brings the person in; the limit of ten replies is a placeholder until the production count is read
+R-0855 | TEST OWED | not built: the coach marking dates approximate, certain or unknown by what the person gave, and the features that read certainty
+R-0856 | TEST OWED | not built: the F1 suite of synthetic cases for cluster detection and the prompt tuning against it
