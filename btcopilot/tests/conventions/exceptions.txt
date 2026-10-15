@@ -205,9 +205,6 @@ R-0743 | TEST OWED | not built: the coach calling out a connection across genera
 R-0748 | WAIVED | one test proves F18 is drawn with no line through a name; the rest is a judgement that marriages inside a family are rare
 R-0757 | WAIVED | deferred to how coverage is shown; nothing is built to assert
 R-0769 | TEST OWED | not built: functioning going down has no animation until its art direction is done
-R-0833 | WAIVED | the couple card drawn from the diagram stage by stage is replaced by the coach's one statement on the person's own couple (FD-381, Patrick approved 2026-10-14); to be marked superseded in the store
-R-0834 | WAIVED | the couple card drawn from the diagram stage by stage is replaced by the coach's one statement on the person's own couple (FD-381, Patrick approved 2026-10-14); to be marked superseded in the store
-R-0835 | WAIVED | the couple card drawn from the diagram stage by stage is replaced by the coach's one statement on the person's own couple (FD-381, Patrick approved 2026-10-14); to be marked superseded in the store
 R-0850 | TEST OWED | the framing is built into the case report prompt and cards on FD-381; its tests come with that build
 R-0851 | TEST OWED | built on FD-381: the what_brought card value and the setAside and openingEventId cluster fields; its tests come with that build
 R-0852 | TEST OWED | not built: the what_brought coverage item and the coach writing the card note during the chat turn; waits on the coach build

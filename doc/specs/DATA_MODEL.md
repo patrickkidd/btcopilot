@@ -258,7 +258,7 @@ declined; one held or let go says nothing. The last such question wins. Removing
 link and the `fact` together.
 
 A question or an impression carries `case_report_card`, a `CaseReportCard`
-(`main_guess`, `own_part`, `choice`, `work_on`, `coach_guess`) or null: the case report card
+(`main_guess`, `what_brought`, `couple`, `own_part`, `choice`, `work_on`, `coach_guess`) or null: the case report card
 the coach put it on (R-0709). Only the coach writes it. A question goes only on
 `own_part` or `choice`, and an entry kept for later (held) on none. Putting an
 entry on a card takes the card off the entry of the same kind that held it, in

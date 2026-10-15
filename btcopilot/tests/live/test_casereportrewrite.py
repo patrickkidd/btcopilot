@@ -38,7 +38,7 @@ from btcopilot.tests.live.test_executivesummary import (
     reads,
 )
 
-CARDS = ("main_guess", "coach_guess", "own_part", "work_on")
+CARDS = ("main_guess", "coach_guess", "couple", "own_part", "work_on")
 MORE = [
     event(36, "shift", "2009-10-01", 1, "Stopped calling her mother", relationship="distance", relationshipTargets=[2]),
     event(37, "shift", "2016-06-01", 1, "Stopped calling her mother", relationship="distance", relationshipTargets=[2]),

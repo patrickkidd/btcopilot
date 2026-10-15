@@ -355,25 +355,19 @@ for (const size of [SIZES[0], { width: 1440, height: 900 }])
   test.describe(`the couple card at ${size.width}`, () => {
     test.use({ storageState: stateFor("case-report"), viewport: size });
 
-    // R-0833, R-0834, R-0835
-    test("groups the couple's events under Bowen's stage heads in date order, each head a chip, and says what it still needs", async ({ page }) => {
+    // R-0850
+    test("is the coach's one statement on the couple with one chip per event it rests on, inside the card", async ({ page }) => {
       const errors = await open(page);
       const card = page.locator('#case-body .level[data-card="couple"]');
       await card.scrollIntoViewIfNeeded();
       await expect(card.locator("p.label")).toHaveText("4 · The couple since they met");
-      await expect(card.locator("p.lead").first()).toHaveText("Nora and Daniel are married.");
-      const rows = card.locator(".stage .chips");
-      await expect(rows).toHaveCount(2);
-      expect(await rows.locator(".chip:first-child").allTextContents()).toEqual(["Jun 2009 · married", "May 2012 · Lily born"]);
-      // under married: Nora's fights with Daniel; under Lily born: Daniel's job, named; and her mother's illness, always
-      await expect(rows.nth(0)).toContainText("Jun 2011 · Fights over money");
-      await expect(rows.nth(1)).toContainText("Feb 2014 · Daniel · Lost his job");
-      await expect(rows.nth(1)).toContainText("Apr 2018 · Elaine · Hospitalized with pneumonia");
-      await expect(rows.nth(1)).toContainText("Jan 2019 · Stopped visiting her mother");
-      // nothing of hers from before the marriage
-      await expect(card).not.toContainText("Stopped sleeping well");
-      await expect(card.locator("p.lead").last()).toHaveText("This card still needs where Daniel stands among his brothers and sisters.");
-      // every chip whole and inside the card, nothing sideways
+      await expect(card.locator(".gbub")).toHaveCount(1);
+      await expect(card.locator(".gbub")).toContainText("Since you married Daniel");
+      expect((await card.locator(".chips .chip").allTextContents()).sort()).toEqual(
+        ["Jun 2009 · married", "Jun 2011 · Fights over money", "Feb 2014 · Daniel · Lost his job", "May 2012 · Lily born"].sort(),
+      );
+      // the stage heads of the old list are gone
+      await expect(card.locator(".stage")).toHaveCount(0);
       const geometry = await card.evaluate((level) => {
         const box = level.getBoundingClientRect();
         const chips = [...level.querySelectorAll<HTMLElement>(".chips .chip")];
@@ -386,8 +380,8 @@ for (const size of [SIZES[0], { width: 1440, height: 900 }])
       expect(errors).toEqual([]);
     });
 
-    // R-0835, R-0691
-    test("its book raises the passages behind the stages and the selection rule, each with its book and chapter", async ({ page }) => {
+    // R-0850, R-0691
+    test("its book raises the passages behind the card, each with its book and chapter", async ({ page }) => {
       await open(page);
       const card = page.locator('#case-body .level[data-card="couple"]');
       await card.scrollIntoViewIfNeeded();

@@ -217,6 +217,7 @@ def test_the_case_report_fixture_holds_every_card_and_the_persons_own_answer(fla
         "i4": "work_on",
         "i5": "work_on",
         "i6": "coach_guess",
+        "i8": "couple",
         "q1": "own_part",
     }
     assert shown["i2"]["text"].splitlines()[1].startswith("Other way: ")
