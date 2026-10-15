@@ -1784,6 +1784,24 @@ def test_a_period_with_no_years_is_not_written_and_is_observed(discussion):
     ]
 
 
+def test_a_declined_run_is_observed_and_not_asked_again(discussion):
+    # R-0856
+    data = record(
+        moment(1, "1994-01-01", person=1),
+        moment(2, "1994-03-01", person=1),
+        moment(3, "1994-05-01", person=2),
+    )
+    grouped, ask = grouped_with(discussion, data, answers(declined=["r1"]))
+    assert grouped.clusters == []
+    noted = Observation.query.filter_by(kind=ObservationKind.ClusterRefused).all()
+    assert [(n.detail["check"], n.detail["reason"]) for n in noted] == [
+        ("declined", "nothing piles up")
+    ]
+    assert ask.call_count == 1
+    assert sync(discussion.diagram.id, turn_id="t2", user_id=discussion.diagram.user_id) is None
+    assert ask.call_count == 1
+
+
 def test_an_answer_closed_before_its_message_was_kept_is_found_in_the_change_log(
     discussion,
 ):

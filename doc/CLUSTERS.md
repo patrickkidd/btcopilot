@@ -136,13 +136,13 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
 
 After any coach turn that adds or changes an event, when the cache key (the
 events' dates, date certainty and shifts, the message ids of the person's
-answers to when the most was going on, plus `DETECTION_VERSION`, now 14)
+answers to when the most was going on, plus `DETECTION_VERSION`, now 15)
 differs from the stored one; `flask admin diagrams regroup` reruns diagrams that
 are behind. Version 12 regroups every diagram on its next event change, so
 periods set aside only for too few supporting shifts are offered again; version
 13 does again, with runs of fewer than three supporting shifts in the hint;
 version 14 does again, with events of unknown date offered, the wider naming
-check, and answers found through the change log. A turn
+check, and answers found through the change log; version 15 does again, with a run seeded only at a shift whose date is known, the people offered with what each is to the person, and every run of three or more supporting shifts returned as a period or declined with a reason [Oracle: R-0850, R-0856]. A turn
 that only closes the `most_going_on` question, with no event change, does not
 regroup; the next event change or `regroup` writes the person's periods.
 

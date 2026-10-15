@@ -117,6 +117,14 @@ least half of the larger one's events. Each case's bar is `BARS` in `clusters/te
 rules beside F1 are in `clusters/score.py`. The answers, stored clusters and score go to
 `clusters/runs/<time>/` (git-ignored) and one line per case to the eval ledger.
 
+Free replay, $0, saved answers (any earlier run's folder under `clusters/runs/`, or one made of
+the newest answer per case):
+
+    CLUSTER_ANSWERS=btcopilot/tests/live/clusters/runs/<folder> LIVE_REPLAY=only \
+        SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt uv run pytest btcopilot/tests/live/clusters --e2e
+
+Paid run, about half a cent per case on Gemini (calls the model):
+
     LIVE_REPLAY=only GOOGLE_GEMINI_API_KEY=... SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt \
         uv run pytest btcopilot/tests/live/clusters --e2e
 

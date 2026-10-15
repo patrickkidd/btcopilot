@@ -92,6 +92,8 @@ class Event:
     description: str | None = None
     dateTime: str | None = None
     endDateTime: str | None = None
+    dateCertainty: DateCertainty = DateCertainty.Certain
+    location: str | None = None
     symptom: VariableShift | None = None
     anxiety: VariableShift | None = None
     relationship: RelationshipKind | None = None
@@ -101,6 +103,8 @@ class Event:
     item: NotedFact | None = None
     confidence: float | None = None
 ```
+
+`dateCertainty` says how far `dateTime` can be trusted when events are matched: `unknown` (any date matches), `approximate` (within 365 days), `certain` (within 7 days, the default); how the coach marks it is [Oracle: R-0855]. `location` is where the event happened, free text.
 
 `item` is set only on a noted event that records an item of the basic data
 about its `person`: one of `schooling`, `work`, `health`, `places` (where they
