@@ -14,6 +14,10 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
 What the report's readings rest on, from Kerr's evaluation (FE 3101-3119, ten questions) and
 Bowen's method. Each point names the book lines it comes from. [Oracle: R-0850]
 
+The full framing, with the Kerr passages it rests on by book and line, lives in the private corpus
+file `research/case-report-cards/FORMULATION-2026-10-14.md` (R-0850). Every future case report
+change starts from that file, not from this summary, and improves it as the work goes on.
+
 1. The pattern. Kerr names three patterns that carry a family's anxiety into a symptom: illness
    in a spouse, conflict between the spouses, a problem in a child (FE 1905); which one
    predominates decides where the symptom shows (FE 1907). One partner over-functioning while the
