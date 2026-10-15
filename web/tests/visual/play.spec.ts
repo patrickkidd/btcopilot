@@ -586,8 +586,8 @@ test.describe("a move between two people further apart than the screen is wide",
     await page.route(/\/app\/timeline(\?diagram_id=\d+)?$/, async (route) => {
       const tl = await (await route.fetch()).json();
       ids = joined(tl, [["Hugo", "Wanda"]], WIDE, "Hs0", "Hs15");
-      // the first move's date also holds a divorce, told first, as "Louann and
-      // Wally divorced; Wally estranged from family" is
+      // the first move's date also holds a divorce, told first, as "Hope and
+      // Hal divorced; Hal moved out of state" is
       const first = tl.events
         .filter((e: { dateTime: string | null }) => e.dateTime)
         .sort((a: { dateTime: string }, b: { dateTime: string }) => a.dateTime.localeCompare(b.dateTime))[0];
