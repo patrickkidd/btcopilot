@@ -48,7 +48,10 @@ HERE = Path(__file__).parent
 ANSWERS = os.environ.get("CLUSTER_ANSWERS")
 LEDGER = Path(os.environ.get("CLUSTER_LEDGER", ledger.PATH))
 GIT = subprocess.run(
-    ["git", "-C", str(HERE), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ["git", "-C", str(HERE), "rev-parse", "HEAD"],
+    capture_output=True,
+    text=True,
+    check=True,
 ).stdout.strip()
 RUN = HERE / "runs" / f"{datetime.datetime.now():%Y-%m-%dT%H%M%S}"
 CASES = load()
@@ -98,7 +101,9 @@ class Asker:
         if self.saved is not None:
             if len(self.answers) == len(self.saved["answers"]):
                 raise LookupError(f"no saved answer for call {len(self.answers) + 1}")
-            answer = from_dict(ClusterListResponse, self.saved["answers"][len(self.answers)])
+            answer = from_dict(
+                ClusterListResponse, self.saved["answers"][len(self.answers)]
+            )
         else:
             try:
                 parsed = gemini_structured_sync(
@@ -194,7 +199,9 @@ def test_grouping_matches_the_expected_clusters(case, board):
         stored = detect_clusters(
             case.data,
             ask,
-            lambda n, error, _: refused.append(f"answer {n}: {error.check.value}: {error}"),
+            lambda n, error, _: refused.append(
+                f"answer {n}: {error.check.value}: {error}"
+            ),
             case.said,
         ).clusters
     except ClusterError as failed:

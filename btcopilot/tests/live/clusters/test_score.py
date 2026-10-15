@@ -14,7 +14,9 @@ DENSE = next(case for case in load() if case.name == "dense")
 DEATH, LEAVING = (e.eventIds for e in DENSE.expected)
 
 
-def stored(ids, name="A change in the household", source=ClusterSource.Model, opening=None):
+def stored(
+    ids, name="A change in the household", source=ClusterSource.Model, opening=None
+):
     return Cluster(
         id=f"c{ids[0]}",
         title=name,
@@ -50,7 +52,10 @@ def test_a_missing_cluster_costs_recall():
 def test_an_extra_cluster_costs_precision():
     # R-0856
     result = scored(stored(DEATH), stored(LEAVING), stored([21, 22, 23]))
-    assert (result.clusters.precision, result.clusters.recall) == (pytest.approx(2 / 3), 1.0)
+    assert (result.clusters.precision, result.clusters.recall) == (
+        pytest.approx(2 / 3),
+        1.0,
+    )
     assert result.clusters.f1 == pytest.approx(0.8)
 
 
@@ -91,9 +96,14 @@ def test_the_rules_that_are_not_f1_are_each_named():
 @once
 def test_the_persons_period_stored_as_theirs_holds_unless_an_app_period_shares_its_days():
     # R-0853
-    hers = stored([9, 10, 11, 12], name="the hard years at home", source=ClusterSource.User)
+    hers = stored(
+        [9, 10, 11, 12], name="the hard years at home", source=ClusterSource.User
+    )
     period = Theirs("the hard years at home", 1988, 1989)
-    assert scored(hers, stored(LEAVING), theirs=[period]).missed(frozenset({Rule.Theirs})) == []
+    assert (
+        scored(hers, stored(LEAVING), theirs=[period]).missed(frozenset({Rule.Theirs}))
+        == []
+    )
     overlaid = scored(hers, stored([11, 12, 13]), theirs=[period])
     assert overlaid.missed(frozenset({Rule.Theirs}))
 

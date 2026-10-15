@@ -398,7 +398,8 @@ class Reader {
       if (at < 0) loose.unshift(q);
       else if (!placed.has(at)) placed.set(at, q);
     }
-    const mothersFirst = sides.map((_, i) => i).sort((a, b) => (sides[a].parent.gender === "female" ? 0 : 1) - (sides[b].parent.gender === "female" ? 0 : 1));
+    const later = (i: number) => (sides[i].parent.gender === "female" ? 0 : 1);
+    const mothersFirst = sides.map((_, i) => i).sort((a, b) => later(a) - later(b));
     for (const q of loose) {
       const open = mothersFirst.find((i) => !placed.has(i));
       if (open !== undefined) placed.set(open, q);

@@ -82,10 +82,14 @@ def test_the_provider_is_anthropic_unless_the_flag_says_bedrock(anthropic_machin
         provider.provider()
 
 
-def test_on_the_subscription_a_text_call_is_answered_by_claude_code_at_no_cost(subscribed):
+def test_on_the_subscription_a_text_call_is_answered_by_claude_code_at_no_cost(
+    subscribed,
+):
     # R-0568
     claude = subscribed({"type": "text", "text": "Ada moved to Leeds."})
-    said = llmutil.claude_text_sync("Who moved?", system_instruction="Answer in one line.")
+    said = llmutil.claude_text_sync(
+        "Who moved?", system_instruction="Answer in one line."
+    )
 
     assert said.words == "Ada moved to Leeds."
     assert [c[:2] for c in claude.commands] == [["claude", "-p"]]

@@ -178,17 +178,15 @@ OUTSIDE_WORDS = (
 # reads as the person's trouble whatever their descriptions say.
 STEM = 4
 COMMON_WORDS = frozenset(
-    {
-        "about", "after", "again", "always", "another", "away", "back", "became",
-        "been", "before", "could", "during", "family", "from", "going", "have",
-        "home", "into", "less", "life", "more", "never", "only", "onto", "over",
-        "period", "said", "since", "than", "that", "their", "them", "then",
-        "they", "this", "time", "until", "were", "when", "while", "with",
-        "would", "year", "years",
+    (
+        "about after again always another away back became been before could "
+        "during family from going have home into less life more never only onto "
+        "over period said since than that their them then they this time until "
+        "were when while with would year years "
         # Words for relatives, which name who changed, never the trouble.
-        "child", "children", "daughter", "husband", "parent", "parents",
-        "partner", "sibling", "siblings", "spouse", "wife",
-    }
+        "child children daughter husband parent parents partner sibling "
+        "siblings spouse wife"
+    ).split()
 )
 
 
@@ -856,7 +854,7 @@ def _fault(
     stored: dict[str, dict],
     claimed: set[str],
     told: set[str],
-    unsure_ids: set[int] = frozenset(),
+    unsure_ids: set[int],
 ) -> tuple[str, ClusterCheck] | None:
     """What makes one returned cluster unusable before any merge, or nothing."""
     unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
@@ -1004,8 +1002,12 @@ class Age:
 
 
 DECADES = {
-    "teens": 10, "twenties": 20, "thirties": 30, "forties": 40, "fifties": 50,
-    "sixties": 60, "seventies": 70, "eighties": 80, "nineties": 90,
+    word: 10 * n
+    for n, word in enumerate(
+        "teens twenties thirties forties fifties sixties seventies eighties "
+        "nineties".split(),
+        1,
+    )
 }
 # The ages in a part of a decade; the teens start at thirteen.
 PARTS = {"early": (0, 3), "mid": (4, 6), "late": (7, 9), None: (0, 9)}

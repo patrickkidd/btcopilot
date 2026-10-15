@@ -92,7 +92,7 @@ def staged() -> list[str]:
 
 def index_stale() -> bool:
     added = blob("diff", "--cached", "-U0", "--diff-filter=ACMR", "--", ".", f":!{INDEX}")
-    if INDEX in staged() or not any(CITATION.match(l) for l in added.splitlines()):
+    if INDEX in staged() or not any(CITATION.match(line) for line in added.splitlines()):
         return False
     tool = Path(__file__).resolve().parent / "oracleindex.py"
     return subprocess.run(

@@ -74,9 +74,10 @@ def _event_head(event: dict) -> list[str]:
     is about: enough to tell it from another without saying what happened. A
     date not marked certain says so beside it, so no reader takes it as exact
     [Oracle: R-0855]."""
-    parts = [str(event["id"]), date_text(event.get("dateTime")) or "undated"]
+    written = date_text(event.get("dateTime"))
+    parts = [str(event["id"]), written or "undated"]
     certainty = enum_val(event.get("dateCertainty"))
-    if parts[1] != "undated" and certainty and certainty != DateCertainty.Certain:
+    if written and certainty and certainty != DateCertainty.Certain:
         parts.append(f"({certainty})")
     end = date_text(event.get("endDateTime"))
     if end:

@@ -159,16 +159,29 @@ def score(
             )
         elif c.name == plain_name(ModelCluster(eventIds=c.eventIds), when):
             result.misses.append(
-                (Rule.TroubleName, f"{c.name!r} is the plain name the code fell back to")
+                (
+                    Rule.TroubleName,
+                    f"{c.name!r} is the plain name the code fell back to",
+                )
             )
     for c in ours_of(stored):
-        for field_, text in (("name", c.name), ("summary", c.summary), ("reason", c.reason)):
+        for field_, text in (
+            ("name", c.name),
+            ("summary", c.summary),
+            ("reason", c.reason),
+        ):
             if text and voiced(text):
-                result.misses.append((Rule.Voice, f"{field_} {text!r} says {voiced(text)!r}"))
+                result.misses.append(
+                    (Rule.Voice, f"{field_} {text!r} says {voiced(text)!r}")
+                )
             if text and caused(text):
-                result.misses.append((Rule.Cause, f"{field_} {text!r} says {caused(text)!r}"))
+                result.misses.append(
+                    (Rule.Cause, f"{field_} {text!r} says {caused(text)!r}")
+                )
             if text and ided(text):
-                result.misses.append((Rule.Id, f"{field_} {text!r} holds {ided(text)!r}"))
+                result.misses.append(
+                    (Rule.Id, f"{field_} {text!r} holds {ided(text)!r}")
+                )
     for c in stored:
         opening = every.get(c.openingEventId)
         if opening is not None and unsure(opening):
@@ -195,7 +208,9 @@ def score(
     periods = [_as_cluster(n, p.name, within(data, p)) for n, p in enumerate(theirs)]
     found = match_clusters(hers, periods, identity)
     for missing in found.gt_unmatched:
-        result.misses.append((Rule.Theirs, f"{missing.title!r} is not stored as theirs"))
+        result.misses.append(
+            (Rule.Theirs, f"{missing.title!r} is not stored as theirs")
+        )
     for c, _ in found.matched_pairs:
         days = span_of([when[i] for i in c.eventIds])
         for other in ours:

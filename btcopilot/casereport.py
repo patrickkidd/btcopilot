@@ -465,17 +465,18 @@ def _opener(data: DiagramData, event_id: int) -> str:
     pid = event.get("person")
     if pid is None:
         return "its opening names no person"
+    bonds = [
+        b for b in data.pair_bonds if pid in (b.get("person_a"), b.get("person_b"))
+    ]
     partners = [
         _who(data, other)
-        for b in data.pair_bonds
-        if pid in (b.get("person_a"), b.get("person_b"))
+        for b in bonds
         for other in (b.get("person_a"), b.get("person_b"))
         if other not in (pid, None)
     ]
     children = [
         f"{_who(data, p['id'])} born {_year(profile.birth(data, p['id']))}"
-        for b in data.pair_bonds
-        if pid in (b.get("person_a"), b.get("person_b"))
+        for b in bonds
         for p in data.people
         if p.get("parents") == b["id"]
     ]
@@ -486,8 +487,12 @@ def _opener(data: DiagramData, event_id: int) -> str:
     )
 
 
+def _names_of(data: DiagramData) -> dict:
+    return {p["id"]: p.get("name") or "unnamed" for p in data.people}
+
+
 def _named(data: DiagramData) -> dict:
-    return {p["id"]: f"{p['id']} {p.get('name') or 'unnamed'}" for p in data.people}
+    return {pid: f"{pid} {name}" for pid, name in _names_of(data).items()}
 
 
 def kin(data: DiagramData) -> str:
@@ -550,21 +555,20 @@ def triangles(data: DiagramData) -> str:
     """One line per three people the inside and outside marks put together,
     each mark dated with who was inside and who outside, so a card names a
     triangle only when the events mark it (R-0850)."""
-    named = {p["id"]: p.get("name") or "unnamed" for p in data.people}
+    named = _names_of(data)
     marked: dict[frozenset, list[str]] = {}
     for event in sorted(data.events, key=_dated):
         kind = _marked(event)
         if kind not in TRIANGLE or event.get("person") is None:
             continue
         mover = event["person"]
-        others = [*(event.get("relationshipTargets") or []), *(event.get("relationshipTriangles") or [])]
+        targets = event.get("relationshipTargets") or []
+        thirds = event.get("relationshipTriangles") or []
         if kind is RelationshipKind.Inside:
-            inside = [mover, *(event.get("relationshipTargets") or [])]
-            outside = event.get("relationshipTriangles") or []
+            inside, outside = [mover, *targets], thirds
         else:
-            inside = others
-            outside = [mover]
-        marked.setdefault(frozenset([mover, *others]), []).append(
+            inside, outside = [*targets, *thirds], [mover]
+        marked.setdefault(frozenset([mover, *targets, *thirds]), []).append(
             f"{_year(event)} {_names(named, inside)} inside, {_names(named, outside)} outside{_words(event)}"
         )
     return "\n".join(
@@ -579,7 +583,7 @@ def pairs(data: DiagramData) -> str:
     them by date, who made it, and its words, from the stored events alone,
     so a card lays the people out in time order (R-0850, R-0864). Pairs
     farther out are counted; their marks are on the event lines."""
-    named = {p["id"]: p.get("name") or "unnamed" for p in data.people}
+    named = _names_of(data)
     near = coverage.nearest(data)
     marked: dict[frozenset, list[str]] = {}
     for event in sorted(data.events, key=_dated):

@@ -1649,23 +1649,25 @@ RAW_ID = re.compile(
 )
 
 
+def _first(pattern: re.Pattern, text: str) -> str | None:
+    found = pattern.search(text)
+    return found and found.group(0)
+
+
 def ided(text: str) -> str | None:
     """The first raw id in the text outside quotation marks, or None (R-0864)."""
-    found = RAW_ID.search(QUOTED.sub("", text))
-    return found and found.group(0)
+    return _first(RAW_ID, QUOTED.sub("", text))
 
 
 def caused(text: str) -> str | None:
     """The first word of the text that gives a cause or a why, or None."""
-    found = CAUSE.search(text)
-    return found and found.group(0)
+    return _first(CAUSE, text)
 
 
 def voiced(text: str) -> str | None:
     """The first word outside quotation marks in which the text speaks as the
     person, or None (R-0860)."""
-    found = FIRST_PERSON.search(QUOTED.sub("", text))
-    return found and found.group(0)
+    return _first(FIRST_PERSON, QUOTED.sub("", text))
 
 
 def plain(text: str) -> str:
