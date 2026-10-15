@@ -1677,30 +1677,58 @@ def test_a_period_the_person_names_is_stored_as_theirs(discussion):
     assert (cluster["startDate"], cluster["endDate"]) == ("2005-03-01", "2006-08-01")
 
 
-def test_a_regroup_leaves_the_persons_period_as_it_is():
+# Rowan names the long slow crawl from 2008; an earlier reading stored it
+# from 2010. The years away, a second period of hers, share its days.
+CRAWL = "the long slow crawl"
+CRAWL_SAID = "From 2008 to 2011 was the long slow crawl."
+AWAY_SAID = "From 2009 to 2011 were the years away."
+
+
+def test_a_regroup_reads_the_persons_period_again_in_place_of_its_stored_copy():
     # R-0853
-    stored = asdict(
-        Cluster(
-            id="c1",
-            title=DIVORCE,
-            name=DIVORCE,
-            summary=ROWAN_SAID,
-            reason=ROWAN_SAID,
-            eventIds=[40, 41, 42],
-            source=ClusterSource.User,
-        )
+    stored = Cluster(
+        id="c1",
+        title=CRAWL,
+        name=CRAWL,
+        summary="When was the most going on?",
+        reason="When was the most going on?",
+        eventIds=[52, 53],
+        startDate="2010-01-01",
+        endDate="2011-02-07",
+        source=ClusterSource.User,
     )
-    data = asked(record(*ASH.events), 7)
-    data.clusters = [stored]
+    data = asked(
+        record(
+            moment(50, "2008-09-01", person=1),
+            moment(51, "2009-06-01", person=2),
+            moment(52, "2010-01-01", person=1),
+            moment(53, "2011-02-07", person=1),
+            clusters=[stored],
+        ),
+        7,
+    )
     seen = []
-    with replies(ClusterListResponse(periods=[period(7, years=(2004, 2006))])) as ask:
+    periods = [
+        period(7, name=CRAWL, words=CRAWL_SAID, years=(2008, 2011)),
+        period(7, name="the years away", words=AWAY_SAID, years=(2009, 2011)),
+    ]
+    with replies(ClusterListResponse(periods=periods)) as ask:
         result = detect_clusters(
-            data, ask, heard(seen), [Answer(7, "When?", ROWAN_SAID)]
+            data, ask, heard(seen), [Answer(7, MOST, f"{CRAWL_SAID} {AWAY_SAID}")]
         )
     assert '"note": "the person drew this period"' in ask.call_args_list[0].args[0]
     assert seen == [(1, ClusterCheck.Theirs)]
     dates = {e["id"]: e["dateTime"] for e in data.events}
-    assert _deltas(data.clusters, result.clusters, dates) == []
+    changed = {
+        (d["item_id"], d["field"]): d["after"]
+        for d in _deltas(data.clusters, result.clusters, dates)
+    }
+    assert changed == {
+        ("c1", "eventIds"): [50, 51, 52, 53],
+        ("c1", "startDate"): "2008-09-01",
+        ("c1", "summary"): CRAWL_SAID,
+        ("c1", "reason"): CRAWL_SAID,
+    }
 
 
 def test_an_unsupported_period_of_theirs_is_kept_and_judged_unsupported():

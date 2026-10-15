@@ -98,7 +98,10 @@ _log = logging.getLogger(__name__)
 # unknown date is cleared without asking again, and a second call sees the
 # first answer, so every record regroups on its next event change
 # [Oracle: R-0850, R-0856].
-DETECTION_VERSION = 15
+# 16: the person's period read again from their answer replaces its stored
+# copy's events and sentence instead of being refused as overlapping it
+# [Oracle: R-0853].
+DETECTION_VERSION = 16
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -1058,6 +1061,7 @@ class Named:
     period: TheirPeriod
     eventIds: list[int]
     sentence: str
+    replaces: str | None = None
 
 
 def _read_theirs(
@@ -1069,17 +1073,24 @@ def _read_theirs(
     inside its years, never reshaped [Oracle: R-0853]. One with no readable
     years, not in their own words, too few events, or sharing days with a
     period of theirs already stored or read first is not written; each such is
-    a fault, never asked again, since asking cannot add years to their words."""
+    a fault, never asked again, since asking cannot add years to their words.
+    A period read again under the name of one of theirs already stored is
+    that period, not one beside it: the new reading replaces the stored
+    copy's events and sentence."""
     events = _dated(data)
     when = {e.id: parse_date(e.dateTime) for e in events}
     messages = {one.messageId: one for one in said}
     born = birth(data)
+    stored = [c for c in data.clusters if isinstance(c, dict) and not _regroupable(c)]
+    copies = {
+        _title(c).casefold(): str(c["id"])
+        for c in stored
+        if _source(c) is ClusterSource.User and not c.get("setAside")
+    }
     taken = [
-        span
-        for cluster in data.clusters
-        if isinstance(cluster, dict)
-        and not _regroupable(cluster)
-        and (span := span_of([when[i] for i in cluster.get("eventIds") or [] if i in when]))
+        (str(c.get("id")), span)
+        for c in stored
+        if (span := span_of([when[i] for i in c.get("eventIds") or [] if i in when]))
     ]
     kept: list[Named] = []
     faults: list[ClusterError] = []
@@ -1142,7 +1153,9 @@ def _read_theirs(
             )
             continue
         span = span_of([when[i] for i in ids])
-        if any(overlapping(span, other) for other in taken):
+        copy = copies.pop(period.name.casefold(), None)
+        others = [(owner, s) for owner, s in taken if owner is None or owner != copy]
+        if any(overlapping(span, other) for _, other in others):
             fault(
                 f"The person's period {period.name!r} shares days with a period "
                 "of theirs already stored.",
@@ -1151,8 +1164,8 @@ def _read_theirs(
                 ids,
             )
             continue
-        taken.append(span)
-        kept.append(Named(period=period, eventIds=ids, sentence=sentence))
+        taken = [*others, (None, span)]
+        kept.append(Named(period=period, eventIds=ids, sentence=sentence, replaces=copy))
     return kept, faults
 
 
@@ -1195,10 +1208,12 @@ def _screen(
     unsure_ids = {e.id for e in free if unsure(e)}
     when = {e.id: parse_date(e.dateTime) for e in free}
     full = {e.id: parse_date(e.dateTime) for e in _dated(data)}
+    replaced = {one.replaces for one in named}
     theirs = [
         (cluster, span)
-        for cluster in stored.values()
-        if not _regroupable(cluster)
+        for cluster_id, cluster in stored.items()
+        if cluster_id not in replaced
+        and not _regroupable(cluster)
         and (span := span_of([when[i] for i in cluster.get("eventIds") or [] if i in when]))
     ] + [
         ({"name": one.period.name}, span_of([full[i] for i in one.eventIds]))
@@ -1298,8 +1313,11 @@ def _answered_runs(
     judged [Oracle: R-0856, R-0850]."""
     held = [set(c.eventIds) for c in response.clusters]
     held += [set(one.eventIds) for one in named]
+    replaced = {one.replaces for one in named}
     held += [
-        set(c.get("eventIds") or []) for c in stored.values() if not _regroupable(c)
+        set(c.get("eventIds") or [])
+        for cluster_id, c in stored.items()
+        if cluster_id not in replaced and not _regroupable(c)
     ]
     why = {d.run: d.reason.strip() for d in response.declined if d.reason.strip()}
     unanswered, declined = [], []
@@ -1583,7 +1601,7 @@ def detect_clusters(
             _log.info(f"Regrouped {cluster.name!r}: {cluster.change}")
     dated = {e.id: e.dateTime for e in _dated(data)}
     for one in screened.named:
-        cluster_id = next_id(taken)
+        cluster_id = one.replaces or next_id(taken)
         taken.add(cluster_id)
         clusters.append(
             Cluster(

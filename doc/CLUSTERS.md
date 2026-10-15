@@ -117,11 +117,13 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    the first and last of them. It is not written, and is a cluster_refused row
    instead, when the message is not one of the answers, the name or sentence is
    not the person's words in order, the years are missing, the years hold fewer
-   than three events, or it shares days with a stored period of theirs or one
-   read before it in the same answer. None of these is asked again. The app's
-   periods never share their days. Once written it is the person's like any
-   other: never reshaped, judged by `judge` with the same checks, kept and shown
-   when unsupported.
+   than three events, or it shares days with another stored period of theirs
+   or one read before it in the same answer. None of these is asked again. A
+   period read again under the name of one of theirs already stored is that
+   period: the new reading replaces the stored copy's events, dates and
+   sentence under its id. The app's periods never share their days. Once
+   written it is the person's like any other: never reshaped by the app,
+   judged by `judge` with the same checks, kept and shown when unsupported.
 8. `judge(cluster, data)` reads any stored period against the data: its
    supporting shifts, whether they are one person's run, its opening (the stored
    `openingEventId`, else its first change in the family), and the days from the
@@ -136,13 +138,13 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
 
 After any coach turn that adds or changes an event, when the cache key (the
 events' dates, date certainty and shifts, the message ids of the person's
-answers to when the most was going on, plus `DETECTION_VERSION`, now 15)
+answers to when the most was going on, plus `DETECTION_VERSION`, now 16)
 differs from the stored one; `flask admin diagrams regroup` reruns diagrams that
 are behind. Version 12 regroups every diagram on its next event change, so
 periods set aside only for too few supporting shifts are offered again; version
 13 does again, with runs of fewer than three supporting shifts in the hint;
 version 14 does again, with events of unknown date offered, the wider naming
-check, and answers found through the change log; version 15 does again, with a run seeded only at a shift whose date is known, the people offered with what each is to the person, and every run of three or more supporting shifts returned as a period or declined with a reason [Oracle: R-0850, R-0856]. A turn
+check, and answers found through the change log; version 15 does again, with a run seeded only at a shift whose date is known, the people offered with what each is to the person, and every run of three or more supporting shifts returned as a period or declined with a reason [Oracle: R-0850, R-0856]; version 16 does again, with the person's period read again from their answer under the same name replacing its stored copy's events and sentence, no longer refused as overlapping it; the no-overlap rule holds between different periods [Oracle: R-0853]. A turn
 that only closes the `most_going_on` question, with no event change, does not
 regroup; the next event change or `regroup` writes the person's periods.
 
