@@ -5,7 +5,8 @@ pattern in one sentence, with no chronology of more than one sentence.
 
 The family: a grandfather dies, and a few months later the speaker (Wren)
 stops going to classes; years later she has panic attacks at work. A pass is a
-main_guess impression, stored as raised, whose first sentence names Wren and
+main_guess impression, stored as raised, whose first sentence names Wren, or
+calls her "you" as the coach speaks to her (R-0860), and
 one of her symptoms (panic attacks, stopping classes, sleeping most days),
 whose later text names the pattern (a link of her symptoms to her
 grandfather's death, her mother or the distance from her), and in which at
@@ -62,15 +63,17 @@ def summary(coach) -> dict | None:
 
 
 SYMPTOM = re.compile(r"panic|classes|slept|sleep", re.I)
+PERSON = re.compile(r"\bWren\b|\byou\b", re.I)
 PATTERN = re.compile(r"grandfather|Silas|death|died|loss|mother|Ada|distance|calling", re.I)
 WHEN = re.compile(r"\b(19|20)\d\d\b|\b(January|February|March|April|May|June|July|August|September|October|November|December)\b")
 
 
 def reads(main: dict, events: list[dict]) -> tuple[bool, bool, bool]:
-    """Opens on Wren and her symptom, names the pattern after it, and tells
-    no more than one sentence of chronology."""
+    """Opens on Wren, or "you" in the coach's voice (R-0860), and her symptom,
+    names the pattern after it, and tells no more than one sentence of
+    chronology."""
     first, *rest = re.split(r"(?<=[.!?])\s+", main["text"].strip())
-    opens = SYMPTOM.search(first) is not None and "Wren" in first
+    opens = SYMPTOM.search(first) is not None and PERSON.search(first) is not None
     pattern = any(PATTERN.search(one) for one in rest)
     return opens, pattern, sum(WHEN.search(one) is not None for one in [first, *rest]) <= 1
 
