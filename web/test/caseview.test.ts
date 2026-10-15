@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { BRINGS, cards, NOT_ASKED, NOT_ENOUGH, NOT_SAID, quoted, rail, UNSURE } from "../src/case";
+import { BRINGS, cards, dashboard, NOT_ASKED, NOT_ENOUGH, NOT_SAID, quoted, rail, UNSURE } from "../src/case";
 import { Card, caseView, ORDER, TOO_LITTLE } from "../src/caseview";
 import { esc } from "../src/dom";
 import {
@@ -460,4 +460,37 @@ it("never tells the sides apart by a word in the note: a note resting on no side
   expect(placed[1].note).toEqual({ guess: null, needs: "your mother's parents' names" });
   tl.asked_questions = [side("s1", "One side.", []), side("s2", "The other side.", [2, 3])];
   expect(caseView(tl, ONE, "").sideNotes.map((s) => s.note.guess?.text)).toEqual(["The other side.", "One side."]);
+});
+
+// R-0694, R-0716, R-0866
+it("titles card four for the couple only when the person is married now, else for the parents and partners", () => {
+  const married = caseView(halloran(), ONE, "");
+  expect(cards(married, false)).toContain(`<p class="label">4 · The couple since they met</p>`);
+  expect(rail(married)).toContain(`<b>4</b>The couple</button>`);
+  const tl = halloran();
+  tl.pair_bonds = tl.pair_bonds.filter((b) => b.id !== 33);
+  const single = caseView(tl, ONE, "");
+  expect(cards(single, false)).toContain(`<p class="label">4 · Nora&#39;s parents and partners, stage by stage</p>`);
+  expect(rail(single)).toContain(`<b>4</b>Parents and partners</button>`);
+});
+
+// R-0850
+it("shows on the Executive Summary a chip only for the people its words name, by name or by what they are to the person, or the coach cited", () => {
+  const tl = halloran();
+  const summary = (text: string) => [on(text, CaseReportCard.MainGuess, [112, 209].map((id) => ({ kind: EvidenceKind.Event, id, label: "" })))];
+  const shown = () => [...body(cards(caseView(tl, ONE, ""), false), Card.Main).matchAll(/data-kind="person" data-target="(\d+)"/g)].map((m) => m[1]);
+  tl.asked_questions = summary("Nora's panic began after Lily was born.");
+  expect(shown()).toEqual(["11"]);
+  tl.asked_questions = summary("Your panic began after your daughter was born, and you stopped visiting your mother.");
+  expect(shown()).toEqual(["11", "3"]);
+  tl.asked_questions = summary("Your panic began after Lily was born.");
+  tl.asked_questions[0].evidence.push({ kind: EvidenceKind.Person, id: 3, label: "" });
+  expect(body(cards(caseView(tl, ONE, ""), false), Card.Main)).toContain('data-kind="person" data-target="3"');
+});
+
+// R-0697
+it("leaves the card's title off the family picture beside the cards, so it shows once", () => {
+  const v = caseView(halloran(), ONE, "");
+  expect(dashboard(v)).not.toContain("Who is in the family");
+  expect(cards(v, true)).toContain(`<p class="label">2 · Who is in the family</p>`);
 });

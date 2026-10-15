@@ -112,6 +112,8 @@ export interface Guess {
   text: string;
   facts: Fact[];
   people: Who[];
+  /** The people its chips show: those the coach cited, and those of its events its words name. */
+  shown: Who[];
   clusters: ClusterRef[];
   /** Whose words and when, as the message it rests on is labelled: "You said, 21 Sep". */
   said: string | null;
@@ -171,6 +173,8 @@ export interface CaseView {
   family: Stated;
   /** The coach's card on what brought the person (R-0850), or null when not asked yet. */
   brought: Guess | null;
+  /** Whether the person is married now, as the picture draws it (R-0694). */
+  married: boolean;
   /** The coach's one statement on the person's own couple from its early years,
    * and what the diagram still needs when it holds too little for one (R-0850). */
   couple: Stated;
@@ -218,6 +222,16 @@ function pronouns(p: Person): { him: string; his: string } {
   return { him: "them", his: "their" };
 }
 
+/** What someone is to the person, as the cards say it: her word, his word,
+ * a word for either and a word for the group (R-0850). */
+type Kin = [string, string, string, string];
+const PARENT: Kin = ["mother", "father", "parent", "parents"];
+const GRANDPARENT: Kin = ["grandmother", "grandfather", "grandparent", "grandparents"];
+const SIBLING: Kin = ["sister", "brother", "sibling", "siblings"];
+const AUNT: Kin = ["aunt", "uncle", "", ""];
+const PARTNER: Kin = ["wife", "husband", "partner", "spouse"];
+const CHILD: Kin = ["daughter", "son", "child", "children"];
+
 class Reader {
   readonly family: Family;
   readonly people = new Map<number, Person>();
@@ -251,6 +265,36 @@ class Reader {
   dead = (id: number) => this.family.died(this.people.get(id)!) !== null;
 
   event = (id: number) => this.tl.events.find((e) => e.id === id);
+
+  /** What each of the person's close family is to them, in the words a card names them by. */
+  private kinWords?: Map<number, string[]>;
+  kin(id: number): string[] {
+    if (this.kinWords) return this.kinWords.get(id) ?? [];
+    const words = (this.kinWords = new Map<number, string[]>());
+    const add = (ids: number[], [her, him, either, all]: Kin) =>
+      ids.forEach((i) => {
+        const g = this.people.get(i)?.gender;
+        const own = g === "female" ? [her, `${her}s`] : g === "male" ? [him, `${him}s`] : [her, him];
+        words.set(i, [...(words.get(i) ?? []), ...own, either, all].filter(Boolean));
+      });
+    const s = this.subject.id;
+    const kids = (b: PairBond | undefined, but: number) => (b ? this.childrenOf(b).map((c) => c.id).filter((c) => c !== but) : []);
+    const parents = this.parentsOf(s);
+    const pair = parents ? this.pair(parents) : [];
+    add(pair, PARENT);
+    add([...new Set(pair.flatMap((p) => this.bondsOf(p).flatMap((b) => kids(b, s))))], SIBLING);
+    pair.forEach((p) => {
+      const up = this.parentsOf(p);
+      add(up ? this.pair(up) : [], GRANDPARENT);
+      add(kids(up, p), AUNT);
+    });
+    this.bondsOf(s).forEach((b) => {
+      const other = this.other(b, s);
+      add(other == null ? [] : [other], PARTNER);
+      add(kids(b, s), CHILD);
+    });
+    return words.get(id) ?? [];
+  }
 
   /** A chip's words: the date as sure as the record is, then the event's own
    * label; a self-describing event about someone else says whose it is. */
@@ -309,6 +353,16 @@ class Reader {
     } catch (e) {
       return { layout: null, fault: (e as Error).message };
     }
+  }
+
+  /** The person's marriage now (R-0694): the bond the picture draws solid,
+   * with no later separation or divorce, and both partners alive. */
+  marriage(): PairBond | undefined {
+    const s = this.subject.id;
+    return this.bondsOf(s).find((b) => {
+      const other = this.other(b, s);
+      return other != null && this.tie(b).st === Tie.Married && !this.dead(s) && !this.dead(other);
+    });
   }
 
   /** The person, their partners now, their children, their parents with the
@@ -437,19 +491,27 @@ class Reader {
       .filter((one) => one.kind === EvidenceKind.Event)
       .map((one) => this.event(Number(one.id)))
       .filter((e): e is TimelineEvent => !!e);
-    const named = [
-      ...q.evidence.filter((one) => one.kind === EvidenceKind.Person).map((one) => Number(one.id)),
-      ...events.flatMap((e) => [e.person, e.spouse, e.child, ...e.relationshipTargets, ...e.relationshipTriangles]),
-    ].filter((id): id is number => id != null && id !== this.subject.id && this.people.has(id));
+    const someone = (id: number | null): id is number => id != null && id !== this.subject.id && this.people.has(id);
+    const cited = q.evidence.filter((one) => one.kind === EvidenceKind.Person).map((one) => Number(one.id)).filter(someone);
+    const around = events.flatMap((e) => [e.person, e.spouse, e.child, ...e.relationshipTargets, ...e.relationshipTriangles]).filter(someone);
+    const text = body.join("\n").trim();
+    const who = (ids: number[]) => [...new Set(ids)].map((id) => ({ id, name: this.name(id) }));
     return {
-      text: body.join("\n").trim(),
+      text,
       facts: this.facts(events),
-      people: [...new Set(named)].map((id) => ({ id, name: this.name(id) })),
+      people: who([...cited, ...around]),
+      shown: who([...cited, ...around.filter((id) => names(text, [this.name(id)], "u") || names(text, this.kin(id), "iu"))]),
       clusters,
       said: q.evidence.find((one) => one.kind === EvidenceKind.Statement)?.label || null,
       ...g,
     };
   }
+}
+
+/** Whether the words name someone by any of these, each as a whole word. */
+function names(text: string, words: string[], flags: string): boolean {
+  const any = words.filter(Boolean).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  return any.length > 0 && new RegExp(`(?<![\\p{L}\\p{N}])(?:${any.join("|")})(?![\\p{L}\\p{N}])`, flags).test(text);
 }
 
 const open = (q: AskedQuestion) => q.open;
@@ -493,6 +555,7 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
     main: main && r.guess(main),
     family: r.stated(guessOn(CaseReportCard.Family)),
     brought: brought && r.guess(brought),
+    married: !!r.marriage(),
     couple: r.stated(guessOn(CaseReportCard.Couple)),
     sides: r.sides().map(({ label, still }) => ({ label, still })),
     sideNotes: r.sideNotes(guesses.filter(onCard(CaseReportCard.Sides)).slice(-SIDE_NOTES)),

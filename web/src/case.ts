@@ -21,7 +21,7 @@ export function title(card: Card, v: CaseView): string {
     case Card.Brought:
       return `What brought ${v.name}`;
     case Card.Couple:
-      return "The couple since they met";
+      return v.married ? "The couple since they met" : `${v.name}'s parents and partners, stage by stage`;
     case Card.Sides:
       return "Each parent's own family";
     case Card.Guesses:
@@ -45,7 +45,7 @@ function short(card: Card, v: CaseView): string {
     case Card.Brought:
       return `What brought ${v.him}`;
     case Card.Couple:
-      return "The couple";
+      return v.married ? "The couple" : "Parents and partners";
     case Card.Sides:
       return "Each parent's family";
     case Card.Guesses:
@@ -137,7 +137,7 @@ function bubble(words: string, facts: Fact[] = [], ask: string | null = null): s
 }
 
 const guessBlock = (g: Guess, ask: string | null = null) =>
-  `<div class="gbub">${bubble(g.text, g.facts, ask)}${chips([...g.facts.map(factChip), ...g.clusters.map(clusterChip), ...g.people.map(personChip)])}</div>`;
+  `<div class="gbub">${bubble(g.text, g.facts, ask)}${chips([...g.facts.map(factChip), ...g.clusters.map(clusterChip), ...g.shown.map(personChip)])}</div>`;
 
 /** A cluster under the coach's guess: its chip, then what holds for it and against it (R-0850). */
 const held = (c: Held) => {
@@ -177,7 +177,7 @@ function stated(s: Stated, people = true): string {
   if (s.needs !== null) return `<div class="gbub">${bubble(`${TOO_LITTLE}.`)}</div>${s.needs ? needs(s.needs) : ""}`;
   const g = s.guess;
   if (!g) return notEnough();
-  return `<div class="gbub">${bubble(g.text, g.facts)}${chips([...g.facts.map(factChip), ...(people ? g.people.map(personChip) : [])])}</div>`;
+  return `<div class="gbub">${bubble(g.text, g.facts)}${chips([...g.facts.map(factChip), ...(people ? g.shown.map(personChip) : [])])}</div>`;
 }
 
 /** The top padding of a family's frame on the report, as casereport.css gives it. */
@@ -262,11 +262,11 @@ export function cards(v: CaseView, wide: boolean): string {
 }
 
 /** The family picture for the column or the slide-out, as the approved
- * proposal draws it: the person's family, then each parent's side (R-0697). */
+ * proposal draws it: the person's family, then each parent's side (R-0697);
+ * the family card itself carries the title, so the picture shows none. */
 export function dashboard(v: CaseView): string {
   const sides = v.sides.map((s) => `<div class="side"><p class="sub">${esc(s.label)}</p>${picture(v, s.still, s.label)}</div>`);
-  const name = `${ORDER.indexOf(Card.Family) + 1} · ${title(Card.Family, v)}`;
-  return `<div class="case dash"><section class="level"><p class="label">${esc(name)}</p>${picture(v, v.household, `${v.name}'s family`)}${sides.join("")}</section></div>`;
+  return `<div class="case dash"><section class="level">${picture(v, v.household, `${v.name}'s family`)}${sides.join("")}</section></div>`;
 }
 
 /** A strip item's face: its number, the family button's icon on the family's, its name. */
