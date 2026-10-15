@@ -62,7 +62,9 @@ against their birth date, a single year given as both. Leave both years out
 when their words give none. Their `name` and `words` keep "I", "me" and "my"
 as they said them; the coach's voice below is for your periods only. Never rename, merge, split, shorten or widen a
 period of theirs, and never fold one into yours. Return each one even when a
-period of yours covers the same years: theirs stands and yours gives way. Your periods never share their years. When there are no answers, return no `periods`.
+period of yours covers the same years: theirs stands and yours gives way. Your periods never share their years, and whether they do is read from the
+numbers: only where a run's or period's dates fall between their `startYear` and
+`endYear`. When there are no answers, return no `periods`.
 
 **Name and reason.** Name each period of yours by the change that opened it and
 its years, in words this person would recognise; never by the person's own
@@ -91,7 +93,7 @@ person it touched matters to this family, unless the events say otherwise; two
 shifts are then enough, and a period is never declined for its count alone.
 Without such a change it is not one. Events whose dates are all unknown
 never make a period by themselves: nothing shows they were close in time. Never write
-an id that is not listed below, and never add a detail that is not on the events
+an id that is not listed below, never put an event's id in a `name`, `reason` or `change`, and never add a detail that is not on the events
 you were given.
 
 Return one entry under `clusters` per period of yours: `id` when it grew out of
