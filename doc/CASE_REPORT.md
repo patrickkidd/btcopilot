@@ -11,39 +11,57 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
 
 ## The formulation
 
-1. A cluster is a stretch when the family's chronic anxiety runs above its usual level. A
-   disturbance in its relationships opens it, the family's patterns bind it, and it ends at a
-   new balance, which may hold a symptom. [Oracle: R-0850] FE 1373, 1375, 1389, 921, 1919,
-   1379.
-2. A cluster is evidence in time for the formulation; it is not the formulation itself.
-   [Oracle: R-0850]
-3. The coach's guess states the pattern: which of Kerr's three kinds of dysfunction carried the
-   anxiety (illness in a spouse, marital conflict, impairment of a child), through whom, and
-   when. [Oracle: R-0850] FE 1905.
-4. Over- and under-functioning between two people lies behind illness in a spouse.
-   [Oracle: R-0850] FE 1979.
-5. Distance is a further way anxiety is bound. [Oracle: R-0850] FE 957.
-6. The guess never says why; it says what happened, how, when and where, and may predict.
-   [Oracle: R-0850] FTiCP 1312, 2036.
-7. The event that opens a cluster matters through the relationships it unbalances, more than
-   through the event itself. [Oracle: R-0850] FE 1377.
-8. A cluster may open when someone joins or leaves the family, or when a key member's
-   functioning changes: an addition, a loss, a threatened loss, a departure, a marriage, a
-   cutoff. [Oracle: R-0850] FTiCP 2470, 2474.
-9. Families hide the connection between such events and react with denial when it is shown, so
-   the app shows the dates side by side and lets the person see it. [Oracle: R-0850] FTiCP 2474,
-   2482.
-10. That trouble follows a death over months to years is kept as a hypothesis and tested against
-    the data, which may disprove it. [Oracle: R-0850] FTiCP 2474.
-11. The prognosis lives on card nine, built on the eight cards before it. [Oracle: R-0850]
-    FE 3117, 3425, 3463-3465.
-12. Every reading is marked as the person's ("you said") or the app's, and a card with too little
-    says what it still needs to know. [Oracle: R-0850]
+What the report's readings rest on, from Kerr's evaluation (FE 3101-3119, ten questions) and
+Bowen's method. Each point names the book lines it comes from. [Oracle: R-0850]
+
+1. The pattern. Kerr names three patterns that carry a family's anxiety into a symptom: illness
+   in a spouse, conflict between the spouses, a problem in a child (FE 1905); which one
+   predominates decides where the symptom shows (FE 1907). One partner over-functioning while the
+   other under-functions lies behind the first (FE 1979-1981); distance is a further way anxiety
+   is held (FE 945-947, 957). The coach's guess names the pattern, the nuclear family it runs in
+   (the person's parents with the person as their child, or the person's own couple), and rests
+   it on the relationship marks the events carry.
+2. Through whom and when. The coach's guess lays out the people in time order with the time
+   between them, and never says anything passed, flowed or was transmitted from one to another.
+   It says what happened, how, when and where, never why (FTiCP 1312, 2036).
+3. Triangles. Who sits in which triangle, from the principal triangles each partner grew up in
+   (FE 3225) to the ones that outlive their members (FE 1615). The coach's guess names a
+   triangle only when the events' inside and outside marks show one; otherwise it asks about it
+   on its Open line.
+4. Cutoff and positions in each extended family. How cut off each partner is from each side
+   (FE 3115, 3209): a side the person knows little about is a fact toward cutoff (FE 3205), held
+   as the app's guess. Each person's place among their brothers and sisters, and each parent's
+   (FE 3221, 3461).
+5. Stressors against adaptiveness. How many changes piled up in the family, past and present
+   (FE 3109-3111, 3187, 3435), weighed against how the family has held up: marriages that lasted,
+   people alive and in touch (FE 3229-3231, 3465). Each For line of the coach's guess gives the
+   changes in that cluster's years and who was rearranged around its opening: the opening event
+   matters through the relationships it unbalances (FE 1375-1377).
+6. Onset. Whether the trouble came on fast near events or built slowly (FE 3127, 1373, 3467).
+   When the person says when the trouble is worst or least, that is a fact for or against the
+   pattern (FE 947, 1981, 3447).
+7. The balance after. After a run of raised anxiety the family settles at a new balance, which
+   may hold a symptom (FE 1379, 1381). Each For line says how things stood after its cluster,
+   the symptom included when it went on, as facts; never what the symptom does for anyone.
+8. The clusters are the when. A cluster is a stretch when the family's anxiety ran above its
+   usual level, opened by someone joining or leaving the family or a key member's functioning
+   changing (FE 1375-1377, 1389; FTiCP 2470, 2474). It is the formulation's evidence in time,
+   not the formulation; that trouble follows a loss over months to years is a hypothesis the
+   data may disprove (FTiCP 2474).
+9. Facts side by side, then stop. Families hide the connection between such events and deny it
+   when it is shown (FTiCP 2474, 2482), so a card sets the dated facts beside each other and
+   explains no connection beyond its dates.
+10. The prognosis lives on card nine only, built on the cards before it (FE 3117, 3423-3425), and
+    says what it rests on: one pattern across the years or several (FE 3463), the pile-up against
+    how the family has held up (FE 3465), fast or slow onset (FE 3467). No other card says what
+    will come.
+11. Every reading is marked as the person's ("you said") or the app's, and a card with too little
+    says what it still needs to know.
 
 ## The ten cards
 
 1. Executive Summary: who has the trouble and what it is, then the pattern from card 6 in one
-   sentence.
+   sentence; three sentences at most, no run of events.
 2. The family: one line per household the person grew up in and lives in now, with the one fact
    that turns the list into a reading.
 3. What brought the person: their own words, quoted, with the date.
@@ -53,13 +71,15 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
    With too little it is one line, "Not enough in the diagram yet:" and what it still needs,
    shown as the dashed amber chip. [Oracle: R-0850] FE 3165.
 5. Each parent's family: one statement per side, with its chips.
-6. The coach's guess: one pattern statement (what bound the anxiety, through whom, when), one chip
-   per cluster with "For" and "Against", and the open question naming what it needs to know.
+6. The coach's guess: one pattern statement (what bound the anxiety, in which nuclear family,
+   through whom, when, the people in time order), one chip per cluster with "For" and "Against",
+   and the open question naming what it needs to know; it says nothing of what will come.
 7. The person's part: what the person did, toward whom, with dates, inside the pattern of card 6,
    then the other way it could have gone.
 8. The choice: merged into card 7; no separate card.
-9. What to work on: Kerr's therapeutic focus, built on card 6, then the prognosis; the person's
-   aim as a chip in their words.
+9. What to work on: Kerr's therapeutic focus, built on card 6, saying whether it agrees with the
+   person's aim, then the prognosis with what it rests on; the person's aim as a chip in their
+   words, or no aim line when they have not said one.
 10. The effort: what the person has done since setting the aim and what followed, as dated chips.
 
 ## How the refresh writes them (as built)
@@ -72,8 +92,15 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
   per conversation (the stored one; a conversation with none gets one written then, one extra
   call each), and, while no note is on card 3, the first conversation's opening read raw, each
   message by its number, up to 2000 characters, and for each drawn cluster its supporting shifts
-  (how many, whether all one person's, the days from its opening to the first and last). Never the
-  whole thread.
+  (how many, whether all one person's, the days from its opening to the first and last), the
+  changes in the family in its years by year, and who its opening is about with their partners
+  and children. Beside them, computed from the diagram each time: what each person is to the
+  person and whose side they are on; the person's and each parent's brothers and sisters in birth
+  order; how many events the diagram holds on each side of the family; each triangle the events'
+  inside and outside marks show, with who was inside and outside when; and the relationship events
+  of each pair that includes the person's own family, their parents or grandparents, by date,
+  with pairs farther out counted. Never the whole thread. On the dense stand-in family (125
+  people, 281 events) these blocks add about 6,500 characters.
 - A cluster with fewer than three supporting shifts stays stored and drawn; the shortfall is said
   on its Against line of card 6, in words (A1). One whose supporting shifts are all one person's
   is that person's run: card 6 says so, and its Open line asks about the others in the family then
@@ -86,6 +113,9 @@ are in btcopilot-sources `bowentheory/FE.txt` (Kerr and Bowen, Family Evaluation
   alternative), "Prognosis:" and "Aim:" (card 9).
 - A card that gives a cause or a why is refused and asked for once more; given again with one, it
   is written with those sentences taken out. The words are one list in the code.
+- A card other than card 9 that says what will come (will, expect, likely, predicts, prognosis,
+  outside the person's quoted words), and an Executive Summary of more than three sentences, are
+  refused and asked for once more; refused again, the card keeps what it had.
 - Card 8, the choice, is no longer written or drawn; the page has nine cards, so what to work on
   is numbered 8 on it.
 
