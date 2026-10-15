@@ -468,11 +468,14 @@ const SCROLLER = ".ss-scroll";
 const CONTROLS = "button, input, select, textarea, a[href]";
 
 /** A control as a plain span that looks the same: its classes, its inline
- * style and what it says, nothing it does. */
-function plain(control: Element): HTMLElement {
+ * style, the box the live control is laid out as (a button is a block in the
+ * line, a span is not, so its margins would be lost and the copy come out
+ * shorter than the level it stands for) and what it says, nothing it does. */
+function plain(control: Element, display: string): HTMLElement {
   const span = document.createElement("span");
   span.className = control.className;
   span.setAttribute("style", control.getAttribute("style") ?? "");
+  span.style.display = display;
   span.innerHTML = control.innerHTML;
   return span;
 }
@@ -498,7 +501,8 @@ function snapshot(region: HTMLElement): HTMLElement {
     }
     // every control becomes a plain element drawn the same way, so the copy
     // holds nothing a reader, a screen reader or a test could take for one
-    for (const el of copy.querySelectorAll(CONTROLS)) el.replaceWith(plain(el));
+    const shown = [...child.querySelectorAll(CONTROLS)].map((el) => getComputedStyle(el).display);
+    copy.querySelectorAll(CONTROLS).forEach((el, i) => el.replaceWith(plain(el, shown[i])));
     const live = [...child.querySelectorAll<HTMLElement>(SCROLLER)];
     copy.querySelectorAll<HTMLElement>(SCROLLER).forEach((el, i) => {
       el.dataset.left = String(live[i]?.scrollLeft ?? 0);

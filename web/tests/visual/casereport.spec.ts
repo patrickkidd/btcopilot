@@ -52,7 +52,7 @@ for (const key of FIXTURES)
       test.describe(`${key} at ${size.width} in ${scheme}`, () => {
         test.use({ storageState: stateFor(key), viewport: size, colorScheme: scheme });
 
-        // R-0702, R-0689, R-0690
+        // R-0702, R-0689, R-0690, R-0850
         test("draws every card with its strip item, each chip whole and inside its card, nothing sideways", async ({ page }) => {
           const errors = await open(page);
           const seen = await page.evaluate(() => {
@@ -81,7 +81,8 @@ for (const key of FIXTURES)
             };
           });
           expect([...seen.cards].sort()).toEqual([...seen.strip].sort());
-          expect(seen.strip).toHaveLength(10);
+          // nine cards: the choice is part of the person's own part (R-0850)
+          expect(seen.strip).toHaveLength(9);
           expect(seen.stripRows).toBe(1);
           expect(seen.cut).toEqual([]);
           expect(seen.ellipsis).toBe(0);
@@ -231,12 +232,11 @@ test.describe("the case report's taps", () => {
   });
 
   // R-0700
-  test("a cluster's chip on a card opens it on the timeline with explain offered, and explain opens the play-by-play", async ({ page }) => {
+  test("a cluster's chip on a card opens that cluster's view, as its info button on the timeline does", async ({ page }) => {
     await open(page);
     await page.locator('#case-body .chip[data-kind="cluster"]').first().click();
-    await expect(page.locator("#case-path [data-step]").first()).toBeVisible();
-    await page.locator("#case-caption #cap-play").click();
-    await expect(page.locator("#case-pbp")).toHaveClass(/in/);
+    await expect(page.locator("#case-path .here")).toHaveText("about");
+    await expect(page.locator("#case-view .ss.about")).toBeVisible();
   });
 
   // R-0715
@@ -360,7 +360,7 @@ for (const size of [SIZES[0], { width: 1440, height: 900 }])
       await expect(card.locator(".gbub")).toHaveCount(1);
       await expect(card.locator(".gbub")).toContainText("Since you married Daniel");
       expect((await card.locator(".chips .chip").allTextContents()).sort()).toEqual(
-        ["Jun 2009 · married", "Jun 2011 · Fights over money", "Feb 2014 · Daniel · Lost his job", "May 2012 · Lily born"].sort(),
+        ["Jun 2009 · married", "Jun 2011 · Fights over money", "Feb 2014 · Lost his job", "May 2012 · Lily · born"].sort(),
       );
       // the stage heads of the old list are gone
       await expect(card.locator(".stage")).toHaveCount(0);
