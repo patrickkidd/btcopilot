@@ -452,3 +452,64 @@ def test_the_couple_card_says_one_partner_did_more_as_the_other_did_less_when_th
     coach.record(people=[OWEN], pair_bonds=[WED], events=[*COUPLE, *OVER])
     card = refreshed(coach, "Owen and I married in 2009.")
     assert re.search(r"bills|took over", words(card), re.I) and re.search(r"stopped working|work", words(card), re.I), card
+
+
+def notes(coach, card: str) -> list[dict]:
+    return [q for q in stored(coach).values() if q.get(record.CARD) == card and q.get("text")]
+
+
+def chips(card: dict, kind: str) -> set[str]:
+    return {str(e["id"]) for e in card.get("evidence", []) if e["kind"] == kind}
+
+
+CAUSE = r"because|caused|which is why|so that|led to|as a result|due to"
+I_VOICE = r"\b(I|my|me)\b"
+
+
+@passes(2, of=3)
+def test_the_family_card_is_one_note_with_a_line_per_household_and_a_reading_line(coach):
+    # R-0866, R-0850
+    # pass: one note tagged family, a line for her mother's household and one for her father's, chips on people and events, in the coach's voice, with no cause word
+    formulated(coach)
+    family = notes(coach, "family")
+    note = family[0] if family else {}
+    lines = [line for line in words(note).splitlines() if line.strip()]
+    assert len(family) == 1 and len(lines) >= 3, family
+    assert chips(note, "person") and chips(note, "event"), note
+    assert not re.search(I_VOICE, words(note)) and not re.search(CAUSE, words(note), re.I), note["text"]
+
+
+@passes(2, of=3)
+def test_the_sides_card_is_two_notes_each_resting_on_its_own_sides_people(coach):
+    # R-0866, R-0850
+    # pass: two notes tagged sides; one rests on her mother's side (Ruth, Walt, Ivy), the other on her father's (Nan)
+    formulated(coach)
+    sides = notes(coach, "sides")
+    mother, father = {"5", "6", "7"}, {"8"}
+    rest = [chips(s, "person") | {str(e["id"]) for e in s.get("evidence", []) if e["kind"] == "person"} for s in sides]
+    assert len(sides) == 2, sides
+    assert any(r & mother and not r & father for r in rest) and any(r & father and not r & mother for r in rest), sides
+
+
+@passes(2, of=3)
+def test_a_thin_side_on_the_sides_card_says_not_enough_in_the_diagram_yet_naming_items(coach):
+    # R-0866, R-0850
+    # pass: with every event on her father's side, her mother's side note opens with the too-little line and names what it still needs
+    hale = [
+        told(70, "death", "1996-05-01", 8),
+        told(71, "shift", "1997-01-01", 3, "Stopped going to work", functioning="down"),
+        told(73, "noted", "1999-08-01", 3, "Moved to the coast"),
+    ]
+    formulated(coach, events=hale, clusters=())
+    thin = [s for s in notes(coach, "sides") if s["text"].startswith("Not enough in the diagram yet")]
+    assert len(thin) == 1 and len(thin[0]["text"].split(":", 1)[1].strip()) > 10, notes(coach, "sides")
+
+
+@passes(2, of=3)
+def test_the_couple_card_is_one_note_on_the_early_years_with_event_chips(coach):
+    # R-0866, R-0850
+    # pass: one note tagged couple resting on Wren and Owen's own events (met, married), never her parents' wedding
+    coach.record(people=[OWEN], pair_bonds=[WED], events=[PARENTS_WED, *COUPLE])
+    written(coach, "Owen and I met in 2006 and married three years later; after that I called my mother less.")
+    couple = notes(coach, "couple")
+    assert len(couple) == 1 and chips(couple[0], "event") & {"51", "52"} and "50" not in chips(couple[0], "event"), couple
