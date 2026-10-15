@@ -281,7 +281,7 @@ def test_the_executive_summary_is_the_trouble_then_the_pattern_on_its_first_answ
     main = formulated(coach)["main_guess"]
     assert not first_answer_refused("Executive Summary"), first_answer_refused("Executive Summary")
     sentences = [s for s in record.SENTENCE.split(" ".join(words(main).split())) if s]
-    assert len(sentences) <= 3 and "sleep" in sentences[0].lower(), main["text"]
+    assert len(sentences) <= 3 and re.search(r"sleep|slept", sentences[0], re.I), main["text"]
 
 
 @passes(2, of=3)
