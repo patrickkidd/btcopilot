@@ -505,8 +505,11 @@ RECORD = record(
 )
 
 
-def answers(*clusters: ModelCluster) -> ClusterListResponse:
-    return ClusterListResponse(clusters=list(clusters))
+def answers(*clusters: ModelCluster, declined=()) -> ClusterListResponse:
+    return ClusterListResponse(
+        clusters=list(clusters),
+        declined=[Declined(run=run, reason="nothing piles up") for run in declined],
+    )
 
 
 def named(
@@ -812,6 +815,7 @@ MERGED = answers(named(*ALL_HALE, name="The women of this family", change=MERGED
 PROPOSED = answers(
     named(2, 3, 4, 5, name="After the marriage"),
     named(9, 10, 12, 13, 14, name="Nell and Theo"),
+    declined=["r2"],
 )
 
 
@@ -887,6 +891,7 @@ def test_the_grandfathers_death_joins_the_run_it_fell_in():
         answers(
             named(2, 3, 4, 5, name="After the marriage"),
             named(9, 10, 11, 12, 13, 14, name="After Walter's death", change=joined),
+            declined=["r2"],
         )
     ) as ask:
         result = detect_clusters(HALE, ask)
@@ -902,6 +907,7 @@ def test_the_early_marriage_joined_to_the_first_run_passes_the_check():
         answers(
             named(1, 2, 3, 4, 5, name="The marriage"),
             named(9, 10, 12, 13, 14, name="Nell and Theo"),
+            declined=["r2"],
         )
     ) as ask:
         result = detect_clusters(HALE, ask)
@@ -956,6 +962,7 @@ def test_a_stored_group_within_ten_years_is_still_handed_back():
         answers(
             named(2, 3, 4, 5, cluster_id="c1", name="After the marriage"),
             named(9, 10, 12, 13, 14, name="Nell and Theo"),
+            declined=["r2"],
         )
     ) as ask:
         result = detect_clusters(data, ask)
@@ -985,7 +992,7 @@ def test_the_prompt_holds_periods_as_hypotheses_with_the_silence_before_each_hin
         "no visible opening event and no definite end",
         "two periods never cover the same days",
         "Most events stay outside any period",
-        "a hint only",
+        "or decline it the same way",
         "never its length, and never its years alone",
     ):
         assert sentence in asked, sentence
@@ -1632,15 +1639,18 @@ def test_an_unsupported_period_of_theirs_is_kept_and_judged_unsupported():
     assert not clusters.judge(asdict(theirs), ASH).supported
 
 
+DECLINED = [Declined(run="r1", reason="the person's own reading is the one to hear")]
+
+
 def test_a_period_in_other_words_than_theirs_is_not_written():
     # R-0853
     seen = []
     renamed = period(7, name="After the divorce")
-    with replies(ClusterListResponse(periods=[renamed])) as ask:
+    with replies(ClusterListResponse(periods=[renamed], declined=DECLINED)) as ask:
         result = detect_clusters(
             ASH, ask, heard(seen), [Answer(7, "When?", ROWAN_SAID)]
         )
-    assert seen == [(1, ClusterCheck.Renamed)]
+    assert seen == [(1, ClusterCheck.Renamed), (1, ClusterCheck.Declined)]
     assert result.clusters == []
 
 
@@ -1654,12 +1664,16 @@ def test_a_period_with_no_years_is_not_written_and_is_observed(discussion):
         ClusterListResponse(
             periods=[
                 period(said, name="everything happened at once", words=words, years=None)
-            ]
+            ],
+            declined=DECLINED,
         ),
     )
     assert data.clusters == []
-    [noted] = Observation.query.filter_by(kind=ObservationKind.ClusterRefused).all()
-    assert (noted.detail["check"], noted.detail["messageId"]) == ("no_years", said)
+    noted = Observation.query.filter_by(kind=ObservationKind.ClusterRefused).all()
+    assert [(n.detail["check"], n.detail.get("messageId")) for n in noted] == [
+        ("no_years", said),
+        ("declined", None),
+    ]
 
 
 def test_an_answer_closed_before_its_message_was_kept_is_found_in_the_change_log(

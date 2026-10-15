@@ -6,7 +6,8 @@ description: Notice the periods of heightened difficulty in a family's events an
 heightened for someone: shifts and events piling up close together. Only some
 shifts count toward a period: a rise in symptom or anxiety, a fall in
 functioning, or a relationship shift. A drop in anxiety or a rise in
-functioning does not. The shifts may be anyone's in the extended family.
+functioning does not. Nor does a shift told as how things always were (always,
+never, mostly): that is this family's ordinary level, not a departure from it. The shifts may be anyone's in the extended family.
 Anxiety is never written down for you; infer it from what piles up. Piling
 up takes two shifts that count at least: one shift alone is a reaction, not a
 period, and there is not enough in the diagram to choose a reading around it,
@@ -36,7 +37,8 @@ with its `id`, the silence before it and `supportingShifts`, how many of its
 events are shifts that count. A run marked `default` has three or more: return
 a period holding its shifts, reshaped as the events read, or list it under
 `declined` with one sentence on what in the events says it is not a period.
-Any other run is a hint only, never a period by itself. Third, the people the
+Any other run is weaker evidence: judge it, and return a period from it or
+decline it the same way. Third, the people the
 events name, each with what they are to the person when the diagram says.
 Fourth, every event. One whose `dateCertainty` is `unknown` has a date nobody is sure of: it
 may belong to a period and count toward it, weighed as the guess it is, but it
@@ -78,7 +80,7 @@ you were given.
 Return one entry under `clusters` per period of yours: `id` when it grew out of
 a listed one, `eventIds`, `name`, `reason`, `openingId` when an event opened it,
 and `change` when it is not exactly as given. List under `declined` each
-`default` run you do not return, with its `run` id and `reason`.
+run you do not return, with its `run` id and `reason`.
 
 PERIODS THIS DIAGRAM HAS
 

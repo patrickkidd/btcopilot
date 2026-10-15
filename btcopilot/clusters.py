@@ -381,8 +381,8 @@ class Candidate:
 
     @property
     def strong(self) -> bool:
-        """Three supporting shifts or more: the call returns it as a period or
-        declines it with a reason [Oracle: R-0856]."""
+        """Three supporting shifts or more: the call's default reading, kept
+        unless it says why not [Oracle: R-0856]."""
         return len(self.shiftIds) >= MIN_CLUSTER_EVENTS
 
 
@@ -1134,10 +1134,10 @@ def _answered_runs(
     named: list[Named],
     stored: dict[str, dict],
 ) -> tuple[list[ClusterError], list[ClusterError]]:
-    """Each run with three or more supporting shifts that no period holds a
-    shift of, the app's as returned or the person's: declined with a reason,
-    it is kept as an observation; neither returned nor declined, it is a
-    fault, asked again [Oracle: R-0856, R-0850]."""
+    """Each run that no period holds a shift of, the app's as returned or the
+    person's: declined with a reason, it is kept as an observation; neither
+    returned nor declined, it is a fault, asked again, so every run offered is
+    judged [Oracle: R-0856, R-0850]."""
     held = [set(c.eventIds) for c in response.clusters]
     held += [set(one.eventIds) for one in named]
     held += [
@@ -1146,7 +1146,7 @@ def _answered_runs(
     why = {d.run: d.reason.strip() for d in response.declined if d.reason.strip()}
     unanswered, declined = [], []
     for run in runs:
-        if not run.strong or any(set(run.shiftIds) & ids for ids in held):
+        if any(set(run.shiftIds) & ids for ids in held):
             continue
         said = {
             "run": run.id,
@@ -1239,8 +1239,7 @@ def answer_schema(
     new group, and the check refused each answer; with nothing required, it
     once left out every group's events. The person's periods are asked for
     only when they answered, each under one of their messages, its years left
-    out when their words give none; a run may be declined only when it has
-    three or more supporting shifts."""
+    out when their words give none; a run is declined by its id."""
     schema = dataclass_to_json_schema(
         ClusterListResponse, PDP_SCHEMA_DESCRIPTIONS, PDP_FORCE_REQUIRED
     )
@@ -1252,11 +1251,10 @@ def answer_schema(
         fields["id"]["enum"] = ours
     else:
         del fields["id"]
-    strong = [run.id for run in runs if run.strong]
-    if strong:
+    if runs:
         declined = schema["properties"]["declined"]["items"]
         declined["required"] = ["run", "reason"]
-        declined["properties"]["run"]["enum"] = strong
+        declined["properties"]["run"]["enum"] = [run.id for run in runs]
     else:
         del schema["properties"]["declined"]
     if not said:
@@ -1325,7 +1323,7 @@ def detect_clusters(
     limit = (
         THINKING_ROOM
         + PER_EVENT * len(free)
-        + PER_ANSWER * (len(said) + sum(run.strong for run in cands))
+        + PER_ANSWER * (len(said) + len(cands))
     )
     _log.info(
         f"Grouping {len(free)} events: {len(existing)} groups already there, "
