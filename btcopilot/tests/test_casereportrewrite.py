@@ -309,6 +309,22 @@ def test_a_rewrite_that_fails_says_so_on_its_turn_and_keeps_the_cards(web, past,
     assert turnlog.rewriting(family.id) is None
 
 
+def test_a_rewrite_whose_second_call_fails_takes_back_the_first_answers_cards_and_stays_out_of_date(
+    web, past, written, family
+):
+    # R-0825, R-0850
+    happened(family, "death", "2019-03-01", person=2, turn="e9")
+    turnlog.claim(family.id, "broke")
+    no_couple = [*every(past)[:3], *every(past)[4:]]
+    with patch("btcopilot.casereport.model_for", return_value=Model(calling(*no_couple))):
+        with pytest.raises(IndexError):
+            casereport.run("broke", family.id, family.user_id)
+
+    assert sorted(v for v in cards(family).values() if v) == ["main_guess"]
+    assert cards(family)["i1"] == "main_guess"
+    assert out_of_date(family)["sentence"] == "Ada's death in 2019 was added after the coach wrote this report."
+
+
 def test_a_second_rewrite_while_one_runs_is_refused(web, past, written, family):
     # R-0825
     turnlog.claim(family.id, "running")
@@ -766,7 +782,7 @@ def test_going_to_says_what_will_come_only_after_is_or_are(web, past, written, f
 def test_an_executive_summary_longer_than_the_trouble_and_the_pattern_is_kept_and_observed(web, past, written, family):
     # R-0850
     run = "You said you sleep badly. It began in 1998. Your grandmother died that year. You stopped calling your mother."
-    model = Model(calling(guessed(run, "main_guess")))
+    model = Model(calling(guessed(run, "main_guess")), calling())
     rewrite(web, model)
 
     assert texts(family)["main_guess"] == run

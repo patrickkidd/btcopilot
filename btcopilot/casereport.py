@@ -970,15 +970,18 @@ def run(turn_id: str, diagram_id: int, user_id: int) -> dict:
         _log.info(f"{TASK} {turn_id} wrote nothing: {moved}")
         TokenMeter.charge(user_id, meter.spent)
         db.session.commit()
+        _taken_back(diagram_id, turn_id)
         return _end(diagram_id, turn_id, {"type": TurnEventKind.Failed.value, "message": MOVED})
     except Refusal as refused:
         db.session.rollback()
+        _taken_back(diagram_id, turn_id)
         _observe(diagram_id, turn_id, ObservationKind.TurnDeclined,
                  {"category": refused.category, "reason": f"case report rewrite: {refused.category}"})
         return _end(diagram_id, turn_id, {"type": TurnEventKind.Refused.value, "message": REFUSED})
     # The one router in this task: the page is told it ended, and the error goes on.
     except Exception as error:
         db.session.rollback()
+        _taken_back(diagram_id, turn_id)
         _observe(diagram_id, turn_id, ObservationKind.TurnFailed,
                  {"error": f"{type(error).__name__}: {error}",
                   "reason": f"case report rewrite: {type(error).__name__}"})
@@ -994,6 +997,15 @@ def run(turn_id: str, diagram_id: int, user_id: int) -> dict:
         turn_id,
         {"type": TurnEventKind.Done.value, "turn_id": turn_id, "cards": cards, "version": diagram.version},
     )
+
+
+def _taken_back(diagram_id: int, turn_id: str) -> None:
+    """A rewrite that fails leaves the cards as they were: what the first
+    answer wrote before the second failed is taken back, and counts for
+    nothing in whether the report is out of date (R-0825, R-0850)."""
+    ids = [c.id for c in Change.query.filter_by(diagram_id=diagram_id, turn_id=turn_id)]
+    if ids:
+        record.undo_changes(diagram_id, ids, author=Author.Coach)
 
 
 def _end(diagram_id: int, turn_id: str, event: dict) -> dict:
