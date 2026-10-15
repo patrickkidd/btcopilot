@@ -14,10 +14,10 @@ from dataclasses import asdict
 import pytest
 from mock import patch
 
-from btcopilot import casereport, turnlog
+from btcopilot import casereport, record, turnlog
 from btcopilot.admin import admin
 from btcopilot.extensions import db
-from btcopilot.models import Change, Discussion, ModelCall, Observation, ObservationKind, Purpose, TokenMeter
+from btcopilot.models import Author, Change, Discussion, ModelCall, Observation, ObservationKind, Purpose, TokenMeter
 from btcopilot.schema import Cluster, DiagramData, Person
 from btcopilot.tests.conftest import Model, calling, csrf_token, version
 from btcopilot.tests.test_casereport import card, cards
@@ -136,19 +136,44 @@ def test_a_card_written_after_the_change_makes_the_report_current_again(written,
     assert out_of_date(family) is None
 
 
-def test_the_coach_writing_one_card_again_leaves_the_others_out_of_date(web, past, written, family):
-    # R-0825, R-0826
+def test_the_coachs_last_card_write_is_what_the_report_is_measured_from(written, family):
+    # R-0850, R-0826
     impress(box(family, "r2"), text="The coach's own guess.", evidence=({"kind": "event", "id": written},))
     card(family, "i2", "coach_guess", "c2")
     moved(family, written, "e3", date="2005-01-01")
     impress(box(family, "e3"), text="A guess on the new date.", evidence=({"kind": "event", "id": written},))
     card(family, "i3", "main_guess", "e3")
 
-    assert out_of_date(family)["sentence"] == (
-        "The date of Wren's “Stopped sleeping well” in 2005 changed after the coach wrote this report."
-    )
+    assert out_of_date(family) is None
+
+
+def test_a_refresh_with_no_change_after_it_is_current_and_one_change_after_it_is_not(
+    web, past, written, family
+):
+    # R-0850, R-0826
+    moved(family, written, "e3", date="2005-01-01")
+    assert out_of_date(family)
     rewrite(web, Model(calling(*every(past))))
     assert out_of_date(family) is None
+    moved(family, written, "e4", date="2006-01-01")
+    assert out_of_date(family)["sentence"] == (
+        "The date of Wren's “Stopped sleeping well” in 2006 changed after the coach wrote this report."
+    )
+
+
+def test_an_entry_on_the_retired_choice_card_is_never_a_card_write(written, family):
+    # R-0850
+    happened(family, "death", "2019-03-01", person=2)
+    impress(box(family, "r2"), text="An old choice.")
+    record.apply(
+        family.id,
+        [{"item_kind": "question", "item_id": "i2", "field": "case_report_card", "after": "choice"}],
+        author=Author.Coach,
+        turn_id="c9",
+        user_id=family.user_id,
+    )
+
+    assert out_of_date(family)["sentence"] == "Ada's death in 2019 was added after the coach wrote this report."
 
 
 def test_the_timeline_says_what_put_the_report_out_of_date(web, written, family):

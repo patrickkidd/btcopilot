@@ -160,28 +160,28 @@ def _said(delta: dict, events: dict, people: dict) -> str:
 
 
 def stale(diagram_id: int, data: DiagramData) -> dict | None:
-    """The newest change to a person, an event or a pair-bond made after a card
-    on the report was last written, or None: its change row id, when, and one
-    sentence naming it, or how many when there are several: one item in one
-    turn is one change, and a pair-bond written with an event is part of that
-    event. The coach writing
-    one card again leaves the others older than the change. A change taken
-    back, and the undo itself, count for nothing."""
+    """The newest change to a person, an event or a pair-bond made after the
+    coach last wrote a card on the report, a refresh or one card, or None:
+    its change row id, when, and one sentence naming it, or how many when
+    there are several: one item in one turn is one change, and a pair-bond
+    written with an event is part of that event. The retired choice card
+    never counts as a write. A change taken back, and the undo itself, count
+    for nothing."""
     taken = record.undone(diagram_id)
     rows = [
         c
         for c in Change.query.filter_by(diagram_id=diagram_id).order_by(Change.id)
         if c.id not in taken and not c.turn_id.startswith("undo:")
     ]
-    shown = {q[CARD] for q in data.questions if q.get(CARD)}
-    last = {}
+    shown = {q[CARD] for q in data.questions if q.get(CARD)} & set(CARDS)
+    last = None
     for i, change in enumerate(rows):
-        for card in shown.intersection(map(_carded, change.deltas)):
-            last[card] = i
-    if not last:
+        if shown.intersection(map(_carded, change.deltas)):
+            last = i
+    if last is None:
         return None
     since = {}
-    for change in rows[min(last.values()) + 1 :]:
+    for change in rows[last + 1 :]:
         for delta in change.deltas:
             if delta["item_kind"] in FAMILY:
                 since.setdefault((change.turn_id, delta["item_kind"], str(delta["item_id"])), (change, delta))
