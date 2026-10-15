@@ -22,7 +22,7 @@ import enum
 import json
 import logging
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from btcopilot.extensions import db
 from btcopilot.llmutil import (
@@ -945,83 +945,107 @@ def _said_of(cluster: ModelCluster, when: dict[int, datetime.date]) -> dict:
     }
 
 
-def _fault(
+def _faults(
     cluster: ModelCluster,
     known: set[int],
     stored: dict[str, dict],
     claimed: set[str],
     told: set[str],
     unsure_ids: set[int],
-) -> tuple[str, ClusterCheck] | None:
-    """What makes one returned cluster unusable before any merge, or nothing."""
+) -> list[tuple[str, ClusterCheck]]:
+    """Everything that makes one returned cluster unusable before any merge,
+    each said once, so one answer again fixes them all."""
+    found = []
     unknown = [event_id for event_id in cluster.eventIds if event_id not in known]
     if unknown:
-        return f"Events {unknown} are not among the events you were given.", (
-            ClusterCheck.UnknownEvent
+        found.append(
+            (
+                f"Events {unknown} are not among the events you were given.",
+                ClusterCheck.UnknownEvent,
+            )
         )
     if not cluster.name.strip():
-        return "Every period needs a name.", ClusterCheck.NoName
+        found.append(("Every period needs a name.", ClusterCheck.NoName))
     if cluster.openingId is not None and cluster.openingId not in cluster.eventIds:
-        return (
-            f"Period {cluster.name!r} opens at event {cluster.openingId}, which is "
-            "not one of its events.",
-            ClusterCheck.UnknownEvent,
+        found.append(
+            (
+                f"Period {cluster.name!r} opens at event {cluster.openingId}, which "
+                "is not one of its events.",
+                ClusterCheck.UnknownEvent,
+            )
         )
     if cluster.openingId in unsure_ids:
-        return (
-            f"Period {cluster.name!r} opens at event {cluster.openingId}, whose date "
-            "is unknown; an event of unknown date opens nothing.",
-            ClusterCheck.UnknownDate,
+        found.append(
+            (
+                f"Period {cluster.name!r} opens at event {cluster.openingId}, whose "
+                "date is unknown; an event of unknown date opens nothing.",
+                ClusterCheck.UnknownDate,
+            )
         )
     if not cluster.reason.strip():
-        return "Every period needs a reason.", ClusterCheck.NoReason
+        found.append(("Every period needs a reason.", ClusterCheck.NoReason))
     if cluster.id is not None and not _regroupable(stored.get(cluster.id, {})):
-        return (
-            f"Period {cluster.id!r} is not one of the app's periods listed.",
-            ClusterCheck.UnknownGroup,
+        found.append(
+            (
+                f"Period {cluster.id!r} is not one of the app's periods listed.",
+                ClusterCheck.UnknownGroup,
+            )
         )
     if cluster.id is not None and cluster.id in claimed:
-        return f"Period {cluster.id!r} came back twice.", ClusterCheck.GroupTwice
-    spoken = " ".join([cluster.name, cluster.reason, cluster.change or ""]).lower()
-    outside = [word for word in OUTSIDE_WORDS if word in spoken]
+        found.append((f"Period {cluster.id!r} came back twice.", ClusterCheck.GroupTwice))
+    spoken = " ".join([cluster.name, cluster.reason, cluster.change or ""])
+    outside = [word for word in OUTSIDE_WORDS if word in spoken.lower()]
     if outside:
-        return (
-            f"Period {cluster.name!r} uses {outside}, which the definitions you "
-            "were given do not contain.",
-            ClusterCheck.OutsideWords,
+        found.append(
+            (
+                f"Period {cluster.name!r} uses {outside}, which the definitions you "
+                "were given do not contain.",
+                ClusterCheck.OutsideWords,
+            )
         )
-    words = " ".join([cluster.name, cluster.reason, cluster.change or ""])
-    word = record.caused(words)
+    word = record.caused(spoken)
     if word:
-        return (
-            f"Period {cluster.name!r} says one event brought about another "
-            f"({word!r}): say which events fell close together and when, side by "
-            "side, never that one created, caused or led to another.",
-            ClusterCheck.Cause,
+        found.append(
+            (
+                f"Period {cluster.name!r} says one event brought about another "
+                f"({word!r}): say which events fell close together and when, side "
+                "by side, never that one created, caused or led to another.",
+                ClusterCheck.Cause,
+            )
         )
-    word = record.voiced(words)
+    word = record.voiced(spoken)
     if word:
-        return (
-            f"Period {cluster.name!r} speaks as the person ({word!r}): write as the "
-            "coach, calling them you, and put their own words only inside quotation "
-            "marks.",
-            ClusterCheck.FirstPerson,
+        found.append(
+            (
+                f"Period {cluster.name!r} speaks as the person ({word!r}): write as "
+                "the coach, calling them you, and put their own words only inside "
+                "quotation marks.",
+                ClusterCheck.FirstPerson,
+            )
         )
-    word = record.ided(words)
+    word = record.ided(spoken)
     if word:
-        return (
-            f"Period {cluster.name!r} holds an id ({word!r}): name events by the "
-            "person and what happened, with years or dates, never by number.",
-            ClusterCheck.RawId,
+        found.append(
+            (
+                f"Period {cluster.name!r} holds an id ({word!r}): name events by the "
+                "person and what happened, with years or dates, never by number.",
+                ClusterCheck.RawId,
+            )
         )
     trouble = trouble_in(cluster.name, told)
     if trouble:
-        return (
-            f"Period {cluster.name!r} is named by the person's trouble ({trouble}); "
-            "name it by the change in the family and its years.",
-            ClusterCheck.SymptomName,
+        found.append(
+            (
+                f"Period {cluster.name!r} is named by the person's trouble "
+                f"({trouble}); name it by the change in the family and its years.",
+                ClusterCheck.SymptomName,
+            )
         )
-    return None
+    return found
+
+
+def _checks(found: list[tuple[str, ClusterCheck]]) -> set[ClusterCheck]:
+    return {check for _, check in found}
 
 
 # What the coach's words on a period may not do: give a cause, or speak as
@@ -1373,45 +1397,33 @@ def _screen(
     cleared: list[ClusterError] = []
     usable: list[ModelCluster] = []
     claimed: set[str] = set()
+
+    def refused(found, only=None) -> list[ClusterError]:
+        return [
+            ClusterError(message, check, _said_of(cluster, when))
+            for message, check in found
+            if only is None or check in only
+        ]
+
     for cluster in response.clusters:
-        fault = _fault(cluster, known, stored, claimed, told, unsure_ids)
-        if fault and fault[1] is ClusterCheck.UnknownDate:
-            cleared.append(ClusterError(*fault, said=_said_of(cluster, when)))
+        found = _faults(cluster, known, stored, claimed, told, unsure_ids)
+        if ClusterCheck.UnknownDate in _checks(found):
+            cleared += refused(found, {ClusterCheck.UnknownDate})
             cluster.openingId = None
-            fault = _fault(cluster, known, stored, claimed, told, unsure_ids)
-        if fault and fault[1] in SPOKEN and last:
-            faults.append(ClusterError(*fault, said=_said_of(cluster, when)))
+            found = _faults(cluster, known, stored, claimed, told, unsure_ids)
+        # An event that was not offered has no date to name a period by.
+        repair = last and ClusterCheck.UnknownEvent not in _checks(found)
+        if repair and _checks(found) & set(SPOKEN):
+            faults += refused(found, SPOKEN)
             _plain(cluster, when)
-            fault = _fault(cluster, known, stored, claimed, told, unsure_ids)
-        if fault and fault[1] is ClusterCheck.SymptomName and last:
-            faults.append(ClusterError(*fault, said=_said_of(cluster, when)))
+            found = _faults(cluster, known, stored, claimed, told, unsure_ids)
+        if repair and ClusterCheck.SymptomName in _checks(found):
+            faults += refused(found, {ClusterCheck.SymptomName})
             cluster.name = plain_name(cluster, when)
-            fault = None
-        if fault:
-            faults.append(ClusterError(*fault, said=_said_of(cluster, when)))
-            continue
-        if not cluster.eventIds:
-            faults.append(
-                ClusterError(
-                    f"Period {cluster.name!r} holds no events.",
-                    ClusterCheck.TooSmall,
-                    _said_of(cluster, when),
-                )
-            )
-            continue
-        span = span_of([when[i] for i in cluster.eventIds])
-        over = next((c for c, s in theirs if overlapping(s, span)), None)
-        if over is not None:
-            faults.append(
-                ClusterError(
-                    f"Period {cluster.name!r} shares days with the person's own "
-                    f"period {_title(over)!r}, which stays as they drew it; leave "
-                    "yours out unless the days outside theirs make a period by "
-                    "themselves.",
-                    ClusterCheck.Theirs,
-                    _said_of(cluster, when),
-                )
-            )
+            found = _faults(cluster, known, stored, claimed, told, unsure_ids)
+        found += _placed(cluster, when, theirs, bool(found))
+        if found:
+            faults += refused(found)
             continue
         if cluster.id is not None:
             claimed.add(cluster.id)
@@ -1419,28 +1431,9 @@ def _screen(
     merged, absorbed = _merged(usable, when)
     kept = []
     for cluster in merged:
-        said = _said_of(cluster, when)
-        check = backstop(cluster.eventIds, when)
-        if check is ClusterCheck.TooSmall:
-            faults.append(
-                ClusterError(
-                    f"Period {cluster.name!r} holds {len(cluster.eventIds)} events; "
-                    f"anything under {MIN_CLUSTER_EVENTS} is never a period.",
-                    check,
-                    said,
-                )
-            )
-        elif check is ClusterCheck.TooLong:
-            faults.append(
-                ClusterError(
-                    f"Period {cluster.name!r} runs from {said['start'][:4]} to "
-                    f"{said['end'][:4]}: more than {MAX_SPAN_YEARS} years is this "
-                    "family's ordinary level, not a period. Return the periods "
-                    "inside it.",
-                    check,
-                    said,
-                )
-            )
+        found = _backstopped(cluster, when)
+        if found:
+            faults += refused(found)
         else:
             kept.append(cluster)
     held = [set(c.eventIds) for c in response.clusters]
@@ -1458,6 +1451,65 @@ def _screen(
         declined=declined,
         cleared=cleared,
     )
+
+
+def _backstopped(
+    cluster: ModelCluster, when: dict[int, datetime.date]
+) -> list[tuple[str, ClusterCheck]]:
+    """A period under three events or over ten years."""
+    said = _said_of(cluster, when)
+    check = backstop(cluster.eventIds, when)
+    if check is ClusterCheck.TooSmall:
+        return [
+            (
+                f"Period {cluster.name!r} holds {len(cluster.eventIds)} events; "
+                f"anything under {MIN_CLUSTER_EVENTS} is never a period.",
+                check,
+            )
+        ]
+    if check is ClusterCheck.TooLong:
+        return [
+            (
+                f"Period {cluster.name!r} runs from {said['start'][:4]} to "
+                f"{said['end'][:4]}: more than {MAX_SPAN_YEARS} years is this "
+                "family's ordinary level, not a period. Return the periods "
+                "inside it.",
+                check,
+            )
+        ]
+    return []
+
+
+def _placed(
+    cluster: ModelCluster,
+    when: dict[int, datetime.date],
+    theirs: list[tuple[dict, Span]],
+    refused: bool,
+) -> list[tuple[str, ClusterCheck]]:
+    """Where a period falls: holding no events, or over the days of one of
+    the person's own. One refused already is also held to three events and
+    ten years on its own, so the answer again hears every fault at once; one
+    that passes is held to them after merging, as a smaller period may merge
+    into a larger one."""
+    if any(i not in when for i in cluster.eventIds):
+        return []
+    if not cluster.eventIds:
+        return [(f"Period {cluster.name!r} holds no events.", ClusterCheck.TooSmall)]
+    span = span_of([when[i] for i in cluster.eventIds])
+    drawn = next((c for c, s in theirs if overlapping(s, span)), None)
+    found = []
+    if drawn is not None:
+        found.append(
+            (
+                f"Period {cluster.name!r} shares days with the person's own period "
+                f"{_title(drawn)!r}, which stays as they drew it; leave yours out "
+                "unless the days outside theirs make a period by themselves.",
+                ClusterCheck.Theirs,
+            )
+        )
+    if refused:
+        found += _backstopped(cluster, when)
+    return found
 
 
 def _decline_fault(declined: Declined, run: Candidate, theirs: list[Span]) -> str | None:
@@ -1653,6 +1705,47 @@ def _answered(ask, prompt: str, schema: dict, limit: int) -> "ClusterListRespons
         ) from failed
 
 
+def _carried(
+    first: Screened, second: Screened, runs: list[Candidate], dates: dict
+) -> Screened:
+    """The second answer with each period that passed on the first and that
+    no period of the second, the app's or the person's, shares an id, an
+    event or a day with, so one refused period never takes the others with
+    it; and each run the second leaves unanswered, or declines for what does
+    not stand, that a period carried over holds or the first declined for
+    what does [Oracle: R-0846, R-0856]."""
+
+    def span(ids) -> Span:
+        return span_of([dates[i] for i in ids])
+
+    taken = [set(c.eventIds) for c in second.kept] + [set(one.eventIds) for one in second.named]
+    days = [span(ids) for ids in taken]
+    ids = {c.id for c in second.kept if c.id is not None}
+    carried = [
+        c
+        for c in first.kept
+        if (c.id is None or c.id not in ids)
+        and not any(set(c.eventIds) & held for held in taken)
+        and not any(overlapping(span(c.eventIds), other) for other in days)
+    ]
+    for cluster in carried:
+        _log.info(f"Kept {cluster.name!r} as the first answer gave it")
+    shifts = {run.id: set(run.shiftIds) for run in runs}
+    declined_first = {d.said["run"]: d for d in first.declined}
+    faults, declined = [], list(second.declined)
+    for fault in second.faults:
+        run = (fault.said or {}).get("run")
+        if fault.check not in (ClusterCheck.Unanswered, ClusterCheck.DeclineReason):
+            faults.append(fault)
+        elif any(shifts[run] & set(c.eventIds) for c in carried):
+            continue
+        elif run in declined_first:
+            declined.append(declined_first[run])
+        else:
+            faults.append(fault)
+    return replace(second, kept=second.kept + carried, faults=faults, declined=declined)
+
+
 def detect_clusters(
     data: DiagramData, ask, refused=None, said: list[Answer] = ()
 ) -> ClusterResult:
@@ -1698,8 +1791,9 @@ def detect_clusters(
             refused(attempt, error, answer)
 
     given: list[ClusterListResponse] = []
+    dates = {e.id: parse_date(e.dateTime) for e in _dated(data)}
 
-    def attempt(n: int, words: str) -> Screened:
+    def attempt(n: int, words: str, first: Screened | None = None) -> Screened:
         answer = None
         try:
             answer = _answered(ask, words, schema, limit)
@@ -1709,7 +1803,12 @@ def detect_clusters(
             )
         except ClusterError as failed:
             heard(n, failed, answer)
+            if first is not None and first.kept:
+                _log.info(f"Grouping answer {n} failed; the first answer's passing periods stand")
+                return first
             raise
+        if first is not None:
+            screened = _carried(first, screened, cands, dates)
         for fault in [*screened.faults, *screened.cleared]:
             heard(n, fault, answer)
         for lost, into in screened.absorbed:
@@ -1734,8 +1833,9 @@ def detect_clusters(
             raise screened.faults[0]
         return screened
 
+    first = None
     try:
-        screened = attempt(1, prompt)
+        first = screened = attempt(1, prompt)
         retry = bool(screened.faults)
         # The second call does not see the first answer unless it is told it,
         # so without it every period is read afresh, not only the faulty one.
@@ -1748,7 +1848,7 @@ def detect_clusters(
     except ClusterError as failed:
         retry, why = True, str(failed)
     if retry:
-        screened = attempt(2, prompt + prompts.CLUSTER_REJECTED.format(why=why))
+        screened = attempt(2, prompt + prompts.CLUSTER_REJECTED.format(why=why), first)
     for fault in screened.unnamed:
         heard(2 if retry else 1, fault, None)
     for declined in screened.declined:

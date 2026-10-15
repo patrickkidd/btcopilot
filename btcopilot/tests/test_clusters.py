@@ -46,6 +46,7 @@ from btcopilot.models import (
     Statement,
 )
 from btcopilot.seed import seed_diagram_data
+from btcopilot.tests.live.clusters.cases import HERE, read
 from btcopilot.schema import (
     CaseReportCard,
     Cluster,
@@ -608,7 +609,7 @@ def test_a_group_under_three_events_is_dropped_on_the_second_answer():
     with replies(small, small) as ask:
         result = detect_clusters(RECORD, ask, heard(seen))
     assert ask.call_count == 2
-    assert "thrown out" in ask.call_args_list[1].args[0]
+    assert "were refused" in ask.call_args_list[1].args[0]
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3]]
     assert seen == [(n, ClusterCheck.TooSmall) for n in (1, 1, 2, 2)]
 
@@ -644,7 +645,7 @@ def test_words_from_outside_the_given_definitions_are_rejected():
         with pytest.raises(ClusterError, match="toxic"):
             detect_clusters(RECORD, ask)
     assert ask.call_count == 2
-    assert "thrown out" in ask.call_args_list[1].args[0]
+    assert "were refused" in ask.call_args_list[1].args[0]
 
 
 def test_a_contaminated_name_that_is_corrected_on_the_second_ask_is_stored():
@@ -669,7 +670,7 @@ def test_a_rejected_grouping_is_asked_for_once_more():
         result = detect_clusters(RECORD, ask)
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3], [4, 5, 6]]
     second = ask.call_args_list[1].args[0]
-    assert "thrown out" in second and "99" in second
+    assert "were refused" in second and "99" in second
 
 
 FORBIDDEN = (
@@ -874,7 +875,7 @@ def test_a_whole_history_period_given_twice_fails_the_grouping():
     assert refused.value.check is ClusterCheck.TooLong
     assert seen == [(1, ClusterCheck.TooLong), (2, ClusterCheck.TooLong)]
     second = ask.call_args_list[1].args[0]
-    assert "thrown out" in second and "1948 to 2001" in second
+    assert "were refused" in second and "1948 to 2001" in second
 
 
 def test_a_ten_year_period_is_dropped_and_the_rest_kept():
@@ -2113,7 +2114,6 @@ def test_the_note_on_what_brought_them_in_tells_their_trouble_too():
     assert clusters.trouble_words(data) == {"burnout", "insomnia", "sleepless"}
 
 
-
 THREE_RUNS = record(
     moment(1, "1994-01-01", person=1),
     moment(2, "1994-03-01", person=1),
@@ -2165,3 +2165,155 @@ def test_a_run_declined_for_its_count_or_its_spread_is_asked_again():
     declined = schema["properties"]["declined"]["items"]
     assert declined["required"] == ["run", "kind", "reason"]
     assert declined["properties"]["kind"]["enum"] == [kind.value for kind in DeclineKind]
+
+
+def test_every_fault_of_every_period_is_told_in_one_answer_again():
+    # R-0856, R-0846
+    """The answer again hears each fault of each period, not the first alone:
+    a name from outside the definitions and from the trouble, and a period
+    over the person's own days."""
+    data = record(*PIKE.events, *THREE_RUNS.events, clusters=[own(10, 11, 12)])
+    first = answers(
+        named(1, 2, 3, name="The burnout trauma"),
+        named(20, 21, 22, name="The year after"),
+        named(10, 11, 12, name="Another hard spring"),
+    )
+    second = answers(
+        named(1, 2, 3, name="After Bea's death"), named(20, 21, 22, name="The year after")
+    )
+    seen = []
+    with replies(first, second) as ask:
+        detect_clusters(data, ask, heard(seen))
+    assert seen[:3] == [
+        (1, ClusterCheck.OutsideWords),
+        (1, ClusterCheck.SymptomName),
+        (1, ClusterCheck.Theirs),
+    ]
+    again = ask.call_args_list[1].args[0]
+    assert "uses ['trauma']" in again
+    assert "named by the person's trouble (['burnout'])" in again
+    assert "shares days with the person's own period 'The years I was ill'" in again
+
+
+def test_periods_that_passed_stand_when_the_answer_again_fails_on_others():
+    # R-0856, R-0846
+    """One refused period never empties the diagram: a period that passed on
+    the first answer is kept when the second leaves it out or never comes."""
+    data = record(*PIKE.events, *THREE_RUNS.events)
+    first = answers(
+        named(1, 2, 3, name="The burnout spring"),
+        named(10, 11, 12, name="The winter they moved"),
+        named(20, 21, 22, name="The year after"),
+    )
+    with replies(first, answers(named(1, 2, 3, name="After Bea's death"))) as ask:
+        result = detect_clusters(data, ask)
+    assert [c.name for c in result.clusters] == [
+        "After Bea's death, 2009",
+        "The winter they moved, 2010",
+        "The year after, 2020",
+    ]
+    seen = []
+    with replies(first, TimeoutError("no answer")) as ask:
+        result = detect_clusters(data, ask, heard(seen))
+    assert seen == [(1, ClusterCheck.SymptomName), (2, ClusterCheck.CallFailed)]
+    assert [c.name for c in result.clusters] == [
+        "The winter they moved, 2010",
+        "The year after, 2020",
+    ]
+
+
+# The deep case of the cluster suite, the fictional copy of Patrick's diagram,
+# with answers shaped like the two the grouping call gave on his own diagram
+# on 15 October: the sandbox's, four periods and a long run declined for its
+# spread; production's, its one period named by his trouble over his own
+# period's days and four runs declined for their count or spread.
+DEEP = read(HERE / "deep.json")
+SLUMP = TheirPeriod(
+    messageId=1,
+    name="the long slump",
+    words="when nothing at home felt right",
+    startYear=2001,
+    endYear=2003,
+)
+DEEP_RUNS = {c.id: c.eventIds for c in candidates(DEEP.data)}
+
+
+def test_the_sandbox_answer_keeps_its_four_periods_when_its_decline_is_refused():
+    # R-0856, R-0857, R-0853
+    first = ClusterListResponse(
+        clusters=[
+            named(*DEEP_RUNS["r1"], name="Changes at home, 1987"),
+            named(*DEEP_RUNS["r3"], name="A new partner and a separation"),
+            named(*DEEP_RUNS["r5"], name="The grandparents' deaths"),
+            named(*DEEP_RUNS["r6"], name="The years after the wedding"),
+        ],
+        periods=[SLUMP],
+        declined=[
+            Declined(
+                run="r2",
+                reason="This run spans several years and multiple distinct family "
+                "events, which are better understood as separate periods.",
+                kind=DeclineKind.NoChange,
+            )
+        ],
+    )
+    seen = []
+    with replies(first, TimeoutError("no answer")) as ask:
+        result = detect_clusters(DEEP.data, ask, heard(seen), DEEP.said)
+    assert (1, ClusterCheck.DeclineReason) in seen
+    assert "its reason says 'spans'" in ask.call_args_list[1].args[0]
+    assert [(c.name, c.source) for c in result.clusters] == [
+        ("Changes at home, 1987", ClusterSource.Model),
+        ("A new partner and a separation, 1998–1999", ClusterSource.Model),
+        ("The grandparents' deaths, 2008–2010", ClusterSource.Model),
+        ("The years after the wedding, 2017–2019", ClusterSource.Model),
+        ("the long slump", ClusterSource.User),
+    ]
+
+
+def test_the_production_answer_asks_again_for_every_fault_and_only_those():
+    # R-0856, R-0857, R-0853
+    declines = [
+        Declined(
+            run="r1",
+            reason="An adjustment to school that does not center on a change in "
+            "family membership.",
+            kind=DeclineKind.NoChange,
+        ),
+        Declined(
+            run="r2", reason="A long, disconnected series of events.", kind=DeclineKind.NoChange
+        ),
+        Declined(
+            run="r3", reason="It contains only two shifts that count.", kind=DeclineKind.NoChange
+        ),
+        Declined(run="r5", reason="Too sparse and spread out.", kind=DeclineKind.NoChange),
+        Declined(
+            run="r6",
+            reason="It aggregates disparate events over several years.",
+            kind=DeclineKind.NoChange,
+        ),
+    ]
+    first = ClusterListResponse(
+        clusters=[named(*DEEP_RUNS["r4"], name="Insomnia and Winifred's death")],
+        periods=[SLUMP],
+        declined=declines,
+    )
+    second = ClusterListResponse(
+        clusters=[named(*DEEP_RUNS["r4"], name="Winifred's illness and death")],
+        periods=[SLUMP],
+        declined=declines,
+    )
+    seen = []
+    with replies(first, second) as ask:
+        result = detect_clusters(DEEP.data, ask, heard(seen), DEEP.said)
+    refused = [ClusterCheck.SymptomName, ClusterCheck.Theirs]
+    assert seen == [
+        *[(1, check) for check in refused],
+        *[(1, ClusterCheck.DeclineReason)] * 4,
+        (2, ClusterCheck.Theirs),
+        *[(2, ClusterCheck.DeclineReason)] * 4,
+        (2, ClusterCheck.Declined),
+    ]
+    told = ask.call_args_list[1].args[0].split("Parts of your last answer were refused:")[1]
+    assert "Run r1" not in told.split("Your last answer was:")[0]
+    assert [c.name for c in result.clusters] == ["the long slump"]

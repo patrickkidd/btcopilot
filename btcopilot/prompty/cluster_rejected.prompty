@@ -1,8 +1,8 @@
 ---
 name: cluster_rejected
-description: Tell the model its grouping answer was thrown out.
+description: Tell the model which parts of its grouping answer were refused.
 ---
 
 
-Your last answer was thrown out: {why}
-Answer again, fixing only that.
+Parts of your last answer were refused: {why}
+Answer again, fixing every one of these.
