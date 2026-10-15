@@ -511,6 +511,19 @@ def test_a_card_giving_a_cause_twice_is_written_without_that_sentence(web, past,
     assert texts(family)["coach_guess"] == "Your sleep and your mother's illness came the same winter."
 
 
+def test_the_persons_quoted_words_giving_a_why_are_kept_on_the_card(web, past, written, family):
+    # R-0864, R-0850
+    quote = "“I came because I can't sleep.”"
+    model = Model(calling(brought(past["user"], quote), *GUESSED))
+    rewrite(web, model)
+
+    assert len(model.histories) == 1
+    assert texts(family)["what_brought"] == quote
+    why = guessed(f"That is why you pulled away. You said {quote}")
+    rewrite(web, Model(calling(why), calling(why)))
+    assert texts(family)["coach_guess"] == f"You said {quote}"
+
+
 def test_a_card_saying_one_event_created_a_period_is_refused_written_down_and_asked_for_again(
     web, past, written, family
 ):

@@ -1660,8 +1660,9 @@ def ided(text: str) -> str | None:
 
 
 def caused(text: str) -> str | None:
-    """The first word of the text that gives a cause or a why, or None."""
-    return _first(CAUSE, text)
+    """The first word outside quotation marks that gives a cause or a why, or
+    None: the person's own quoted words are theirs to give (R-0864)."""
+    return _first(CAUSE, QUOTED.sub("", text))
 
 
 def voiced(text: str) -> str | None:
@@ -1700,11 +1701,11 @@ LITERATURE = re.compile(
 
 
 def _uncaused(impression: dict, impression_id: str):
-    found = CAUSE.search(impression.get("text") or "")
+    found = caused(impression.get("text") or "")
     if found:
         raise Invalid(
             f"impression {impression_id} says one thing brought about another "
-            f"({found.group(0)!r}): say what came first and how close in time, "
+            f"({found!r}): say what came first and how close in time, "
             "and claim no more than what it rests on holds",
             "The impression says one thing caused another. Say what came first "
             "and how close in time instead.",
