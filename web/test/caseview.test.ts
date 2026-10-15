@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { BRINGS, cards, NOT_ASKED, NOT_ENOUGH, NOT_SAID, rail } from "../src/case";
+import { BRINGS, cards, NOT_ASKED, NOT_ENOUGH, NOT_SAID, rail, UNSURE } from "../src/case";
 import { Card, caseView, ORDER } from "../src/caseview";
 import { esc } from "../src/dom";
 import {
@@ -286,6 +286,20 @@ it("gives what to work on its prognosis as its own sentence and the aim in the p
   expect(card).toContain('<p class="prognosis">more trouble near the next loss.</p>');
   expect(card).toContain("You said: call him weekly");
   expect(v.work.aim).toBeNull();
+});
+
+// R-0855
+it("draws a fact chip whose date is approximate or unknown with the picture's hollow dot, and a certain one without", () => {
+  const tl = halloran();
+  tl.events = tl.events.map((e) =>
+    e.id === 209 ? { ...e, dateCertainty: "approximate" } : e.id === 210 ? { ...e, dateCertainty: "unknown" } : e,
+  );
+  tl.asked_questions = [guess("i1", "Distance from her mother.", CaseReportCard.MainGuess, [202, 209, 210])];
+  const card = body(cards(caseView(tl, ONE, ""), false), Card.Main);
+  const chip = (id: number) => card.split(`data-target="${id}"`)[1].split("</button>")[0];
+  expect(chip(202)).not.toContain(UNSURE);
+  expect(chip(209)).toContain(`${UNSURE}2019 · Stopped visiting her mother`);
+  expect(chip(210)).toContain(`${UNSURE}2021 · Panic attacks at work`);
 });
 
 // R-0709

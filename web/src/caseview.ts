@@ -1,4 +1,5 @@
 import { arrange, Sex, Tie, type Bond, type Brood, type Cast, type Layout, type Shape } from "./diagram";
+import { DateCertainty } from "./certainty";
 import { dateText } from "./spotlight";
 import { aboutOf, Family, tieBefore, when } from "./snapshots";
 import {
@@ -71,7 +72,17 @@ export const GUESS_CARDS = new Set([Card.Main, Card.Guesses, Card.OwnPart, Card.
 export interface Fact {
   id: number;
   face: string;
+  /** The date is marked certain; an approximate or unknown one is drawn as the
+   * picture draws it, hollow (R-0855). */
+  sure: boolean;
 }
+
+/** One dated event's chip, the date as sure as the record is. */
+const dated = (e: TimelineEvent, words: string): Fact => ({
+  id: e.id,
+  face: `${dateText(e.dateTime!, e.dateCertainty)} · ${words}`,
+  sure: e.dateCertainty === DateCertainty.Certain,
+});
 
 /** A cluster on a chip: its years and its title. */
 export interface ClusterRef {
@@ -265,7 +276,7 @@ class Reader {
     if (!e.dateTime) return null;
     const about = aboutOf(e);
     const whose = SELF_DESCRIBING.has(e.kind ?? "") && about !== this.subject.id && e.person_name ? `${e.person_name} · ` : "";
-    return { id: e.id, face: `${dateText(e.dateTime, e.dateCertainty)} · ${whose}${e.label}` };
+    return dated(e, `${whose}${e.label}`);
   }
 
   facts = (events: TimelineEvent[]) => events.filter((e) => e.dateTime).sort(byDate).map((e) => this.fact(e)!);
@@ -363,14 +374,14 @@ class Reader {
     COUPLE.has(e.kind ?? "") && e.person != null && pair.includes(e.person) && (e.spouse == null || pair.includes(e.spouse));
 
   /** A stage head: the date, then what it opened. */
-  head = (e: TimelineEvent, what: string): Fact => ({ id: e.id, face: `${dateText(e.dateTime!, e.dateCertainty)} · ${what}` });
+  head = (e: TimelineEvent, what: string): Fact => dated(e, what);
 
   /** A chip on the couple card: whoever it is about is named unless it is the
    * person, so a partner's, a child's or a relative's event says whose it is. */
   named(e: TimelineEvent): Fact {
     const about = aboutOf(e);
     const who = about != null && about !== this.subject.id ? this.name(about) || e.person_name : "";
-    return { id: e.id, face: `${dateText(e.dateTime!, e.dateCertainty)} · ${who ? `${who} · ` : ""}${e.label}` };
+    return dated(e, `${who ? `${who} · ` : ""}${e.label}`);
   }
 
   /** The people either partner was born beside: their parents and their
@@ -518,7 +529,7 @@ class Reader {
     return openers.map(({ e, what }, i) => {
       const next = openers[i + 1]?.e.dateTime;
       const under = theirs.filter((t) => t.dateTime! >= e.dateTime! && (!next || t.dateTime! < next));
-      return { head: { id: e.id, face: `${dateText(e.dateTime!, e.dateCertainty)} · ${what}` }, facts: under.map((t) => this.fact(t)!) };
+      return { head: dated(e, what), facts: under.map((t) => this.fact(t)!) };
     });
   }
 

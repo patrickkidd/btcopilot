@@ -113,10 +113,13 @@ export const familyIcon = (size: number) =>
   `<rect x="3" y="3" width="6" height="6"/><circle cx="18" cy="6" r="3"/><path d="M6 9v3h12V9M12 12v3"/><rect x="9" y="15" width="6" height="6"/></svg>`;
 
 /** A chip of the thread: a tap does what a chip does on the case report. */
-const chip = (kind: ChipKind, target: string | number, face: string) =>
-  pill({ kind, target: String(target), label: face, tone: ChipTone.Data, bare: false }, face);
+const chip = (kind: ChipKind, target: string | number, face: string, mark = "") =>
+  pill({ kind, target: String(target), label: face, tone: ChipTone.Data, bare: false }, face, mark);
 
-const factChip = (f: Fact) => chip(ChipKind.Event, f.id, f.face);
+/** The picture's own mark for a date it is unsure of: its key's hollow dot (R-0855). */
+export const UNSURE = `<span class="ab-swatch ab-hollow"></span>`;
+
+const factChip = (f: Fact) => chip(ChipKind.Event, f.id, f.face, f.sure ? "" : UNSURE);
 const clusterChip = (c: { id: string; label: string }) => chip(ChipKind.Cluster, c.id, c.label);
 /** What the app still needs to know, de-emphasized: the dashed amber chip (R-0850). */
 const needs = (words: string) => `<span class="chip ask qmark dashed">? ${esc(words)}</span>`;

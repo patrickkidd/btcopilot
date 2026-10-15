@@ -179,12 +179,12 @@ export const face = (kind: ChipKind, full: string) => (kind === ChipKind.Ask ? `
 
 /** One size, the whole label, never cut. The coach's labels are capped at the
  * source, so a chip that needs shortening is a bug upstream rather than
- * something for the reader to expand. */
-export const pill = (chip: Chip, full: string): string =>
+ * something for the reader to expand. `mark` is markup drawn before the words. */
+export const pill = (chip: Chip, full: string, mark = ""): string =>
   `<button type="button" class="chip ${chip.tone}" ` +
   `data-kind="${chip.kind}" data-target="${esc(chip.target)}" ` +
   `data-full="${esc(full)}" title="${esc(full)}"${chip.bare ? " data-bare" : ""}>` +
-  `${esc(face(chip.kind, full))}</button>`;
+  `${mark}${esc(face(chip.kind, full))}</button>`;
 
 /** The play-by-play message whose own cluster this pill names, if any. */
 function playOf(button: HTMLElement): number | undefined {
