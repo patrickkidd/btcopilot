@@ -380,9 +380,9 @@ def test_a_for_line_says_how_things_stood_after_its_cluster_never_what_the_troub
 @passes(2, of=3)
 def test_when_the_person_says_when_the_trouble_is_worst_that_is_a_for_or_against_fact(coach):
     # R-0850, R-0864
-    # pass: a For or Against line of the coach's guess speaks of the family gatherings
+    # pass: a For or Against line of the coach's guess speaks of the family gatherings, in the person's quoted words or the coach's
     guess = formulated(coach, SLEEP, "It's always worst after family gatherings at my mother's.")["coach_guess"]
-    lines = marked(guess, CardLine.For) + marked(guess, CardLine.Against)
+    lines = [line for line in guess["text"].splitlines() if line.startswith((CardLine.For.value, CardLine.Against.value))]
     assert any("gathering" in line.lower() for line in lines), guess["text"]
 
 
