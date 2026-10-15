@@ -10,6 +10,7 @@ import json
 from contextlib import contextmanager
 
 import pytest
+from google.genai import _transformers
 from mock import Mock, patch
 
 from btcopilot import clusters, diagramjson
@@ -728,6 +729,15 @@ def test_the_answer_may_name_only_the_groups_the_record_holds():
     for fresh in ({}, {"u1": user}):
         items = answer_schema(fresh)["properties"]["clusters"]["items"]
         assert "id" not in items["properties"]
+
+
+def test_gemini_takes_the_answer_shape_when_the_person_answered():
+    # R-0853
+    """Gemini reads every enum as text, so a list of message ids would refuse
+    the call before it is made; the code checks the message ids instead."""
+    said = [Answer(messageId=7, question="When?", words="In my late 20s.")]
+    schema = answer_schema({"c1": {"source": "model"}}, said)
+    assert _transformers.t_schema(None, schema) is not None
 
 
 # The Hale record: the rules' proposal, the scripted answers the check refuses

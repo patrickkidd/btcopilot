@@ -1155,7 +1155,6 @@ def answer_schema(stored: dict[str, dict], said: list[Answer] = ()) -> dict:
         return schema
     period = schema["properties"]["periods"]["items"]
     period["required"] = ["messageId", "name", "words"]
-    period["properties"]["messageId"]["enum"] = [one.messageId for one in said]
     return schema
 
 
