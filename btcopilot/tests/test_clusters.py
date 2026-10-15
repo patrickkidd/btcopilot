@@ -46,12 +46,14 @@ from btcopilot.models import (
 )
 from btcopilot.seed import seed_diagram_data
 from btcopilot.schema import (
+    CaseReportCard,
     Cluster,
     ClusterSource,
     DateCertainty,
     DiagramData,
     Event,
     EventKind,
+    EvidenceKind,
     Fact,
     ItemKind,
     PairBond,
@@ -1549,8 +1551,7 @@ def test_a_name_from_the_persons_relationship_shift_is_refused_once_and_renamed(
         "cutoff"
     ]
     assert clusters.trouble_in("Ida's death and the stopped calling, 2003", told) == [
-        "calling",
-        "stopped",
+        "stopped"
     ]
     assert clusters.trouble_in("Ida's stroke and death, 2003", told) == []
     seen = []
@@ -2047,3 +2048,53 @@ def test_the_second_answer_with_an_id_is_stored_without_that_sentence():
     clusters._plain(cluster, {1: datetime.date(1998, 1, 1), 2: datetime.date(1998, 6, 1)})
     assert cluster.reason == "Sleep went in 1998."
     assert not clusters.record.ided(cluster.name)
+
+
+# The fictional Pike family: Cal (1), the person, tells his own trouble in
+# long sentences full of everyday words.
+PIKE = record(
+    moment(
+        1,
+        "2009-03-01",
+        person=1,
+        anxiety=VariableShift.Up,
+        description="left work with burnout, could not talk or help",
+    ),
+    moment(
+        2,
+        "2009-06-01",
+        person=1,
+        functioning=VariableShift.Down,
+        description="stayed home, sleepless and well behind",
+    ),
+    asdict(Event(id=3, kind=EventKind.Death, person=2, dateTime="2009-08-01")),
+)
+
+
+def test_everyday_words_in_the_persons_trouble_never_bar_a_name():
+    # R-0376, R-0850
+    """Only the words of the person's trouble bar a name, never the everyday
+    or short words told beside them, and the call is given the words barred."""
+    told = clusters.trouble_words(PIKE)
+    assert told == {"burnout", "sleepless"}
+    assert clusters.trouble_in("After Bea left home and stayed well, 2009", told) == []
+    assert clusters.trouble_in("Burnouts after Bea's death", told) == ["burnouts"]
+    with replies(answers(named(1, 2, 3, name="After Bea's death"))) as ask:
+        detect_clusters(PIKE, ask)
+    assert "their trouble is told in: burnout, sleepless)" in ask.call_args_list[0].args[0]
+
+
+def test_the_note_on_what_brought_them_in_tells_their_trouble_too():
+    # R-0376, R-0850
+    data = record(*PIKE.events)
+    data.questions = [
+        {
+            "id": "q9",
+            "kind": QuestionKind.Impression.value,
+            "text": "You came in because insomnia keeps you up",
+            "case_report_card": CaseReportCard.WhatBrought.value,
+            "evidence": [{"kind": EvidenceKind.Statement.value, "id": 7}],
+        }
+    ]
+    assert clusters.trouble_words(data) == {"burnout", "insomnia", "sleepless"}
+

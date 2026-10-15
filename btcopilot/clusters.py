@@ -174,18 +174,56 @@ OUTSIDE_WORDS = (
 )
 
 
-# How many letters of a word the naming check compares, and the words it never
-# reads as the person's trouble whatever their descriptions say.
-STEM = 4
+# The fewest letters a word of the person's trouble has, and the endings and
+# length past which the naming check reads two words as one, so "racing" and
+# "raced", or "burnout" and "burnouts", are one word. Everyday words, by their
+# stem, are never the person's trouble whatever their descriptions say: on
+# Patrick's diagram four-letter stems forbade "left", "well" and "help", and
+# the model was never told which words it may not use [Oracle: R-0376, R-0850].
+TROUBLE_LETTERS = 5
+ENDINGS = re.compile(r"(?:ing|ed|es|e|s|ly)$")
+STEM = 5
 COMMON_WORDS = frozenset(
     (
-        "about after again always another away back became been before could "
-        "during family from going have home into less life more never only onto "
-        "over period said since than that their them then they this time until "
-        "were when while with would year years "
+        "able about above accept across actual after again against agree "
+        "ahead aim allow almost along already also although always among "
+        "amount another answer anyone anything anyway appear application "
+        "apply around arrive asked away back basic became because become "
+        "before begin behind being believe below better between beyond brief "
+        "bring brought build business call calm calmer came careful carry "
+        "case catch certain chance change check choose city class clean clear "
+        "click close come common company complete consider constant continue "
+        "control conversation cost could country couple course cover create "
+        "creative cross daily decide describe despite different dinner doing "
+        "drive during early easy either else enjoy enough entire even evening "
+        "ever every everyone everything exactly example except exchange "
+        "expect explain fact family feel felt field figure fill final finally "
+        "find fine finish first follow forever forget form forward found "
+        "friend from full further game general generally getting give given "
+        "going good great group half hand happen happy hear heard heavy help "
+        "here high hold home hope hour house however idea important instead "
+        "into just keep kind know knowledge large last late later lay lean "
+        "learn least leave left less light like line listen little live long "
+        "look major make many maybe mean meet might mind minute moment money "
+        "month more morning most mostly move much must name near nearly need "
+        "never next night none notice number often once only open ordinary "
+        "other ought over part party people perhaps period person pick place "
+        "plan play point positive possible pretty problem program project "
+        "public question quick quite raise rather reach read ready real "
+        "really reason regular remember request return right run running same "
+        "say school second see seeing seem send several short should show "
+        "side simple since small some someone something sometimes soon sort "
+        "speak spend stand start stay still story structure student study "
+        "such support sure surprise system take talk teach tell term than "
+        "that their them then there these they thing think third this those "
+        "though thought three through time today together told toward under "
+        "understand until usual usually very visit wait walk wanna want watch "
+        "week well were what when where whether which while whole will wish "
+        "with within without work world would write year young "
         # Words for relatives, which name who changed, never the trouble.
-        "child children daughter husband parent parents partner sibling "
-        "siblings spouse wife"
+        "brother child children cousin daughter father grandparent husband "
+        "mother nephew niece parent partner sibling sister spouse stepfather "
+        "stepmother stepparent uncle wife"
     ).split()
 )
 
@@ -504,19 +542,26 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
     )
 
 
-def _stems(text: str | None) -> set[str]:
-    """Each word of four letters or more by its first four, so "moved" and
-    "move", or "burnout" and "burn", are one word."""
-    return {w[:STEM] for w in re.findall(r"[a-z]{4,}", (text or "").lower())}
+def _long(text: str | None) -> list[str]:
+    return re.findall(rf"[a-z]{{{TROUBLE_LETTERS},}}", (text or "").lower())
+
+
+def _stem(word: str) -> str:
+    return ENDINGS.sub("", word)[:STEM]
+
+
+def _stems(words) -> set[str]:
+    return {_stem(word) for word in words}
 
 
 def trouble_words(data: DiagramData) -> set[str]:
-    """The words the person's own trouble is told in, by stem: those of the
+    """The words the person's own trouble is told in: those of the
     descriptions of their rises in symptom or anxiety, falls in functioning
-    and relationship shifts, with each relationship shift's own word (a
-    cutoff, a distance), less any another event, an event's kind, a name, a
-    word for a relative or a common word also uses, so a name says the loss
-    and not the trouble [Oracle: R-0376, R-0850]."""
+    and relationship shifts, each relationship shift's own word (a cutoff, a
+    distance) and the coach's note on what brought them in, less any word
+    another event, an event's kind, a name, a word for a relative or an
+    everyday word shares a stem with, so a name says the loss and not the
+    trouble [Oracle: R-0376, R-0850]."""
     me = (profile.own(data) or {}).get("id")
     events = _dated(data)
     theirs = {
@@ -524,24 +569,29 @@ def trouble_words(data: DiagramData) -> set[str]:
         for e in events
         if me is not None and e.person == me and (troubled(e) or e.relationship)
     }
-    told = set().union(
-        *(_stems(e.description) for e in theirs.values()),
-        *(_stems(_enum_value(e.relationship)) for e in theirs.values() if e.relationship),
-    )
+    brought = coverage.brought(data)
+    told = {
+        word
+        for text in (
+            *(e.description for e in theirs.values()),
+            *(_enum_value(e.relationship) for e in theirs.values() if e.relationship),
+            brought and brought.get("text"),
+        )
+        for word in _long(text)
+    }
     plain = set().union(
-        *(_stems(e.description) for e in events if e.id not in theirs),
-        *(_stems(kind.value) for kind in EventKind),
-        *(_stems(p.get("name")) for p in data.people if isinstance(p, dict)),
-        _stems(" ".join(TITLE_PREFIXES | COMMON_WORDS)),
+        *(_stems(_long(e.description)) for e in events if e.id not in theirs),
+        *(_stems(_long(kind.value)) for kind in EventKind),
+        *(_stems(_long(p.get("name"))) for p in data.people if isinstance(p, dict)),
+        _stems(TITLE_PREFIXES | COMMON_WORDS),
     )
-    return told - plain
+    return {word for word in told if _stem(word) not in plain}
 
 
 def trouble_in(name: str, told: set[str]) -> list[str]:
     """The words of a name that tell the person's trouble."""
-    return sorted(
-        w for w in re.findall(r"[a-z]{4,}", name.lower()) if w[:STEM] in told
-    )
+    stems = _stems(told)
+    return sorted(word for word in _long(name) if _stem(word) in stems)
 
 
 # A year or a run of years in a name, with what sets it off: "(2014)",
@@ -783,6 +833,7 @@ def _prompt(
             shown["note"] = TROUBLE
         existing.append(shown)
     return prompts.CLUSTER_PROMPT.format(
+        trouble=", ".join(sorted(told)) or "none",
         existing=json.dumps(existing, indent=2),
         candidates=json.dumps(
             [
