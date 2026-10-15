@@ -485,7 +485,7 @@ describe("the drawing on a cluster's page", () => {
     expect(p.lanes).toEqual([]);
   });
 
-  // R-0862
+  // R-0862, R-0867
   it("draws a solid line at every death, a dashed one at each illness found in someone other than the diagram's own person, and one at the stored opening when it is neither", () => {
     const keys = (opening: number | null, you: number | null) =>
       place(events, ClusterView.Row, 300, opening, people, you).keys.map((k) => [k.id, k.key, k.label]);
