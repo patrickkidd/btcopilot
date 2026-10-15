@@ -256,6 +256,8 @@ button { font-family: inherit; }
   left: 0;
   right: 0;
   z-index: 4;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--panel);
   box-shadow: 0 8px 24px var(--shadow);
 }

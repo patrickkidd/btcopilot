@@ -27,11 +27,12 @@ it("opens a cluster's view one way, from its info button and from a chip naming 
   expect(report).not.toContain("picture.about(");
 });
 
-// R-0850, R-0845
-it("grows the case report's picture region with a cluster's about page, so it never hangs over the cards", () => {
+// R-0460
+it("lays a cluster's about page over the case report as over the chat, held to the screen", () => {
   const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  expect(page).toContain('<div class="view grows" id="case-view"></div>');
-  expect(page).toContain('<div class="view" id="view"></div>');
-  expect(source("picture.ts")).toContain('if (this.host.classList.contains("grows")) this.host.style.height = "";');
-  expect(source("casereport.css")).toContain(".screen.report .view.grows > .card { position: relative; }");
+  expect(page).toContain('<div class="view" id="case-view"></div>');
+  expect(page).not.toContain("grows");
+  expect(source("picture.ts")).toMatch(/private card\(markup: string\): void \{\s*this\.laid = \{ zones: \[\], rows: \[\] \};\s*this\.pin\(PIC_H\);/);
+  expect(source("picture.ts")).toContain("card.style.maxHeight = `${window.innerHeight - this.host.getBoundingClientRect().top}px`;");
+  expect(source("theme.css")).toMatch(/\.view \.card \{[^}]*overflow-x: hidden;\s*overflow-y: auto;/);
 });
