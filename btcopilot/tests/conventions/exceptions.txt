@@ -215,3 +215,9 @@ R-0856 | TEST OWED | not built: the F1 suite of synthetic cases for cluster dete
 R-0857 | TEST OWED | not built: evaluating a cluster discrepancy by re-grounding in the literature and correcting the expected clusters and rules, a process with no behaviour to test
 R-0858 | TEST OWED | not built: the learning-pipeline skill that takes one prompt and runs re-grounding, evaluation and a ruling candidate
 R-0859 | TEST OWED | not built: the index of theory deep dives by research question, results and cost
+R-0860 | TEST OWED | not built: the coach's cards and cluster sentences written in the coach's voice, never the user's first person
+R-0861 | TEST OWED | not built: tapping an event row or a dot in the cluster view selects the row and its dot together without hiding the view
+R-0862 | TEST OWED | not built: the dashed vertical line at the major event in the cluster view
+R-0863 | TEST OWED | not built: only the quoted words sit in the statement bubble on the What brought card
+R-0864 | TEST OWED | not built: card and cluster sentences state events as memories side by side, never as causes or appearing shifts
+R-0865 | TEST OWED | not built: the label Your suggestion on the person's own periods
