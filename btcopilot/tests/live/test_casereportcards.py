@@ -355,7 +355,7 @@ def test_a_for_line_names_who_was_rearranged_around_the_opening(coach):
     # pass: the For line on c1 says Ada took her mother in
     lines = marked(formulated(coach)["coach_guess"], CardLine.For)
     first = " ".join(line for line in lines if "c1" in line).lower()
-    assert re.search(r"took .* in|into her home|moved in|lived with|care", first), lines
+    assert re.search(r"(took|taking|take) .* in\b|into (her|your mother's) home|move[ds]? in|lived with|care", first), lines
 
 
 @passes(2, of=3)
