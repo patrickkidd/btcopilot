@@ -324,9 +324,9 @@ def test_the_coachs_guess_names_the_nuclear_family_and_the_way_the_strain_was_he
 @passes(2, of=3)
 def test_the_coachs_guess_names_the_triangle_the_events_mark(coach):
     # R-0850
-    # pass: the coach's guess names Ivy, the third of the triangle the 2010 event marks
+    # pass: the coach's guess names Ivy, the third of the triangle the 2010 event marks, by name or by what she is to Wren
     guess = formulated(coach)["coach_guess"]
-    assert "Ivy" in words(guess), guess["text"]
+    assert re.search(r"\bIvy\b|\b(her|your mother's) sister\b|\baunt\b", words(guess)), guess["text"]
 
 
 @passes(2, of=3)
