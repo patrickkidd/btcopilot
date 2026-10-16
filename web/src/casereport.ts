@@ -43,7 +43,7 @@ const GLIDE_MS = 2000;
 /** How often the rewrite is asked whether the coach has finished, as the chat's vote asks of shadow replies. */
 const POLL_MS = 2000;
 /** The cards the coach writes; the rest are drawn from the diagram each time and never go out of date. */
-const WRITTEN = new Set<Card>([Card.Main, Card.Guesses, Card.OwnPart, Card.Choice, Card.WorkOn]);
+const WRITTEN = new Set<Card>([Card.Main, Card.Family, Card.Brought, Card.Couple, Card.Sides, Card.Guesses, Card.OwnPart, Card.WorkOn]);
 
 const q = (root: HTMLElement, id: string): HTMLElement => {
   const found = root.querySelector<HTMLElement>(`#${id}`);
@@ -242,7 +242,7 @@ export class CaseReport implements View {
     this.render();
   }
 
-  /** The coach rewrites its five cards (R-0825); the report is read again
+  /** The coach rewrites its eight cards (R-0825); the report is read again
    * when it is done. One the server will not start now (already running, or
    * no session yet) says so; a failed one, or one the server no longer knows,
    * says so and puts the cards back as they were. Kept per diagram, so
@@ -279,29 +279,55 @@ export class CaseReport implements View {
   }
 
   /** A chip on the report: an event lights on the timeline as in the chat; a
-   * person lights that person's events (R-0700); a cluster opens on the
-   * timeline the way its pill does, so explain is offered (R-0700). */
+   * person lights that person's events (R-0700); a cluster opens its view, as
+   * its info button on the timeline does (Patrick, 2026-10-14). */
   private chip(chip: Chip): void {
     const tl = this.opened!.record;
     // what a chip names is shown on the full line, so a folded line opens first
     this.openedAt = this.body.scrollTop;
-    this.strip.open();
-    if (chip.kind === ChipKind.Person) {
-      const ids = tl.events.filter((e) => e.dateTime && [e.person, e.child, e.spouse].includes(Number(chip.target))).map((e) => e.id);
-      if (ids.length) this.lens.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(ids[0]) }), ids);
+    // a chip naming a cluster opens its view; a chip naming events inside one
+    // opens that cluster the way a tap on it on the timeline does, so explain
+    // is offered (R-0700), and lights what it names there
+    const ids = chip.kind === ChipKind.Person ? [] : aimedEvents(chip, tl.clusters);
+    const cluster = ids.length ? tl.clusters.find((c) => ids.every((id) => c.event_ids.includes(id))) : undefined;
+    if (cluster && chip.kind === ChipKind.Cluster) {
+      const open = this.openOver();
+      this.lens.openCluster(cluster);
+      void open.then(() => this.lens.about());
       return;
     }
-    // a chip naming a cluster, or events inside one, opens that cluster the
-    // way a tap on it on the timeline does, so explain is offered (R-0700),
-    // and lights what it names there
-    const ids = aimedEvents(chip, tl.clusters);
-    const cluster = ids.length ? tl.clusters.find((c) => ids.every((id) => c.event_ids.includes(id))) : undefined;
+    this.strip.open();
+    if (chip.kind === ChipKind.Person) {
+      const mine = tl.events.filter((e) => e.dateTime && [e.person, e.child, e.spouse].includes(Number(chip.target))).map((e) => e.id);
+      if (mine.length) this.lens.apply(reduce(REST, PicEvent.Tap, { kind: SelKind.Event, id: String(mine[0]) }), mine);
+      return;
+    }
     if (cluster) {
       this.lens.openCluster(cluster);
       this.lens.picture.spotlight(ids);
       return;
     }
     this.lens.aim(chip);
+  }
+
+  /** The folded line opens for a cluster's view, which is laid over the cards:
+   * the cards scroll with the line as it opens, so they stand where they were
+   * on the screen and nothing under the view moves (R-0460). Settles once the
+   * line is open, so the view is held to the screen from where it lands. */
+  private openOver(): Promise<void> {
+    const b = this.body;
+    const [top, from] = [b.getBoundingClientRect().top, b.scrollTop];
+    const pic = this.root.querySelector<HTMLElement>(":scope > .pic")!;
+    this.strip.open();
+    return new Promise((done) => {
+      const keep = () => {
+        b.scrollTop = from + b.getBoundingClientRect().top - top;
+        this.openedAt = b.scrollTop;
+        if (pic.getAnimations().length) requestAnimationFrame(keep);
+        else done();
+      };
+      keep();
+    });
   }
 
   /** The cluster told in the play-by-play drawer: the record's own dated
@@ -335,17 +361,10 @@ export class CaseReport implements View {
 
   /** To a card: the cards glide to it and it is ringed, the app's own light
    * for what a jump points at (Patrick, 2026-10-03: a strip tap animates the
-   * scroll). The family on a wide window is in the column; on the phone the
-   * family button's picture slides out. */
+   * scroll). */
   private jump(card: Card): void {
     this.drawer.close();
     const at = this.body.querySelector<HTMLElement>(`.level[data-card="${card}"]`);
-    if (card === Card.Family && this.hooks.wide()) {
-      const pinned = this.column.querySelector<HTMLElement>(".level");
-      if (pinned) flash(pinned, true);
-      return;
-    }
-    if (card === Card.Family) return this.family();
     if (!at) return;
     this.asked = card;
     // the glide passes other cards on its way; the one asked for stays lit

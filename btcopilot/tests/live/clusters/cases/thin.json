@@ -1,0 +1,129 @@
+{
+ "about": "The sparsest shape: eight people, a cousin's death, the person's unease after it, and her father's distance from his brother on a placeholder date. One shift on a thin diagram: the app withholds (A1), and the placeholder date opens nothing (A9).",
+ "placeholder": "PLACEHOLDER until a real case arrives and gets its own synthetic copy (R-0856).",
+ "expected": [],
+ "theirs": [],
+ "diagram": {
+  "people": [
+   {
+    "id": 1,
+    "name": "Marion",
+    "gender": "female",
+    "parents": 20,
+    "primary": true
+   },
+   {
+    "id": 2,
+    "name": "Edwin",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 3,
+    "name": "Clara",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 4,
+    "name": "Hugh",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 5,
+    "name": "Vera",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 6,
+    "name": "Lionel",
+    "gender": "male",
+    "parents": 21
+   },
+   {
+    "id": 7,
+    "name": "Gordon",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 8,
+    "name": "Ivy",
+    "gender": "female",
+    "parents": 20
+   }
+  ],
+  "pair_bonds": [
+   {
+    "id": 20,
+    "person_a": 2,
+    "person_b": 3,
+    "married": true
+   },
+   {
+    "id": 21,
+    "person_a": 4,
+    "person_b": 5,
+    "married": true
+   },
+   {
+    "id": 22,
+    "person_a": 1,
+    "person_b": 7,
+    "married": true
+   }
+  ],
+  "events": [
+   {
+    "id": 1,
+    "kind": "shift",
+    "dateTime": "1950-01-01",
+    "dateCertainty": "unknown",
+    "person": 2,
+    "relationship": "distance",
+    "relationshipTargets": [
+     4
+    ],
+    "description": "drifted apart from his brother after both married",
+    "notes": "The date is a placeholder; she only knows it came after the two marriages."
+   },
+   {
+    "id": 2,
+    "kind": "birth",
+    "dateTime": "1951-04-02",
+    "dateCertainty": "certain",
+    "person": 2,
+    "spouse": 3,
+    "child": 1
+   },
+   {
+    "id": 3,
+    "kind": "death",
+    "dateTime": "2026-08-14",
+    "dateCertainty": "certain",
+    "person": 6,
+    "description": "died"
+   },
+   {
+    "id": 4,
+    "kind": "noted",
+    "dateTime": "2026-08-22",
+    "dateCertainty": "certain",
+    "person": 1,
+    "description": "drove to the funeral with her sister"
+   },
+   {
+    "id": 5,
+    "kind": "shift",
+    "dateTime": "2026-09-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "anxiety": "up",
+    "description": "uneasy since the funeral"
+   }
+  ]
+ },
+ "said": []
+}

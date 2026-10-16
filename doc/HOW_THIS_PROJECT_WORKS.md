@@ -22,6 +22,7 @@ This is not optional and not deferred to the end of a session:
   "trying (date), not ruled", try it, and record it as a rule only after he has seen the result
   and said so (Patrick 2026-09-26: "don't mark things as rulings until you've tested them out
   with me first. you just jumped ahead for example").
+- **Theory is guidance, hypotheses are tested (Patrick, 2026-10-13)** — a claim from the literature (for example, trouble follows a death over months to years) is kept as a hypothesis and checked against the diagrams' data, which may disprove or refine it; a finding that contradicts the books is reported as such, never bent to fit them.
 - **FD-362's description** — keep it in line with STATE.md at *this* altitude only:
   inspiration, motivation, the bet, guardrails, what carries over, the product, and this
   maintenance rule. Detail belongs in the corpus, not the epic. Updating the epic needs

@@ -1,5 +1,6 @@
 import { el, esc } from "./dom";
 import { BACK } from "./tokens";
+import { periodName } from "./caseview";
 import { fullName, when } from "./rows";
 import {
   ChipKind,
@@ -52,7 +53,7 @@ const link = (attr: string, id: number | string, words: string) =>
   `<button type="button" class="who" ${attr}="${esc(String(id))}">${esc(words)}</button>`;
 
 const clusterChip = (cluster: Cluster) =>
-  `<button type="button" class="chip" data-cluster="${esc(cluster.id)}">${esc(cluster.label)}</button>`;
+  `<button type="button" class="chip" data-cluster="${esc(cluster.id)}">${esc(periodName(cluster))}</button>`;
 
 function dates(event: TimelineEvent): string {
   if (!event.dateTime) return esc(when(null));

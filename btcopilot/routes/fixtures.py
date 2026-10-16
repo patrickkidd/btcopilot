@@ -854,14 +854,15 @@ def _case_report_family(names=None) -> DiagramData:
 
     questions = [
         note("i1", "My guess is that when your mother is unwell you keep your distance from her, and your sleep goes first.", "impression", "raised", "main_guess", (202, 207, 209)),
-        note("i2", "It looks to me as if your part has been to stop visiting when things with your mother get tense.", "impression", "raised", "own_part", (203, 209)),
-        note("i3", "Twice you stopped being in touch with your mother within months of a worry about her.", "impression", "raised", "choice", (203, 209)),
+        note("i2", "It looks to me as if your part has been to stop visiting when things with your mother get tense.\nOther way: could you have kept visiting while she was unwell?", "impression", "raised", "own_part", (203, 209)),
+        note("i3", "Twice you stopped being in touch with your mother within months of a worry about her.", "impression", "raised", None, (203, 209)),
         note("i4", "Staying in touch with your mother the next time she is unwell, and expecting her to push back at first.", "impression", "raised", "work_on", (207, 209)),
         note("i5", "Noticing when your sleep slips, as an early sign that things are tense at home.", "impression", "raised", "work_on", (202, 210)),
         note("i6", "Your father's drinking got heavy the year after his own father died.", "impression", "raised", "coach_guess", (110, 200)),
+        note("i8", "Since you married Daniel, money and his job loss have been where the two of you meet strain, and you pulled back from your mother in the same years.", "impression", "raised", "couple", (111, 205, 206, 112)),
         note("i7", "Your mother ran the household much as her own mother did.", "impression", "held", None, (201,)),
         note("q1", "What do you think your own part was?", "thought", "resolved", "own_part", outcome="answered"),
-        note("q2", "What would it look like to visit her the next time she is unwell?", "thought", "asked", "choice"),
+        note("q2", "What would it look like to visit her the next time she is unwell?", "thought", "asked"),
         note("q3", "When did your grandmother June die?", "fact", "asked"),
     ]
     return DiagramData(

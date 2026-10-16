@@ -23,6 +23,8 @@ from btcopilot.models import Diagram
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
     CaseReportCard,
+    CauseWord,
+    FirstPerson,
     LIST_FIELDS,
     MIN_CLUSTER_EVENTS,
     DateCertainty,
@@ -416,14 +418,15 @@ def _apply(data: dict, delta: dict) -> list[dict]:
 
 # The case report card a guess or a question is on: the newest on a card
 # replaces the one before it, except that up to three guesses are on what to
-# work on and on the coach's guess (R-0709, R-0732).
+# work on and on the coach's guess (R-0709, R-0732), and two, one a parent's
+# side, on each parent's family (R-0866).
 CARD = "case_report_card"
 # The days the coach put a question to the person again after the first ask (R-0774).
 ASKED_AGAIN = "asked_again_on"
 # Asked again this many times and passed over, it is no longer waiting.
 PASSES = 2
-CARD_HOLDS = {CaseReportCard.WorkOn: 3, CaseReportCard.CoachGuess: 3}
-QUESTION_CARDS = (CaseReportCard.OwnPart, CaseReportCard.Choice)
+CARD_HOLDS = {CaseReportCard.WorkOn: 3, CaseReportCard.CoachGuess: 3, CaseReportCard.Sides: 2}
+QUESTION_CARDS = (CaseReportCard.OwnPart,)
 
 
 def _carded(data: dict, delta: dict) -> list[dict]:
@@ -1535,7 +1538,7 @@ def _again(rules) -> str:
 
 def _card(question: dict, question_id: str, rules, state, written: set, author: Author):
     """Only the coach puts an entry on a case report card; a question goes only
-    on the own part card or the choice card; and an entry kept for later is on
+    on the own part card; and an entry kept for later is on
     none, since the page never sees it (R-0709)."""
     noun = rules.noun
     if CARD in written and Author(author) is not Author.Coach:
@@ -1620,10 +1623,72 @@ def _rests(data: dict, impression: dict, impression_id: str, added: bool):
 # came first and how close in time (R-0569, R-0504); Bowen never went beyond
 # "a striking time sequence".
 CAUSE = re.compile(
-    r"\b(caus(e|es|ed|ing)|drove|drives|driven|(led|leads|leading) to|because of"
-    r"|made (him|her|them)|result(ed|s)? in|trigger(ed|s)?)\b",
+    r"\b(" + "|".join(w.value for w in CauseWord) + r"|drives|driven|leading to"
+    r"|results? in|triggers?)\b",
     re.IGNORECASE,
 )
+
+# The coach writes as the coach; the person's own words appear only quoted
+# (R-0860). "I" alone is matched by case, so "i.e." is not the person.
+FIRST_PERSON = re.compile(
+    r"\b("
+    + "|".join(w.value if w is FirstPerson.I else f"(?i:{w.value})" for w in FirstPerson)
+    + r")\b"
+)
+QUOTED = re.compile(r'"[^"]*"|“[^”]*”')
+SENTENCE = re.compile(r"(?<=[.?!])\s+")
+
+
+# An id in a card's words: a cluster, question or impression key, a number in
+# brackets that is not a year, or a number after what it numbers.
+RAW_ID = re.compile(
+    r"\b[ciq]\d+\b|\((?!(?:18|19|20)\d\d\))\d+\)"
+    r"|\b(?:events?|persons?|people|clusters?|messages?|statements?|bonds?|pair-bonds?"
+    r"|couples?|questions?|impressions?) #?\d+\b",
+    re.I,
+)
+
+
+def _first(pattern: re.Pattern, text: str) -> str | None:
+    found = pattern.search(text)
+    return found and found.group(0)
+
+
+def ided(text: str) -> str | None:
+    """The first raw id in the text outside quotation marks, or None (R-0864)."""
+    return _first(RAW_ID, QUOTED.sub("", text))
+
+
+def caused(text: str) -> str | None:
+    """The first word outside quotation marks that gives a cause or a why, or
+    None: the person's own quoted words are theirs to give (R-0864)."""
+    return _first(CAUSE, QUOTED.sub("", text))
+
+
+def voiced(text: str) -> str | None:
+    """The first word outside quotation marks in which the text speaks as the
+    person, or None (R-0860)."""
+    return _first(FIRST_PERSON, QUOTED.sub("", text))
+
+
+def plain(text: str) -> str:
+    """The text with every sentence taken out that gives a cause or a why or
+    speaks as the person (R-0850, R-0860)."""
+    kept = []
+    for line in text.splitlines():
+        sentences = [s for s in SENTENCE.split(line) if not caused(s) and not voiced(s)]
+        if sentences:
+            kept.append(" ".join(sentences))
+    return "\n".join(kept)
+
+
+def unided(text: str) -> str:
+    """The text with every sentence taken out that holds a raw id (R-0864)."""
+    return "\n".join(
+        kept
+        for line in text.splitlines()
+        if (kept := " ".join(s for s in SENTENCE.split(line) if not ided(s)))
+    )
 
 
 # Words that point a person away from their own story to sources behind the
@@ -1636,11 +1701,11 @@ LITERATURE = re.compile(
 
 
 def _uncaused(impression: dict, impression_id: str):
-    found = CAUSE.search(impression.get("text") or "")
+    found = caused(impression.get("text") or "")
     if found:
         raise Invalid(
             f"impression {impression_id} says one thing brought about another "
-            f"({found.group(0)!r}): say what came first and how close in time, "
+            f"({found!r}): say what came first and how close in time, "
             "and claim no more than what it rests on holds",
             "The impression says one thing caused another. Say what came first "
             "and how close in time instead.",

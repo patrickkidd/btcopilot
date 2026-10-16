@@ -2,46 +2,116 @@
 name: cluster
 description: Notice the periods of heightened difficulty in a family's events and hold each as a hypothesis.
 ---
-**Your task.** Read this family's events the way a clinician reads a family
-history. Notice the periods when things were heightened for someone: shifts and
-events piling up close together. A shift can be a fall as well as a rise:
-functioning going down counts as much as a symptom or anxiety going up. Anxiety
-is never written down for you; infer it from what piles up.
+**Your task.** Read this family's events and notice the periods when things were
+heightened for someone: shifts and events piling up close together. Only some
+shifts count toward a period: a rise in symptom or anxiety, a fall in
+functioning, or a relationship shift. A drop in anxiety or a rise in
+functioning does not. Nor does a shift told as how things always were (always,
+never, mostly): that is this family's ordinary level, not a departure from it. The shifts may be anyone's in the extended family.
+Anxiety is never written down for you; infer it from what piles up. Piling
+up takes two shifts that count at least: one shift alone is a reaction, not a
+period, and there is not enough in the diagram to choose a reading around it,
+so return no period for it.
 
-**Each period is a loose hypothesis.** Hold each one as a guess that some bigger
-shift happened in the family around then: someone added, someone lost, someone's
-position changed, even when nothing like that is recorded yet. A period needs no
-visible opening event and no definite end; it ends where things look settled. A
-family often has not connected its own troubles to what else was going on, so a
-period drawn around one person's own problems is the usual place to start. You
-do not have the whole story; do not hold a period tighter than the events allow.
+**Each period is a loose hypothesis.** Hold each one as a guess that the family's
+balance was disturbed around then by a change in who is in the family, or a
+change in how a key member functions: a birth, a death, a serious diagnosis, someone
+leaving, a partner arriving or leaving, a marriage, a separation, a cutoff. These are examples, not a list:
+judge which change mattered by who changed, not by the kind of event. The
+trouble may begin months before the change as well as after it, and may reach
+months or a few years after it. A period needs no visible opening event and no
+definite end. It ends where the events show the family settled, judged against
+how close together the period's own events fall: weeks apart, a few quiet
+months end it; a year apart, it takes a longer quiet. Nothing longer than ten
+years is one period. You do not have the
+whole story; do not hold a period tighter than the events allow.
 
 **One reading per family.** The family is one emotional unit, so two periods
-never cover the same days. Most events stay outside any period.
+never cover the same days. Most events
+stay outside any period.
 
 **What you are given.** First, the periods this diagram already has, each with
-its id, name, reason and events; one marked "the person drew this period" is the
-person's own. Every one of them is a hypothesis like yours: keep it, rename it,
-reshape it, merge it or drop it as the events now read, the person's own
-included. Return a period under the id of the one it grew out of. A period you
-leave out is removed. Second, runs of events the app's rules found close in
-time, each with the silence before it: a hint only, never a period by itself.
-Third, every event.
+its id, name, reason and events. One marked "the person drew this period" is
+the person's own: it stays as they drew it, you never return it, and your
+periods never share its days. Keep, rename, reshape, merge or drop any other
+one as the events now read, returning it under its id. A period you leave out
+is set aside. Second, runs of events the app's rules found close in time, each
+with its `id`, the silence before it and `supportingShifts`, how many of its
+events are shifts that count. `supportingShifts` is the app's count; it does not leave out the shifts
+told as how things always were, so recount without them before you keep a
+run. A run marked `default` has three or more: return
+a period holding its shifts, reshaped as the events read, or list it under
+`declined` with one sentence on what in the events says it is not a period,
+never its count of shifts or of events alone. Never decline a run for being
+long, spread out or mixed: cut it down to the stretch around the change in the
+family inside it, return that, and leave the rest of its events out. Any other run is weaker evidence: judge it, and return a period from it or
+decline it the same way. Third, the people the
+events name, each with what they are to the person when the diagram says.
+Fourth, every event. One whose `dateCertainty` is `unknown` has a date nobody is sure of: it
+may belong to a period and count toward it, weighed as the guess it is, but it
+never opens one (it is marked `neverOpens`) and is never an `openingId`;
+`approximate` is a date within
+about a year. Fifth, the person's answers when asked when the most was going on in
+their life, with their birth date.
 
-**Name and reason.** Name each period for the hypothesis: what seems to have
-shifted in the family, or the event that dominates it, and when, in words this
-person would recognise; never its length, and never its years alone. The
-`reason` is one sentence: which events pile up and what you suspect shifted.
-When a period is not exactly as you were given it, `change` says in one
-sentence, the way you would say it aloud about this person's story, what in the
-events made you see it so.
+**The person's own periods.** An answer often names more than one time, and may say how
+many: read every sentence of it for each one. For each time the person says stood out or was
+hard in an answer, and not one they only wonder or ask about, that is not
+already listed as "the person drew this period", return one entry under
+`periods`: `messageId`, the answer it is in; `name`, a short phrase copied word
+for word from their answer; `words`, their sentence that names it, copied word
+for word; and `startYear` and `endYear` as their words give them, an age read
+against their birth date, a single year given as both. Leave both years out
+when their words give none; a time of theirs is still returned, and unclear
+years never leave it out. Their `name` and `words` keep "I", "me" and "my"
+as they said them; the coach's voice below is for your periods only. Never rename, merge, split, shorten or widen a
+period of theirs, and never fold one into yours. Return each one even when a
+period of yours covers the same years: theirs stands and yours gives way. Your periods never share their years, and whether they do is read from the
+numbers: only where a run's or period's dates fall between their `startYear` and
+`endYear`. When there are no answers, return no `periods`.
 
-Every period holds at least three events. A period covering the whole history is
-the family's ordinary level, not a period. Never write an id that is not listed
-below, and never add a detail that is not on the events you were given.
+**Name and reason.** Name each period of yours by the change that opened it and
+its years, in words this person would recognise; never by the person's own
+trouble or symptom, never its length, and never its years alone. Never call a
+period "chronic anxiety" in its name, `reason` or `change`: chronic anxiety is
+not felt as something that starts and ends, so a period with dates is only a
+guess at a time when things ran higher. A listed
+period marked "named by the person's trouble" breaks this: rename it when you
+return it. `openingId` is
+the event that opened it, when one of its events did. The `reason` is one
+sentence: which events pile up and when, and what may have shifted around
+then, held as a guess. When a period is not exactly as you were given it,
+`change` says in one sentence what in the events made you see it so.
+Each event is something the person remembered and told you, not a measured
+shift: the `reason` and `change` name which events fell close together and
+when, one beside the next, and never claim that one event brought about,
+caused, drove, triggered or led to another, or that a shift appeared, emerged
+or began as a fact. When events are close in time, say they are close ("around
+the same time", "within three months of"), never that one produced the other, and a shift is given as the person told it ("you said you
+couldn't sleep before races"). Write the name, `reason` and `change` as the
+coach speaking to the person, calling them "you"; never write "I", "me" or
+"my" as if you were them. Their own words appear only inside quotation marks.
 
-Return one entry per period: `id` when it grew out of a listed one, `eventIds`,
-`name`, `reason`, and `change` when it is not exactly as given.
+Every period of yours holds at least three events of any kind, though only
+two of them need be shifts that count. A period is stronger with
+three or more of the shifts that count; one with fewer may still be proposed
+when its events belong together, and its `reason` then says so. With fewer than three, a run is a period when a change in the family's
+membership, or in how a key member functions, sits among its shifts and the
+person it touched matters to this family, unless the events say otherwise; two
+shifts are then enough, and a period is never declined for its count alone.
+Without such a change it is not one. Events whose dates are all unknown
+never make a period by themselves: nothing shows they were close in time. Never write
+an id that is not listed below, never put an event's id in a `name`, `reason` or `change`, and never add a detail that is not on the events
+you were given.
+
+Return one entry under `clusters` per period of yours: `id` when it grew out of
+a listed one, `eventIds`, `name`, `reason`, `openingId` when an event opened it,
+and `change` when it is not exactly as given. List under `declined` each
+run you do not return, with its `run` id and `reason`. Before you decline a
+run with fewer than three shifts that count, look among its events for someone
+joining or leaving the family, or for a key member whose functioning changes,
+and when you find one, return the run as a period. A `reason` says what in the run's events
+shows it is not a period, never how many shifts or events it has.
 
 PERIODS THIS DIAGRAM HAS
 
@@ -51,6 +121,14 @@ RUNS THE APP'S RULES FOUND (A HINT ONLY)
 
 {candidates}
 
+THE PEOPLE
+
+{people}
+
 EVERY EVENT
 
 {events}
+
+WHEN THE PERSON SAID THE MOST WAS GOING ON
+
+{told}

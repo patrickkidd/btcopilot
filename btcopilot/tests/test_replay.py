@@ -5,10 +5,11 @@ import time
 
 import pytest
 
+from btcopilot import subscription
 from btcopilot.coachmodel import CoachModel, ModelTurn, Spent, ToolCall, marked_ends
 from btcopilot.llmutil import Served
 from btcopilot.quality import Source
-from btcopilot.tests.live import answer, replay, subscription
+from btcopilot.tests.live import answer, replay
 from btcopilot.tests.live.replay import KEEP, Miss, Mode, Replay
 
 MESSAGES = [{"role": "user", "content": "My brother moved away last spring."}]

@@ -1,6 +1,8 @@
 import { book } from "./case";
+import { nameOnly } from "./caseview";
 import { DateCertainty } from "./certainty";
 import { closeX, esc, pan, still } from "./dom";
+import { Shift } from "./marks";
 // this line draws pills, dots and the wire
 import {
   CH,
@@ -21,6 +23,7 @@ import {
   zones,
 } from "./spotlight";
 import {
+  EventKind,
   ItemKind,
   Spotlight,
   Touch,
@@ -156,7 +159,7 @@ function edges(clusters: { start: string; end: string }[], at: (iso: string) => 
  * further, so the whole history is always one or two swipes (R-0381). The
  * clusters come in time order; the dates are every dated moment, in order. */
 export function restWidth(
-  clusters: { start: string; end: string; count?: number }[],
+  clusters: { start: string; end: string; event_ids?: number[] }[],
   dates: string[],
   screen: number,
 ): number {
@@ -165,7 +168,8 @@ export function restWidth(
   if (span <= 0) return screen;
   let scale = (screen - 2 * X_PAD) / span;
   clusters.forEach((cluster, i) => {
-    const dots = cluster.count ?? 0;
+    // room for the dots drawn, which are its dated events only
+    const dots = cluster.event_ids?.length ?? 0;
     const room =
       Math.max(
         shortYears(cluster.start, cluster.end).length * YEAR_CH + 8,
@@ -337,21 +341,21 @@ const MODE: Partial<Record<Level, string>> = {
   [Level.Compare]: "compare",
 };
 
-type Named = { title: string; start: string; end: string };
+type Named = { title: string; label?: string; start: string; end: string };
 
-/** The open cluster as the path names it: its name alone, "Every mark", the
- * years alone for a cluster with no name (R-0767); the years go under
- * the line, so neither is on the screen twice. */
-export const clusterStep = (c: Named) => c.title || spanYears(c.start, c.end);
+/** The open cluster's name, or its years for a cluster with no name of its own. */
+export const clusterName = (c: Named) => nameOnly(c) || (c.label ?? spanYears(c.start, c.end));
 
-/** The words under the line with a cluster open and nothing picked: its years
- * and how many events it holds, "1981\u20132003 \u00b7 3 events" (R-0583, R-0767);
- * the name is in the path above. */
-export const clusterLabel = (c: { start: string; end: string; count: number }) =>
-  `${fullYears(c.start, c.end)} \u00b7 ${c.count} event${c.count === 1 ? "" : "s"}`;
+/** The open cluster as the path names it: its name and years, "Every mark \u00b7
+ * 1972\u201399", the years written once for a cluster with no name (R-0767). */
+export const clusterStep = (c: Named) => {
+  const years = c.label ?? spanYears(c.start, c.end);
+  const name = clusterName(c);
+  return name === years ? years : `${name} \u00b7 ${years}`;
+};
 
 /** The path over the line, from the whole timeline down to where the reader
- * is: the cluster open by its name, then the mode it is in or the event
+ * is: the cluster open by its name and years, then the mode it is in or the event
  * picked (R-0540, R-0767). */
 export function trail(level: Level, cluster: Named | null, picked: string | null): string[] {
   const last = MODE[level] ?? picked;
@@ -388,6 +392,8 @@ export enum Target {
   Close = "close",
   /** Anywhere on the picture that is not a moment or a label. */
   Ground = "ground",
+  /** A dot on a cluster's page; its index is the event's id. */
+  Dot = "dot",
 }
 
 /** One invisible tap target along the line. */
@@ -454,6 +460,8 @@ enum Park {
 }
 
 const SCROLLER = ".ss-scroll";
+/** What is laid over a screen and answers its own taps. */
+const OVER = ".slideover, .pbp, .fs-sheet, .fs-scrim, [role=dialog]";
 
 /** A still picture of the region as it is now, laid over it: the live rows
  * are cloned without their ids so nothing on the page can find the copies.
@@ -462,11 +470,14 @@ const SCROLLER = ".ss-scroll";
 const CONTROLS = "button, input, select, textarea, a[href]";
 
 /** A control as a plain span that looks the same: its classes, its inline
- * style and what it says, nothing it does. */
-function plain(control: Element): HTMLElement {
+ * style, the box the live control is laid out as (a button is a block in the
+ * line, a span is not, so its margins would be lost and the copy come out
+ * shorter than the level it stands for) and what it says, nothing it does. */
+function plain(control: Element, display: string): HTMLElement {
   const span = document.createElement("span");
   span.className = control.className;
   span.setAttribute("style", control.getAttribute("style") ?? "");
+  span.style.display = display;
   span.innerHTML = control.innerHTML;
   return span;
 }
@@ -492,7 +503,8 @@ function snapshot(region: HTMLElement): HTMLElement {
     }
     // every control becomes a plain element drawn the same way, so the copy
     // holds nothing a reader, a screen reader or a test could take for one
-    for (const el of copy.querySelectorAll(CONTROLS)) el.replaceWith(plain(el));
+    const shown = [...child.querySelectorAll(CONTROLS)].map((el) => getComputedStyle(el).display);
+    copy.querySelectorAll(CONTROLS).forEach((el, i) => el.replaceWith(plain(el, shown[i])));
     const live = [...child.querySelectorAll<HTMLElement>(SCROLLER)];
     copy.querySelectorAll<HTMLElement>(SCROLLER).forEach((el, i) => {
       el.dataset.left = String(live[i]?.scrollLeft ?? 0);
@@ -522,25 +534,361 @@ export interface PictureHandlers {
   /** A tap on the book button of the page behind a cluster's i, which raises
    * the passages behind what a cluster is (R-0691; Patrick, 2026-10-08). */
   onBook?(button: HTMLElement): void;
+  /** The cluster's drawing switched between one row and one lane per person. */
+  onView?(view: ClusterView): void;
+  /** A long press on an event's row or dot on a cluster's page: its details. */
+  onHold?(eventId: number): void;
+}
+
+/** How the page behind a cluster's i draws its events: one row, or one lane
+ * per person (Patrick, 2026-10-13: option A by default, a button for B). */
+export enum ClusterView {
+  Row = "row",
+  Lanes = "lanes",
+}
+
+export const VIEW_KEY = "cluster-view";
+
+/** The reader's last choice in this browser; one row when the browser keeps nothing. */
+export function storedView(): ClusterView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === ClusterView.Lanes ? ClusterView.Lanes : ClusterView.Row;
+  } catch {
+    return ClusterView.Row;
+  }
+}
+
+export function storeView(view: ClusterView): void {
+  try {
+    localStorage.setItem(VIEW_KEY, view);
+  } catch {
+    // a browser that keeps nothing keeps the choice for this page only
+  }
+}
+
+/** A shift's dot takes the colour of what moved, the strongest first; any
+ * other event is drawn in ink. */
+const SHIFT_COLOURS: [keyof TimelineEvent, string][] = [
+  ["symptom", "var(--remove)"],
+  ["anxiety", "var(--ask)"],
+  ["functioning", "var(--move)"],
+  ["relationship", "var(--data)"],
+];
+const INK = "var(--ink)";
+
+export const colourOf = (event: TimelineEvent) =>
+  (event.kind === EventKind.Shift && SHIFT_COLOURS.find(([field]) => event[field])?.[1]) || INK;
+
+/** The word under the drawing for each colour that appears in it. */
+const COLOUR_WORDS = new Map<string, string>([
+  ...SHIFT_COLOURS.map(([field, colour]): [string, string] => [colour, field]),
+  [INK, "other events"],
+]);
+
+/** What a line through a cluster's drawing stands at: a death, solid; an
+ * illness found in someone other than the diagram's own person, dashed; the
+ * opening event the cluster stores, dashed, when it is neither (R-0862). */
+export enum Key {
+  Death = "death",
+  Illness = "illness",
+  Opening = "opening",
+}
+
+/** The events a cluster's events cluster around, each with its line's kind and
+ * its short label, by the first deaths-and-periods mockup's rule (R-0862). */
+export function keysOf(
+  events: TimelineEvent[],
+  opening: number | null,
+  you: number | null,
+  people: Map<number, string>,
+): { event: TimelineEvent; key: Key; label: string }[] {
+  const first = (e: TimelineEvent) => ((e.person !== null && people.get(e.person)) || e.person_name || "").split(" ")[0];
+  return events.flatMap((e): { event: TimelineEvent; key: Key; label: string }[] => {
+    if (e.kind === EventKind.Death)
+      return [{ event: e, key: Key.Death, label: first(e) ? `${first(e)}'s death` : e.label }];
+    if (e.kind === EventKind.Shift && e.symptom === Shift.Up && e.person !== you)
+      return [{ event: e, key: Key.Illness, label: first(e) ? `${first(e)}: ${e.label}` : e.label }];
+    if (e.id === opening) return [{ event: e, key: Key.Opening, label: e.label }];
+    return [];
+  });
+}
+
+/** Whose lane an event sits in: its first person, the child for a birth. */
+const laneOf = (e: TimelineEvent) =>
+  (e.kind === EventKind.Birth || e.kind === EventKind.Adopted ? (e.child ?? e.person) : (e.person ?? e.child)) ?? -1;
+
+/** How long a press is held before it opens the event, as in the sessions list. */
+const HOLD_MS = 500;
+const LANE_H = 30;
+const NAME_W = 64;
+/** How wide one letter of a line's label is drawn, and how far apart two rows of labels stand. */
+const LETTER = 6.6;
+const KEY_ROW = 11;
+/** How far apart up the row events on the same date stand, the row staying one row. */
+const STACK = 8;
+/** How far a dot's target reaches past it where no other dot is near. */
+const THUMB = 12;
+const TOP = 22;
+const SHORT = 22;
+
+const cut = (text: string, n: number) => (text.length > n ? text.slice(0, n - 1) + "\u2026" : text);
+
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Each dot's own target: a thumb's reach around it, cut halfway to any dot
+ * nearer than that, along the way the two stand furthest apart, so no target
+ * covers another dot and every dot answers its own tap (R-0168). */
+export function targets(dots: { x: number; y: number }[]): Box[] {
+  return dots.map((d) => {
+    let [l, r, t, b] = [d.x - THUMB, d.x + THUMB, d.y - THUMB, d.y + THUMB];
+    for (const o of dots) {
+      const [dx, dy] = [o.x - d.x, o.y - d.y];
+      if (o === d || Math.abs(dx) >= 2 * THUMB || Math.abs(dy) >= 2 * THUMB) continue;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        if (dx > 0) r = Math.min(r, d.x + dx / 2);
+        else l = Math.max(l, d.x + dx / 2);
+      } else if (dy > 0) b = Math.min(b, d.y + dy / 2);
+      else t = Math.max(t, d.y + dy / 2);
+    }
+    return { x: l, y: t, w: r - l, h: b - t };
+  });
+}
+
+/** A key event's line, its label on the row of labels it was stood on. */
+export interface KeyLine {
+  id: number;
+  key: Key;
+  x: number;
+  label: string;
+  row: number;
+  /** Where the label's words start and end along the drawing. */
+  from: number;
+  to: number;
+}
+
+/** Each line's label on the highest row where it touches no other label and
+ * no other line crosses it, cut shorter only when no row is clear, so no two
+ * labels ever overlap (R-0862). */
+export function stand(lines: { id: number; key: Key; x: number; label: string }[], width: number): KeyLine[] {
+  const laid: KeyLine[] = [];
+  const span = (x: number, label: string) => {
+    const w = label.length * LETTER;
+    return x + 3 + w <= width ? [x + 3, x + 3 + w] : [x - 3 - w, x - 3];
+  };
+  const clear = (c: KeyLine) =>
+    laid.every(
+      (o) =>
+        !(o.row === c.row && c.from < o.to + 4 && o.from < c.to + 4) &&
+        !(o.row < c.row && o.x >= c.from && o.x <= c.to) &&
+        !(c.row < o.row && c.x >= o.from && c.x <= o.to),
+    );
+  for (const line of [...lines].sort((a, b) => a.x - b.x)) {
+    let found: KeyLine | null = null;
+    for (let n = Math.min(line.label.length, SHORT); !found && n >= 4; n--) {
+      const label = cut(line.label, n);
+      const [from, to] = span(line.x, label);
+      for (let row = 0; !found && row <= laid.length; row++) {
+        const c = { ...line, label, row, from, to };
+        if (clear(c)) found = c;
+      }
+    }
+    if (found) laid.push(found);
+  }
+  return laid;
+}
+
+export interface Placed {
+  dots: { id: number; x: number; y: number; colour: string; hollow: boolean; hit: Box }[];
+  keys: KeyLine[];
+  /** Where the dots start under the rows of labels. */
+  top: number;
+  lanes: { name: string; y: number }[];
+  /** Where each lane's line is drawn, the one row's alone in the one-row view. */
+  lines: number[];
+  years: [string, string];
+  height: number;
+}
+
+/** Where each event of a cluster with a date on it lands in a drawing `width`
+ * wide; a date the diagram is unsure of, or does not know, is drawn hollow
+ * where it is stored, as the approved gallery does. `people` names the lanes. */
+export function place(
+  events: TimelineEvent[],
+  view: ClusterView,
+  width: number,
+  opening: number | null,
+  people: Map<number, string> = new Map(),
+  you: number | null = null,
+): Placed {
+  const dated = events.filter((e) => e.dateTime).sort((a, b) => a.dateTime!.localeCompare(b.dateTime!));
+  const lanes = view === ClusterView.Lanes ? [...new Set(dated.map(laneOf))] : [-1];
+  const left = (view === ClusterView.Lanes ? NAME_W : 0) + 8;
+  const right = width - 8;
+  const a = years(dated[0].dateTime!.slice(0, 10));
+  const span = years(dated[dated.length - 1].dateTime!.slice(0, 10)) - a || 1;
+  const x = (e: TimelineEvent) => left + ((years(e.dateTime!.slice(0, 10)) - a) / span) * (right - left);
+  const keys = stand(
+    keysOf(dated, opening, you, people).map((k) => ({ id: k.event.id, key: k.key, x: x(k.event), label: k.label })),
+    width,
+  );
+  const top = TOP + KEY_ROW * Math.max(0, ...keys.map((k) => k.row));
+  const laneAt = (e: TimelineEvent) => (view === ClusterView.Lanes ? lanes.indexOf(laneOf(e)) : 0);
+  const slotOf = (e: TimelineEvent) => `${laneAt(e)}:${e.dateTime!.slice(0, 10)}`;
+  const counts = new Map<string, number>();
+  for (const e of dated) counts.set(slotOf(e), (counts.get(slotOf(e)) ?? 0) + 1);
+  // A lane is as tall as its largest stack of same-date dots needs, so the top
+  // dot stays under the labels and the lane above.
+  const bands = lanes.map((_, i) => {
+    const most = Math.max(...dated.filter((e) => laneAt(e) === i).map((e) => counts.get(slotOf(e))!));
+    return LANE_H + Math.max(0, (most - 1) * STACK + 5 - (LANE_H - 8));
+  });
+  const laneY = (i: number) => top + bands.slice(0, i + 1).reduce((a, b) => a + b, 0) - 8;
+  const stacked = new Map<string, number>();
+  const dots = dated.map((e) => {
+    const lane = laneAt(e);
+    const slot = slotOf(e);
+    const n = stacked.get(slot) ?? 0;
+    stacked.set(slot, n + 1);
+    return {
+      id: e.id,
+      x: x(e),
+      y: laneY(lane) - n * STACK,
+      colour: colourOf(e),
+      hollow: e.dateCertainty !== DateCertainty.Certain,
+    };
+  });
+  const hits = targets(dots);
+  return {
+    dots: dots.map((d, i) => ({ ...d, hit: hits[i] })),
+    keys,
+    top,
+    lanes:
+      view === ClusterView.Lanes
+        ? lanes.map((id, i) => ({ name: cut(people.get(id) ?? "", 9), y: laneY(i) }))
+        : [],
+    lines: lanes.map((_, i) => laneY(i)),
+    years: [dated[0].dateTime!.slice(0, 4), dated[dated.length - 1].dateTime!.slice(0, 4)],
+    height: laneY(lanes.length - 1) + 26,
+  };
+}
+
+/** The baseline of a row of line labels. */
+const keyY = (row: number) => TOP - 10 + KEY_ROW * row;
+
+/** The cluster's events as dots by date, a line through them at each event
+ * they cluster around, the years at the ends, and the button that swaps one
+ * row for lanes. */
+export function drawing(
+  events: TimelineEvent[],
+  view: ClusterView,
+  width: number,
+  opening: number | null,
+  people: Map<number, string> = new Map(),
+  you: number | null = null,
+): string {
+  if (!events.some((e) => e.dateTime)) return "";
+  const p = place(events, view, width, opening, people, you);
+  const f = (n: number) => n.toFixed(1);
+  const marks =
+    p.lanes
+      .map((l) => `<text class="ab-name" x="0" y="${f(l.y + 4)}">${esc(l.name)}</text>`)
+      .join("") +
+    p.lines
+      .map((y) => `<line class="ab-lane" x1="${f(p.lanes.length ? NAME_W + 8 : 8)}" x2="${f(width - 8)}" y1="${f(y)}" y2="${f(y)}"/>`)
+      .join("") +
+    p.keys
+      .map(
+        (k) =>
+          `<line class="ab-key ab-${k.key}" x1="${f(k.x)}" x2="${f(k.x)}" y1="${f(keyY(k.row) + 3)}" y2="${f(p.height - 16)}"/>` +
+          `<text class="ab-keyname ab-${k.key}" x="${f(k.from)}" y="${f(keyY(k.row))}">${esc(k.label)}</text>`,
+      )
+      .join("") +
+    p.dots
+      .map(
+        (d) =>
+          `<circle class="ab-dot" data-event="${d.id}" cx="${f(d.x)}" cy="${f(d.y)}" r="5" stroke="${d.colour}" fill="${d.hollow ? "var(--panel)" : d.colour}"/>` +
+          `<rect class="ab-hit" data-target="${Target.Dot}" data-index="${d.id}" x="${f(d.hit.x)}" y="${f(d.hit.y)}" width="${f(d.hit.w)}" height="${f(d.hit.h)}"/>`,
+      )
+      .join("") +
+    `<text class="ab-end" x="${p.lanes.length ? NAME_W + 8 : 8}" y="${f(p.height - 4)}">${p.years[0]}</text>` +
+    `<text class="ab-end" x="${width - 8}" y="${f(p.height - 4)}" text-anchor="end">${p.years[1]}</text>`;
+  const shown = new Set(p.dots.map((d) => d.colour));
+  const legend =
+    [...COLOUR_WORDS]
+      .filter(([colour]) => shown.has(colour))
+      .map(([colour, word]) => `<span class="ab-swatch" style="background:${colour}"></span>${word}`)
+      .join(" ") +
+    (p.dots.some((d) => d.hollow) ? ` <span class="ab-swatch ab-hollow"></span>hollow: approximate date` : "") +
+    (p.keys.some((k) => k.key === Key.Death) ? ` <span class="ab-swatch ab-line ab-death"></span>death` : "") +
+    (p.keys.some((k) => k.key === Key.Illness) ? ` <span class="ab-swatch ab-line ab-illness"></span>illness found` : "");
+  const other = view === ClusterView.Row ? ClusterView.Lanes : ClusterView.Row;
+  return (
+    `<svg class="ab-draw" data-view="${view}" viewBox="0 0 ${width} ${f(p.height)}" width="${width}" height="${f(p.height)}">${marks}</svg>` +
+    `<p class="ab-span ab-legend">${legend}</p>` +
+    `<button type="button" class="ab-view" data-view="${other}">${other === ClusterView.Lanes ? "By person" : "One row"}</button>`
+  );
 }
 
 /** The key the cluster's book raises in the passages file, and the sheet's title. */
 export const CLUSTER_BOOK = "cluster";
 export const CLUSTER_BOOK_TITLE = "What a cluster is";
 
+/** A cluster's page: every event of the cluster in the list, the undated
+ * ones too, and the drawing of those with a date on them (R-0850). */
+export function clusterPage(
+  cluster: Cluster,
+  all: TimelineEvent[],
+  people: { id: number; name: string; primary?: boolean }[],
+  view: ClusterView,
+  width: number,
+): string {
+  const why = (cluster.reason ?? cluster.summary ?? "").trim();
+  const events = membersOf(cluster, all);
+  const moments = events.map((e) => ({ id: e.id, year: e.dateTime?.slice(0, 4) ?? "", label: e.label }));
+  const names = new Map(people.map((p) => [p.id, p.name]));
+  const you = people.find((p) => p.primary)?.id ?? null;
+  const draw = drawing(events, view, width, cluster.openingEventId ?? null, names, you);
+  return aboutMarkup(why, cluster.label, moments, draw);
+}
+
+/** Every event of a cluster, the undated ones too, by date. */
+export const membersOf = (cluster: Cluster, all: TimelineEvent[]) =>
+  all.filter((e) => cluster.play_ids.includes(e.id)).sort((a, b) => (a.dateTime ?? "").localeCompare(b.dateTime ?? ""));
+
+/** What a tap on a cluster's page leaves selected: a row, that one event; a
+ * dot, every event on its date; the same again, nothing. It only relates the
+ * list to the drawing and opens nothing (R-0861). */
+export function chosen(now: number[], id: number, via: Via, events: TimelineEvent[]): number[] {
+  const day = events.find((e) => e.id === id)?.dateTime?.slice(0, 10);
+  const next =
+    via === Via.Dot && day ? events.filter((e) => e.dateTime?.slice(0, 10) === day).map((e) => e.id) : [id];
+  return next.length === now.length && next.every((n) => now.includes(n)) ? [] : next;
+}
+
 /** The page behind a cluster's i, as markup: the coach's reason, the years and
  * the count, each moment with its year, and the app's book button, which
  * opens the passages behind what a cluster is (R-0213, R-0691; Patrick,
  * 2026-10-08: the info button for a cluster has the book button). The passages
  * live only behind the book, never in the coach's words (R-0688). */
-export function aboutMarkup(why: string, span: string, moments: { year: string; label: string }[]): string {
+export function aboutMarkup(
+  why: string,
+  span: string,
+  moments: { id?: number; year: string; label: string }[],
+  draw = "",
+): string {
   const rows = moments
-    .map((m) => `<li><span class="ab-yr">${esc(m.year)}</span><span class="ab-what">${esc(m.label)}</span></li>`)
+    .map((m) => `<li${m.id === undefined ? "" : ` data-event="${m.id}"`}><span class="ab-yr">${esc(m.year)}</span><span class="ab-what">${esc(m.label)}</span></li>`)
     .join("");
   return (
     `<div class="ss about">` +
     (why ? `<p class="ab-why">${esc(why)}</p>` : "") +
     `<p class="ab-span">${esc(span)} · ${moments.length} event${moments.length === 1 ? "" : "s"}</p>` +
+    draw +
     `<ul class="ab-list">${rows}</ul>` +
     book(CLUSTER_BOOK, CLUSTER_BOOK_TITLE) +
     `</div>` +
@@ -563,6 +911,22 @@ export function years(iso: string): number {
 export const centredOn = (x: number, width: number, screen: number) =>
   Math.max(0, Math.min(width - screen, x - screen / 2));
 
+/** Where the line slides so a span of it is in sight: nowhere when it is in
+ * sight already, else centred on it, or from its start when it is wider than
+ * the screen; centred when where the line stands is not known (Patrick,
+ * 2026-10-15). */
+export function into(span: Span, left: number | null, width: number, screen: number): number {
+  const wide = span.right - span.left > screen - 2 * X_PAD;
+  if (left !== null) {
+    const seen = wide
+      ? span.left <= left + X_PAD && span.right >= left + screen - X_PAD
+      : inSight(span.left, left, screen) && inSight(span.right, left, screen);
+    if (seen) return left;
+  }
+  if (!wide) return centredOn(middle(span), width, screen);
+  return Math.max(0, Math.min(width - screen, span.left - X_PAD));
+}
+
 /** Whether a point `x` on the line is in sight, the line slid to `left`,
  * clear of the picture's side margins. */
 export const inSight = (x: number, left: number, screen: number) =>
@@ -579,13 +943,6 @@ interface Mark {
   x: number;
 }
 
-/** "2006", or "2004–2006": the span in full years, for a page with room. */
-function fullYears(start: string, end: string): string {
-  const a = yearAt(years(start));
-  const b = yearAt(years(end));
-  return a === b ? String(a) : `${a}\u2013${b}`;
-}
-
 /** The dated moments no cluster claims. */
 function loose(dated: TimelineEvent[], clusters: { event_ids: number[] }[]): TimelineEvent[] {
   const claimed = new Set(clusters.flatMap((cluster) => cluster.event_ids));
@@ -596,6 +953,8 @@ function loose(dated: TimelineEvent[], clusters: { event_ids: number[] }[]): Tim
 export enum Via {
   Chip = "chip",
   Dot = "dot",
+  /** A row of the list on a cluster's page. */
+  Row = "row",
 }
 
 /** What the picture shows, as far as picking an event changes it. */
@@ -645,6 +1004,8 @@ export class Picture {
    * to when the coach's words name one. */
   private park = Park.Present;
   private aimed: number | null = null;
+  /** Where the line was last slid to, while something else stands in its place. */
+  private left: number | null = null;
   private focus: Cluster | null = null;
   private laid: { zones: Mark[][]; rows: LabelRow[] } = {
     zones: [],
@@ -660,6 +1021,10 @@ export class Picture {
   private landed: () => void = () => undefined;
   /** Kept once the about page has finished sliding in or out. */
   settled: Promise<void> = Promise.resolve();
+  /** The events selected on the cluster's page, in its list and on its drawing alike (R-0861). */
+  private chosen: number[] = [];
+  /** A long press has just opened an event, so the tap that ends it selects nothing. */
+  private held = false;
 
   constructor(
     private host: HTMLElement,
@@ -670,6 +1035,7 @@ export class Picture {
     private stepping = false,
   ) {
     window.addEventListener("resize", () => this.render());
+    document.addEventListener("click", (e) => this.under(e), true);
     this.host.addEventListener("click", (e) => {
       // The book on the page behind the i raises its passages and touches
       // nothing on the picture.
@@ -677,6 +1043,22 @@ export class Picture {
       if (bookButton) {
         e.preventDefault();
         this.handlers.onBook?.(bookButton);
+        return;
+      }
+      const one = this.aboutEvent(e.target as Element);
+      if (one !== null) {
+        e.preventDefault();
+        if (this.held) this.held = false;
+        else this.choose(one.id, one.via);
+        return;
+      }
+      const swap = (e.target as Element).closest<HTMLElement>(".ab-view[data-view]");
+      if (swap) {
+        e.preventDefault();
+        const view = swap.dataset.view as ClusterView;
+        storeView(view);
+        this.render();
+        this.handlers.onView?.(view);
         return;
       }
       const hit = (e.target as Element).closest<HTMLElement>("[data-target]");
@@ -703,6 +1085,64 @@ export class Picture {
           : tap;
       this.handlers.onTap(on);
     });
+    this.holds();
+  }
+
+  /** With a cluster's view open, a tap on what lies under it, below the
+   * picture on the same screen, puts the view away and reaches nothing there,
+   * so no second view opens over the first (Patrick, 2026-10-15). What is laid
+   * over the screen, a sheet or a drawer, keeps its own taps. */
+  private under(e: MouseEvent): void {
+    if (this.level !== Level.About) return;
+    const region = this.host.parentElement as HTMLElement;
+    const at = e.target as Element;
+    if (region.contains(at) || at.closest(OVER) || !region.parentElement?.contains(at)) return;
+    if (!(region.compareDocumentPosition(at) & Node.DOCUMENT_POSITION_FOLLOWING)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    this.handlers.onTap(this.tapAt(Target.Close, e));
+  }
+
+  /** A long press on an event of a cluster's page opens its details, as a
+   * long press on a row opens it for editing in the sessions list. */
+  private holds(): void {
+    let timer = 0;
+    const cancel = () => window.clearTimeout(timer);
+    this.host.addEventListener("pointerdown", (e) => {
+      this.held = false;
+      const one = this.aboutEvent(e.target as Element);
+      if (one === null) return;
+      timer = window.setTimeout(() => {
+        this.held = true;
+        this.handlers.onHold?.(one.id);
+      }, HOLD_MS);
+    });
+    for (const kind of ["pointerup", "pointercancel", "pointermove"]) this.host.addEventListener(kind, cancel);
+  }
+
+  /** The event under a tap on the cluster's page, by its row or its dot. */
+  private aboutEvent(el: Element): { id: number; via: Via } | null {
+    if (this.level !== Level.About) return null;
+    const row = el.closest<HTMLElement>(".ab-list li[data-event]");
+    if (row) return { id: Number(row.dataset.event), via: Via.Row };
+    const dot = el.closest<HTMLElement>(`.ab-draw [data-target="${Target.Dot}"]`);
+    return dot ? { id: Number(dot.dataset.index), via: Via.Dot } : null;
+  }
+
+  private choose(id: number, via: Via): void {
+    this.chosen = chosen(this.chosen, id, via, this.focus ? membersOf(this.focus, this.data?.events ?? []) : []);
+    this.mark();
+  }
+
+  /** The selection drawn in place on the list and the drawing, so the page
+   * keeps where it was scrolled to. */
+  private mark(): void {
+    const on = new Set(this.chosen);
+    for (const el of this.host.querySelectorAll<HTMLElement | SVGElement>(".about [data-event]")) {
+      const lit = on.has(Number(el.dataset.event));
+      el.classList.toggle("on", lit);
+      if (el.tagName === "circle") el.setAttribute("r", lit ? "7" : "5");
+    }
   }
 
   private tapAt(target: Target, e: Event, index = -1): Tap {
@@ -776,10 +1216,10 @@ export class Picture {
     this.name(eventIds);
   }
 
-  /** A cluster the reader opened: the line changes where it stands and
-   * travels nowhere (R-0542). */
+  /** A cluster the reader opened: the line travels to it when it is out of
+   * sight, and stays where it is when it is in sight (Patrick, 2026-10-15). */
   open(eventIds: number[]): void {
-    this.aim(null);
+    this.aim(eventIds[0] ?? null);
     this.name(eventIds);
   }
 
@@ -802,9 +1242,7 @@ export class Picture {
       named: this.named,
       selected: this.selected,
     } = picked(this.look(), id, named, this.data?.clusters ?? [], this.spot, via));
-    if (via === Via.Chip) {
-      this.aim(id);
-      }
+    if (via === Via.Chip) this.aim(id);
     this.render();
   }
 
@@ -936,6 +1374,7 @@ export class Picture {
   about(): void {
     if (!this.opened()) return;
     this.level = Level.About;
+    this.chosen = [];
     this.render();
   }
 
@@ -993,8 +1432,6 @@ export class Picture {
     this.render();
   }
 
-  private yearOf = (event: TimelineEvent) => (event.dateTime as string).slice(0, 4);
-
   private event(id: number | null): TimelineEvent | null {
     return id === null
       ? null
@@ -1010,17 +1447,31 @@ export class Picture {
     return (this.data?.events ?? []).filter((e) => !!dateOf(e));
   }
 
+  /** What the line draws: the dated events, and the one picked when it holds
+   * a date the record is unsure of, since a chip showing a date goes there
+   * (Patrick, 2026-10-15). */
+  private onLine(): TimelineEvent[] {
+    const dated = this.dated();
+    const picked = this.event(this.selected);
+    if (!picked?.dateTime || dated.includes(picked)) return dated;
+    return [...dated, picked].sort((a, b) => years(a.dateTime as string) - years(b.dateTime as string));
+  }
+
   private get width(): number {
     return this.host.clientWidth || 360;
   }
 
   /** A mode of the cluster, as a card laid over the chat from the top of the
    * picture: as tall as what it holds, while the picture and the header keep
-   * their height and the bubbles stay where they are under it (R-0460). */
+   * their height and the bubbles stay where they are under it (R-0460), on
+   * the case report as on the chat. It stops at the bottom of the screen and
+   * scrolls inside itself when it holds more. */
   private card(markup: string): void {
     this.laid = { zones: [], rows: [] };
     this.pin(PIC_H);
     this.host.innerHTML = `<div class="card">${markup}</div>`;
+    const card = this.host.firstElementChild as HTMLElement;
+    card.style.maxHeight = `${window.innerHeight - this.host.getBoundingClientRect().top}px`;
   }
 
   /** The picture region owns its level's height, so the chat below it only ever
@@ -1034,13 +1485,11 @@ export class Picture {
    * page takes the height its words need. */
   private renderAbout(cluster: Cluster): void {
     this.laid = { zones: [], rows: [] };
-    const why = (cluster.reason ?? cluster.summary ?? "").trim();
-    const moments = (this.data?.events ?? [])
-      .filter((e) => cluster.event_ids.includes(e.id))
-      .sort((a, b) => (a.dateTime ?? "").localeCompare(b.dateTime ?? ""))
-      .map((e) => ({ year: this.yearOf(e), label: e.label }));
-    this.card(aboutMarkup(why, fullYears(cluster.start, cluster.end), moments));
+    // the page's words sit between its 16px left and its 52px right, clear of the cross
+    this.card(clusterPage(cluster, this.data?.events ?? [], this.data?.people ?? [], storedView(), this.width - 68));
+    this.mark();
   }
+
 
   /** The line: one drawing for the whole timeline and a cluster open on it
    * (R-0538), wider than the screen when the record needs it and swiped
@@ -1054,7 +1503,7 @@ export class Picture {
    * neighbours; a tap on the open pill is ground, which puts it down. */
   private renderLine(): void {
     const screen = this.width;
-    const dated = this.dated();
+    const dated = this.onLine();
     this.laid = { zones: [], rows: [] };
     this.pin(PIC_H);
 
@@ -1077,7 +1526,8 @@ export class Picture {
       dated.map((e) => e.dateTime as string),
       screen,
     );
-    const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? null;
+    // where the reader left the line, kept while a cluster's view stood in its place
+    const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? this.left;
     const x0 = X_PAD;
     const x1 = width - X_PAD;
     const first = years(dated[0].dateTime as string);
@@ -1150,7 +1600,7 @@ export class Picture {
         index: clusters.indexOf(cluster),
         left: hits[i].left,
         width: hits[i].right - hits[i].left,
-        label: cluster.title || fullYears(cluster.start, cluster.end),
+        label: cluster.title,
       });
     });
     // what this turn removed stays where it was, in its colour, until the next
@@ -1182,20 +1632,22 @@ export class Picture {
     // sight, as one that lands mid-travel does, goes to it again (Patrick, 2026-10-07)
     const step = this.stepping && !aimed ? marks.find((m) => m.event.id === this.selected) : undefined;
     if (step && !inSight(step.x, held ?? Math.max(0, width - screen), screen)) this.park = Park.Named;
-    const onX = (aimed ?? step)?.x ?? null;
+    const mark = aimed ?? step;
+    // an event drawn inside its cluster's pill is gone to by the pill
+    const pill = mark || this.aimed === null ? undefined : laid.find((p) => p.cluster?.event_ids.includes(this.aimed!));
+    const on = mark ? { left: mark.x, right: mark.x } : (pill ?? null);
     // where the line comes to rest, so the words of a picked event are
     // written across the stretch the reader will be looking at
-    const shows = this.stands({ width, screen }, held, onX);
+    const shows = this.stands({ width, screen }, held, on);
     const said = this.labels(marks, shows + X_PAD, shows + screen - X_PAD, WIRE);
     this.laid.rows = said.rowsLaid;
     const chosen = marks.find((m) => m.event.id === this.selected);
     // With a cluster open and nothing picked, the words over the line are the
-    // cluster's years and how many events it holds (R-0538, R-0583); its name
-    // is in the path above, so neither is on the screen twice (R-0767).
+    // cluster's name with how many events it holds (R-0538, R-0583, R-0767).
     const title =
       !said.text && open && !chosen
         ? `<div class="ss-t ss-name" style="left:${X_PAD}px;top:${ROWS[0]}px;` +
-          `width:${screen - 2 * X_PAD}px"><span>${esc(clusterLabel(open))}</span></div>`
+          `width:${screen - 2 * X_PAD}px"><span>${esc(clusterName(open))}</span> <span class="ct">(${open.count})</span></div>`
         : "";
     // The band lies over the words and under the marks' own targets.
     const words = said.text ? said.text + bandHit(shows + X_PAD, screen - 2 * X_PAD) : "";
@@ -1218,19 +1670,21 @@ export class Picture {
     this.host.innerHTML =
       `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
       `${svg}${words}${targets}${snaps}</div></div>${title}${shelf}</div>`;
-    this.settle({ width, screen }, held, onX);
+    this.settle({ width, screen }, held, on);
   }
 
-  /** Where the line comes to rest after this draw: on the moment just named,
-   * where the reader left it, or parked at the present. */
+  /** Where the line comes to rest after this draw: on what was just named
+   * when it is out of sight, where the reader left it, or parked at the
+   * present. */
   private stands(
     view: { width: number; screen: number },
     held: number | null,
-    onX: number | null,
+    on: Span | null,
   ): number {
     const end = Math.max(0, view.width - view.screen);
-    if (this.park === Park.Named && onX !== null) return centredOn(onX, view.width, view.screen);
-    if (this.park === Park.Held && held !== null) return Math.min(end, held);
+    const left = held === null ? null : Math.min(end, held);
+    if (this.park === Park.Named && on) return into(on, left, view.width, view.screen);
+    if (this.park !== Park.Present && left !== null) return left;
     return end;
   }
 
@@ -1239,12 +1693,12 @@ export class Picture {
   private settle(
     view: { width: number; screen: number },
     held: number | null,
-    onX: number | null,
+    on: Span | null,
   ): void {
     const scroll = this.host.querySelector<HTMLElement>(SCROLLER);
     if (!scroll) return;
-    const named = this.park === Park.Named && onX !== null;
-    const to = this.stands(view, held, onX);
+    const named = this.park === Park.Named && on !== null;
+    const to = this.stands(view, held, on);
     this.park = Park.Held;
     this.aimed = null;
     // the line travelling to what was named is the picture answering the
@@ -1282,6 +1736,7 @@ export class Picture {
 
   private render(): void {
     if (!this.data) return;
+    this.left = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? this.left;
     const to = DEPTH[this.level];
     const from = this.depth;
     this.depth = to;
@@ -1319,7 +1774,10 @@ export class Picture {
     clip.append(leaving);
     region.append(clip);
     keepScroll(leaving);
-    requestAnimationFrame(() => {
+    // A render that arrives before the first frame lands this slide there and
+    // then, so a cluster's view opened over another never leaves a dead copy
+    // over the live one, its cross answering nothing (Patrick, 2026-10-15).
+    const frame = requestAnimationFrame(() => {
       const arriving = snapshot(region);
       clip.append(dir === 1 ? arriving : leaving);
       keepScroll(arriving);
@@ -1333,15 +1791,16 @@ export class Picture {
         duration: SLIDE_MS,
         easing: "ease",
       });
-      this.landing = () => {
-        clip.remove();
-        region.classList.remove("sliding");
-      };
       this.flight.finished.then(
         () => this.land(),
         () => undefined,
       );
     });
+    this.landing = () => {
+      cancelAnimationFrame(frame);
+      clip.remove();
+      region.classList.remove("sliding");
+    };
   }
 
   /** Put the arriving view down where it belongs, whether the slide finished

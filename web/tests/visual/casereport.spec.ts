@@ -52,7 +52,7 @@ for (const key of FIXTURES)
       test.describe(`${key} at ${size.width} in ${scheme}`, () => {
         test.use({ storageState: stateFor(key), viewport: size, colorScheme: scheme });
 
-        // R-0702, R-0689, R-0690
+        // R-0702, R-0689, R-0690, R-0850
         test("draws every card with its strip item, each chip whole and inside its card, nothing sideways", async ({ page }) => {
           const errors = await open(page);
           const seen = await page.evaluate(() => {
@@ -61,7 +61,7 @@ for (const key of FIXTURES)
             const chips = [...document.querySelectorAll<HTMLElement>("#case-body .chips .chip")];
             return {
               strip: [...document.querySelectorAll<HTMLElement>("#case-rail [data-jump]")].map((b) => b.dataset.jump),
-              cards: [...document.querySelectorAll<HTMLElement>("#case-body .level, #case-dash .level")].map((l) => l.dataset.card),
+              cards: [...document.querySelectorAll<HTMLElement>("#case-body .level")].map((l) => l.dataset.card),
               // a stored title shows whole: no chip cut short, none with an ellipsis
               ellipsis: chips.filter((c) => getComputedStyle(c).textOverflow === "ellipsis").length,
               cut: chips
@@ -77,13 +77,12 @@ for (const key of FIXTURES)
               stripRows: new Set([...document.querySelectorAll<HTMLElement>("#case-rail [data-jump]")].map((b) => b.offsetTop)).size,
               text: document.querySelector("#case-screen")!.textContent ?? "",
               folds: document.querySelectorAll("#case-body details").length,
-              sides: document.querySelectorAll("#case-body details.side").length,
-              sideCount: document.querySelectorAll("#case-body details.side").length,
-              sidePictures: document.querySelectorAll("#case-body details.side .fam").length,
+              bodyPictures: document.querySelectorAll("#case-body .fam").length,
             };
           });
           expect([...seen.cards].sort()).toEqual([...seen.strip].sort());
-          expect(seen.strip).toHaveLength(10);
+          // nine cards: the choice is part of the person's own part (R-0850)
+          expect(seen.strip).toHaveLength(9);
           expect(seen.stripRows).toBe(1);
           expect(seen.cut).toEqual([]);
           expect(seen.ellipsis).toBe(0);
@@ -92,11 +91,11 @@ for (const key of FIXTURES)
           expect(seen.text).not.toMatch(/NaN|undefined|not in the record|From the record/);
           // stored words show as written: an apostrophe is never escaped code
           expect(seen.text).not.toMatch(/&#39;|&#x27;|&apos;|&amp;|&quot;/);
-          // every family picture is drawn; each side is one picture (R-0733)
+          // every family picture is drawn (R-0733), and only behind the family button or beside the cards (R-0866)
           expect(seen.text).not.toContain("cannot be drawn");
-          expect(seen.sidePictures).toEqual(seen.sideCount);
-          // only each side of the family folds (R-0689)
-          expect(seen.folds).toBe(seen.sides);
+          expect(seen.bodyPictures).toBe(0);
+          // the sides are the coach's notes now, so nothing on the report folds (R-0866)
+          expect(seen.folds).toBe(0);
           expect(errors).toEqual([]);
         });
       });
@@ -200,11 +199,12 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-body")).not.toContainText(/A guess, yours to reject|Rests on|The record covers|open questions|Left off this page/i);
   });
 
-  // R-0702
-  test("the family card is one button, the same as the strip's family item", async ({ page }) => {
+  // R-0702, R-0866
+  test("the family card is the coach's lines and the picture button, the same as the strip's family item", async ({ page }) => {
     await open(page);
     const card = page.locator('#case-body .level[data-card="family"]');
-    await expect(card.locator("> *")).toHaveCount(1);
+    await expect(card.locator(".bub.coach")).toHaveCount(1);
+    await expect(card.locator(".fam")).toHaveCount(0);
     await expect(card.locator("button.famcard")).toHaveText((await page.locator('#case-rail [data-jump="family"]').textContent())!);
     await card.locator("button.famcard").click();
     await expect(page.locator("#case-famout")).toHaveClass(/in/);
@@ -232,12 +232,113 @@ test.describe("the case report's taps", () => {
   });
 
   // R-0700
-  test("a cluster's chip on a card opens it on the timeline with explain offered, and explain opens the play-by-play", async ({ page }) => {
+  test("a cluster's chip on a card opens that cluster's view, as its info button on the timeline does", async ({ page }) => {
     await open(page);
     await page.locator('#case-body .chip[data-kind="cluster"]').first().click();
-    await expect(page.locator("#case-path [data-step]").first()).toBeVisible();
-    await page.locator("#case-caption #cap-play").click();
-    await expect(page.locator("#case-pbp")).toHaveClass(/in/);
+    await expect(page.locator("#case-path .here")).toHaveText("about");
+    await expect(page.locator("#case-view .ss.about")).toBeVisible();
+  });
+
+  // R-0861, R-0862
+  test("a tap under a cluster's view puts it away and reaches nothing there, and its cross always closes it", async ({ page }) => {
+    await open(page);
+    const chip = page.locator('#case-body .chip[data-kind="cluster"]').first();
+    const view = page.locator("#case-view .ss.about");
+    await chip.click();
+    await expect(view).toBeVisible();
+    const card = (await page.locator("#case-view .card").boundingBox())!;
+    const body = (await page.locator("#case-body").boundingBox())!;
+    const below = card.y + card.height + 12;
+    expect(below).toBeLessThan(body.y + body.height);
+    const before = await page.locator("#case-body").evaluate((b) => b.scrollTop);
+    await page.mouse.click(body.x + body.width / 2, below);
+    await expect(view).toHaveCount(0);
+    await expect(page.locator("#case-path .here")).not.toHaveText("about");
+    // nothing under the view answered: no drawer, no book, no second view
+    await expect(page.locator("#case-pbp")).not.toHaveClass(/in/);
+    await expect(page.locator("#case-screen .fs-sheet.in")).toHaveCount(0);
+    await page.waitForTimeout(600);
+    await expect(view).toHaveCount(0);
+    await expect(page.locator("#case-screen .slide-clip")).toHaveCount(0);
+    expect(await page.locator("#case-body").evaluate((b) => b.scrollTop)).toBe(before);
+    // opened again, its cross closes it, and no copy of it is left over the line
+    await chip.click();
+    await expect(view).toBeVisible();
+    await page.waitForTimeout(600);
+    await page.locator('#case-view .card [data-target="close"]').click();
+    await expect(view).toHaveCount(0);
+    await page.waitForTimeout(600);
+    await expect(page.locator("#case-screen .slide-clip")).toHaveCount(0);
+    await expect(page.locator("#case-view .card")).toHaveCount(0);
+  });
+
+  // R-0855, R-0168
+  test("a chip whose event's date is unsure picks its dot on the timeline, a marriage first", async ({ page }) => {
+    const record = await (await page.request.get("/app/timeline")).json();
+    type Ev = { id: number; kind: string; dateCertainty: string };
+    const inside = new Set(record.clusters.flatMap((c: { event_ids: number[] }) => c.event_ids));
+    await open(page);
+    const targets = await page.locator('#case-body .chip[data-kind="event"]').evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.target)));
+    const loose = (record.events as Ev[]).filter((e) => targets.includes(e.id) && !inside.has(e.id));
+    const one = loose.find((e) => e.kind === "married") ?? loose[0];
+    expect(one).toBeTruthy();
+    await page.route("**/app/timeline*", async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      for (const e of json.events as Ev[]) if (e.id === one.id) e.dateCertainty = "unknown";
+      await route.fulfill({ response, json });
+    });
+    await page.reload();
+    await expect(page.locator("#case-body .level").first()).toBeVisible();
+    await page.waitForTimeout(400);
+    await expect(page.locator(`#case-view circle.dot[data-event="${one.id}"]`)).toHaveCount(0);
+    await page.locator(`#case-body .chip[data-kind="event"][data-target="${one.id}"]`).first().click();
+    await expect(page.locator(`#case-view circle.dot.on[data-event="${one.id}"]`)).toHaveCount(1);
+    await expect(page.locator("#case-view .ss-t.on").first()).toBeVisible();
+  });
+
+  // R-0767
+  test("a chip whose dot is out of sight glides the timeline to it, and one in sight leaves the timeline still", async ({ page }) => {
+    const record = await (await page.request.get("/app/timeline")).json();
+    const inside = new Set(record.clusters.flatMap((c: { event_ids: number[] }) => c.event_ids));
+    await open(page);
+    const scroller = page.locator("#case-view .ss-scroll");
+    const wide = await scroller.evaluate((s) => s.scrollWidth - s.clientWidth);
+    expect(wide).toBeGreaterThan(100);
+    // the line swiped to its start, and the dot of a card's chip nearest the present
+    await scroller.evaluate((s) => (s.scrollLeft = 0));
+    const targets = await page.locator('#case-body .chip[data-kind="event"]').evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.target)));
+    const dots = await page.locator("#case-view circle.dot").evaluateAll((els) =>
+      els.map((d) => ({ id: Number(d.getAttribute("data-event")), x: d.getBoundingClientRect().left })),
+    );
+    const far = dots.filter((d) => targets.includes(d.id) && !inside.has(d.id)).sort((a, b) => b.x - a.x)[0];
+    const box = (await page.locator("#case-view").boundingBox())!;
+    expect(far.x).toBeGreaterThan(box.x + box.width);
+    /** Every frame's slide of the line for a while after `act`. */
+    const slides = async (act: () => Promise<void>) => {
+      await page.evaluate(() => {
+        const seen: number[] = [];
+        (window as unknown as { SLID: number[] }).SLID = seen;
+        const read = () => {
+          const line = document.querySelector<HTMLElement>("#case-view .ss-scroll");
+          if (line) seen.push(Math.round(line.scrollLeft));
+          if (seen.length < 150) requestAnimationFrame(read);
+        };
+        requestAnimationFrame(read);
+      });
+      await act();
+      await page.waitForTimeout(2600);
+      return page.evaluate(() => (window as unknown as { SLID: number[] }).SLID);
+    };
+    const chip = page.locator(`#case-body .chip[data-kind="event"][data-target="${far.id}"]`).first();
+    const travel = await slides(() => chip.click());
+    expect(new Set(travel).size).toBeGreaterThan(3);
+    const picked = (await page.locator(`#case-view circle.dot.on[data-event="${far.id}"]`).boundingBox())!;
+    expect(picked.x).toBeGreaterThanOrEqual(box.x);
+    expect(picked.x + picked.width).toBeLessThanOrEqual(box.x + box.width);
+    const before = await scroller.evaluate((s) => s.scrollLeft);
+    const still = await slides(() => chip.click());
+    expect(new Set(still)).toEqual(new Set([Math.round(before)]));
   });
 
   // R-0715
@@ -330,13 +431,10 @@ test.describe("the case report's family pictures of a family many phones wide", 
   // R-0759, R-0744
   test("draw names at 13px or more and pan in their own frames, every word inside what the frame scrolls to", async ({ page }) => {
     const errors = await open(page);
-    const pictures = "#case-body .fam svg";
-    expect(await leastName(page, pictures)).toBeGreaterThanOrEqual(NAME_PX);
-    expect(await wordsOutside(page, pictures)).toEqual([]);
-    expect(await page.locator("#case-body .fam").evaluateAll((f) => f.some((d) => d.scrollWidth > d.clientWidth))).toBe(true);
     await page.locator("#case-family").click();
     await expect(page.locator("#case-famout")).toHaveClass(/in/);
     const slid = "#case-famout .fam svg";
+    expect(await page.locator("#case-famout .fam").evaluateAll((f) => f.some((d) => d.scrollWidth > d.clientWidth))).toBe(true);
     // R-0759: the record's own person and their words whole in the frame, as the Family drawer opens
     const own = await page.locator("#case-famout .fam[data-who]").first().getAttribute("data-who");
     expect(await page.locator(`#case-famout .fam .pt[data-id="${own}"]`).first().textContent()).toContain("Margaret-Anne");
@@ -355,25 +453,19 @@ for (const size of [SIZES[0], { width: 1440, height: 900 }])
   test.describe(`the couple card at ${size.width}`, () => {
     test.use({ storageState: stateFor("case-report"), viewport: size });
 
-    // R-0833, R-0834, R-0835
-    test("groups the couple's events under Bowen's stage heads in date order, each head a chip, and says what it still needs", async ({ page }) => {
+    // R-0850
+    test("is the coach's one statement on the couple with one chip per event it rests on, inside the card", async ({ page }) => {
       const errors = await open(page);
       const card = page.locator('#case-body .level[data-card="couple"]');
       await card.scrollIntoViewIfNeeded();
       await expect(card.locator("p.label")).toHaveText("4 · The couple since they met");
-      await expect(card.locator("p.lead").first()).toHaveText("Nora and Daniel are married.");
-      const rows = card.locator(".stage .chips");
-      await expect(rows).toHaveCount(2);
-      expect(await rows.locator(".chip:first-child").allTextContents()).toEqual(["Jun 2009 · married", "May 2012 · Lily born"]);
-      // under married: Nora's fights with Daniel; under Lily born: Daniel's job, named; and her mother's illness, always
-      await expect(rows.nth(0)).toContainText("Jun 2011 · Fights over money");
-      await expect(rows.nth(1)).toContainText("Feb 2014 · Daniel · Lost his job");
-      await expect(rows.nth(1)).toContainText("Apr 2018 · Elaine · Hospitalized with pneumonia");
-      await expect(rows.nth(1)).toContainText("Jan 2019 · Stopped visiting her mother");
-      // nothing of hers from before the marriage
-      await expect(card).not.toContainText("Stopped sleeping well");
-      await expect(card.locator("p.lead").last()).toHaveText("This card still needs where Daniel stands among his brothers and sisters.");
-      // every chip whole and inside the card, nothing sideways
+      await expect(card.locator(".gbub")).toHaveCount(1);
+      await expect(card.locator(".gbub")).toContainText("Since you married Daniel");
+      expect((await card.locator(".chips .chip").allTextContents()).sort()).toEqual(
+        ["Jun 2009 · married", "Jun 2011 · Fights over money", "Feb 2014 · Lost his job", "May 2012 · Lily · born"].sort(),
+      );
+      // the stage heads of the old list are gone
+      await expect(card.locator(".stage")).toHaveCount(0);
       const geometry = await card.evaluate((level) => {
         const box = level.getBoundingClientRect();
         const chips = [...level.querySelectorAll<HTMLElement>(".chips .chip")];
@@ -386,8 +478,8 @@ for (const size of [SIZES[0], { width: 1440, height: 900 }])
       expect(errors).toEqual([]);
     });
 
-    // R-0835, R-0691
-    test("its book raises the passages behind the stages and the selection rule, each with its book and chapter", async ({ page }) => {
+    // R-0850, R-0691
+    test("its book raises the passages behind the card, each with its book and chapter", async ({ page }) => {
       await open(page);
       const card = page.locator('#case-body .level[data-card="couple"]');
       await card.scrollIntoViewIfNeeded();

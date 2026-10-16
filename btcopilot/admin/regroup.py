@@ -1,6 +1,7 @@
-"""Regrouping the records whose clusters are behind their events, so a fix to
-the grouping reaches them without waiting for the person's next turn
-[Oracle: R-0772, R-0780]."""
+"""Regrouping the records whose clusters are behind their events or the
+person's answers to when the most was going on, so a fix to the grouping
+reaches them without waiting for the person's next turn [Oracle: R-0772,
+R-0844, R-0853]."""
 
 import datetime
 import enum
@@ -18,15 +19,18 @@ TURN = "regroup:{}:{}"
 
 
 class Why(enum.StrEnum):
-    Changed = "events changed since the last grouping"
+    Changed = (
+        "events or an answer about when the most was going on changed since the last "
+        "grouping"
+    )
     Ungrouped = "events and no groups"
 
 
 def why(diagram: Diagram) -> Why | None:
     data = diagram.get_diagram_data()
-    if not clusters.candidates(data):
+    if not clusters.candidates(data) and not clusters.told_ids(diagram.id, data):
         return None
-    if clusters.behind(data):
+    if clusters.behind(diagram.id, data):
         return Why.Changed
     if not data.clusters:
         return Why.Ungrouped
@@ -43,12 +47,18 @@ def why(diagram: Diagram) -> Why | None:
 )
 @rows_option
 def regroup(diagram_id, apply):
-    """Regroup each record whose events changed since its last grouping, or that
-    has events to group and no groups. The dry run lists them and makes no model
-    call; --apply makes the grouping calls a turn makes, one or two per record,
-    each in the model-calls ledger, and writes each record's new grouping as one
-    change row that `diagrams undo` takes back. A record whose answers are both
-    refused gets the rules' groups under their years, and `failed` says so."""
+    """Regroup each record whose events, or the person's answers to when the
+    most was going on, changed since its last grouping, or that has events to
+    group and no groups. The dry run lists them and makes no model call;
+    --apply makes the grouping calls a turn makes, one or two per record, each
+    in the model-calls ledger, and writes each record's new grouping as one
+    change row that `diagrams undo` takes back: the app's periods as the answer
+    returns them, the ones it leaves out set aside, and the periods the person
+    named written as theirs. Before the call, a stored period of the app's
+    that fails a check is set aside. A record whose answers are both refused
+    keeps the stored periods that pass, sets aside the app's that fail, names
+    nothing after its years, is not regrouped by a turn until its events or
+    answers change, and `failed` says so."""
     columns = ["diagram", "why", "groups", "regrouped", "change", "failed"]
     found = [find(diagram_id)] if diagram_id else Diagram.query.order_by(Diagram.id).all()
     stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%S")
@@ -73,10 +83,11 @@ def regroup(diagram_id, apply):
             db.session.commit()
             row["regrouped"] = len(diagram.get_diagram_data().clusters)
             row["change"] = done.change.id if done else None
-            row["failed"] = bool(
-                Observation.query.filter_by(
+            row["failed"] = any(
+                "setAside" not in o.detail
+                for o in Observation.query.filter_by(
                     turn_id=turn_id, kind=ObservationKind.ClusterFailed
-                ).count()
+                )
             )
         rows.append(row)
     return columns, rows

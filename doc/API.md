@@ -55,7 +55,7 @@ statement_id}}` for events whose coding session is known, which is what "coded
 in …" reads. Events never traced are absent.
 
 Each entry of `asked_questions` also carries `case_report_card`: `main_guess`,
-`own_part`, `choice`, `work_on`, `coach_guess` or null, the case report card the
+`what_brought`, `couple`, `own_part`, `choice`, `work_on`, `coach_guess` or null, the case report card the
 coach put it on (R-0709, R-0732). One guess is on each card, the newest;
 `work_on` and `coach_guess` hold up to three, in record order. A question is only ever on `own_part` or `choice`. And
 `answer`: null, or the person's own message that answered the question,
@@ -89,7 +89,7 @@ mockup's: `why`, `1` to `6`, `7a`, `9a`, `10`, `3s` and `order`.
 
 `POST /case-report-rewrites?diagram_id=` — write every card the coach writes
 again from the diagram as it stands: Executive Summary (`main_guess`), the
-coach's guess, own part, the choice and what to work on, in one model call in
+coach's guess, the couple (one statement on the person's own couple, its events as chips), own part, the choice and what to work on, in one model call in
 the worker, given every event's words and notes (R-0825). 202 `{id, state: "running"}`; 409 while a rewrite of that
 family's report is running, or when the family has no session yet; a read-only
 diagram is refused as every write is.

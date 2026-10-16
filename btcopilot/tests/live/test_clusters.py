@@ -1,10 +1,16 @@
 """The grouping call on the fictional Hale record: three runs of events decades
-apart and two strays, the shape of the fault seen on production. An older
+apart and one stray, the shape of the fault seen on production. An older
 prompt let the model fold them into one period of fifty years. Read as
 hypotheses of a family process, the periods stay apart across the quiet
-decades, each named for what seems to have shifted, never for its years
-(R-0841, R-0844, R-0837, R-0838). Invented names only; no real record is
-involved.
+decades, each named for the change in the family that opened it, never for
+its years or the person's trouble (R-0841, R-0844, R-0837, R-0838, R-0850).
+The periods the person names when asked when the most was going on come back
+as hers, in her words (R-0853). Fewer than three of the shifts that count
+weighs against a period and never keeps it out: the 1994 run, offered with its
+two, may come back with its shortfall said in its reason (R-0850). Invented
+names only; no real record is involved. Pass criteria are k of n runs on the
+stored clusters, stated on each test; none has been run against the prompt of
+DETECTION_VERSION 14 yet (real-model spend waits on Patrick).
 
 The app's grouping model is Gemini, and this suite's machine may have no key
 for it, so the call goes through Claude Code (`claude -p` with the answer's
@@ -22,11 +28,17 @@ import tempfile
 from decimal import Decimal
 
 from btcopilot.clusters import (
+    Answer,
+    ClusterCheck,
     ClusterError,
     ClusterListResponse,
     ModelCluster,
+    TheirPeriod,
     detect_clusters,
+    judge,
+    trouble_words,
 )
+from btcopilot.schema import ClusterSource
 from btcopilot.tests.live.criterion import once, passes
 from btcopilot.tests.test_clusters import ALL_HALE, HALE, HALE_NAMES, HALE_STORED
 
@@ -85,7 +97,8 @@ def ask(prompt: str, schema: dict, limit: int) -> ClusterListResponse:
     print(f"  {MODEL}: ${spent[-1]:.4f}, {sum(spent):.4f} so far")
     answer = result.get("structured_output") or json.loads(result["result"])
     return ClusterListResponse(
-        clusters=[ModelCluster(**group) for group in answer.get("clusters", [])]
+        clusters=[ModelCluster(**group) for group in answer.get("clusters", [])],
+        periods=[TheirPeriod(**period) for period in answer.get("periods", [])],
     )
 
 
@@ -157,7 +170,7 @@ def test_a_stored_fifty_year_group_is_not_handed_back_unchanged():
     try:
         result = detect_clusters(HALE_STORED, ask)
     except ClusterError as refused:
-        # both answers refused: in the turn the stored group is removed and
+        # both answers refused: in the turn the stored group is set aside and
         # nothing is named after its years (R-0844, R-0838)
         print(f"  refused twice, the last by {refused.check.value}: {refused}")
         return
@@ -168,3 +181,98 @@ def test_a_stored_fifty_year_group_is_not_handed_back_unchanged():
     assert not [
         c for c in result.clusters if span(c)[0] <= 1955 and span(c)[1] >= 1994
     ], "a group still spans 1955 and 1994"
+
+
+@passes(8, of=10)
+def test_a_period_is_named_by_its_change_and_holds_the_death_it_follows():
+    # R-0850
+    """Pass: no stored name uses the words the person's trouble is told in
+    (Edith's headaches, June's drinking, Nell's panic attacks), and the
+    grandfather's 1998 death, offered in the run around Nell and Theo's
+    trouble, is held by the period over those years."""
+    result = detect_clusters(HALE, ask)
+    told = trouble_words(HALE)
+    for cluster in result.clusters:
+        print(f"  {span(cluster)} {cluster.eventIds} {cluster.name!r}")
+    assert not [
+        c.name for c in result.clusters if told & set(c.name.lower().split())
+    ]
+    late = [c for c in result.clusters if span(c)[0] >= 1996]
+    assert late and any(11 in c.eventIds for c in late)
+
+
+SHORTFALL = re.compile(r"\b(only|two|fewer|single|lone)\b")
+
+
+@passes(8, of=10)
+def test_a_period_with_fewer_than_three_shifts_stands_with_its_shortfall_said():
+    # R-0850
+    """Pass: a period holds the 1994 divorce with Nell's distance from her
+    mother and June's drinking after it, two of the shifts that count, and
+    every period of the app's with fewer than three says so in its reason."""
+    result = detect_clusters(HALE, ask)
+    thin = []
+    for cluster in result.clusters:
+        count = len(judge({"eventIds": cluster.eventIds}, HALE).shiftIds)
+        print(f"  {span(cluster)} {cluster.eventIds} {count} {cluster.name!r}: {cluster.reason}")
+        if count < 3:
+            thin.append(cluster)
+    assert [c for c in result.clusters if {6, 7, 8} <= set(c.eventIds)]
+    assert not [c.reason for c in thin if not SHORTFALL.search(c.reason.lower())]
+
+
+# Nell's answer when the coach asked when the most was going on.
+NELL_SAID = (
+    "The worst stretch was after Theo and I got married, from 1996 until we "
+    "split in 2001. Before that, 1994, when Mum and Dad divorced, was hard too."
+)
+
+
+@passes(8, of=10)
+def test_the_periods_the_person_names_come_back_as_hers():
+    # R-0853
+    """Pass: exactly two periods of hers are stored, over 1994 and over 1996 to
+    2001 (the code refuses any not in her words or sharing days), and no period
+    of the app's shares their days."""
+    said = [Answer(1, "When in your life was the most going on?", NELL_SAID)]
+    result = detect_clusters(HALE, ask, said=said)
+    for cluster in result.clusters:
+        print(f"  {cluster.source} {span(cluster)} {cluster.eventIds} {cluster.name!r}")
+    hers = [c for c in result.clusters if c.source is ClusterSource.User]
+    assert sorted(span(c) for c in hers) == [(1994, 1994), (1996, 2001)]
+    ours = [c for c in result.clusters if c.source is ClusterSource.Model]
+    assert not [
+        c.name
+        for c in ours
+        for h in hers
+        if c.startDate < h.endDate and h.startDate < c.endDate
+    ]
+
+
+def first_refused(said=()) -> tuple[list, list]:
+    """The checks the first answer failed, and the app's periods kept."""
+    seen = []
+    result = detect_clusters(HALE, ask, lambda n, err, _: seen.append((n, err.check)), said=said)
+    for cluster in result.clusters:
+        print(f"  {cluster.source} {span(cluster)} {cluster.name!r}: {cluster.reason}")
+    return seen, [c for c in result.clusters if c.source is ClusterSource.Model]
+
+
+@passes(8, of=10)
+def test_a_periods_words_are_the_coachs_even_beside_her_own_first_person_answer():
+    # R-0860
+    """Pass: with Nell's own answer in the first person in the prompt, no
+    period of the app's is refused on its first answer for speaking as her."""
+    said = [Answer(1, "When in your life was the most going on?", NELL_SAID)]
+    seen, _ = first_refused(said)
+    assert (1, ClusterCheck.FirstPerson) not in seen
+
+
+@passes(8, of=10)
+def test_a_periods_sentence_sets_its_events_side_by_side_never_one_creating_another():
+    # R-0864, R-0569
+    """Pass: no period's first answer is refused for saying one event created,
+    caused or led to another, and the app still keeps a period."""
+    seen, ours = first_refused()
+    assert (1, ClusterCheck.Cause) not in seen
+    assert ours

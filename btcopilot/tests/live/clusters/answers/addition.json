@@ -1,0 +1,23 @@
+{
+ "model": "hand-written",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "Bea's birth",
+     "reason": "Within eighteen months of the third child's birth both parents and both older children shifted.",
+     "openingId": 4
+    }
+   ],
+   "periods": []
+  }
+ ]
+}

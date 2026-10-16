@@ -30,6 +30,7 @@ from btcopilot.turnlog import TurnEventKind
 
 BORN = "When were you born?"
 MOST = "the two or three times when the most was going on"
+BROUGHT = "what brought them in"
 ME = 1
 ADA, TOM, HOME, NELL = 2, 3, 4, 5
 SAM, BOND = 6, 7
@@ -100,8 +101,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            f"1 Wren (the person): {MOST}, who their parents are, marriages with dates",
-            RESOLVED.format(known=2, resolved=2, required=14),
+            f"1 Wren (the person): {BROUGHT}, {MOST}, who their parents are",
+            RESOLVED.format(known=2, resolved=2, required=15),
         ]
     )
 
@@ -120,8 +121,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     # the person chatting is alive
     assert coverage.states(data)[(Fact.Alive, ItemKind.Person, ME)] is FactState.Known
     assert done(first["turn_id"]) == {
-        "before": counts(14, 2),
-        "after": counts(14, 2, asked=1),
+        "before": counts(15, 2),
+        "after": counts(15, 2, asked=1),
     }
 
     at = version(family)
@@ -162,8 +163,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            f"1 Wren (the person): {MOST}, who their parents are, marriages with dates",
-            RESOLVED.format(known=2, resolved=2, required=14),
+            f"1 Wren (the person): {BROUGHT}, {MOST}, who their parents are",
+            RESOLVED.format(known=2, resolved=2, required=15),
         ]
     )
 
@@ -183,8 +184,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     # the person, each parent with who their parents are, the parents'
     # number of children, the sister
     assert done(second["turn_id"]) == {
-        "before": counts(14, 2, asked=1),
-        "after": counts(50, 10, 1),
+        "before": counts(15, 2, asked=1),
+        "after": counts(51, 10, 1),
     }
 
     at = version(family)
@@ -215,13 +216,12 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert shown(model) == "\n".join(
         [
             coverage.HEAD,
-            f"1 Wren (the person): {MOST}, marriages with dates",
+            f"1 Wren (the person): {BROUGHT}, {MOST}, marriages with dates",
             "2 Ada (mother): who their parents are, marriages with dates",
             "3 Tom (father): who their parents are, marriages with dates",
             "couple 4, Ada and Tom (parents): how many children",
-            "5 Nell (sister): marriages with dates",
             "Said unknown: 1 Wren (the person): birth date",
-            RESOLVED.format(known=10, resolved=11, required=50),
+            RESOLVED.format(known=10, resolved=11, required=51),
         ]
     )
 
@@ -231,8 +231,8 @@ def test_the_checklist_grows_with_the_record_turn_by_turn(
     assert found[(Fact.Parents, ItemKind.Person, SAM)] is FactState.NotAsked
     # Sam with who his parents are, and when they met and how many children
     assert done(third["turn_id"]) == {
-        "before": counts(50, 10, 1),
-        "after": counts(64, 15, 1),
+        "before": counts(51, 10, 1),
+        "after": counts(65, 15, 1),
     }
 
 
@@ -346,13 +346,12 @@ def test_under_a_plateau_the_list_is_cut_to_the_nearest_few(family):
     # R-0006, R-0520
     data = parents(family.get_diagram_data())
     full = coverage.block(data).splitlines()
-    assert len(full) == 7
+    assert len(full) == 6
     assert coverage.block(data, plateau=2).splitlines() == [
         coverage.HEAD,
         "Your plateau note holds, turn 2 of 5: the nearest 3 only.",
-        f"1 Wren (the person): {MOST}",
+        f"1 Wren (the person): {BROUGHT}, {MOST}",
         "2 Ada (mother): who their parents are",
-        "3 Tom (father): who their parents are",
         full[-1],
     ]
 
@@ -380,7 +379,7 @@ def test_a_plateau_note_lapses_after_five_turns(web, token, family, monkeypatch)
         for turn in range(1, coverage.PLATEAU_TURNS + 1)
     ]
     assert seen[0] == seen[-1] == (
-        f"1 Wren (the person): {MOST}, who their parents are, marriages with dates"
+        f"1 Wren (the person): {BROUGHT}, {MOST}, who their parents are"
     )
 
 
@@ -423,7 +422,7 @@ def test_the_times_the_most_was_going_on_lead_until_a_question_on_them_closes(fa
     ]
     most = (Fact.MostGoingOn, ItemKind.Person, ME)
     assert coverage.block(data).splitlines()[1] == (
-        f"1 Wren (the person): {MOST}, who their parents are, marriages with dates"
+        f"1 Wren (the person): {BROUGHT}, {MOST}, who their parents are"
     )
     # the clusters make the periods of major stress known, never these times
     assert coverage.states(data)[most] is FactState.NotAsked
@@ -469,12 +468,11 @@ def test_the_structure_items_lead_the_list_for_every_diagram_until_closed(family
     # on the list before anyone's schooling and before anyone's marriage dates,
     # and so is the father's parents; the eight nearest never reach a story
     assert lines[1:-1] == [
-        f"1 Wren (the person): {MOST}, marriages with dates",
+        f"1 Wren (the person): {BROUGHT}, {MOST}, marriages with dates",
         "3 Tom (father): who their parents are, marriages with dates",
         "couple 4, Ada and Tom (parents): how many children",
         "couple 10, Joan and Ray (grandparents): how many children",
         "2 Ada (mother): marriages with dates",
-        "5 Nell (sister): marriages with dates",
     ]
     assert "schooling" not in coverage.block(data)
     # the order is the required items re-sorted, nothing added or taken away
@@ -484,7 +482,7 @@ def test_the_structure_items_lead_the_list_for_every_diagram_until_closed(family
     tier = {fact: n for n, facts in enumerate(coverage.TIERS) for fact in facts}
     kinds = [tier.get(fact, len(coverage.TIERS)) for fact, _, _ in first]
     assert kinds == sorted(kinds)
-    assert [fact for fact, _, _ in first][0] is Fact.MostGoingOn
+    assert [fact for fact, _, _ in first][:2] == [Fact.WhatBrought, Fact.MostGoingOn]
     assert (Fact.Children, ItemKind.PairBond, UP) in first[: kinds.index(2)]
 
     # with every structure item closed, the story items come, in Kerr's order
@@ -659,3 +657,38 @@ def test_a_death_without_words_leaves_its_cause_unknown(family):
 
     data.events[0]["description"] = "Stroke"
     assert coverage.states(data)[cause] is FactState.Known
+
+
+def brought(card="what_brought", evidence=({"kind": "statement", "id": 5},)) -> dict:
+    return {
+        "id": "i1",
+        "text": "You can't sleep and it's getting worse.",
+        "kind": "impression",
+        "evidence": list(evidence),
+        "pushback": None,
+        "state": "raised",
+        "outcome": None,
+        "session_id": 7,
+        "asked_at": "2026-10-14",
+        "case_report_card": card,
+    }
+
+
+def test_what_brought_the_person_leads_the_list_until_the_coachs_note_on_its_card(family):
+    # R-0852, R-0854
+    data = family.get_diagram_data()
+    item = (Fact.WhatBrought, ItemKind.Person, ME)
+    assert coverage.structure_first(coverage.required(data))[0] == item
+    assert coverage.block(data).splitlines()[1].startswith(
+        f"1 Wren (the person): {BROUGHT}, {MOST}"
+    )
+
+    # a note on another card, or one resting on no message, closes nothing
+    for note in (brought(card="main_guess"), brought(evidence=[{"kind": "person", "id": "1"}])):
+        data.questions = [note]
+        assert coverage.states(data)[item] is FactState.NotAsked
+
+    data.questions = [brought()]
+    assert coverage.states(data)[item] is FactState.Known
+    assert BROUGHT not in coverage.block(data)
+    assert coverage.evidence(data, *item).startswith('i1 raised "You can\'t sleep')

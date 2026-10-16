@@ -1,0 +1,4 @@
+# Each run's answers and scores, one folder per run; replay one with
+# CLUSTER_ANSWERS=<its folder>.
+*
+!.gitignore

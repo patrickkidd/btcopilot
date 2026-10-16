@@ -2,10 +2,12 @@
 the tests citing each ruling; the index is never edited by hand.
 
   python bin/oracleindex.py      rewrites the index only when its text changed
+  python bin/oracleindex.py --check   exits 1 when the index is stale, writes nothing
 
 Needs a sops key (SOPS_AGE_KEY_FILE or SOPS_AGE_KEY).
 """
 import subprocess
+import sys
 
 from btcopilot import oracle
 from btcopilot.tests.conventions.test_oracle import citations
@@ -13,6 +15,8 @@ from btcopilot.tests.conventions.test_oracle import citations
 text = oracle.listing(citations())
 if oracle.INDEX.exists() and oracle.index() == text:
     print(f"{oracle.INDEX} unchanged")
+elif "--check" in sys.argv:
+    sys.exit(1)
 else:
     subprocess.run(
         ["sops", "-e", "--filename-override", str(oracle.INDEX.relative_to(oracle.ROOT)),

@@ -361,8 +361,8 @@ export class Unplaceable extends Error {
  * the `others` drawn beside that line, as a father and his grandfather both
  * called Robert (R-0548, as widened in the FD-371 review, 2026-10-05); never
  * for a namesake the record holds elsewhere. A stand-in is named by the
- * nearest named person and the relation, in the record's own words: "Jim
- * O'Malley's partner" is "Jim's partner", "Catherine's mother's partner" stays
+ * nearest named person and the relation, in the record's own words: "Ned
+ * Thorsby's partner" is "Ned's partner", "Greta's mother's partner" stays
  * whole (R-0766). */
 export function called(names: Record<string, string>, others: string[] = []): Record<string, string> {
   const standIn = (n: string) => /'s /.test(n);

@@ -89,3 +89,13 @@
 .bk-list { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .bk-list blockquote { margin: 12px 0 2px; padding-left: 12px; border-left: 2px solid var(--line); font: 400 15px/1.45 var(--sans); color: var(--ink); overflow-wrap: anywhere; }
 .bk-list .bk-by { margin: 0; padding-left: 14px; font: 400 12px/1.4 var(--mono); color: var(--faint); }
+/* the coach's guess: each cluster with its for and against, the person's own period dashed (R-0850) */
+.case .cl { display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.case .cl.his { border-style: dashed; border-color: var(--ask); }
+.case .cl .chip { align-self: flex-start; }
+.case .slots { display: grid; grid-template-columns: 4.2em 1fr; gap: 2px 8px; font: 400 13.5px/1.4 var(--sans); }
+.case .slots b { font: 500 11px/1.9 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
+.case .slots span { overflow-wrap: anywhere; }
+.case .chip.dashed { border-style: dashed; }
+.case .chip.his { color: var(--ask); border-color: var(--ask); border-style: dashed; }
+.case p.prognosis { margin: 0; font: 400 15px/1.45 var(--sans); }

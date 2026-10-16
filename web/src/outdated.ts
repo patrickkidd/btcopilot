@@ -1,6 +1,6 @@
 import type { OutOfDate } from "./types";
 
-/** Whether the coach's five cards on the case report still stand: the sheet
+/** Whether the coach's eight cards on the case report still stand: the sheet
  * that asks on opening, the grey line at the top of the cards, and the
  * cards dimmed while the coach rewrites them (Patrick's approved mockup,
  * 2026-10-07). */
@@ -23,13 +23,13 @@ export function phase(out: OutOfDate | null, dismissed: number | null, rewriting
 }
 
 /** The line at the top of the cards while the coach rewrites them. */
-export const REWRITING = "The coach is rewriting its five cards from the diagram as it stands now.";
+export const REWRITING = "The coach is rewriting its eight cards from the diagram as it stands now.";
 
 /** The sheet that asks on opening an out-of-date report. */
 export const ask = (sentence: string, esc: (s: string) => string): string =>
   `<div class="cf-t">This report is out of date</div>` +
   `<p class="cf-p">${esc(sentence)}</p>` +
-  `<p class="cf-p">The coach can rewrite its five cards now. Or you can read the report as it was last written.</p>` +
+  `<p class="cf-p">The coach can rewrite its eight cards now. Or you can read the report as it was last written.</p>` +
   `<div class="cf-btns">` +
   `<button class="cf-go" type="button" data-act="refresh">Refresh the report</button>` +
   `<button class="cf-no" type="button" data-act="last">Show the last report</button>` +

@@ -107,7 +107,7 @@ def resolve(refs: list[Ref], data: DiagramData) -> list[Ref]:
     """Drop references the diagram cannot aim at, so no chip points at nothing."""
     people = {p.get("id") for p in data.people if isinstance(p, dict)}
     events = {e.get("id") for e in data.events if isinstance(e, dict)}
-    clusters = {c.get("id") for c in data.clusters if isinstance(c, dict)}
+    clusters = {c.get("id") for c in data.drawn_clusters() if isinstance(c, dict)}
 
     resolved = []
     for ref in refs:
@@ -183,6 +183,21 @@ def _people_entries(people: dict, dated: list[tuple[dict, datetime.date]]) -> li
     return entries
 
 
+def cluster_years(cluster: dict, dates: list[datetime.date]) -> str | None:
+    """A cluster's years, "2009–2011", the one way every screen writes them:
+    its stored start and end dates, the years the person gave for a period of
+    their own, the span the grouping stored for the app's [Oracle: R-0853].
+    With no stored dates, the span of its dated events (`dates`), the span the
+    grouping would store; with neither, it has no years."""
+    start = parse_date(cluster.get("startDate"))
+    end = parse_date(cluster.get("endDate")) or start
+    if start is None:
+        if not dates:
+            return None
+        start, end = min(dates), max(dates)
+    return str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
+
+
 def _cluster_entries(
     clusters: list[dict], dated: list[tuple[dict, datetime.date]]
 ) -> list[str]:
@@ -194,8 +209,7 @@ def _cluster_entries(
         start = parse_date(cluster.get("startDate"))
         if start is None or not first <= start <= last:
             continue
-        end = parse_date(cluster.get("endDate")) or start
-        span = str(start.year) if start.year == end.year else f"{start.year}–{end.year}"
+        span = cluster_years(cluster, [])
         title = (cluster.get("title") or "").strip()[:_LABEL_CHARS]
         entries.append((start, f"{cluster['id']} {span} {title}".strip()))
     entries.sort(key=lambda pair: pair[0], reverse=True)
@@ -225,7 +239,7 @@ def index(data: DiagramData | None) -> str:
 
     sections = [
         ("People", _people_entries(people, dated)),
-        ("Clusters", _cluster_entries(data.clusters, dated)),
+        ("Clusters", _cluster_entries(data.drawn_clusters(), dated)),
         (
             "Events (newest first)",
             [

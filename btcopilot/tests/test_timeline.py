@@ -1,10 +1,11 @@
 import pytest
 
 from btcopilot.seed import seed_diagram_data
-from btcopilot.refs import Ref, RefKind
+from btcopilot.refs import Ref, RefKind, cluster_years
 from btcopilot.timeline import GAP_DAYS, aimable, build_timeline
 from btcopilot.schema import (
     Cluster,
+    ClusterSource,
     DateCertainty,
     DiagramData,
     Event,
@@ -216,6 +217,58 @@ def test_a_cluster_takes_its_title_from_a_stored_cluster_inside_it():
     assert cluster["cluster_ids"] == ["cl-1"]
 
 
+def test_a_period_is_written_with_the_years_stored_on_it_not_its_drawn_span():
+    # R-0853
+    events = [
+        _shift(10, 1, "2009-09-01", "symptom", VariableShift.Up, DateCertainty.Approximate),
+        _shift(11, 1, "2010-06-01", "symptom", VariableShift.Down, DateCertainty.Approximate),
+        _shift(12, 1, "2010-11-01", "symptom", VariableShift.Up, DateCertainty.Approximate),
+        _shift(13, 1, "2011-01-01", "symptom", VariableShift.Up, DateCertainty.Unknown),
+    ]
+    data = _data([1], events)
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="cl-p",
+                title="",
+                summary="",
+                eventIds=[10, 11, 12, 13],
+                startDate="2009-09-01",
+                endDate="2011-01-01",
+                source=ClusterSource.User,
+            )
+        )
+    ]
+    cluster = build_timeline(data)["clusters"][0]
+    assert (cluster["start"], cluster["end"]) == ("2009-09-01", "2010-11-01")
+    assert cluster["label"] == "2009–2011"
+    assert cluster["title"] == "2009–2011"
+
+
+def test_a_cluster_with_no_stored_dates_is_written_with_the_years_of_its_dated_events():
+    # R-0853
+    events = [
+        _shift(10, 1, "2004-03-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "2006-08-01", "symptom", VariableShift.Down),
+        _shift(12, 1, None, "symptom", VariableShift.Up),
+    ]
+    data = _data([1], events)
+    data.clusters = [asdict(Cluster(id="cl-n", title="", summary="", eventIds=[10, 11, 12]))]
+    cluster = build_timeline(data)["clusters"][0]
+    assert cluster["label"] == "2004–2006"
+    assert cluster["title"] == "2004–2006"
+
+
+def test_a_cluster_with_no_stored_dates_and_no_dated_event_has_no_years():
+    # R-0853
+    events = [_shift(10, 1, None, "symptom", VariableShift.Up)]
+    data = _data([1], events)
+    stored = asdict(Cluster(id="cl-u", title="", summary="", eventIds=[10]))
+    data.clusters = [stored]
+    assert cluster_years(stored, []) is None
+    assert build_timeline(data)["clusters"] == []
+
+
 def test_two_clusters_inside_one_run_of_events_stay_two_groupings():
     # R-0371
     """Without this the picture draws a single blob over a dense record, which
@@ -386,15 +439,15 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
             )
         ),
     ]
-    timeline = _named([(1, "Elizabeth"), (2, "Ray"), (3, "Nora")], events)
+    timeline = _named([(1, "Marguerite"), (2, "Ray"), (3, "Nora")], events)
     said = {
         e["id"]: (e["person_name"], e["label"])
         for e in build_timeline(timeline)["events"]
     }
-    assert said[10] == ("Elizabeth", "born · in Anchorage, AK")
+    assert said[10] == ("Marguerite", "born · in Anchorage, AK")
     assert said[11] == ("Ray & Nora", "divorced")
-    assert said[12] == ("Elizabeth & Nora", "Grew more anxious")
-    assert said[13] == ("Elizabeth → Ray", "Started fighting")
+    assert said[12] == ("Marguerite & Nora", "Grew more anxious")
+    assert said[13] == ("Marguerite → Ray", "Started fighting")
 
 
 @pytest.mark.parametrize(
@@ -402,8 +455,8 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
     [
         (
             EventKind.Death,
-            "died, possibly around July 4",
-            "died, possibly around July 4",
+            "died, perhaps late that summer",
+            "died, perhaps late that summer",
         ),
         (EventKind.Death, "Death of a heart attack", "Death of a heart attack"),
         (EventKind.Death, "Passed away at home", "Passed away at home"),
@@ -421,11 +474,11 @@ def test_a_moment_says_who_from_its_links_and_what_without_the_name():
         (EventKind.Birth, "reborn in faith", "born \u00b7 reborn in faith"),
         (
             EventKind.Death,
-            "Robert Belgard died, possibly around July 4",
-            "Robert Belgard died, possibly around July 4",
+            "Walter Finch died, perhaps late that summer",
+            "Walter Finch died, perhaps late that summer",
         ),
-        (EventKind.Married, "Robert married Ann", "Robert married Ann"),
-        (EventKind.Birth, "Robert was born at home", "Robert was born at home"),
+        (EventKind.Married, "Walter married Ann", "Walter married Ann"),
+        (EventKind.Birth, "Walter was born at home", "Walter was born at home"),
         (EventKind.Death, "Ann died", "died \u00b7 Ann died"),
         (EventKind.Death, "", "died"),
     ],
@@ -443,7 +496,7 @@ def test_a_label_says_the_kind_once(kind, description, label):
             )
         )
     ]
-    said = build_timeline(_named([(1, "Robert Belgard")], events))["events"][0]
+    said = build_timeline(_named([(1, "Walter Finch")], events))["events"][0]
     assert said["label"] == label
 
 
@@ -461,7 +514,7 @@ def test_a_noted_event_is_labelled_by_its_title_not_its_description():
             )
         )
     ]
-    said = build_timeline(_named([(1, "Robert Belgard")], events))["events"][0]
+    said = build_timeline(_named([(1, "Walter Finch")], events))["events"][0]
     assert said["label"] == "Moved to Anchorage"
 
 
@@ -469,8 +522,8 @@ def test_a_pair_bond_names_the_speaker_and_the_partner():
     # R-0457
     data = DiagramData(
         people=[
-            {**asdict(Person(id=1, name="Patrick")), "primary": True},
-            asdict(Person(id=2, name="Emily")),
+            {**asdict(Person(id=1, name="Jonah")), "primary": True},
+            asdict(Person(id=2, name="Marisol")),
         ],
         events=[
             asdict(
@@ -480,15 +533,15 @@ def test_a_pair_bond_names_the_speaker_and_the_partner():
                     person=1,
                     spouse=2,
                     dateTime="2019-03-01",
-                    description="together for about a year and a half",
+                    description="a couple for some eighteen months",
                 )
             )
         ],
     )
     event = build_timeline(data)["events"][0]
     assert (event["person_name"], event["label"]) == (
-        "Patrick & Emily",
-        "bonded \u00b7 together for about a year and a half",
+        "Jonah & Marisol",
+        "bonded \u00b7 a couple for some eighteen months",
     )
 
 
@@ -539,11 +592,11 @@ def _undated_in_cluster() -> DiagramData:
 
 
 def test_an_undated_event_plays_where_the_coach_put_it_but_draws_no_dot():
-    # R-0527, R-0532
+    # R-0527, R-0532, R-0850
     cluster = build_timeline(_undated_in_cluster())["clusters"][0]
     assert cluster["play_ids"] == [10, 12, 11, 13]
     assert cluster["event_ids"] == [10, 11, 13]
-    assert cluster["count"] == 3
+    assert cluster["count"] == 4
 
 
 def test_a_chip_naming_an_undated_event_in_a_cluster_survives():
@@ -551,3 +604,20 @@ def test_a_chip_naming_an_undated_event_in_a_cluster_survives():
     data = _undated_in_cluster()
     chip = Ref(kind=RefKind.Events, label="that week", event_ids=[12])
     assert aimable([chip], data) == [chip]
+
+
+def test_a_set_aside_cluster_is_not_in_the_payload_and_the_payload_names_its_opening():
+    # R-0845
+    events = [
+        _shift(10, 1, "1990-01-01", "symptom", VariableShift.Up),
+        _shift(11, 1, "1991-01-01", "symptom", VariableShift.Down),
+    ]
+    data = _data([1], events)
+    span = {"startDate": "1990-01-01", "endDate": "1991-01-01"}
+    kept = Cluster(id="cl-1", title="Kept", summary="s", eventIds=[10, 11], openingEventId=10, **span)
+    aside = Cluster(id="cl-2", title="Aside", summary="s", eventIds=[10, 11], setAside=True, **span)
+    data.clusters = [asdict(kept), asdict(aside)]
+    drawn = build_timeline(data)["clusters"]
+    assert [c["id"] for c in drawn] == ["cl-1"]
+    assert drawn[0]["openingEventId"] == 10
+    assert drawn[0]["setAside"] is False

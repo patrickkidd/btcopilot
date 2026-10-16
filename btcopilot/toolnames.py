@@ -117,7 +117,7 @@ def evidence_label(data: DiagramData, one: dict) -> str:
         return label(data, ItemKind(one["kind"]), one["id"])
     if "label" in one:
         return one["label"]
-    statement = db.session.get(Statement, int(one["id"]))
+    statement = db.session.get(Statement, int(one["id"])) if str(one["id"]).isdigit() else None
     return MESSAGE_GONE if statement is None else said_label(statement)
 
 

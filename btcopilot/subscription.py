@@ -1,5 +1,6 @@
 """One coach call answered on the Claude Code subscription instead of the API:
-a request the suite dumped (LIVE_REPLAY=dump) goes to `claude -p` with the
+a request the live suite dumped (LIVE_REPLAY=dump), or the app's own call on a
+sandbox with BTCOPILOT_MODEL_PROVIDER=subscription, goes to `claude -p` with the
 coach's system prompt as the whole system prompt, the coach's tools served by
 toolserver.py under their own names and schemas, and the chat as a resumed
 session plus stdin. The model's first message is the answer, in the
@@ -18,11 +19,11 @@ import json
 import os
 import re
 import subprocess
+import tempfile
 import uuid
 from pathlib import Path
 
-from btcopilot.tests.live.replay import REPO
-
+REPO = Path(__file__).parents[1]
 SERVER = "coach"
 PREFIX = f"mcp__{SERVER}__"
 SESSIONS = Path.home() / ".claude" / "projects"
@@ -103,8 +104,7 @@ def command(request: dict, work: Path, session: str, resume: bool) -> list[str]:
         str(work / "system.txt"),
         "--model",
         request["model"],
-        "--effort",
-        request["effort"],
+        *(["--effort", request["effort"]] if request["effort"] else []),
         "--tools",
         "",
         "--max-turns",
@@ -185,7 +185,7 @@ def answer(request: dict, work: Path, base_url: str | None = None) -> dict:
                         "command": str(REPO / ".venv" / "bin" / "python"),
                         "args": [
                             "-m",
-                            "btcopilot.tests.live.toolserver",
+                            "btcopilot.toolserver",
                             str(work / "tools.json"),
                         ],
                         "env": {"PYTHONPATH": str(REPO)},
@@ -236,3 +236,9 @@ def answer(request: dict, work: Path, base_url: str | None = None) -> dict:
             stored.parent.rmdir()
         for name in ("system.txt", "tools.json", "mcp.json"):
             (work / name).unlink(missing_ok=True)
+
+
+def asked(request: dict) -> dict:
+    """The subscription's answer to one of the app's own calls."""
+    with tempfile.TemporaryDirectory() as work:
+        return answer(request, Path(work))

@@ -276,7 +276,7 @@ def test_the_write_refuses_a_description_that_names_a_person_the_event_links(
     # R-0457
     """Owner ruling 2026-09-09: the links say who, so the words may not say the
     same person again."""
-    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Marguerite"}]})
 
     with pytest.raises(record.Invalid, match="already its child"):
         record.apply(
@@ -288,7 +288,7 @@ def test_the_write_refuses_a_description_that_names_a_person_the_event_links(
                     "item_kind": ItemKind.Event,
                     "item_id": 20,
                     "field": "description",
-                    "after": "Elizabeth born in Anchorage",
+                    "after": "Marguerite born in Anchorage",
                 },
             ],
             author=Author.Coach,
@@ -299,7 +299,7 @@ def test_the_write_refuses_a_description_that_names_a_person_the_event_links(
 
 def test_the_write_refuses_a_birth_hung_on_the_person_instead_of_the_child(subscriber):
     # R-0456
-    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Marguerite"}]})
 
     with pytest.raises(record.Invalid, match="set child, not person"):
         record.apply(
@@ -316,7 +316,7 @@ def test_the_write_refuses_a_birth_hung_on_the_person_instead_of_the_child(subsc
 
 def test_a_birth_about_the_child_with_words_of_its_own_commits(subscriber):
     # R-0457
-    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Elizabeth"}]})
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Marguerite"}]})
 
     record.apply(
         diagram.id,

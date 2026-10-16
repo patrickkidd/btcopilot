@@ -20,7 +20,7 @@ _log = logging.getLogger(__name__)
 
 
 def _cluster(data: DiagramData, cluster_id: str) -> dict:
-    for cluster in data.clusters:
+    for cluster in data.drawn_clusters():
         if isinstance(cluster, dict) and str(cluster.get("id")) == str(cluster_id):
             return cluster
     raise ValueError(f"No cluster {cluster_id!r} on the line")

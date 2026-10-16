@@ -39,7 +39,15 @@ from btcopilot.schema import (
     Person,
     asdict,
 )
-from btcopilot.tests.conftest import Model, called, csrf_token, said, version, wrote
+from btcopilot.tests.conftest import (
+    Model,
+    called,
+    calling,
+    csrf_token,
+    said,
+    version,
+    wrote,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -181,6 +189,37 @@ def test_a_turn_that_changes_no_event_does_not_regroup(discussion, family):
     assert clusters_of(family) == {}
 
 
+def test_a_turn_that_answers_when_the_most_was_going_on_regroups(discussion, family):
+    # R-0853
+    discussion.chat_user_speaker_id = discussion.speakers[0].id
+    db.session.commit()
+    with detects(("After the move", [10, 11, 12])) as detect:
+        CoachTurn(
+            discussion,
+            "The worst was 1994, the year we moved.",
+            purpose=Purpose.Coach,
+            model=Model(
+                calling(
+                    (
+                        ToolName.AddQuestion,
+                        {
+                            "text": "When in your life was the most going on?",
+                            "kind": "fact",
+                            "state": "resolved",
+                            "outcome": "answered",
+                            "fact": "most_going_on",
+                            "item_kind": "person",
+                            "item_id": "1",
+                        },
+                    )
+                ),
+                said("That year stands out."),
+            ),
+        ).run()
+    detect.assert_called_once()
+    assert [c["name"] for c in clusters_of(family).values()] == ["After the move"]
+
+
 def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, family):
     # R-0084
     with detects(("The hard spring", [10, 11, 12])):
@@ -211,62 +250,34 @@ def test_the_grouping_is_written_by_the_coach_in_the_same_turn(discussion, famil
     assert {d["item_kind"] for d in change.deltas} == {"cluster", "diagram"}
 
 
-def test_a_grouping_the_user_made_is_absorbed_by_a_wider_period(discussion, family):
-    # R-0843
+def test_a_grouping_the_user_made_is_kept_through_a_regroup(discussion, family):
+    # R-0850
+    """The model's periods are stored beside the person's own, which stays
+    as they drew it."""
     data = family.get_diagram_data()
-    data.clusters = [
-        asdict(
-            Cluster(
-                id="c1",
-                title="When he left",
-                summary="",
-                name="When he left",
-                eventIds=[10, 11, 12],
-                source=ClusterSource.User,
-            )
+    theirs = asdict(
+        Cluster(
+            id="c1",
+            title="When he left",
+            summary="",
+            name="When he left",
+            eventIds=[10, 11, 12],
+            source=ClusterSource.User,
         )
-    ]
+    )
+    data.clusters = [theirs]
     family.set_diagram_data(data)
     db.session.commit()
 
-    with detects(("Everything at once", [10, 11, 12, 13, 14, 15])):
+    with detects(("The winter after", [13, 14, 15])):
         sync(family.id, turn_id="t1", user_id=family.user_id)
 
     stored = clusters_of(family)
-    assert "c1" not in stored
+    assert stored["c1"] == theirs
     assert [(c["eventIds"], c["source"]) for c in stored.values()] == [
-        ([10, 11, 12, 13, 14, 15], ClusterSource.Model.value)
+        ([10, 11, 12], ClusterSource.User.value),
+        ([13, 14, 15], ClusterSource.Model.value),
     ]
-
-
-def test_a_grouping_the_user_made_that_the_answer_leaves_out_is_removed(
-    discussion, family
-):
-    # R-0843
-    """The model was shown the person's own grouping and returned its own
-    periods without it: one reading of the family, so it goes."""
-    data = family.get_diagram_data()
-    data.clusters = [
-        asdict(
-            Cluster(
-                id="c1",
-                title="When he left",
-                summary="",
-                name="When he left",
-                eventIds=[11, 12],
-                source=ClusterSource.User,
-            )
-        )
-    ]
-    family.set_diagram_data(data)
-    db.session.commit()
-
-    with detects(("The hard spring", [10, 11, 12]), ("The winter after", [13, 14, 15])):
-        sync(family.id, turn_id="t1", user_id=family.user_id)
-
-    stored = clusters_of(family)
-    assert "c1" not in stored
-    assert [c["eventIds"] for c in stored.values()] == [[10, 11, 12], [13, 14, 15]]
 
 
 def test_a_grouping_under_the_minimum_is_never_stored(discussion, family):
@@ -396,12 +407,12 @@ def test_undoing_the_removal_of_such_a_grouping_reads_as_words_too(family):
     assert clusters_of(family) == {}
 
 
-def test_a_grouping_of_unknown_provenance_is_reshaped_like_the_users(
+def test_a_grouping_of_unknown_provenance_is_kept_like_the_users(
     discussion, family
 ):
-    # R-0843
+    # R-0850
     """A row written before provenance was recorded is treated as the user's,
-    and the user's is a hypothesis the model may absorb."""
+    and the user's stays as it was drawn."""
     data = family.get_diagram_data()
     stale = asdict(
         Cluster(id="c1", title="When he left", summary="", eventIds=[10, 11, 12])
@@ -411,12 +422,11 @@ def test_a_grouping_of_unknown_provenance_is_reshaped_like_the_users(
     family.set_diagram_data(data)
     db.session.commit()
 
-    with detects(("Everything at once", [10, 11, 12, 13, 14, 15])):
+    with detects(("The winter after", [13, 14, 15])):
         sync(family.id, turn_id="t1", user_id=family.user_id)
 
     stored = clusters_of(family)
-    assert "c1" not in stored
-    assert [c["eventIds"] for c in stored.values()] == [[10, 11, 12, 13, 14, 15]]
+    assert [c["eventIds"] for c in stored.values()] == [[10, 11, 12], [13, 14, 15]]
 
 
 def test_the_coach_is_never_told_the_model_made_a_grouping_it_may_not_have(family):
@@ -691,7 +701,7 @@ def test_a_refused_grouping_answer_is_written_down_with_the_models_answer(family
     assert (row.turn_id, row.diagram_id) == ("t1", family.id)
     assert (row.detail["name"], row.detail["eventIds"]) == ("A pair", [10, 11])
     assert (row.detail["start"], row.detail["end"]) == ("1994-01-01", "1994-02-01")
-    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert not Observation.query.filter_by(kind=ObservationKind.ClusterFailed).count()
 
 
@@ -705,7 +715,7 @@ def test_an_accepted_grouping_answer_writes_no_observation(family):
 
 
 def test_twice_refused_with_no_groups_stores_nothing_named_after_its_years(family):
-    # R-0517, R-0844
+    # R-0517, R-0844, R-0850
     with patch(
         "btcopilot.metered.gemini_structured_sync",
         side_effect=[parsed(PAIR), parsed(PAIR)],
@@ -714,7 +724,7 @@ def test_twice_refused_with_no_groups_stores_nothing_named_after_its_years(famil
     assert clusters_of(family) == {}
     failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
     assert (failed.detail["check"], failed.detail["fallback"]) == ("too_small", False)
-    assert not family.get_diagram_data().clusterCacheKey
+    assert family.get_diagram_data().clusterCacheKey
 
 
 def test_a_model_that_fills_every_offered_field_still_groups_a_new_record(family):
@@ -724,7 +734,7 @@ def test_a_model_that_fills_every_offered_field_still_groups_a_new_record(family
     The answer's schema now offers no id when the record holds no groups."""
     with flashlite(GROUPED, GROUPED):
         sync(family.id, turn_id="t1", user_id=family.user_id)
-    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert Observation.query.count() == 0
 
 
@@ -741,14 +751,14 @@ def test_an_answer_cut_off_at_its_limit_is_refused_and_asked_again(family):
         side_effect=[cut, parsed(GROUPED)],
     ) as asked:
         sync(family.id, turn_id="t1", user_id=family.user_id)
-    assert [c.kwargs["limit"] for c in asked.call_args_list] == [4096 + 24 * 6] * 2
+    assert [c.kwargs["limit"] for c in asked.call_args_list] == [4096 + 24 * 6 + 160] * 2
     assert noted(ObservationKind.ClusterRefused) == [(1, "cut_off", 0, 0)]
-    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year"]
+    assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert ModelCall.query.filter_by(purpose=Purpose.Cluster).count() == 2
 
 
 def test_a_grouping_call_that_fails_twice_never_fails_the_turn(discussion, family):
-    # R-0517, R-0844
+    # R-0517, R-0844, R-0850
     with patch(
         "btcopilot.metered.gemini_structured_sync",
         side_effect=[TimeoutError(), TimeoutError()],
@@ -779,3 +789,4 @@ def test_a_grouping_call_that_fails_twice_never_fails_the_turn(discussion, famil
     failed = Observation.query.filter_by(kind=ObservationKind.ClusterFailed).one()
     assert (failed.detail["check"], failed.detail["fallback"]) == ("call_failed", False)
     assert clusters_of(family) == {}
+    assert not family.get_diagram_data().clusterCacheKey

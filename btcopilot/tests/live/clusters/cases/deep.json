@@ -1,0 +1,1876 @@
+{
+ "about": "A fictional four-generation family. Jonah is the person. His answer about the busiest stretches of his life gives an age range for one of his periods and no years for the other.",
+ "placeholder": false,
+ "draft": "ACCEPTED PROVISIONALLY: the expected clusters below stand as drafted until a cluster detection problem is pointed out (R-0857, builds on R-0856); of the four open questions on them, the second half of question 2 (the run in the case's last two years, around the lake weekend) is answered: not a cluster; the rest stay open.",
+ "expected": [
+  {
+   "name": "Jonah's maternal grandfather Gordon's death, 1991-92",
+   "opening": 78,
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39
+   ]
+  },
+  {
+   "name": "A new partner and a separation, 1998-99",
+   "opening": 11,
+   "eventIds": [
+    11,
+    4,
+    173,
+    12,
+    22
+   ]
+  },
+  {
+   "name": "His maternal grandmother Winifred's illness and death, 2001-04",
+   "opening": null,
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106,
+    24,
+    107,
+    108,
+    178,
+    79
+   ]
+  },
+  {
+   "name": "His paternal grandparents' deaths, 2008-09",
+   "opening": 61,
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10,
+    179
+   ]
+  }
+ ],
+ "theirs": [
+  {
+   "name": "the year I left home",
+   "startYear": 1991,
+   "endYear": 1993
+  },
+  {
+   "name": "the long slump",
+   "startYear": 2001,
+   "endYear": 2003
+  }
+ ],
+ "diagram": {
+  "people": [
+   {
+    "id": 1,
+    "name": "Jonah",
+    "gender": "male",
+    "parents": 32,
+    "last_name": "Mercer",
+    "primary": true
+   },
+   {
+    "id": 5,
+    "name": "Joelle",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 13,
+    "name": "Marisol",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 14,
+    "name": "Victor Halloran",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 27,
+    "name": "Wren",
+    "gender": "female",
+    "parents": 122,
+    "last_name": "Lindqvist"
+   },
+   {
+    "id": 30,
+    "name": "Russell",
+    "gender": "male",
+    "parents": 56,
+    "last_name": "Mercer"
+   },
+   {
+    "id": 31,
+    "name": "Maureen",
+    "gender": "female",
+    "parents": 74,
+    "last_name": "Okafor"
+   },
+   {
+    "id": 36,
+    "name": "Desmond",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Okafor"
+   },
+   {
+    "id": 42,
+    "name": "Bettina",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 43,
+    "name": "Felix",
+    "gender": "male",
+    "parents": 48
+   },
+   {
+    "id": 45,
+    "name": "Ada",
+    "gender": "female",
+    "parents": 48
+   },
+   {
+    "id": 47,
+    "name": "Desmond's former partner",
+    "gender": "unknown",
+    "parents": null
+   },
+   {
+    "id": 54,
+    "name": "Lorna",
+    "gender": "female",
+    "parents": 69,
+    "last_name": "Mercer"
+   },
+   {
+    "id": 55,
+    "name": "Clifford",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Mercer"
+   },
+   {
+    "id": 62,
+    "name": "Petra",
+    "gender": "female",
+    "parents": 56,
+    "last_name": "Mercer"
+   },
+   {
+    "id": 63,
+    "name": "Andrew",
+    "gender": "male",
+    "parents": 56,
+    "last_name": "Mercer"
+   },
+   {
+    "id": 67,
+    "name": "Cora",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Ashby"
+   },
+   {
+    "id": 68,
+    "name": "Morris",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Ashby"
+   },
+   {
+    "id": 72,
+    "name": "Gordon",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 73,
+    "name": "Winifred",
+    "gender": "female",
+    "parents": 82,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 80,
+    "name": "Winifred's mother",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 81,
+    "name": "Winifred's mother's partner",
+    "gender": "unknown",
+    "parents": null
+   },
+   {
+    "id": 87,
+    "name": "Rafe",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Novak"
+   },
+   {
+    "id": 98,
+    "name": "Tara",
+    "gender": "female",
+    "parents": 46,
+    "last_name": "Mercer"
+   },
+   {
+    "id": 99,
+    "name": "Silas",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 100,
+    "name": "Corbin",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 101,
+    "name": "Dale",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 102,
+    "name": "Hamish",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Duarte"
+   },
+   {
+    "id": 119,
+    "name": "Frances",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Lindqvist"
+   },
+   {
+    "id": 120,
+    "name": "Hugo",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Lindqvist"
+   },
+   {
+    "id": 121,
+    "name": "Bree",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 123,
+    "name": "Leo",
+    "gender": "male",
+    "parents": 122,
+    "last_name": "Lindqvist"
+   },
+   {
+    "id": 125,
+    "name": "Poppy",
+    "gender": "female",
+    "parents": 124
+   },
+   {
+    "id": 126,
+    "name": "Max",
+    "gender": "male",
+    "parents": 124
+   },
+   {
+    "id": 132,
+    "name": "James",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Mercer"
+   },
+   {
+    "id": 138,
+    "name": "Sylvia",
+    "gender": "female",
+    "parents": 74,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 139,
+    "name": "Gregory",
+    "gender": "male",
+    "parents": 74,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 140,
+    "name": "Imogen",
+    "gender": "female",
+    "parents": 74,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 141,
+    "name": "Tamsin",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 147,
+    "name": "Alistair",
+    "gender": "male",
+    "parents": null
+   },
+   {
+    "id": 149,
+    "name": "Hal",
+    "gender": "male",
+    "parents": 148
+   },
+   {
+    "id": 152,
+    "name": "Sylvia's former partner",
+    "gender": "unknown",
+    "parents": null
+   },
+   {
+    "id": 153,
+    "name": "Evan",
+    "gender": "male",
+    "parents": 158
+   },
+   {
+    "id": 155,
+    "name": "Dina",
+    "gender": "female",
+    "parents": null
+   },
+   {
+    "id": 157,
+    "name": "Kit",
+    "gender": "male",
+    "parents": 142,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 187,
+    "name": "Bella",
+    "gender": "female",
+    "parents": 142,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 188,
+    "name": "Alice",
+    "gender": "female",
+    "parents": 142,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 203,
+    "name": "Vera",
+    "gender": "female",
+    "parents": 74,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 204,
+    "name": "Ivo",
+    "gender": "male",
+    "parents": 56,
+    "last_name": "Mercer"
+   },
+   {
+    "id": 205,
+    "name": "Nell",
+    "gender": "female",
+    "parents": 142,
+    "last_name": "Sorensen"
+   },
+   {
+    "id": 206,
+    "name": "Ruben",
+    "gender": "male",
+    "parents": 159
+   }
+  ],
+  "pair_bonds": [
+   {
+    "id": 6,
+    "person_a": 1,
+    "person_b": 5
+   },
+   {
+    "id": 15,
+    "person_a": 1,
+    "person_b": 13
+   },
+   {
+    "id": 28,
+    "person_a": 1,
+    "person_b": 27,
+    "married": true
+   },
+   {
+    "id": 32,
+    "person_a": 30,
+    "person_b": 31,
+    "married": true
+   },
+   {
+    "id": 37,
+    "person_a": 31,
+    "person_b": 36,
+    "married": true
+   },
+   {
+    "id": 46,
+    "person_a": 30,
+    "person_b": 42,
+    "married": true
+   },
+   {
+    "id": 48,
+    "person_a": 36,
+    "person_b": 47,
+    "married": true
+   },
+   {
+    "id": 56,
+    "person_a": 54,
+    "person_b": 55,
+    "married": true
+   },
+   {
+    "id": 69,
+    "person_a": 67,
+    "person_b": 68
+   },
+   {
+    "id": 74,
+    "person_a": 72,
+    "person_b": 73,
+    "married": true
+   },
+   {
+    "id": 82,
+    "person_a": 80,
+    "person_b": 81
+   },
+   {
+    "id": 103,
+    "person_a": 100,
+    "person_b": 101,
+    "married": true
+   },
+   {
+    "id": 122,
+    "person_a": 119,
+    "person_b": 120,
+    "married": true
+   },
+   {
+    "id": 124,
+    "person_a": 123,
+    "person_b": 121,
+    "married": true
+   },
+   {
+    "id": 133,
+    "person_a": 98,
+    "person_b": 132,
+    "married": true
+   },
+   {
+    "id": 142,
+    "person_a": 139,
+    "person_b": 141,
+    "married": true
+   },
+   {
+    "id": 148,
+    "person_a": 140,
+    "person_b": 147,
+    "married": true
+   },
+   {
+    "id": 158,
+    "person_a": 138,
+    "person_b": 152
+   },
+   {
+    "id": 159,
+    "person_a": 153,
+    "person_b": 155,
+    "married": true
+   }
+  ],
+  "events": [
+   {
+    "id": 84,
+    "kind": "birth",
+    "dateTime": "1914-01-12",
+    "dateCertainty": "approximate",
+    "child": 55,
+    "description": "birth year only",
+    "notes": "No month or day on record."
+   },
+   {
+    "id": 85,
+    "kind": "birth",
+    "dateTime": "1924-07-01",
+    "dateCertainty": "certain",
+    "person": 67,
+    "spouse": 68,
+    "child": 54,
+    "description": "birth"
+   },
+   {
+    "id": 70,
+    "kind": "noted",
+    "dateTime": "1933-01-11",
+    "dateCertainty": "unknown",
+    "person": 67,
+    "description": "ran a timber mill; took the family west to Brackenridge"
+   },
+   {
+    "id": 75,
+    "kind": "married",
+    "dateTime": "1941-02-27",
+    "dateCertainty": "certain",
+    "person": 72,
+    "spouse": 73,
+    "description": "a whirlwind wedding; exact date lost",
+    "notes": "Probably met on the islands and wed within weeks; Jonah plans to ask his aunt Sylvia."
+   },
+   {
+    "id": 167,
+    "kind": "birth",
+    "dateTime": "1943-10-29",
+    "dateCertainty": "certain",
+    "person": 72,
+    "spouse": 73,
+    "child": 138
+   },
+   {
+    "id": 168,
+    "kind": "birth",
+    "dateTime": "1942-03-30",
+    "dateCertainty": "certain",
+    "person": 72,
+    "spouse": 73,
+    "child": 139
+   },
+   {
+    "id": 71,
+    "kind": "death",
+    "dateTime": "1946-01-12",
+    "dateCertainty": "unknown",
+    "person": 68,
+    "description": "passed away when Lorna was in her early twenties"
+   },
+   {
+    "id": 169,
+    "kind": "birth",
+    "dateTime": "1946-03-07",
+    "dateCertainty": "certain",
+    "person": 72,
+    "spouse": 73,
+    "child": 140
+   },
+   {
+    "id": 170,
+    "kind": "birth",
+    "dateTime": "1947-12-14",
+    "dateCertainty": "certain",
+    "person": 72,
+    "spouse": 73,
+    "child": 31
+   },
+   {
+    "id": 57,
+    "kind": "married",
+    "dateTime": "1948-01-12",
+    "dateCertainty": "unknown",
+    "person": 54,
+    "spouse": 55,
+    "description": "wedding, date not known"
+   },
+   {
+    "id": 76,
+    "kind": "noted",
+    "dateTime": "1948-01-12",
+    "dateCertainty": "unknown",
+    "person": 73,
+    "description": "came inland by train one spring, leaving the islands"
+   },
+   {
+    "id": 77,
+    "kind": "shift",
+    "dateTime": "1948-06-11",
+    "dateCertainty": "unknown",
+    "person": 73,
+    "relationship": "away",
+    "relationshipTargets": [
+     72
+    ],
+    "description": "homesick for the islands; her mother said a wife stays put",
+    "notes": "She wrote asking to move home and leave her husband in Thornbury. Her mother wrote back that the choice was made. She remained."
+   },
+   {
+    "id": 196,
+    "kind": "birth",
+    "dateTime": "1949-10-22",
+    "dateCertainty": "approximate",
+    "child": 119,
+    "description": "birth year worked out from her age"
+   },
+   {
+    "id": 165,
+    "kind": "shift",
+    "dateTime": "1958-01-12",
+    "dateCertainty": "unknown",
+    "person": 72,
+    "symptom": "up",
+    "description": "gambled away household money through the children's youth",
+    "notes": "Jonah's mother says her father's gambling left its mark; she told Jonah the story over one long dinner."
+   },
+   {
+    "id": 166,
+    "kind": "shift",
+    "dateTime": "1958-01-12",
+    "dateCertainty": "unknown",
+    "person": 72,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     31
+    ],
+    "description": "harsh with his youngest daughter, as she remembers it",
+    "notes": "From that dinner. She grew up tight with money; Jonah grew up scornful of card rooms."
+   },
+   {
+    "id": 58,
+    "kind": "divorced",
+    "dateTime": "1963-01-12",
+    "dateCertainty": "unknown",
+    "person": 54,
+    "spouse": 55,
+    "description": "split up; nobody knows why"
+   },
+   {
+    "id": 59,
+    "kind": "shift",
+    "dateTime": "1963-01-12",
+    "dateCertainty": "unknown",
+    "person": 55,
+    "relationship": "cutoff",
+    "relationshipTargets": [
+     54,
+     30
+    ],
+    "description": "dropped out of the family's life after the split"
+   },
+   {
+    "id": 193,
+    "kind": "birth",
+    "dateTime": "1969-09-07",
+    "dateCertainty": "certain",
+    "person": 139,
+    "spouse": 141,
+    "child": 187
+   },
+   {
+    "id": 161,
+    "kind": "birth",
+    "dateTime": "1970-01-12",
+    "dateCertainty": "unknown",
+    "person": 138,
+    "spouse": 152,
+    "child": 153,
+    "notes": "Older than Jonah; Sylvia's first child."
+   },
+   {
+    "id": 189,
+    "kind": "birth",
+    "dateTime": "1971-01-12",
+    "dateCertainty": "approximate",
+    "person": 139,
+    "spouse": 141,
+    "child": 188
+   },
+   {
+    "id": 33,
+    "kind": "married",
+    "dateTime": "1972-01-12",
+    "dateCertainty": "unknown",
+    "person": 30,
+    "spouse": 31,
+    "description": "wed some years before Jonah's birth"
+   },
+   {
+    "id": 7,
+    "kind": "birth",
+    "dateTime": "1973-05-22",
+    "dateCertainty": "certain",
+    "child": 1,
+    "description": "born in Thornbury"
+   },
+   {
+    "id": 34,
+    "kind": "separated",
+    "dateTime": "1974-02-12",
+    "dateCertainty": "approximate",
+    "person": 30,
+    "spouse": 31,
+    "description": "first time apart, Jonah still a baby"
+   },
+   {
+    "id": 49,
+    "kind": "bonded",
+    "dateTime": "1976-01-12",
+    "dateCertainty": "approximate",
+    "person": 30,
+    "spouse": 42,
+    "description": "became a couple"
+   },
+   {
+    "id": 35,
+    "kind": "divorced",
+    "dateTime": "1976-05-11",
+    "dateCertainty": "approximate",
+    "person": 30,
+    "spouse": 31,
+    "description": "Jonah a toddler"
+   },
+   {
+    "id": 127,
+    "kind": "married",
+    "dateTime": "1979-01-12",
+    "dateCertainty": "approximate",
+    "person": 119,
+    "spouse": 120,
+    "description": "long married",
+    "notes": "Both alive and living close to Jonah and Wren."
+   },
+   {
+    "id": 117,
+    "kind": "birth",
+    "dateTime": "1980-02-22",
+    "dateCertainty": "certain",
+    "child": 27,
+    "description": "birth"
+   },
+   {
+    "id": 185,
+    "kind": "shift",
+    "dateTime": "1981-06-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     31
+    ],
+    "anxiety": "up",
+    "description": "dodged the talk about moving to Corriemoor each time she brought it up, until she made him sit down"
+   },
+   {
+    "id": 184,
+    "kind": "noted",
+    "dateTime": "1981-09-12",
+    "dateCertainty": "unknown",
+    "person": 31,
+    "description": "took her boy to Corriemoor while she studied for a master's"
+   },
+   {
+    "id": 128,
+    "kind": "birth",
+    "dateTime": "1982-01-12",
+    "dateCertainty": "approximate",
+    "person": 119,
+    "spouse": 120,
+    "child": 123,
+    "description": "Wren's younger brother"
+   },
+   {
+    "id": 181,
+    "kind": "shift",
+    "dateTime": "1982-06-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     30
+    ],
+    "anxiety": "up",
+    "description": "homesick and miserable; sent back to Thornbury to live with his dad, a new school again",
+    "notes": "In the middle of primary school. The decision was his mother's."
+   },
+   {
+    "id": 182,
+    "kind": "noted",
+    "dateTime": "1983-03-12",
+    "dateCertainty": "unknown",
+    "person": 31,
+    "description": "returned most of a year later; found a rental close to the boy's school"
+   },
+   {
+    "id": 186,
+    "kind": "shift",
+    "dateTime": "1983-06-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     31
+    ],
+    "symptom": "up",
+    "description": "read under the covers past bedtime, kept it secret once his mother was home",
+    "notes": "The earliest late nights he recalls. Thinks she caught on; he rarely broke rules."
+   },
+   {
+    "id": 38,
+    "kind": "bonded",
+    "dateTime": "1984-01-12",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "spouse": 36,
+    "description": "began seeing each other, year estimated"
+   },
+   {
+    "id": 50,
+    "kind": "married",
+    "dateTime": "1984-01-12",
+    "dateCertainty": "approximate",
+    "person": 30,
+    "spouse": 42,
+    "description": "wedding"
+   },
+   {
+    "id": 183,
+    "kind": "noted",
+    "dateTime": "1984-01-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "description": "back in his mother's old home; reunited with friends from before"
+   },
+   {
+    "id": 41,
+    "kind": "shift",
+    "dateTime": "1987-01-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     36
+    ],
+    "description": "has always clashed with his stepfather; finds him more obstacle than support"
+   },
+   {
+    "id": 51,
+    "kind": "shift",
+    "dateTime": "1987-01-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     30
+    ],
+    "description": "warm on the whole, though forever angling for his dad's notice"
+   },
+   {
+    "id": 144,
+    "kind": "separated",
+    "dateTime": "1987-01-12",
+    "dateCertainty": "unknown",
+    "person": 30,
+    "spouse": 42,
+    "description": "left for a while over the question of a baby",
+    "notes": "His stepmother moved out over starting a family around when Jonah began secondary school; they patched it up, as Tara came later."
+   },
+   {
+    "id": 145,
+    "kind": "shift",
+    "dateTime": "1987-09-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "anxiety": "up",
+    "description": "made the city chess squad, out of his depth",
+    "notes": "Few younger players were picked; he ground hard to qualify and hated sitting at the bottom of the ladder."
+   },
+   {
+    "id": 60,
+    "kind": "shift",
+    "dateTime": "1989-01-11",
+    "dateCertainty": "unknown",
+    "person": 55,
+    "relationship": "toward",
+    "relationshipTargets": [
+     30
+    ],
+    "description": "came back into the family after years away",
+    "notes": "His father's siblings disagree on the year. Everyone assembled to welcome Clifford back; a large occasion."
+   },
+   {
+    "id": 194,
+    "kind": "noted",
+    "dateTime": "1989-04-12",
+    "dateCertainty": "approximate",
+    "person": 36,
+    "description": "took a rental on Quarry Lane while the Hollin Road rebuild started",
+    "notes": "Quarry Lane was Maureen's place after her divorce; Desmond joined her and Jonah there."
+   },
+   {
+    "id": 3,
+    "kind": "shift",
+    "dateTime": "1989-09-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "description": "liked late nights; unsure whether that was out of the ordinary",
+    "notes": "Late nights through all of secondary school. These days he needs pills to sleep."
+   },
+   {
+    "id": 40,
+    "kind": "noted",
+    "dateTime": "1989-09-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "settled with his mother and Desmond in the rebuilt Hollin Road house",
+    "notes": "That fall, once building finished. Desmond's two children lived there as well; loud and cramped."
+   },
+   {
+    "id": 146,
+    "kind": "noted",
+    "dateTime": "1989-09-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "description": "dropped chess, then the debate club",
+    "notes": "Partway through secondary school; music was taking over."
+   },
+   {
+    "id": 134,
+    "kind": "birth",
+    "dateTime": "1990-07-06",
+    "dateCertainty": "certain",
+    "person": 30,
+    "spouse": 42,
+    "child": 98,
+    "description": "birth"
+   },
+   {
+    "id": 89,
+    "kind": "shift",
+    "dateTime": "1991-03-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "underfunctioning",
+    "relationshipTargets": [
+     31
+    ],
+    "description": "his mother filled in his college forms",
+    "notes": "He let it happen and chose wherever his closest friend was headed."
+   },
+   {
+    "id": 78,
+    "kind": "death",
+    "dateTime": "1991-06-14",
+    "dateCertainty": "certain",
+    "person": 72,
+    "description": "death",
+    "notes": "A stroke after years of kidney disease; he smoked a pipe."
+   },
+   {
+    "id": 88,
+    "kind": "noted",
+    "dateTime": "1991-09-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "began at the conservatory, playing in its orchestra",
+    "notes": "His first time living apart from his mother. Picked Wexley Conservatory because Rafe, his closest friend, had a place."
+   },
+   {
+    "id": 90,
+    "kind": "shift",
+    "dateTime": "1991-09-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "fusion",
+    "relationshipTargets": [
+     87
+    ],
+    "description": "leaned hard on Rafe",
+    "notes": "Roommates in halls."
+   },
+   {
+    "id": 91,
+    "kind": "shift",
+    "dateTime": "1991-10-26",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "anxiety": "up",
+    "functioning": "down",
+    "description": "a wrist injury stopped his playing",
+    "notes": "Hurt during the first term; he lost his footing."
+   },
+   {
+    "id": 92,
+    "kind": "shift",
+    "dateTime": "1991-11-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     87
+    ],
+    "description": "a blow-up; Rafe found another room",
+    "notes": "Once he stopped playing, Rafe moved out of their room."
+   },
+   {
+    "id": 93,
+    "kind": "shift",
+    "dateTime": "1991-11-26",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "description": "on his own, getting high, absorbed in fixing old radios",
+    "notes": "Holed up in his room, high most days, he learned to repair and rebuild radios."
+   },
+   {
+    "id": 86,
+    "kind": "shift",
+    "dateTime": "1992-01-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "anxiety": "up",
+    "functioning": "down",
+    "description": "lost and low, unable to get going",
+    "notes": "With his grandfather gone and his mother about to remarry, too much was moving at once; he had no footing."
+   },
+   {
+    "id": 94,
+    "kind": "noted",
+    "dateTime": "1992-03-11",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "earned money fixing radios in the spring holiday"
+   },
+   {
+    "id": 83,
+    "kind": "shift",
+    "dateTime": "1992-06-11",
+    "dateCertainty": "unknown",
+    "person": 73,
+    "symptom": "up",
+    "description": "treated for a thyroid tumour within a year or so of being widowed",
+    "notes": "Jonah's mother cannot settle on which of two years; she remembers it as a blow. Surgery and radioiodine; it was not what took her."
+   },
+   {
+    "id": 171,
+    "kind": "shift",
+    "dateTime": "1992-09-11",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "symptom": "up",
+    "functioning": "down",
+    "description": "a bleak year at the community college, nights out playing pool, days asleep",
+    "notes": "This followed dropping out of Wexley and some months at home doing nothing."
+   },
+   {
+    "id": 39,
+    "kind": "married",
+    "dateTime": "1992-10-11",
+    "dateCertainty": "certain",
+    "person": 31,
+    "spouse": 36,
+    "description": "wedding",
+    "notes": "He recalls autumn; the exact month is his guess."
+   },
+   {
+    "id": 53,
+    "kind": "shift",
+    "dateTime": "1994-01-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     30
+    ],
+    "anxiety": "up",
+    "description": "stung that his dad had never heard of the film he was making"
+   },
+   {
+    "id": 172,
+    "kind": "noted",
+    "dateTime": "1994-01-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "description": "an exchange in Lisbon, then Porto; raced through the rest of his degree",
+    "notes": "He found his drive again and things improved."
+   },
+   {
+    "id": 191,
+    "kind": "shift",
+    "dateTime": "1994-01-12",
+    "dateCertainty": "approximate",
+    "person": 187,
+    "symptom": "up",
+    "description": "treated for melanoma as a young adult",
+    "notes": "The year is estimated."
+   },
+   {
+    "id": 180,
+    "kind": "shift",
+    "dateTime": "1997-01-11",
+    "dateCertainty": "unknown",
+    "person": 139,
+    "symptom": "up",
+    "description": "had a kidney removed for a tumour",
+    "notes": "From Maureen's family health notes; surgery only."
+   },
+   {
+    "id": 11,
+    "kind": "bonded",
+    "dateTime": "1998-01-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "spouse": 5,
+    "description": "a relationship of roughly eighteen months"
+   },
+   {
+    "id": 4,
+    "kind": "shift",
+    "dateTime": "1999-01-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "description": "insomnia began getting in the way; sleepless nights before concerts though he practised hard"
+   },
+   {
+    "id": 173,
+    "kind": "shift",
+    "dateTime": "1999-01-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "functioning": "up",
+    "description": "playing the best he ever had, winning competitions for a couple of years",
+    "notes": "This was his high point as a performer."
+   },
+   {
+    "id": 12,
+    "kind": "separated",
+    "dateTime": "1999-07-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "spouse": 5
+   },
+   {
+    "id": 22,
+    "kind": "shift",
+    "dateTime": "1999-08-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     14
+    ],
+    "description": "started with a therapist after the split",
+    "notes": "At the time he was reading about families with a gambler, asking whether that accounted for it all; he now sees it as only part."
+   },
+   {
+    "id": 174,
+    "kind": "shift",
+    "dateTime": "2001-09-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "anxiety": "up",
+    "functioning": "down",
+    "description": "running out of steam for performing; less content by the month"
+   },
+   {
+    "id": 176,
+    "kind": "shift",
+    "dateTime": "2001-09-12",
+    "dateCertainty": "unknown",
+    "person": 73,
+    "symptom": "up",
+    "description": "found to have bowel cancer, the year uncertain",
+    "notes": "Jonah's mother cannot place the year; it ran alongside his burnout and the failed audition. Operations, then chemotherapy."
+   },
+   {
+    "id": 175,
+    "kind": "shift",
+    "dateTime": "2002-01-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "functioning": "down",
+    "description": "a disastrous audition for the national orchestra, held in his home town; done with performing, he began casting about for what came next",
+    "notes": "He draws a near-total blank on family life across those years and recalls only his own story."
+   },
+   {
+    "id": 16,
+    "kind": "shift",
+    "dateTime": "2002-09-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     30,
+     31
+    ],
+    "description": "on poor terms with family and friends"
+   },
+   {
+    "id": 17,
+    "kind": "noted",
+    "dateTime": "2002-09-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "left Thornbury for Gull Harbour"
+   },
+   {
+    "id": 18,
+    "kind": "bonded",
+    "dateTime": "2003-01-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "spouse": 13,
+    "description": "they met at a winter party"
+   },
+   {
+    "id": 19,
+    "kind": "noted",
+    "dateTime": "2003-06-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "left Gull Harbour for Fenwick to live with her"
+   },
+   {
+    "id": 177,
+    "kind": "noted",
+    "dateTime": "2003-09-12",
+    "dateCertainty": "unknown",
+    "person": 73,
+    "description": "spent her final months in a back bedroom of Maureen and Desmond's home"
+   },
+   {
+    "id": 20,
+    "kind": "separated",
+    "dateTime": "2003-10-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "spouse": 13,
+    "description": "split up within the year"
+   },
+   {
+    "id": 21,
+    "kind": "shift",
+    "dateTime": "2003-10-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "functioning": "down",
+    "description": "sank into a deep depression once they split",
+    "notes": "It took hold that winter once he was back in Thornbury; at the bottom, minding a house near Hamish, he hardly moved from the sofa. Getting out was gradual."
+   },
+   {
+    "id": 23,
+    "kind": "noted",
+    "dateTime": "2003-11-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "returned to Thornbury after the split and the depression",
+    "notes": "He bunked with friends, Corbin and Dale, then Hamish, rather than any relative."
+   },
+   {
+    "id": 104,
+    "kind": "shift",
+    "dateTime": "2003-11-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     30,
+     31
+    ],
+    "anxiety": "up",
+    "description": "could not face his family",
+    "notes": "His parents seemed a world away from what he was going through."
+   },
+   {
+    "id": 105,
+    "kind": "shift",
+    "dateTime": "2003-11-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     100,
+     99,
+     102
+    ],
+    "description": "relied, gingerly, on friends",
+    "notes": "Corbin and Dale took him in, then Hamish; a long walk in the hills with Silas, who took no side."
+   },
+   {
+    "id": 106,
+    "kind": "shift",
+    "dateTime": "2003-12-12",
+    "dateCertainty": "unknown",
+    "person": 100,
+    "relationship": "toward",
+    "relationshipTargets": [
+     30
+    ],
+    "description": "spoke with Jonah's dad",
+    "notes": "Corbin and Russell talked several times during Jonah's stay."
+   },
+   {
+    "id": 24,
+    "kind": "shift",
+    "dateTime": "2004-01-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "functioning": "up",
+    "description": "began swimming laps",
+    "notes": "Took it up to help him sleep."
+   },
+   {
+    "id": 107,
+    "kind": "shift",
+    "dateTime": "2004-01-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     30,
+     31
+    ],
+    "description": "requested help from his parents with therapy costs"
+   },
+   {
+    "id": 108,
+    "kind": "shift",
+    "dateTime": "2004-01-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     14
+    ],
+    "functioning": "up",
+    "description": "returned to his therapist",
+    "notes": "Back with Victor Halloran, the therapist he saw after the earlier split; the gradual recovery started there and pointed him toward nursing."
+   },
+   {
+    "id": 178,
+    "kind": "shift",
+    "dateTime": "2004-01-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     73
+    ],
+    "anxiety": "up",
+    "description": "dropped in briefly on her sickroom, hung over, on the way to the airport",
+    "notes": "His last visit; he cut it short and regrets it."
+   },
+   {
+    "id": 79,
+    "kind": "death",
+    "dateTime": "2004-02-18",
+    "dateCertainty": "certain",
+    "person": 73,
+    "description": "died of the bowel cancer"
+   },
+   {
+    "id": 66,
+    "kind": "shift",
+    "dateTime": "2006-06-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     54
+    ],
+    "description": "told her he was training as a nurse; she said the job would wear him down"
+   },
+   {
+    "id": 8,
+    "kind": "noted",
+    "dateTime": "2006-09-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "began entry courses at the community college"
+   },
+   {
+    "id": 61,
+    "kind": "death",
+    "dateTime": "2008-01-09",
+    "dateCertainty": "certain",
+    "person": 54,
+    "description": "death"
+   },
+   {
+    "id": 64,
+    "kind": "death",
+    "dateTime": "2008-01-12",
+    "dateCertainty": "unknown",
+    "person": 55,
+    "description": "death; the year is not certain",
+    "notes": "Jonah believes it is noted in one of his papers."
+   },
+   {
+    "id": 111,
+    "kind": "noted",
+    "dateTime": "2008-07-11",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "four weeks in Alder Creek building with Silas",
+    "notes": "Silas, who builds houses, took him on at the family lodge for a few weeks before nursing school, a rest from screens."
+   },
+   {
+    "id": 112,
+    "kind": "shift",
+    "dateTime": "2008-07-11",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     31
+    ],
+    "description": "too drained for conversation",
+    "notes": "At Alder Creek he could barely manage a phone call with his mother."
+   },
+   {
+    "id": 113,
+    "kind": "shift",
+    "dateTime": "2008-07-30",
+    "dateCertainty": "unknown",
+    "person": 31,
+    "relationship": "toward",
+    "relationshipTargets": [
+     1
+    ],
+    "anxiety": "up",
+    "description": "pressed to visit him",
+    "notes": "She rang and pushed; he told her repeatedly the timing was wrong, and she drove out regardless."
+   },
+   {
+    "id": 114,
+    "kind": "shift",
+    "dateTime": "2008-07-30",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     31
+    ],
+    "description": "kept the door shut on her",
+    "notes": "The visit went wrong; she never got inside."
+   },
+   {
+    "id": 109,
+    "kind": "shift",
+    "dateTime": "2008-08-11",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "cutoff",
+    "relationshipTargets": [
+     31
+    ],
+    "description": "left for nursing school",
+    "notes": "Stopped speaking to his mother when he moved to Marlow Sound that summer; after the lodge every call cost too much. The silence held for roughly a year."
+   },
+   {
+    "id": 9,
+    "kind": "noted",
+    "dateTime": "2008-09-11",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationshipTargets": [],
+    "description": "relocated to Marlow Sound for nursing school"
+   },
+   {
+    "id": 10,
+    "kind": "noted",
+    "dateTime": "2008-09-11",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationshipTargets": [],
+    "description": "began the nursing programme"
+   },
+   {
+    "id": 179,
+    "kind": "shift",
+    "dateTime": "2009-01-11",
+    "dateCertainty": "approximate",
+    "person": 140,
+    "symptom": "up",
+    "description": "a stroke, with months of rehabilitation",
+    "notes": "Her son Hal was checked for blood-pressure risk too; all clear."
+   },
+   {
+    "id": 130,
+    "kind": "birth",
+    "dateTime": "2010-01-12",
+    "dateCertainty": "approximate",
+    "person": 123,
+    "spouse": 121,
+    "child": 125,
+    "description": "the older of the two"
+   },
+   {
+    "id": 131,
+    "kind": "birth",
+    "dateTime": "2012-01-12",
+    "dateCertainty": "approximate",
+    "person": 123,
+    "spouse": 121,
+    "child": 126,
+    "description": "the younger, a boy"
+   },
+   {
+    "id": 25,
+    "kind": "noted",
+    "dateTime": "2012-09-11",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "took a hospital placement down south"
+   },
+   {
+    "id": 26,
+    "kind": "noted",
+    "dateTime": "2013-03-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "functioning": "up",
+    "description": "returned home as the pandemic began and completed the placement online"
+   },
+   {
+    "id": 65,
+    "kind": "noted",
+    "dateTime": "2013-06-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "picked up piano tuning again once home"
+   },
+   {
+    "id": 110,
+    "kind": "shift",
+    "dateTime": "2013-06-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     30,
+     31
+    ],
+    "functioning": "up",
+    "description": "calmer, more adult dealings with his parents",
+    "notes": "Only after returning home could he keep up mature ties with family and friends."
+   },
+   {
+    "id": 143,
+    "kind": "shift",
+    "dateTime": "2015-01-12",
+    "dateCertainty": "approximate",
+    "person": 140,
+    "symptom": "up",
+    "description": "memory slipping, getting worse",
+    "notes": "Her husband dates the first lapses to that year."
+   },
+   {
+    "id": 118,
+    "kind": "bonded",
+    "dateTime": "2015-03-09",
+    "dateCertainty": "certain",
+    "person": 1,
+    "spouse": 27,
+    "description": "first evening out together",
+    "notes": "The two families get along warmly."
+   },
+   {
+    "id": 164,
+    "kind": "noted",
+    "dateTime": "2016-01-12",
+    "dateCertainty": "approximate",
+    "person": 140,
+    "description": "started tests for memory loss"
+   },
+   {
+    "id": 29,
+    "kind": "married",
+    "dateTime": "2017-03-27",
+    "dateCertainty": "certain",
+    "person": 1,
+    "spouse": 27
+   },
+   {
+    "id": 115,
+    "kind": "shift",
+    "dateTime": "2017-03-27",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "away",
+    "relationshipTargets": [
+     31
+    ],
+    "description": "saw his mother a bit less once Wren came along",
+    "notes": "Contact eased off slightly once he had Wren and her family; placed at the wedding."
+   },
+   {
+    "id": 190,
+    "kind": "shift",
+    "dateTime": "2017-10-12",
+    "dateCertainty": "approximate",
+    "person": 188,
+    "symptom": "up",
+    "description": "diagnosed with multiple sclerosis in her forties",
+    "notes": "Mild so far."
+   },
+   {
+    "id": 135,
+    "kind": "noted",
+    "dateTime": "2018-01-12",
+    "dateCertainty": "unknown",
+    "person": 98,
+    "description": "flies for a regional airline",
+    "notes": "Tara and James live in Rennick for her work."
+   },
+   {
+    "id": 136,
+    "kind": "married",
+    "dateTime": "2018-07-12",
+    "dateCertainty": "unknown",
+    "person": 98,
+    "spouse": 132,
+    "description": "wedding, the previous summer"
+   },
+   {
+    "id": 163,
+    "kind": "noted",
+    "dateTime": "2018-07-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "most recent visit with Imogen",
+    "notes": "A holiday get-together; she seemed fine, though they barely talked."
+   },
+   {
+    "id": 150,
+    "kind": "shift",
+    "dateTime": "2018-10-12",
+    "dateCertainty": "unknown",
+    "person": 140,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     149
+    ],
+    "symptom": "up",
+    "description": "lashes out when muddled",
+    "notes": "Hal, per Jonah's mother, had never known her like this until lately."
+   },
+   {
+    "id": 192,
+    "kind": "noted",
+    "dateTime": "2018-10-12",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "description": "had a heart check-up after her siblings' illnesses; all clear"
+   },
+   {
+    "id": 96,
+    "kind": "shift",
+    "dateTime": "2019-06-12",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "anxiety": "down",
+    "description": "job steadied, paying well",
+    "notes": "Far less strain since the work became stable."
+   },
+   {
+    "id": 129,
+    "kind": "noted",
+    "dateTime": "2019-08-12",
+    "dateCertainty": "unknown",
+    "person": 123,
+    "description": "returned to Danfield",
+    "notes": "Leo, Bree and their two children moved back nearby, under an hour's drive; date estimated."
+   },
+   {
+    "id": 95,
+    "kind": "shift",
+    "dateTime": "2019-10-07",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "anxiety": "up",
+    "description": "constantly feels he ought to be driving his projects forward",
+    "notes": "His normal state; he likens it to all-nighters at the conservatory but doubts it started then."
+   },
+   {
+    "id": 97,
+    "kind": "shift",
+    "dateTime": "2019-10-07",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "anxiety": "down",
+    "description": "started a sleeping pill",
+    "notes": "Glad to stop fretting about sleep, though sleep itself is no better."
+   },
+   {
+    "id": 116,
+    "kind": "shift",
+    "dateTime": "2019-10-09",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "toward",
+    "relationshipTargets": [
+     31
+    ],
+    "description": "aiming for shorter, more regular calls with his mother",
+    "notes": "His lesson from that summer at the lodge: distance that piles up makes contact tense; small regular contact softens it."
+   },
+   {
+    "id": 137,
+    "kind": "noted",
+    "dateTime": "2019-10-10",
+    "dateCertainty": "approximate",
+    "person": 98,
+    "description": "a baby on the way, their first",
+    "notes": "Due later that autumn; Russell's first grandchild that Jonah knows of."
+   },
+   {
+    "id": 195,
+    "kind": "shift",
+    "dateTime": "2019-10-21",
+    "dateCertainty": "certain",
+    "person": 27,
+    "symptom": "up",
+    "anxiety": "up",
+    "functioning": "down",
+    "description": "swamped, one thing after another",
+    "notes": "A street party, then a fundraising dinner, then the drive to the lake for her mother's retirement party."
+   },
+   {
+    "id": 198,
+    "kind": "shift",
+    "dateTime": "2019-10-21",
+    "dateCertainty": "certain",
+    "person": 1,
+    "relationship": "overfunctioning",
+    "relationshipTargets": [
+     27
+    ],
+    "anxiety": "up",
+    "description": "too strict laying out a plan to settle her when she was swamped",
+    "notes": "It helps her, he knows, but he would like her to cope without him."
+   },
+   {
+    "id": 199,
+    "kind": "shift",
+    "dateTime": "2019-10-21",
+    "dateCertainty": "approximate",
+    "person": 27,
+    "relationship": "fusion",
+    "relationshipTargets": [
+     120,
+     123
+    ],
+    "description": "talks with her father and brother all day; nothing happens to one that the others don't hear"
+   },
+   {
+    "id": 200,
+    "kind": "shift",
+    "dateTime": "2019-10-21",
+    "dateCertainty": "certain",
+    "person": 27,
+    "anxiety": "down",
+    "functioning": "up",
+    "description": "settled once the weekend had a plan; the dinner went well"
+   },
+   {
+    "id": 197,
+    "kind": "noted",
+    "dateTime": "2019-10-22",
+    "dateCertainty": "certain",
+    "person": 119,
+    "description": "the family met at the lake house for her retirement"
+   },
+   {
+    "id": 201,
+    "kind": "shift",
+    "dateTime": "2019-10-23",
+    "dateCertainty": "certain",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     27,
+     119,
+     120,
+     123
+    ],
+    "symptom": "up",
+    "anxiety": "up",
+    "description": "awake from the small hours at the lake weekend, no more sleep, and could only pull back as the others rose",
+    "notes": "His sleep is at its worst around her family; he feels he doesn't belong."
+   },
+   {
+    "id": 202,
+    "kind": "shift",
+    "dateTime": "2019-10-23",
+    "dateCertainty": "approximate",
+    "person": 27,
+    "anxiety": "up",
+    "description": "anxious when he's had no sleep at family occasions; long quiet drives home afterward"
+   },
+   {
+    "id": 151,
+    "kind": "noted",
+    "dateTime": "2019-10-26",
+    "dateCertainty": "unknown",
+    "person": 149,
+    "description": "drove his mother to the coast for a week",
+    "notes": "Hal does most of her care."
+   }
+  ]
+ },
+ "said": [
+  {
+   "messageId": 1,
+   "question": "Thinking over your life up to now, which two or three stretches were the fullest or hardest, and roughly which years?",
+   "words": "There are two stretches I'd pick. The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework. After that came years of performing and odd jobs on boats up and down the coast. The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school. I think something in the family set each of those off. I'd also like to know when my sleeplessness started; I've always been keyed up, maybe anxious, maybe more than that. And I wonder what the moves between primary and secondary school did to me. Before that it's a blur."
+  }
+ ]
+}

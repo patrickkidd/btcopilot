@@ -1,0 +1,64 @@
+{
+ "model": "hand-written",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Joelle, then the separation",
+     "reason": "A new partner in 1998 and the separation in mid-1999, with two of the shifts that count, fewer than three.",
+     "openingId": 11
+    },
+    {
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Lorna's and Clifford's deaths",
+     "reason": "Lorna died at the start of 2008; within seven months Jonah could not talk with his mother, shut her out and left.",
+     "openingId": 61
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "I went off to the conservatory",
+     "startYear": 1991,
+     "endYear": 1993
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "when nothing at home felt right",
+     "startYear": 2001,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "run": "r1",
+     "reason": "The 1987 shifts are told as how things already stood that year, not as a change at a known date."
+    },
+    {
+     "run": "r6",
+     "reason": "The shifts from 2017 on are spread over two and a half years with no date where they draw close together."
+    }
+   ]
+  }
+ ]
+}

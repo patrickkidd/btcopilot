@@ -353,6 +353,21 @@ def test_the_coach_is_given_the_words_but_none_of_its_earlier_tool_calls(
     assert "tool_use" not in str(history)
 
 
+def test_the_coach_is_given_the_number_of_the_message_it_answers_and_the_earlier_words_as_they_were(
+    web, token, family, monkeypatch
+):
+    # R-0852
+    coach(monkeypatch, Model(said("Nell is in.")))
+    first = post(web, token).get_json()
+    second = coach(monkeypatch, Model(said("Tell me about Ash.")))
+    body = post(web, token, "My brother is Ash.").get_json()
+
+    history = second.histories[0]
+    assert words(history[0]).startswith("My sister is Nell.")
+    assert f"[message {body['statement_id']}] My brother is Ash." in words(history[-1])
+    assert f"[message {first['statement_id']}]" not in words(history[0])
+
+
 def test_the_latest_words_come_from_every_one_of_the_users_sessions_on_the_family(
     web, token, family, monkeypatch, test_user, test_user_2
 ):

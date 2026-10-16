@@ -4,7 +4,7 @@ app sends the API, name, description and input schema unchanged, read from the
 JSON file given as its one argument. A call is answered with nothing: the turn
 stops at its first message, and the suite's own replay runs the tools.
 
-python -m btcopilot.tests.live.toolserver <tools file>
+python -m btcopilot.toolserver <tools file>
 """
 
 import json

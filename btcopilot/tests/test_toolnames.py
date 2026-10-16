@@ -3,7 +3,7 @@ import pytest
 from btcopilot.schema import DiagramData
 from btcopilot.timeline import event_label
 from btcopilot.toolbox import ToolName
-from btcopilot.toolnames import names
+from btcopilot.toolnames import MESSAGE_GONE, evidence_label, names
 
 DATA = DiagramData(people=[{"id": 1, "name": "Wrenn"}, {"id": 2, "name": "Bo"}])
 
@@ -54,3 +54,8 @@ def test_a_tool_line_names_a_kind_event_by_who_and_the_shared_label(event, line)
     people = {p["id"]: p for p in DATA.people}
     assert added(**event) == line
     assert line.endswith(event_label(event, people))
+
+
+def test_a_message_given_by_no_number_is_labelled_gone_and_left_to_the_tools_own_check():
+    # R-0852
+    assert evidence_label(DATA, {"kind": "statement", "id": "latest"}) == MESSAGE_GONE

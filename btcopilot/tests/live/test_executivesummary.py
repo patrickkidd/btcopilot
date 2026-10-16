@@ -1,17 +1,17 @@
-"""The Executive Summary, the case report's first card: asked to sum up the
-whole story, the coach puts on the main_guess card a reading that sets the
-person's hard stretches beside what happened in the family across at least two
-generations, ends on what does not fit yet, and never describes the person as
-a standing type (R-0820).
+"""The Executive Summary, the case report's first card, in the approved shape
+(cards.md card 1, rule B1, R-0850): asked to sum up the whole story, the coach
+puts on the main_guess card who has the symptom and what it is first, then the
+pattern in one sentence, with no chronology of more than one sentence.
 
-The family: a grandfather dies, and a few months later the speaker stops going
-to classes; years later the speaker has panic attacks at work with no family
-event near them. A pass is a main_guess impression, stored as raised, whose
-evidence holds events of at least two generations, which names the 2016
-stretch by its event or its year, which places the speaker among her brothers
-and sisters (her sister by name or as evidence), and which never describes her
-as a standing type ("you tend to", "your trouble tends to", "you always").
-Two runs of three: the reading is the coach's judgement.
+The family: a grandfather dies, and a few months later the speaker (Wren)
+stops going to classes; years later she has panic attacks at work. A pass is a
+main_guess impression, stored as raised, whose first sentence names Wren, or
+calls her "you" as the coach speaks to her (R-0860), and
+one of her symptoms (panic attacks, stopping classes, sleeping most days),
+whose later text names the pattern (a link of her symptoms to her
+grandfather's death, her mother or the distance from her), and in which at
+most one sentence carries a year or a month. Two runs of three: the reading
+is the coach's judgement.
 
 Invented names only.
 """
@@ -62,22 +62,27 @@ def summary(coach) -> dict | None:
     return carded[-1] if carded else None
 
 
-def reads(main: dict, events: list[dict]) -> tuple[bool, bool, bool, bool]:
-    """Events of two generations, the 2016 stretch named, the sister named,
-    and no standing description of the speaker."""
-    found = {e["id"]: e for e in events}
-    cited = [found[int(one["id"])] for one in main["evidence"] if one["kind"] == "event" and int(one["id"]) in found]
-    generations = {GENERATION[e.get("child") or e["person"]] for e in cited if (e.get("child") or e["person"]) in GENERATION}
-    unfit = PANIC["id"] in {e["id"] for e in cited} or "2016" in main["text"]
-    placed = TESS["name"] in main["text"] or {"kind": "person", "id": str(TESS["id"])} in main["evidence"]
-    return len(generations) >= 2, unfit, placed, TYPE.search(main["text"]) is None
+SYMPTOM = re.compile(r"panic|classes|slept|sleep", re.I)
+PERSON = re.compile(r"\bWren\b|\byou\b", re.I)
+PATTERN = re.compile(r"grandfather|Silas|death|died|loss|mother|Ada|distance|calling", re.I)
+WHEN = re.compile(r"\b(19|20)\d\d\b|\b(January|February|March|April|May|June|July|August|September|October|November|December)\b")
+
+
+def reads(main: dict, events: list[dict]) -> tuple[bool, bool, bool]:
+    """Opens on Wren, or "you" in the coach's voice (R-0860), and her symptom,
+    names the pattern after it, and tells no more than one sentence of
+    chronology."""
+    first, *rest = re.split(r"(?<=[.!?])\s+", main["text"].strip())
+    opens = SYMPTOM.search(first) is not None and PERSON.search(first) is not None
+    pattern = any(PATTERN.search(one) for one in rest)
+    return opens, pattern, sum(WHEN.search(one) is not None for one in [first, *rest]) <= 1
 
 
 @passes(2, of=3)
-def test_the_executive_summary_reads_the_family_over_generations_and_ends_on_what_does_not_fit(coach):
-    # R-0820
+def test_the_executive_summary_opens_on_the_symptom_and_its_person_then_names_the_pattern(coach):
+    # R-0850
     coach.record(people=[ADA, HUGH, SILAS, RUTH, WALT, IRIS, TESS], pair_bonds=BONDS, events=EVENTS)
     coach.turn(ASKED)
     main = summary(coach)
     assert main, "no raised impression on the main_guess card"
-    assert reads(main, coach.events) == (True,) * 4, main
+    assert reads(main, coach.events) == (True,) * 3, main

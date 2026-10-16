@@ -274,7 +274,7 @@ def genders_agree(a: Person, b: Person) -> bool:
 
 
 #: How alike two names in one record must be to be one person written twice:
-#: "Robert" and "Robert Stinson", or "Katherine" and "Catherine".
+#: "Vernon" and "Vernon Haskell", or "Katrina" and "Catrina".
 SAME_NAME = 0.85
 
 

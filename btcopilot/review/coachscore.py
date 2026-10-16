@@ -54,7 +54,11 @@ def compare(mine_data: dict, agreed_data: dict) -> dict:
 
 
 def _clusters(data: dict) -> list[Cluster]:
-    return [from_dict(Cluster, c) for c in data.get("clusters") or []]
+    return [
+        cluster
+        for cluster in (from_dict(Cluster, c) for c in data.get("clusters") or [])
+        if not cluster.setAside
+    ]
 
 
 def _f1(result) -> float:

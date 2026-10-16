@@ -38,6 +38,11 @@ class Diagram(db.Model, ModelMixin):
     version = Column(Integer, nullable=False, default=1)
     # a copy a shadow turn writes on and throws away; never listed to anyone
     scratch = Column(Boolean, nullable=False, default=False, server_default=false())
+    # out of date apart from the change-date check until a Refresh writes the
+    # cards, set by the FD-381 catch-up (R-0772)
+    case_report_forced_out_of_date = Column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
 
     access_rights = relationship(
         "AccessRight",

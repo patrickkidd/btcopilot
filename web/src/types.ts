@@ -158,6 +158,12 @@ export interface Cluster {
   /** Why these moments are one episode, in the coach's own sentence. Null for
    * a cluster the reader regrouped or renamed themselves. */
   reason: string | null;
+  /** The cluster's own opening loss or change, when the grouping named one. */
+  openingEventId?: number | null;
+  /** True for a period the app set aside; the payload never carries one. */
+  setAside?: boolean;
+  /** The person's own period, or the app's. */
+  source?: ClusterSource | null;
   cluster_ids: string[];
   start: string;
   end: string;
@@ -256,10 +262,31 @@ export interface AskedQuestion {
  * `CaseReportCard` on the server (R-0709). */
 export enum CaseReportCard {
   MainGuess = "main_guess",
+  Family = "family",
+  WhatBrought = "what_brought",
+  Couple = "couple",
+  Sides = "sides",
   OwnPart = "own_part",
+  /** Merged into own_part (R-0850): never shown. */
   Choice = "choice",
   WorkOn = "work_on",
   CoachGuess = "coach_guess",
+}
+
+/** A card's line opened by its mark. Mirrors `CardLine` on the server (R-0850). */
+export enum CardLine {
+  For = "For",
+  Against = "Against",
+  Open = "Open",
+  OtherWay = "Other way",
+  Prognosis = "Prognosis",
+  Aim = "Aim",
+}
+
+/** Who proposed a cluster. Mirrors `ClusterSource` on the server. */
+export enum ClusterSource {
+  Model = "model",
+  User = "user",
 }
 
 /** The passages behind each case report card's book button, by card (R-0691). */

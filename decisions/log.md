@@ -189,7 +189,7 @@ K>1 consensus dedup unchanged.
 
 **Revisit trigger:** Real-rebuild dup rate on first-name-only extractions
 becomes a review burden (corroboration seeds too thin on bond-poor diagrams),
-or nickname variants ("Bob"/"Robert") start staging duplicates frequently
+or nickname variants ("Dick"/"Richard") start staging duplicates frequently
 enough to need an alias table.
 
 ### 2026-06-09: FD-338 — commit-pdp acceptance contract restricted to negative ids; parents edits applied server-side on full accept
@@ -229,8 +229,8 @@ need to apply parents on partial accepts.
 
 ### 2026-06-09: FD-338 — canonical-case cleanup approved; scope ruling: stop tuning on AI-residue test data
 
-**Context:** Committed diagram 1924 contained "Jim's Son 1/2" — name-only
-placeholder rows duplicating the named Anthony/Joseph, committed by earlier
+**Context:** Committed diagram 1924 contained "Son 1/2" rows under a relative's
+name — name-only placeholder rows duplicating that relative's two named sons, committed by earlier
 AI extraction runs during FD-337 testing. Unattachable (no transcript mention
 of the placeholder names) and unmatchable (no name overlap, zero structure),
 they capped raw LCC just under the 90% bar in 2/7 acceptance runs.
@@ -244,8 +244,8 @@ spend on test data not produced by the e2e extraction flow. The decisive gate
 for this feature is a human walking the real e2e flow on fresh extraction.
 
 **Note:** placeholder-vs-named duplicate is another ask-the-user case for the
-deferred closed-loop ticket ("Are 'Jim's Son 1' and Anthony the same
-person?").
+deferred closed-loop ticket ("Are the relative's 'Son 1' and his first named son
+the same person?").
 
 ### 2026-06-09: FD-338 — gate-and-dock replaces K-union as the rebuild core; DEFAULT_K 4→1 (supersedes the K=4-default entry below)
 
@@ -309,8 +309,8 @@ mandatory; it passed, so the loop is the compounding complement. Pivot review
    learned (FD-324). I reached for it again in the FD-338 merge/reconcile
    (`match_people`'s fuzzy `token_set_ratio` name component). On the real
    diagram it produced soft-duplicates it could not catch: **"Client"** and
-   **"Patrick"** added as separate people from the User/proband node; **"Jim's
-   Ex"** vs **"Jim's Ex-Wife"** and **"William"** vs **"William Patrick"** left
+   **"Patrick"** added as separate people from the User/proband node; a relative's
+   **"Ex"** vs his **"Ex-Wife"**, and a first name alone vs the same first name with a middle name, left
    un-merged. Patrick would have blocked this had he seen it. **RULE: never use
    fuzzy name similarity to decide person identity for committed/production
    data.** (Offline F1 *scoring* is a separate, acceptable use.)

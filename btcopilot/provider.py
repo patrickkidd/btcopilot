@@ -1,8 +1,11 @@
 """Which service answers the app's model calls: Anthropic's API with a key (the
-default), or Amazon Bedrock with the machine's AWS sign-in, chosen only by
-BTCOPILOT_MODEL_PROVIDER=bedrock. The SDK reads ANTHROPIC_BEDROCK_BASE_URL itself.
-Gemini is not on Bedrock, so on Bedrock every Gemini call is answered by Claude
-Haiku (llmutil.GEMINI_STAND_IN)."""
+default), Amazon Bedrock with the machine's AWS sign-in
+(BTCOPILOT_MODEL_PROVIDER=bedrock), or, for a sandbox, the Claude Code
+subscription at no API cost (BTCOPILOT_MODEL_PROVIDER=subscription), which
+answers the coach's calls and plain text calls through `claude -p`
+(subscription.py) and leaves Gemini's to Google. The SDK reads
+ANTHROPIC_BEDROCK_BASE_URL itself. Gemini is not on Bedrock, so on Bedrock
+every Gemini call is answered by Claude Haiku (llmutil.GEMINI_STAND_IN)."""
 
 import enum
 import os
@@ -14,6 +17,7 @@ from typing import Iterable
 class Provider(enum.StrEnum):
     Anthropic = "anthropic"
     Bedrock = "bedrock"
+    Subscription = "subscription"
 
 
 SETTING = "BTCOPILOT_MODEL_PROVIDER"

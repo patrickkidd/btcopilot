@@ -36,7 +36,7 @@ def _record(events, people=(1, 2, 3), bonds=(), parents=None):
 
 
 def test_two_endings_with_different_people_fire_once_at_the_second():
-    # R-0004
+    # R-0004, R-0855
     record = _record(
         [
             _event(10, EventKind.Separated, "1998-11-01", person=1, spouse=2),
@@ -45,7 +45,6 @@ def test_two_endings_with_different_people_fire_once_at_the_second():
                 20,
                 EventKind.Shift,
                 "2010-10-01",
-                APPROXIMATE,
                 person=1,
                 relationship=RelationshipKind.Cutoff,
                 relationshipTargets=[3],
@@ -54,7 +53,7 @@ def test_two_endings_with_different_people_fire_once_at_the_second():
             _worse(22, "2010-10-20", symptom=VariableShift.Up),
         ]
     )
-    assert firings(record) == [Firing(1, Variable.Symptom, ((10, 11), (20, 21)))]
+    assert firings(record) == [Firing(1, Variable.Symptom, ((10, 11), (20, 22)))]
 
 
 def test_one_ending_with_two_bad_turns_is_one_occurrence():
@@ -85,19 +84,19 @@ def test_year_only_undated_and_earlier_shifts_do_not_count():
     assert firings(record) == []
 
 
-def test_a_month_only_date_widens_the_window_by_a_month():
-    # R-0004
+def test_an_approximate_date_off_the_first_of_january_is_no_nearer_than_its_year():
+    # R-0855
     day_certain = [
         _event(10, EventKind.Separated, "2001-10-01", person=1),
-        _worse(11, "2001-12-15", functioning=VariableShift.Down),
+        _worse(11, "2001-10-20", functioning=VariableShift.Down),
         _event(20, EventKind.Separated, "2005-10-01", person=1),
-        _worse(21, "2005-12-15", functioning=VariableShift.Down),
+        _worse(21, "2005-10-20", functioning=VariableShift.Down),
     ]
-    assert firings(_record(day_certain)) == []
-    month_only = [dict(e, dateCertainty=APPROXIMATE.value) for e in day_certain]
-    assert firings(_record(month_only)) == [
+    assert firings(_record(day_certain)) == [
         Firing(1, Variable.Functioning, ((10, 11), (20, 21)))
     ]
+    approximate = [dict(e, dateCertainty=APPROXIMATE.value) for e in day_certain]
+    assert firings(_record(approximate)) == []
 
 
 def test_a_parents_death_counts_for_the_child_and_a_spouses_for_the_widow():

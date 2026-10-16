@@ -1,15 +1,27 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   CLUSTER_BOOK,
   CLUSTER_BOOK_TITLE,
+  ClusterView,
+  Key,
+  Via,
+  chosen,
+  clusterPage,
+  stand,
+  VIEW_KEY,
+  drawing,
+  place,
+  storeView,
+  storedView,
   Level,
   Target,
   aboutMarkup,
   centredOn,
-  clusterLabel,
+  clusterName,
   clusterStep,
   dotLayers,
   inSight,
+  into,
   pills,
   reach,
   restLayers,
@@ -23,6 +35,7 @@ import {
   years,
   type Layer,
 } from "../src/picture";
+import { periodName } from "../src/caseview";
 import { zones } from "../src/spotlight";
 import { Touch, type Cluster, type TimelineEvent } from "../src/types";
 
@@ -328,20 +341,17 @@ describe("the path row over the line", () => {
   const cluster = { title: "", start: "2009-03-01", end: "2010-11-20" };
 
   // R-0767
-  it("names an open cluster by its name alone, its years going under the line", () => {
-    const named = { title: "Every mark", start: "1972-06-10", end: "1999-02-01" };
-    expect(trail(Level.Wire, named, null)).toEqual(["Timeline", "Every mark"]);
-    expect(trail(Level.About, named, null)).toEqual(["Timeline", "Every mark", "about"]);
+  it("names an open cluster in the path by its name and years", () => {
+    const named = { title: "Every mark", label: "1972–1999", start: "1972-06-10", end: "1999-02-01" };
+    expect(trail(Level.Wire, named, null)).toEqual(["Timeline", "Every mark · 1972–1999"]);
+    expect(trail(Level.About, named, null)).toEqual(["Timeline", "Every mark · 1972–1999", "about"]);
   });
 
   // R-0583, R-0767
-  it("writes the years and the count once under the line, the name once above it", () => {
-    const open = { title: "Every mark", start: "1972-06-10", end: "1999-02-01", count: 12 };
-    expect(clusterLabel(open)).toBe("1972–1999 · 12 events");
-    expect(clusterLabel({ ...open, end: "1972-12-01", count: 1 })).toBe("1972 · 1 event");
-    expect(clusterLabel(open)).not.toContain("Every mark");
-    expect(clusterStep(open)).toBe("Every mark");
-    expect(clusterStep(open)).not.toMatch(/\d{4}/);
+  it("names the open cluster under the line by its name, the count beside it", () => {
+    const open = { title: "Every mark", label: "1972–1999", start: "1972-06-10", end: "1999-02-01", count: 12 };
+    expect(clusterName(open)).toBe("Every mark");
+    expect(clusterName({ ...open, title: "" })).toBe("1972–1999");
   });
 
   // R-0540
@@ -445,4 +455,222 @@ it("slides the line to put the step's dot in the middle, as near as its ends all
   expect(inSight(2000, 0, 1440)).toBe(false);
   expect(inSight(2000, 1280, 1440)).toBe(true);
   expect(inSight(10, 0, 1440)).toBe(false);
+});
+
+// "The timeline needs to scroll an event or cluster into view when it is off screen. It should not scroll when the cluster or event is already in view." (Patrick, 2026-10-15)
+// R-0767
+it("slides the line to an event or a cluster only when it is out of sight, and a cluster wider than the screen to its start", () => {
+  const dot = (x: number) => ({ left: x, right: x });
+  expect(into(dot(500), 300, 2880, 393)).toBe(300);
+  expect(into(dot(2000), 300, 2880, 393)).toBe(centredOn(2000, 2880, 393));
+  expect(into(dot(500), null, 2880, 393)).toBe(centredOn(500, 2880, 393));
+  expect(into({ left: 400, right: 600 }, 300, 2880, 393)).toBe(300);
+  expect(into({ left: 400, right: 600 }, 450, 2880, 393)).toBe(centredOn(500, 2880, 393));
+  expect(into({ left: 1000, right: 1600 }, 1100, 2880, 393)).toBe(1100);
+  expect(into({ left: 1000, right: 1600 }, 0, 2880, 393)).toBe(984);
+});
+
+describe("the drawing on a cluster's page", () => {
+  const ev = (id: number, iso: string | null, over: Partial<TimelineEvent> = {}): TimelineEvent =>
+    ({ id, dateTime: iso, label: `event ${id}`, kind: "shift", person: 1, person_name: "Ada", dateCertainty: "certain", ...over }) as TimelineEvent;
+  const events = [
+    ev(1, "1998-01-01", { symptom: "up" }),
+    ev(2, "1998-07-01", { kind: "death", label: "Grandmother died", person: 2, person_name: "Rose" }),
+    ev(3, "1999-01-01", { anxiety: "up", dateCertainty: "approximate", person_name: "Ada → Rose" }),
+    ev(4, "1998-04-01", { kind: "bonded", dateCertainty: "unknown" }),
+  ];
+  const people = new Map([[1, "Ada"], [2, "Rose"]]);
+
+  // R-0213, R-0850
+  it("puts one row of dots by date, hollow when the date is unsure or unknown", () => {
+    const p = place(events, ClusterView.Row, 300, null);
+    const x = (iso: string) => 8 + ((years(iso) - years("1998-01-01")) / (years("1999-01-01") - years("1998-01-01"))) * 284;
+    expect(p.dots.map((d) => [d.id, Math.round(d.x), d.hollow])).toEqual([
+      [1, 8, false],
+      [4, Math.round(x("1998-04-01")), true],
+      [2, Math.round(x("1998-07-01")), false],
+      [3, 292, true],
+    ]);
+    expect(p.dots.map((d) => d.colour)).toEqual(["var(--remove)", "var(--ink)", "var(--ink)", "var(--ask)"]);
+    expect(p.years).toEqual(["1998", "1999"]);
+    expect(p.lanes).toEqual([]);
+  });
+
+  // R-0862, R-0867
+  it("draws a solid line at every death, a dashed one at each illness found in someone other than the diagram's own person, and one at the stored opening when it is neither", () => {
+    const keys = (opening: number | null, you: number | null) =>
+      place(events, ClusterView.Row, 300, opening, people, you).keys.map((k) => [k.id, k.key, k.label]);
+    expect(keys(null, 1)).toEqual([[2, Key.Death, "Rose's death"]]);
+    expect(keys(null, 2)).toEqual([[1, Key.Illness, "Ada: event 1"], [2, Key.Death, "Rose's death"]]);
+    expect(keys(2, 1)).toEqual([[2, Key.Death, "Rose's death"]]);
+    expect(keys(3, 1)).toEqual([[2, Key.Death, "Rose's death"], [3, Key.Opening, "event 3"]]);
+    const p = place(events, ClusterView.Row, 300, 3, people, 2);
+    expect(p.keys.find((k) => k.id === 2)!.x).toBe(p.dots.find((d) => d.id === 2)!.x);
+    const svg = drawing(events, ClusterView.Row, 300, 3, people, 2);
+    expect(svg).toContain('<line class="ab-key ab-death"');
+    expect(svg).toContain('<line class="ab-key ab-illness"');
+    expect(svg).toContain('<line class="ab-key ab-opening"');
+    expect(svg).toContain(">Rose&#39;s death</text>");
+    expect(svg).toContain('ab-line ab-death"></span>death');
+    expect(svg).toContain('ab-line ab-illness"></span>illness found');
+    // the lanes draw the same lines through every lane
+    expect(place(events, ClusterView.Lanes, 300, 3, people, 2).keys.map((k) => k.key)).toEqual([Key.Illness, Key.Death, Key.Opening]);
+    expect(drawing(events, ClusterView.Lanes, 300, 3, people, 2)).toContain('<line class="ab-key ab-death"');
+  });
+
+  // R-0862
+  it("stands the lines' labels on rows so no two overlap and no line crosses a label, cutting one only when no row is clear", () => {
+    const lines = [100, 104, 110, 118, 290].map((x, i) => ({ id: i, key: Key.Death, x, label: `Grandmother number ${i}'s death` }));
+    const laid = stand(lines, 300);
+    expect(laid).toHaveLength(5);
+    for (const a of laid)
+      for (const b of laid) {
+        if (a === b) continue;
+        if (a.row === b.row) expect(a.to < b.from || b.to < a.from).toBe(true);
+        if (a.row < b.row) expect(a.x < b.from || a.x > b.to).toBe(true);
+      }
+    expect(new Set(laid.map((k) => k.row)).size).toBeGreaterThan(1);
+    const last = laid.find((k) => k.id === 4)!;
+    expect(last.to).toBeLessThan(last.x);
+    expect(laid.every((k) => k.label.length <= 22)).toBe(true);
+    // the dots move down under as many rows of labels as there are
+    const many = [ev(1, "1998-01-01", { kind: "death" }), ev(2, "1998-01-02", { kind: "death", person: 2 }), ev(3, "1999-01-01")];
+    const p = place(many, ClusterView.Row, 300, null, people, 1);
+    expect(p.keys.map((k) => k.row)).toEqual([0, 1]);
+    expect(p.top).toBeGreaterThan(place(events, ClusterView.Row, 300, null, people, 1).top);
+  });
+
+  // R-0861
+  it("makes a lane as tall as its largest stack of same-date dots, so no dot rises into the labels or the lane above", () => {
+    const seven = [1, 2, 3, 4, 5, 6, 7].map((id) => ev(id, "2001-05-01"));
+    const row = place([...seven, ev(8, "2003-01-01")], ClusterView.Row, 300, null);
+    expect(Math.min(...row.dots.map((d) => d.y - 5))).toBeGreaterThanOrEqual(row.top);
+    const plain = place(events, ClusterView.Row, 300, null);
+    expect(row.height - row.lines[0]).toBe(plain.height - plain.lines[0]);
+    const rose = [9, 10, 11, 12, 13].map((id) => ev(id, "2001-05-01", { person: 2, person_name: "Rose" }));
+    const lanes = place([ev(14, "2000-01-01"), ...rose], ClusterView.Lanes, 300, null, people, 1);
+    const top = Math.min(...lanes.dots.filter((d) => d.id !== 14).map((d) => d.y - 5));
+    expect(top).toBeGreaterThan(lanes.lines[0]);
+  });
+
+  // R-0850
+  it("gives each person one lane by who they are, a two-person event in its first person's", () => {
+    const p = place(events, ClusterView.Lanes, 300, 2, people, 1);
+    expect(p.lanes.map((l) => l.name)).toEqual(["Ada", "Rose"]);
+    expect(p.dots.find((d) => d.id === 3)!.y).toBe(p.lanes[0].y);
+    expect(p.dots.find((d) => d.id === 2)!.y).toBe(p.lanes[1].y);
+    expect(p.dots[0].x).toBe(72);
+    expect(drawing(events, ClusterView.Lanes, 300, 2, people)).toContain('class="ab-view" data-view="row">One row</button>');
+  });
+
+  // R-0850
+  it("lists every event of the cluster, the undated ones too", () => {
+    const cluster = { reason: "", summary: null, label: "1998–1999", start: "1998-01-01", end: "1999-01-01", event_ids: [1, 2, 3], play_ids: [1, 2, 3, 4, 5], openingEventId: null } as unknown as Cluster;
+    const page = clusterPage(cluster, [...events, ev(5, null, { label: "Moved away" })], [], ClusterView.Row, 300);
+    expect(page).toContain("1998–1999 · 5 events");
+    expect(page).toContain('<span class="ab-yr"></span><span class="ab-what">Moved away</span>');
+  });
+
+  /** A period as the person stored it, Sep 2009 to Jan 2011: on the line to
+   * Nov 2010, four events after it whose dates the diagram does not know. */
+  const period = () => {
+    const dates: [number, string, string][] = [
+      [16, "2009-09-01", "approximate"], [17, "2009-09-01", "approximate"], [18, "2010-01-01", "approximate"],
+      [19, "2010-06-01", "approximate"], [20, "2010-10-01", "approximate"], [21, "2010-10-01", "approximate"],
+      [23, "2010-11-01", "approximate"], [104, "2010-11-01", "approximate"], [105, "2010-11-01", "approximate"],
+      [106, "2010-12-01", "unknown"], [107, "2011-01-01", "unknown"], [108, "2011-01-01", "unknown"], [24, "2011-01-01", "unknown"],
+    ];
+    const all = dates.map(([id, iso, sure]) => ev(id, iso, { dateCertainty: sure as TimelineEvent["dateCertainty"] }));
+    const ids = all.map((e) => e.id);
+    const cluster = { id: "p", title: "2009\u20132011", label: "2009\u20132011", reason: "", summary: null, start: "2009-09-01", end: "2010-11-01", count: 13, event_ids: ids.slice(0, 9), play_ids: ids, openingEventId: null } as unknown as Cluster;
+    return { all, cluster };
+  };
+
+  // R-0853, R-0850
+  it("writes a period's years one way, the years the server stored for it, on its page, in the path and on a detail chip", () => {
+    const { all, cluster } = period();
+    expect(clusterPage(cluster, all, [], ClusterView.Row, 360)).toContain("2009\u20132011 · 13 events");
+    expect(place(all, ClusterView.Row, 360, null).years).toEqual(["2009", "2011"]);
+    expect(clusterStep(cluster)).toBe("2009\u20132011");
+    expect(periodName(cluster)).toBe("2009\u20132011");
+    expect(periodName({ ...cluster, title: "When Lily came" })).toBe("When Lily came \u00b7 2009\u20132011");
+  });
+
+  // R-0853, R-0767
+  it("writes an app period's years once beside its name, though its stored name ends in them", () => {
+    const { cluster } = period();
+    const app = { ...cluster, title: "When Lily came, 2009\u20132011" };
+    expect(periodName(app)).toBe("When Lily came \u00b7 2009\u20132011");
+    expect(clusterStep(app)).toBe("When Lily came · 2009\u20132011");
+    expect(trail(Level.About, app, null)).toEqual(["Timeline", "When Lily came · 2009\u20132011", "about"]);
+    expect(periodName({ ...cluster, title: "When Lily came, 2007" })).toBe("When Lily came, 2007 \u00b7 2009\u20132011");
+  });
+
+  // R-0168, R-0850
+  it("stacks events on one date a few pixels apart in the one row, each dot answering its own tap", () => {
+    const { all } = period();
+    const p = place(all, ClusterView.Row, 360, null);
+    const at = (id: number) => p.dots.find((d) => d.id === id)!;
+    expect(p.lanes).toEqual([]);
+    expect([at(23).x, at(104).x]).toEqual([at(105).x, at(105).x]);
+    expect([at(23).y - at(104).y, at(104).y - at(105).y]).toEqual([8, 8]);
+    const inside = (b: { x: number; y: number; w: number; h: number }, d: { x: number; y: number }) =>
+      d.x >= b.x && d.x <= b.x + b.w && d.y >= b.y && d.y <= b.y + b.h;
+    for (const d of p.dots) expect(p.dots.filter((o) => inside(o.hit, d)).map((o) => o.id)).toEqual([d.id]);
+    const svg = drawing(all, ClusterView.Row, 360, null);
+    expect(svg.match(/<rect class="ab-hit"/g)).toHaveLength(13);
+  });
+
+  // R-0861
+  it("selects a tapped row alone, a tapped dot with every event on its date, and nothing on a second tap", () => {
+    const { all } = period();
+    expect(chosen([], 104, Via.Row, all)).toEqual([104]);
+    expect(chosen([104], 104, Via.Row, all)).toEqual([]);
+    expect(chosen([], 104, Via.Dot, all)).toEqual([23, 104, 105]);
+    expect(chosen([23, 104, 105], 105, Via.Dot, all)).toEqual([]);
+    expect(chosen([23, 104, 105], 104, Via.Row, all)).toEqual([104]);
+    expect(chosen([104], 19, Via.Dot, all)).toEqual([19]);
+    expect(chosen([19], 19, Via.Row, all)).toEqual([]);
+  });
+
+  // R-0861
+  it("marks each row and each dot with its event, so a selection lights both", () => {
+    const { all, cluster } = period();
+    const page = clusterPage(cluster, all, [], ClusterView.Row, 360);
+    expect(page).toContain('<li data-event="104"><span class="ab-yr">2010</span>');
+    expect(page).toContain('<circle class="ab-dot" data-event="104"');
+    expect(page.match(/<li data-event=/g)).toHaveLength(13);
+  });
+
+  // R-0168
+  it("gives every dot a target the picture's tap language answers", () => {
+    const svg = drawing(events, ClusterView.Row, 300, null);
+    expect(svg.match(new RegExp(`data-target="${Target.Dot}"`, "g"))).toHaveLength(4);
+    expect(svg).toContain('data-index="4"');
+  });
+
+  // R-0850
+  it("names under the drawing only the colours in it, and the hollow dot", () => {
+    const legend = drawing(events, ClusterView.Row, 300, null).split('class="ab-span ab-legend">')[1];
+    expect(legend).toContain("symptom");
+    expect(legend).toContain("anxiety");
+    expect(legend).toContain("other events");
+    expect(legend).toContain("hollow: approximate date");
+    expect(legend).not.toContain("functioning");
+    expect(legend).not.toContain("relationship");
+  });
+
+  // R-0213
+  it("keeps the reader's choice in the browser, one row by default", () => {
+    expect(storedView()).toBe(ClusterView.Row);
+    const kept = new Map<string, string>();
+    vi.stubGlobal("localStorage", { getItem: (k: string) => kept.get(k) ?? null, setItem: (k: string, v: string) => kept.set(k, v) });
+    expect(drawing(events, storedView(), 300, null)).toContain('data-view="lanes">By person</button>');
+    storeView(ClusterView.Lanes);
+    expect(storedView()).toBe(ClusterView.Lanes);
+    expect(kept.get(VIEW_KEY)).toBe("lanes");
+    storeView(ClusterView.Row);
+    expect(storedView()).toBe(ClusterView.Row);
+    vi.unstubAllGlobals();
+  });
 });

@@ -6,16 +6,18 @@ but the counts each coach turn keeps."""
 
 import datetime
 
-from btcopilot import profile
+from btcopilot import profile, record
 from btcopilot.prompts import Role
 from btcopilot.record import GENERIC, PLACEHOLDERS, ROLE_WORDS, generic_key
 from btcopilot.recordtext import event_line, note_line, person_line
 from btcopilot.schema import (
     DECLINED,
     DEFAULT_SUBJECT_NAME,
+    CaseReportCard,
     DateCertainty,
     DiagramData,
     EventKind,
+    EvidenceKind,
     Fact,
     FactState,
     ItemKind,
@@ -44,9 +46,9 @@ FULL = (
     (Fact.DeathDate, Fact.CauseOfDeath),
 )
 SIBLING = ((*FULL[0], Fact.Order, Fact.Sex), FULL[1])
-# The person's own: what a sibling needs, with the times they say the most was
-# going on right after their birth date.
-OWN = ((*SIBLING[0][:2], Fact.MostGoingOn, *SIBLING[0][2:]), SIBLING[1])
+# The person's own: what a sibling needs, with what brought them in and the
+# times they say the most was going on right after their birth date.
+OWN = ((*SIBLING[0][:2], Fact.WhatBrought, Fact.MostGoingOn, *SIBLING[0][2:]), SIBLING[1])
 # Bowen's list for each sibling of each parent (FTiCP ch. 9).
 AUNT = (
     (
@@ -109,6 +111,7 @@ WORDS = {
     Fact.Met: "when they met",
     Fact.Stress: "periods of major stress",
     Fact.MostGoingOn: "the two or three times when the most was going on",
+    Fact.WhatBrought: "what brought them in",
 }
 
 # The items the checklist places on a couple; every other one is a person's.
@@ -123,9 +126,9 @@ COUPLE_FACTS = (Fact.Children, Fact.Met)
 # bonds with their dates. When the next question is the coach's own to choose,
 # these lead the list for every diagram until they are closed, and the story
 # items follow. A topic the person brings is followed first; that is the
-# prompt's rule, not the list's. The times the most was going on keep their
-# place ahead of everything [R-0735].
-LEADING = (Fact.MostGoingOn,)
+# prompt's rule, not the list's. What brought the person in, then the times
+# the most was going on, keep their place ahead of everything [R-0852, R-0735].
+LEADING = (Fact.WhatBrought, Fact.MostGoingOn)
 TIERS = (LEADING, (Fact.Name, Fact.Parents, Fact.Children), (Fact.Marriages, Fact.Met))
 STRUCTURE = (*TIERS[1], *TIERS[2])
 
@@ -177,6 +180,10 @@ SEARCH_WORDS = {
     Fact.Met: ("met", "meet", "dating", "started seeing", "got together", "introduced"),
     Fact.Stress: ("stress", "hardest", "worst", "crisis", "fell apart", "rough patch"),
     Fact.MostGoingOn: ("most was going on", "most going on", "busiest"),
+    Fact.WhatBrought: (
+        "brought me", "brings me", "came because", "came here", "here because",
+        "reaching out",
+    ),
 }
 
 # What a relative is called in talk, by what they are to the person, searched
@@ -388,7 +395,9 @@ def evidence(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> str | N
         if fact is Fact.Alive:
             return "they are the person you are talking with"
         if fact is Fact.Stress:
-            return f"the record's {len(data.clusters)} clusters"
+            return f"the record's {len(data.drawn_clusters())} clusters"
+        if fact is Fact.WhatBrought:
+            return note_line(brought(data))
         if fact is Fact.Order:
             return "every child of their parents has a dated birth"
         return person_line(_person(data, iid))
@@ -407,6 +416,77 @@ def label(data: DiagramData, kind: ItemKind, iid: int) -> str:
     """A person or couple as the coach's list names them, with what they are
     to the person when the record says."""
     return _label(data, kind, iid, _role_of(data, kind, iid))
+
+
+def role(data: DiagramData, pid: int) -> str | None:
+    """What a person is to the person, when the record says."""
+    return _role_of(data, ItemKind.Person, pid)
+
+
+def in_birth_order(data: DiagramData, pid: int) -> list[int]:
+    """The person and their brothers and sisters, full, half and step, in
+    birth order; one with no dated birth comes last."""
+
+    def when(kid: int) -> tuple:
+        birth = profile.birth(data, kid)
+        date = parse_date(birth["dateTime"]) if birth and _dated(birth) else None
+        return (date is None, date or datetime.date.min)
+
+    return sorted(dict.fromkeys([pid, *_siblings(data, pid)]), key=when)
+
+
+def nearest(data: DiagramData) -> set[int]:
+    """The person, their partners and children, their parents, brothers and
+    sisters, and grandparents."""
+    own = profile.own(data)
+    if own is None:
+        return set()
+    me = own["id"]
+    mine = _couples(data, me)
+    parents = _partners(data, _parents(data, me))
+    return {
+        me,
+        *(_other(data, bid, me) for bid in mine),
+        *(kid for bid in mine for kid in _children(data, bid)),
+        *parents,
+        *_siblings(data, me),
+        *(pid for parent in parents for pid in _partners(data, _parents(data, parent))),
+    }
+
+
+def sides(data: DiagramData) -> dict[int, set[int]]:
+    """Each of the person's parents with everyone on that side of the family:
+    the parent, their forebears, every child of a forebear's couples and the
+    children's own lines and partners, never the person's parents' couple's
+    line."""
+    own = profile.own(data)
+    if own is None:
+        return {}
+    out = {}
+    for parent in _partners(data, _parents(data, own["id"])):
+        side: set[int] = set()
+
+        def down(bid: int | None):
+            for kid in _children(data, bid):
+                if kid in side:
+                    continue
+                side.add(kid)
+                for couple in _couples(data, kid):
+                    side.update(_partners(data, couple))
+                    down(couple)
+
+        up, climbed = [parent], set()
+        while up:
+            pid = up.pop()
+            if pid in climbed:
+                continue
+            climbed.add(pid)
+            side.add(pid)
+            home = _parents(data, pid)
+            up.extend(_partners(data, home))
+            down(home)
+        out[parent] = side
+    return out
 
 
 def spoken_as(data: DiagramData, kind: ItemKind, iid: int) -> list[str] | None:
@@ -500,10 +580,10 @@ def block(data: DiagramData, plateau: int | None = None) -> str:
 
 
 def structure_first(items: list[Item]) -> list[Item]:
-    """The items with the times the most was going on first, then each tier of
-    the structure items, then the rest, each part keeping the order given. The
-    same rule for every diagram: the order comes from the record's shape, and
-    no diagram is edited to get it."""
+    """The items with what brought the person in and the times the most was
+    going on first, then each tier of the structure items, then the rest, each
+    part keeping the order given. The same rule for every diagram: the order
+    comes from the record's shape, and no diagram is edited to get it."""
     rank = {fact: tier for tier, facts in enumerate(TIERS) for fact in facts}
     return sorted(items, key=lambda item: rank.get(item[0], len(TIERS)))
 
@@ -585,8 +665,26 @@ def _recorded(data: DiagramData, item: Item, answers: dict) -> bool:
         case Fact.Parents:
             return _parents(data, iid) is not None
         case Fact.Stress:
-            return bool(data.clusters)
+            return bool(data.drawn_clusters())
+        case Fact.WhatBrought:
+            return brought(data) is not None
     return bool(_records(data, fact, iid))
+
+
+def brought(data: DiagramData) -> dict | None:
+    """The coach's note on the what_brought card, resting on one of the
+    person's messages; the tool refuses one resting on anything else
+    [R-0852]."""
+    return next(
+        (
+            q
+            for q in data.questions
+            if record.note(q) is record.IMPRESSION
+            and q.get(record.CARD) == CaseReportCard.WhatBrought
+            and any(e["kind"] == EvidenceKind.Statement for e in q.get("evidence") or [])
+        ),
+        None,
+    )
 
 
 def _records(data: DiagramData, fact: Fact, iid: int) -> list[dict]:

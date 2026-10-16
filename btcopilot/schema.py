@@ -346,6 +346,9 @@ class Fact(enum.StrEnum):
     Stress = "stress"
     # On the person: the two or three times they say the most was going on.
     MostGoingOn = "most_going_on"
+    # On the person: what brought them in, kept as the coach's note on the
+    # what_brought card.
+    WhatBrought = "what_brought"
 
 
 class NotedFact(enum.StrEnum):
@@ -462,6 +465,8 @@ class Cluster:
     source: ClusterSource = ClusterSource.Model
     # One sentence saying what the record shows these events have in common.
     reason: str | None = None
+    setAside: bool = False
+    openingEventId: int | None = None
 
 
 class ItemKind(enum.StrEnum):
@@ -535,10 +540,65 @@ class CaseReportCard(enum.StrEnum):
     """The case report card a question or an impression is on (R-0709)."""
 
     MainGuess = "main_guess"
+    Family = "family"
+    WhatBrought = "what_brought"
+    Couple = "couple"
+    Sides = "sides"
     OwnPart = "own_part"
+    # Merged into own_part (R-0850): never written or shown, kept so stored entries still read.
     Choice = "choice"
     WorkOn = "work_on"
     CoachGuess = "coach_guess"
+
+
+class CardLine(enum.StrEnum):
+    """A line after a card's first lines, opened by its mark (R-0850): what
+    holds for and against a cluster, named by its id, the open question, the
+    other way it could have gone, the prognosis and the aim."""
+
+    For = "For"
+    Against = "Against"
+    Open = "Open"
+    OtherWay = "Other way"
+    Prognosis = "Prognosis"
+    Aim = "Aim"
+
+
+class CauseWord(enum.StrEnum):
+    """Words that give a cause or a why, never on a card or a cluster's
+    sentence (R-0850, R-0569, R-0864)."""
+
+    Because = "because"
+    Cause = "cause"
+    Caused = "caused"
+    Causes = "causes"
+    Causing = "causing"
+    LedTo = "led to"
+    LeadsTo = "leads to"
+    LeadTo = "lead to"
+    DueTo = "due to"
+    Why = "why"
+    Triggered = "triggered"
+    ResultedIn = "resulted in"
+    Drove = "drove"
+    MadeHim = "made him"
+    MadeHer = "made her"
+    MadeThem = "made them"
+    MadeYou = "made you"
+    Created = "created"
+    Appeared = "appeared"
+    Emerged = "emerged"
+
+
+class FirstPerson(enum.StrEnum):
+    """Words in which the coach would speak as the person, never outside
+    their quoted words (R-0860)."""
+
+    I = "I"
+    Me = "me"
+    My = "my"
+    Mine = "mine"
+    Myself = "myself"
 
 
 class Pushback(enum.StrEnum):
@@ -679,6 +739,18 @@ class DiagramData:
         "items",
         "pruned",
     ]
+
+    def drawn_clusters(self) -> list[dict]:
+        """The clusters every reader shows. One set aside stays in `clusters`,
+        which only regrouping reads, so the one axis holds no overlap
+        [Oracle: R-0845, R-0850]."""
+        return [
+            cluster
+            for cluster in self.clusters
+            if isinstance(cluster, dict)
+            and cluster.get("id") is not None
+            and not cluster.get("setAside")
+        ]
 
     def clear(self) -> None:
         self.people = []

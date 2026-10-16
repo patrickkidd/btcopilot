@@ -54,6 +54,7 @@ TOPICS = (
 )  # fmt: skip
 
 NO_TOPIC = (
+    "fact:what_brought",
     "kind:shift",
     "kind:noted",
     "person:last_name",

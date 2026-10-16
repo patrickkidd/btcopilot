@@ -113,7 +113,7 @@ def build(kind: ViewKind, params: dict, data: DiagramData) -> dict:
         built = {"events": [_event(e, data) for e in events]}
     else:
         cluster = str(params["cluster"])
-        if cluster not in _ids(data.clusters):
+        if cluster not in _ids(data.drawn_clusters()):
             raise Unshowable(f"No cluster {cluster} in the record", NO_CLUSTER)
         built = {"cluster": cluster}
 

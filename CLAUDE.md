@@ -106,7 +106,7 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
   `--real` puts the coach on Anthropic with the testing key from `.env` at the main clone's root; ask Patrick
   before spending. With `BTCOPILOT_MODEL_PROVIDER=bedrock` set, `--real` goes through Bedrock with
   the machine's AWS sign-in and `AWS_REGION`, needs no key, and answers Gemini-named calls with Haiku
-  (doc/SETUP.md section 6). `--build` rebuilds the page first; without it the page already built in the
+  (doc/SETUP.md section 6). `--subscription` answers every Claude call (coach turns, the case report refresh) through `claude -p` on this machine's Claude Code subscription at $0, reads no Anthropic key, and leaves Gemini calls on Google; prefer it to `--real` for testing. `--build` rebuilds the page first; without it the page already built in the
   worktree is served, so rebuilding under another agent's running sandbox is a choice, not a
   side effect. A turn on the local model takes one to several minutes.
 - **A session that sees "no sops key in ... the open-source prompts are in use" stops and tells
@@ -170,9 +170,9 @@ curl -s --user "patrick@alaskafamilysystems.com:${TOKEN}" \
 - **He is Patrick (2026-09-11).** Never "the owner" in a document or a reply; it is ambiguous.
 - **Sandbox addresses use `turin`, never `turin.local` (2026-09-11).** The review app is
   https://turin:8891/app/ (`bin/sandbox/sandbox up <name> <port> --dev`).
-- **Every question mark is a question (2026-09-11).** Each "?" he types is covered somewhere,
+- **Every question mark is a question (2026-09-11); a "?" is something to verify (2026-10-15).** Each "?" he types is covered somewhere,
   explicitly or implicitly, never recited one by one and never repeated between the reply and
-  the drawing.
+  the drawing. A "?" marks a fact he needs checked against the code or the data, with the evidence, never answered from memory (verified failure 2026-10-14: "is cluster detection run on every edit of the diagram?" went unanswered until he asked again).
 - **Artifacts are UI drawings in the app's own style, never text documents (2026-09-11).** The
   open decisions go on the drawing, one numbered list in one place, each self-contained with its
   example, and are never repeated in the reply. The reply is a link and a few lines.
@@ -227,6 +227,7 @@ rulings and the oracle SPEC. The encrypted rulings store and prompts in this rep
 | The app's JSON API | [doc/API.md](doc/API.md) |
 | Data model (schema, enums, validation) | [doc/specs/DATA_MODEL.md](doc/specs/DATA_MODEL.md), [doc/specs/PDP_DATA_FLOW.md](doc/specs/PDP_DATA_FLOW.md), [doc/EVENT_MODEL.md](doc/EVENT_MODEL.md) |
 | Clusters | [doc/CLUSTERS.md](doc/CLUSTERS.md) |
+| Case report: the formulation framing, the cards, the cluster rules | [doc/CASE_REPORT.md](doc/CASE_REPORT.md) |
 | Coverage of the basic data: required items, their states, the metrics | [doc/COVERAGE.md](doc/COVERAGE.md) |
 | Drawability — when the timeline picture may draw vs must ask | [doc/DRAWABILITY.md](doc/DRAWABILITY.md) |
 | Crisis protocol | [doc/CRISIS_PROTOCOL.md](doc/CRISIS_PROTOCOL.md) |

@@ -8,6 +8,73 @@ Read this first, every session. This is the current truth; the derivation lives 
 **append to HISTORY, revise STATE** as part of any work that changes either.
 Ten-minute read by design.
 
+## FD-381 — where it stands (2026-10-15, hand-over to a fresh session)
+
+A fresh Opus session told "FD-381: read doc/STATE.md and take it to production" starts here and needs nothing from the session that wrote this. Jira FD-381, branch FD-381, draft PR 161 (102 commits ahead of master). Goal: the coach holds the Bowen stance on Patrick's hard presenting problem, and the case report shows his case at the app seminar on Friday 2026-10-16. Brainstorm is not ruling: nothing is a ruling until Patrick says to take it forward.
+
+### 1. What is built (all pushed on FD-381)
+Head before this hand-over: ca59d6f1 (style pass, no behaviour change). CI on that head failed (run 38691725188) in one oracle guard: the open-source cluster prompt (btcopilot/prompty/cluster.prompty lines 105 and 106) and its golden (btcopilot/tests/prompt_goldens.json line 15) carry R-0850's wording; reword those lines so they no longer repeat the ruling, regenerate the open goldens, and rerun the conventions guards with the key before anything else. The migration-gate test failed once under parallel load during the style pass; a fix attempt found no shared path, environment or module state, and could not reproduce it in 46 parallel runs at 2 to 16 workers plus three full-suite runs, all green. The gate-script fix 5bdfb09d may have removed it. Watch for it; if it recurs, find and fix the root cause.
+- **Walk fixes (round 2).** A cluster chip on the case report opens the cluster view, which lies over the case report as over the chat and grows the picture region; the cards stand still under it. One rule for a cluster's years: the dates stored on it, written once by the server; a cluster without them takes them from its dated events. One event count everywhere. Same-date dots stacked, each with its own target. The case report is out of date only after its last card write. A card refused on both tries is written to the observations table once per try, and every case report observation names its card.
+- **The formulation and eight coach-written cards (R-0850, R-0866).** A reground against Kerr's evaluation found 28 elements of the formulation: before the fixes 7 built, 11 partial, 9 missing, 1 contradicted (the summary ran as a chronology). Built after it: the refresh now also reads what each person is to the person and whose side they are on, brothers and sisters in birth order for the person and each parent, the events per side, each triangle the events mark, each close pair's relationship events by date, and per cluster the changes in the family in its years and who its opening is about. The Executive Summary is the symptom, then the pattern in one sentence; one over three sentences is kept and its count written to the observations table. The coach's guess is one pattern statement in a named nuclear family, people in time order with the gaps between them, a triangle only when events mark one. Prediction only on What to work on, with its basis. The couple card is one coach statement on the person's own couple from its early years (R-0833 to R-0835 superseded). The family card and each parent's side are now coach notes too: eight coach-written cards in one refresh call. A person's period may open at an illness found. One live eval per new refresh prompt line (R-0850).
+- **Coach voice, no cause words (R-0860, R-0864).** Cards and cluster sentences speak as the coach and set events side by side, never one causing another; a breach is refused once, then stored with the sentence removed. A name or sentence holding a raw event or cluster id is treated the same way. What brought holds only the quoted words in its bubble (R-0863); the person's periods are labelled "Your suggestion" (R-0865).
+- **Date certainty (R-0855).** The coach marks a year, season, age or short range approximate, a day certain, a pure guess unknown; the outreach reads an approximate date no finer than its year; fact chips with an unsure date wear the picture's hollow dot.
+- **The cluster view (R-0861, R-0862).** Tapping a row selects it and its dot; tapping a dot selects its row or all rows of that date; the view never hides on a tap. Deaths are drawn with a solid line, illnesses found with a dashed one (Patrick, 2026-10-14) [Oracle: R-0867].
+- **Clusters by the approved rules (R-0853, R-0856, R-0857).** Grouping at DETECTION_VERSION 18 on Gemini: every run offered comes back as a period or is declined with a reason that names what in the events says no, never a count; the person's periods are read from every sentence of their answer and kept in their own words. The call is made once the person answered when the most was going on.
+- **Cluster F1 suite.** btcopilot/tests/live/clusters: a fictional four-generation case (`deep`) plus three placeholder cases, scored on cluster and event F1, plus voice and cause counts on every cluster the app made (either above 0 fails the case). The saved answers for the free replay are in btcopilot/tests/live/clusters/runs/saved (git-ignored, this machine only).
+- **The subscription provider.** `bin/sandbox/sandbox up <name> <port> --subscription` answers every Claude call (coach turns, the refresh) through this machine's Claude Code subscription at $0; Gemini stays on Google. The live suite uses the same path by default (btcopilot/tests/live/README.md).
+- **Builder hook.** It refuses a commit that cites a new ruling while the rulings index is stale (93805572).
+
+### 2. Not yet seen by Patrick (the next session's first job)
+Sandbox fd381v (port 8920, dev 8922, started `--subscription --dev`; the account made for his diagram, its email in the sandbox's links file; diagram 87 = production diagram 1 copied 2026-10-14, export in /Users/patrick/.claude/jobs/044a13d3/tmp/export-1014) was last started at 20:39 on 2026-10-14, before the formulation and card commits (e7be2f81 onwards). His rules: no partial builds, nothing with a known defect, the walk in his terms. In order:
+1. `npm run build` in the worktree.
+2. The free checks: the full unit suite, the conventions guards with the key, the web suite, and the cluster replay `CLUSTER_ANSWERS=btcopilot/tests/live/clusters/runs/saved LIVE_REPLAY=only SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt uv run pytest btcopilot/tests/live/clusters --e2e` (the saved answers predate the `deep` case's anonymisation, so `deep` and `deep-unasked` fail there with no saved answer until FD-383's paid loop records new ones; the hand-written answers, `CLUSTER_ANSWERS=btcopilot/tests/live/clusters/answers`, prove the runner on every case at $0).
+3. Restart fd381v on the new code with `--subscription --dev`.
+4. On diagram 87: ONE regroup (Gemini, about a cent, the only paid call allowed) and ONE refresh on the subscription ($0).
+5. An agent that built nothing checks it in a real browser at phone 393x852 (Chromium and WebKit) and desktop with the gates (zero console errors, zero failed requests, no box outside its parent, no sideways scroll, the page changing after every tap), and compares each card and cluster with the approved mock https://claude.ai/artifact/NCe14ZjXyNZRN4HmcXRzda. The last comparison (run87e/compare.md, before the formulation changes) found a 10-sentence summary against the mock's 3, unknown dates printed as plain years on chips (one for his paternal grandfather's unknown date), and an extra 1994 app period.
+6. Republish the walk page https://claude.ai/artifact/JzRRC31XzsYsBMbBonsGFn from /Users/patrick/.claude/jobs/044a13d3/tmp/fd381-walk.html with a new sign-in link (`bin/sandbox/sandbox invite fd381v <that account's email>`) in both forms, https://turin:8922/app/invite/... and https://100.71.164.31:8922/app/invite/..., then hand it to Patrick.
+
+### 3. Patrick's open rulings and asks
+- **The deploy lock**, held by FD-372 (`uv run bin/deploy-lock show`, 2026-10-15). He must tell the session to take it; then `uv run bin/deploy-lock set FD-381`.
+- Not proposed, and nothing to ask now: a field for who lived with whom when (a schema choice; today only free-text "moved in" events say it).
+- Deferred by him (R-0866): the cleanup of card values (card lines as text marks, two card lists).
+All earlier asks (the what_brought card value, how the coach stores what brought them and their periods, onboarding) are ruled: R-0851 to R-0854.
+
+### 4. Path to production (punch list)
+1. Free checks (section 2, step 2): waiting.
+2. Rebuilt sandbox, one regroup, one refresh, independent browser check, his walk: waiting.
+3. Pre-deploy bar (CLAUDE.md "Deploy and spend"), by item:
+   - (1) every known bug fixed: waiting on step 2.
+   - (2) a ruling-citing test per new behaviour: written; "seen to fail when removed" not shown for every one.
+   - (3) the full suite once at the end: waiting.
+   - (4) and (5) real model calls with the private prompts, and the live evals: running on the subscription at hand-over; verdicts in evals/results.md (section 5); every failing eval fixed before the deploy. The refresh on diagram 87 proves the running path.
+   - (6) stored-data spot check, (7) browser check, (8) by an agent that did not build it: waiting on step 2.
+   - (9) migration gate on a fresh production dump: done 2026-10-15. No migration on this branch; every table's row count equal; zero orphaned change rows; tool lines match. Three mismatches predate FD-381 and are in doc/KNOWN_DEFECTS.md: 104 coach change rows no statement claims, 4 failed turns where 5 were expected, 1629 of 1665 live write calls found in their turn's change rows.
+   - (10) settings on the box: the branch reads one new setting, BTCOPILOT_MODEL_PROVIDER, which must NOT be set on the box (checked 2026-10-15: absent; the Anthropic and Gemini keys are present).
+   - (11) backup on the box, (12) dispatch, (13) after: healthy build, his thread unchanged (same statements, same lines per reply, no server errors), roll back at once if not, (14) checks on production are a public-page probe only; any live turn only on the claude-test account.
+4. Deploy lock to FD-381: waiting on Patrick.
+5. Deploy: `gh workflow run release.yml --ref FD-381`, after items 1 to 4.
+6. Catch-up: worker job 038 builds `flask admin fd381-catchup` with plan, apply and undo (claimed 2026-10-15 06:16 UTC, base e560dc59, work branch worker/job-038-catchup). Its result is verified here by an agent that did not build it, then merged into FD-381 before the deploy. After the deploy: backup, dry run that saves a plan, show Patrick the plan (diagrams, owners, regroups, cost), apply on his yes. The catch-up regroups each diagram and marks its case report out of date; the refresh itself stays the owner's tap, per diagram.
+7. Merge PR 161 to master: on his word only.
+8. Docs sweep: post /Users/patrick/.claude/jobs/044a13d3/tmp/brief-docs.md as a worker job with base = the merged commit.
+
+### 5. Deferred and tracked
+- FD-382: events known only by their order ("before or after"). Not in FD-381.
+- FD-383: derive Patrick's clusters from the literature for his sign-off, then pick the grouping model by pass rate and cost. Left over from the Gemini loop (six runs, $0.15, f1/loop2.md): voice and cause were zero in every run, but the four-generation case met its bar in 1 run of 6; the app keeps proposing a period around the father's second separation, a period around the person's own marriage (Patrick: need not be a cluster) and once one around a half-sibling's birth; it declines the new-partner run for its count in about half the runs; its sentences often list event ids and end in the same stock phrase, which the scorer does not check.
+- Whether one run of the suite says anything: the `deep` case's bar is met or missed run to run, so a pass rate over many runs is needed (FD-383 step e).
+- The card-value cleanup (R-0866).
+- The live evals for the family card, the sides card and the couple card's early years: written (74ec246e). Results of the live evals were not in at hand-over: they run on the subscription at $0 (bin/subscribe.py; at round 11 at 22:42 on 2026-10-14, still answering calls), with output in /Users/patrick/.claude/jobs/044a13d3/tmp/evals/run.log and the verdicts in evals/results.md when the run ends. Read results.md and fix any failing eval before the deploy.
+
+### 6. Spend this ticket
+Gemini: about $0.20 tuning (the loop's six runs were $0.1455) plus about $0.05 in regroups. Anthropic paid refreshes: $1.80, all before the subscription path existed; $0 since. His rule: Claude test calls go through the subscription first (efficiency criterion 102).
+
+### 7. Where things live
+- Briefs: /private/tmp/claude-501/-Users-patrick-btcopilot/9d7987a9-4a3f-5f52-9721-dc5b87867996/scratchpad/briefs/ (common.md, clusters.md, drawer.md, cards.md) and scratchpad/ground.md.
+- Session scratch: /Users/patrick/.claude/jobs/044a13d3/tmp/ (export-1014, run87 to run87f, reground-formulation with gaps.md and plan.md, f1/loop2.md, predeploy/gate.out, evals, mailbox, fd381-walk.html, brief-docs.md).
+- Corpus (btcopilot-sources): research/case-report-cards/ (CONTEXT-BUNDLE, FORMULATION, THEORY-HANDOVER section 2 binding, BUILD-KICKOFF, cards.md); research/clusters/rules-2026-10-14.html (rules A1-A9, B1-B9); learning/ (HYPOTHESES, FEATURES, FINDINGS, DEEP_DIVES with D-011 for this reground); claude-user/skills/reground; theory/CORRECTIONS.md entries 1 to 15; fd-corpus/private/PATRICK_STATEMENTS.md 2026-10-12 to 2026-10-15. Earlier coaching-stance research: branch worker/job-035-coaching-stance. The worker trial harness on btcopilot branch worker/job-035-live-trial is unverified.
+- Docs: doc/CASE_REPORT.md (the formulation, the ten cards, how the refresh writes them), doc/CLUSTERS.md ("When a cluster looks wrong"), btcopilot/tests/live/README.md (cluster F1, free replay, subscription).
+
+## Earlier tickets (FD-365 to FD-375), kept for reference
+
 **Play-by-play redesign — approved and built.** The snapshot-based drawer, designed on Fable
 from the theory corpus and approved by Patrick 2026-09-27, replaced the old moves board; see
 "Where the build stands" below for what shipped and where it stands.

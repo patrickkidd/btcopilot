@@ -42,12 +42,12 @@ calibration below, and the ruled run at the end of a batch, before its deploy.
 `bin/subscribe.py` runs the cases in `dump` mode, answers every call left unanswered through
 `claude -p`, saves each answer marked `source: subscription`, and runs again until nothing is
 left; the last run is the verdict. Each call goes to Claude Code as the coach's own call
-(`subscription.py`):
+(`btcopilot/subscription.py`):
 
 | Part of the call | How it reaches the model |
 |------------------|--------------------------|
 | System prompt | the coach's, whole, by `--system-prompt-file` (replaces Claude Code's own) |
-| Tools | the coach's 18, served by `toolserver.py` with the same descriptions and schemas; `--tools ""` removes Claude Code's own; `--strict-mcp-config` and `--setting-sources ""` keep out every other server, setting and CLAUDE.md |
+| Tools | the coach's 18, served by `btcopilot/toolserver.py` with the same descriptions and schemas; `--tools ""` removes Claude Code's own; `--strict-mcp-config` and `--setting-sources ""` keep out every other server, setting and CLAUDE.md |
 | The chat | earlier turns as a resumed session; the last tool call and its results on stdin |
 | Model, effort, output limit | the request's, by `--model`, `--effort` and `CLAUDE_CODE_MAX_OUTPUT_TOKENS` |
 | One message | `--max-turns 1`; the first message is the answer, tool names stripped of their prefix |
@@ -98,6 +98,63 @@ chance. Such a change goes to the ruled run on the API.
 The paid suite, as it would run:
 
     uv run pytest btcopilot/tests/live -m "not waiting" --collect-only -q
+
+## Cluster F1
+
+`clusters/` scores the app's grouping call against expected clusters [Oracle: R-0856]. Each case
+in `clusters/cases/` is a fictional diagram, the person's answer to when the most was going on, the
+clusters expected of it and the periods the person named; `deep` is a fictional four-generation
+family and is the case the prompts are tuned on; `addition`, `thin` and `dense`
+are placeholders until real cases arrive. A case whose person answered also runs as
+`<name>-unasked`. The expected clusters are accepted provisionally [Oracle: R-0857]; when a cluster looks wrong, follow "When a cluster looks wrong" in doc/CLUSTERS.md.
+
+Each run makes the production call, `detect_clusters` on Gemini, once per case (twice when the
+first answer is refused), and prints a table: clusters expected and stored, cluster precision,
+recall and F1, the F1 of the member events within paired clusters, openings agreed, answers
+refused, and pass or the misses. A stored cluster pairs with an expected one when they share at
+least half of the larger one's events. Each case's bar is `BARS` in `clusters/test_f1.py`; the
+rules beside F1 are in `clusters/score.py`. The answers, stored clusters and score go to
+`clusters/runs/<time>/` (git-ignored) and one line per case to the eval ledger.
+
+Two more checks run on every cluster the app made (the person's own are theirs), over its name, summary
+and sentence, by the server's own word lists in `btcopilot/record.py`, never copies [Oracle: R-0860,
+R-0864]. Voice: no first-person word outside quotation marks. Cause: no cause word. The table prints
+"voice" and "cause" counts per case, and a case fails its bar when either is above 0, beside the F1 bars.
+
+Loop rule: a prompt change is tuned by running this suite, reading the failing checks, changing the
+prompt by general rules only, and rerunning, up to a cap of runs and dollars stated before the first
+run. No run outside the suite until it passes.
+
+Free replay, $0, saved answers (any earlier run's folder under `clusters/runs/`, or one made of
+the newest answer per case):
+
+    CLUSTER_ANSWERS=btcopilot/tests/live/clusters/runs/<folder> LIVE_REPLAY=only \
+        SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt uv run pytest btcopilot/tests/live/clusters --e2e
+
+Paid run, about half a cent per case on Gemini (calls the model):
+
+    LIVE_REPLAY=only GOOGLE_GEMINI_API_KEY=... SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt \
+        uv run pytest btcopilot/tests/live/clusters --e2e
+
+`LIVE_REPLAY=only` keeps the coach's machinery offline, so no Anthropic key or balance check is
+needed. Cost, at gemini-3.1-flash-lite's rates: `deep` sends about 11,000 tokens, the
+placeholders about 3,000; a call costs about half a cent, never above 1.4 cents at its output
+limit, so a run of the five cases is 2 to 3 cents, at most about 13 when every first answer is
+refused. On a Bedrock machine the call goes to the Claude stand-in, so the run does not measure
+Gemini. Free ways, $0 and no network: replay a run with `CLUSTER_ANSWERS=<its runs folder>`, or
+prove the runner on the hand-written answers with `CLUSTER_ANSWERS=btcopilot/tests/live/clusters/answers
+CLUSTER_LEDGER=<a scratch file>`; the scorer's own tests run in the same command.
+
+A real case: build a fictional case from it that someone who knows the family could not
+recognise. Shift every date by one constant offset of at least five years, so every gap and every
+expected cluster keeps its shape; change the structure where no expected cluster depends on it (the
+sex of people outside the clusters, siblings and cousins added or removed, birth order); rewrite
+every name, place, job, illness, description, note and answer so none shares five words in a row
+with the real diagram or the person's own words; name it by no person. Write it as
+`clusters/cases/<name>.json` in the shape of `deep.json` with `"draft"` set until Patrick confirms
+its expected clusters, add its bar to `BARS`, and when it replaces a placeholder, delete that
+placeholder and its answers file. A free replay has no saved answer for a new or changed case and
+fails naming it, until a paid run records one.
 
 ## Waiting list
 

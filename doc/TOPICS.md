@@ -482,6 +482,7 @@ he has marked no example clusters yet, and the examples are the input only he ca
 (3) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
 produces numbers.
 **Lives in:** btcopilot/clusters.py; the grouping prompt in the private prompt files;
+doc/CLUSTERS.md "When a cluster looks wrong" (how a new session evaluates a cluster discrepancy against the F1 suite [R-0857]);
 doc/PICTURE_IDEAS.md; the drawings in btcopilot-sources/fd-corpus/design/ and
 their pages https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 .
 **Next action:** teach the model to name each grouping's key shift and who carries the trouble,

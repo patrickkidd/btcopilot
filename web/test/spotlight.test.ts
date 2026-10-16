@@ -34,6 +34,11 @@ describe("the words a moment says about itself", () => {
     expect(dateText("1996-06-15", DateCertainty.Approximate)).toBe("1996");
   });
 
+  // R-0855
+  it("a date nobody is sure of says no more than its year", () => {
+    expect(dateText("2015-07-20", DateCertainty.Unknown)).toBe("2015");
+  });
+
   // R-0457
   it("a label names everyone it is about, the speaker included", () => {
     const say = (who: string) =>

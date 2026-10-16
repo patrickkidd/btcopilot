@@ -13,6 +13,7 @@ from btcopilot import diagramjson, matching, record
 from btcopilot.models import Change, Interaction
 from btcopilot.schema import (
     DECLINED,
+    DateCertainty,
     DiagramData,
     EventKind,
     ItemKind,
@@ -69,16 +70,19 @@ def bond_line(bond: dict) -> str:
 
 
 def _event_head(event: dict) -> list[str]:
-    """When an event was, what kind it is and who it is about: enough to tell
-    it from another without saying what happened."""
-    parts = [
-        str(event["id"]),
-        date_text(event.get("dateTime")) or "undated",
-        f"[{enum_val(event.get('kind')) or 'shift'}]",
-    ]
+    """When an event was and how sure that date is, what kind it is and who it
+    is about: enough to tell it from another without saying what happened. A
+    date not marked certain says so beside it, so no reader takes it as exact
+    [Oracle: R-0855]."""
+    written = date_text(event.get("dateTime"))
+    parts = [str(event["id"]), written or "undated"]
+    certainty = enum_val(event.get("dateCertainty"))
+    if written and certainty and certainty != DateCertainty.Certain:
+        parts.append(f"({certainty})")
     end = date_text(event.get("endDateTime"))
     if end:
-        parts.insert(2, f"to {end}")
+        parts.append(f"to {end}")
+    parts.append(f"[{enum_val(event.get('kind')) or 'shift'}]")
     for key in ("person", "spouse", "child"):
         if event.get(key) is not None:
             parts.append(f"{key}={event[key]}")
@@ -104,9 +108,6 @@ def event_line(event: dict) -> str:
         parts.append(f"targets={event['relationshipTargets']}")
     if event.get("relationshipTriangles"):
         parts.append(f"triangles={event['relationshipTriangles']}")
-    certainty = enum_val(event.get("dateCertainty"))
-    if certainty and certainty != "certain":
-        parts.append(f"date-{certainty}")
     return " ".join(parts)
 
 
@@ -247,7 +248,7 @@ def render(data: DiagramData | None, speaker: int | None = None) -> str:
         ),
         _section("PAIR BONDS", [bond_line(b) for b in _rows(data.pair_bonds)]),
         _section(EVENTS, [event_line(e) for e in events]),
-        _section("CLUSTERS", [cluster_line(c) for c in _rows(data.clusters)]),
+        _section("CLUSTERS", [cluster_line(c) for c in _rows(data.drawn_clusters())]),
     ]
     return "\n\n".join(section for section in sections if section)
 
@@ -294,7 +295,7 @@ def outline(data: DiagramData | None, version: int, speaker: int | None = None) 
             ],
         ),
         _section("PAIR BONDS", [bond_line(b) for b in _rows(data.pair_bonds)]),
-        _section("CLUSTERS", [_span(c, dates) for c in _rows(data.clusters)]),
+        _section("CLUSTERS", [_span(c, dates) for c in _rows(data.drawn_clusters())]),
         _section(
             QUESTIONS,
             _notes(data, (record.QUESTION, record.TODO)),

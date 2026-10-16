@@ -143,3 +143,24 @@ def test_conflict_marker_refused(repo):
     result = commit(repo, "app/mine.py")
     assert result.returncode == 1
     assert "no conflict markers" in result.stderr
+
+
+def test_new_citation_with_stale_index_refused(repo, monkeypatch):
+    # R-0447
+    monkeypatch.setenv("SOPS_AGE_KEY_FILE", str(repo / "nokey"))
+    install(repo)
+    write(repo, "app/test_mine.py", "def test_a():\n    # R-0123\n    pass\n")
+    result = commit(repo, "app/test_mine.py")
+    assert result.returncode == 1
+    assert "ruling citations changed: run" in result.stderr
+
+
+def test_citation_with_index_staged_or_no_citation_allowed(repo, monkeypatch):
+    # R-0447
+    monkeypatch.setenv("SOPS_AGE_KEY_FILE", str(repo / "nokey"))
+    install(repo)
+    write(repo, "app/plain.py", "x = 1\n")
+    assert commit(repo, "app/plain.py").returncode == 0
+    write(repo, "app/test_mine.py", "# R-0123\n")
+    write(repo, "private/oracle/rulings.md", "index\n")
+    assert commit(repo, "app/test_mine.py", "private/oracle/rulings.md").returncode == 0

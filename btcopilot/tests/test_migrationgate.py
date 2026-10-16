@@ -1,5 +1,6 @@
 """The migration gate's per-reply change count (bin/migrationgate.py:AGENT_CHANGES)."""
 
+import pytest
 import sqlalchemy as sa
 
 import bin.migrationgate as migrationgate
@@ -107,3 +108,14 @@ def test_an_impression_write_is_found_in_its_turns_question_rows(flask_app):
     )
     [(_, expected, seen)] = migrationgate.live_checks(conn)
     assert (expected, seen) == (2, 2)
+
+
+def test_a_navigate_call_names_a_place_not_an_item():
+    # R-0487
+    assert migrationgate.gone({"name": "navigate", "args": {"address": "/app/"}}, "it") == []
+
+
+def test_a_tool_with_no_subject_fails_with_its_name():
+    # R-0487
+    with pytest.raises(SystemExit, match="show"):
+        migrationgate.gone({"name": "show", "args": {}}, "it")

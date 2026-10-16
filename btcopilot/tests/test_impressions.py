@@ -9,18 +9,19 @@ import datetime
 
 import pytest
 
-from btcopilot import chips, questions, record, turnlog
+from btcopilot import chips, coverage, questions, record, turnlog
 from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.interactions import recent
 from btcopilot.models import Author, Change, InteractionKind, Observation, ObservationKind, Statement
 from btcopilot.recordtext import outline
-from btcopilot.schema import DiagramData, ItemKind
+from btcopilot.schema import DiagramData, Fact, FactState, ItemKind
 from btcopilot.tests.conftest import Model, called, calling, csrf_token, said, version
 from btcopilot.tests.test_questionbackfill import backfill, past  # noqa: F401
 from btcopilot.tests.test_questions import TODAY, box, clock, stored  # noqa: F401
+from btcopilot.tests.test_questions import settle as answered
 from btcopilot.tests.test_turnhistory import coach, family, post, say_in, statements, titles  # noqa: F401
-from btcopilot.toolbox import ToolError, ToolName
+from btcopilot.toolbox import ToolError, ToolName, schemas
 
 TENSE = "When things get tense, your father gets busy and your mother goes quiet."
 LATCH = "You latch on hard to someone, then go deep into something alone."
@@ -109,6 +110,7 @@ def test_a_raised_impression_is_one_whole_add_never_removed_and_left_by_undo(fam
         ([], "It gave the impression nothing to rest on."),
         ([{"kind": "event", "id": "99"}], "That is not in the diagram."),
         ([{"kind": "statement", "id": "9999"}], "That is not in the diagram."),
+        ([{"kind": "statement", "id": "latest"}], "That is not in the diagram."),
     ],
 )
 def test_an_impression_must_rest_on_something_the_record_or_the_sessions_hold(
@@ -579,3 +581,76 @@ def test_a_middle_pass_taken_back_while_a_later_one_stays_is_read_again(
 
     again, model = backfill(flask_app, group="impressions")
     assert (again, model.systems) == ([], [])
+
+
+SLEEP = "You can't sleep and it's getting worse."
+
+
+def brought(toolbox, evidence, card="what_brought"):
+    return toolbox.call(
+        ToolName.AddImpression,
+        {"text": SLEEP, "evidence": evidence, "state": "raised", "case_report_card": card},
+    )
+
+
+def fact_question(toolbox, text="What brings you here?"):
+    return toolbox.call(
+        ToolName.AddQuestion,
+        {
+            "text": text,
+            "kind": "fact",
+            "state": "asked",
+            "item_kind": "person",
+            "item_id": "1",
+            "fact": "what_brought",
+        },
+    )
+
+
+def test_what_brought_rests_on_one_of_the_persons_own_messages(family, past):
+    # R-0852, R-0854
+    coachs = [{"kind": "statement", "id": str(past["reply"])}]
+    for evidence in (coachs, [{"kind": "person", "id": "1"}]):
+        with pytest.raises(ToolError, match="statement"):
+            brought(box(family), evidence)
+    assert stored(family) == {}
+
+    impress(box(family))
+    with pytest.raises(ToolError, match="statement"):
+        settle(box(family), family, "i1", case_report_card="what_brought")
+
+    brought(box(family), [{"kind": "statement", "id": str(past["user"])}])
+    db.session.expire_all()
+    cards = [q.get("case_report_card") for q in family.get_diagram_data().questions]
+    assert cards == [None, "what_brought"]
+
+
+def test_the_choice_card_is_not_written_in_chat(family):
+    # R-0850
+    with pytest.raises(ToolError, match="part of own_part"):
+        brought(box(family), [{"kind": "person", "id": "1"}], card="choice")
+    impress(box(family))
+    with pytest.raises(ToolError, match="part of own_part"):
+        settle(box(family), family, "i1", case_report_card="choice")
+    cards = [
+        tool["input_schema"]["properties"]["case_report_card"]["enum"]
+        for tool in schemas()
+        if tool["name"] in (ToolName.AddImpression, ToolName.SetImpression)
+    ]
+    assert len(cards) == 2
+    assert all("choice" not in values and "what_brought" in values for values in cards)
+
+
+def test_the_what_brought_question_closes_as_answered_only_once_the_note_is_kept(family, past):
+    # R-0852, R-0854
+    fact_question(box(family))
+    with pytest.raises(ToolError, match="add_impression"):
+        answered(box(family), family, "q1", state="resolved", outcome="answered", answer=past["user"])
+
+    brought(box(family), [{"kind": "statement", "id": str(past["user"])}])
+    answered(box(family), family, "q1", state="resolved", outcome="answered", answer=past["user"])
+    db.session.expire_all()
+    data = family.get_diagram_data()
+    assert coverage.state_of(data, Fact.WhatBrought, ItemKind.Person, 1) is FactState.Known
+    with pytest.raises(ToolError, match="already answers"):
+        fact_question(box(family), "What brought you in?")

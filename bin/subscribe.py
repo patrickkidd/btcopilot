@@ -1,6 +1,6 @@
 """Runs live cases on the Claude Code subscription, $0: dumps every coach call
 that has no saved answer, answers each through `claude -p` with the coach's
-own system prompt and tools (btcopilot/tests/live/subscription.py), saves it
+own system prompt and tools (btcopilot/subscription.py), saves it
 to the replay store marked as the subscription's, and runs again until no
 call is left unanswered. The last run is the verdict.
 
@@ -16,11 +16,14 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from btcopilot.coachturn import MAX_STEPS
 from btcopilot.tests.live.answer import saved
 from btcopilot.tests.live.replay import REPO, Mode
-from btcopilot.tests.live.subscription import answer
+from btcopilot.subscription import answer
 
-ROUNDS = 12
+# A case stops at its first unanswered call, so it takes one round per call in
+# its longest chain: up to twelve coach turns of at most MAX_STEPS calls each.
+ROUNDS = 12 * MAX_STEPS
 PARALLEL = 4
 
 
@@ -54,6 +57,7 @@ def answered(request: Path, work: Path) -> str:
 def main(args: list[str]) -> int:
     with tempfile.TemporaryDirectory() as scratch:
         scratch = Path(scratch)
+        done = set()
         for round in range(ROUNDS):
             requests = scratch / f"requests{round}"
             ran = dumped(args, requests)
@@ -61,6 +65,10 @@ def main(args: list[str]) -> int:
             if not waiting:
                 print(ran.stdout[-2000:])
                 return ran.returncode
+            again = [r.name for r in waiting if r.name in done]
+            if again:
+                raise SystemExit(f"answered but not replayed: {again}")
+            done |= {r.name for r in waiting}
             with ThreadPoolExecutor(PARALLEL) as pool:
                 for line in pool.map(
                     answered,
@@ -68,7 +76,10 @@ def main(args: list[str]) -> int:
                     [scratch / f"work{i}" for i in range(len(waiting))],
                 ):
                     print(f"round {round + 1}: {line}", flush=True)
-    raise SystemExit(f"still awaiting answers after {ROUNDS} rounds")
+    raise SystemExit(
+        f"still awaiting answers after {ROUNDS} rounds; the last answered: "
+        f"{[r.name for r in waiting]}"
+    )
 
 
 if __name__ == "__main__":

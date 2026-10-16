@@ -132,6 +132,21 @@ lives in `~/btcopilot-sandbox/<name>/` (override with `SANDBOX_HOME`); `.env` is
 main clone's root (override with `SANDBOX_DOTENV`). `bin/sandbox/sandbox` with no arguments
 prints every command. Port 8888 is Patrick's own server: never use it.
 
+**The Claude Code subscription, $0.** `bin/sandbox/sandbox up mine 8912 --subscription` sets
+`BTCOPILOT_MODEL_PROVIDER=subscription`: every Claude call the app makes (coach turns, the case
+report refresh, plain text calls) is answered by `claude -p` on this machine's Claude Code
+subscription, through the same adapter the live suite uses (`btcopilot/subscription.py`), with the
+call's own system prompt, model, effort and tools. No Anthropic key is read; Gemini calls (titles,
+summaries, grouping into clusters) still go to Google with the key from `.env`. It needs `claude`
+on the PATH of the shell that starts the sandbox, signed in. Each call's row in `model_calls`
+carries the model, 0 tokens and $0: the adapter keeps no token counts, and the row has no
+column saying who answered. Differences from the paid call: no thinking comes back, the
+first answer's words arrive at once rather than streamed, Claude Code
+adds its own billing line and the account's email and date ahead of the prompt
+(`btcopilot/tests/live/README.md`), and a structured call that names a Claude model is not routed: it
+fails on the missing key. This is the way to test for free; `--real`
+is the paid API.
+
 **Bedrock.** The app calls Anthropic's API with the key by default. `BTCOPILOT_MODEL_PROVIDER=bedrock`
 is the only switch to Amazon Bedrock: every model call then goes through Bedrock with the shell's
 AWS sign-in, no Anthropic or Google key is read, and a Gemini-named title, summary or cluster call is answered by Haiku

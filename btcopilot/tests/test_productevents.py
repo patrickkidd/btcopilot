@@ -70,3 +70,17 @@ def test_web_and_server_name_the_same_screens_and_features():
     source = TRACK.read_text()
     assert enum_values(source, "Screen") == {s.value for s in Screen}
     assert enum_values(source, "Feature") == {f.value for f in Feature}
+
+
+def test_both_cluster_views_are_stored(web):
+    # R-0077, R-0213
+    response = post(
+        web,
+        event(name=Feature.ClusterViewRow.value),
+        event(name=Feature.ClusterViewLanes.value),
+    )
+    assert response.status_code == 201
+    assert [r.name for r in ProductEvent.query.order_by(ProductEvent.id)] == [
+        "cluster_view_row",
+        "cluster_view_lanes",
+    ]

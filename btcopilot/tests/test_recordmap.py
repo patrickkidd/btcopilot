@@ -33,6 +33,22 @@ def family(test_user):
     return diagram
 
 
+def test_a_date_not_marked_certain_says_so_beside_it_on_the_map_and_the_event_line():
+    # R-0855
+    events = [
+        {"id": 4, "kind": "shift", "person": 1, "dateTime": "2008-01-01", "dateCertainty": "approximate"},
+        {"id": 5, "kind": "noted", "person": 1, "dateTime": "2015-07-20", "dateCertainty": "unknown"},
+        {"id": 6, "kind": "noted", "person": 1, "dateTime": "2016-03-02", "dateCertainty": "certain"},
+    ]
+    data = DiagramData(people=[{"id": 1, "name": "Wren"}], events=events)
+    assert recordtext.outline(data, 1).split(f"{recordtext.EVENTS}\n")[1].splitlines()[:3] == [
+        "4 2008-01-01 (approximate) [shift] person=1",
+        "5 2015-07-20 (unknown) [noted] person=1",
+        "6 2016-03-02 [noted] person=1",
+    ]
+    assert recordtext.event_line(events[0]) == "4 2008-01-01 (approximate) [shift] person=1"
+
+
 def test_the_map_shows_who_and_when_but_not_what_happened():
     # R-0479, R-0481
     data = DiagramData(
