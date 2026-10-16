@@ -145,6 +145,10 @@ Gemini. Free ways, $0 and no network: replay a run with `CLUSTER_ANSWERS=<its ru
 prove the runner on the hand-written answers with `CLUSTER_ANSWERS=btcopilot/tests/live/clusters/answers
 CLUSTER_LEDGER=<a scratch file>`; the scorer's own tests run in the same command.
 
+`CLUSTER_TRIES=10` runs each case ten times, one grouping call a try (two when the first answer is refused), each try's answers in `runs/<time>/<case>-<try>.json`, which a replay with the same setting reads back.
+`CLUSTER_MODEL` names the model the grouping call asks in place of Gemini, such as `claude-haiku-4-5-20251001` or `claude-sonnet-5`.
+`uv run python -m btcopilot.tests.live.clusters.passrate <ledger>` prints per model and case the tries, passes, cost and tokens per call, and the cost per user-month.
+
 A real case: build a fictional case from it that someone who knows the family could not
 recognise. Shift every date by one constant offset of at least five years, so every gap and every
 expected cluster keeps its shape; change the structure where no expected cluster depends on it (the
