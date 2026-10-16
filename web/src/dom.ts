@@ -225,7 +225,11 @@ const panning = new WeakMap<HTMLElement, number>();
  * reader taking it in hand stops; the play-by-play's frame and the timeline
  * alike, the same way in every browser. */
 export function pan(frame: HTMLElement, to: number, glide: boolean): void {
-  if (panning.has(frame)) cancelAnimationFrame(panning.get(frame)!);
+  const stop = () => {
+    cancelAnimationFrame(panning.get(frame)!);
+    frame.style.scrollSnapType = "";
+  };
+  if (panning.has(frame)) stop();
   const from = frame.scrollLeft;
   if (!glide || from === to) {
     frame.scrollLeft = to;
@@ -233,14 +237,17 @@ export function pan(frame: HTMLElement, to: number, glide: boolean): void {
   }
   // a reader who takes the frame in hand stops it
   if (!panning.has(frame))
-    for (const kind of ["pointerdown", "touchstart", "wheel"])
-      frame.addEventListener(kind, () => cancelAnimationFrame(panning.get(frame)!), { passive: true });
+    for (const kind of ["pointerdown", "touchstart", "wheel"]) frame.addEventListener(kind, stop, { passive: true });
+  // a snap point near the way would catch every frame of the travel, and a
+  // short one would land in one jump (Patrick, 2026-10-15)
+  frame.style.scrollSnapType = "none";
   const t0 = performance.now();
   const ms = PAN.ms(to - from);
   const tick = (now: number) => {
     const t = Math.min((now - t0) / ms, 1);
     frame.scrollLeft = from + (to - from) * PAN.ease(t);
     if (t < 1) panning.set(frame, requestAnimationFrame(tick));
+    else frame.style.scrollSnapType = "";
   };
   panning.set(frame, requestAnimationFrame(tick));
 }

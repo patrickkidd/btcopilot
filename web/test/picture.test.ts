@@ -21,6 +21,7 @@ import {
   clusterStep,
   dotLayers,
   inSight,
+  into,
   pills,
   reach,
   restLayers,
@@ -454,6 +455,19 @@ it("slides the line to put the step's dot in the middle, as near as its ends all
   expect(inSight(2000, 0, 1440)).toBe(false);
   expect(inSight(2000, 1280, 1440)).toBe(true);
   expect(inSight(10, 0, 1440)).toBe(false);
+});
+
+// "The timeline needs to scroll an event or cluster into view when it is off screen. It should not scroll when the cluster or event is already in view." (Patrick, 2026-10-15)
+// R-0767
+it("slides the line to an event or a cluster only when it is out of sight, and a cluster wider than the screen to its start", () => {
+  const dot = (x: number) => ({ left: x, right: x });
+  expect(into(dot(500), 300, 2880, 393)).toBe(300);
+  expect(into(dot(2000), 300, 2880, 393)).toBe(centredOn(2000, 2880, 393));
+  expect(into(dot(500), null, 2880, 393)).toBe(centredOn(500, 2880, 393));
+  expect(into({ left: 400, right: 600 }, 300, 2880, 393)).toBe(300);
+  expect(into({ left: 400, right: 600 }, 450, 2880, 393)).toBe(centredOn(500, 2880, 393));
+  expect(into({ left: 1000, right: 1600 }, 1100, 2880, 393)).toBe(1100);
+  expect(into({ left: 1000, right: 1600 }, 0, 2880, 393)).toBe(984);
 });
 
 describe("the drawing on a cluster's page", () => {

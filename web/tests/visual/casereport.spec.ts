@@ -297,6 +297,50 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-view .ss-t.on").first()).toBeVisible();
   });
 
+  // R-0767
+  test("a chip whose dot is out of sight glides the timeline to it, and one in sight leaves the timeline still", async ({ page }) => {
+    const record = await (await page.request.get("/app/timeline")).json();
+    const inside = new Set(record.clusters.flatMap((c: { event_ids: number[] }) => c.event_ids));
+    await open(page);
+    const scroller = page.locator("#case-view .ss-scroll");
+    const wide = await scroller.evaluate((s) => s.scrollWidth - s.clientWidth);
+    expect(wide).toBeGreaterThan(100);
+    // the line swiped to its start, and the dot of a card's chip nearest the present
+    await scroller.evaluate((s) => (s.scrollLeft = 0));
+    const targets = await page.locator('#case-body .chip[data-kind="event"]').evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.target)));
+    const dots = await page.locator("#case-view circle.dot").evaluateAll((els) =>
+      els.map((d) => ({ id: Number(d.getAttribute("data-event")), x: d.getBoundingClientRect().left })),
+    );
+    const far = dots.filter((d) => targets.includes(d.id) && !inside.has(d.id)).sort((a, b) => b.x - a.x)[0];
+    const box = (await page.locator("#case-view").boundingBox())!;
+    expect(far.x).toBeGreaterThan(box.x + box.width);
+    /** Every frame's slide of the line for a while after `act`. */
+    const slides = async (act: () => Promise<void>) => {
+      await page.evaluate(() => {
+        const seen: number[] = [];
+        (window as unknown as { SLID: number[] }).SLID = seen;
+        const read = () => {
+          const line = document.querySelector<HTMLElement>("#case-view .ss-scroll");
+          if (line) seen.push(Math.round(line.scrollLeft));
+          if (seen.length < 150) requestAnimationFrame(read);
+        };
+        requestAnimationFrame(read);
+      });
+      await act();
+      await page.waitForTimeout(2600);
+      return page.evaluate(() => (window as unknown as { SLID: number[] }).SLID);
+    };
+    const chip = page.locator(`#case-body .chip[data-kind="event"][data-target="${far.id}"]`).first();
+    const travel = await slides(() => chip.click());
+    expect(new Set(travel).size).toBeGreaterThan(3);
+    const picked = (await page.locator(`#case-view circle.dot.on[data-event="${far.id}"]`).boundingBox())!;
+    expect(picked.x).toBeGreaterThanOrEqual(box.x);
+    expect(picked.x + picked.width).toBeLessThanOrEqual(box.x + box.width);
+    const before = await scroller.evaluate((s) => s.scrollLeft);
+    const still = await slides(() => chip.click());
+    expect(new Set(still)).toEqual(new Set([Math.round(before)]));
+  });
+
   // R-0715
   test("the header names who presents by first name, never by email", async ({ page }) => {
     await open(page);

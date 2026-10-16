@@ -911,6 +911,22 @@ export function years(iso: string): number {
 export const centredOn = (x: number, width: number, screen: number) =>
   Math.max(0, Math.min(width - screen, x - screen / 2));
 
+/** Where the line slides so a span of it is in sight: nowhere when it is in
+ * sight already, else centred on it, or from its start when it is wider than
+ * the screen; centred when where the line stands is not known (Patrick,
+ * 2026-10-15). */
+export function into(span: Span, left: number | null, width: number, screen: number): number {
+  const wide = span.right - span.left > screen - 2 * X_PAD;
+  if (left !== null) {
+    const seen = wide
+      ? span.left <= left + X_PAD && span.right >= left + screen - X_PAD
+      : inSight(span.left, left, screen) && inSight(span.right, left, screen);
+    if (seen) return left;
+  }
+  if (!wide) return centredOn(middle(span), width, screen);
+  return Math.max(0, Math.min(width - screen, span.left - X_PAD));
+}
+
 /** Whether a point `x` on the line is in sight, the line slid to `left`,
  * clear of the picture's side margins. */
 export const inSight = (x: number, left: number, screen: number) =>
@@ -988,6 +1004,8 @@ export class Picture {
    * to when the coach's words name one. */
   private park = Park.Present;
   private aimed: number | null = null;
+  /** Where the line was last slid to, while something else stands in its place. */
+  private left: number | null = null;
   private focus: Cluster | null = null;
   private laid: { zones: Mark[][]; rows: LabelRow[] } = {
     zones: [],
@@ -1198,10 +1216,10 @@ export class Picture {
     this.name(eventIds);
   }
 
-  /** A cluster the reader opened: the line changes where it stands and
-   * travels nowhere (R-0542). */
+  /** A cluster the reader opened: the line travels to it when it is out of
+   * sight, and stays where it is when it is in sight (Patrick, 2026-10-15). */
   open(eventIds: number[]): void {
-    this.aim(null);
+    this.aim(eventIds[0] ?? null);
     this.name(eventIds);
   }
 
@@ -1508,7 +1526,8 @@ export class Picture {
       dated.map((e) => e.dateTime as string),
       screen,
     );
-    const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? null;
+    // where the reader left the line, kept while a cluster's view stood in its place
+    const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? this.left;
     const x0 = X_PAD;
     const x1 = width - X_PAD;
     const first = years(dated[0].dateTime as string);
@@ -1613,10 +1632,13 @@ export class Picture {
     // sight, as one that lands mid-travel does, goes to it again (Patrick, 2026-10-07)
     const step = this.stepping && !aimed ? marks.find((m) => m.event.id === this.selected) : undefined;
     if (step && !inSight(step.x, held ?? Math.max(0, width - screen), screen)) this.park = Park.Named;
-    const onX = (aimed ?? step)?.x ?? null;
+    const mark = aimed ?? step;
+    // an event drawn inside its cluster's pill is gone to by the pill
+    const pill = mark || this.aimed === null ? undefined : laid.find((p) => p.cluster?.event_ids.includes(this.aimed!));
+    const on = mark ? { left: mark.x, right: mark.x } : (pill ?? null);
     // where the line comes to rest, so the words of a picked event are
     // written across the stretch the reader will be looking at
-    const shows = this.stands({ width, screen }, held, onX);
+    const shows = this.stands({ width, screen }, held, on);
     const said = this.labels(marks, shows + X_PAD, shows + screen - X_PAD, WIRE);
     this.laid.rows = said.rowsLaid;
     const chosen = marks.find((m) => m.event.id === this.selected);
@@ -1648,19 +1670,21 @@ export class Picture {
     this.host.innerHTML =
       `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
       `${svg}${words}${targets}${snaps}</div></div>${title}${shelf}</div>`;
-    this.settle({ width, screen }, held, onX);
+    this.settle({ width, screen }, held, on);
   }
 
-  /** Where the line comes to rest after this draw: on the moment just named,
-   * where the reader left it, or parked at the present. */
+  /** Where the line comes to rest after this draw: on what was just named
+   * when it is out of sight, where the reader left it, or parked at the
+   * present. */
   private stands(
     view: { width: number; screen: number },
     held: number | null,
-    onX: number | null,
+    on: Span | null,
   ): number {
     const end = Math.max(0, view.width - view.screen);
-    if (this.park === Park.Named && onX !== null) return centredOn(onX, view.width, view.screen);
-    if (this.park === Park.Held && held !== null) return Math.min(end, held);
+    const left = held === null ? null : Math.min(end, held);
+    if (this.park === Park.Named && on) return into(on, left, view.width, view.screen);
+    if (this.park !== Park.Present && left !== null) return left;
     return end;
   }
 
@@ -1669,12 +1693,12 @@ export class Picture {
   private settle(
     view: { width: number; screen: number },
     held: number | null,
-    onX: number | null,
+    on: Span | null,
   ): void {
     const scroll = this.host.querySelector<HTMLElement>(SCROLLER);
     if (!scroll) return;
-    const named = this.park === Park.Named && onX !== null;
-    const to = this.stands(view, held, onX);
+    const named = this.park === Park.Named && on !== null;
+    const to = this.stands(view, held, on);
     this.park = Park.Held;
     this.aimed = null;
     // the line travelling to what was named is the picture answering the
@@ -1712,6 +1736,7 @@ export class Picture {
 
   private render(): void {
     if (!this.data) return;
+    this.left = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? this.left;
     const to = DEPTH[this.level];
     const from = this.depth;
     this.depth = to;
