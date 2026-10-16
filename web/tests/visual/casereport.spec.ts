@@ -239,6 +239,39 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-view .ss.about")).toBeVisible();
   });
 
+  // R-0861, R-0862
+  test("a tap under a cluster's view puts it away and reaches nothing there, and its cross always closes it", async ({ page }) => {
+    await open(page);
+    const chip = page.locator('#case-body .chip[data-kind="cluster"]').first();
+    const view = page.locator("#case-view .ss.about");
+    await chip.click();
+    await expect(view).toBeVisible();
+    const card = (await page.locator("#case-view .card").boundingBox())!;
+    const body = (await page.locator("#case-body").boundingBox())!;
+    const below = card.y + card.height + 12;
+    expect(below).toBeLessThan(body.y + body.height);
+    const before = await page.locator("#case-body").evaluate((b) => b.scrollTop);
+    await page.mouse.click(body.x + body.width / 2, below);
+    await expect(view).toHaveCount(0);
+    await expect(page.locator("#case-path .here")).not.toHaveText("about");
+    // nothing under the view answered: no drawer, no book, no second view
+    await expect(page.locator("#case-pbp")).not.toHaveClass(/in/);
+    await expect(page.locator("#case-screen .fs-sheet.in")).toHaveCount(0);
+    await page.waitForTimeout(600);
+    await expect(view).toHaveCount(0);
+    await expect(page.locator("#case-screen .slide-clip")).toHaveCount(0);
+    expect(await page.locator("#case-body").evaluate((b) => b.scrollTop)).toBe(before);
+    // opened again, its cross closes it, and no copy of it is left over the line
+    await chip.click();
+    await expect(view).toBeVisible();
+    await page.waitForTimeout(600);
+    await page.locator('#case-view .card [data-target="close"]').click();
+    await expect(view).toHaveCount(0);
+    await page.waitForTimeout(600);
+    await expect(page.locator("#case-screen .slide-clip")).toHaveCount(0);
+    await expect(page.locator("#case-view .card")).toHaveCount(0);
+  });
+
   // R-0715
   test("the header names who presents by first name, never by email", async ({ page }) => {
     await open(page);

@@ -460,6 +460,8 @@ enum Park {
 }
 
 const SCROLLER = ".ss-scroll";
+/** What is laid over a screen and answers its own taps. */
+const OVER = ".slideover, .pbp, .fs-sheet, .fs-scrim, [role=dialog]";
 
 /** A still picture of the region as it is now, laid over it: the live rows
  * are cloned without their ids so nothing on the page can find the copies.
@@ -1015,6 +1017,7 @@ export class Picture {
     private stepping = false,
   ) {
     window.addEventListener("resize", () => this.render());
+    document.addEventListener("click", (e) => this.under(e), true);
     this.host.addEventListener("click", (e) => {
       // The book on the page behind the i raises its passages and touches
       // nothing on the picture.
@@ -1065,6 +1068,21 @@ export class Picture {
       this.handlers.onTap(on);
     });
     this.holds();
+  }
+
+  /** With a cluster's view open, a tap on what lies under it, below the
+   * picture on the same screen, puts the view away and reaches nothing there,
+   * so no second view opens over the first (Patrick, 2026-10-15). What is laid
+   * over the screen, a sheet or a drawer, keeps its own taps. */
+  private under(e: MouseEvent): void {
+    if (this.level !== Level.About) return;
+    const region = this.host.parentElement as HTMLElement;
+    const at = e.target as Element;
+    if (region.contains(at) || at.closest(OVER) || !region.parentElement?.contains(at)) return;
+    if (!(region.compareDocumentPosition(at) & Node.DOCUMENT_POSITION_FOLLOWING)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    this.handlers.onTap(this.tapAt(Target.Close, e));
   }
 
   /** A long press on an event of a cluster's page opens its details, as a
@@ -1723,7 +1741,10 @@ export class Picture {
     clip.append(leaving);
     region.append(clip);
     keepScroll(leaving);
-    requestAnimationFrame(() => {
+    // A render that arrives before the first frame lands this slide there and
+    // then, so a cluster's view opened over another never leaves a dead copy
+    // over the live one, its cross answering nothing (Patrick, 2026-10-15).
+    const frame = requestAnimationFrame(() => {
       const arriving = snapshot(region);
       clip.append(dir === 1 ? arriving : leaving);
       keepScroll(arriving);
@@ -1737,15 +1758,16 @@ export class Picture {
         duration: SLIDE_MS,
         easing: "ease",
       });
-      this.landing = () => {
-        clip.remove();
-        region.classList.remove("sliding");
-      };
       this.flight.finished.then(
         () => this.land(),
         () => undefined,
       );
     });
+    this.landing = () => {
+      cancelAnimationFrame(frame);
+      clip.remove();
+      region.classList.remove("sliding");
+    };
   }
 
   /** Put the arriving view down where it belongs, whether the slide finished
