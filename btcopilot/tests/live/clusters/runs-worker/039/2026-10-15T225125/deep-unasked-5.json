@@ -1,0 +1,454 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Stepfather strain and father's remarriage, 1987",
+     "reason": "Around the time Jonah began secondary school, his relationship with his stepfather Desmond remained distant while his bond with his father stayed warm. His stepfather and father separated briefly over starting a family, and Jonah's anxiety rose as he made the city chess squad and felt out of his depth.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86
+     ],
+     "name": "Grandfather's death and family upheaval, 1989\u20131992",
+     "reason": "Within three years starting in 1989, Jonah's grandfather Gordon died after kidney disease, his mother's partner Desmond moved into a rebuilt house with him, his anxiety rose around late nights, he fused closely with his roommate Rafe at conservatory, suffered a wrist injury that ended his playing, and his functioning fell sharply. His mother filled in his college forms and he let it happen; he was lost and low with no footing as his grandfather died and his mother prepared to remarry.",
+     "change": "You moved through a cluster of losses and changes: your grandfather Gordon died in 1991, you were injured and stopped playing, Rafe moved out, and you drifted without direction through 1992 while your mother was settling into her life with Desmond.",
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Performance peak and relationship split, 1998\u20131999",
+     "reason": "Jonah bonded with Joelle around 1998 and played at his best, winning competitions. Within a year his insomnia worsened before concerts, they separated, and he started therapy. His functioning rose even as his symptom of sleeplessness grew, and the relationship shift toward his therapist Victor came after the split.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Burnout, depression, and grandmother's death, 2001\u20132004",
+     "reason": "Starting in 2001, Jonah's anxiety rose and functioning fell as he ran out of steam for performing. His grandmother Winifred was found to have bowel cancer around the same time. He had a disastrous audition in 2002, withdrew from family and friends, left Thornbury, and bonded with Marisol. They split within months and he sank into deep depression through late 2003. He could not face his parents but relied on friends, began swimming, returned to his therapist, and his functioning began to improve. His grandmother died in February 2004, and his anxiety remained high as he struggled to connect with family across these years.",
+     "change": "Around 2001 you hit a wall with performing, your grandmother got cancer, and things fell apart over the next few years: the failed audition, a broken relationship, depression, and your inability to reach your parents while everything was happening.",
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      10,
+      179
+     ],
+     "name": "Nursing school and mother cutoff, 2008",
+     "reason": "In 2008, Jonah's grandmother Lorna and grandfather Clifford both died. As he prepared for nursing school, he took a building break with Silas at Alder Creek where he was too drained for contact with his mother. She pressed him to visit despite his refusal, they had conflict at the visit, and he cut off contact with her when he left for Marlow Sound in August. His anxiety rose around her pressure to visit. His aunt Imogen had a stroke around this time.",
+     "change": "With both your grandparents dying in early 2008 and nursing school ahead, you and your mother hit a breaking point at Alder Creek. You stopped speaking when you moved to Marlow Sound that August, and the silence held for about a year.",
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Marriage, partner's family fusion, and sleep crisis, 2017\u20132019",
+     "reason": "Jonah married Wren in March 2017 and contact with his mother eased slightly. His cousin Alice was diagnosed with multiple sclerosis in 2017. His sister Tara married and his aunt Imogen's memory loss worsened and she began lashing out. Through 2019, Jonah's anxiety rose constantly as he felt driven to push projects forward. In October 2019, Wren became swamped with family events while her family fused tightly around her father and brother. Jonah overfunctioned trying to settle her, his anxiety spiked around family occasions, and at the lake weekend for Wren's mother's retirement he had no sleep from the small hours and could only withdraw as the family rose. His anxiety stayed high afterward on the quiet drive home. His job had steadied and paid well earlier that year, yet his baseline anxiety remained high.",
+     "change": "After you married Wren in 2017, the balance shifted: you saw your mother a bit less, you were drawn into Wren's tightly connected family, and by late 2019 you were running on empty at family occasions\u2014unable to sleep, overfunctioning to manage her stress, and feeling you didn't belong.",
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "run": "r3",
+     "reason": "The events around 1998\u20131999 form a clear period marking Jonah's performance peak and relationship split; this run is subsumed into that period."
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Father's remarriage and stepfather arrival, 1987",
+     "reason": "Around the time Jonah began secondary school in 1987, his stepfather Desmond arrived in his life, and you found distance between you and him while your bond with your father stayed warm. Your stepfather and father separated briefly over starting a family, and your anxiety rose as you made the city chess squad and felt out of your depth.",
+     "change": null,
+     "openingId": 49
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86
+     ],
+     "name": "Grandfather's death and family upheaval, 1989\u20131992",
+     "reason": "Within three years starting in 1989, your grandfather Gordon died after kidney disease, your mother's partner Desmond moved into a rebuilt house with you, your anxiety rose around late nights, you fused closely with your roommate Rafe at conservatory, suffered a wrist injury that ended your playing, and your functioning fell sharply. Your mother filled in your college forms and you let it happen; you were lost and low with no footing as your grandfather died and your mother prepared to remarry.",
+     "change": "You moved through a cluster of losses and changes: your grandfather Gordon died in 1991, you were injured and stopped playing, Rafe moved out, and you drifted without direction through 1992 while your mother was settling into her life with Desmond.",
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Relationship split and therapy start, 1998\u20131999",
+     "reason": "You bonded with Joelle around 1998 and played at your best, winning competitions. Within a year your insomnia worsened before concerts, you separated, and you started therapy with Victor. Your functioning rose even as your symptom of sleeplessness grew, and you moved toward your therapist after the split.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Burnout, depression, and grandmother's death, 2001\u20132004",
+     "reason": "Starting in 2001, your anxiety rose and functioning fell as you ran out of steam for performing. Your grandmother Winifred was found to have bowel cancer around the same time. You had a disastrous audition in 2002, withdrew from family and friends, left Thornbury, and bonded with Marisol. You split within months and sank into deep depression through late 2003. You could not face your parents but relied on friends, began swimming, returned to your therapist, and your functioning began to improve. Your grandmother died in February 2004, and your anxiety remained high as you struggled to connect with family across these years.",
+     "change": "Around 2001 you hit a wall with performing, your grandmother got cancer, and things fell apart over the next few years: the failed audition, a broken relationship, depression, and your inability to reach your parents while everything was happening.",
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Both grandparents' deaths and nursing school move, 2008",
+     "reason": "In 2008, your grandmother Lorna and grandfather Clifford both died. As you prepared for nursing school, you took a building break with Silas at Alder Creek where you were too drained for contact with your mother. She pressed you to visit despite your refusal, you had conflict at the visit, and you cut off contact with her when you left for Marlow Sound in August. Your anxiety rose around her pressure to visit. Your aunt Imogen had a stroke around this time.",
+     "change": "With both your grandparents dying in early 2008 and nursing school ahead, you and your mother hit a breaking point at Alder Creek. You stopped speaking when you moved to Marlow Sound that August, and the silence held for about a year.",
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Marriage and partner's family fusion, 2017\u20132019",
+     "reason": "You married Wren in March 2017 and contact with your mother eased slightly. Your cousin Alice was diagnosed with multiple sclerosis in 2017. Your sister Tara married and your aunt Imogen's memory loss worsened and she began lashing out. Through 2019, your anxiety rose constantly as you felt driven to push projects forward. In October 2019, Wren became swamped with family events while her family fused tightly around her father and brother. You overfunctioned trying to settle her, your anxiety spiked around family occasions, and at the lake weekend for Wren's mother's retirement you had no sleep from the small hours and could only withdraw as the family rose. Your anxiety stayed high afterward on the quiet drive home. Your job had steadied and paid well earlier that year, yet your baseline anxiety remained high.",
+     "change": "After you married Wren in 2017, the balance shifted: you saw your mother a bit less, you were drawn into Wren's tightly connected family, and by late 2019 you were running on empty at family occasions\u2014unable to sleep, overfunctioning to manage her stress, and feeling you didn't belong.",
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "run": "r3",
+     "reason": "These events around 1998\u20131999 form a clear period marking your relationship split and therapy start; the run is subsumed into that period."
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period \"Stepfather strain and father's remarriage, 1987\" is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 1: symptom_name: Period 'Performance peak and relationship split, 1998\u20131999' is named by the person's trouble (['performance']); name it by the change in the family and its years.",
+  "answer 1: symptom_name: Period 'Nursing school and mother cutoff, 2008' is named by the person's trouble (['cutoff']); name it by the change in the family and its years.",
+  "answer 1: cause: Period \"Marriage, partner's family fusion, and sleep crisis, 2017\u20132019\" says one event brought about another ('driven'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: unknown_event: Period \"Father's remarriage and stepfather arrival, 1987\" opens at event 49, which is not one of its events.",
+  "answer 2: symptom_name: Period 'Relationship split and therapy start, 1998\u20131999' is named by the person's trouble (['therapy']); name it by the change in the family and its years.",
+  "answer 2: cause: Period \"Marriage and partner's family fusion, 2017\u20132019\" says one event brought about another ('driven'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: symptom_name: Period \"Marriage and partner's family fusion, 2017\u20132019\" is named by the person's trouble (['fusion']); name it by the change in the family and its years."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Grandfather's death and family upheaval, 1989\u20131992",
+   "summary": "Within three years starting in 1989, your grandfather Gordon died after kidney disease, your mother's partner Desmond moved into a rebuilt house with you, your anxiety rose around late nights, you fused closely with your roommate Rafe at conservatory, suffered a wrist injury that ended your playing, and your functioning fell sharply. Your mother filled in your college forms and you let it happen; you were lost and low with no footing as your grandfather died and your mother prepared to remarry.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    146,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1992-01-12",
+   "name": "Grandfather's death and family upheaval, 1989\u20131992",
+   "source": "model",
+   "reason": "Within three years starting in 1989, your grandfather Gordon died after kidney disease, your mother's partner Desmond moved into a rebuilt house with you, your anxiety rose around late nights, you fused closely with your roommate Rafe at conservatory, suffered a wrist injury that ended your playing, and your functioning fell sharply. Your mother filled in your college forms and you let it happen; you were lost and low with no footing as your grandfather died and your mother prepared to remarry.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c2",
+   "title": "A change in the family, 1998\u20131999",
+   "summary": "You bonded with Joelle around 1998 and played at your best, winning competitions. Within a year your insomnia worsened before concerts, you separated, and you started therapy with Victor. Your functioning rose even as your symptom of sleeplessness grew, and you moved toward your therapist after the split.",
+   "eventIds": [
+    11,
+    4,
+    173,
+    12,
+    22
+   ],
+   "startDate": "1998-01-12",
+   "endDate": "1999-08-12",
+   "name": "A change in the family, 1998\u20131999",
+   "source": "model",
+   "reason": "You bonded with Joelle around 1998 and played at your best, winning competitions. Within a year your insomnia worsened before concerts, you separated, and you started therapy with Victor. Your functioning rose even as your symptom of sleeplessness grew, and you moved toward your therapist after the split.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c3",
+   "title": "Burnout, depression, and grandmother's death, 2001\u20132004",
+   "summary": "Starting in 2001, your anxiety rose and functioning fell as you ran out of steam for performing. Your grandmother Winifred was found to have bowel cancer around the same time. You had a disastrous audition in 2002, withdrew from family and friends, left Thornbury, and bonded with Marisol. You split within months and sank into deep depression through late 2003. You could not face your parents but relied on friends, began swimming, returned to your therapist, and your functioning began to improve. Your grandmother died in February 2004, and your anxiety remained high as you struggled to connect with family across these years.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106,
+    24,
+    107,
+    108,
+    178,
+    79
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-02-18",
+   "name": "Burnout, depression, and grandmother's death, 2001\u20132004",
+   "source": "model",
+   "reason": "Starting in 2001, your anxiety rose and functioning fell as you ran out of steam for performing. Your grandmother Winifred was found to have bowel cancer around the same time. You had a disastrous audition in 2002, withdrew from family and friends, left Thornbury, and bonded with Marisol. You split within months and sank into deep depression through late 2003. You could not face your parents but relied on friends, began swimming, returned to your therapist, and your functioning began to improve. Your grandmother died in February 2004, and your anxiety remained high as you struggled to connect with family across these years.",
+   "setAside": false,
+   "openingEventId": 174
+  },
+  {
+   "id": "c4",
+   "title": "Both grandparents' deaths and nursing school move, 2008\u20132009",
+   "summary": "In 2008, your grandmother Lorna and grandfather Clifford both died. As you prepared for nursing school, you took a building break with Silas at Alder Creek where you were too drained for contact with your mother. She pressed you to visit despite your refusal, you had conflict at the visit, and you cut off contact with her when you left for Marlow Sound in August. Your anxiety rose around her pressure to visit. Your aunt Imogen had a stroke around this time.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10,
+    179
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2009-01-11",
+   "name": "Both grandparents' deaths and nursing school move, 2008\u20132009",
+   "source": "model",
+   "reason": "In 2008, your grandmother Lorna and grandfather Clifford both died. As you prepared for nursing school, you took a building break with Silas at Alder Creek where you were too drained for contact with your mother. She pressed you to visit despite your refusal, you had conflict at the visit, and you cut off contact with her when you left for Marlow Sound in August. Your anxiety rose around her pressure to visit. Your aunt Imogen had a stroke around this time.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c5",
+   "title": "A change in the family, 2017\u20132019",
+   "summary": "You married Wren in March 2017 and contact with your mother eased slightly. Your cousin Alice was diagnosed with multiple sclerosis in 2017. Your sister Tara married and your aunt Imogen's memory loss worsened and she began lashing out. In October 2019, Wren became swamped with family events while her family fused tightly around her father and brother. You overfunctioned trying to settle her, your anxiety spiked around family occasions, and at the lake weekend for Wren's mother's retirement you had no sleep from the small hours and could only withdraw as the family rose. Your anxiety stayed high afterward on the quiet drive home. Your job had steadied and paid well earlier that year, yet your baseline anxiety remained high.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202,
+    151
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-26",
+   "name": "A change in the family, 2017\u20132019",
+   "source": "model",
+   "reason": "You married Wren in March 2017 and contact with your mother eased slightly. Your cousin Alice was diagnosed with multiple sclerosis in 2017. Your sister Tara married and your aunt Imogen's memory loss worsened and she began lashing out. In October 2019, Wren became swamped with family events while her family fused tightly around her father and brother. You overfunctioned trying to settle her, your anxiety spiked around family occasions, and at the lake weekend for Wren's mother's retirement you had no sleep from the small hours and could only withdraw as the family rose. Your anxiety stayed high afterward on the quiet drive home. Your job had steadied and paid well earlier that year, yet your baseline anxiety remained high.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.8,
+   "recall": 1.0,
+   "f1": 0.888888888888889
+  },
+  "members": {
+   "tp": 41,
+   "fp": 5,
+   "fn": 5,
+   "precision": 0.8913043478260869,
+   "recall": 0.8913043478260869,
+   "f1": 0.8913043478260869
+  },
+  "openings": [
+   3,
+   3
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 1998\u20131999' is the plain name the code fell back to",
+  "'A change in the family, 2017\u20132019' is the plain name the code fell back to"
+ ],
+ "cost": 0.04868
+}

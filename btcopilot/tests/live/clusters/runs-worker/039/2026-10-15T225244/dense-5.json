@@ -1,0 +1,118 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "After your grandfather's death, 1988\u20131990",
+     "reason": "Della's worry over money and her growing distance from Victor in 1988 sat close to your grandfather's death in 1989 and Felix's grades falling that fall, before Della felt calmer back at work in 1990.",
+     "change": "The app's run is kept whole, but centered on your grandfather's death as the change around which the money worry, distance, and Felix's dip in grades cluster.",
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "After leaving home and your mother's cancer diagnosis, 1993\u20131996",
+     "reason": "Leaving home for college in 1993 fell close to Greta's death, then migraines and nightly calls to Felix followed, and around your mother's 1995 cancer diagnosis you stopped returning his calls and later stopped calling home in 1996.",
+     "change": "The run is kept as one stretch because the distancing from Felix and from home runs continuously from your leaving home through your mother's diagnosis without a settled gap between.",
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence.",
+  "answer 2: cause: Period \"After leaving home and your mother's cancer diagnosis, 1993\u20131996\" says one event brought about another ('because'): say which events fell close together and when, side by side, never that one created, caused or led to another."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "After your grandfather's death, 1988\u20131990",
+   "summary": "Della's worry over money and her growing distance from Victor in 1988 sat close to your grandfather's death in 1989 and Felix's grades falling that fall, before Della felt calmer back at work in 1990.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "After your grandfather's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Della's worry over money and her growing distance from Victor in 1988 sat close to your grandfather's death in 1989 and Felix's grades falling that fall, before Della felt calmer back at work in 1990.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "After leaving home and your mother's cancer diagnosis, 1993\u20131996",
+   "summary": "Leaving home for college in 1993 fell close to Greta's death, then migraines and nightly calls to Felix followed, and around your mother's 1995 cancer diagnosis you stopped returning his calls and later stopped calling home in 1996.",
+   "eventIds": [
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-01-01",
+   "endDate": "1996-02-01",
+   "name": "After leaving home and your mother's cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "Leaving home for college in 1993 fell close to Greta's death, then migraines and nightly calls to Felix followed, and around your mother's 1995 cancer diagnosis you stopped returning his calls and later stopped calling home in 1996.",
+   "setAside": false,
+   "openingEventId": 15
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.9166666666666666,
+   "recall": 1.0,
+   "f1": 0.9565217391304348
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.12171
+}

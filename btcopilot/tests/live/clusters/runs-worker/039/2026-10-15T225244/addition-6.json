@@ -1,0 +1,76 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "After Bea's birth, 1995\u20131996",
+     "reason": "In the months after the birth of your third child in March 1995, the events pile up close together: your mother worn out and on edge by August, your parents drifting into distance by November, your own stomach aches and missed school by February 1996, shouting matches between your father and brother that May, and your mother not going back to her job that September, with nothing else recorded until 2003.",
+     "change": "The run's shifts all follow the birth of your third sibling, so the period is read as opening with that birth rather than with any one person's trouble, and it settles where the record goes quiet for years afterward.",
+     "openingId": 4
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "After Bea's birth, 1995\u20131996",
+   "summary": "In the months after the birth of your third child in March 1995, the events pile up close together: your mother worn out and on edge by August, your parents drifting into distance by November, your own stomach aches and missed school by February 1996, shouting matches between your father and brother that May, and your mother not going back to her job that September, with nothing else recorded until 2003.",
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "startDate": "1995-03-02",
+   "endDate": "1996-09-01",
+   "name": "After Bea's birth, 1995\u20131996",
+   "source": "model",
+   "reason": "In the months after the birth of your third child in March 1995, the events pile up close together: your mother worn out and on edge by August, your parents drifting into distance by November, your own stomach aches and missed school by February 1996, shouting matches between your father and brother that May, and your mother not going back to her job that September, with nothing else recorded until 2003.",
+   "setAside": false,
+   "openingEventId": 4
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.025228
+}

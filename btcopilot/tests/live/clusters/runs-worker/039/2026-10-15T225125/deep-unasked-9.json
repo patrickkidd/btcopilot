@@ -1,0 +1,467 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Starting secondary school and family shifts, 1987",
+     "reason": "Around the time Jonah began secondary school, his distance from his stepfather deepened while his tie to his father strengthened. His stepparents' marriage fractured over whether to have a child, and Jonah's anxiety rose as he made the chess squad but felt out of his depth.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      91,
+      92,
+      93,
+      86
+     ],
+     "name": "Grandfather's death and unravelling at conservatory, 1989\u20131992",
+     "reason": "Jonah's grandfather died in June 1991 after years of illness. Within months, Jonah injured his wrist and stopped playing, lost his closest friendship with Rafe, and sank into isolation and low functioning. His mother had remarried in autumn 1992. Around the same time, his grandfather Gordon died. Through this stretch Jonah's anxiety, symptoms and underfunctioning mounted: he was getting high, absorbed in radios, lost and unable to get going. His functioning collapsed.",
+     "change": "Your grandfather Gordon died in June 1991 while you were at the conservatory. Within months you hurt your wrist and stopped playing, your closest friend moved out after a conflict, and you found yourself alone, getting high, and unable to get your footing. Around the same time your mother remarried. The picture shows a year when several things shifted at once\u2014your grandfather gone, your music stopped, your friendship broken, your mother's remarriage underway\u2014and you lost your way.",
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Relationship ending and insomnia, 1998\u20131999",
+     "reason": "Jonah bonded with Joelle in early 1998. By 1999 his insomnia worsened before performances, though he was playing the best he ever had and winning competitions. Within months they separated. He began therapy with Victor Halloran after the split, reading about families with gamblers and asking what that meant for him.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      177,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Burnout, grandmother's death, and depression, 2001\u20132004",
+     "reason": "In autumn 2001 Jonah began running out of steam for performing. Around the same time his grandmother Winifred was found to have bowel cancer and underwent operations and chemotherapy. In early 2002 Jonah had a disastrous audition and began casting about. He withdrew from family and left Thornbury for Gull Harbour. He met Marisol and moved to Fenwick with her, but they split within the year. He returned to Thornbury and sank into deep depression, hardly moving from the sofa. He could not face his family. His grandmother died in February 2004. Over those years\u2014his burnout, her illness and death, his failed audition, his distance from his family\u2014Jonah's functioning collapsed and his symptoms mounted. He began swimming to help sleep, asked his parents for help with therapy costs, and returned to Victor Halloran. As his grandmother declined he visited her briefly, hung over, on the way to the airport, and regrets cutting the visit short.",
+     "change": "Your performing life was running out of steam when your grandmother developed bowel cancer and underwent chemotherapy. Your audition failed in early 2002. You moved away from Thornbury and your family, started a relationship and left it within the year, and sank into depression. Your grandmother died in February 2004. Across those years your functioning fell, your symptoms rose, and you pulled back from your parents and nearly everyone else. The stretch from autumn 2001 through the winter after her death was when the bottom fell out.",
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      10,
+      179,
+      130
+     ],
+     "name": "Grandmother's death and cutoff from mother, 2008",
+     "reason": "In January 2008 Jonah's maternal grandmother Lorna died, and his grandfather Clifford died around the same time. Four weeks before nursing school, Jonah was building at Alder Creek with Silas when his mother pressed to visit him against his wishes. The visit went wrong and she never got inside. He kept the door shut on her. When he left for nursing school in Marlow Sound, he stopped speaking to his mother\u2014a silence that held for roughly a year. Within months, his aunt Imogen had a stroke. His sister's partner Bree had a child. The events show distance piling up: Jonah too drained to speak with his mother, her pushing past his wishes, conflict between them, then his cutoff.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Marriage to Wren and family strain, 2017\u20132019",
+     "reason": "Jonah married Wren in March 2017. After the wedding he saw his mother somewhat less. Around the same time his cousin Alice was diagnosed with multiple sclerosis. His sister Tara married and had a baby. His aunt Imogen's condition worsened\u2014she lashes out when muddled. Leo and his family returned to live nearby. In October 2019, around Wren's family's retirement celebration at the lake, Jonah's sleep collapsed entirely\u2014awake from the small hours and unable to sleep. He felt he didn't belong among her family. Wren was swamped by events and he overfunctioned laying out a plan to settle her. She and her father and brother are tightly fused, talking all day. Jonah carries constant anxiety about driving projects forward. The picture shows a year when his married life with Wren deepened his contact with her family's anxiety and fusion while his contact with his own family eased off, and his sleep fell apart around her family gatherings.",
+     "change": "You married Wren in March 2017, and once you did, you saw your mother somewhat less. Over the following years, as you settled into married life with Wren and her family, your sleep at her family occasions fell apart. At a lake house weekend in October 2019, you couldn't sleep\u2014awake from the small hours. Wren was swamped, her father and brother were involved in everything she did, and you found yourself overfunctioning to manage the chaos. You felt you didn't belong. The stretch from your marriage through that autumn shows increasing strain around her family\u2014their closeness, their demands on her, and the toll it took on your sleep.",
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "run": "r3",
+     "reason": "This run covers only one shift that counts after removing shifts told as how things always were. Without a clear change in the family's membership or a key member's functioning, it does not form a period."
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Starting secondary school and family shifts, 1987",
+     "reason": "Around the time Jonah began secondary school, his distance from his stepfather deepened while his tie to his father strengthened. His stepparents' marriage fractured over whether to have a child, and Jonah's anxiety rose as he made the chess squad but felt out of his depth.",
+     "change": null,
+     "openingId": 41
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      91,
+      92,
+      93,
+      86
+     ],
+     "name": "Grandfather's death and unravelling at conservatory, 1989\u20131992",
+     "reason": "Jonah's grandfather Gordon died in June 1991 after years of illness. Within months, Jonah injured his wrist and stopped playing, lost his closest friendship with Rafe, and sank into isolation and low functioning. His mother had remarried in autumn 1992. Through this stretch Jonah's anxiety, symptoms and underfunctioning mounted: he was getting high, absorbed in radios, lost and unable to get going. His functioning collapsed.",
+     "change": "Your grandfather Gordon died in June 1991 while you were at the conservatory. Within months you hurt your wrist and stopped playing, your closest friend moved out after a conflict, and you found yourself alone, getting high, and unable to get your footing. Around the same time your mother remarried. The picture shows a year when several things shifted at once\u2014your grandfather gone, your music stopped, your friendship broken, your mother's remarriage underway\u2014and you lost your way.",
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Relationship ending and playing at your peak, 1998\u20131999",
+     "reason": "Jonah bonded with Joelle in early 1998. By 1999 his insomnia worsened before performances, though he was playing the best he ever had and winning competitions. Within months they separated. He began therapy with Victor Halloran after the split, reading about families with gamblers and asking what that meant for him.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      177,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Burnout, grandmother's illness and death, and depression, 2001\u20132004",
+     "reason": "In autumn 2001 Jonah began running out of steam for performing. Around the same time his grandmother Winifred was found to have bowel cancer and underwent operations and chemotherapy. In early 2002 Jonah had a disastrous audition and began casting about. He withdrew from family and left Thornbury for Gull Harbour. He met Marisol and moved to Fenwick with her, but they split within the year. He returned to Thornbury and sank into deep depression, hardly moving from the sofa. He could not face his family. His grandmother died in February 2004. Over those years\u2014his burnout, her illness and death, his failed audition, his distance from his family\u2014Jonah's functioning collapsed and his symptoms mounted. He began swimming to help sleep, asked his parents for help with therapy costs, and returned to Victor Halloran. As his grandmother declined he visited her briefly, hung over, on the way to the airport, and regrets cutting the visit short.",
+     "change": "Your performing life was running out of steam when your grandmother developed bowel cancer and underwent chemotherapy. Your audition failed in early 2002. You moved away from Thornbury and your family, started a relationship and left it within the year, and sank into depression. Your grandmother died in February 2004. Across those years your functioning fell, your symptoms rose, and you pulled back from your parents and nearly everyone else. The stretch from autumn 2001 through the winter after her death was when the bottom fell out.",
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179,
+      130
+     ],
+     "name": "Grandparents' deaths and cutoff from mother before nursing school, 2008",
+     "reason": "In January 2008 Jonah's maternal grandmother Lorna died, and his grandfather Clifford died around the same time. Four weeks before nursing school, Jonah was building at Alder Creek with Silas when his mother pressed to visit him against his wishes. The visit went wrong and she never got inside. He kept the door shut on her. When he left for nursing school in Marlow Sound, he stopped speaking to his mother\u2014a silence that held for roughly a year. Within months, his aunt Imogen had a stroke. The events show distance piling up: Jonah too drained to speak with his mother, her pushing past his wishes, conflict between them, then his cutoff.",
+     "change": "Your maternal grandparents died in January 2008. Four weeks before you left for nursing school, your mother pressed to visit you at Alder Creek against your wishes. The visit went wrong and a conflict opened between you. When you moved to Marlow Sound for nursing school, you stopped speaking to her\u2014a year of silence. The deaths of your grandparents, your mother's push to visit when you had no room for it, and your cutoff from her all sat close together around your move.",
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Marriage to Wren and strain around her family, 2017\u20132019",
+     "reason": "Jonah married Wren in March 2017. After the wedding he saw his mother somewhat less. Around the same time his cousin Alice was diagnosed with multiple sclerosis. His sister Tara married and had a baby. His aunt Imogen's condition worsened\u2014she lashes out when muddled. Leo and his family returned to live nearby. In October 2019, around Wren's family's retirement celebration at the lake, Jonah's sleep collapsed entirely\u2014awake from the small hours and unable to sleep. He felt he didn't belong among her family. Wren was swamped by events and he overfunctioned laying out a plan to settle her. She and her father and brother are tightly fused, talking all day. Jonah carries constant anxiety about driving projects forward. The picture shows a year when his married life with Wren deepened his contact with her family's anxiety and fusion while his contact with his own family eased off, and his sleep fell apart around her family gatherings.",
+     "change": "You married Wren in March 2017, and once you did, you saw your mother somewhat less. Over the following years, as you settled into married life with Wren and her family, your sleep at her family occasions fell apart. At a lake house weekend in October 2019, you couldn't sleep\u2014awake from the small hours. Wren was swamped, her father and brother were involved in everything she did, and you found yourself overfunctioning to manage the chaos. You felt you didn't belong. The stretch from your marriage through that autumn shows increasing strain around her family\u2014their closeness, their demands on her, and the toll it took on your sleep.",
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "run": "r3",
+     "reason": "This run covers only one shift that counts after removing shifts told as how things always were. Without a clear change in the family's membership or a key member's functioning, it does not form a period."
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period 'Relationship ending and insomnia, 1998\u20131999' is named by the person's trouble (['insomnia']); name it by the change in the family and its years.",
+  "answer 1: symptom_name: Period \"Grandmother's death and cutoff from mother, 2008\" is named by the person's trouble (['cutoff']); name it by the change in the family and its years.",
+  "answer 2: symptom_name: Period \"Grandparents' deaths and cutoff from mother before nursing school, 2008\" is named by the person's trouble (['cutoff']); name it by the change in the family and its years."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Starting secondary school and family shifts, 1987",
+   "summary": "Around the time Jonah began secondary school, his distance from his stepfather deepened while his tie to his father strengthened. His stepparents' marriage fractured over whether to have a child, and Jonah's anxiety rose as he made the chess squad but felt out of his depth.",
+   "eventIds": [
+    41,
+    51,
+    144,
+    145
+   ],
+   "startDate": "1987-01-12",
+   "endDate": "1987-09-12",
+   "name": "Starting secondary school and family shifts, 1987",
+   "source": "model",
+   "reason": "Around the time Jonah began secondary school, his distance from his stepfather deepened while his tie to his father strengthened. His stepparents' marriage fractured over whether to have a child, and Jonah's anxiety rose as he made the chess squad but felt out of his depth.",
+   "setAside": false,
+   "openingEventId": 41
+  },
+  {
+   "id": "c2",
+   "title": "Grandfather's death and unravelling at conservatory, 1989\u20131992",
+   "summary": "Jonah's grandfather Gordon died in June 1991 after years of illness. Within months, Jonah injured his wrist and stopped playing, lost his closest friendship with Rafe, and sank into isolation and low functioning. His mother had remarried in autumn 1992. Through this stretch Jonah's anxiety, symptoms and underfunctioning mounted: he was getting high, absorbed in radios, lost and unable to get going. His functioning collapsed.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    146,
+    89,
+    78,
+    91,
+    92,
+    93,
+    86
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1992-01-12",
+   "name": "Grandfather's death and unravelling at conservatory, 1989\u20131992",
+   "source": "model",
+   "reason": "Jonah's grandfather Gordon died in June 1991 after years of illness. Within months, Jonah injured his wrist and stopped playing, lost his closest friendship with Rafe, and sank into isolation and low functioning. His mother had remarried in autumn 1992. Through this stretch Jonah's anxiety, symptoms and underfunctioning mounted: he was getting high, absorbed in radios, lost and unable to get going. His functioning collapsed.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c3",
+   "title": "Relationship ending and playing at your peak, 1998\u20131999",
+   "summary": "Jonah bonded with Joelle in early 1998. By 1999 his insomnia worsened before performances, though he was playing the best he ever had and winning competitions. Within months they separated. He began therapy with Victor Halloran after the split, reading about families with gamblers and asking what that meant for him.",
+   "eventIds": [
+    11,
+    4,
+    173,
+    12,
+    22
+   ],
+   "startDate": "1998-01-12",
+   "endDate": "1999-08-12",
+   "name": "Relationship ending and playing at your peak, 1998\u20131999",
+   "source": "model",
+   "reason": "Jonah bonded with Joelle in early 1998. By 1999 his insomnia worsened before performances, though he was playing the best he ever had and winning competitions. Within months they separated. He began therapy with Victor Halloran after the split, reading about families with gamblers and asking what that meant for him.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c4",
+   "title": "Burnout, grandmother's illness and death, and depression, 2001\u20132004",
+   "summary": "In autumn 2001 Jonah began running out of steam for performing. Around the same time his grandmother Winifred was found to have bowel cancer and underwent operations and chemotherapy. In early 2002 Jonah had a disastrous audition and began casting about. He withdrew from family and left Thornbury for Gull Harbour. He met Marisol and moved to Fenwick with her, but they split within the year. He returned to Thornbury and sank into deep depression, hardly moving from the sofa. He could not face his family. His grandmother died in February 2004. Over those years\u2014his burnout, her illness and death, his failed audition, his distance from his family\u2014Jonah's functioning collapsed and his symptoms mounted. He began swimming to help sleep, asked his parents for help with therapy costs, and returned to Victor Halloran. As his grandmother declined he visited her briefly, hung over, on the way to the airport, and regrets cutting the visit short.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106,
+    24,
+    107,
+    108,
+    178,
+    79
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-02-18",
+   "name": "Burnout, grandmother's illness and death, and depression, 2001\u20132004",
+   "source": "model",
+   "reason": "In autumn 2001 Jonah began running out of steam for performing. Around the same time his grandmother Winifred was found to have bowel cancer and underwent operations and chemotherapy. In early 2002 Jonah had a disastrous audition and began casting about. He withdrew from family and left Thornbury for Gull Harbour. He met Marisol and moved to Fenwick with her, but they split within the year. He returned to Thornbury and sank into deep depression, hardly moving from the sofa. He could not face his family. His grandmother died in February 2004. Over those years\u2014his burnout, her illness and death, his failed audition, his distance from his family\u2014Jonah's functioning collapsed and his symptoms mounted. He began swimming to help sleep, asked his parents for help with therapy costs, and returned to Victor Halloran. As his grandmother declined he visited her briefly, hung over, on the way to the airport, and regrets cutting the visit short.",
+   "setAside": false,
+   "openingEventId": 174
+  },
+  {
+   "id": "c5",
+   "title": "A change in the family, 2008\u20132010",
+   "summary": "In January 2008 Jonah's maternal grandmother Lorna died, and his grandfather Clifford died around the same time. Four weeks before nursing school, Jonah was building at Alder Creek with Silas when his mother pressed to visit him against his wishes. The visit went wrong and she never got inside. He kept the door shut on her. When he left for nursing school in Marlow Sound, he stopped speaking to his mother\u2014a silence that held for roughly a year. Within months, his aunt Imogen had a stroke. The events show distance piling up: Jonah too drained to speak with his mother, her pushing past his wishes, conflict between them, then his cutoff.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10,
+    179,
+    130
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2010-01-12",
+   "name": "A change in the family, 2008\u20132010",
+   "source": "model",
+   "reason": "In January 2008 Jonah's maternal grandmother Lorna died, and his grandfather Clifford died around the same time. Four weeks before nursing school, Jonah was building at Alder Creek with Silas when his mother pressed to visit him against his wishes. The visit went wrong and she never got inside. He kept the door shut on her. When he left for nursing school in Marlow Sound, he stopped speaking to his mother\u2014a silence that held for roughly a year. Within months, his aunt Imogen had a stroke. The events show distance piling up: Jonah too drained to speak with his mother, her pushing past his wishes, conflict between them, then his cutoff.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c6",
+   "title": "Marriage to Wren and strain around her family, 2017\u20132019",
+   "summary": "Jonah married Wren in March 2017. After the wedding he saw his mother somewhat less. Around the same time his cousin Alice was diagnosed with multiple sclerosis. His sister Tara married and had a baby. His aunt Imogen's condition worsened\u2014she lashes out when muddled. Leo and his family returned to live nearby. In October 2019, around Wren's family's retirement celebration at the lake, Jonah's sleep collapsed entirely\u2014awake from the small hours and unable to sleep. He felt he didn't belong among her family. Wren was swamped by events and he overfunctioned laying out a plan to settle her. She and her father and brother are tightly fused, talking all day. Jonah carries constant anxiety about driving projects forward. The picture shows a year when his married life with Wren deepened his contact with her family's anxiety and fusion while his contact with his own family eased off, and his sleep fell apart around her family gatherings.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202,
+    151
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-26",
+   "name": "Marriage to Wren and strain around her family, 2017\u20132019",
+   "source": "model",
+   "reason": "Jonah married Wren in March 2017. After the wedding he saw his mother somewhat less. Around the same time his cousin Alice was diagnosed with multiple sclerosis. His sister Tara married and had a baby. His aunt Imogen's condition worsened\u2014she lashes out when muddled. Leo and his family returned to live nearby. In October 2019, around Wren's family's retirement celebration at the lake, Jonah's sleep collapsed entirely\u2014awake from the small hours and unable to sleep. He felt he didn't belong among her family. Wren was swamped by events and he overfunctioned laying out a plan to settle her. She and her father and brother are tightly fused, talking all day. Jonah carries constant anxiety about driving projects forward. The picture shows a year when his married life with Wren deepened his contact with her family's anxiety and fusion while his contact with his own family eased off, and his sleep fell apart around her family gatherings.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 2,
+   "fn": 0,
+   "precision": 0.6666666666666666,
+   "recall": 1.0,
+   "f1": 0.8
+  },
+  "members": {
+   "tp": 40,
+   "fp": 6,
+   "fn": 6,
+   "precision": 0.8695652173913043,
+   "recall": 0.8695652173913043,
+   "f1": 0.8695652173913043
+  },
+  "openings": [
+   3,
+   3
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 2008\u20132010' is the plain name the code fell back to"
+ ],
+ "cost": 0.052328
+}

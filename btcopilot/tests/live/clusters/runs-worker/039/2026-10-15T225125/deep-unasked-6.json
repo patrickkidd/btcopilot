@@ -1,0 +1,409 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Father's remarriage and stepfather's presence, 1987",
+     "reason": "Around the time his father remarried, Jonah's relationship with his stepfather became strained while his relationship with his father remained warm. His anxiety rose when he made the chess squad. His stepmother left temporarily over the question of having a baby, adding instability to the household.",
+     "change": null,
+     "openingId": 41
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      91,
+      92,
+      93,
+      86,
+      78,
+      88,
+      90
+     ],
+     "name": "Grandfather's death and loss of footing at conservatory, 1989\u20131992",
+     "reason": "His grandfather died in June 1991 after years of illness. Around the same time Jonah began at the conservatory, leaning heavily on his roommate Rafe. A wrist injury stopped his playing that autumn and led to conflict with Rafe. He dropped out, became withdrawn and symptomatic, lost his functioning, and his anxiety rose. His mother's family also reconciled with his grandfather that year, and the household moved into a rebuilt home during this stretch.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      79
+     ],
+     "name": "Performing burnout, failed audition, and grandmother's death, 2001\u20132004",
+     "reason": "Around 2001 Jonah's anxiety rose and his functioning fell as he lost steam for performing. His grandmother was found to have bowel cancer around the same time. He had a disastrous audition in early 2002 and grew distant from family and friends. He moved away, entered a brief relationship that ended within the year, and sank into deep depression. He withdrew from his parents entirely, relying instead on friends. He reconnected with his therapist and with his parents around early 2004, began swimming, and his grandmother died in February 2004.",
+     "change": null,
+     "openingId": 175
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Grandparents' deaths and cutoff from mother during nursing school, 2008",
+     "reason": "His grandmother died in January 2008 and his grandfather around the same time. That summer at a family lodge before nursing school, he grew distant from his mother and they had a conflict when she visited against his wishes. He left for nursing school in September and stopped speaking to his mother, a cutoff that lasted roughly a year. His aunt had a stroke that year, adding medical stress to the extended family.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Marriage to Wren and tension around in-laws' closeness, 2017\u20132019",
+     "reason": "Jonah married Wren in March 2017 and his contact with his mother eased slightly. His sister had a baby expected that autumn. Around October 2019, Wren became swamped with family events and he overfunctioned to help her. Wren's family is tightly fused\u2014she talks with her father and brother all day and nothing happens to one that the others don't hear. When the family gathered for Wren's mother's retirement at a lake house, Jonah's sleep fell apart; he felt he didn't belong. His anxiety rose and he withdrew. His sleep troubles are at their worst around Wren's family occasions.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "run": "r3",
+     "reason": "This run spans only from January 1998 to August 1999 around Jonah's relationship with Joelle and his insomnia worsening before concerts. While his insomnia did worsen and he split with Joelle, his functioning actually rose as he won competitions and played the best he ever had. The events do not show a sustained period of heightened difficulty; the split itself is a one-time event, and without a change in who was in the family or a fall in functioning during this stretch, this does not form a period."
+    },
+    {
+     "run": "r5",
+     "reason": "The events cluster around Jonah's entry into nursing school in 2008 and family deaths that year, but the supporting shifts are scattered. His grandmother and grandfather died in January 2008; the cutoff from his mother began in late summer 2008 as a direct consequence of the lodge conflict, not as an opening. His aunt's stroke in 2009 falls outside this stretch. The run mixes the period already captured in r4 with events that belong elsewhere; it does not stand as a separate period."
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your father's remarriage, 1987",
+     "reason": "Around the time your father remarried, your relationship with your stepfather became strained while your relationship with your father remained warm. Your anxiety rose when you made the chess squad. Your stepmother left temporarily over the question of having a baby, adding instability to the household.",
+     "change": null,
+     "openingId": 50
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      91,
+      92,
+      93,
+      86,
+      78,
+      88,
+      90
+     ],
+     "name": "Your grandfather's death and time at conservatory, 1989\u20131992",
+     "reason": "Your grandfather died in June 1991 after years of illness. Around the same time you began at the conservatory, leaning heavily on your roommate Rafe. A wrist injury stopped your playing that autumn and led to conflict with Rafe. You dropped out, became withdrawn and symptomatic, and your anxiety rose as your functioning fell. Your mother's family also reconciled with your grandfather that year, and the household moved into a rebuilt home during this stretch.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      79
+     ],
+     "name": "Your grandmother's cancer diagnosis and performing collapse, 2001\u20132004",
+     "reason": "Around 2001 your anxiety rose and your functioning fell as you lost steam for performing. Your grandmother was found to have bowel cancer around the same time. You had a disastrous audition in early 2002 and grew distant from family and friends. You moved away, entered a brief relationship that ended within the year, and sank into deep depression. You withdrew from your parents entirely, relying instead on friends. You reconnected with your therapist and with your parents around early 2004, began swimming, and your grandmother died in February 2004.",
+     "change": null,
+     "openingId": 175
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10
+     ],
+     "name": "Your grandparents' deaths and move to nursing school, 2008",
+     "reason": "Your grandmother died in January 2008 and your grandfather around the same time. That summer at a family lodge before nursing school, you grew distant from your mother and the two of you had conflict when she visited against your wishes. You left for nursing school in September and stopped speaking to your mother, a cutoff that lasted roughly a year.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren and time with her family, 2017\u20132019",
+     "reason": "You married Wren in March 2017 and your contact with your mother eased slightly. Around October 2019, Wren became swamped with family events and you overfunctioned to help her. Wren's family is tightly fused\u2014she talks with her father and brother all day and nothing happens to one that the others don't hear. When the family gathered for Wren's mother's retirement at a lake house, your sleep fell apart; you felt you didn't belong. Your anxiety rose and you withdrew. Your sleep troubles are at their worst around Wren's family occasions.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "run": "r3",
+     "reason": "This run spans from January 1998 to August 1999 around your relationship with Joelle and your insomnia worsening before concerts. While your insomnia did worsen and you split with Joelle, your functioning actually rose as you won competitions and played the best you ever had. The events do not show a sustained period of heightened difficulty; without a fall in your functioning or a change in the family's membership during this stretch, this does not form a period."
+    },
+    {
+     "run": "r5",
+     "reason": "The events cluster around your entry into nursing school in 2008 and family deaths that year, but they belong with the period already shown. Your grandmother and grandfather died in January 2008; the cutoff from your mother began in late summer 2008 following the lodge conflict, not opening a separate period. Your aunt's stroke in 2009 falls outside this stretch. This run does not stand as a separate period."
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period \"Father's remarriage and stepfather's presence, 1987\" is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 1: cause: Period \"Grandfather's death and loss of footing at conservatory, 1989\u20131992\" says one event brought about another ('led to'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 1: symptom_name: Period \"Performing burnout, failed audition, and grandmother's death, 2001\u20132004\" is named by the person's trouble (['audition', 'performing']); name it by the change in the family and its years.",
+  "answer 1: symptom_name: Period \"Grandparents' deaths and cutoff from mother during nursing school, 2008\" is named by the person's trouble (['cutoff']); name it by the change in the family and its years.",
+  "answer 2: unknown_event: Period \"Your father's remarriage, 1987\" opens at event 50, which is not one of its events.",
+  "answer 2: cause: Period \"Your grandfather's death and time at conservatory, 1989\u20131992\" says one event brought about another ('led to'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: symptom_name: Period \"Your grandmother's cancer diagnosis and performing collapse, 2001\u20132004\" is named by the person's trouble (['performing']); name it by the change in the family and its years.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: This run spans from January 1998 to August 1999 around your relationship with Joelle and your insomnia worsening before concerts. While your insomnia did worsen and you split with Joelle, your functioning actually rose as you won competitions and played the best you ever had. The events do not show a sustained period of heightened difficulty; without a fall in your functioning or a change in the family's membership during this stretch, this does not form a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather's death and time at conservatory, 1989\u20131992",
+   "summary": "Your grandfather died in June 1991 after years of illness. Around the same time you began at the conservatory, leaning heavily on your roommate Rafe. You dropped out, became withdrawn and symptomatic, and your anxiety rose as your functioning fell. Your mother's family also reconciled with your grandfather that year, and the household moved into a rebuilt home during this stretch.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    146,
+    89,
+    91,
+    92,
+    93,
+    86,
+    78,
+    88,
+    90
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1992-01-12",
+   "name": "Your grandfather's death and time at conservatory, 1989\u20131992",
+   "source": "model",
+   "reason": "Your grandfather died in June 1991 after years of illness. Around the same time you began at the conservatory, leaning heavily on your roommate Rafe. You dropped out, became withdrawn and symptomatic, and your anxiety rose as your functioning fell. Your mother's family also reconciled with your grandfather that year, and the household moved into a rebuilt home during this stretch.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c2",
+   "title": "A change in the family, 2001\u20132004",
+   "summary": "Around 2001 your anxiety rose and your functioning fell as you lost steam for performing. Your grandmother was found to have bowel cancer around the same time. You had a disastrous audition in early 2002 and grew distant from family and friends. You moved away, entered a brief relationship that ended within the year, and sank into deep depression. You withdrew from your parents entirely, relying instead on friends. You reconnected with your therapist and with your parents around early 2004, began swimming, and your grandmother died in February 2004.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106,
+    24,
+    107,
+    108,
+    79
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-02-18",
+   "name": "A change in the family, 2001\u20132004",
+   "source": "model",
+   "reason": "Around 2001 your anxiety rose and your functioning fell as you lost steam for performing. Your grandmother was found to have bowel cancer around the same time. You had a disastrous audition in early 2002 and grew distant from family and friends. You moved away, entered a brief relationship that ended within the year, and sank into deep depression. You withdrew from your parents entirely, relying instead on friends. You reconnected with your therapist and with your parents around early 2004, began swimming, and your grandmother died in February 2004.",
+   "setAside": false,
+   "openingEventId": 175
+  },
+  {
+   "id": "c3",
+   "title": "Your grandparents' deaths and move to nursing school, 2008",
+   "summary": "Your grandmother died in January 2008 and your grandfather around the same time. That summer at a family lodge before nursing school, you grew distant from your mother and the two of you had conflict when she visited against your wishes. You left for nursing school in September and stopped speaking to your mother, a cutoff that lasted roughly a year.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-09-11",
+   "name": "Your grandparents' deaths and move to nursing school, 2008",
+   "source": "model",
+   "reason": "Your grandmother died in January 2008 and your grandfather around the same time. That summer at a family lodge before nursing school, you grew distant from your mother and the two of you had conflict when she visited against your wishes. You left for nursing school in September and stopped speaking to your mother, a cutoff that lasted roughly a year.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c4",
+   "title": "Your marriage to Wren and time with her family, 2017\u20132019",
+   "summary": "You married Wren in March 2017 and your contact with your mother eased slightly. Around October 2019, Wren became swamped with family events and you overfunctioned to help her. Wren's family is tightly fused\u2014she talks with her father and brother all day and nothing happens to one that the others don't hear. When the family gathered for Wren's mother's retirement at a lake house, your sleep fell apart; you felt you didn't belong. Your anxiety rose and you withdrew. Your sleep troubles are at their worst around Wren's family occasions.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your marriage to Wren and time with her family, 2017\u20132019",
+   "source": "model",
+   "reason": "You married Wren in March 2017 and your contact with your mother eased slightly. Around October 2019, Wren became swamped with family events and you overfunctioned to help her. Wren's family is tightly fused\u2014she talks with her father and brother all day and nothing happens to one that the others don't hear. When the family gathered for Wren's mother's retirement at a lake house, your sleep fell apart; you felt you didn't belong. Your anxiety rose and you withdrew. Your sleep troubles are at their worst around Wren's family occasions.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 1,
+   "fn": 1,
+   "precision": 0.75,
+   "recall": 0.75,
+   "f1": 0.75
+  },
+  "members": {
+   "tp": 34,
+   "fp": 5,
+   "fn": 7,
+   "precision": 0.8717948717948718,
+   "recall": 0.8292682926829268,
+   "f1": 0.8500000000000001
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 2001\u20132004' is the plain name the code fell back to",
+  "cluster F1 0.75 under 0.8"
+ ],
+ "cost": 0.045412
+}

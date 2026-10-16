@@ -1,0 +1,76 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "After your sister's birth, 1995\u20131996",
+     "reason": "Around the birth of the third child in March 1995, several things piled up over about a year and a half: the mother grew worn out and anxious with the baby, the father began working late and staying distant from the mother, you started having stomach aches and missing school, father and brother fell into shouting matches, and the mother did not go back to her job; the closeness of these shifts suggests a broader process may have been moving in the family around the new birth.",
+     "change": null,
+     "openingId": 4
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "After your sister's birth, 1995\u20131996",
+   "summary": "Around the birth of the third child in March 1995, several things piled up over about a year and a half: the mother grew worn out and anxious with the baby, the father began working late and staying distant from the mother, you started having stomach aches and missing school, father and brother fell into shouting matches, and the mother did not go back to her job; the closeness of these shifts suggests a broader process may have been moving in the family around the new birth.",
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "startDate": "1995-03-02",
+   "endDate": "1996-09-01",
+   "name": "After your sister's birth, 1995\u20131996",
+   "source": "model",
+   "reason": "Around the birth of the third child in March 1995, several things piled up over about a year and a half: the mother grew worn out and anxious with the baby, the father began working late and staying distant from the mother, you started having stomach aches and missing school, father and brother fell into shouting matches, and the mother did not go back to her job; the closeness of these shifts suggests a broader process may have been moving in the family around the new birth.",
+   "setAside": false,
+   "openingEventId": 4
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.026308
+}

@@ -1,0 +1,117 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Money worries and grandfather's death, 1988\u20131990",
+     "reason": "Della's anxiety over money and her distance from Victor in 1988 sit close to Amos's death in 1989 and Felix's grades falling that fall, with things settling by 1990 when Della felt calmer back at work.",
+     "change": null,
+     "openingId": 9
+    },
+    {
+     "id": null,
+     "eventIds": [
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Leaving home and your mother's diagnosis, 1993\u20131996",
+     "reason": "Your migraines and nightly calls to Felix after leaving home for college in 1993 sit close to your mother's cancer diagnosis in 1995 and your later pulling away from both Felix and her through 1996.",
+     "change": null,
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Money worries and grandfather's death, 1988\u20131990",
+   "summary": "Della's anxiety over money and her distance from Victor in 1988 sit close to Amos's death in 1989 and Felix's grades falling that fall, with things settling by 1990 when Della felt calmer back at work.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Money worries and grandfather's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Della's anxiety over money and her distance from Victor in 1988 sit close to Amos's death in 1989 and Felix's grades falling that fall, with things settling by 1990 when Della felt calmer back at work.",
+   "setAside": false,
+   "openingEventId": 9
+  },
+  {
+   "id": "c2",
+   "title": "Leaving home and your mother's diagnosis, 1993\u20131996",
+   "summary": "Your migraines and nightly calls to Felix after leaving home for college in 1993 sit close to your mother's cancer diagnosis in 1995 and your later pulling away from both Felix and her through 1996.",
+   "eventIds": [
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-01-01",
+   "endDate": "1996-02-01",
+   "name": "Leaving home and your mother's diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "Your migraines and nightly calls to Felix after leaving home for college in 1993 sit close to your mother's cancer diagnosis in 1995 and your later pulling away from both Felix and her through 1996.",
+   "setAside": false,
+   "openingEventId": 15
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.9166666666666666,
+   "recall": 1.0,
+   "f1": 0.9565217391304348
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.10951
+}
