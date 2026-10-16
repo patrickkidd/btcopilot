@@ -1,16 +1,18 @@
 """The cluster F1 suite: the app's grouping call, `detect_clusters` on Gemini as
-production makes it, run once on each case and scored against the case's
-expected clusters (score.py) [Oracle: R-0856]. The cases are in cases/; the
-four-generation one, `deep`, is the one the prompts are tuned on, the others
-are placeholders until real cases arrive. How to run it, and what it
-costs: README.md, "Cluster F1".
+production makes it, or on CLUSTER_MODEL, run CLUSTER_TRIES times (once by
+default) on each case and scored against the case's expected clusters
+(score.py) [Oracle: R-0856]. The cases are in cases/; the four-generation one,
+`deep`, is the one the prompts are tuned on, the others are placeholders until
+real cases arrive. How to run it, and what it costs: README.md, "Cluster F1".
 
-CLUSTER_ANSWERS, when set, is a folder of answers served in place of Gemini,
-one `<case>.json` each holding `{"answers": [...]}` in the order the calls are
-made: answers/ holds hand-written ones that prove the runner with no network,
-and every run's own folder under runs/ replays that run at $0. Each case's
-answers, stored clusters and score go to runs/<time>/<case>.json, and one line
-per case to the eval ledger (CLUSTER_LEDGER, by default the live suite's).
+CLUSTER_ANSWERS, when set, is a folder of answers served in place of the model,
+one `<case>-<try>.json` per try (or one `<case>.json` for every try) holding
+`{"answers": [...]}` in the order the calls are made, a failed call saved in
+its place: answers/ holds hand-written ones that prove the runner with no
+network, and every run's own folder under runs/ replays that run at $0. Each
+try's answers, stored clusters and score go to runs/<time>/<case>-<try>.json,
+and one line per try to the eval ledger (CLUSTER_LEDGER, by default the live
+suite's).
 """
 
 import datetime
@@ -32,9 +34,12 @@ from btcopilot.clusters import (
 )
 from btcopilot.llmutil import (
     EXTRACTION_MODEL,
+    UNANSWERED,
     Billed,
+    OutputTruncatedError,
     Served,
     Spent,
+    Unreadable,
     gemini_structured_sync,
 )
 from btcopilot.pricing import cost
@@ -47,6 +52,8 @@ from btcopilot.tests.live.criterion import once
 HERE = Path(__file__).parent
 ANSWERS = os.environ.get("CLUSTER_ANSWERS")
 LEDGER = Path(os.environ.get("CLUSTER_LEDGER", ledger.PATH))
+MODEL = os.environ.get("CLUSTER_MODEL", EXTRACTION_MODEL)
+TRIES = range(int(os.environ.get("CLUSTER_TRIES", "1")))
 GIT = subprocess.run(
     ["git", "-C", str(HERE), "rev-parse", "HEAD"],
     capture_output=True,
@@ -78,15 +85,26 @@ BARS = {
 }
 
 
-class Asker:
-    """`ask` for detect_clusters: Gemini, or the case's saved answers."""
+# A call that failed is saved in its place among the answers, so a replay fails
+# it the same way; one that never came back replays as a timeout.
+FAILED = {kind.__name__: kind for kind in (OutputTruncatedError, Unreadable, Billed)}
 
-    def __init__(self, case: Case):
-        self.saved = (
-            json.loads((Path(ANSWERS) / f"{case.name}.json").read_text())
-            if ANSWERS
-            else None
-        )
+
+def failure(error: Exception) -> dict:
+    return {"failed": type(error).__name__, "error": str(error)}
+
+
+def saved(case: Case, k: int) -> Path:
+    """Try k's saved answers, or the case's when the folder has one try."""
+    tried = Path(ANSWERS) / f"{case.name}-{k}.json"
+    return tried if tried.exists() else Path(ANSWERS) / f"{case.name}.json"
+
+
+class Asker:
+    """`ask` for detect_clusters: the model, or try k's saved answers."""
+
+    def __init__(self, case: Case, k: int):
+        self.saved = json.loads(saved(case, k).read_text()) if ANSWERS else None
         self.answers: list[dict] = []
         self.spent = Spent()
         self.cost = Decimal(0)
@@ -101,16 +119,25 @@ class Asker:
         if self.saved is not None:
             if len(self.answers) == len(self.saved["answers"]):
                 raise LookupError(f"no saved answer for call {len(self.answers) + 1}")
-            answer = from_dict(
-                ClusterListResponse, self.saved["answers"][len(self.answers)]
-            )
+            said = self.saved["answers"][len(self.answers)]
+            if "failed" in said:
+                self.answers.append(said)
+                kind = FAILED.get(said["failed"])
+                if kind is None:
+                    raise TimeoutError(said["error"])
+                raise kind(said["error"], Served(model=self.model), Spent())
+            answer = from_dict(ClusterListResponse, said)
         else:
             try:
                 parsed = gemini_structured_sync(
-                    prompt, ClusterListResponse, schema=schema, limit=limit
+                    prompt, ClusterListResponse, model=MODEL, schema=schema, limit=limit
                 )
             except Billed as paid:
                 self._charge(paid.served, paid.spent)
+                self.answers.append(failure(paid))
+                raise
+            except UNANSWERED as lost:
+                self.answers.append(failure(lost))
                 raise
             self._charge(parsed.served, parsed.spent)
             answer = parsed.value
@@ -130,22 +157,25 @@ def numbers(result: Score) -> dict:
     }
 
 
-def line(case: Case, stored, result: Score, refused: list[str], misses) -> str:
+def line(case: Case, k: int, stored, result: Score, refused: list[str], misses) -> str:
     c = result.clusters
     agreed, of = result.openings
     verdict = "pass" if not misses else "FAIL " + "; ".join(misses)
     tag = " (placeholder)" if case.placeholder else ""
+    name = case.name if len(TRIES) == 1 else f"{case.name}-{k}"
     return (
-        f"{case.name:18}{len(case.expected):>5}{len(stored):>5}{len(result.pairs):>7}"
+        f"{name:18}{len(case.expected):>5}{len(stored):>5}{len(result.pairs):>7}"
         f"{c.precision:>6.2f}{c.recall:>6.2f}{c.f1:>6.2f}{result.members.f1:>10.2f}"
         f"{f'{agreed}/{of}':>9}{len(refused):>8}"
         f"{result.count(Rule.Voice):>6}{result.count(Rule.Cause):>6}  {verdict}{tag}"
     )
 
 
-def keep(case: Case, ask: Asker, stored, result: Score, refused, misses, ms) -> None:
+def keep(
+    case: Case, k: int, ask: Asker, stored, result: Score, refused, misses, ms
+) -> None:
     RUN.mkdir(parents=True, exist_ok=True)
-    (RUN / f"{case.name}.json").write_text(
+    (RUN / f"{case.name}-{k}.json").write_text(
         json.dumps(
             {
                 "model": ask.model,
@@ -167,7 +197,7 @@ def keep(case: Case, ask: Asker, stored, result: Score, refused, misses, ms) -> 
             "kind": ledger.LedgerKind.Live,
             "git": GIT,
             "model": ask.model,
-            "requested": EXTRACTION_MODEL,
+            "requested": MODEL,
             "discussion_id": None,
             "reference_diagram_id": None,
             "scratch_diagram_id": None,
@@ -187,12 +217,14 @@ def keep(case: Case, ask: Asker, stored, result: Score, refused, misses, ms) -> 
 
 
 @once
+@pytest.mark.parametrize("k", TRIES)
 @pytest.mark.parametrize("case", CASES, ids=[case.name for case in CASES])
-def test_grouping_matches_the_expected_clusters(case, board):
-    # R-0856, R-0850, R-0853
+def test_grouping_matches_the_expected_clusters(case, k, board):
+    # R-0856, R-0857, R-0850, R-0853
     """Pass: the case's bar in BARS, cluster F1 and event F1 at least its
-    numbers, and none of its rules missed."""
-    ask = Asker(case)
+    numbers, and none of its rules missed. Each try is one grouping call on
+    the same inputs, two when the first answer is refused."""
+    ask = Asker(case, k)
     refused: list[str] = []
     started = time.monotonic()
     try:
@@ -216,8 +248,8 @@ def test_grouping_matches_the_expected_clusters(case, board):
         misses.append(f"cluster F1 {result.clusters.f1:.2f} under {bar.clusters}")
     if result.members.f1 < bar.members:
         misses.append(f"event F1 {result.members.f1:.2f} under {bar.members}")
-    keep(case, ask, stored, result, refused, misses, ms)
-    board.append(line(case, stored, result, refused, misses))
+    keep(case, k, ask, stored, result, refused, misses, ms)
+    board.append(line(case, k, stored, result, refused, misses))
     for cluster in stored:
         print(
             f"  {cluster.source} {cluster.startDate[:7]}..{cluster.endDate[:7]} "

@@ -772,11 +772,16 @@ async def gemini_structured(
 
 
 def gemini_structured_sync(
-    prompt, response_format, large=False, schema=None, limit=None
+    prompt, response_format, large=False, model=None, schema=None, limit=None
 ):
     return asyncio.run(
         gemini_structured(
-            prompt, response_format, large=large, schema=schema, limit=limit
+            prompt,
+            response_format,
+            large=large,
+            model=model,
+            schema=schema,
+            limit=limit,
         )
     )
 
