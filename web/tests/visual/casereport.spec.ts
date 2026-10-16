@@ -272,6 +272,31 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-view .card")).toHaveCount(0);
   });
 
+  // R-0855, R-0168
+  test("a chip whose event's date is unsure picks its dot on the timeline, a marriage first", async ({ page }) => {
+    const record = await (await page.request.get("/app/timeline")).json();
+    type Ev = { id: number; kind: string; dateCertainty: string };
+    const inside = new Set(record.clusters.flatMap((c: { event_ids: number[] }) => c.event_ids));
+    await open(page);
+    const targets = await page.locator('#case-body .chip[data-kind="event"]').evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.target)));
+    const loose = (record.events as Ev[]).filter((e) => targets.includes(e.id) && !inside.has(e.id));
+    const one = loose.find((e) => e.kind === "married") ?? loose[0];
+    expect(one).toBeTruthy();
+    await page.route("**/app/timeline*", async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      for (const e of json.events as Ev[]) if (e.id === one.id) e.dateCertainty = "unknown";
+      await route.fulfill({ response, json });
+    });
+    await page.reload();
+    await expect(page.locator("#case-body .level").first()).toBeVisible();
+    await page.waitForTimeout(400);
+    await expect(page.locator(`#case-view circle.dot[data-event="${one.id}"]`)).toHaveCount(0);
+    await page.locator(`#case-body .chip[data-kind="event"][data-target="${one.id}"]`).first().click();
+    await expect(page.locator(`#case-view circle.dot.on[data-event="${one.id}"]`)).toHaveCount(1);
+    await expect(page.locator("#case-view .ss-t.on").first()).toBeVisible();
+  });
+
   // R-0715
   test("the header names who presents by first name, never by email", async ({ page }) => {
     await open(page);

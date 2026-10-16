@@ -1224,9 +1224,7 @@ export class Picture {
       named: this.named,
       selected: this.selected,
     } = picked(this.look(), id, named, this.data?.clusters ?? [], this.spot, via));
-    if (via === Via.Chip) {
-      this.aim(id);
-      }
+    if (via === Via.Chip) this.aim(id);
     this.render();
   }
 
@@ -1431,6 +1429,16 @@ export class Picture {
     return (this.data?.events ?? []).filter((e) => !!dateOf(e));
   }
 
+  /** What the line draws: the dated events, and the one picked when it holds
+   * a date the record is unsure of, since a chip showing a date goes there
+   * (Patrick, 2026-10-15). */
+  private onLine(): TimelineEvent[] {
+    const dated = this.dated();
+    const picked = this.event(this.selected);
+    if (!picked?.dateTime || dated.includes(picked)) return dated;
+    return [...dated, picked].sort((a, b) => years(a.dateTime as string) - years(b.dateTime as string));
+  }
+
   private get width(): number {
     return this.host.clientWidth || 360;
   }
@@ -1477,7 +1485,7 @@ export class Picture {
    * neighbours; a tap on the open pill is ground, which puts it down. */
   private renderLine(): void {
     const screen = this.width;
-    const dated = this.dated();
+    const dated = this.onLine();
     this.laid = { zones: [], rows: [] };
     this.pin(PIC_H);
 
