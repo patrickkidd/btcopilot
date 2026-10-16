@@ -111,6 +111,18 @@ def test_a_local_url_sends_gemini_extraction_to_the_local_model(anthropic_env):
     assert asked == [llmutil.EXTRACTION_MODEL]
 
 
+def test_a_structured_call_goes_to_the_model_it_names(anthropic_env):
+    # R-0856, R-0857
+    asked = []
+
+    async def claude_structured(prompt, response_format, model, schema, limit):
+        asked.append(model)
+
+    anthropic_env.setattr(llmutil, "claude_structured", claude_structured)
+    llmutil.gemini_structured_sync("prompt", Named, model="claude-sonnet-5")
+    assert asked == ["claude-sonnet-5"]
+
+
 def test_a_local_url_sends_gemini_text_to_the_local_model(anthropic_env):
     # R-0507
     anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
