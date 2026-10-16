@@ -239,6 +239,108 @@ test.describe("the case report's taps", () => {
     await expect(page.locator("#case-view .ss.about")).toBeVisible();
   });
 
+  // R-0861, R-0862
+  test("a tap under a cluster's view puts it away and reaches nothing there, and its cross always closes it", async ({ page }) => {
+    await open(page);
+    const chip = page.locator('#case-body .chip[data-kind="cluster"]').first();
+    const view = page.locator("#case-view .ss.about");
+    await chip.click();
+    await expect(view).toBeVisible();
+    const card = (await page.locator("#case-view .card").boundingBox())!;
+    const body = (await page.locator("#case-body").boundingBox())!;
+    const below = card.y + card.height + 12;
+    expect(below).toBeLessThan(body.y + body.height);
+    const before = await page.locator("#case-body").evaluate((b) => b.scrollTop);
+    await page.mouse.click(body.x + body.width / 2, below);
+    await expect(view).toHaveCount(0);
+    await expect(page.locator("#case-path .here")).not.toHaveText("about");
+    // nothing under the view answered: no drawer, no book, no second view
+    await expect(page.locator("#case-pbp")).not.toHaveClass(/in/);
+    await expect(page.locator("#case-screen .fs-sheet.in")).toHaveCount(0);
+    await page.waitForTimeout(600);
+    await expect(view).toHaveCount(0);
+    await expect(page.locator("#case-screen .slide-clip")).toHaveCount(0);
+    expect(await page.locator("#case-body").evaluate((b) => b.scrollTop)).toBe(before);
+    // opened again, its cross closes it, and no copy of it is left over the line
+    await chip.click();
+    await expect(view).toBeVisible();
+    await page.waitForTimeout(600);
+    await page.locator('#case-view .card [data-target="close"]').click();
+    await expect(view).toHaveCount(0);
+    await page.waitForTimeout(600);
+    await expect(page.locator("#case-screen .slide-clip")).toHaveCount(0);
+    await expect(page.locator("#case-view .card")).toHaveCount(0);
+  });
+
+  // R-0855, R-0168
+  test("a chip whose event's date is unsure picks its dot on the timeline, a marriage first", async ({ page }) => {
+    const record = await (await page.request.get("/app/timeline")).json();
+    type Ev = { id: number; kind: string; dateCertainty: string };
+    const inside = new Set(record.clusters.flatMap((c: { event_ids: number[] }) => c.event_ids));
+    await open(page);
+    const targets = await page.locator('#case-body .chip[data-kind="event"]').evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.target)));
+    const loose = (record.events as Ev[]).filter((e) => targets.includes(e.id) && !inside.has(e.id));
+    const one = loose.find((e) => e.kind === "married") ?? loose[0];
+    expect(one).toBeTruthy();
+    await page.route("**/app/timeline*", async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      for (const e of json.events as Ev[]) if (e.id === one.id) e.dateCertainty = "unknown";
+      await route.fulfill({ response, json });
+    });
+    await page.reload();
+    await expect(page.locator("#case-body .level").first()).toBeVisible();
+    await page.waitForTimeout(400);
+    await expect(page.locator(`#case-view circle.dot[data-event="${one.id}"]`)).toHaveCount(0);
+    await page.locator(`#case-body .chip[data-kind="event"][data-target="${one.id}"]`).first().click();
+    await expect(page.locator(`#case-view circle.dot.on[data-event="${one.id}"]`)).toHaveCount(1);
+    await expect(page.locator("#case-view .ss-t.on").first()).toBeVisible();
+  });
+
+  // R-0767
+  test("a chip whose dot is out of sight glides the timeline to it, and one in sight leaves the timeline still", async ({ page }) => {
+    const record = await (await page.request.get("/app/timeline")).json();
+    const inside = new Set(record.clusters.flatMap((c: { event_ids: number[] }) => c.event_ids));
+    await open(page);
+    const scroller = page.locator("#case-view .ss-scroll");
+    const wide = await scroller.evaluate((s) => s.scrollWidth - s.clientWidth);
+    expect(wide).toBeGreaterThan(100);
+    // the line swiped to its start, and the dot of a card's chip nearest the present
+    await scroller.evaluate((s) => (s.scrollLeft = 0));
+    const targets = await page.locator('#case-body .chip[data-kind="event"]').evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.target)));
+    const dots = await page.locator("#case-view circle.dot").evaluateAll((els) =>
+      els.map((d) => ({ id: Number(d.getAttribute("data-event")), x: d.getBoundingClientRect().left })),
+    );
+    const far = dots.filter((d) => targets.includes(d.id) && !inside.has(d.id)).sort((a, b) => b.x - a.x)[0];
+    const box = (await page.locator("#case-view").boundingBox())!;
+    expect(far.x).toBeGreaterThan(box.x + box.width);
+    /** Every frame's slide of the line for a while after `act`. */
+    const slides = async (act: () => Promise<void>) => {
+      await page.evaluate(() => {
+        const seen: number[] = [];
+        (window as unknown as { SLID: number[] }).SLID = seen;
+        const read = () => {
+          const line = document.querySelector<HTMLElement>("#case-view .ss-scroll");
+          if (line) seen.push(Math.round(line.scrollLeft));
+          if (seen.length < 150) requestAnimationFrame(read);
+        };
+        requestAnimationFrame(read);
+      });
+      await act();
+      await page.waitForTimeout(2600);
+      return page.evaluate(() => (window as unknown as { SLID: number[] }).SLID);
+    };
+    const chip = page.locator(`#case-body .chip[data-kind="event"][data-target="${far.id}"]`).first();
+    const travel = await slides(() => chip.click());
+    expect(new Set(travel).size).toBeGreaterThan(3);
+    const picked = (await page.locator(`#case-view circle.dot.on[data-event="${far.id}"]`).boundingBox())!;
+    expect(picked.x).toBeGreaterThanOrEqual(box.x);
+    expect(picked.x + picked.width).toBeLessThanOrEqual(box.x + box.width);
+    const before = await scroller.evaluate((s) => s.scrollLeft);
+    const still = await slides(() => chip.click());
+    expect(new Set(still)).toEqual(new Set([Math.round(before)]));
+  });
+
   // R-0715
   test("the header names who presents by first name, never by email", async ({ page }) => {
     await open(page);
