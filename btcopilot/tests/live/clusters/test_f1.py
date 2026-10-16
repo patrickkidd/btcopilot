@@ -10,9 +10,9 @@ one `<case>-<try>.json` per try (or one `<case>.json` for every try) holding
 `{"answers": [...]}` in the order the calls are made, a failed call saved in
 its place: answers/ holds hand-written ones that prove the runner with no
 network, and every run's own folder under runs/ replays that run at $0. Each
-try's answers, stored clusters and score go to runs/<time>/<case>-<try>.json,
-and one line per try to the eval ledger (CLUSTER_LEDGER, by default the live
-suite's).
+try's answers, stored clusters and score go to
+runs/<time>-<model>-<process>/<case>-<try>.json, and one line per try to the
+eval ledger (CLUSTER_LEDGER, by default the live suite's).
 """
 
 import datetime
@@ -60,7 +60,10 @@ GIT = subprocess.run(
     text=True,
     check=True,
 ).stdout.strip()
-RUN = HERE / "runs" / f"{datetime.datetime.now():%Y-%m-%dT%H%M%S}"
+# A run's folder names its start, the model asked (or "replay") and its
+# process, so two runs started in the same second never share one.
+STARTED = f"{datetime.datetime.now():%Y-%m-%dT%H%M%S}"
+RUN = HERE / "runs" / f"{STARTED}-{'replay' if ANSWERS else MODEL}-{os.getpid()}"
 CASES = load()
 
 
