@@ -1,0 +1,150 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Around the grandfather's death, 1988\u20131990",
+     "reason": "Della's lying awake over money and no longer talking with Victor about it in early-to-mid 1988 sit within a year or so of Amos's death in mid-1989, with Felix's grades falling that same fall and Della feeling calmer again by early 1990, suggesting a period of heightened strain around the loss of her father-in-law.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": "r2",
+     "eventIds": [
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Leaving home and your mother's diagnosis, 1993\u20131996",
+     "reason": "You leaving home for college in September 1993 sits close to your migraines starting and calling your brother most nights in early 1994, and your mother's breast cancer diagnosis in February 1995 sits within months of you stopping calls with your brother and then with home through 1996, with Greta's death placed loosely in the same stretch, suggesting a period of heightened strain across this span.",
+     "change": null,
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": []
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Around the grandfather's death, 1988\u20131990",
+     "reason": "Della's lying awake over money and no longer talking with Victor about it in early-to-mid 1988 sit within a year or so of Amos's death in mid-1989, with Felix's grades falling that same fall and Della feeling calmer again by early 1990, suggesting a period of heightened strain around the loss of her father-in-law.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Leaving home and your mother's diagnosis, 1993\u20131996",
+     "reason": "You leaving home for college in September 1993 sits close to your migraines starting and calling your brother most nights in early 1994, and your mother's breast cancer diagnosis in February 1995 sits within months of you stopping calls with your brother and then with home through 1996, with Greta's death placed loosely in the same stretch, suggesting a period of heightened strain across this span.",
+     "change": null,
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 1: unknown_group: Period 'r2' is not one of the app's periods listed."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Around the grandfather's death, 1988\u20131990",
+   "summary": "Della's lying awake over money and no longer talking with Victor about it in early-to-mid 1988 sit within a year or so of Amos's death in mid-1989, with Felix's grades falling that same fall and Della feeling calmer again by early 1990, suggesting a period of heightened strain around the loss of her father-in-law.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Around the grandfather's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Della's lying awake over money and no longer talking with Victor about it in early-to-mid 1988 sit within a year or so of Amos's death in mid-1989, with Felix's grades falling that same fall and Della feeling calmer again by early 1990, suggesting a period of heightened strain around the loss of her father-in-law.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Leaving home and your mother's diagnosis, 1993\u20131996",
+   "summary": "You leaving home for college in September 1993 sits close to your migraines starting and calling your brother most nights in early 1994, and your mother's breast cancer diagnosis in February 1995 sits within months of you stopping calls with your brother and then with home through 1996, with Greta's death placed loosely in the same stretch, suggesting a period of heightened strain across this span.",
+   "eventIds": [
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-01-01",
+   "endDate": "1996-02-01",
+   "name": "Leaving home and your mother's diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "You leaving home for college in September 1993 sits close to your migraines starting and calling your brother most nights in early 1994, and your mother's breast cancer diagnosis in February 1995 sits within months of you stopping calls with your brother and then with home through 1996, with Greta's death placed loosely in the same stretch, suggesting a period of heightened strain across this span.",
+   "setAside": false,
+   "openingEventId": 15
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.9166666666666666,
+   "recall": 1.0,
+   "f1": 0.9565217391304348
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.077088
+}

@@ -1,0 +1,76 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "After Bea's birth, 1995\u20131996",
+     "reason": "Bea was born in March 1995, a third child ten years after you. Within months, your mother was worn out and on edge with the baby, and by late 1995 your parents were distancing\u2014your father working late most nights, rarely home. Around the same time, you developed stomach aches and missed school. By early 1996, your brother was shouting with your father. By September, your mother had stopped working. Five shifts piled up over eighteen months around this birth and what followed in how your parents and siblings were managing.",
+     "change": null,
+     "openingId": 4
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "After Bea's birth, 1995\u20131996",
+   "summary": "Bea was born in March 1995, a third child ten years after you. Within months, your mother was worn out and on edge with the baby, and by late 1995 your parents were distancing\u2014your father working late most nights, rarely home. Around the same time, you developed stomach aches and missed school. By early 1996, your brother was shouting with your father. By September, your mother had stopped working. Five shifts piled up over eighteen months around this birth and what followed in how your parents and siblings were managing.",
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "startDate": "1995-03-02",
+   "endDate": "1996-09-01",
+   "name": "After Bea's birth, 1995\u20131996",
+   "source": "model",
+   "reason": "Bea was born in March 1995, a third child ten years after you. Within months, your mother was worn out and on edge with the baby, and by late 1995 your parents were distancing\u2014your father working late most nights, rarely home. Around the same time, you developed stomach aches and missed school. By early 1996, your brother was shouting with your father. By September, your mother had stopped working. Five shifts piled up over eighteen months around this birth and what followed in how your parents and siblings were managing.",
+   "setAside": false,
+   "openingEventId": 4
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.005224
+}

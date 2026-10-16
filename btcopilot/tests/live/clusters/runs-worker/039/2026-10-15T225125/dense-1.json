@@ -1,0 +1,109 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "After grandfather's death, 1989\u20131990",
+     "reason": "Around the time your grandfather died in July 1989, your mother's anxiety rose over money in early 1988 and she stopped talking with your father about it by May 1988. Within months of his death, your brother's grades fell. Your mother's anxiety came down once she returned to work in early 1990, marking a settlement.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "After your mother's cancer diagnosis, 1994\u20131996",
+     "reason": "You left home for college in September 1993. Within months, you developed migraines that kept you in bed, and you began calling your brother most nights. When your mother was told she had breast cancer in early 1995, you stopped returning your brother's calls and by early 1996 you stopped calling home. These shifts in your symptoms and your relationships with your family clustered around her diagnosis over roughly a year and a half.",
+     "change": "This run covers a longer span than the shifts alone suggest, so it is cut to the period around your mother's cancer diagnosis when your relationship moves and symptoms clustered most tightly.",
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "After grandfather's death, 1988\u20131990",
+   "summary": "Around the time your grandfather died in July 1989, your mother's anxiety rose over money in early 1988 and she stopped talking with your father about it by May 1988. Within months of his death, your brother's grades fell. Your mother's anxiety came down once she returned to work in early 1990, marking a settlement.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "After grandfather's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around the time your grandfather died in July 1989, your mother's anxiety rose over money in early 1988 and she stopped talking with your father about it by May 1988. Within months of his death, your brother's grades fell. Your mother's anxiety came down once she returned to work in early 1990, marking a settlement.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "After your mother's cancer diagnosis, 1993\u20131996",
+   "summary": "You left home for college in September 1993. Within months, you developed migraines that kept you in bed, and you began calling your brother most nights. When your mother was told she had breast cancer in early 1995, you stopped returning your brother's calls and by early 1996 you stopped calling home. These shifts in your symptoms and your relationships with your family clustered around her diagnosis over roughly a year and a half.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "After your mother's cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "You left home for college in September 1993. Within months, you developed migraines that kept you in bed, and you began calling your brother most nights. When your mother was told she had breast cancer in early 1995, you stopped returning your brother's calls and by early 1996 you stopped calling home. These shifts in your symptoms and your relationships with your family clustered around her diagnosis over roughly a year and a half.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.007038
+}

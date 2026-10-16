@@ -1,0 +1,109 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "After grandfather's death, 1989\u20131990",
+     "reason": "Your mother's anxiety rose over money around March 1988, and within two months she and your father stopped talking about it, drawing apart. When your grandfather died in July 1989, your brother's grades fell that autumn. Your mother was calmer once back at work by spring 1990, and the cluster settled.",
+     "change": "The run opened with your grandfather's death in 1989, which sits among shifts in your mother's worry and distance from your father, and in your brother's functioning. This is a key loss to the family, so the period holds even though the shifts cluster partly before it.",
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "After your mother's cancer diagnosis, 1994\u20131996",
+     "reason": "You left for college in September 1993. Within months you developed migraines and called your brother most nights. Your mother was told she had breast cancer in February 1995. By June 1995 you stopped returning your brother's calls, and by February 1996 you stopped calling home. The distance held as things settled.",
+     "change": "The run's events span from your leaving home through your mother's cancer diagnosis. Her diagnosis is the key change in the family, and the shifts in how you related to your brother and to home cluster around it, so the period opens there rather than at your departure.",
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "After grandfather's death, 1988\u20131990",
+   "summary": "Your mother's anxiety rose over money around March 1988, and within two months she and your father stopped talking about it, drawing apart. When your grandfather died in July 1989, your brother's grades fell that autumn. Your mother was calmer once back at work by spring 1990, and the cluster settled.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "After grandfather's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Your mother's anxiety rose over money around March 1988, and within two months she and your father stopped talking about it, drawing apart. When your grandfather died in July 1989, your brother's grades fell that autumn. Your mother was calmer once back at work by spring 1990, and the cluster settled.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "After your mother's cancer diagnosis, 1993\u20131996",
+   "summary": "You left for college in September 1993. Within months you developed migraines and called your brother most nights. Your mother was told she had breast cancer in February 1995. By June 1995 you stopped returning your brother's calls, and by February 1996 you stopped calling home. The distance held as things settled.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "After your mother's cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "You left for college in September 1993. Within months you developed migraines and called your brother most nights. Your mother was told she had breast cancer in February 1995. By June 1995 you stopped returning your brother's calls, and by February 1996 you stopped calling home. The distance held as things settled.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.007308
+}

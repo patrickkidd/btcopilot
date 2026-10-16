@@ -1,0 +1,475 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Starting secondary school, 1987",
+     "reason": "Around when you began secondary school, your stepfather remained distant while you sought your father's notice, and your parents' marriage hit a rough patch over starting a family. At the same time, you made the city chess squad and felt out of your depth, your anxiety rising as you ground hard to qualify and hated sitting at the bottom of the ladder.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      172
+     ],
+     "name": "Leaving home and your grandfather's death, 1989\u20131994",
+     "reason": "Your grandfather died in June 1991 as you were starting at the conservatory that September, leaning hard on your close friend Rafe and then injuring your wrist in the first term. The injury stopped your playing, your anxiety rose and your functioning fell, you and Rafe clashed and he moved out, and you holed up getting high and absorbed in fixing radios. By early 1992 you were lost and low, unable to get going with so much moving at once and no footing. You dropped chess and debate, your late nights and symptoms were climbing, and you spent a bleak year at community college, nights out playing pool and days asleep. But by 1994 you found your drive again through an exchange in Lisbon and Porto, raced through the rest of your degree, and things improved.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "A relationship and the start of insomnia, 1998\u20131999",
+     "reason": "You were in a relationship of roughly eighteen months beginning in 1998, and around the same time insomnia began getting in the way with sleepless nights before concerts though you practised hard. You were playing the best you ever had and winning competitions for a couple of years, your functioning at its high point as a performer. The relationship ended in July 1999, you separated, and afterward you started with a therapist.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "The long slump and your grandmother's death, 2001\u20132004",
+     "reason": "Around 2001 you began running out of steam for performing, less content by the month, your anxiety rising and your functioning falling. In early 2002 came a disastrous audition for the national orchestra in your home town, and you were done with performing and casting about for what came next. You grew distant from family and friends, left Thornbury for Gull Harbour, met Marisol at a winter party in early 2003, left Gull Harbour to live with her in Fenwick by summer, and within months you separated. That winter you sank into a deep depression once you were back in Thornbury, at the bottom hardly moving from the sofa. Your parents seemed a world away; you could not face your family and your anxiety rose. You relied on friends\u2014Corbin, Dale, and Hamish\u2014who kept you afloat. Your grandmother was found to have bowel cancer sometime around 2001\u20132002 and underwent operations and chemotherapy; by late 2003 she spent her final months in your parents' home. You began swimming laps in January 2004 to help you sleep, requested help from your parents with therapy costs, and returned to your therapist Victor Halloran. Your functioning began to rise and your gradual recovery started there. Your grandmother died in February 2004, and you had dropped in briefly on her sickroom, hung over, on the way to the airport\u2014your last visit, which you came to regret.",
+     "change": null,
+     "openingId": 175
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Your grandmother's death and the cutoff from your mother, 2008",
+     "reason": "In January 2008 both your grandmother and your grandfather died. That summer, working four weeks at Alder Creek with Silas before nursing school, you were too drained for conversation and could barely manage a phone call with your mother. She pressed you to visit, rang and pushed despite your repeated nos, and drove out regardless. The visit went wrong and she never got inside. Your anxiety rose and you kept the door shut on her. When you left for nursing school in Marlow Sound that August, you stopped speaking to your mother entirely; the silence held for roughly a year after every call cost too much.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage and strain with your partner's family, 2017\u20132019",
+     "reason": "You married Wren in March 2017, and around that time you saw your mother a bit less once Wren came along. From October 2019, events piled up: your job steadied and paid well, dropping your anxiety, but you constantly felt you ought to be driving your projects forward, your anxiety rose again, and you started a sleeping pill. Your sister was expecting her first child. Wren's family gathered for her mother's retirement: a street party, a fundraising dinner, and a drive to the lake. Wren was swamped, one thing after another, her symptom and anxiety rising and her functioning falling. You overfunctioned, laying out a strict plan to settle her, your anxiety rising as you tried to help. Her family talks all day and nothing happens to one that the others don't hear\u2014tight fusion among them. Once the weekend had a plan, Wren settled and the dinner went well. But at the lake house you woke from the small hours with no more sleep, could only pull back as the others rose, your symptom and anxiety climbing and your connection to Wren and her family drawing back. Your sleep is at its worst around her family; you feel you don't belong. Wren grew anxious when you'd had no sleep at family occasions, and long quiet drives home followed.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "run": "r3",
+     "reason": "Only one shift that counts sits among these events: your insomnia rising in 1999. The relationship with Joelle and the separation in July\u2013August 1999 are not shifts that count toward a period. Without a second shift counting among the events close in time, this is a single reaction, not a period."
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Starting secondary school, 1987",
+     "reason": "Around when you began secondary school, your stepfather remained distant while you sought your father's notice, and your parents' marriage hit a rough patch over starting a family. At the same time, you made the city chess squad and felt out of your depth, your anxiety rising as you ground hard to qualify and hated sitting at the bottom of the ladder.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      172
+     ],
+     "name": "Leaving home and your grandfather's death, 1989\u20131994",
+     "reason": "Your grandfather died in June 1991 as you were starting at the conservatory that September, leaning hard on your close friend Rafe and then injuring your wrist in the first term. The injury stopped your playing, your anxiety rose and your functioning fell, you and Rafe clashed and he moved out, and you holed up getting high and absorbed in fixing radios. By early 1992 you were lost and low, unable to get going with so much moving at once and no footing. You dropped chess and debate, your late nights and symptoms were climbing, and you spent a bleak year at community college, nights out playing pool and days asleep. But by 1994 you found your drive again through an exchange in Lisbon and Porto, raced through the rest of your degree, and things improved.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Running out of steam, 2001\u20132004",
+     "reason": "Around 2001 you began running out of steam for performing, less content by the month, your anxiety rising and your functioning falling. In early 2002 came a disastrous audition for the national orchestra in your home town, and you were done with performing and casting about for what came next. You grew distant from family and friends, left Thornbury for Gull Harbour, met Marisol at a winter party in early 2003, left Gull Harbour to live with her in Fenwick by summer, and within months you separated. That winter you sank into a deep depression once you were back in Thornbury, at the bottom hardly moving from the sofa. Your parents seemed a world away; you could not face your family and your anxiety rose. You relied on friends\u2014Corbin, Dale, and Hamish\u2014who kept you afloat. Your grandmother was found to have bowel cancer sometime around 2001\u20132002 and underwent operations and chemotherapy; by late 2003 she spent her final months in your parents' home. You began swimming laps in January 2004 to help you sleep, requested help from your parents with therapy costs, and returned to your therapist Victor Halloran. Your functioning began to rise and your gradual recovery started there. Your grandmother died in February 2004, and you had dropped in briefly on her sickroom, hung over, on the way to the airport\u2014your last visit, which you came to regret.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Both grandparents' deaths and the cutoff from your mother, 2008",
+     "reason": "In January 2008 both your grandmother and your grandfather died. That summer, working four weeks at Alder Creek with Silas before nursing school, you were too drained for conversation and could barely manage a phone call with your mother. She pressed you to visit, rang and pushed despite your repeated nos, and drove out regardless. The visit went wrong and she never got inside. Your anxiety rose and you kept the door shut on her. When you left for nursing school in Marlow Sound that August, you stopped speaking to your mother entirely; the silence held for roughly a year after every call cost too much.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage and strain with your partner's family, 2017\u20132019",
+     "reason": "You married Wren in March 2017, and around that time you saw your mother a bit less once Wren came along. From October 2019, events piled up: your job steadied and paid well, dropping your anxiety, but you constantly felt you ought to be driving your projects forward, your anxiety rose again, and you started a sleeping pill. Your sister was expecting her first child. Wren's family gathered for her mother's retirement: a street party, a fundraising dinner, and a drive to the lake. Wren was swamped, one thing after another, her symptom and anxiety rising and her functioning falling. You overfunctioned, laying out a strict plan to settle her, your anxiety rising as you tried to help. Her family talks all day and nothing happens to one that the others don't hear\u2014tight fusion among them. Once the weekend had a plan, Wren settled and the dinner went well. But at the lake house you woke from the small hours with no more sleep, could only pull back as the others rose, your symptom and anxiety climbing and your connection to Wren and her family drawing back. Your sleep is at its worst around her family; you feel you don't belong. Wren grew anxious when you'd had no sleep at family occasions, and long quiet drives home followed.",
+     "change": null,
+     "openingId": null
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "run": "r3",
+     "reason": "Only one shift that counts sits among these events: your insomnia rising in 1999. The relationship with Joelle and the separation in July\u2013August 1999 are not shifts that count toward a period. Without a second shift counting among the events close in time, this is a single reaction, not a period."
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Leaving home and your grandfather's death, 1989\u20131994\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: symptom_name: Period 'A relationship and the start of insomnia, 1998\u20131999' is named by the person's trouble (['insomnia']); name it by the change in the family and its years.",
+  "answer 1: theirs: Period \"The long slump and your grandmother's death, 2001\u20132004\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: cause: Period \"Your grandmother's death and the cutoff from your mother, 2008\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 1: cause: Period \"Your marriage and strain with your partner's family, 2017\u20132019\" says one event brought about another ('drives'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 1: unknown_date: Period 'Starting secondary school, 1987' opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: theirs: Period \"Leaving home and your grandfather's death, 1989\u20131994\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: symptom_name: Period 'Running out of steam, 2001\u20132004' is named by the person's trouble (['running']); name it by the change in the family and its years.",
+  "answer 2: theirs: Period 'A change in the family, 2001\u20132004' shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: cause: Period \"Both grandparents' deaths and the cutoff from your mother, 2008\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: symptom_name: Period \"Both grandparents' deaths and the cutoff from your mother, 2008\" is named by the person's trouble (['cutoff']); name it by the change in the family and its years.",
+  "answer 2: cause: Period \"Your marriage and strain with your partner's family, 2017\u20132019\" says one event brought about another ('drives'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: Only one shift that counts sits among these events: your insomnia rising in 1999. The relationship with Joelle and the separation in July\u2013August 1999 are not shifts that count toward a period. Without a second shift counting among the events close in time, this is a single reaction, not a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Starting secondary school, 1987",
+   "summary": "Around when you began secondary school, your stepfather remained distant while you sought your father's notice, and your parents' marriage hit a rough patch over starting a family. At the same time, you made the city chess squad and felt out of your depth, your anxiety rising as you ground hard to qualify and hated sitting at the bottom of the ladder.",
+   "eventIds": [
+    41,
+    51,
+    144,
+    145
+   ],
+   "startDate": "1987-01-12",
+   "endDate": "1987-09-12",
+   "name": "Starting secondary school, 1987",
+   "source": "model",
+   "reason": "Around when you began secondary school, your stepfather remained distant while you sought your father's notice, and your parents' marriage hit a rough patch over starting a family. At the same time, you made the city chess squad and felt out of your depth, your anxiety rising as you ground hard to qualify and hated sitting at the bottom of the ladder.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "A change in the family, 2008\u20132009",
+   "summary": "In January 2008 both your grandmother and your grandfather died. That summer, working four weeks at Alder Creek with Silas before nursing school, you were too drained for conversation and could barely manage a phone call with your mother. The visit went wrong and she never got inside. Your anxiety rose and you kept the door shut on her. When you left for nursing school in Marlow Sound that August, you stopped speaking to your mother entirely; the silence held for roughly a year after every call cost too much.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10,
+    179
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2009-01-11",
+   "name": "A change in the family, 2008\u20132009",
+   "source": "model",
+   "reason": "In January 2008 both your grandmother and your grandfather died. That summer, working four weeks at Alder Creek with Silas before nursing school, you were too drained for conversation and could barely manage a phone call with your mother. The visit went wrong and she never got inside. Your anxiety rose and you kept the door shut on her. When you left for nursing school in Marlow Sound that August, you stopped speaking to your mother entirely; the silence held for roughly a year after every call cost too much.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c3",
+   "title": "Your marriage and strain with your partner's family, 2017\u20132019",
+   "summary": "You married Wren in March 2017, and around that time you saw your mother a bit less once Wren came along. From October 2019, events piled up: your job steadied and paid well, dropping your anxiety, but you constantly felt you ought to be driving your projects forward, your anxiety rose again, and you started a sleeping pill. Your sister was expecting her first child. Wren's family gathered for her mother's retirement: a street party, a fundraising dinner, and a drive to the lake. Wren was swamped, one thing after another, her symptom and anxiety rising and her functioning falling. You overfunctioned, laying out a strict plan to settle her, your anxiety rising as you tried to help. Her family talks all day and nothing happens to one that the others don't hear\u2014tight fusion among them. Once the weekend had a plan, Wren settled and the dinner went well. But at the lake house you woke from the small hours with no more sleep, could only pull back as the others rose, your symptom and anxiety climbing and your connection to Wren and her family drawing back. Your sleep is at its worst around her family; you feel you don't belong.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your marriage and strain with your partner's family, 2017\u20132019",
+   "source": "model",
+   "reason": "You married Wren in March 2017, and around that time you saw your mother a bit less once Wren came along. From October 2019, events piled up: your job steadied and paid well, dropping your anxiety, but you constantly felt you ought to be driving your projects forward, your anxiety rose again, and you started a sleeping pill. Your sister was expecting her first child. Wren's family gathered for her mother's retirement: a street party, a fundraising dinner, and a drive to the lake. Wren was swamped, one thing after another, her symptom and anxiety rising and her functioning falling. You overfunctioned, laying out a strict plan to settle her, your anxiety rising as you tried to help. Her family talks all day and nothing happens to one that the others don't hear\u2014tight fusion among them. Once the weekend had a plan, Wren settled and the dinner went well. But at the lake house you woke from the small hours with no more sleep, could only pull back as the others rose, your symptom and anxiety climbing and your connection to Wren and her family drawing back. Your sleep is at its worst around her family; you feel you don't belong.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c4",
+   "title": "the year I left home",
+   "summary": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1991-03-12",
+   "endDate": "1994-01-12",
+   "name": "the year I left home",
+   "source": "user",
+   "reason": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c5",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 2,
+   "fn": 1,
+   "precision": 0.6,
+   "recall": 0.75,
+   "f1": 0.6666666666666665
+  },
+  "members": {
+   "tp": 36,
+   "fp": 3,
+   "fn": 5,
+   "precision": 0.9230769230769231,
+   "recall": 0.8780487804878049,
+   "f1": 0.9
+  },
+  "openings": [
+   0,
+   2
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 2008\u20132009' is the plain name the code fell back to",
+  "cluster F1 0.67 under 0.8"
+ ],
+ "cost": 0.053525
+}

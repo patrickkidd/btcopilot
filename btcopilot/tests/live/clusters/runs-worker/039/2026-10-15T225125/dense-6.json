@@ -1,0 +1,109 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "After grandfather's death, 1989\u20131990",
+     "reason": "Around the time your grandfather died in July 1989, your mother was lying awake over money and stopped talking with your father about it. A few months later, your brother's grades fell. Your mother grew calmer once back at work in early 1990, and the events settled.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "After your mother's cancer diagnosis, 1994\u20131996",
+     "reason": "You left for college in fall 1993. Within months, you developed migraines that kept you in bed and started calling your brother most nights. Your mother was told she had breast cancer in early 1995. Over the next year, you stopped returning your brother's calls and then stopped calling home. Your contact with your family withdrew over this time.",
+     "change": "The run opened with your leaving for college, but the shift that mattered was your mother's cancer diagnosis in early 1995, which fell among the events where your relationship to your brother and mother moved away. The period holds the cluster of your own trouble alongside the news of her illness.",
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "After grandfather's death, 1988\u20131990",
+   "summary": "Around the time your grandfather died in July 1989, your mother was lying awake over money and stopped talking with your father about it. A few months later, your brother's grades fell. Your mother grew calmer once back at work in early 1990, and the events settled.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "After grandfather's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around the time your grandfather died in July 1989, your mother was lying awake over money and stopped talking with your father about it. A few months later, your brother's grades fell. Your mother grew calmer once back at work in early 1990, and the events settled.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "After your mother's cancer diagnosis, 1993\u20131996",
+   "summary": "You left for college in fall 1993. Within months, you developed migraines that kept you in bed and started calling your brother most nights. Your mother was told she had breast cancer in early 1995. Over the next year, you stopped returning your brother's calls and then stopped calling home. Your contact with your family withdrew over this time.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "After your mother's cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "You left for college in fall 1993. Within months, you developed migraines that kept you in bed and started calling your brother most nights. Your mother was told she had breast cancer in early 1995. Over the next year, you stopped returning your brother's calls and then stopped calling home. Your contact with your family withdrew over this time.",
+   "setAside": false,
+   "openingEventId": 15
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.006988
+}

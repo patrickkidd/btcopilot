@@ -1,0 +1,76 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "After the birth of the third child, 1995\u20131996",
+     "reason": "Within about a year and a half after Bea's birth, your mother being worn out and on edge with the baby, your parents working late and growing distant, your stomach aches and missing school, the shouting matches between your father and Jonah, and your mother not going back to her job all fall close together, suggesting a broader process may have been moving in the family around that birth.",
+     "change": null,
+     "openingId": 4
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "After the birth of the third child, 1995\u20131996",
+   "summary": "Within about a year and a half after Bea's birth, your mother being worn out and on edge with the baby, your parents working late and growing distant, your stomach aches and missing school, the shouting matches between your father and Jonah, and your mother not going back to her job all fall close together, suggesting a broader process may have been moving in the family around that birth.",
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "startDate": "1995-03-02",
+   "endDate": "1996-09-01",
+   "name": "After the birth of the third child, 1995\u20131996",
+   "source": "model",
+   "reason": "Within about a year and a half after Bea's birth, your mother being worn out and on edge with the baby, your parents working late and growing distant, your stomach aches and missing school, the shouting matches between your father and Jonah, and your mother not going back to her job all fall close together, suggesting a broader process may have been moving in the family around that birth.",
+   "setAside": false,
+   "openingEventId": 4
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.039438
+}
