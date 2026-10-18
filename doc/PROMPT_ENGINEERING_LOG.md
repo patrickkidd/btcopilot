@@ -2,7 +2,7 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-18 (cluster detection version 20: three code fixes, a period's name checked word for word)
+**Last Updated**: 2026-10-18 (cluster detection version 20 final; version 21 tried and reverted)
 
 ---
 
@@ -38,10 +38,48 @@ contradicted the prompt's own line that only a period covering the whole history
 ordinary level. Sonnet 5 at high effort spent its whole limit thinking in 20 of 20 tries.
 
 **Evals**: unit tests in `btcopilot/tests/test_clusters.py` and `test_llmutil.py`, each seen to fail
-with its fix taken out. The cluster F1 suite, ten tries per case through Bedrock, before the
-always-and-forever narrowing: Haiku 4.5 passed `deep` 8 of 10, `deep-unasked` 9 of 10, `harbor` 5 of
-10 and `orchard` 10 of 10. The Sonnet 5 column measures a failure to read its answer as the JSON
-asked for, not cluster detection. Haiku is tried again on the head that narrows the words.
+with its fix taken out. The cluster F1 suite, Haiku 4.5 ten tries per case through Bedrock, passes of 10 (bar 8 on `deep`):
+
+| Round | Head | Prompt | `deep` | `deep-unasked` | `harbor` | `dense` | the rest |
+|---|---|---|---|---|---|---|---|
+| 1 | 280b57b8 | version 20 before the always-and-forever narrowing | 8 | 9 | 5 | 10 | 10 |
+| 2 | 81978261 | version 20, the final prompt | 7 | 10 | 8 | 7 | 10 |
+| 3 | 9f78697f | version 21, reverted | 7 | 8 | 7 | 6 | 10 |
+
+Sonnet 5 without thinking, measured on 280b57b8: 66 of 80 first answers could not be read as the
+JSON asked for, so its column measures the answer's shape, not cluster detection. The final prompt
+is version 20 at 81978261 (round 2); version 21 measured worse on three cases and better on none and
+is reverted.
+
+---
+
+## FD-383 job 042 — version 21, the one prompt-fix round after version 20's tries (2026-10-18; reverted 2026-10-18: measured worse)
+
+**Status**: reverted the same day. Haiku's ten tries on it (round 3, head 9f78697f) passed `deep`
+7 of 10 (round 2: 7), `deep-unasked` 8 (round 2: 10), `harbor` 7 (round 2: 8), `dense` 6 (round 2:
+7), the rest 10: worse on three cases and better on none, so the branch carries version 20 as the
+final prompt and the round 3 folder under `runs-worker/042/` stays as evidence.
+
+**Change** (as tried): five lines added and two changed, aimed only at the misses Haiku's ten tries
+on version 20 showed. An acute episode was described as it shows in the events, a noted event naming
+a party, a dinner, a visit, a trip or a gathering with several shifts dated within the same few days of
+it, none of those events going into any period's `eventIds`, a period that would reach them ending
+before those days, and the check before answering testing the `eventIds` for such days. A hint
+holding a change in the family on a known date with two or more shifts that count around it was
+returned as a period even when every shift was one person's, never declined as one person's or for
+want of a shared reaction; one event's `neverOpens` mark said nothing about another's. The coach
+wrote the person's own periods first and then held no period of its own with an event dated in their
+years. The answer was one JSON object with the keys `clusters`, `periods` and `declined` and nothing
+else, on the second answer too. One example added: a period cut short of an episode at the end of its
+hint.
+
+**Why**: on version 20 two `deep` tries drew the lake weekend, the acute episode, into the 2017 to
+2019 period; three `dense` tries declined the 1993 to 1996 hint, the person's own shifts around her
+leaving home and her mother's diagnosis, as one person's or for want of a shared reaction; one
+second answer was prose, not the JSON asked for; and every first answer on `deep` was refused for
+sharing days with the person's own periods, which forced the second answers.
+
+**Evals**: round 3 above. The brief allowed no tuning after it.
 
 ---
 
