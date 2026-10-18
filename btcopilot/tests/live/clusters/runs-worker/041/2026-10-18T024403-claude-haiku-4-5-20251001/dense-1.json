@@ -1,0 +1,117 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her pulling away from your father over it by May 1988, your father's increased drinking while living apart since October 1980, your brother Felix's grades falling by November 1989, and your mother growing calmer once back at work by March 1990. The shifts pile up across nearly two years before and after the death, each one's trouble near another's.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della told she had breast cancer, 1995\u20131996",
+     "reason": "Around your mother Della being told she had breast cancer in February 1995, within the year after: you left home for college in September 1993, your migraines kept you in bed starting March 1994, you called your brother most nights beginning April 1994, you stopped returning his calls by June 1995, and you stopped calling home by February 1996. Every shift in these months is yours, and no one else's shows then; your moves toward and away from your brother and toward distance from your mother sit beside your mother's diagnosis and frame the period.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1988\u20131990: Strike out event 13, your mother's anxiety going down, since a lift alone opens nothing; event 11 is your grandfather's death, not a shift. Two shifts count: event 9, your mother's anxiety up over money, and event 10, distance between your parents over money. Event 12, your brother's functioning down, makes three shifts that count, and your grandfather's death sits among them. This is returned as a period.",
+     "hint": "r1",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her pulling away from your father over it by May 1988, your father's increased drinking while living apart since October 1980, your brother Felix's grades falling by November 1989, and your mother growing calmer once back at work by March 1990. The shifts pile up across nearly two years before and after the death, each one's trouble near another's.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her pulling away from your father over it by May 1988, your father's increased drinking while living apart since October 1980, your brother Felix's grades falling by November 1989, and your mother growing calmer once back at work by March 1990. The shifts pile up across nearly two years before and after the death, each one's trouble near another's.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "summary": "Around your mother Della being told she had breast cancer in February 1995, within the year after: you left home for college in September 1993, your migraines kept you in bed starting March 1994, you called your brother most nights beginning April 1994, you stopped returning his calls by June 1995, and you stopped calling home by February 1996. Every shift in these months is yours, and no one else's shows then; your moves toward and away from your brother and toward distance from your mother sit beside your mother's diagnosis and frame the period.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your mother Della being told she had breast cancer in February 1995, within the year after: you left home for college in September 1993, your migraines kept you in bed starting March 1994, you called your brother most nights beginning April 1994, you stopped returning his calls by June 1995, and you stopped calling home by February 1996. Every shift in these months is yours, and no one else's shows then; your moves toward and away from your brother and toward distance from your mother sit beside your mother's diagnosis and frame the period.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.010674
+}

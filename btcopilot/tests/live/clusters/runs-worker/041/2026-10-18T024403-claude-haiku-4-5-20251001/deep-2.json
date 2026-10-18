@@ -1,0 +1,320 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      78,
+      94,
+      39,
+      53,
+      172
+     ],
+     "name": "Jonah's move to the conservatory, 1991\u20131994",
+     "reason": "Around Jonah starting at Wexley Conservatory in September 1991, within three years: he leaned hard on Rafe and fused with him, then a wrist injury stopped his playing and his anxiety rose with his functioning falling, a blow-up with Rafe followed, he withdrew into his room getting high and absorbed in radios, then sank further losing and low with his grandfather's death that June leaving him without footing. By early 1992 he was lost and low; he drifted through a bleak year at community college with nights out playing pool and days asleep, his symptom and the fall in functioning holding. An exchange in Portugal in early 1994 snapped him out of it and he raced through the rest of his degree, his functioning rising; that same month he was stung that his father had never heard of the film he was making, his anxiety rising with his pull toward his dad.",
+     "change": null,
+     "openingId": 88
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      109
+     ],
+     "name": "Jonah's move to Gull Harbour, 2001\u20132008",
+     "reason": "Around Jonah running out of steam for performing in September 2001, within seven years: his anxiety rose with his functioning falling month by month, and his grandmother Winifred was found to have bowel cancer in 2001 or 2002 alongside his burnout. In early 2002 came a disastrous audition for the national orchestra and he was done with performing, casting about for what came next; he was on poor terms with family and friends, his distance from his parents hardening. He left Thornbury for Gull Harbour in late 2002, met Marisol at a winter party in early 2003 and moved to Fenwick to live with her within months, then separated within the year that autumn and sank into a deep depression once they split, his symptom and the fall in functioning taking hold. He returned to Thornbury in late 2003 and could not face his family, his anxiety up and his distance from his parents deepening, though he relied gingerly on friends; the silence with his mother held until he left for nursing school in August 2008, a cutoff lasting roughly a year, and every shift in these months is his own.",
+     "change": null,
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Wren's mother's retirement, 2017\u20132019",
+     "reason": "Around Jonah's marriage to Wren in March 2017, within two years: once Wren came along he saw his mother a bit less, his relationship shifting away. In late October 2019, around Wren's mother's retirement party at the lake house, Wren was swamped one thing after another, her symptom and anxiety rising with her functioning falling, and he was too strict laying out a plan to settle her when she was swamped, his anxiety up and his overfunctioning with her rising; Wren talks with her father and brother all day, nothing happening to one that the others don't hear, her fusion with them holding. Once the weekend had a plan the dinner went well and her anxiety fell with her functioning rising, but Jonah awoke from the small hours at the lake weekend with no more sleep, his symptom and anxiety up with his distance from the family widening, and Wren grew anxious when he'd had no sleep at family occasions with long quiet drives home afterward, her anxiety up. The cluster holds Wren's swamped state and Jonah's sleep loss alongside the family gathering; the shifts in Wren and Jonah are tied to the same event and days.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1987: Only two events count as shifts once those told as how things always are struck out\u2014the distance from his stepfather and the pull toward his father\u2014and among them sits no change in the family on a known date; one shift alone is a reaction, so there is not enough in the diagram to choose a reading.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "1998\u20131999: Two shifts count\u2014his insomnia rising and his functioning rising in his playing\u2014but they move in opposite directions and sit months apart with no change in the family on a known date among the events; not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "2008\u20132010: The shifts pile up around Jonah's move to nursing school and his cutoff from his mother in August 2008, but the recount left one shift told with how things always were (event 113 is struck) and the remaining shifts belong to the period already drawn of the long slump; this time settles within the later period's settling.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "2017\u20132019: Your marriage to Wren in March 2017 is listed as the opening, but it is your own event\u2014a shift in your relationship, not a change in who is in the family or in how a key member functions; the period opens in late October 2019 around your wife's mother's retirement, which sits among these events, and the cluster holds from there.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      39,
+      53,
+      172
+     ],
+     "name": "Desmond's move to Quarry Lane, 1989\u20131994",
+     "reason": "Around Desmond moving to Quarry Lane in April 1989 while the Hollin Road rebuild started, within five years: Jonah began liking late nights that autumn, unsure whether that was out of the ordinary, his symptom rising. Once the rebuilt house settled in September 1989 he dropped chess then the debate club, and his late nights through secondary school held as his symptom stayed up. His mother filled in his college forms in spring 1991, his relationship shifting to underfunctioning with her, and in June that year his grandfather Gordon died. Jonah began at the conservatory that September, leaning hard on Rafe with fusion, then a wrist injury stopped his playing in October with his anxiety rising and functioning falling, a blow-up followed and Rafe moved out, he withdrew into his room getting high and absorbed in radios with his symptom up, then sank into being lost and low with his anxiety rising and functioning falling further. His mother married Desmond in October 1992, and Jonah was at the community college through a bleak year with nights playing pool and days asleep, his symptom and functioning down. An exchange to Portugal in early 1994 snapped him out of it and he raced through the rest of his degree, his functioning rising; that same month he was stung that his father had never heard of the film he was making, his anxiety rising with his pull toward his dad.",
+     "change": null,
+     "openingId": 194
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105
+     ],
+     "name": "Jonah running out of steam, 2001\u20132003",
+     "reason": "Around Jonah running out of steam for performing in September 2001, within two years: his anxiety rose with his functioning falling month by month as he grew less content. His grandmother Winifred was found to have bowel cancer in 2001 or 2002 alongside his burnout. In early 2002 came a disastrous audition for the national orchestra and he was done with performing, casting about for what came next; he was on poor terms with family and friends, his distance from his parents hardening. He left Thornbury for Gull Harbour in late 2002, met Marisol at a winter party in early 2003 and moved to Fenwick to live with her within months, then separated within the year that autumn and sank into a deep depression once they split, his symptom and functioning down taking hold. He returned to Thornbury in late 2003 and could not face his family, his anxiety up and his distance from his parents deepening, though he relied gingerly on friends; every shift in these months is his own, and no one else's shows then.",
+     "change": null,
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Frances's retirement, 2019",
+     "reason": "Around Frances's retirement party at the lake house in late October 2019, within weeks: Wren was swamped one thing after another leading up to it, her symptom and anxiety rising with her functioning falling, and Jonah was too strict laying out a plan to settle her when she was swamped, his anxiety up and his overfunctioning with her rising. Wren talks with her father and brother all day, nothing happening to one that the others don't hear, her fusion with them holding. Once the weekend had a plan the dinner went well and her anxiety fell with her functioning rising, but Jonah awoke from the small hours at the lake weekend with no more sleep, his symptom and anxiety up with his distance from the family widening, and Wren grew anxious when he'd had no sleep at family occasions with long quiet drives home afterward, her anxiety up. The cluster holds Wren's swamped state and Jonah's sleep loss alongside the family gathering.",
+     "change": null,
+     "openingId": 197
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1987: Only one shift counts once those told as how things always are struck out\u2014the distance from his stepfather is struck as told with 'has always'; the pull toward his father is the one shift left, and one shift alone is a reaction, so there is not enough in the diagram to choose a reading.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "1989\u20131994: This period shares days with the person's own period 'the year I left home' from 1991 to 1994; the events from 1989 and early 1991 fall outside those years and do not make a period by themselves.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "1998\u20131999: Two shifts count\u2014his insomnia rising and his functioning rising in his playing\u2014but they move in opposite directions and sit months apart with no change in the family on a known date among the events; not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "2001\u20132004: This period shares days with the person's own period 'the long slump' from 2000 to 2003; the events from January 2004 onward fall outside those years, and the shifts from January 2004 are his requests for help and returns to therapy with no one else's showing then, not enough to make a period by themselves.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "2008\u20132010: The shifts pile up around Jonah's move to nursing school in August 2008 and his cutoff from his mother in the same months, but these shifts and the cutoff belong to the person's own period 'the long slump' already drawn; once the silence with his mother held into 2009 and beyond, the settlings his later events show fall after his period settled.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "2019\u20132019: The opening event is Jonah's marriage to Wren in March 2017, which is his own bonding event, not a change in who is in the family or in how a key member functions; shifts later in October 2019 around Frances's retirement open a new period held within the cluster above.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Jonah's move to the conservatory, 1991\u20131994\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period \"Jonah's move to Gull Harbour, 2001\u20132008\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: cause: Period \"Wren's mother's retirement, 2017\u20132019\" says one event brought about another ('drives'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: theirs: Period \"Desmond's move to Quarry Lane, 1989\u20131994\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: symptom_name: Period 'Jonah running out of steam, 2001\u20132003' is named by the person's trouble (['running']); name it by the change in the family and its years.",
+  "answer 2: theirs: Period 'A change in the family, 2001\u20132003' shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: unknown_event: Period \"Frances's retirement, 2019\" opens at event 197, which is not one of its events.",
+  "answer 2: declined: Run r1 (1987-01-12 to 1987-09-12) has 3 shifts that count and was declined: 1987: Only one shift counts once those told as how things always are struck out\u2014the distance from his stepfather is struck as told with 'has always'; the pull toward his father is the one shift left, and one shift alone is a reaction, so there is not enough in the diagram to choose a reading.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: Two shifts count\u2014his insomnia rising and his functioning rising in his playing\u2014but they move in opposite directions and sit months apart with no change in the family on a known date among the events; not enough in the diagram to choose a reading.",
+  "answer 2: declined: Run r5 (2008-01-09 to 2010-01-12) has 5 shifts that count and was declined: 2008\u20132010: The shifts pile up around Jonah's move to nursing school in August 2008 and his cutoff from his mother in the same months, but these shifts and the cutoff belong to the person's own period 'the long slump' already drawn; once the silence with his mother held into 2009 and beyond, the settlings his later events show fall after his period settled."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "the year I left home",
+   "summary": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1991-03-12",
+   "endDate": "1994-01-12",
+   "name": "the year I left home",
+   "source": "user",
+   "reason": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.6666666666666666,
+   "f1": 0.8
+  },
+  "members": {
+   "tp": 26,
+   "fp": 3,
+   "fn": 5,
+   "precision": 0.896551724137931,
+   "recall": 0.8387096774193549,
+   "f1": 0.8666666666666666
+  },
+  "openings": [
+   0,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.057972
+}
