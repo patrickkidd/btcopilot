@@ -313,7 +313,7 @@ def test_a_run_with_fewer_than_three_supporting_shifts_is_offered_with_its_count
     proposed = candidates(data)
     assert [(c.eventIds, c.shiftIds) for c in proposed] == [([1, 2, 3], [2, 3])]
     prompt = clusters._prompt(proposed, joinable(data), {}, [], None)
-    hint = prompt.split("RUNS THE APP'S RULES FOUND (A HINT ONLY)")[1].split("THE PEOPLE")[0]
+    hint = prompt.split("(A HINT ONLY)")[1].split("THE PEOPLE")[0]
     assert [
         (run["supportingShifts"], run["default"], run["eventIds"])
         for run in json.loads(hint)
@@ -998,8 +998,8 @@ def test_the_prompt_holds_periods_as_hypotheses_with_the_silence_before_each_hin
         detect_clusters(HALE, ask)
     # the prompt's lines wrap, so phrases are matched on its words alone
     asked = " ".join(ask.call_args_list[0].args[0].split())
-    assert "5 years and 8 months with nothing recorded before this group" in asked
-    assert "1 year and 10 months with nothing recorded before this group" in asked
+    assert "5 years and 8 months with nothing in the diagram before these events" in asked
+    assert "1 year and 10 months with nothing in the diagram before these events" in asked
     for sentence in (
         "Each period is a loose hypothesis",
         "a change in who is in the family",
@@ -1010,7 +1010,6 @@ def test_the_prompt_holds_periods_as_hypotheses_with_the_silence_before_each_hin
         "The trouble may begin months before the change",
         "It ends where the events show the family settled",
         "judged against how close together the period's own events fall",
-        "Nothing longer than ten years is one period",
         "never by the person's own trouble or symptom",
         "infer it from what piles up",
         "no visible opening event and no definite end",
@@ -1047,9 +1046,9 @@ def test_a_record_whose_first_proposal_has_nothing_before_it_says_so():
     ) as ask:
         detect_clusters(RECORD, ask)
     asked = ask.call_args_list[0].args[0]
-    assert '"before": "first group in the record"' in asked
+    assert '"before": "the first events in the diagram"' in asked
     assert (
-        '"before": "2 years and 2 months with nothing recorded before this group"'
+        '"before": "2 years and 2 months with nothing in the diagram before these events"'
         in asked
     )
 
@@ -1592,7 +1591,7 @@ def test_a_stored_period_named_by_the_persons_trouble_is_renamed_under_its_id():
     with replies(answers(renamed)) as ask:
         result = detect_clusters(data, ask)
     offered = ask.call_args_list[0].args[0].split("PERIODS THIS DIAGRAM HAS")[1]
-    offered = json.loads(offered.split("RUNS THE APP'S RULES")[0])
+    offered = json.loads(offered.split("\n\n")[1])
     assert offered[0]["note"] == clusters.TROUBLE
     dates = {e["id"]: e["dateTime"] for e in data.events}
     assert [
@@ -2002,7 +2001,7 @@ def test_a_stored_period_with_undated_events_regroups_and_keeps_them(test_user):
     ) as ask:
         sync(diagram.id, turn_id="t1", user_id=diagram.user_id)
     asked = ask.call_args_list[0].args[0]
-    offered = asked.split("PERIODS THIS DIAGRAM HAS")[1].split("RUNS THE APP'S RULES")[0]
+    offered = asked.split("PERIODS THIS DIAGRAM HAS")[1].split("\n\n")[1]
     assert json.loads(offered)[0]["eventIds"] == [50, 51, 52, 53, 54]
     assert Observation.query.filter_by(kind=ObservationKind.ClusterRefused).all() == []
     [cluster] = diagram.get_diagram_data().clusters
