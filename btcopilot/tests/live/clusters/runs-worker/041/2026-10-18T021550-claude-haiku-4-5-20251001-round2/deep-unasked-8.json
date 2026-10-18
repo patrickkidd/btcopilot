@@ -1,0 +1,449 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond's separation from your father, 1987\u20131988",
+     "reason": "Around your stepfather leaving the household over starting a family while you began secondary school in 1987: your distance from him deepened, your pull toward your dad strengthened, and your anxiety rose when you made the city chess squad and felt out of your depth. Three shifts pile up close together, each marking a change in how you stood with the men in your life as the household was unsettled.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94
+     ],
+     "name": "Your grandfather Gordon's death, 1989\u20131992",
+     "reason": "Around your grandfather's stroke and death in June 1991, within three years: your grandfather came back into the family early in 1989, then your household moved twice that year, settling into the rebuilt house where your stepfather's children lived as well. Your late nights began, you dropped your activities and sank into music. You injured your wrist and stopped playing, clashed with your closest friend Rafe, got high and withdrew to fix radios. By early 1992 you felt lost and low with no footing. Your mother filled in your college forms and you began at the conservatory leaning hard on Rafe. The pile of shifts shows you struggling through the loss of your grandfather, the crowded household, and the injury that cut short your playing all at once.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your separation from Joelle, 1998\u20131999",
+     "reason": "Around your relationship with Joelle beginning in early 1998 and ending by July 1999: your insomnia began getting in the way before concerts though you played the best you ever had and won competitions. Once you split, you started with a therapist. One shift alone is a reaction, but the cluster of your symptom rising alongside your functioning rising\u2014playing your best\u2014with the relationship move toward therapy after the split, all within eighteen months of a relationship that ended, shows a period when you were managing high performance while struggling with sleep and then grieving the split.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106
+     ],
+     "name": "Your grandmother Winifred's bowel cancer, 2001\u20132004",
+     "reason": "Around your grandmother found to have bowel cancer in 2001 or 2002 and her death in February 2004: your anxiety rose and your functioning fell as you ran out of steam for performing by the month; you had a disastrous audition in your home town and were done with performing. You were on poor terms with family and friends, left Thornbury for Gull Harbour, met Marisol and moved to Fenwick with her, then split within the year and sank into deep depression once back in Thornbury. You could not face your family, your anxiety rose, you relied on friends and your dad spoke with one of them. The pile of shifts shows you unmoored as your grandmother declined, cut off from your family, relying on friends, struggling through depression for months until you returned to your therapist and began to recover.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother's death in January 2008 and your grandfather's death the same month: you spent four weeks building at Alder Creek with Silas before nursing school, too drained for conversation with your mother. She pressed to visit you; your anxiety rose and you told her repeatedly the timing was wrong. You kept the door shut on her and the visit went wrong. You then left for nursing school in August and stopped speaking to your mother; the silence held roughly a year. The pile of shifts shows you withdrawing from your mother and then cutting off as you grieved your grandparents and moved away to school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your wedding to Wren in March 2017 and the months that followed: your contact with your mother eased off slightly once you had Wren and her family. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. By autumn 2019, your sister Tara was expecting and your job had steadied, but your anxiety rose\u2014you felt you ought to drive your projects forward\u2014and you started a sleeping pill. You aimed for shorter, more regular calls with your mother. At her family's lake house for her mother's retirement in late October, you were swamped one thing after another, you overfunctioned laying out a plan to settle Wren when she was swamped, Wren's family talked all day and knew everything happening to one another, Wren settled once the weekend had a plan, but you had no sleep from the small hours and could only pull back as the others rose. Your sleep is worst around her family; you feel you don't belong. The shifts show you moving between two families, managing Wren's closeness to hers, struggling with sleep and anxiety around them, while your own family pulls less and less.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "Not enough in the diagram to choose a reading: the bonding with Joelle in January 1998 is a relationship move, not a change in the family that opened a period, and the two shifts that count\u2014your insomnia rising and your functioning rising\u2014do not sit near enough to a birth, death, loss or change in household to anchor a period around your family's balance, though the separation and start with a therapist six months later do.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      144,
+      41,
+      51,
+      145
+     ],
+     "name": "Your stepfather Desmond's separation from your father, 1987",
+     "reason": "Around your stepfather leaving the household over starting a family while you began secondary school in 1987: your distance from him deepened, your pull toward your dad strengthened, and your anxiety rose when you made the city chess squad and felt out of your depth. Three shifts pile up close together in the same months, each marking a change in how you stood with the men in your life as the household was unsettled.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94
+     ],
+     "name": "Your grandfather Gordon's death, 1989\u20131992",
+     "reason": "Around your grandfather's stroke and death in June 1991, within three years: your grandfather came back into the family early in 1989, then your household moved twice that year, settling into the rebuilt house where your stepfather's children lived as well. Your late nights began, you dropped your activities and sank into music. You injured your wrist and stopped playing, clashed with your closest friend Rafe, got high and withdrew to fix radios. By early 1992 you felt lost and low with no footing. Your mother filled in your college forms and you began at the conservatory leaning hard on Rafe. The pile of shifts shows you struggling through the loss of your grandfather, the crowded household, and the injury that cut short your playing all at once.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your separation from Joelle, 1999",
+     "reason": "Around your separation from Joelle by July 1999: your insomnia began getting in the way before concerts though you played the best you ever had and won competitions. Once you split, you started with a therapist. The cluster of your symptom rising alongside your functioning rising\u2014playing your best\u2014with the relationship move toward therapy after the split, all within months of the separation, shows a period when you were managing high performance while struggling with sleep and then turning toward help after the split.",
+     "change": null,
+     "openingId": 12
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106
+     ],
+     "name": "Your grandmother Winifred's bowel cancer, 2001\u20132004",
+     "reason": "Around your grandmother found to have bowel cancer in 2001 or 2002 and her death in February 2004: your anxiety rose and your functioning fell as you ran out of steam for performing by the month; you had a disastrous audition in your home town and were done with performing. You were on poor terms with family and friends, left Thornbury for Gull Harbour, met Marisol and moved to Fenwick with her, then split within the year and sank into deep depression once back in Thornbury. You could not face your family, your anxiety rose, you relied on friends and your dad spoke with one of them. The pile of shifts shows you unmoored as your grandmother declined, cut off from your family, relying on friends, struggling through depression for months until you returned to your therapist and began to recover.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother's death in January 2008 and your grandfather's death the same month: you spent four weeks building at Alder Creek with Silas before nursing school, too drained for conversation with your mother. She pressed to visit you; your anxiety rose and you told her repeatedly the timing was wrong. You kept the door shut on her and the visit went wrong. You then left for nursing school in August and stopped speaking to your mother; the silence held roughly a year. The pile of shifts shows you withdrawing from your mother and then cutting off as you grieved your grandparents and moved away to school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your wedding to Wren in March 2017 and the months that followed: your contact with your mother eased off slightly once you had Wren and her family. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. By autumn 2019, your sister Tara was expecting and your job had steadied, but your anxiety rose\u2014you felt you ought to drive your projects forward\u2014and you started a sleeping pill. You aimed for shorter, more regular calls with your mother. At her family's lake house for her mother's retirement in late October, you were swamped one thing after another, you overfunctioned laying out a plan to settle Wren when she was swamped, Wren's family talked all day and knew everything happening to one another, Wren settled once the weekend had a plan, but you had no sleep from the small hours and could only pull back as the others rose. Your sleep is worst around her family; you feel you don't belong. The shifts show you moving between two families, managing Wren's closeness to hers, struggling with sleep and anxiety around them, while your own family pulls less and less.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "Not enough in the diagram to choose a reading: no change in the family on a known date sits among these events to open a period around your family's balance.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period \"Your stepfather Desmond's separation from your father, 1987\u20131988\" is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 1: unknown_date: Period \"Your stepfather Desmond's separation from your father, 1987\u20131988\" opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: symptom_name: Period \"Your stepfather Desmond's separation from your father, 1987\" is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 2: unknown_date: Period \"Your stepfather Desmond's separation from your father, 1987\" opens at event 144, whose date is unknown; an event of unknown date opens nothing."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "A change in the family, 1987",
+   "summary": "Around your stepfather leaving the household over starting a family while you began secondary school in 1987: your distance from him deepened, your pull toward your dad strengthened, and your anxiety rose when you made the city chess squad and felt out of your depth. Three shifts pile up close together in the same months, each marking a change in how you stood with the men in your life as the household was unsettled.",
+   "eventIds": [
+    144,
+    41,
+    51,
+    145
+   ],
+   "startDate": "1987-01-12",
+   "endDate": "1987-09-12",
+   "name": "A change in the family, 1987",
+   "source": "model",
+   "reason": "Around your stepfather leaving the household over starting a family while you began secondary school in 1987: your distance from him deepened, your pull toward your dad strengthened, and your anxiety rose when you made the city chess squad and felt out of your depth. Three shifts pile up close together in the same months, each marking a change in how you stood with the men in your life as the household was unsettled.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "Your grandfather Gordon's death, 1989\u20131992",
+   "summary": "Around your grandfather's stroke and death in June 1991, within three years: your grandfather came back into the family early in 1989, then your household moved twice that year, settling into the rebuilt house where your stepfather's children lived as well. Your late nights began, you dropped your activities and sank into music. You injured your wrist and stopped playing, clashed with your closest friend Rafe, got high and withdrew to fix radios. By early 1992 you felt lost and low with no footing. Your mother filled in your college forms and you began at the conservatory leaning hard on Rafe. The pile of shifts shows you struggling through the loss of your grandfather, the crowded household, and the injury that cut short your playing all at once.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1992-03-11",
+   "name": "Your grandfather Gordon's death, 1989\u20131992",
+   "source": "model",
+   "reason": "Around your grandfather's stroke and death in June 1991, within three years: your grandfather came back into the family early in 1989, then your household moved twice that year, settling into the rebuilt house where your stepfather's children lived as well. Your late nights began, you dropped your activities and sank into music. You injured your wrist and stopped playing, clashed with your closest friend Rafe, got high and withdrew to fix radios. By early 1992 you felt lost and low with no footing. Your mother filled in your college forms and you began at the conservatory leaning hard on Rafe. The pile of shifts shows you struggling through the loss of your grandfather, the crowded household, and the injury that cut short your playing all at once.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c3",
+   "title": "Your separation from Joelle, 1998\u20131999",
+   "summary": "Around your separation from Joelle by July 1999: your insomnia began getting in the way before concerts though you played the best you ever had and won competitions. Once you split, you started with a therapist. The cluster of your symptom rising alongside your functioning rising\u2014playing your best\u2014with the relationship move toward therapy after the split, all within months of the separation, shows a period when you were managing high performance while struggling with sleep and then turning toward help after the split.",
+   "eventIds": [
+    11,
+    4,
+    173,
+    12,
+    22
+   ],
+   "startDate": "1998-01-12",
+   "endDate": "1999-08-12",
+   "name": "Your separation from Joelle, 1998\u20131999",
+   "source": "model",
+   "reason": "Around your separation from Joelle by July 1999: your insomnia began getting in the way before concerts though you played the best you ever had and won competitions. Once you split, you started with a therapist. The cluster of your symptom rising alongside your functioning rising\u2014playing your best\u2014with the relationship move toward therapy after the split, all within months of the separation, shows a period when you were managing high performance while struggling with sleep and then turning toward help after the split.",
+   "setAside": false,
+   "openingEventId": 12
+  },
+  {
+   "id": "c4",
+   "title": "Your grandmother Winifred's bowel cancer, 2001\u20132003",
+   "summary": "Around your grandmother found to have bowel cancer in 2001 or 2002 and her death in February 2004: your anxiety rose and your functioning fell as you ran out of steam for performing by the month; you had a disastrous audition in your home town and were done with performing. You were on poor terms with family and friends, left Thornbury for Gull Harbour, met Marisol and moved to Fenwick with her, then split within the year and sank into deep depression once back in Thornbury. You could not face your family, your anxiety rose, you relied on friends and your dad spoke with one of them. The pile of shifts shows you unmoored as your grandmother declined, cut off from your family, relying on friends, struggling through depression for months until you returned to your therapist and began to recover.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "Your grandmother Winifred's bowel cancer, 2001\u20132003",
+   "source": "model",
+   "reason": "Around your grandmother found to have bowel cancer in 2001 or 2002 and her death in February 2004: your anxiety rose and your functioning fell as you ran out of steam for performing by the month; you had a disastrous audition in your home town and were done with performing. You were on poor terms with family and friends, left Thornbury for Gull Harbour, met Marisol and moved to Fenwick with her, then split within the year and sank into deep depression once back in Thornbury. You could not face your family, your anxiety rose, you relied on friends and your dad spoke with one of them. The pile of shifts shows you unmoored as your grandmother declined, cut off from your family, relying on friends, struggling through depression for months until you returned to your therapist and began to recover.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c5",
+   "title": "Your grandmother Lorna's death, 2008",
+   "summary": "Around your grandmother's death in January 2008 and your grandfather's death the same month: you spent four weeks building at Alder Creek with Silas before nursing school, too drained for conversation with your mother. She pressed to visit you; your anxiety rose and you told her repeatedly the timing was wrong. You kept the door shut on her and the visit went wrong. You then left for nursing school in August and stopped speaking to your mother; the silence held roughly a year. The pile of shifts shows you withdrawing from your mother and then cutting off as you grieved your grandparents and moved away to school.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-08-11",
+   "name": "Your grandmother Lorna's death, 2008",
+   "source": "model",
+   "reason": "Around your grandmother's death in January 2008 and your grandfather's death the same month: you spent four weeks building at Alder Creek with Silas before nursing school, too drained for conversation with your mother. She pressed to visit you; your anxiety rose and you told her repeatedly the timing was wrong. You kept the door shut on her and the visit went wrong. You then left for nursing school in August and stopped speaking to your mother; the silence held roughly a year. The pile of shifts shows you withdrawing from your mother and then cutting off as you grieved your grandparents and moved away to school.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c6",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "Around your wedding to Wren in March 2017 and the months that followed: your contact with your mother eased off slightly once you had Wren and her family. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. By autumn 2019, your sister Tara was expecting and your job had steadied, but your anxiety rose\u2014you felt you ought to drive your projects forward\u2014and you started a sleeping pill. You aimed for shorter, more regular calls with your mother. At her family's lake house for her mother's retirement in late October, you were swamped one thing after another, you overfunctioned laying out a plan to settle Wren when she was swamped, Wren's family talked all day and knew everything happening to one another, Wren settled once the weekend had a plan, but you had no sleep from the small hours and could only pull back as the others rose. Your sleep is worst around her family; you feel you don't belong. The shifts show you moving between two families, managing Wren's closeness to hers, struggling with sleep and anxiety around them, while your own family pulls less and less.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202,
+    151
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-26",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your wedding to Wren in March 2017 and the months that followed: your contact with your mother eased off slightly once you had Wren and her family. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. By autumn 2019, your sister Tara was expecting and your job had steadied, but your anxiety rose\u2014you felt you ought to drive your projects forward\u2014and you started a sleeping pill. You aimed for shorter, more regular calls with your mother. At her family's lake house for her mother's retirement in late October, you were swamped one thing after another, you overfunctioned laying out a plan to settle Wren when she was swamped, Wren's family talked all day and knew everything happening to one another, Wren settled once the weekend had a plan, but you had no sleep from the small hours and could only pull back as the others rose. Your sleep is worst around her family; you feel you don't belong. The shifts show you moving between two families, managing Wren's closeness to hers, struggling with sleep and anxiety around them, while your own family pulls less and less.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.75,
+   "recall": 1.0,
+   "f1": 0.8571428571428571
+  },
+  "members": {
+   "tp": 29,
+   "fp": 4,
+   "fn": 12,
+   "precision": 0.8787878787878788,
+   "recall": 0.7073170731707317,
+   "f1": 0.7837837837837839
+  },
+  "openings": [
+   3,
+   3
+  ],
+  "hypotheses": 2,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 1987' is the plain name the code fell back to"
+ ],
+ "cost": 0.053564
+}
