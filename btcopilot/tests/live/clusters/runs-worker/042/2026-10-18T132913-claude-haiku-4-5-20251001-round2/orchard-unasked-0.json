@@ -1,0 +1,306 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around your grandfather Walter's move across the country in March 1952 to buy an apple orchard, within the year: your grandmother June's homesickness and daily letters to her sister, Walter's distance from June as he worked the orchard, your father Glen's fights at school, Walter's cutoff from his brother Harlan over their father's land money, June's weeks in bed that first winter, rows between Walter and June over money for new trees, and June's shift toward the church choir and away from her letters\u2014all shifts in the household and extended family within sixteen months of the move. Your grandmother's anxiety eased and her functioning rose once she joined the choir by September 1953, and the period settles there.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failed, 1968\u20131969",
+     "reason": "Around your grandfather Walter's orchard failing in May 1968 when the late frost took the crop and the bank called in the loan: Walter's drinking heavily most nights by June, conflict between Walter and your father Glen over who was to blame for the loan, your parents' overfunctioning as your father Glen took over the family's money and talks with the bank, your brother Carl's asthma attacks worsening that winter, you began wetting the bed in April 1969, your grandmother Ida's heart trouble was found that May, and Walter's functioning rose and drinking stopped by October as he took work pruning other men's trees. Your brother Carl's symptom eased once spring came, and the period settles by late 1969.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      158
+     ],
+     "name": "Your father Glen's job lost, 1975\u20131976",
+     "reason": "Around your father Glen losing his job when the Ridgeport cannery closed in February 1975: his functioning fell as he sat out of work most of that year, loud fights between your parents over money at night, your mother Marian's overfunctioning as she took a second job cleaning offices at night, you stopped eating properly and lost weight that summer, you kept to your room and distanced from your mother, your grandfather Walter's drinking returned after six years off it, and your functioning rose by June 1976 when you ate again and made the track team. The period settles by summer 1976.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      178
+     ],
+     "name": "Wilma moved into your house, 1990\u20131991",
+     "reason": "Around Wilma, your partner's mother, moving into your house in January 1990 after selling her farm: you clashed with her over the children's bedtimes and meals, you distanced from your partner Hollis as you worked late and kept out of the kitchen rows, Hollis aligned with his mother, your son Owen had tantrums at preschool, Wilma overfunctioned by taking over your daughter Lily's care, you developed eczema flared on both hands, rows between you and Hollis most nights by November, and your mother Marian drove over twice a week to take your side. Wilma took a flat in town by June 1991, and your eczema cleared over the summer, where the period settles.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1994: The wildfire and evacuation of 14\u201316 August is an acute episode\u2014several shifts dated within the same few days around a real threat, with the family calm again within a week once home. The shifts settle within days of the start and are left out of every period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996\u20131997: Two of the three shifts that count are told as how things always were or lasted\u2014your sister Tess's drinking as an ongoing state from October 1996, and your mother Marian's overfunctioning as told with 'kept' most weekends\u2014so after striking those, only two shifts remain: your anxiety over your sister and the conflict between your sister and Rick, with no change in the family on a known date among the events; not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around your grandfather Walter's move across the country in March 1952 to buy an apple orchard, within the year: your grandmother June's homesickness and daily letters to her sister, Walter's distance from June as he worked the orchard, your father Glen's fights at school, Walter's cutoff from his brother Harlan over their father's land money, June's weeks in bed that first winter, rows between Walter and June over money for new trees, and June's shift toward the church choir and away from her letters. Your grandmother's anxiety eased and her functioning rose once she joined the choir by September 1953, and the period settles there.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failed, 1968\u20131969",
+     "reason": "Around your grandfather Walter's orchard failing in May 1968 when the late frost took the crop and the bank called in the loan: Walter's drinking heavily most nights by June, conflict between Walter and your father Glen over who was to blame for the loan, your parents' overfunctioning as your father Glen took over the family's money and talks with the bank, your brother Carl's asthma attacks worsening that winter, you began wetting the bed in April 1969, your grandmother Ida's heart trouble was found that May, and Walter's functioning rose and drinking stopped by October as he took work pruning other men's trees. Your brother Carl's symptom eased once spring came, and the period settles by late 1969.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      158
+     ],
+     "name": "Your father Glen's job lost, 1975\u20131976",
+     "reason": "Around your father Glen losing his job when the Ridgeport cannery closed in February 1975: his functioning fell as he sat out of work most of that year, loud fights between your parents over money at night, your mother Marian's overfunctioning as she took a second job cleaning offices at night, you stopped eating properly and lost weight that summer, you kept to your room and distanced from your mother, your grandfather Walter's drinking returned after six years off it, and your functioning rose by June 1976 when you ate again and made the track team. The period settles by summer 1976.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      178
+     ],
+     "name": "Wilma moved into your house, 1990\u20131991",
+     "reason": "Around Wilma, your partner's mother, moving into your house in January 1990 after selling her farm: you clashed with her over the children's bedtimes and meals, you distanced from your partner Hollis as you worked late and kept out of the kitchen rows, with Hollis aligning with his mother, your son Owen had tantrums at preschool, Wilma overfunctioned by taking over your daughter Lily's care, you developed eczema flared on both hands, rows between you and Hollis most nights by November, and your mother Marian drove over twice a week to take your side. Wilma took a flat in town by June 1991, and your eczema cleared over the summer, where the period settles.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1994: The wildfire and evacuation of 14\u201316 August is an acute episode\u2014several shifts dated within the same few days around a real threat, with the family calm again within a week once home. The shifts settle within days of the start and are left out of every period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996\u20131997: Two of the three shifts that count are told as how things always were or lasted\u2014your sister Tess's drinking as an ongoing state from October 1996, and your mother Marian's overfunctioning as told with 'kept' most weekends\u2014so after striking those, only two shifts remain: your anxiety over your sister and the conflict between your sister and Rick, with no change in the family on a known date among the events; not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cause: Period 'Wilma moved into your house, 1990\u20131991' says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: cause: Period 'Wilma moved into your house, 1990\u20131991' says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 5 shifts that count and was declined: 1994: The wildfire and evacuation of 14\u201316 August is an acute episode\u2014several shifts dated within the same few days around a real threat, with the family calm again within a week once home. The shifts settle within days of the start and are left out of every period.",
+  "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996\u20131997: Two of the three shifts that count are told as how things always were or lasted\u2014your sister Tess's drinking as an ongoing state from October 1996, and your mother Marian's overfunctioning as told with 'kept' most weekends\u2014so after striking those, only two shifts remain: your anxiety over your sister and the conflict between your sister and Rick, with no change in the family on a known date among the events; not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Around your grandfather Walter's move across the country in March 1952 to buy an apple orchard, within the year: your grandmother June's homesickness and daily letters to her sister, Walter's distance from June as he worked the orchard, your father Glen's fights at school, Walter's cutoff from his brother Harlan over their father's land money, June's weeks in bed that first winter, rows between Walter and June over money for new trees, and June's shift toward the church choir and away from her letters. Your grandmother's anxiety eased and her functioning rose once she joined the choir by September 1953, and the period settles there.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    114,
+    115,
+    116,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Around your grandfather Walter's move across the country in March 1952 to buy an apple orchard, within the year: your grandmother June's homesickness and daily letters to her sister, Walter's distance from June as he worked the orchard, your father Glen's fights at school, Walter's cutoff from his brother Harlan over their father's land money, June's weeks in bed that first winter, rows between Walter and June over money for new trees, and June's shift toward the church choir and away from her letters. Your grandmother's anxiety eased and her functioning rose once she joined the choir by September 1953, and the period settles there.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failed, 1968\u20131969",
+   "summary": "Around your grandfather Walter's orchard failing in May 1968 when the late frost took the crop and the bank called in the loan: Walter's drinking heavily most nights by June, conflict between Walter and your father Glen over who was to blame for the loan, your parents' overfunctioning as your father Glen took over the family's money and talks with the bank, your brother Carl's asthma attacks worsening that winter, you began wetting the bed in April 1969, your grandmother Ida's heart trouble was found that May, and Walter's functioning rose and drinking stopped by October as he took work pruning other men's trees. Your brother Carl's symptom eased once spring came, and the period settles by late 1969.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    136,
+    137,
+    140,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failed, 1968\u20131969",
+   "source": "model",
+   "reason": "Around your grandfather Walter's orchard failing in May 1968 when the late frost took the crop and the bank called in the loan: Walter's drinking heavily most nights by June, conflict between Walter and your father Glen over who was to blame for the loan, your parents' overfunctioning as your father Glen took over the family's money and talks with the bank, your brother Carl's asthma attacks worsening that winter, you began wetting the bed in April 1969, your grandmother Ida's heart trouble was found that May, and Walter's functioning rose and drinking stopped by October as he took work pruning other men's trees. Your brother Carl's symptom eased once spring came, and the period settles by late 1969.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Your father Glen's job lost, 1975\u20131976",
+   "summary": "Around your father Glen losing his job when the Ridgeport cannery closed in February 1975: his functioning fell as he sat out of work most of that year, loud fights between your parents over money at night, your mother Marian's overfunctioning as she took a second job cleaning offices at night, you stopped eating properly and lost weight that summer, you kept to your room and distanced from your mother, your grandfather Walter's drinking returned after six years off it, and your functioning rose by June 1976 when you ate again and made the track team. The period settles by summer 1976.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    154,
+    155,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "Your father Glen's job lost, 1975\u20131976",
+   "source": "model",
+   "reason": "Around your father Glen losing his job when the Ridgeport cannery closed in February 1975: his functioning fell as he sat out of work most of that year, loud fights between your parents over money at night, your mother Marian's overfunctioning as she took a second job cleaning offices at night, you stopped eating properly and lost weight that summer, you kept to your room and distanced from your mother, your grandfather Walter's drinking returned after six years off it, and your functioning rose by June 1976 when you ate again and made the track team. The period settles by summer 1976.",
+   "setAside": false,
+   "openingEventId": 148
+  },
+  {
+   "id": "c4",
+   "title": "Wilma moved into your house, 1990\u20131991",
+   "summary": "Wilma took a flat in town by June 1991, and your eczema cleared over the summer, where the period settles.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma moved into your house, 1990\u20131991",
+   "source": "model",
+   "reason": "Wilma took a flat in town by June 1991, and your eczema cleared over the summer, where the period settles.",
+   "setAside": false,
+   "openingEventId": 168
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 34,
+   "fp": 0,
+   "fn": 10,
+   "precision": 1.0,
+   "recall": 0.7727272727272727,
+   "f1": 0.8717948717948718
+  },
+  "openings": [
+   4,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.041573
+}

@@ -1,0 +1,429 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      171,
+      39,
+      53,
+      172,
+      191
+     ],
+     "name": "Your grandfather Gordon's death, 1991\u20131994",
+     "reason": "Around your grandfather Gordon's stroke in June 1991, within about two years: you left home for the conservatory in the autumn, hurt your wrist within weeks and stopped playing, clashed with your roommate Rafe, got high and holed up, felt lost and low with no footing, then drifted through a bleak spell at community college before an exchange in Portugal in early 1994 snapped you out of it and you tore through your degree. In those same months your grandmother Winifred was treated for a thyroid tumour within a year of his death, you said you liked late nights from the autumn of 1989 and were unsure whether that was ordinary, and your cousin Bella was treated for melanoma. Your mother filled in your college forms and you let it happen, choosing where your closest friend was headed. You moved into a rebuilt house with your mother and Desmond in the autumn of 1989, dropped chess and debate, and began at the conservatory that September. The exchange and its aftermath mark where you found your drive again.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your separation from Joelle, 1998\u20131999",
+     "reason": "Around your relationship with Joelle from early 1998 to the summer of 1999: you began seeing each other in January, your insomnia began getting in the way around the same time, you were playing the best you ever had and winning competitions, you separated in July, and you started with your therapist Victor Halloran in August. Your performing peaked and your sleep worsened in the same months, and the split opened the door to help.",
+     "change": null,
+     "openingId": 12
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      177,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Your grandmother Winifred's death, 2001\u20132004",
+     "reason": "Around your grandmother Winifred's bowel cancer found in 2001 or 2002, within about two years: you were running out of steam for performing and less content by the month, had a disastrous audition for the national orchestra and were done with performing, felt on poor terms with family and friends, left Thornbury for Gull Harbour, met Marisol at a winter party in Fenwick and left Gull Harbour to live with her, split up within the year, sank into a deep depression once you were back in Thornbury, and could not face your family. You relied on friends\u2014Corbin, Dale and Hamish\u2014and could barely manage a phone call with your mother at Alder Creek in the summer of 2008, though that was later. You began swimming laps in January 2004 and returned to your therapist, and her death in February 2004 is where the period settles. You dropped in on her sickroom hung over on your way to the airport and regret cutting it short. Your aunt Imogen had a stroke in 2009, also marked, but the shifts pile up around your grandmother's final years and your own collapse and recovery.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, within months: you took four weeks building with Silas at Alder Creek and were too drained for conversation with your mother, she pressed to visit you against your wishes and the visit went wrong, you kept the door shut on her, and you left for nursing school in September and stopped speaking to her. The silence held for roughly a year. Your grandmother Clifford died around the same time in January 2008, and the period marks your rupture with your mother around your grandparents' losses and your move away for school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within about two and a half years: you saw your mother a bit less once Wren came along, your aunt Alice was diagnosed with multiple sclerosis in October 2017, your sister Tara had a wedding the previous summer and is now flying for a regional airline, your cousin Leo returned to Danfield with his family in August 2019, your job steadied and paid well in June 2019, and you constantly feel you ought to be driving your projects forward and started a sleeping pill in October. You are aiming for shorter, more regular calls with your mother to keep distance from piling up. In October 2019 around your sister's baby on the way and her mother-in-law Frances's retirement party, Wren was swamped one thing after another, you overfunctioned laying out a plan to settle her, she talks with her father and brother all day and nothing happens to one that the others don't hear, she settled once the weekend had a plan, you were awake from the small hours at the lake weekend with no more sleep and could only pull back as the others rose, and she was anxious when you had no sleep at family occasions. Your aunt Imogen's memory has been slipping since 2015 and getting worse, and she lashes out when muddled.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": []
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      194,
+      3,
+      40,
+      146,
+      89,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      53,
+      172
+     ],
+     "name": "Your move to Hollin Road, 1989\u20131994",
+     "reason": "Around your move to the rebuilt Hollin Road house with your mother and Desmond in the autumn of 1989, within about five years: you liked late nights from that autumn and were unsure whether that was ordinary, you leaned hard on your roommate Rafe once you left home for the conservatory, hurt your wrist within weeks and stopped playing, clashed with Rafe, got high and holed up in your room, felt lost and low with no footing, then drifted through a bleak spell at community college before an exchange in Portugal in early 1994 snapped you out of it and you tore through your degree. Your mother filled in your college forms and you let it happen, choosing where your closest friend was headed. You dropped chess and debate as music took over. The exchange and its aftermath mark where you found your drive again, and your performing began to peak.",
+     "change": null,
+     "openingId": 40
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your separation from Joelle, 1998\u20131999",
+     "reason": "Around your relationship with Joelle from early 1998 to the summer of 1999: you began seeing each other in January, your insomnia began getting in the way around the same time, you were playing the best you ever had and winning competitions, you separated in July, and you started with your therapist Victor Halloran in August. Your performing peaked and your sleep worsened in the same months, and the split opened the door to help.",
+     "change": null,
+     "openingId": 12
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108
+     ],
+     "name": "Your move to Gull Harbour, 2001\u20132004",
+     "reason": "Around your move to Gull Harbour in the autumn of 2002, within about two years: you were running out of steam for performing and less content by the month, had a disastrous audition for the national orchestra and were done with performing, felt on poor terms with family and friends, met Marisol at a winter party in early 2003 and left Gull Harbour to live with her, split up within that year, and sank into a deep depression once you were back in Thornbury. You could not face your family and relied on friends\u2014Corbin, Dale and Hamish. You began swimming laps in January 2004 and returned to your therapist, which marks where your gradual recovery started and pointed you toward nursing.",
+     "change": null,
+     "openingId": 17
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      114,
+      109,
+      9,
+      10
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, within months: you took four weeks building with Silas at Alder Creek in July and were too drained for conversation with your mother, your mother pressed to visit you against your wishes later that month and the visit went wrong, you kept the door shut on her, and you left for nursing school in September and stopped speaking to her. The silence held for roughly a year. Your grandmother Clifford died around the same time in January 2008, and the period marks your rupture with your mother around your grandparents' losses and your move away for school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within about two and a half years: you saw your mother a bit less once Wren came along. In October 2019 around your sister's baby on the way and her mother-in-law Frances's retirement party at the lake house: Wren was swamped one thing after another, you overfunctioned laying out a plan to settle her, she talks with her father and brother all day and nothing happens to one that the others don't hear, she settled once the weekend had a plan, you were awake from the small hours at the lake with no more sleep and could only pull back as the others rose, and she was anxious when you had no sleep at family occasions. Your job had steadied and paid well by June 2019, and you constantly feel you ought to be driving your projects forward and started a sleeping pill in October. You are aiming for shorter, more regular calls with your mother to keep distance from piling up.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "2008 events: your grandmother Lorna's death opens a period that is returned as a cluster; the other events in this hint lie outside those years and do not gather around a change in the family on a known date to form a separate period.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "2017\u20132019 events: your marriage to Wren opens a period that is returned as a cluster; the events cluster around your marriage and the autumn 2019 gathering at the lake rather than spreading across separate periods.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Your grandfather Gordon's death, 1991\u20131994\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period \"Your grandmother Winifred's death, 2001\u20132004\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: theirs: Period 'Your move to Hollin Road, 1989\u20131994' shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: theirs: Period 'Your move to Gull Harbour, 2001\u20132004' shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your separation from Joelle, 1998\u20131999",
+   "summary": "Around your relationship with Joelle from early 1998 to the summer of 1999: you began seeing each other in January, your insomnia began getting in the way around the same time, you were playing the best you ever had and winning competitions, you separated in July, and you started with your therapist Victor Halloran in August. Your performing peaked and your sleep worsened in the same months, and the split opened the door to help.",
+   "eventIds": [
+    11,
+    4,
+    173,
+    12,
+    22
+   ],
+   "startDate": "1998-01-12",
+   "endDate": "1999-08-12",
+   "name": "Your separation from Joelle, 1998\u20131999",
+   "source": "model",
+   "reason": "Around your relationship with Joelle from early 1998 to the summer of 1999: you began seeing each other in January, your insomnia began getting in the way around the same time, you were playing the best you ever had and winning competitions, you separated in July, and you started with your therapist Victor Halloran in August. Your performing peaked and your sleep worsened in the same months, and the split opened the door to help.",
+   "setAside": false,
+   "openingEventId": 12
+  },
+  {
+   "id": "c2",
+   "title": "Your grandmother Lorna's death, 2008",
+   "summary": "Around your grandmother Lorna's death in January 2008, within months: you took four weeks building with Silas at Alder Creek in July and were too drained for conversation with your mother, your mother pressed to visit you against your wishes later that month and the visit went wrong, you kept the door shut on her, and you left for nursing school in September and stopped speaking to her. The silence held for roughly a year. Your grandmother Clifford died around the same time in January 2008, and the period marks your rupture with your mother around your grandparents' losses and your move away for school.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    114,
+    109,
+    9,
+    10
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-09-11",
+   "name": "Your grandmother Lorna's death, 2008",
+   "source": "model",
+   "reason": "Around your grandmother Lorna's death in January 2008, within months: you took four weeks building with Silas at Alder Creek in July and were too drained for conversation with your mother, your mother pressed to visit you against your wishes later that month and the visit went wrong, you kept the door shut on her, and you left for nursing school in September and stopped speaking to her. The silence held for roughly a year. Your grandmother Clifford died around the same time in January 2008, and the period marks your rupture with your mother around your grandparents' losses and your move away for school.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c3",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "Around your marriage to Wren in March 2017, within about two and a half years: you saw your mother a bit less once Wren came along. In October 2019 around your sister's baby on the way and her mother-in-law Frances's retirement party at the lake house: Wren was swamped one thing after another, you overfunctioned laying out a plan to settle her, she talks with her father and brother all day and nothing happens to one that the others don't hear, she settled once the weekend had a plan, you were awake from the small hours at the lake with no more sleep and could only pull back as the others rose, and she was anxious when you had no sleep at family occasions. Your job had steadied and paid well by June 2019, and you constantly feel you ought to be driving your projects forward and started a sleeping pill in October. You are aiming for shorter, more regular calls with your mother to keep distance from piling up.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your marriage to Wren in March 2017, within about two and a half years: you saw your mother a bit less once Wren came along. In October 2019 around your sister's baby on the way and her mother-in-law Frances's retirement party at the lake house: Wren was swamped one thing after another, you overfunctioned laying out a plan to settle her, she talks with her father and brother all day and nothing happens to one that the others don't hear, she settled once the weekend had a plan, you were awake from the small hours at the lake with no more sleep and could only pull back as the others rose, and she was anxious when you had no sleep at family occasions. Your job had steadied and paid well by June 2019, and you constantly feel you ought to be driving your projects forward and started a sleeping pill in October. You are aiming for shorter, more regular calls with your mother to keep distance from piling up.",
+   "setAside": false,
+   "openingEventId": 29
+  },
+  {
+   "id": "c4",
+   "title": "the year I left home",
+   "summary": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1991-03-12",
+   "endDate": "1994-01-12",
+   "name": "the year I left home",
+   "source": "user",
+   "reason": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c5",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.75,
+   "recall": 1.0,
+   "f1": 0.8571428571428571
+  },
+  "members": {
+   "tp": 33,
+   "fp": 3,
+   "fn": 8,
+   "precision": 0.9166666666666666,
+   "recall": 0.8048780487804879,
+   "f1": 0.8571428571428571
+  },
+  "openings": [
+   1,
+   3
+  ],
+  "hypotheses": 1,
+  "not clusters": 1,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'Your marriage to Wren, 2017\u20132019' is 'The family weekend at the lake, 2019', not a cluster"
+ ],
+ "cost": 0.057611
+}

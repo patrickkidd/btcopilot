@@ -1,0 +1,122 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money beginning in March 1988, her stepping back from talking with your father about it by May 1988, your brother's grades falling in November 1989, and your mother calmer once back at work by March 1990. The shifts show your mother's anxiety rising and distance growing between her and your father, then your brother's functioning falling after the death, before things settled as your mother's anxiety lifted.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother's cancer diagnosis, 1994\u20131996",
+     "reason": "Around your mother's diagnosis of breast cancer in February 1995: your migraines began in March 1994, you called your brother most nights starting in April 1994, you stopped returning his calls in June 1995, and you stopped calling home by February 1996. Your symptoms rose and your moves toward your brother turned to distance from both him and your mother in the months after her diagnosis, with no shifts in anyone else's during these months but hers.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "Events 9, 10, and 12 count as shifts; event 11 is a death and event 13 is a shift down in anxiety that does not open a period on its own. The death of your grandfather Amos in July 1989 lies among these events and opened the period.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "Event 14 is marked neverOpens and has an unknown date; event 15 is a noted event, not a shift; events 16, 17, 19, and 20 are shifts that count. Event 18 is your mother's diagnosis in February 1995, which is a change in the family on a known date and opened the period.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money beginning in March 1988, her stepping back from talking with your father about it by May 1988, your brother's grades falling in November 1989, and your mother calmer once back at work by March 1990. The shifts show your mother's anxiety rising and distance growing between her and your father, then your brother's functioning falling after the death, before things settled as your mother's anxiety lifted.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money beginning in March 1988, her stepping back from talking with your father about it by May 1988, your brother's grades falling in November 1989, and your mother calmer once back at work by March 1990. The shifts show your mother's anxiety rising and distance growing between her and your father, then your brother's functioning falling after the death, before things settled as your mother's anxiety lifted.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother's cancer diagnosis, 1993\u20131996",
+   "summary": "Around your mother's diagnosis of breast cancer in February 1995: your migraines began in March 1994, you called your brother most nights starting in April 1994, you stopped returning his calls in June 1995, and you stopped calling home by February 1996. Your symptoms rose and your moves toward your brother turned to distance from both him and your mother in the months after her diagnosis, with no shifts in anyone else's during these months but hers.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother's cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your mother's diagnosis of breast cancer in February 1995: your migraines began in March 1994, you called your brother most nights starting in April 1994, you stopped returning his calls in June 1995, and you stopped calling home by February 1996. Your symptoms rose and your moves toward your brother turned to distance from both him and your mother in the months after her diagnosis, with no shifts in anyone else's during these months but hers.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.010942
+}

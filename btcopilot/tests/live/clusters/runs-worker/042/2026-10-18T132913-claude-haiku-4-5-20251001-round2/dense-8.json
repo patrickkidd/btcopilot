@@ -1,0 +1,86 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's anxiety rose as she lay awake over money in March 1988, and she and your father stopped talking with each other about money by May 1988; your brother's grades fell in November 1989, four months after the death; your mother's anxiety then fell again in March 1990 once she returned to work. The shifts in money worry and distance between your parents begin before the death, but the pile of shifts\u2014in your mother, your father, and your brother\u2014clusters around these months, and your mother's return to work in March 1990 is where it settles.",
+     "change": null,
+     "openingId": 11
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1993\u20131996: your mother's diagnosis of breast cancer in February 1995 is the change in the family among these events, but it is marked neverOpens because the date of Greta's death is unknown; the shifts around your mother's illness\u2014your migraines rising in March 1994, your calls toward your brother in April 1994, your distance from him in June 1995, and your distance from your mother in February 1996\u2014are your own reactions to her diagnosis and to your move away to college in September 1993, so there is not enough in the diagram to choose a reading of a broader family process around these months.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: declined: Run r2 (1993-01-01 to 1996-02-01) has 4 shifts that count and was declined: 1993\u20131996: your mother's diagnosis of breast cancer in February 1995 is the change in the family among these events, but it is marked neverOpens because the date of Greta's death is unknown; the shifts around your mother's illness\u2014your migraines rising in March 1994, your calls toward your brother in April 1994, your distance from him in June 1995, and your distance from your mother in February 1996\u2014are your own reactions to her diagnosis and to your move away to college in September 1993, so there is not enough in the diagram to choose a reading of a broader family process around these months."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, within the following months: your mother's anxiety rose as she lay awake over money in March 1988, and she and your father stopped talking with each other about money by May 1988; your brother's grades fell in November 1989, four months after the death; your mother's anxiety then fell again in March 1990 once she returned to work. The shifts in money worry and distance between your parents begin before the death, but the pile of shifts\u2014in your mother, your father, and your brother\u2014clusters around these months, and your mother's return to work in March 1990 is where it settles.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's anxiety rose as she lay awake over money in March 1988, and she and your father stopped talking with each other about money by May 1988; your brother's grades fell in November 1989, four months after the death; your mother's anxiety then fell again in March 1990 once she returned to work. The shifts in money worry and distance between your parents begin before the death, but the pile of shifts\u2014in your mother, your father, and your brother\u2014clusters around these months, and your mother's return to work in March 1990 is where it settles.",
+   "setAside": false,
+   "openingEventId": 11
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.5,
+   "f1": 0.6666666666666666
+  },
+  "members": {
+   "tp": 5,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "cluster F1 0.67 under 0.8"
+ ],
+ "cost": 0.010187
+}
