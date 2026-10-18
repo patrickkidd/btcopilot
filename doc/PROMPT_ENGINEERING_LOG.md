@@ -36,9 +36,9 @@ is still no period; a stored period is kept while the events still read as they 
 with `change` saying what moved it, when they do not; a period left out is set aside, never deleted;
 a period is named by the change that opened it and its years, who and what as the people list says,
 never by anything the person did or felt, never with a word from the person's own shifts; the name,
-reason and change never name a book, the theory or the word cluster. The example lines are from the
-invented orchard family (`btcopilot/tests/live/clusters/cases/orchard.json`), none from a real
-diagram. DETECTION_VERSION 19.
+reason and change never name a book, the theory or the word cluster. The example lines are from a
+third invented family (a printing family of the 1940s to 1970s), unlike both Patrick's diagram and
+the orchard case, so neither gate is told its key by the prompt; none is from a real diagram. DETECTION_VERSION 19.
 
 **Why**: Patrick, 2026-10-16 and 2026-10-17: the vocabulary is mandatory everywhere, prompt text
 included; this rewrite is to be the last for a while, fitted to his signed clusters and to the
@@ -46,8 +46,11 @@ literature rather than to the last failed try. Rulings behind the new lines are 
 by inventory id; the fourteen decisions are in `research/clusters/CONFLICTS-DECIDED.md`.
 
 **Evals**: the cluster F1 suite (`btcopilot/tests/live/clusters/`), ten tries per model on Haiku 4.5
-and Sonnet 5 through Bedrock, the signed `deep` key and the placeholder `orchard` key both at 8 of 10
-or better; the try folders under `runs-worker/041/`.
+and Sonnet 5 through Bedrock, against the signed `deep` key and the placeholder `orchard` key, bar 8 of
+10. Measured, after two rounds of prompt fixes: Haiku `deep` 4 of 10 and `deep-unasked` 6 of 10, so the
+gate was not met and tuning stopped as the brief says; `orchard` 10 of 10. Sonnet was cut off on every
+`deep` try, at 16,784 output tokens and, in one try, at medium effort. The try folders are under
+`runs-worker/041/`.
 
 **Versions 10 to 18, not logged at the time (FD-381, 2026-10-14 to 2026-10-15):** 10, the approved
 rules A1 to A9: any change in the family may open a period, only rising shifts support one, events of
