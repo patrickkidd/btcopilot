@@ -1,0 +1,1370 @@
+{
+ "about": "A fictional four-generation family that kept an apple orchard. Nora is the person. No cluster opens at a death: a move across the country, the orchard's failure, her father's job loss and her mother-in-law moving into her house each open one, and her brother's wedding opens nothing. Her answer gives an age for one hard time of her own; she only wonders about two others.",
+ "placeholder": "PLACEHOLDER: the key is written from the cluster rules, not from a real case. Patrick is the oracle and has not confirmed it (R-0856).",
+ "status": "placeholder",
+ "note": "Written by hand from the cluster rules page of 2026-10-14 and the fourteen decided conflicts; Patrick has not confirmed any of it. Four clusters, each opened by a change in the family that is not a death and named by that change and its years (A6). The move west, 1952-53, holds the shifts of the parents, the three children and Walter's brother left behind (A4: anyone's in the extended family). Losing the orchard, 1968-69, holds Carl's asthma easing while Nora's bedwetting began (a fall with another's rise is part of one movement) and Ida's heart trouble on her mother's side. The cannery layoff, 1975-76, is also the person's own period: every event of those two years. Wilma moving in, 1990-91, is an addition to the household. Events of unknown date sit inside every cluster as members and open none, and Wade's birth, of unknown date, comes just before the orchard failed and opens nothing (A9). The wildfire of August 1994 is an acute episode, five days of trouble around a real threat that soon passed, not a period: a try that stores it misses. Tess's drinking, 1996-97, has no change in the family beside it, so it is held as a hypothesis and scored neither way. June's arthritis from 1958 is a lasting complaint, coded as functioning down and never counted toward a period. Carl's wedding in 1984 has one shift beside it, and one shift alone is no period. Nothing is in the diagram from 1977 through 1983: a quiet time of seven years with no events.",
+ "expected": [
+  {
+   "name": "The Laskeys' move west to Sorrel Valley, 1952-53",
+   "opening": 109,
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118
+   ]
+  },
+  {
+   "name": "Losing the orchard, 1968-69",
+   "opening": 132,
+   "eventIds": [
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143
+   ]
+  },
+  {
+   "name": "Her father Glen's layoff at the cannery, 1975-76",
+   "opening": 148,
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ]
+  },
+  {
+   "name": "Her mother-in-law Wilma moving in, 1990-91",
+   "opening": 168,
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    178
+   ]
+  },
+  {
+   "name": "Tess's drinking, with no change in the family, 1996-97",
+   "eventIds": [
+    190,
+    191,
+    192,
+    193,
+    194
+   ],
+   "hypothesis": true
+  }
+ ],
+ "notClusters": [
+  {
+   "name": "The wildfire evacuation, August 1994",
+   "eventIds": [
+    183,
+    184,
+    185,
+    186,
+    187,
+    188,
+    189
+   ]
+  }
+ ],
+ "theirs": [
+  {
+   "name": "the year Dad lost his job",
+   "startYear": 1975,
+   "endYear": 1976
+  }
+ ],
+ "diagram": {
+  "people": [
+   {
+    "id": 1,
+    "name": "Nora",
+    "gender": "female",
+    "parents": 44,
+    "last_name": "Whitlock",
+    "primary": true
+   },
+   {
+    "id": 2,
+    "name": "Walter",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 3,
+    "name": "June",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 4,
+    "name": "Harlan",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 5,
+    "name": "Edna",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Coker"
+   },
+   {
+    "id": 6,
+    "name": "Leon",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Ferrand"
+   },
+   {
+    "id": 7,
+    "name": "Ida",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Ferrand"
+   },
+   {
+    "id": 8,
+    "name": "Clyde",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Whitlock"
+   },
+   {
+    "id": 9,
+    "name": "Wilma",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Whitlock"
+   },
+   {
+    "id": 10,
+    "name": "Glen",
+    "gender": "male",
+    "parents": 41,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 11,
+    "name": "Marian",
+    "gender": "female",
+    "parents": 42,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 12,
+    "name": "Faye",
+    "gender": "female",
+    "parents": 41,
+    "last_name": "Orr"
+   },
+   {
+    "id": 13,
+    "name": "Dennis",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Orr"
+   },
+   {
+    "id": 14,
+    "name": "Roy",
+    "gender": "male",
+    "parents": 41,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 15,
+    "name": "Bev",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 16,
+    "name": "Curtis",
+    "gender": "male",
+    "parents": 42,
+    "last_name": "Ferrand"
+   },
+   {
+    "id": 17,
+    "name": "Sandra",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Ferrand"
+   },
+   {
+    "id": 18,
+    "name": "Lottie",
+    "gender": "female",
+    "parents": 42,
+    "last_name": "Pike"
+   },
+   {
+    "id": 19,
+    "name": "Ned",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Pike"
+   },
+   {
+    "id": 20,
+    "name": "Carl",
+    "gender": "male",
+    "parents": 44,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 21,
+    "name": "Gail",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 22,
+    "name": "Tess",
+    "gender": "female",
+    "parents": 44,
+    "last_name": "Moreno"
+   },
+   {
+    "id": 23,
+    "name": "Rick",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Moreno"
+   },
+   {
+    "id": 24,
+    "name": "Sam",
+    "gender": "male",
+    "parents": 43,
+    "last_name": "Whitlock"
+   },
+   {
+    "id": 25,
+    "name": "Joan",
+    "gender": "female",
+    "parents": 43,
+    "last_name": "Whitlock"
+   },
+   {
+    "id": 26,
+    "name": "Kevin",
+    "gender": "male",
+    "parents": 45,
+    "last_name": "Orr"
+   },
+   {
+    "id": 27,
+    "name": "Dana",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Orr"
+   },
+   {
+    "id": 28,
+    "name": "Amy",
+    "gender": "female",
+    "parents": 45,
+    "last_name": "Orr"
+   },
+   {
+    "id": 29,
+    "name": "Danny",
+    "gender": "male",
+    "parents": 46,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 30,
+    "name": "Wade",
+    "gender": "male",
+    "parents": 47,
+    "last_name": "Ferrand"
+   },
+   {
+    "id": 31,
+    "name": "Owen",
+    "gender": "male",
+    "parents": 49,
+    "last_name": "Whitlock"
+   },
+   {
+    "id": 32,
+    "name": "Lily",
+    "gender": "female",
+    "parents": 49,
+    "last_name": "Whitlock"
+   },
+   {
+    "id": 33,
+    "name": "Mia",
+    "gender": "female",
+    "parents": 48,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 34,
+    "name": "Ben",
+    "gender": "male",
+    "parents": 48,
+    "last_name": "Laskey"
+   },
+   {
+    "id": 35,
+    "name": "Jesse",
+    "gender": "male",
+    "parents": 50,
+    "last_name": "Moreno"
+   },
+   {
+    "id": 36,
+    "name": "Rose",
+    "gender": "female",
+    "parents": 52,
+    "last_name": "Orr"
+   }
+  ],
+  "pair_bonds": [
+   {
+    "id": 41,
+    "person_a": 2,
+    "person_b": 3,
+    "married": true
+   },
+   {
+    "id": 42,
+    "person_a": 6,
+    "person_b": 7,
+    "married": true
+   },
+   {
+    "id": 43,
+    "person_a": 8,
+    "person_b": 9,
+    "married": true
+   },
+   {
+    "id": 44,
+    "person_a": 10,
+    "person_b": 11,
+    "married": true
+   },
+   {
+    "id": 45,
+    "person_a": 12,
+    "person_b": 13,
+    "married": true
+   },
+   {
+    "id": 46,
+    "person_a": 14,
+    "person_b": 15,
+    "married": true
+   },
+   {
+    "id": 47,
+    "person_a": 16,
+    "person_b": 17,
+    "married": true
+   },
+   {
+    "id": 48,
+    "person_a": 20,
+    "person_b": 21,
+    "married": true
+   },
+   {
+    "id": 49,
+    "person_a": 1,
+    "person_b": 24,
+    "married": true
+   },
+   {
+    "id": 50,
+    "person_a": 22,
+    "person_b": 23,
+    "married": true
+   },
+   {
+    "id": 51,
+    "person_a": 18,
+    "person_b": 19,
+    "married": true
+   },
+   {
+    "id": 52,
+    "person_a": 26,
+    "person_b": 27,
+    "married": true
+   }
+  ],
+  "events": [
+   {
+    "id": 101,
+    "kind": "birth",
+    "dateTime": "1936-07-14",
+    "dateCertainty": "certain",
+    "person": 2,
+    "spouse": 3,
+    "child": 10,
+    "description": "born in Millbrook"
+   },
+   {
+    "id": 102,
+    "kind": "birth",
+    "dateTime": "1938-02-02",
+    "dateCertainty": "certain",
+    "person": 6,
+    "spouse": 7,
+    "child": 11,
+    "description": "born in Ridgeport"
+   },
+   {
+    "id": 103,
+    "kind": "birth",
+    "dateTime": "1939-05-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "spouse": 3,
+    "child": 12,
+    "description": "birth year from her school papers"
+   },
+   {
+    "id": 104,
+    "kind": "birth",
+    "dateTime": "1941-11-15",
+    "dateCertainty": "approximate",
+    "person": 6,
+    "spouse": 7,
+    "child": 16
+   },
+   {
+    "id": 105,
+    "kind": "birth",
+    "dateTime": "1944-03-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "spouse": 3,
+    "child": 14,
+    "description": "the youngest of Walter and June's three"
+   },
+   {
+    "id": 106,
+    "kind": "birth",
+    "dateTime": "1946-09-15",
+    "dateCertainty": "unknown",
+    "person": 6,
+    "spouse": 7,
+    "child": 18,
+    "description": "born after the war; no one has the year"
+   },
+   {
+    "id": 107,
+    "kind": "married",
+    "dateTime": "1950-04-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "spouse": 9,
+    "description": "wedding"
+   },
+   {
+    "id": 108,
+    "kind": "divorced",
+    "dateTime": "1950-06-15",
+    "dateCertainty": "unknown",
+    "person": 6,
+    "spouse": 7,
+    "description": "split up; the year is not known",
+    "notes": "Marian was a girl; she lived on with her mother."
+   },
+   {
+    "id": 109,
+    "kind": "noted",
+    "dateTime": "1952-03-15",
+    "dateCertainty": "certain",
+    "person": 2,
+    "description": "moved the family across the country from Millbrook to Sorrel Valley and bought an apple orchard",
+    "notes": "Walter's brother Harlan and June's sister Edna stayed behind in Millbrook."
+   },
+   {
+    "id": 110,
+    "kind": "shift",
+    "dateTime": "1952-05-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "anxiety": "up",
+    "relationship": "toward",
+    "relationshipTargets": [
+     5
+    ],
+    "description": "homesick; wrote to her sister Edna back in Millbrook every day"
+   },
+   {
+    "id": 111,
+    "kind": "shift",
+    "dateTime": "1952-06-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "relationship": "distance",
+    "relationshipTargets": [
+     3
+    ],
+    "description": "out in the trees from dark to dark; June hardly saw him"
+   },
+   {
+    "id": 112,
+    "kind": "shift",
+    "dateTime": "1952-10-15",
+    "dateCertainty": "approximate",
+    "person": 10,
+    "symptom": "up",
+    "description": "fights at the new school; sent home twice that fall"
+   },
+   {
+    "id": 113,
+    "kind": "shift",
+    "dateTime": "1952-11-15",
+    "dateCertainty": "unknown",
+    "person": 12,
+    "symptom": "up",
+    "description": "stomach aches most school mornings",
+    "notes": "Faye says it was the first winter in the valley; no one can confirm the year."
+   },
+   {
+    "id": 114,
+    "kind": "shift",
+    "dateTime": "1953-01-15",
+    "dateCertainty": "approximate",
+    "person": 4,
+    "relationship": "cutoff",
+    "relationshipTargets": [
+     2
+    ],
+    "description": "stopped writing to his brother Walter after a quarrel over their father's land money"
+   },
+   {
+    "id": 115,
+    "kind": "shift",
+    "dateTime": "1953-02-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "functioning": "down",
+    "description": "kept to her bed for weeks that first winter"
+   },
+   {
+    "id": 116,
+    "kind": "shift",
+    "dateTime": "1953-04-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     3
+    ],
+    "description": "rows with June over money for new trees"
+   },
+   {
+    "id": 117,
+    "kind": "shift",
+    "dateTime": "1953-06-15",
+    "dateCertainty": "unknown",
+    "person": 14,
+    "functioning": "down",
+    "description": "kept back a year at school",
+    "notes": "Glen thinks it was Roy's second school year in the valley."
+   },
+   {
+    "id": 118,
+    "kind": "shift",
+    "dateTime": "1953-09-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "anxiety": "down",
+    "functioning": "up",
+    "description": "joined the church choir; her letters to Edna thinned out"
+   },
+   {
+    "id": 119,
+    "kind": "birth",
+    "dateTime": "1955-05-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "spouse": 9,
+    "child": 25
+   },
+   {
+    "id": 120,
+    "kind": "shift",
+    "dateTime": "1958-02-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "functioning": "down",
+    "description": "arthritis in both hands, with her for the rest of her life; she gave up picking",
+    "notes": "A lasting complaint: no better and no worse after that year."
+   },
+   {
+    "id": 121,
+    "kind": "married",
+    "dateTime": "1958-06-14",
+    "dateCertainty": "certain",
+    "person": 10,
+    "spouse": 11,
+    "description": "wedding in Ridgeport"
+   },
+   {
+    "id": 122,
+    "kind": "birth",
+    "dateTime": "1959-02-03",
+    "dateCertainty": "certain",
+    "person": 10,
+    "spouse": 11,
+    "child": 20
+   },
+   {
+    "id": 123,
+    "kind": "birth",
+    "dateTime": "1959-11-02",
+    "dateCertainty": "certain",
+    "person": 8,
+    "spouse": 9,
+    "child": 24
+   },
+   {
+    "id": 124,
+    "kind": "married",
+    "dateTime": "1960-05-15",
+    "dateCertainty": "approximate",
+    "person": 12,
+    "spouse": 13,
+    "description": "wedding"
+   },
+   {
+    "id": 125,
+    "kind": "birth",
+    "dateTime": "1961-04-18",
+    "dateCertainty": "certain",
+    "person": 10,
+    "spouse": 11,
+    "child": 1,
+    "description": "born in Ridgeport"
+   },
+   {
+    "id": 126,
+    "kind": "birth",
+    "dateTime": "1962-09-15",
+    "dateCertainty": "approximate",
+    "person": 12,
+    "spouse": 13,
+    "child": 26
+   },
+   {
+    "id": 127,
+    "kind": "birth",
+    "dateTime": "1964-08-09",
+    "dateCertainty": "certain",
+    "person": 10,
+    "spouse": 11,
+    "child": 22
+   },
+   {
+    "id": 128,
+    "kind": "married",
+    "dateTime": "1964-10-15",
+    "dateCertainty": "approximate",
+    "person": 16,
+    "spouse": 17,
+    "description": "wedding"
+   },
+   {
+    "id": 129,
+    "kind": "birth",
+    "dateTime": "1965-03-15",
+    "dateCertainty": "approximate",
+    "person": 12,
+    "spouse": 13,
+    "child": 28
+   },
+   {
+    "id": 130,
+    "kind": "married",
+    "dateTime": "1966-05-15",
+    "dateCertainty": "approximate",
+    "person": 14,
+    "spouse": 15,
+    "description": "wedding"
+   },
+   {
+    "id": 131,
+    "kind": "birth",
+    "dateTime": "1968-03-15",
+    "dateCertainty": "unknown",
+    "person": 16,
+    "spouse": 17,
+    "child": 30,
+    "description": "birth; no one has the date",
+    "notes": "Curtis puts it some time in the late 1960s."
+   },
+   {
+    "id": 132,
+    "kind": "noted",
+    "dateTime": "1968-05-02",
+    "dateCertainty": "certain",
+    "person": 2,
+    "description": "the orchard failed: a late frost took the whole crop and the bank called in the loan"
+   },
+   {
+    "id": 133,
+    "kind": "shift",
+    "dateTime": "1968-06-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "symptom": "up",
+    "description": "drinking heavily, most nights"
+   },
+   {
+    "id": 134,
+    "kind": "shift",
+    "dateTime": "1968-07-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     10
+    ],
+    "description": "he and Glen blamed each other for the loan",
+    "notes": "Glen had worked the orchard beside his father since leaving school."
+   },
+   {
+    "id": 135,
+    "kind": "noted",
+    "dateTime": "1968-10-03",
+    "dateCertainty": "certain",
+    "person": 2,
+    "description": "the orchard sold at auction; he and June moved to a rented house in Ridgeport"
+   },
+   {
+    "id": 136,
+    "kind": "shift",
+    "dateTime": "1968-11-15",
+    "dateCertainty": "approximate",
+    "person": 11,
+    "relationship": "overfunctioning",
+    "relationshipTargets": [
+     10
+    ],
+    "description": "took over the family's money and the talks with the bank"
+   },
+   {
+    "id": 137,
+    "kind": "shift",
+    "dateTime": "1968-12-15",
+    "dateCertainty": "approximate",
+    "person": 20,
+    "symptom": "up",
+    "description": "asthma attacks, worse that winter"
+   },
+   {
+    "id": 138,
+    "kind": "noted",
+    "dateTime": "1969-02-15",
+    "dateCertainty": "approximate",
+    "person": 10,
+    "description": "began on the line at the cannery in Ridgeport"
+   },
+   {
+    "id": 139,
+    "kind": "shift",
+    "dateTime": "1969-03-15",
+    "dateCertainty": "unknown",
+    "person": 14,
+    "relationship": "cutoff",
+    "relationshipTargets": [
+     2
+    ],
+    "description": "stopped speaking to his father over the sale",
+    "notes": "No one agrees on when; Glen places it after the auction."
+   },
+   {
+    "id": 140,
+    "kind": "shift",
+    "dateTime": "1969-04-15",
+    "dateCertainty": "approximate",
+    "person": 20,
+    "symptom": "down",
+    "description": "the asthma eased once spring came"
+   },
+   {
+    "id": 141,
+    "kind": "shift",
+    "dateTime": "1969-04-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "description": "began wetting the bed again",
+    "notes": "She was eight; her mother kept it from her father."
+   },
+   {
+    "id": 142,
+    "kind": "shift",
+    "dateTime": "1969-05-15",
+    "dateCertainty": "approximate",
+    "person": 7,
+    "symptom": "up",
+    "description": "heart trouble found; told to stop working at the bakery"
+   },
+   {
+    "id": 143,
+    "kind": "shift",
+    "dateTime": "1969-10-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "functioning": "up",
+    "description": "stopped drinking; took work pruning other men's trees"
+   },
+   {
+    "id": 144,
+    "kind": "birth",
+    "dateTime": "1971-08-15",
+    "dateCertainty": "approximate",
+    "person": 14,
+    "spouse": 15,
+    "child": 29
+   },
+   {
+    "id": 145,
+    "kind": "death",
+    "dateTime": "1971-09-20",
+    "dateCertainty": "certain",
+    "person": 8,
+    "description": "a heart attack when Sam was eleven"
+   },
+   {
+    "id": 146,
+    "kind": "married",
+    "dateTime": "1972-04-15",
+    "dateCertainty": "approximate",
+    "person": 18,
+    "spouse": 19,
+    "description": "wedding"
+   },
+   {
+    "id": 147,
+    "kind": "death",
+    "dateTime": "1972-06-15",
+    "dateCertainty": "unknown",
+    "person": 6,
+    "description": "died; the year is not known",
+    "notes": "Marian heard of it months later; she had not seen her father since the divorce."
+   },
+   {
+    "id": 148,
+    "kind": "noted",
+    "dateTime": "1975-02-28",
+    "dateCertainty": "certain",
+    "person": 10,
+    "description": "lost his job when the Ridgeport cannery closed"
+   },
+   {
+    "id": 149,
+    "kind": "shift",
+    "dateTime": "1975-05-15",
+    "dateCertainty": "approximate",
+    "person": 10,
+    "functioning": "down",
+    "description": "out of work most of that year; sat in the truck in the yard for hours"
+   },
+   {
+    "id": 150,
+    "kind": "shift",
+    "dateTime": "1975-06-15",
+    "dateCertainty": "approximate",
+    "person": 10,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     11
+    ],
+    "description": "loud fights with Marian at night over money"
+   },
+   {
+    "id": 151,
+    "kind": "shift",
+    "dateTime": "1975-07-15",
+    "dateCertainty": "approximate",
+    "person": 11,
+    "relationship": "overfunctioning",
+    "relationshipTargets": [
+     10
+    ],
+    "description": "took a second job cleaning offices at night"
+   },
+   {
+    "id": 152,
+    "kind": "shift",
+    "dateTime": "1975-08-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "description": "stopped eating properly; lost a lot of weight that summer"
+   },
+   {
+    "id": 153,
+    "kind": "shift",
+    "dateTime": "1975-09-15",
+    "dateCertainty": "unknown",
+    "person": 20,
+    "relationship": "away",
+    "relationshipTargets": [
+     10,
+     11
+    ],
+    "description": "spent most nights at his girlfriend Gail's family's house"
+   },
+   {
+    "id": 154,
+    "kind": "shift",
+    "dateTime": "1975-10-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     11
+    ],
+    "description": "kept to her room; said little to her mother"
+   },
+   {
+    "id": 155,
+    "kind": "shift",
+    "dateTime": "1975-12-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "symptom": "up",
+    "description": "drinking again after six years off it"
+   },
+   {
+    "id": 156,
+    "kind": "shift",
+    "dateTime": "1976-01-15",
+    "dateCertainty": "unknown",
+    "person": 22,
+    "symptom": "up",
+    "description": "nightmares most nights"
+   },
+   {
+    "id": 157,
+    "kind": "noted",
+    "dateTime": "1976-03-08",
+    "dateCertainty": "certain",
+    "person": 10,
+    "description": "started driving a delivery truck for the feed store"
+   },
+   {
+    "id": 158,
+    "kind": "shift",
+    "dateTime": "1976-06-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "functioning": "up",
+    "description": "eating again; made the track team"
+   },
+   {
+    "id": 159,
+    "kind": "shift",
+    "dateTime": "1984-08-20",
+    "dateCertainty": "approximate",
+    "person": 11,
+    "anxiety": "up",
+    "description": "fretted for weeks over Carl's wedding"
+   },
+   {
+    "id": 160,
+    "kind": "married",
+    "dateTime": "1984-09-15",
+    "dateCertainty": "certain",
+    "person": 20,
+    "spouse": 21,
+    "description": "wedding in Ridgeport"
+   },
+   {
+    "id": 161,
+    "kind": "married",
+    "dateTime": "1985-06-22",
+    "dateCertainty": "certain",
+    "person": 1,
+    "spouse": 24,
+    "description": "wedding"
+   },
+   {
+    "id": 162,
+    "kind": "birth",
+    "dateTime": "1986-02-11",
+    "dateCertainty": "certain",
+    "person": 1,
+    "spouse": 24,
+    "child": 31
+   },
+   {
+    "id": 163,
+    "kind": "death",
+    "dateTime": "1986-03-02",
+    "dateCertainty": "certain",
+    "person": 2,
+    "description": "died in his sleep",
+    "notes": "Nora remembers the funeral as quiet."
+   },
+   {
+    "id": 164,
+    "kind": "death",
+    "dateTime": "1987-05-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "description": "died in the spring"
+   },
+   {
+    "id": 165,
+    "kind": "birth",
+    "dateTime": "1987-08-30",
+    "dateCertainty": "certain",
+    "person": 20,
+    "spouse": 21,
+    "child": 33
+   },
+   {
+    "id": 166,
+    "kind": "birth",
+    "dateTime": "1988-03-19",
+    "dateCertainty": "certain",
+    "person": 1,
+    "spouse": 24,
+    "child": 32
+   },
+   {
+    "id": 167,
+    "kind": "married",
+    "dateTime": "1988-06-15",
+    "dateCertainty": "approximate",
+    "person": 26,
+    "spouse": 27,
+    "description": "wedding"
+   },
+   {
+    "id": 168,
+    "kind": "noted",
+    "dateTime": "1990-01-20",
+    "dateCertainty": "certain",
+    "person": 9,
+    "description": "sold her farm and moved into Nora and Sam's house",
+    "notes": "Sam's mother; widowed since 1971."
+   },
+   {
+    "id": 169,
+    "kind": "shift",
+    "dateTime": "1990-04-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     9
+    ],
+    "description": "clashed with Wilma over the children's bedtimes and meals"
+   },
+   {
+    "id": 170,
+    "kind": "shift",
+    "dateTime": "1990-05-15",
+    "dateCertainty": "approximate",
+    "person": 24,
+    "relationship": "distance",
+    "relationshipTargets": [
+     1
+    ],
+    "description": "worked late; kept out of the kitchen rows"
+   },
+   {
+    "id": 171,
+    "kind": "shift",
+    "dateTime": "1990-05-15",
+    "dateCertainty": "approximate",
+    "person": 24,
+    "relationship": "toward",
+    "relationshipTargets": [
+     9
+    ],
+    "description": "took his mother's side"
+   },
+   {
+    "id": 172,
+    "kind": "shift",
+    "dateTime": "1990-06-15",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "symptom": "up",
+    "description": "tantrums at preschool; sent home twice"
+   },
+   {
+    "id": 173,
+    "kind": "shift",
+    "dateTime": "1990-08-15",
+    "dateCertainty": "approximate",
+    "person": 9,
+    "relationship": "overfunctioning",
+    "relationshipTargets": [
+     32
+    ],
+    "description": "took over Lily's care"
+   },
+   {
+    "id": 174,
+    "kind": "shift",
+    "dateTime": "1990-09-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "description": "eczema flared on both hands"
+   },
+   {
+    "id": 175,
+    "kind": "shift",
+    "dateTime": "1990-11-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     24
+    ],
+    "description": "rows with Sam most nights"
+   },
+   {
+    "id": 176,
+    "kind": "shift",
+    "dateTime": "1991-01-15",
+    "dateCertainty": "unknown",
+    "person": 11,
+    "relationship": "toward",
+    "relationshipTargets": [
+     1
+    ],
+    "description": "drove over twice a week to take Nora's side"
+   },
+   {
+    "id": 177,
+    "kind": "noted",
+    "dateTime": "1991-06-01",
+    "dateCertainty": "certain",
+    "person": 9,
+    "description": "took a flat in town"
+   },
+   {
+    "id": 178,
+    "kind": "shift",
+    "dateTime": "1991-08-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "down",
+    "description": "the eczema cleared over the summer"
+   },
+   {
+    "id": 179,
+    "kind": "married",
+    "dateTime": "1992-07-11",
+    "dateCertainty": "certain",
+    "person": 22,
+    "spouse": 23,
+    "description": "wedding"
+   },
+   {
+    "id": 180,
+    "kind": "birth",
+    "dateTime": "1992-08-15",
+    "dateCertainty": "approximate",
+    "person": 26,
+    "spouse": 27,
+    "child": 36
+   },
+   {
+    "id": 181,
+    "kind": "birth",
+    "dateTime": "1992-09-14",
+    "dateCertainty": "certain",
+    "person": 20,
+    "spouse": 21,
+    "child": 34
+   },
+   {
+    "id": 182,
+    "kind": "birth",
+    "dateTime": "1992-11-30",
+    "dateCertainty": "certain",
+    "person": 22,
+    "spouse": 23,
+    "child": 35
+   },
+   {
+    "id": 183,
+    "kind": "noted",
+    "dateTime": "1994-08-12",
+    "dateCertainty": "certain",
+    "person": 1,
+    "description": "a wildfire came over the ridge; the valley was ordered out and the family slept three nights in the school gym"
+   },
+   {
+    "id": 184,
+    "kind": "shift",
+    "dateTime": "1994-08-12",
+    "dateCertainty": "certain",
+    "person": 1,
+    "anxiety": "up",
+    "description": "frightened; kept the children in sight every minute"
+   },
+   {
+    "id": 185,
+    "kind": "shift",
+    "dateTime": "1994-08-13",
+    "dateCertainty": "certain",
+    "person": 32,
+    "symptom": "up",
+    "description": "sick to her stomach in the gym"
+   },
+   {
+    "id": 186,
+    "kind": "shift",
+    "dateTime": "1994-08-13",
+    "dateCertainty": "certain",
+    "person": 24,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     1
+    ],
+    "description": "snapped at Nora over whether to drive out of the valley"
+   },
+   {
+    "id": 187,
+    "kind": "shift",
+    "dateTime": "1994-08-14",
+    "dateCertainty": "certain",
+    "person": 31,
+    "anxiety": "up",
+    "description": "would not sleep without a light on"
+   },
+   {
+    "id": 188,
+    "kind": "noted",
+    "dateTime": "1994-08-15",
+    "dateCertainty": "certain",
+    "person": 1,
+    "description": "allowed home; the house untouched"
+   },
+   {
+    "id": 189,
+    "kind": "shift",
+    "dateTime": "1994-08-16",
+    "dateCertainty": "certain",
+    "person": 1,
+    "anxiety": "down",
+    "description": "calm again once home; the children back at school that week"
+   },
+   {
+    "id": 190,
+    "kind": "shift",
+    "dateTime": "1996-10-15",
+    "dateCertainty": "approximate",
+    "person": 22,
+    "symptom": "up",
+    "description": "drinking most nights"
+   },
+   {
+    "id": 191,
+    "kind": "shift",
+    "dateTime": "1996-11-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "anxiety": "up",
+    "description": "phoned Tess every night, worried for her"
+   },
+   {
+    "id": 192,
+    "kind": "shift",
+    "dateTime": "1997-01-15",
+    "dateCertainty": "unknown",
+    "person": 11,
+    "relationship": "overfunctioning",
+    "relationshipTargets": [
+     22
+    ],
+    "description": "paid Tess's rent and kept Jesse most weekends"
+   },
+   {
+    "id": 193,
+    "kind": "shift",
+    "dateTime": "1997-03-15",
+    "dateCertainty": "approximate",
+    "person": 22,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     23
+    ],
+    "description": "shouting matches; Rick slept at his brother's for a month"
+   },
+   {
+    "id": 194,
+    "kind": "shift",
+    "dateTime": "1997-06-15",
+    "dateCertainty": "approximate",
+    "person": 22,
+    "functioning": "up",
+    "description": "stopped drinking; went to meetings twice a week"
+   },
+   {
+    "id": 195,
+    "kind": "noted",
+    "dateTime": "1999-06-15",
+    "dateCertainty": "approximate",
+    "person": 10,
+    "description": "retired from the feed store"
+   }
+  ]
+ },
+ "said": [
+  {
+   "messageId": 1,
+   "question": "Thinking over your life up to now, which two or three times were the fullest or hardest, and roughly which years?",
+   "words": "The one that stands out is the year Dad lost his job, when I was 14. The cannery closed, he sat out in the truck for hours, Mom and Dad fought every night, and I more or less stopped eating until he found the delivery job. I was small when Grandpa lost the orchard, and I wonder whether that did something to all of us. I also wonder what moving west did to Dad's family before I was born."
+  }
+ ]
+}
