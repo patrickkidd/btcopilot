@@ -1,0 +1,448 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94
+     ],
+     "name": "Jonah leaving for the conservatory, 1991\u20131992",
+     "reason": "Around September 1991 when Jonah began at Wexley Conservatory: a wrist injury in October stopped his playing, his anxiety rose and functioning fell; he and Rafe clashed and Rafe moved out in November; by January 1992 he was lost and low with his grandfather gone and his mother about to remarry. His grandfather Gordon died in June 1991, and his stepmother Bettina separated from his father in 1987 over a baby, which they later had as Tara in July 1990. The shifts pile up around the conservatory start and the injury, with Rafe's move and his grandfather's death months before; the period settles by spring when he earned money fixing radios.",
+     "change": null,
+     "openingId": 88
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      134,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      171,
+      39,
+      53,
+      172
+     ],
+     "name": "Jonah's father Clifford's return and the family rebuilding, 1989\u20131994",
+     "reason": "Around January 1989 when Jonah's grandfather Clifford came back into the family after years away: within months, in April 1989, Desmond took a rental on Quarry Lane while the Hollin Road house was rebuilt; by September 1989 Jonah settled there with his mother and Desmond, in a loud and cramped household with Desmond's two children. His sleep troubles began that autumn, and he dropped chess and debate club. His sister Tara was born in July 1990. From September 1991 onward came the conservatory, the wrist injury, Rafe's conflict, and the loss of his grandfather Gordon in June 1991. His grandmother Winifred had thyroid surgery around 1992. By early 1994 he felt stung that his father had never heard of his film, and he found his drive again through an exchange in Portugal. The shifts pile up in clusters from 1989 onward, with the household changes and his own troubles mounting through secondary school and the conservatory start; the period settles as his degree work caught hold.",
+     "change": "Merged r1 and r2; the opening event is Clifford's return in 1989, which brought the household changes that set the larger arc in motion.",
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      177,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Jonah's move away and the long slump, 2001\u20132004",
+     "reason": "Around September 2001 Jonah began running out of steam for performing and his anxiety rose; his grandmother Winifred was found to have bowel cancer in 2001 or 2002. In early 2002 he had a disastrous audition and was done with performing; by September 2002 he was on poor terms with family and friends and left Thornbury for Gull Harbour. In January 2003 he met Marisol; he moved to Fenwick in June to live with her, then separated by October and sank into a deep depression back in Thornbury by November. His grandmother spent her final months in his parents' home in the autumn of 2003. He could not face his family, relied on friends Corbin, Dale, and Hamish, and his functioning fell sharply. By January 2004 he began swimming and returned to his therapist Victor Halloran; his functioning came back up. His grandmother Winifred died in February 2004. The shifts pile up from 2001 through 2004 around his burnout, the failed audition, the brief relationship, and the depression that followed; his grandmother's illness and death sit within this span but are secondary to his own crisis. The period settles as therapy and swimming began to lift him.",
+     "change": null,
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179,
+      130
+     ],
+     "name": "Jonah's grandmother Lorna's death and his move to nursing school, 2008\u20132010",
+     "reason": "In January 2008 Jonah's grandmother Lorna died; Clifford's death is also noted around then, the year uncertain. In July 2008 Jonah was at Alder Creek building with Silas and was too drained for conversation with his mother; she pressed to visit him despite his repeated refusals, and when she came they clashed and she never got inside. In August 2008 he left for nursing school in Marlow Sound and stopped speaking to his mother, a cutoff that held for roughly a year. His aunt Imogen had a stroke in January 2009 with months of rehabilitation. Bree's older child was born in August 2010. The shifts pile up around Jonah's move to nursing school and the cutoff with his mother; his grandmother's death opens the period but sits with other family losses, and his aunt's stroke falls in the quiet months after his move. The period settles as the silence began to ease and he found his footing in nursing.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Jonah's marriage to Wren and his partner's family involvement, 2017\u20132019",
+     "reason": "In March 2017 Jonah married Wren; he saw his mother a bit less once Wren came along. His partner Wren's cousin Alice was diagnosed with multiple sclerosis in October 2017. His sister Tara married James, flying for a regional airline in Rennick. In October 2019 Wren's mother Frances retired; Wren became swamped with a street party, a fundraiser, and the drive to the lake for the retirement weekend. Jonah responded by overfunctioning, laying out a strict plan to settle her. Wren talks with her father Hugo and brother Leo all day, and nothing happens to one that the others don't hear\u2014a tight fusion. At the lake weekend in late October, Jonah was awake from the small hours with no more sleep and could only pull back as others rose; Wren became anxious when he had no sleep at family occasions. His anxiety around her family is at its worst; he feels he doesn't belong. His sister Tara expected a baby, Russell's first grandchild that Jonah knows of. The shifts pile up in late October 2019 around Wren's swamped state, her family's tight fusion, and Jonah's sleep failure at the family occasion. The period settles after the weekend with the plan in place and the dinner done, though the tension between them about his sleeplessness and his overfunctioning remains.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "Only one shift that counts: Jonah's functioning rose after starting therapy in August 1999, which does not open a period on its own. His insomnia and performing peak in early 1999, and his separation from Joelle in July 1999 and the therapy start in August 1999 are a reaction to the split, not a period.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "The recount of shifts that count leaves two: Jonah's grandmother Lorna's death in January 2008 and his aunt Imogen's stroke in January 2009, both of which are events, not shifts in Jonah himself or his immediate family's functioning. The shifts around Jonah's move to nursing school sit in r4, not here.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The shifts in this hint belong to two periods: those in October 2019 around Wren's swamped state and Jonah's sleep failure at the family occasion belong to the marriage period; Jonah's partner's cousin Alice's MS diagnosis in October 2017 and his sister Tara's baby on the way in October 2019 are changes in the extended family that do not gather Jonah's own shifts, so they stand apart from any period of his own.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond arriving and your father's separation, 1987",
+     "reason": "Around January 1987 when you began secondary school: you clashed with your stepfather Desmond and found him an obstacle rather than support, while you remained warm toward your father though always angling for his notice. Your stepmother Bettina separated from your father over the question of a baby around this time. In September 1987 you made the city chess squad but felt out of your depth at the bottom of the ladder. These shifts in relationship and anxiety pile up around the household changes and your own stretched reaching, held in place by your stepfather's arrival and your father's distance.",
+     "change": null,
+     "openingId": 41
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Your burnout and your move away, 2001\u20132004",
+     "reason": "Around September 2001 you began running out of steam for performing; your anxiety rose and your functioning fell. Your grandmother Winifred was found to have bowel cancer in 2001 or 2002 around the same time. In early 2002 you had a disastrous audition and were done with performing; by September 2002 you were on poor terms with family and friends and left Thornbury for Gull Harbour. In January 2003 you met Marisol; you moved to Fenwick in June to live with her, then separated by October and sank into a deep depression back in Thornbury by November. Your grandmother spent her final months in your parents' home in the autumn of 2003. You could not face your family, relied on friends Corbin, Dale, and Hamish, and your functioning fell sharply. By January 2004 you began swimming and returned to your therapist Victor Halloran; your functioning came back up. Your grandmother died in February 2004. The shifts pile up from 2001 through 2004 around your burnout, the failed audition, the brief relationship, and the depression that followed; your grandmother's illness and death sit within this span but are secondary to your own crisis. The period settles as therapy and swimming began to lift you.",
+     "change": null,
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10
+     ],
+     "name": "Your move to nursing school and the cutoff with your mother, 2008",
+     "reason": "In July 2008 you were at Alder Creek building with Silas and were too drained for conversation with your mother; she pressed to visit you despite your repeated refusals, and when she came you kept the door shut on her. In August 2008 you left for nursing school in Marlow Sound and stopped speaking to your mother, a cutoff that held for roughly a year. Your grandmother Lorna died in January 2008, opening the period, but your own shifts pile up around the move to nursing school and the conflict with your mother over that visit. The period settles as the silence began to ease and you found your footing in nursing.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren and her family's demands, 2019",
+     "reason": "In March 2017 you married Wren; you saw your mother a bit less once Wren came along. In October 2019 Wren's mother Frances retired; Wren became swamped with a street party, a fundraiser, and the drive to the lake for the retirement weekend. You responded by overfunctioning, laying out a strict plan to settle her. Wren talks with her father Hugo and brother Leo all day, and nothing happens to one that the others don't hear\u2014a tight fusion. At the lake weekend in late October, you were awake from the small hours with no more sleep and could only pull back as others rose; Wren became anxious when you had no sleep at family occasions. Your anxiety around her family is at its worst; you feel you don't belong. The shifts pile up in late October 2019 around Wren's swamped state, her family's tight fusion, and your sleep failure at the family occasion. The period settles after the weekend with the plan in place and the dinner done.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "This hint spans 1989 to 1994 and shares days with your own period 'the year I left home', which runs 1991 to 1994; the events outside your period (1989\u20131990) do not form a period by themselves\u2014they are too few and scattered to hold a change in the family around which shifts gather.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "Only one shift that counts: your functioning rose after starting therapy in August 1999, which does not open a period on its own. Your insomnia and performing peak in early 1999, and your separation from Joelle in July 1999 and the therapy start in August 1999 are a reaction to the split, not a period.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "The recount of shifts that count leaves two: your grandmother Lorna's death in January 2008 and your aunt Imogen's stroke in January 2009, both of which are events, not shifts in you or your immediate family's functioning. The shifts around your move to nursing school sit in a separate cluster.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The shifts in this hint belong to two periods or are secondary: those in October 2019 around Wren's swamped state and your sleep failure at the family occasion belong to the marriage period; your partner's cousin Alice's MS diagnosis in October 2017 and your sister Tara's baby on the way in October 2019 are changes in the extended family that do not gather your own shifts, so they stand apart from any period of your own.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period 'Jonah leaving for the conservatory, 1991\u20131992' shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period \"Jonah's father Clifford's return and the family rebuilding, 1989\u20131994\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period \"Jonah's move away and the long slump, 2001\u20132004\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: unanswered: Run r1 (1987-01-12 to 1987-09-12) has 3 shifts that count and came back neither as a period nor under `declined` with a reason.",
+  "answer 2: symptom_name: Period \"Your stepfather Desmond arriving and your father's separation, 1987\" is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 2: theirs: Period 'Your burnout and your move away, 2001\u20132004' shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: symptom_name: Period 'Your move to nursing school and the cutoff with your mother, 2008' is named by the person's trouble (['cutoff']); name it by the change in the family and its years.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: Only one shift that counts: your functioning rose after starting therapy in August 1999, which does not open a period on its own. Your insomnia and performing peak in early 1999, and your separation from Joelle in July 1999 and the therapy start in August 1999 are a reaction to the split, not a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "A change in the family, 1987",
+   "summary": "Around January 1987 when you began secondary school: you clashed with your stepfather Desmond and found him an obstacle rather than support, while you remained warm toward your father though always angling for his notice. Your stepmother Bettina separated from your father over the question of a baby around this time. In September 1987 you made the city chess squad but felt out of your depth at the bottom of the ladder. These shifts in relationship and anxiety pile up around the household changes and your own stretched reaching, held in place by your stepfather's arrival and your father's distance.",
+   "eventIds": [
+    41,
+    51,
+    144,
+    145
+   ],
+   "startDate": "1987-01-12",
+   "endDate": "1987-09-12",
+   "name": "A change in the family, 1987",
+   "source": "model",
+   "reason": "Around January 1987 when you began secondary school: you clashed with your stepfather Desmond and found him an obstacle rather than support, while you remained warm toward your father though always angling for his notice. Your stepmother Bettina separated from your father over the question of a baby around this time. In September 1987 you made the city chess squad but felt out of your depth at the bottom of the ladder. These shifts in relationship and anxiety pile up around the household changes and your own stretched reaching, held in place by your stepfather's arrival and your father's distance.",
+   "setAside": false,
+   "openingEventId": 41
+  },
+  {
+   "id": "c2",
+   "title": "A change in the family, 2008",
+   "summary": "In July 2008 you were at Alder Creek building with Silas and were too drained for conversation with your mother; she pressed to visit you despite your repeated refusals, and when she came you kept the door shut on her. In August 2008 you left for nursing school in Marlow Sound and stopped speaking to your mother, a cutoff that held for roughly a year. Your grandmother Lorna died in January 2008, opening the period, but your own shifts pile up around the move to nursing school and the conflict with your mother over that visit. The period settles as the silence began to ease and you found your footing in nursing.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-09-11",
+   "name": "A change in the family, 2008",
+   "source": "model",
+   "reason": "In July 2008 you were at Alder Creek building with Silas and were too drained for conversation with your mother; she pressed to visit you despite your repeated refusals, and when she came you kept the door shut on her. In August 2008 you left for nursing school in Marlow Sound and stopped speaking to your mother, a cutoff that held for roughly a year. Your grandmother Lorna died in January 2008, opening the period, but your own shifts pile up around the move to nursing school and the conflict with your mother over that visit. The period settles as the silence began to ease and you found your footing in nursing.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c3",
+   "title": "Your marriage to Wren and her family's demands, 2017\u20132019",
+   "summary": "In March 2017 you married Wren; you saw your mother a bit less once Wren came along. In October 2019 Wren's mother Frances retired; Wren became swamped with a street party, a fundraiser, and the drive to the lake for the retirement weekend. You responded by overfunctioning, laying out a strict plan to settle her. Wren talks with her father Hugo and brother Leo all day, and nothing happens to one that the others don't hear\u2014a tight fusion. At the lake weekend in late October, you were awake from the small hours with no more sleep and could only pull back as others rose; Wren became anxious when you had no sleep at family occasions. Your anxiety around her family is at its worst; you feel you don't belong. The shifts pile up in late October 2019 around Wren's swamped state, her family's tight fusion, and your sleep failure at the family occasion. The period settles after the weekend with the plan in place and the dinner done.",
+   "eventIds": [
+    29,
+    115,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your marriage to Wren and her family's demands, 2017\u20132019",
+   "source": "model",
+   "reason": "In March 2017 you married Wren; you saw your mother a bit less once Wren came along. In October 2019 Wren's mother Frances retired; Wren became swamped with a street party, a fundraiser, and the drive to the lake for the retirement weekend. You responded by overfunctioning, laying out a strict plan to settle her. Wren talks with her father Hugo and brother Leo all day, and nothing happens to one that the others don't hear\u2014a tight fusion. At the lake weekend in late October, you were awake from the small hours with no more sleep and could only pull back as others rose; Wren became anxious when you had no sleep at family occasions. Your anxiety around her family is at its worst; you feel you don't belong. The shifts pile up in late October 2019 around Wren's swamped state, her family's tight fusion, and your sleep failure at the family occasion. The period settles after the weekend with the plan in place and the dinner done.",
+   "setAside": false,
+   "openingEventId": 29
+  },
+  {
+   "id": "c4",
+   "title": "the year I left home",
+   "summary": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1991-03-12",
+   "endDate": "1994-01-12",
+   "name": "the year I left home",
+   "source": "user",
+   "reason": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c5",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 2,
+   "fn": 0,
+   "precision": 0.6,
+   "recall": 1.0,
+   "f1": 0.7499999999999999
+  },
+  "members": {
+   "tp": 34,
+   "fp": 3,
+   "fn": 7,
+   "precision": 0.918918918918919,
+   "recall": 0.8292682926829268,
+   "f1": 0.8717948717948718
+  },
+  "openings": [
+   0,
+   3
+  ],
+  "hypotheses": 0,
+  "not clusters": 1,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "\"Your marriage to Wren and her family's demands, 2017\u20132019\" is 'The family weekend at the lake, 2019', not a cluster",
+  "'A change in the family, 1987' is the plain name the code fell back to",
+  "'A change in the family, 2008' is the plain name the code fell back to",
+  "cluster F1 0.75 under 0.8"
+ ],
+ "cost": 0.059534
+}

@@ -1,0 +1,420 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond settling into the family, 1987",
+     "reason": "Around 1987, when you began secondary school, three shifts pile up: you and Desmond grew more distant, you leaned harder toward your dad for notice, and your stepparents separated over starting a family; that autumn you made the chess squad and your anxiety rose. These are your shifts and your father's family's, and no one else's shows then.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86
+     ],
+     "name": "Your grandfather Gordon's death and your move to secondary school, 1989\u20131992",
+     "reason": "From 1989 to early 1992, shifts pile up around your grandfather's return to the family, your move to the rebuilt house with Desmond's children, and his death in 1991. Within those years: your late nights and sleep troubles began and stayed, you dropped chess and debate, you underfunctioned on college forms while your mother filled them in, you fused with Rafe at conservatory, a wrist injury stopped your playing and your anxiety and functioning fell, you and Rafe had a blow-up, you got high and absorbed yourself in radios, and by early 1992 you were lost and low with no footing. Your grandmother was treated for thyroid cancer around the same time. The period reaches from your grandfather's return in early 1989 to the spring of 1992, when you earned money fixing radios and things began to settle.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106
+     ],
+     "name": "Your burnout from performing and the end of your relationship with Marisol, 2001\u20132004",
+     "reason": "From 2001 to early 2004, around your grandmother's cancer diagnosis and your disastrous audition, shifts pile up month by month: you ran out of steam for performing, your anxiety rose and functioning fell, you grew distant from your parents, you left Thornbury for Gull Harbour, you met Marisol and moved to Fenwick, you split within the year, you sank into deep depression and could not face your family, you relied on friends instead, your dad and Corbin talked together, and you began swimming and returned to your therapist. Your grandmother died in February 2004 near the end. The period settles as you began to recover through therapy and moved toward your parents again.",
+     "change": null,
+     "openingId": 175
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna's death and the cutoff from your mother, 2008",
+     "reason": "Around early 2008, when your grandmother died and you went to nursing school, shifts pile up in a few months: your grandmother and grandfather died, you spent weeks building at Alder Creek and grew too drained to talk with your mother, she pressed to visit and you kept the door shut, and you stopped speaking to her when you moved to Marlow Sound. The silence held for roughly a year. No one else's shifts show in these months.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren and her mother's retirement, 2017\u20132019",
+     "reason": "From your wedding in March 2017 through late October 2019, shifts pile up around your marriage, Wren's close ties with her father and brother, and her mother's retirement party: you and your mother grew slightly more distant, your cousin Alice was diagnosed with multiple sclerosis, Tara married and had a baby on the way, Wren's aunt began showing memory loss and lashing out, your job steadied and your anxiety eased, but by autumn 2019 your anxiety rose again as you felt you ought to push your projects forward, you started a sleeping pill, you aimed for shorter regular calls with your mother, Wren became swamped with events, you overfunctioned laying out a plan for her, her family fused around her needs, and at the lake house weekend your sleep broke and you felt you did not belong. The period reaches from the spring of 2017 through late October 2019, settling as things quieted after the weekend.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "A recount without shifts told as how things always were leaves one shift that counts: your therapy after the split with Joelle in 1999. One shift alone is a reaction, so there is not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "The events span from 2017 to 2019 with extended quiet in between; they do not fall near enough together to hold as one period. The wedding in March 2017 and the lake house weekend in October 2019 are nearly three years apart with a long quiet between them.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond moving in and your parents' separation, 1987",
+     "reason": "Around 1987, when you began secondary school, three shifts pile up: you and Desmond grew more distant, you leaned harder toward your dad for notice, and your stepparents separated over starting a family; that autumn you made the chess squad and your anxiety rose. These are your shifts and your father's family's, and no one else's shows then.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86
+     ],
+     "name": "Your grandfather Gordon's return and death, 1989\u20131992",
+     "reason": "From 1989 to early 1992, shifts pile up around your grandfather's return to the family, your move to the rebuilt house with Desmond's children, and his death in 1991. Within those years: your late nights and sleep troubles began and stayed, you dropped chess and debate, you underfunctioned on college forms while your mother filled them in, you fused with Rafe at conservatory, a wrist injury stopped your playing and your anxiety and functioning fell, you and Rafe had a blow-up, you got high and absorbed yourself in radios, and by early 1992 you were lost and low with no footing. Your grandmother was treated for thyroid cancer around the same time. The period reaches from your grandfather's return in early 1989 to the spring of 1992, when you earned money fixing radios and things began to settle.",
+     "change": null,
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106
+     ],
+     "name": "Your grandmother Winifred's cancer diagnosis and your leaving home, 2001\u20132004",
+     "reason": "From 2001 to early 2004, around your grandmother's cancer diagnosis and your disastrous audition, shifts pile up month by month: you ran out of steam for performing, your anxiety rose and functioning fell, you grew distant from your parents, you left Thornbury for Gull Harbour, you met Marisol and moved to Fenwick, you split within the year, you sank into deep depression and could not face your family, you relied on friends instead, your dad and Corbin talked together, and you began swimming and returned to your therapist. Your grandmother died in February 2004 near the end. The period settles as you began to recover through therapy and moved toward your parents again.",
+     "change": null,
+     "openingId": 175
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna's death and your move to nursing school, 2008",
+     "reason": "Around early 2008, when your grandmother died and you went to nursing school, shifts pile up in a few months: your grandmother and grandfather died, you spent weeks building at Alder Creek and grew too drained to talk with your mother, she pressed to visit and you kept the door shut, and you stopped speaking to her when you moved to Marlow Sound. The silence held for roughly a year. No one else's shifts show in these months.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren and her mother's retirement, 2017\u20132019",
+     "reason": "From your wedding in March 2017 through late October 2019, shifts pile up around your marriage, Wren's close ties with her father and brother, and her mother's retirement party: you and your mother grew slightly more distant, your cousin Alice was diagnosed with multiple sclerosis, Tara married and had a baby on the way, Wren's aunt began showing memory loss and lashing out, your job steadied and your anxiety eased, but by autumn 2019 your anxiety rose again as you felt you ought to push your projects forward, you started a sleeping pill, you aimed for shorter regular calls with your mother, Wren became swamped with events, you overfunctioned laying out a plan for her, her family fused around her needs, and at the lake house weekend your sleep broke and you felt you did not belong. The period reaches from the spring of 2017 through late October 2019, settling as things quieted after the weekend.",
+     "change": null,
+     "openingId": null
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events around 1987 span only one year with wide gaps between them; no change in the family on a known date sits among them to open a period, and there is not enough in the diagram to choose a reading.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "A recount without shifts told as how things always were leaves one shift that counts: your therapy after the split with Joelle in 1999. One shift alone is a reaction, so there is not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "The events span from 2017 to 2019 with extended quiet in between; they do not fall near enough together to hold as one period. The wedding in March 2017 and the lake house weekend in October 2019 are nearly three years apart with a long quiet between them.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period 'Your stepfather Desmond settling into the family, 1987' is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 1: symptom_name: Period 'Your burnout from performing and the end of your relationship with Marisol, 2001\u20132004' is named by the person's trouble (['performing']); name it by the change in the family and its years.",
+  "answer 1: symptom_name: Period \"Your grandmother Lorna's death and the cutoff from your mother, 2008\" is named by the person's trouble (['cutoff']); name it by the change in the family and its years.",
+  "answer 1: unknown_date: Period 'Your stepfather Desmond settling into the family, 1987' opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 1: unknown_date: Period \"Your grandfather Gordon's death and your move to secondary school, 1989\u20131992\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: symptom_name: Period \"Your stepfather Desmond moving in and your parents' separation, 1987\" is named by the person's trouble (['moving', 'stepfather']); name it by the change in the family and its years.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: A recount without shifts told as how things always were leaves one shift that counts: your therapy after the split with Joelle in 1999. One shift alone is a reaction, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "A change in the family, 1987",
+   "summary": "Around 1987, when you began secondary school, three shifts pile up: you and Desmond grew more distant, you leaned harder toward your dad for notice, and your stepparents separated over starting a family; that autumn you made the chess squad and your anxiety rose. These are your shifts and your father's family's, and no one else's shows then.",
+   "eventIds": [
+    41,
+    51,
+    144,
+    145
+   ],
+   "startDate": "1987-01-12",
+   "endDate": "1987-09-12",
+   "name": "A change in the family, 1987",
+   "source": "model",
+   "reason": "Around 1987, when you began secondary school, three shifts pile up: you and Desmond grew more distant, you leaned harder toward your dad for notice, and your stepparents separated over starting a family; that autumn you made the chess squad and your anxiety rose. These are your shifts and your father's family's, and no one else's shows then.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "Your grandfather Gordon's return and death, 1989\u20131992",
+   "summary": "From 1989 to early 1992, shifts pile up around your grandfather's return to the family, your move to the rebuilt house with Desmond's children, and his death in 1991. Within those years: your late nights and sleep troubles began and stayed, you dropped chess and debate, you underfunctioned on college forms while your mother filled them in, you fused with Rafe at conservatory, a wrist injury stopped your playing and your anxiety and functioning fell, you and Rafe had a blow-up, you got high and absorbed yourself in radios, and by early 1992 you were lost and low with no footing. Your grandmother was treated for thyroid cancer around the same time. The period reaches from your grandfather's return in early 1989 to the spring of 1992, when you earned money fixing radios and things began to settle.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    146,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1992-01-12",
+   "name": "Your grandfather Gordon's return and death, 1989\u20131992",
+   "source": "model",
+   "reason": "From 1989 to early 1992, shifts pile up around your grandfather's return to the family, your move to the rebuilt house with Desmond's children, and his death in 1991. Within those years: your late nights and sleep troubles began and stayed, you dropped chess and debate, you underfunctioned on college forms while your mother filled them in, you fused with Rafe at conservatory, a wrist injury stopped your playing and your anxiety and functioning fell, you and Rafe had a blow-up, you got high and absorbed yourself in radios, and by early 1992 you were lost and low with no footing. Your grandmother was treated for thyroid cancer around the same time. The period reaches from your grandfather's return in early 1989 to the spring of 1992, when you earned money fixing radios and things began to settle.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c3",
+   "title": "Your grandmother Winifred's cancer diagnosis and your leaving home, 2001\u20132003",
+   "summary": "From 2001 to early 2004, around your grandmother's cancer diagnosis and your disastrous audition, shifts pile up month by month: you ran out of steam for performing, your anxiety rose and functioning fell, you grew distant from your parents, you left Thornbury for Gull Harbour, you met Marisol and moved to Fenwick, you split within the year, you sank into deep depression and could not face your family, you relied on friends instead, your dad and Corbin talked together, and you began swimming and returned to your therapist. Your grandmother died in February 2004 near the end. The period settles as you began to recover through therapy and moved toward your parents again.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "Your grandmother Winifred's cancer diagnosis and your leaving home, 2001\u20132003",
+   "source": "model",
+   "reason": "From 2001 to early 2004, around your grandmother's cancer diagnosis and your disastrous audition, shifts pile up month by month: you ran out of steam for performing, your anxiety rose and functioning fell, you grew distant from your parents, you left Thornbury for Gull Harbour, you met Marisol and moved to Fenwick, you split within the year, you sank into deep depression and could not face your family, you relied on friends instead, your dad and Corbin talked together, and you began swimming and returned to your therapist. Your grandmother died in February 2004 near the end. The period settles as you began to recover through therapy and moved toward your parents again.",
+   "setAside": false,
+   "openingEventId": 175
+  },
+  {
+   "id": "c4",
+   "title": "Your grandmother Lorna's death and your move to nursing school, 2008",
+   "summary": "Around early 2008, when your grandmother died and you went to nursing school, shifts pile up in a few months: your grandmother and grandfather died, you spent weeks building at Alder Creek and grew too drained to talk with your mother, she pressed to visit and you kept the door shut, and you stopped speaking to her when you moved to Marlow Sound. The silence held for roughly a year. No one else's shifts show in these months.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-08-11",
+   "name": "Your grandmother Lorna's death and your move to nursing school, 2008",
+   "source": "model",
+   "reason": "Around early 2008, when your grandmother died and you went to nursing school, shifts pile up in a few months: your grandmother and grandfather died, you spent weeks building at Alder Creek and grew too drained to talk with your mother, she pressed to visit and you kept the door shut, and you stopped speaking to her when you moved to Marlow Sound. The silence held for roughly a year. No one else's shifts show in these months.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c5",
+   "title": "Your marriage to Wren and her mother's retirement, 2017\u20132019",
+   "summary": "From your wedding in March 2017 through late October 2019, shifts pile up around your marriage, Wren's close ties with her father and brother, and her mother's retirement party: you and your mother grew slightly more distant, your cousin Alice was diagnosed with multiple sclerosis, Tara married and had a baby on the way, Wren's aunt began showing memory loss and lashing out, your job steadied and your anxiety eased, but by autumn 2019 your anxiety rose again as you felt you ought to push your projects forward, you started a sleeping pill, you aimed for shorter regular calls with your mother, Wren became swamped with events, you overfunctioned laying out a plan for her, her family fused around her needs, and at the lake house weekend your sleep broke and you felt you did not belong. The period reaches from the spring of 2017 through late October 2019, settling as things quieted after the weekend.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202,
+    151
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-26",
+   "name": "Your marriage to Wren and her mother's retirement, 2017\u20132019",
+   "source": "model",
+   "reason": "From your wedding in March 2017 through late October 2019, shifts pile up around your marriage, Wren's close ties with her father and brother, and her mother's retirement party: you and your mother grew slightly more distant, your cousin Alice was diagnosed with multiple sclerosis, Tara married and had a baby on the way, Wren's aunt began showing memory loss and lashing out, your job steadied and your anxiety eased, but by autumn 2019 your anxiety rose again as you felt you ought to push your projects forward, you started a sleeping pill, you aimed for shorter regular calls with your mother, Wren became swamped with events, you overfunctioned laying out a plan for her, her family fused around her needs, and at the lake house weekend your sleep broke and you felt you did not belong. The period reaches from the spring of 2017 through late October 2019, settling as things quieted after the weekend.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.75,
+   "recall": 1.0,
+   "f1": 0.8571428571428571
+  },
+  "members": {
+   "tp": 28,
+   "fp": 5,
+   "fn": 13,
+   "precision": 0.8484848484848485,
+   "recall": 0.6829268292682927,
+   "f1": 0.7567567567567567
+  },
+  "openings": [
+   1,
+   3
+  ],
+  "hypotheses": 1,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 1987' is the plain name the code fell back to"
+ ],
+ "cost": 0.050251
+}

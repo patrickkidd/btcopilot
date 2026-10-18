@@ -1,0 +1,111 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather's death in July 1989, within the following months: your mother's worry over money in March 1988 and her distance from your father over it by May 1988, then your brother's grades falling in November 1989, and your mother calmer once back at work by March 1990. The shifts in your parents' relationship and your mother's anxiety pile up in the months before and after your grandfather's death, with your brother's functioning falling in the months after.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della's breast cancer diagnosis, 1994\u20131996",
+     "reason": "Around your mother's diagnosis in February 1995, within the surrounding year: your migraines starting in March 1994 after you left for college in September 1993, your calls toward your brother most nights by April 1994, then your stopping his calls by June 1995, and your distance from your mother by February 1996. Your own symptom and the shifts in how you reach toward and away from your family sit close around your mother's diagnosis.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather's death in July 1989, within the following months: your mother's worry over money in March 1988 and her distance from your father over it by May 1988, then your brother's grades falling in November 1989, and your mother calmer once back at work by March 1990. The shifts in your parents' relationship and your mother's anxiety pile up in the months before and after your grandfather's death, with your brother's functioning falling in the months after.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather's death in July 1989, within the following months: your mother's worry over money in March 1988 and her distance from your father over it by May 1988, then your brother's grades falling in November 1989, and your mother calmer once back at work by March 1990. The shifts in your parents' relationship and your mother's anxiety pile up in the months before and after your grandfather's death, with your brother's functioning falling in the months after.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della's breast cancer diagnosis, 1993\u20131996",
+   "summary": "Around your mother's diagnosis in February 1995, within the surrounding year: your migraines starting in March 1994 after you left for college in September 1993, your calls toward your brother most nights by April 1994, then your stopping his calls by June 1995, and your distance from your mother by February 1996. Your own symptom and the shifts in how you reach toward and away from your family sit close around your mother's diagnosis.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della's breast cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your mother's diagnosis in February 1995, within the surrounding year: your migraines starting in March 1994 after you left for college in September 1993, your calls toward your brother most nights by April 1994, then your stopping his calls by June 1995, and your distance from your mother by February 1996. Your own symptom and the shifts in how you reach toward and away from your family sit close around your mother's diagnosis.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.00867
+}
