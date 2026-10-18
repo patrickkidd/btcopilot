@@ -8,16 +8,20 @@
 
 ## FD-383 job 042 — three code fixes behind the deep misses; a name checked word for word (2026-10-18)
 
-**Change**: cluster detection is version 20. One prompt line changed: the name line no longer says
+**Change**: cluster detection is version 20. Two prompt lines changed. The name line no longer says
 the check reads only the first four letters of a word; it says the check compares whole words, and
 that a first name, the event's kind and a word for a relative (mother, father, brother, sister and
-their step- and grand- forms) are always safe. The rest is code the prompt already described. A shift
+their step- and grand- forms) are always safe. The hint's count line no longer says the count keeps
+the shifts told as how things always were; it says the count already leaves out a shift told with
+the listed words, but not one told so in other words, which the coach still strikes before keeping a
+hint. The rest is code the prompt already described. A shift
 whose description says always, forever, never, mostly, on the whole or for years supports no period
 and starts no hint, so a time made only of such shifts is offered as no hint at all. One person's
 trouble lifting counts beside another person's rise in the same months, both on a known date, as one
 movement in the family; a lift alone counts for nothing and never starts a hint. A hint is marked
-the default only when it holds three shifts that count and a change in who is in the family on a
-known date; without one it is offered as a question. A period is refused for its length only when it
+the default only when it holds three shifts that count and a change in the family on a known date:
+any event the diagram lists that is not a shift, a death or a birth, a diagnosis, a move, a job lost
+or someone leaving home; without one it is offered as a question. A period is refused for its length only when it
 covers more than half of the years the diagram's dated events cover, never at ten years or under, and
 the refusal says so; a climb over more than ten years in a long history stands. Cluster detection
 on Sonnet 5 is called with thinking switched off, as on Haiku 4.5.
