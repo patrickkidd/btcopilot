@@ -13,10 +13,11 @@ the check reads only the first four letters of a word; it says the check compare
 that a first name, the event's kind and a word for a relative (mother, father, brother, sister and
 their step- and grand- forms) are always safe. The hint's count line no longer says the count keeps
 the shifts told as how things always were; it says the count already leaves out a shift told with
-the listed words, but not one told so in other words, which the coach still strikes before keeping a
-hint. The rest is code the prompt already described. A shift
-whose description says always, forever, never, mostly, on the whole or for years supports no period
-and starts no hint, so a time made only of such shifts is offered as no hint at all. One person's
+always or forever, but not one told so in other words, which the coach still strikes before keeping
+a hint. The rest is code the prompt already described. A shift whose description says always or
+forever supports no period and starts no hint, so a time made only of such shifts is offered as no
+hint at all; "never", "mostly", "on the whole" and "for years" also tell real changes ("never spoke
+to his father again after the funeral"), so the code leaves them to the coach. One person's
 trouble lifting counts beside another person's rise in the same months, both on a known date, as one
 movement in the family; a lift alone counts for nothing and never starts a hint. A hint is marked
 the default only when it holds three shifts that count and a change in the family on a known date:
@@ -34,8 +35,10 @@ contradicted the prompt's own line that only a period covering the whole history
 ordinary level. Sonnet 5 at high effort spent its whole limit thinking in 20 of 20 tries.
 
 **Evals**: unit tests in `btcopilot/tests/test_clusters.py` and `test_llmutil.py`, each seen to fail
-with its fix taken out; the cluster F1 suite's ten tries on Haiku 4.5 and Sonnet 5 follow in the
-same job.
+with its fix taken out. The cluster F1 suite, ten tries per case through Bedrock, before the
+always-and-forever narrowing: Haiku 4.5 passed `deep` 8 of 10, `deep-unasked` 9 of 10, `harbor` 5 of
+10 and `orchard` 10 of 10. The Sonnet 5 column measures a failure to read its answer as the JSON
+asked for, not cluster detection. Haiku is tried again on the head that narrows the words.
 
 ---
 
