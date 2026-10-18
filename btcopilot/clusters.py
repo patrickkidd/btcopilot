@@ -126,11 +126,13 @@ SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
 RISES = (("symptom", VariableShift.Up), ("anxiety", VariableShift.Up))
 LIFTS = (("symptom", VariableShift.Down), ("anxiety", VariableShift.Down))
-# A shift whose description holds one of these words is told as how things
-# always were: the family's ordinary level, which counts toward no period
-# [Oracle: R-0850]. The words are the ones the prompt names; a standing pattern
-# told in other words is the coach's to strike when it reads the hint.
-STANDING = re.compile(r"\b(?:always|forever|never|mostly|on the whole|for years)\b")
+# A shift whose description says always or forever is told as how things always
+# were: the family's ordinary level, which counts toward no period
+# [Oracle: R-0850]. Only those two words: "never", "mostly", "on the whole" and
+# "for years" also tell real changes ("never spoke to him again after the
+# funeral"), so a standing pattern told in other words is the coach's to strike
+# when it reads the hint.
+STANDING = re.compile(r"\b(?:always|forever)\b")
 # How far apart, in days, one person's lift and another's rise may fall and
 # still be one movement: the same months, about three of them. Guidance, like
 # `SPAN_DAYS`, not a ruled number [Oracle: R-0850].
