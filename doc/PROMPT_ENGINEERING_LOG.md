@@ -2,7 +2,66 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-08 (clusters as hypotheses of a family process)
+**Last Updated**: 2026-10-18 (the cluster prompt rewritten once from the sources, every line cited)
+
+---
+
+## FD-383 job 041 — the cluster prompt rewritten once from the sources, every line cited (2026-10-18)
+
+**Change**: cluster detection's prompt (private) and its three fragments are version 19, written
+once from the inventory of every passage, statement and ruling behind the prompt (btcopilot-sources,
+`research/clusters/INVENTORY.md`) and the fourteen conflicts decided there. Every instruction line
+carries a comment naming its sources by inventory id, stripped at render; the guard
+`btcopilot/tests/test_clusterprompt.py` fails a line with no source, an id not in the inventory, or a
+banned word in the rendered text. Kept: every version 18 line the inventory maps to a source. Dropped
+or rewritten: the lines resting on a commit message alone, the flat ten-year line (the whole-history
+line stays), the terms fragment's "its name says what seems to have shifted", and every word his
+vocabulary rule bans (the hints go to the call as `hints`; a declined hint comes back under `hint`). Added, one sentence each: an acute episode of a few days around a visit or a
+family occasion is not a period, while a flare-up of a couple of weeks can be; a lasting symptom, a
+lasting drop in functioning, a changed atmosphere or a stage of the household's life is the family's
+level, never a period, and a settled family may keep a symptom; a move, a retirement, a job lost or
+changed, money trouble, a business failing or a relative moving in may open a period; a lift in one
+person's trouble in the same months as another's rise is one movement; a lasting complaint is coded
+as functioning down and counts toward no period; a period's events hang together as reactions
+passing from person to person, and the one who shifts may be someone not close to the one lost; a
+partner's family is this family from the day the couple formed; a quick onset points to the extended
+family, a slow build to the household; a death or a turn to a helper may end a period as well as open
+one; a change inside a period under way deepens it; a climb over years is one period only while no
+settling quiet falls between its steps, and events on either side of such a quiet stay apart; a time
+whose shifts pile up around no change in the family on a known date is held as a question for the
+coach, declined with "not enough in the diagram to choose a reading", never drawn; a period of one
+person's own trouble can be a cluster when its reason says no one else's shifts show; the numbers
+(three events, two shifts) are guidance with the reason naming why fewer suffice, and one shift alone
+is still no period; a stored period is kept while the events still read as they did and reshaped,
+with `change` saying what moved it, when they do not; a period left out is set aside, never deleted;
+a period is named by the change that opened it and its years, who and what as the people list says,
+never by anything the person did or felt, never with a word from the person's own shifts; the name,
+reason and change never name a book, the theory or the word cluster. The example lines are from the
+invented orchard family (`btcopilot/tests/live/clusters/cases/orchard.json`), none from a real
+diagram. DETECTION_VERSION 19.
+
+**Why**: Patrick, 2026-10-16 and 2026-10-17: the vocabulary is mandatory everywhere, prompt text
+included; this rewrite is to be the last for a while, fitted to his signed clusters and to the
+literature rather than to the last failed try. Rulings behind the new lines are cited in the prompt
+by inventory id; the fourteen decisions are in `research/clusters/CONFLICTS-DECIDED.md`.
+
+**Evals**: the cluster F1 suite (`btcopilot/tests/live/clusters/`), ten tries per model on Haiku 4.5
+and Sonnet 5 through Bedrock, the signed `deep` key and the placeholder `orchard` key both at 8 of 10
+or better; the try folders under `runs-worker/041/`.
+
+**Versions 10 to 18, not logged at the time (FD-381, 2026-10-14 to 2026-10-15):** 10, the approved
+rules A1 to A9: any change in the family may open a period, only rising shifts support one, events of
+unknown date are left out, a period is named by the change, the person's periods are kept, a failing
+period is set aside, the opening event is stored. 11, the periods the person names when asked when the
+most was going on are written as theirs. 12, fewer than three supporting shifts counts against a period
+and no longer refuses it. 13, the hints offered include those with fewer than three supporting shifts,
+each with its count. 14, an event of unknown date is offered and may belong to a period but never
+opens one; a name is checked against every word the person's own trouble is told in. 15, a hint is
+seeded only at a shift of known date and needs two supporting shifts, the people are offered with what
+each is to the person, every hint comes back as a period or is declined with a reason, and a second
+call sees the first answer. 16, the person's period read again replaces its stored copy. 17, a
+period's name and sentences never give a cause or speak as the person. 18, and never hold a raw
+event or cluster id.
 
 ---
 
