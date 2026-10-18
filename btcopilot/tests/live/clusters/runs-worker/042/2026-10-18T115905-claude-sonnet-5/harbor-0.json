@@ -1,0 +1,156 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      121,
+      122
+     ],
+     "name": "Teodor's death at the bus depot, 1978-1979",
+     "reason": "Around Teodor's death in January 1978, within the next year and a half: Delphine's falling off in cooking and eating, her going to Odette's every evening, Duncan and Odette's distance through night shifts, Anton's drinking at lunch, Odette's lying awake over her mother and Anton, and Callum's string of ear infections; Delphine's move to the library the following spring is where it settles, and the quarrel over selling the house is left out since no one can place its month.",
+     "change": null,
+     "openingId": 113
+    },
+    {
+     "id": "r3",
+     "eventIds": [
+      129,
+      130,
+      131,
+      132
+     ],
+     "name": "Odette's bed rest in pregnancy, 1984",
+     "reason": "Around Odette being ordered to bed in March 1984, within a few months: Hazel coming every morning to keep the house, Hazel and Duncan's quarrel over how she kept it, and Callum's stammer returning; the birth of Ines that September closes the stretch, and Maren's bedtime trouble is left out since no month for it is known.",
+     "change": null,
+     "openingId": 129
+    },
+    {
+     "id": "r4",
+     "eventIds": [
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153
+     ],
+     "name": "Hazel's diagnosis with Parkinson's disease, 1986-1997",
+     "reason": "Around Hazel's diagnosis in September 1986, a long climb with only partial relief between its steps: Ambrose taking over her care and later giving up his workshop, Duncan's nightly calls for news of her and his later drinking and fights with Odette, the conflict between Duncan and Lyle over who should help, Ambrose's own chest pains, Hazel's falls and recoveries, Pearl's turning to nurse her sister, and Pearl's panic spells at the wheel; it settles with Hazel's move into the Fairlie home and Duncan cutting his drinking back, and Duncan's distance from his parents is left out since no year for it is known.",
+     "change": null,
+     "openingId": 135
+    },
+    {
+     "id": "r5",
+     "eventIds": [
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      161
+     ],
+     "name": "Callum's leaving for a job up north, 1999-2000",
+     "reason": "Around Callum leaving home for the mines in May 1999, within the year either side: his rows with Duncan over going, Odette's unsettled nights at the thought of it, Duncan missing work and sitting up in the garage, Ines skipping school that autumn, and Odette pulling Ines close everywhere she went; it settles with Ines back at school and through her exams, and the Sunday phone calls are left out since no one can say when they began.",
+     "change": null,
+     "openingId": 156
+    },
+    {
+     "id": "r6",
+     "eventIds": [
+      164,
+      165,
+      166,
+      168,
+      169
+     ],
+     "name": "Hazel's death at the Fairlie home, 2003",
+     "reason": "Around Hazel's death in January 2003, within the year: Maren's broken sleep, her leaving and then losing the bookshop job, and her dread of buses and crowded shops; it settles with her taking the garden centre job that November, and her distance from her mother is left out since the month is not known.",
+     "change": null,
+     "openingId": 164
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1980-1982: the recount leaves only the symptom shift for Emil and the distance between Duncan and Lyle, which has no known date and is marked as never opening, so there is not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2005: the shifts around Ines's car accident and brief hospital stay all fall within the same few days of November 19-23, with calm returning once she was home, an acute episode around a real threat rather than a period.",
+     "hint": "r7",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r3' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r4' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r5' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r6' is not one of the app's periods listed.",
+  "gave up: unknown_group: Period 'r1' is not one of the app's periods listed."
+ ],
+ "stored": [],
+ "score": {
+  "clusters": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 5,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0
+  },
+  "members": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   0
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'Gran Hazel dying' is not stored as theirs",
+  "cluster F1 0.00 under 0.8"
+ ],
+ "cost": 0.167688
+}

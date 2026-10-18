@@ -1,0 +1,215 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around Walter moving the family across the country to buy an apple orchard in March 1952, within the year: June's anxiety and pull toward her sister Edna, Walter's distance from her and cutoff from his brother Harlan, Glen's fights at school, June's weeks in bed that winter, Walter and June's rows over money for new trees, and June joining the church choir and writing less to Edna by September 1953. The shifts settle as June's functioning lifts and her anxiety drops.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      141,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968\u20131969",
+     "reason": "Around the orchard's failure in May 1968 when the bank called in the loan: Walter's drinking, conflict with Glen over blame for the loan, Glen and Marian overfunctioning to take over the family's money and talks with the bank, Carl's asthma attacks that winter, Nora wetting the bed again in April 1969, and Walter stopping drinking and taking pruning work by October 1969. The period settles as Walter's functioning lifts.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      158
+     ],
+     "name": "Glen's job loss at the cannery, 1975\u20131976",
+     "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975, within the year: Glen's functioning down and sitting in the truck for hours, loud fights between Glen and Marian over money, Marian overfunctioning with a second night job, Nora stopping eating and losing weight, Nora's distance from Marian and keeping to her room, Walter drinking again after six years without, and Nora eating again and making the track team by June 1976. The period settles as Nora's functioning lifts.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      177,
+      178
+     ],
+     "name": "Wilma moving into Nora's house, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within months: Nora and Wilma's conflict over the children's bedtimes and meals, Hollis's distance from Nora and move toward his mother, Owen's tantrums at preschool, Wilma overfunctioning and taking over Lily's care, Nora's eczema flaring on both hands, Nora and Hollis's rows most nights, and Wilma taking a flat in town by June 1991. The period settles as Nora's eczema clears over the summer.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1994: The wildfire that ordered the family out for three nights in August 1994 was an acute episode. All shifts\u2014Nora's anxiety, Lily's nausea, the conflict between Nora and Hollis, Owen's sleep trouble\u2014fall within four days around a real threat, and the family was calm again by August 16 once home. The episode does not open a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996\u20131997: A recount of shifts leaves two that count: Tess stopping drinking and functioning up by June 1997, and a conflict between Tess and Rick. Tess's drinking itself and Nora's anxiety over Tess are each tied to lasting troubles or the person's own reaction rather than a shift in the family's balance. No change in who is in the family or in how a key member functions sits among these events on a known date to open a period.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: declined: Run r5 (1994-08-12 to 1994-08-16) has 5 shifts that count and was declined: 1994: The wildfire that ordered the family out for three nights in August 1994 was an acute episode. All shifts\u2014Nora's anxiety, Lily's nausea, the conflict between Nora and Hollis, Owen's sleep trouble\u2014fall within four days around a real threat, and the family was calm again by August 16 once home. The episode does not open a period.",
+  "answer 1: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996\u20131997: A recount of shifts leaves two that count: Tess stopping drinking and functioning up by June 1997, and a conflict between Tess and Rick. Tess's drinking itself and Nora's anxiety over Tess are each tied to lasting troubles or the person's own reaction rather than a shift in the family's balance. No change in who is in the family or in how a key member functions sits among these events on a known date to open a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Around Walter moving the family across the country to buy an apple orchard in March 1952, within the year: June's anxiety and pull toward her sister Edna, Walter's distance from her and cutoff from his brother Harlan, Glen's fights at school, June's weeks in bed that winter, Walter and June's rows over money for new trees, and June joining the church choir and writing less to Edna by September 1953. The shifts settle as June's functioning lifts and her anxiety drops.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    114,
+    115,
+    116,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Around Walter moving the family across the country to buy an apple orchard in March 1952, within the year: June's anxiety and pull toward her sister Edna, Walter's distance from her and cutoff from his brother Harlan, Glen's fights at school, June's weeks in bed that winter, Walter and June's rows over money for new trees, and June joining the church choir and writing less to Edna by September 1953. The shifts settle as June's functioning lifts and her anxiety drops.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failing, 1968\u20131969",
+   "summary": "Around the orchard's failure in May 1968 when the bank called in the loan: Walter's drinking, conflict with Glen over blame for the loan, Glen and Marian overfunctioning to take over the family's money and talks with the bank, Carl's asthma attacks that winter, Nora wetting the bed again in April 1969, and Walter stopping drinking and taking pruning work by October 1969. The period settles as Walter's functioning lifts.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    136,
+    137,
+    141,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failing, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard's failure in May 1968 when the bank called in the loan: Walter's drinking, conflict with Glen over blame for the loan, Glen and Marian overfunctioning to take over the family's money and talks with the bank, Carl's asthma attacks that winter, Nora wetting the bed again in April 1969, and Walter stopping drinking and taking pruning work by October 1969. The period settles as Walter's functioning lifts.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Glen's job loss at the cannery, 1975\u20131976",
+   "summary": "Around Glen losing his job when the Ridgeport cannery closed in February 1975, within the year: Glen's functioning down and sitting in the truck for hours, loud fights between Glen and Marian over money, Marian overfunctioning with a second night job, Nora stopping eating and losing weight, Nora's distance from Marian and keeping to her room, Walter drinking again after six years without, and Nora eating again and making the track team by June 1976. The period settles as Nora's functioning lifts.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    154,
+    155,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "Glen's job loss at the cannery, 1975\u20131976",
+   "source": "model",
+   "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975, within the year: Glen's functioning down and sitting in the truck for hours, loud fights between Glen and Marian over money, Marian overfunctioning with a second night job, Nora stopping eating and losing weight, Nora's distance from Marian and keeping to her room, Walter drinking again after six years without, and Nora eating again and making the track team by June 1976. The period settles as Nora's functioning lifts.",
+   "setAside": false,
+   "openingEventId": 148
+  },
+  {
+   "id": "c4",
+   "title": "Wilma moving into Nora's house, 1990\u20131991",
+   "summary": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within months: Nora and Wilma's conflict over the children's bedtimes and meals, Hollis's distance from Nora and move toward his mother, Owen's tantrums at preschool, Wilma overfunctioning and taking over Lily's care, Nora's eczema flaring on both hands, Nora and Hollis's rows most nights, and Wilma taking a flat in town by June 1991. The period settles as Nora's eczema clears over the summer.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    177,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma moving into Nora's house, 1990\u20131991",
+   "source": "model",
+   "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within months: Nora and Wilma's conflict over the children's bedtimes and meals, Hollis's distance from Nora and move toward his mother, Owen's tantrums at preschool, Wilma overfunctioning and taking over Lily's care, Nora's eczema flaring on both hands, Nora and Hollis's rows most nights, and Wilma taking a flat in town by June 1991. The period settles as Nora's eczema clears over the summer.",
+   "setAside": false,
+   "openingEventId": 168
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 33,
+   "fp": 0,
+   "fn": 11,
+   "precision": 1.0,
+   "recall": 0.75,
+   "f1": 0.8571428571428571
+  },
+  "openings": [
+   4,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.019645
+}

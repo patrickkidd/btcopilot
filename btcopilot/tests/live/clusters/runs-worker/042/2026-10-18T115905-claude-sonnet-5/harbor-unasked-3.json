@@ -1,0 +1,265 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      121,
+      122
+     ],
+     "name": "Teodor's death at the bus depot, 1978-1979",
+     "reason": "Around Teodor's collapse and death in January 1978, within the year: Delphine's drop in eating, her evenings at her mother's, Duncan and Odette's distance through night shifts, Anton's drinking and warning at work, Odette's wakefulness over her mother and Anton, and Callum's string of ear infections; Delphine's quarrel with Simone is left out, since nobody can place its month, and the period settles with Delphine's library job in May 1979.",
+     "change": "Returned as the hint read it, with the undated quarrel over the house sale left out since its month cannot be placed.",
+     "openingId": 113
+    },
+    {
+     "id": null,
+     "eventIds": [
+      129,
+      130,
+      131,
+      132,
+      134
+     ],
+     "name": "Odette's bed rest in pregnancy, 1984",
+     "reason": "Around Odette being ordered to bed in March 1984, within months: Hazel's daily overfunctioning in the house, her argument with Duncan over how she kept it, and Callum's stammer returning, with Ines's birth in September closing the period; Maren's sleep trouble beside it is left out since nobody can say which month it fell.",
+     "change": "Returned as the hint read it, with the undated event left out of the count.",
+     "openingId": 129
+    },
+    {
+     "id": null,
+     "eventIds": [
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153
+     ],
+     "name": "Hazel's diagnosis with Parkinson's disease, 1986-1997",
+     "reason": "Around Hazel's diagnosis in September 1986, the years that follow show a long climb of shifts close enough together with little relief between them: Ambrose's overfunctioning and later his own decline, Duncan's nightly calls and later drinking, the conflict with Lyle over care, Pearl's panic spells, and Mavis's visits, with the period reaching to Hazel's move into the nursing home and Duncan's drinking easing afterward; the undated falling-out between Ambrose, Hazel and Lyle is left out since no year can be put to it.",
+     "change": "Returned as the hint read it, with the event of unknown date left out of the count.",
+     "openingId": 135
+    },
+    {
+     "id": null,
+     "eventIds": [
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      161
+     ],
+     "name": "Callum's move north for work, 1999-2000",
+     "reason": "Around Callum leaving home for the mines in May 1999, within the year on either side: his conflict with Duncan over the move, Odette's unsettled nights at the thought of it, Duncan's missed days at work, Ines skipping school, and Odette drawing close to Ines, with the period settling once Ines was back at school full days and through her exams in mid-2000; the undated start of Callum's Sunday calls to his mother is left out since the month cannot be fixed.",
+     "change": "Returned as the hint read it, with the event of unknown date left out of the count.",
+     "openingId": 156
+    },
+    {
+     "id": null,
+     "eventIds": [
+      164,
+      165,
+      166,
+      168,
+      169
+     ],
+     "name": "Hazel's death at the Fairlie home, 2003",
+     "reason": "Around Hazel's death in January 2003, within the year: Maren's broken sleep, her leaving and then losing her job at the bookshop, and her dread of buses and crowds, with the period settling once she took the job at the garden centre and was sleeping through the night again in November; her drawing away from her mother's calls is left out since its month is not known, and no one else's shifts show in these months but Maren's own.",
+     "change": "Returned as the hint read it, with the undated event left out and the reason noting the shifts are Maren's own.",
+     "openingId": 164
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1980-1982: once the births and weddings are set aside as events and Emil's drinking is read as told as how it has always been for most of his adult life, only one shift that counts remains in this hint's recount, so there is not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2005: the events of November 19-23 fall within a few days around a car accident and hospital stay, with calm returning once Ines was home within days, making this an acute episode around a real threat rather than a period.",
+     "hint": "r7",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: declined: Run r2 (1980-09-21 to 1982-07-15) has 2 shifts that count and was declined: 1980-1982: once the births and weddings are set aside as events and Emil's drinking is read as told as how it has always been for most of his adult life, only one shift that counts remains in this hint's recount, so there is not enough in the diagram to choose a reading.",
+  "answer 2: declined: Run r7 (2005-11-19 to 2005-11-23) has 5 shifts that count and was declined: 2005: the events of November 19-23 fall within a few days around a car accident and hospital stay, with calm returning once Ines was home within days, making this an acute episode around a real threat rather than a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Teodor's death at the bus depot, 1978\u20131979",
+   "summary": "Around Teodor's collapse and death in January 1978, within the year: Delphine's drop in eating, her evenings at her mother's, Duncan and Odette's distance through night shifts, Anton's drinking and warning at work, Odette's wakefulness over her mother and Anton, and Callum's string of ear infections; Delphine's quarrel with Simone is left out, since nobody can place its month, and the period settles with Delphine's library job in May 1979.",
+   "eventIds": [
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    121,
+    122
+   ],
+   "startDate": "1978-01-27",
+   "endDate": "1979-05-15",
+   "name": "Teodor's death at the bus depot, 1978\u20131979",
+   "source": "model",
+   "reason": "Around Teodor's collapse and death in January 1978, within the year: Delphine's drop in eating, her evenings at her mother's, Duncan and Odette's distance through night shifts, Anton's drinking and warning at work, Odette's wakefulness over her mother and Anton, and Callum's string of ear infections; Delphine's quarrel with Simone is left out, since nobody can place its month, and the period settles with Delphine's library job in May 1979.",
+   "setAside": false,
+   "openingEventId": 113
+  },
+  {
+   "id": "c2",
+   "title": "Odette's bed rest in pregnancy, 1984",
+   "summary": "Around Odette being ordered to bed in March 1984, within months: Hazel's daily overfunctioning in the house, her argument with Duncan over how she kept it, and Callum's stammer returning, with Ines's birth in September closing the period; Maren's sleep trouble beside it is left out since nobody can say which month it fell.",
+   "eventIds": [
+    129,
+    130,
+    131,
+    132,
+    134
+   ],
+   "startDate": "1984-03-15",
+   "endDate": "1984-09-28",
+   "name": "Odette's bed rest in pregnancy, 1984",
+   "source": "model",
+   "reason": "Around Odette being ordered to bed in March 1984, within months: Hazel's daily overfunctioning in the house, her argument with Duncan over how she kept it, and Callum's stammer returning, with Ines's birth in September closing the period; Maren's sleep trouble beside it is left out since nobody can say which month it fell.",
+   "setAside": false,
+   "openingEventId": 129
+  },
+  {
+   "id": "c3",
+   "title": "Hazel's diagnosis with Parkinson's disease, 1986\u20131997",
+   "summary": "Around Hazel's diagnosis in September 1986, the years that follow show a long climb of shifts close enough together with little relief between them: Ambrose's overfunctioning and later his own decline, Duncan's nightly calls and later drinking, the conflict with Lyle over care, Pearl's panic spells, and Mavis's visits, with the period reaching to Hazel's move into the nursing home and Duncan's drinking easing afterward; the undated falling-out between Ambrose, Hazel and Lyle is left out since no year can be put to it.",
+   "eventIds": [
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    142,
+    143,
+    144,
+    145,
+    146,
+    147,
+    148,
+    149,
+    150,
+    151,
+    152,
+    153
+   ],
+   "startDate": "1986-09-03",
+   "endDate": "1997-10-15",
+   "name": "Hazel's diagnosis with Parkinson's disease, 1986\u20131997",
+   "source": "model",
+   "reason": "Around Hazel's diagnosis in September 1986, the years that follow show a long climb of shifts close enough together with little relief between them: Ambrose's overfunctioning and later his own decline, Duncan's nightly calls and later drinking, the conflict with Lyle over care, Pearl's panic spells, and Mavis's visits, with the period reaching to Hazel's move into the nursing home and Duncan's drinking easing afterward; the undated falling-out between Ambrose, Hazel and Lyle is left out since no year can be put to it.",
+   "setAside": false,
+   "openingEventId": 135
+  },
+  {
+   "id": "c4",
+   "title": "Callum's move north for work, 1999\u20132000",
+   "summary": "Around Callum leaving home for the mines in May 1999, within the year on either side: his conflict with Duncan over the move, Odette's unsettled nights at the thought of it, Duncan's missed days at work, Ines skipping school, and Odette drawing close to Ines, with the period settling once Ines was back at school full days and through her exams in mid-2000; the undated start of Callum's Sunday calls to his mother is left out since the month cannot be fixed.",
+   "eventIds": [
+    154,
+    155,
+    156,
+    157,
+    158,
+    159,
+    161
+   ],
+   "startDate": "1999-01-15",
+   "endDate": "2000-08-15",
+   "name": "Callum's move north for work, 1999\u20132000",
+   "source": "model",
+   "reason": "Around Callum leaving home for the mines in May 1999, within the year on either side: his conflict with Duncan over the move, Odette's unsettled nights at the thought of it, Duncan's missed days at work, Ines skipping school, and Odette drawing close to Ines, with the period settling once Ines was back at school full days and through her exams in mid-2000; the undated start of Callum's Sunday calls to his mother is left out since the month cannot be fixed.",
+   "setAside": false,
+   "openingEventId": 156
+  },
+  {
+   "id": "c5",
+   "title": "Hazel's death at the Fairlie home, 2003",
+   "summary": "Around Hazel's death in January 2003, within the year: Maren's broken sleep, her leaving and then losing her job at the bookshop, and her dread of buses and crowds, with the period settling once she took the job at the garden centre and was sleeping through the night again in November; her drawing away from her mother's calls is left out since its month is not known, and no one else's shifts show in these months but Maren's own.",
+   "eventIds": [
+    164,
+    165,
+    166,
+    168,
+    169
+   ],
+   "startDate": "2003-01-14",
+   "endDate": "2003-11-15",
+   "name": "Hazel's death at the Fairlie home, 2003",
+   "source": "model",
+   "reason": "Around Hazel's death in January 2003, within the year: Maren's broken sleep, her leaving and then losing her job at the bookshop, and her dread of buses and crowds, with the period settling once she took the job at the garden centre and was sleeping through the night again in November; her drawing away from her mother's calls is left out since its month is not known, and no one else's shifts show in these months but Maren's own.",
+   "setAside": false,
+   "openingEventId": 164
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 5,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 44,
+   "fp": 0,
+   "fn": 5,
+   "precision": 1.0,
+   "recall": 0.8979591836734694,
+   "f1": 0.9462365591397849
+  },
+  "openings": [
+   4,
+   5
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.131222
+}

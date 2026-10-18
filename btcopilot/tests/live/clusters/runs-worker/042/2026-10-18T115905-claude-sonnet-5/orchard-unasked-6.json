@@ -1,0 +1,136 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952-1953",
+     "reason": "Within a year of Walter moving the family to Sorrel Valley and buying the orchard in March 1952, you see June's homesickness and writing to Edna, Walter out in the trees away from June, Glen's fights at school, Walter's cutoff from his brother Harlan, June keeping to her bed, and rows between Walter and June over money; June joining the choir and her letters thinning out in September 1953 is where things settle, and Faye's stomach aches and Roy being kept back a year are left out since their dates are not known.",
+     "change": "Two shifts dated to the unknown year, Faye's stomach aches and Roy's held-back year, are left out since no one can place them against these months.",
+     "openingId": 109
+    },
+    {
+     "id": "r2",
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      140,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968-1969",
+     "reason": "Around the orchard failing in May 1968 and selling at auction that October, you see Walter drinking heavily, his conflict with Glen over the loan, Glen and Marian taking over the family's money, Carl's asthma worse that winter, Ida's heart trouble found the following spring, and Walter stopping drinking and taking pruning work in October 1969, which is where this settles; Walter's cutoff from Roy and Nora's bedwetting are left out since their dates cannot be placed.",
+     "change": "Two shifts on unknown dates, Walter's cutoff from Roy and Nora's bedwetting that spring, are left out since neither can be placed against these months; Carl's asthma easing is kept only because it falls beside Ida's heart trouble rising.",
+     "openingId": 132
+    },
+    {
+     "id": "r3",
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      158
+     ],
+     "name": "Glen's job loss at the cannery, 1975-1976",
+     "reason": "Around Glen losing his job when the cannery closed in February 1975, you see him out of work and sitting in the truck for hours, loud fights with Marian over money, Glen and Marian taking a second job cleaning offices, Nora not eating properly and losing weight, her keeping to her room away from her mother, Walter drinking again after years off it, and Nora eating again and joining the track team in mid-1976, which is where this settles; Carl's nights at Gail's family's house and Tess's nightmares are left out since their dates cannot be placed.",
+     "change": "Two shifts on unknown dates, Carl staying away at Gail's family's house and Tess's nightmares, are left out since neither can be placed against these months.",
+     "openingId": 148
+    },
+    {
+     "id": "r4",
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      177
+     ],
+     "name": "Wilma's move into Nora and Hollis's house, 1990-1991",
+     "reason": "Around Wilma selling her farm and moving into your house in January 1990, you see your clashes with her over the children's bedtimes and meals, Hollis working late and keeping out of the kitchen rows, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, and rows with Hollis most nights that November; Wilma taking a flat in town in June 1991 is where this settles, and your mother's twice-weekly visits to take your side are left out since that date is not known.",
+     "change": "One shift on an unknown date, your mother's visits to take your side, is left out since it cannot be placed against these months, and the eczema clearing the following summer is kept as the settling the period reaches toward.",
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events of August 1994, the wildfire ordering the valley out and the family's fright, stomach upset, snapping and need for a light while sleeping, all fall within a few days around a real threat and settle once the family is allowed home, so this is an acute episode and not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The events of 1996 to 1997, Tess's drinking, your worry and nightly calls, and the conflict and recovery around her, hold only two shifts that count once Jesse's weekend care on an unknown date is set aside, leaving Tess's drinking, your worry, and the conflict with Rick as the remaining shifts with no change in who is in the family or in how a key member functions on a known date among them, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r2' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r3' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r4' is not one of the app's periods listed.",
+  "gave up: unknown_group: Period 'r1' is not one of the app's periods listed."
+ ],
+ "stored": [],
+ "score": {
+  "clusters": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 4,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0
+  },
+  "members": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   0
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "cluster F1 0.00 under 0.8"
+ ],
+ "cost": 0.134952
+}

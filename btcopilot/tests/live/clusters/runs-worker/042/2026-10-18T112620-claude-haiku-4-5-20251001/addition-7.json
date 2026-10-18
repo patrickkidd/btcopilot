@@ -1,0 +1,78 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "Bea's birth, 1995\u20131996",
+     "reason": "Around Bea's birth in March 1995, within the year: your mother was worn out and on edge with the baby by August, your father was working late most nights and rarely home by November, you had stomach aches and were missing school by February 1996, your brother Jonah was in shouting matches with your father by May, and your mother did not go back to her job by September. The shifts pile up over eighteen months across all three of you and your father's distance, with no settling until after your mother left her job.",
+     "change": null,
+     "openingId": 4
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Bea's birth, 1995\u20131996",
+   "summary": "Around Bea's birth in March 1995, within the year: your mother was worn out and on edge with the baby by August, your father was working late most nights and rarely home by November, you had stomach aches and were missing school by February 1996, your brother Jonah was in shouting matches with your father by May, and your mother did not go back to her job by September. The shifts pile up over eighteen months across all three of you and your father's distance, with no settling until after your mother left her job.",
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "startDate": "1995-03-02",
+   "endDate": "1996-09-01",
+   "name": "Bea's birth, 1995\u20131996",
+   "source": "model",
+   "reason": "Around Bea's birth in March 1995, within the year: your mother was worn out and on edge with the baby by August, your father was working late most nights and rarely home by November, you had stomach aches and were missing school by February 1996, your brother Jonah was in shouting matches with your father by May, and your mother did not go back to her job by September. The shifts pile up over eighteen months across all three of you and your father's distance, with no settling until after your mother left her job.",
+   "setAside": false,
+   "openingEventId": 4
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.008104
+}

@@ -1,0 +1,126 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Amos's death, 1988\u20131990",
+     "reason": "Within about a year of your grandfather Amos's death in July 1989 you said your mother Della was lying awake over money and had stopped talking with your father Victor about it, and your brother Felix's grades fell that November; things read as settling once your mother said she felt calmer back at work in March 1990.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      19,
+      20
+     ],
+     "name": "Rhea's leaving home for college, 1993\u20131996",
+     "reason": "Within months of your leaving home for college in September 1993 you said migraines kept you in bed and you called your brother Felix most nights, then by 1995 and 1996 you stopped returning his calls and stopped calling home; Greta's death is left out of the name since nobody is sure of its date, though it sits among these years.",
+     "change": "Returned with its shifts held together, since Greta's death on an unknown date cannot open or close it and the events instead run from your leaving home through the distance from your brother and your mother.",
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "Covered already as a period around Amos's death, 1988\u20131990.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "Covered already as a period around Rhea's leaving home for college, 1993\u20131996.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Amos's death, 1988\u20131990",
+   "summary": "Within about a year of your grandfather Amos's death in July 1989 you said your mother Della was lying awake over money and had stopped talking with your father Victor about it, and your brother Felix's grades fell that November; things read as settling once your mother said she felt calmer back at work in March 1990.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Within about a year of your grandfather Amos's death in July 1989 you said your mother Della was lying awake over money and had stopped talking with your father Victor about it, and your brother Felix's grades fell that November; things read as settling once your mother said she felt calmer back at work in March 1990.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Rhea's leaving home for college, 1993\u20131996",
+   "summary": "Within months of your leaving home for college in September 1993 you said migraines kept you in bed and you called your brother Felix most nights, then by 1995 and 1996 you stopped returning his calls and stopped calling home; Greta's death is left out of the name since nobody is sure of its date, though it sits among these years.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Rhea's leaving home for college, 1993\u20131996",
+   "source": "model",
+   "reason": "Within months of your leaving home for college in September 1993 you said migraines kept you in bed and you called your brother Felix most nights, then by 1995 and 1996 you stopped returning his calls and stopped calling home; Greta's death is left out of the name since nobody is sure of its date, though it sits among these years.",
+   "setAside": false,
+   "openingEventId": 15
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 10,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.9090909090909091,
+   "f1": 0.9523809523809523
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.105366
+}

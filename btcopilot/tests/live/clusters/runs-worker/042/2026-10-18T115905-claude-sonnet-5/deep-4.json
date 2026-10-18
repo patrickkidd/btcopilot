@@ -1,0 +1,153 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      60,
+      194,
+      40,
+      134,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      39
+     ],
+     "name": "Clifford's return to the family, 1989-1992",
+     "reason": "Around Clifford's return to the family in 1989, you settled into the rebuilt Hollin Road house and your mother's wedding to Desmond followed, and across 1991-1992 you leaned on Rafe then fought with him, hurt your wrist and stopped playing, and felt lost and low beside your grandfather Victor's death; the move to Quarry Lane and the dropping of chess are left out as the ordinary drift of those years.",
+     "change": "Trimmed to the shifts around Clifford's return and dropped the undated or always-true events, since those carry no weight of their own.",
+     "openingId": 60
+    },
+    {
+     "id": "r3",
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      79
+     ],
+     "name": "Winifred's bowel cancer, 2001-2004",
+     "reason": "Around your grandmother Winifred's bowel cancer from 2001, you ran out of steam for performing, failed the national orchestra audition, drifted from Thornbury to Gull Harbour to Fenwick with Marisol, and after that split you sank into depression, pulled away from your parents, and leaned on friends until you returned to your therapist and swam laps; her death in 2004 falls at the far end of the same stretch.",
+     "change": "Kept the full run from the burnout through the depression to the death, since no settled gap separates them.",
+     "openingId": 176
+    },
+    {
+     "id": "r4",
+     "eventIds": [
+      61,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Lorna's death, 2008-2009",
+     "reason": "Around your grandmother Lorna's death in January 2008, you felt too drained to talk with your mother at Alder Creek that summer, kept the door shut when she pushed to visit, then went silent with her for about a year once nursing school started; your aunt Imogen's stroke that followed is left out as a separate strand with no events of yours beside it.",
+     "change": "Dropped Imogen's stroke since nothing of your own shifts shows beside it in those months.",
+     "openingId": 61
+    },
+    {
+     "id": "r5",
+     "eventIds": [
+      190,
+      150,
+      192,
+      95,
+      97,
+      116,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Hal's mother Imogen lashing out, 2018-2019",
+     "reason": "Around Imogen lashing out when muddled in late 2018, you were leaning toward shorter calls with your mother and starting a sleeping pill, and within the year Wren's swamped stretch over a run of family occasions brought your overfunctioning toward her, her family's fusion, and your bad nights and distance at the lake house; Bella's multiple sclerosis and your mother's clear heart check-up are left out as settled matters with no further shift attached.",
+     "change": "Narrowed to the shifts clustered around Imogen's outburst and the lake weekend, leaving out the unrelated clear checkups and diagnoses on either side.",
+     "openingId": 150
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1998-1999: starting with a therapist after the split with Joelle is the only shift that counts once the ordinary-level reading of the insomnia description is set aside, and one shift alone is a reaction, not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r3' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r4' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r5' is not one of the app's periods listed.",
+  "answer 2: unknown_date: Period \"Clifford's return to the family, 1989-1992\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: unknown_date: Period \"Hal's mother Imogen lashing out, 2018-2019\" opens at event 150, whose date is unknown; an event of unknown date opens nothing.",
+  "gave up: unknown_group: Period 'r1' is not one of the app's periods listed."
+ ],
+ "stored": [],
+ "score": {
+  "clusters": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 3,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0
+  },
+  "members": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   0
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'the year I left home' is not stored as theirs",
+  "'the long slump' is not stored as theirs",
+  "cluster F1 0.00 under 0.8"
+ ],
+ "cost": 0.270478
+}

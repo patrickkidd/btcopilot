@@ -1,0 +1,245 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley and the orchard purchase, 1952-1953",
+     "reason": "Within about a year of Walter moving the family to Sorrel Valley and buying the orchard, you see June's homesickness and letters to Edna, distance between Walter and June, Glen's fights at school, Walter's cutoff from his brother Harlan, June's weeks in bed and the rows over money for new trees; the period settles once June joined the choir and her anxiety eased, and Faye's stomach aches and Roy being kept back are left out since no one can date them.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      142,
+      143
+     ],
+     "name": "the orchard failing and being sold at auction, 1968-1969",
+     "reason": "Around the orchard's failure and its sale at auction you see Walter's heavy drinking, the conflict between Walter and Glen over the loan, Glen and Marian taking over the family's money and bank talks, Carl's worsening asthma that winter and Ida's heart trouble found soon after, settling by late 1969 once Walter stopped drinking and took up pruning work; the cutoff between Walter and Roy and Carl's spring improvement are left out, one undated and the other a lift with no accompanying rise.",
+     "change": "Reshaped from hint r2: the undated cutoff (139) and Nora's bedwetting (141, which falls with no other shift in that same month) are left out, and Ida's heart trouble (142) is kept as it falls within the settling months.",
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155
+     ],
+     "name": "Glen's job loss at the cannery, 1975-1976",
+     "reason": "Within months of Glen losing his job at the cannery you see his months out of work, loud fights with Marian over money, their taking a second job, Nora's loss of weight, her withdrawal from her mother and Walter's return to drinking after six years off it, settling as Glen found new work driving for the feed store and Nora's eating and functioning came back; the undated shift of Carl staying at his girlfriend's and Tess's undated nightmares are left out for having no firm date.",
+     "change": "Reshaped from hint r3: Nora's return to eating and the track team (158) is included as the settling point, and the undated events (153, 156) are left out.",
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      178
+     ],
+     "name": "Wilma moving into Nora and Hollis's house, 1990-1991",
+     "reason": "Within months of Wilma selling her farm and moving in with Nora and Hollis, you see the conflict between Nora and Wilma over the children's bedtimes, Hollis's distance and his siding with his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, Nora's eczema flaring and the rows between Nora and Hollis, settling once the eczema cleared the following summer; the undated turning of Marian toward Nora is left out for having no firm date.",
+     "change": "Reshaped from hint r4: the undated shift (176) is left out and the eczema clearing (178) is kept as the settling point.",
+     "openingId": 168
+    },
+    {
+     "id": null,
+     "eventIds": [
+      190,
+      191,
+      193,
+      194
+     ],
+     "name": "Tess's drinking most nights, 1996-1997",
+     "reason": "Within weeks of Tess's drinking most nights, you see your own nightly phoning out of worry for her and the shouting matches between Tess and Rick, settling once Tess stopped drinking and began going to meetings; Marian's undated overfunctioning toward Tess is left out for having no firm date, and this is enough since the shifts of these months pass between you and Tess as reactions to the same trouble.",
+     "change": "Reshaped from hint r6: the undated event (192) is left out; this is now returned as a period since three shifts that count remain and hang together around Tess's drinking.",
+     "openingId": 190
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events of August 1994 are all dated within a few days around the wildfire evacuation and the family's return home within a week, making this an acute episode around a real threat rather than a period.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: raw_id: Period 'the orchard failing and being sold at auction, 1968-1969' holds an id ('(139)'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 2: raw_id: Period \"Glen's job loss at the cannery, 1975-1976\" holds an id ('(158)'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 2: raw_id: Period \"Wilma moving into Nora and Hollis's house, 1990-1991\" holds an id ('(176)'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 2: raw_id: Period \"Tess's drinking most nights, 1996-1997\" holds an id ('(192)'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 5 shifts that count and was declined: The events of August 1994 are all dated within a few days around the wildfire evacuation and the family's return home within a week, making this an acute episode around a real threat rather than a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley and the orchard purchase, 1952\u20131953",
+   "summary": "Within about a year of Walter moving the family to Sorrel Valley and buying the orchard, you see June's homesickness and letters to Edna, distance between Walter and June, Glen's fights at school, Walter's cutoff from his brother Harlan, June's weeks in bed and the rows over money for new trees; the period settles once June joined the choir and her anxiety eased, and Faye's stomach aches and Roy being kept back are left out since no one can date them.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    114,
+    115,
+    116,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley and the orchard purchase, 1952\u20131953",
+   "source": "model",
+   "reason": "Within about a year of Walter moving the family to Sorrel Valley and buying the orchard, you see June's homesickness and letters to Edna, distance between Walter and June, Glen's fights at school, Walter's cutoff from his brother Harlan, June's weeks in bed and the rows over money for new trees; the period settles once June joined the choir and her anxiety eased, and Faye's stomach aches and Roy being kept back are left out since no one can date them.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "the orchard failing and being sold at auction, 1968\u20131969",
+   "summary": "Around the orchard's failure and its sale at auction you see Walter's heavy drinking, the conflict between Walter and Glen over the loan, Glen and Marian taking over the family's money and bank talks, Carl's worsening asthma that winter and Ida's heart trouble found soon after, settling by late 1969 once Walter stopped drinking and took up pruning work; the cutoff between Walter and Roy and Carl's spring improvement are left out, one undated and the other a lift with no accompanying rise.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    136,
+    137,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "the orchard failing and being sold at auction, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard's failure and its sale at auction you see Walter's heavy drinking, the conflict between Walter and Glen over the loan, Glen and Marian taking over the family's money and bank talks, Carl's worsening asthma that winter and Ida's heart trouble found soon after, settling by late 1969 once Walter stopped drinking and took up pruning work; the cutoff between Walter and Roy and Carl's spring improvement are left out, one undated and the other a lift with no accompanying rise.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Glen's job loss at the cannery, 1975",
+   "summary": "Within months of Glen losing his job at the cannery you see his months out of work, loud fights with Marian over money, their taking a second job, Nora's loss of weight, her withdrawal from her mother and Walter's return to drinking after six years off it, settling as Glen found new work driving for the feed store and Nora's eating and functioning came back; the undated shift of Carl staying at his girlfriend's and Tess's undated nightmares are left out for having no firm date.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    154,
+    155
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1975-12-15",
+   "name": "Glen's job loss at the cannery, 1975",
+   "source": "model",
+   "reason": "Within months of Glen losing his job at the cannery you see his months out of work, loud fights with Marian over money, their taking a second job, Nora's loss of weight, her withdrawal from her mother and Walter's return to drinking after six years off it, settling as Glen found new work driving for the feed store and Nora's eating and functioning came back; the undated shift of Carl staying at his girlfriend's and Tess's undated nightmares are left out for having no firm date.",
+   "setAside": false,
+   "openingEventId": 148
+  },
+  {
+   "id": "c4",
+   "title": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Within months of Wilma selling her farm and moving in with Nora and Hollis, you see the conflict between Nora and Wilma over the children's bedtimes, Hollis's distance and his siding with his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, Nora's eczema flaring and the rows between Nora and Hollis, settling once the eczema cleared the following summer; the undated turning of Marian toward Nora is left out for having no firm date.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+   "source": "model",
+   "reason": "Within months of Wilma selling her farm and moving in with Nora and Hollis, you see the conflict between Nora and Wilma over the children's bedtimes, Hollis's distance and his siding with his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, Nora's eczema flaring and the rows between Nora and Hollis, settling once the eczema cleared the following summer; the undated turning of Marian toward Nora is left out for having no firm date.",
+   "setAside": false,
+   "openingEventId": 168
+  },
+  {
+   "id": "c5",
+   "title": "Tess's drinking most nights, 1996\u20131997",
+   "summary": "Within weeks of Tess's drinking most nights, you see your own nightly phoning out of worry for her and the shouting matches between Tess and Rick, settling once Tess stopped drinking and began going to meetings; Marian's undated overfunctioning toward Tess is left out for having no firm date, and this is enough since the shifts of these months pass between you and Tess as reactions to the same trouble.",
+   "eventIds": [
+    190,
+    191,
+    193,
+    194
+   ],
+   "startDate": "1996-10-15",
+   "endDate": "1997-06-15",
+   "name": "Tess's drinking most nights, 1996\u20131997",
+   "source": "model",
+   "reason": "Within weeks of Tess's drinking most nights, you see your own nightly phoning out of worry for her and the shouting matches between Tess and Rick, settling once Tess stopped drinking and began going to meetings; Marian's undated overfunctioning toward Tess is left out for having no firm date, and this is enough since the shifts of these months pass between you and Tess as reactions to the same trouble.",
+   "setAside": false,
+   "openingEventId": 190
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 31,
+   "fp": 0,
+   "fn": 13,
+   "precision": 1.0,
+   "recall": 0.7045454545454546,
+   "f1": 0.8266666666666667
+  },
+  "openings": [
+   4,
+   4
+  ],
+  "hypotheses": 1,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.147772
+}

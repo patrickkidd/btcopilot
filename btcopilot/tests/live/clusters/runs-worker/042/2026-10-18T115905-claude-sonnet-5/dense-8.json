@@ -1,0 +1,117 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Amos's death, 1988-1990",
+     "reason": "You said lying awake over money in March 1988 and stopping talking with your husband Victor about money in May 1988, within a year and a half of your grandfather Amos's death in July 1989, with Felix's grades falling that November and Della calmer once back at work by March 1990 is where it settles.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Rhea's leaving home for college, 1993-1996",
+     "reason": "Within about six months of your leaving home for college in September 1993, your migraines kept you in bed and you called your brother Felix most nights; your mother Della being told she had breast cancer in February 1995 sits close to your stopping returning Felix's calls that June, and your stopping calling home in February 1996 is where this reaches to.",
+     "change": null,
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Amos's death, 1988\u20131990",
+   "summary": "You said lying awake over money in March 1988 and stopping talking with your husband Victor about money in May 1988, within a year and a half of your grandfather Amos's death in July 1989, with Felix's grades falling that November and Della calmer once back at work by March 1990 is where it settles.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "You said lying awake over money in March 1988 and stopping talking with your husband Victor about money in May 1988, within a year and a half of your grandfather Amos's death in July 1989, with Felix's grades falling that November and Della calmer once back at work by March 1990 is where it settles.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Rhea's leaving home for college, 1993\u20131996",
+   "summary": "Within about six months of your leaving home for college in September 1993, your migraines kept you in bed and you called your brother Felix most nights; your mother Della being told she had breast cancer in February 1995 sits close to your stopping returning Felix's calls that June, and your stopping calling home in February 1996 is where this reaches to.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Rhea's leaving home for college, 1993\u20131996",
+   "source": "model",
+   "reason": "Within about six months of your leaving home for college in September 1993, your migraines kept you in bed and you called your brother Felix most nights; your mother Della being told she had breast cancer in February 1995 sits close to your stopping returning Felix's calls that June, and your stopping calling home in February 1996 is where this reaches to.",
+   "setAside": false,
+   "openingEventId": 15
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.135626
+}

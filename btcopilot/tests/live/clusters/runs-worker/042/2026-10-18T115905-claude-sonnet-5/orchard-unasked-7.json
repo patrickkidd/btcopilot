@@ -1,0 +1,229 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952-1953",
+     "reason": "Within about a year of the move to Sorrel Valley you said June wrote to her sister Edna daily and grew homesick, Walter stayed out in the trees from dark to dark, Glen fought at his new school, Walter cut off his brother Harlan over the land money, June kept to her bed for weeks, and June and Walter rowed over money for new trees, with June joining the choir and her letters thinning out by late 1953; Faye's stomach aches and Roy's being kept back a year are left out, since no one can confirm their years.",
+     "change": "Returned as the hint read it, with the two undated events (113, 117) left out since their years are not confirmed.",
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968-1969",
+     "reason": "Around the orchard's failure and sale you said Walter began drinking heavily, he and Glen blamed each other for the loan, Glen and Marian took over the family's money, Carl's asthma worsened then eased, you began wetting the bed again, and Ida's heart trouble was found, settling by late 1969 when Walter stopped drinking and took up pruning work; the cutoff from Roy and Faye's stomach aches are left out as dates nobody is sure of.",
+     "change": "Returned as the hint read it, with undated or neverOpens events (131, 139) left out.",
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      157,
+      158
+     ],
+     "name": "Glen's job loss at the cannery, 1975-1976",
+     "reason": "Within months of Glen losing his job at the cannery you said he sat idle in the truck for hours, he and Marian had loud fights over money then both took extra work, you stopped eating properly and kept to your room away from your mother, and Walter began drinking again after six years off it, settling by mid-1976 when Glen found driving work and you were eating again and on the track team; Carl's time at his girlfriend Gail's house and Tess's nightmares are left out as dates nobody is sure of.",
+     "change": "Returned as the hint read it, with undated or neverOpens events (153, 156) left out.",
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      178
+     ],
+     "name": "Wilma's move into Nora and Hollis's house, 1990-1991",
+     "reason": "Within months of Wilma selling her farm and moving in you said you clashed with her over the children's bedtimes and meals, Hollis worked late and kept out of the rows and took his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, your eczema flared and rows with Hollis grew frequent most nights, settling by mid-1991 when the eczema cleared over the summer; the drive your mother made to take your side sits on a date nobody is sure of and is left out.",
+     "change": "Returned as the hint read it, with the undated event (176) and the departure (177) kept outside the shift count but the period still reaching through the eczema clearing.",
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1994: the shifts around the wildfire evacuation all fall within four days of each other with a settling within days once the family was allowed home, so this is an acute episode around a real threat, not a period.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "1996-1997: Tess's drinking and the conflict with Rick are two shifts that count beside your phoning her every night, but the only possible change in the family among these events is Marian's overfunctioning (192) and your own worry, which are the reactions themselves and not a change in the family on a known date, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: raw_id: Period \"Wilma's move into Nora and Hollis's house, 1990-1991\" holds an id ('(176)'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 2: unanswered: Run r5 (1994-08-12 to 1994-08-16) has 5 shifts that count and came back neither as a period nor under `declined` with a reason.",
+  "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996-1997: Tess's drinking and the conflict with Rick are two shifts that count beside your phoning her every night, but the only possible change in the family among these events is Marian's overfunctioning (192) and your own worry, which are the reactions themselves and not a change in the family on a known date, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Within about a year of the move to Sorrel Valley you said June wrote to her sister Edna daily and grew homesick, Walter stayed out in the trees from dark to dark, Glen fought at his new school, Walter cut off his brother Harlan over the land money, June kept to her bed for weeks, and June and Walter rowed over money for new trees, with June joining the choir and her letters thinning out by late 1953; Faye's stomach aches and Roy's being kept back a year are left out, since no one can confirm their years.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    114,
+    115,
+    116,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Within about a year of the move to Sorrel Valley you said June wrote to her sister Edna daily and grew homesick, Walter stayed out in the trees from dark to dark, Glen fought at his new school, Walter cut off his brother Harlan over the land money, June kept to her bed for weeks, and June and Walter rowed over money for new trees, with June joining the choir and her letters thinning out by late 1953; Faye's stomach aches and Roy's being kept back a year are left out, since no one can confirm their years.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failing, 1968\u20131969",
+   "summary": "Around the orchard's failure and sale you said Walter began drinking heavily, he and Glen blamed each other for the loan, Glen and Marian took over the family's money, Carl's asthma worsened then eased, you began wetting the bed again, and Ida's heart trouble was found, settling by late 1969 when Walter stopped drinking and took up pruning work; the cutoff from Roy and Faye's stomach aches are left out as dates nobody is sure of.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    140,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failing, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard's failure and sale you said Walter began drinking heavily, he and Glen blamed each other for the loan, Glen and Marian took over the family's money, Carl's asthma worsened then eased, you began wetting the bed again, and Ida's heart trouble was found, settling by late 1969 when Walter stopped drinking and took up pruning work; the cutoff from Roy and Faye's stomach aches are left out as dates nobody is sure of.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Glen's job loss at the cannery, 1975\u20131976",
+   "summary": "Within months of Glen losing his job at the cannery you said he sat idle in the truck for hours, he and Marian had loud fights over money then both took extra work, you stopped eating properly and kept to your room away from your mother, and Walter began drinking again after six years off it, settling by mid-1976 when Glen found driving work and you were eating again and on the track team; Carl's time at his girlfriend Gail's house and Tess's nightmares are left out as dates nobody is sure of.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    154,
+    155,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "Glen's job loss at the cannery, 1975\u20131976",
+   "source": "model",
+   "reason": "Within months of Glen losing his job at the cannery you said he sat idle in the truck for hours, he and Marian had loud fights over money then both took extra work, you stopped eating properly and kept to your room away from your mother, and Walter began drinking again after six years off it, settling by mid-1976 when Glen found driving work and you were eating again and on the track team; Carl's time at his girlfriend Gail's house and Tess's nightmares are left out as dates nobody is sure of.",
+   "setAside": false,
+   "openingEventId": 148
+  },
+  {
+   "id": "c4",
+   "title": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Within months of Wilma selling her farm and moving in you said you clashed with her over the children's bedtimes and meals, Hollis worked late and kept out of the rows and took his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, your eczema flared and rows with Hollis grew frequent most nights, settling by mid-1991 when the eczema cleared over the summer; the drive your mother made to take your side sits on a date nobody is sure of and is left out.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+   "source": "model",
+   "reason": "Within months of Wilma selling her farm and moving in you said you clashed with her over the children's bedtimes and meals, Hollis worked late and kept out of the rows and took his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, your eczema flared and rows with Hollis grew frequent most nights, settling by mid-1991 when the eczema cleared over the summer; the drive your mother made to take your side sits on a date nobody is sure of and is left out.",
+   "setAside": false,
+   "openingEventId": 168
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 37,
+   "fp": 0,
+   "fn": 7,
+   "precision": 1.0,
+   "recall": 0.8409090909090909,
+   "f1": 0.9135802469135803
+  },
+  "openings": [
+   4,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.137412
+}

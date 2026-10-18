@@ -1,0 +1,243 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      194,
+      40,
+      3,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39
+     ],
+     "name": "Your grandfather Clifford's death, 1991\u20131992",
+     "reason": "Within months of Clifford's death you said your playing stopped with a wrist injury, Rafe moved out after a blow-up, you were high and absorbed in radios alone, and then lost and low into the new year beside your mother's wedding to Desmond; it settles once the spring radio work picks up, and Winifred's thyroid tumour that June is left out as a different line of illness.",
+     "change": "Dropping chess and debate (146) and the Quarry Lane rental (194) are told with unknown or scaffolding dates and add nothing, so the period rests on the run from the wrist injury through the low spell after Clifford's death.",
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      104,
+      105,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Your grandmother Winifred's bowel cancer, 2001\u20132004",
+     "reason": "Winifred's cancer in 2001 sits beside your own running out of steam and the failed audition, and by late 2002 you were on poor terms with your parents and left Thornbury; the later split from Marisol deepens the same run of distance from family through to her death in February 2004, when you asked your parents for help and returned to your therapist.",
+     "change": "The split from Marisol (20, 21, 23) is kept in since the distance from your parents (104) and the return to therapy (107, 108) sit in the same months, extending the period to her death.",
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Your grandmother Lorna's death, 2008\u20132009",
+     "reason": "Lorna's death in January 2008 sits within a year of you feeling too drained to talk with your mother, pressing the silence into a cutoff when you left for nursing school, with your aunt Imogen's stroke the following January in the same stretch; it settles once nursing school is underway.",
+     "change": "The pressing visit and shut door (113, 114) are dated unknown and are left out, so the period rests on the death, the distance, and the cutoff around the move to Marlow Sound.",
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      195,
+      198,
+      199,
+      200,
+      197,
+      201,
+      202
+     ],
+     "name": "Your wedding to Wren, 2017\u20132019",
+     "reason": "Around your wedding in 2017 your contact with your mother eased, and by October 2019 Wren's swamped week, your own overfunctioning toward her, her family's fusion, and your bad night at the lake house all fall within the same week around her mother's retirement; it settles once the weekend passes.",
+     "change": "Imogen's worsening memory (150, 143, 164) and your mother's heart check (192) are left out as a separate line of illness, since the shifts here hang together around the wedding and the retirement weekend.",
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The 1998\u20131999 events leave only insomnia and the start with a therapist as shifts that count, one short of the two needed, so there is not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "Covered by the period on Lorna's death, 2008\u20132009, which already accounts for the shifts in these years.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "Covered by the period on your wedding to Wren, 2017\u20132019, which already accounts for the shifts in these years.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence.",
+  "answer 2: raw_id: Period \"Your grandfather Clifford's death, 1991\u20131992\" holds an id ('(146)'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 2: raw_id: Period \"Your grandmother Winifred's bowel cancer, 2001\u20132004\" holds an id ('(104)'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 2: raw_id: Period 'Your wedding to Wren, 2017\u20132019' holds an id ('(192)'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 2: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: The 1998\u20131999 events leave only insomnia and the start with a therapist as shifts that count, one short of the two needed, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Clifford's death, 1989\u20131992",
+   "summary": "Within months of Clifford's death you said your playing stopped with a wrist injury, Rafe moved out after a blow-up, you were high and absorbed in radios alone, and then lost and low into the new year beside your mother's wedding to Desmond; it settles once the spring radio work picks up, and Winifred's thyroid tumour that June is left out as a different line of illness.",
+   "eventIds": [
+    194,
+    40,
+    3,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    39
+   ],
+   "startDate": "1989-04-12",
+   "endDate": "1992-10-11",
+   "name": "Your grandfather Clifford's death, 1989\u20131992",
+   "source": "model",
+   "reason": "Within months of Clifford's death you said your playing stopped with a wrist injury, Rafe moved out after a blow-up, you were high and absorbed in radios alone, and then lost and low into the new year beside your mother's wedding to Desmond; it settles once the spring radio work picks up, and Winifred's thyroid tumour that June is left out as a different line of illness.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c2",
+   "title": "Your grandmother Winifred's bowel cancer, 2001\u20132004",
+   "summary": "Winifred's cancer in 2001 sits beside your own running out of steam and the failed audition, and by late 2002 you were on poor terms with your parents and left Thornbury; the later split from Marisol deepens the same run of distance from family through to her death in February 2004, when you asked your parents for help and returned to your therapist.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    104,
+    105,
+    107,
+    108,
+    178,
+    79
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-02-18",
+   "name": "Your grandmother Winifred's bowel cancer, 2001\u20132004",
+   "source": "model",
+   "reason": "Winifred's cancer in 2001 sits beside your own running out of steam and the failed audition, and by late 2002 you were on poor terms with your parents and left Thornbury; the later split from Marisol deepens the same run of distance from family through to her death in February 2004, when you asked your parents for help and returned to your therapist.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c3",
+   "title": "Your grandmother Lorna's death, 2008\u20132009",
+   "summary": "Lorna's death in January 2008 sits within a year of you feeling too drained to talk with your mother, pressing the silence into a cutoff when you left for nursing school, with your aunt Imogen's stroke the following January in the same stretch; it settles once nursing school is underway.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    109,
+    9,
+    10,
+    179
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2009-01-11",
+   "name": "Your grandmother Lorna's death, 2008\u20132009",
+   "source": "model",
+   "reason": "Lorna's death in January 2008 sits within a year of you feeling too drained to talk with your mother, pressing the silence into a cutoff when you left for nursing school, with your aunt Imogen's stroke the following January in the same stretch; it settles once nursing school is underway.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c4",
+   "title": "Your wedding to Wren, 2017\u20132019",
+   "summary": "Around your wedding in 2017 your contact with your mother eased, and by October 2019 Wren's swamped week, your own overfunctioning toward her, her family's fusion, and your bad night at the lake house all fall within the same week around her mother's retirement; it settles once the weekend passes.",
+   "eventIds": [
+    29,
+    195,
+    198,
+    199,
+    200,
+    197,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your wedding to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your wedding in 2017 your contact with your mother eased, and by October 2019 Wren's swamped week, your own overfunctioning toward her, her family's fusion, and your bad night at the lake house all fall within the same week around her mother's retirement; it settles once the weekend passes.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.75,
+   "recall": 1.0,
+   "f1": 0.8571428571428571
+  },
+  "members": {
+   "tp": 29,
+   "fp": 3,
+   "fn": 12,
+   "precision": 0.90625,
+   "recall": 0.7073170731707317,
+   "f1": 0.7945205479452054
+  },
+  "openings": [
+   3,
+   3
+  ],
+  "hypotheses": 0,
+  "not clusters": 1,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'Your wedding to Wren, 2017\u20132019' is 'The family weekend at the lake, 2019', not a cluster"
+ ],
+ "cost": 0.267508
+}

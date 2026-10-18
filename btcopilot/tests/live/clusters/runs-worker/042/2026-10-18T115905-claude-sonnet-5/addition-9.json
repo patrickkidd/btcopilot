@@ -1,0 +1,84 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "Bea's birth, 1995-1996",
+     "reason": "Around the birth of your sister Bea in March 1995, within the following eighteen months, you said your mother Lena was worn out and on edge, your father Paul was working late and rarely home, you had stomach aches and missed school, your father and your brother Jonah had shouting matches, and your mother did not go back to her job; these fall close together with no quiet between them, so they are held together.",
+     "change": null,
+     "openingId": 4
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Bea's birth, 1995\u20131996",
+   "summary": "Around the birth of your sister Bea in March 1995, within the following eighteen months, you said your mother Lena was worn out and on edge, your father Paul was working late and rarely home, you had stomach aches and missed school, your father and your brother Jonah had shouting matches, and your mother did not go back to her job; these fall close together with no quiet between them, so they are held together.",
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "startDate": "1995-03-02",
+   "endDate": "1996-09-01",
+   "name": "Bea's birth, 1995\u20131996",
+   "source": "model",
+   "reason": "Around the birth of your sister Bea in March 1995, within the following eighteen months, you said your mother Lena was worn out and on edge, your father Paul was working late and rarely home, you had stomach aches and missed school, your father and your brother Jonah had shouting matches, and your mother did not go back to her job; these fall close together with no quiet between them, so they are held together.",
+   "setAside": false,
+   "openingEventId": 4
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.044092
+}

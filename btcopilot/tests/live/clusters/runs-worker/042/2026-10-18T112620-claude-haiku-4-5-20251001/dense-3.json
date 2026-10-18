@@ -1,0 +1,122 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's anxiety over money in March 1988, her distance from your father by May 1988, your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts cluster around a loss that touched the household, and your mother's settling marks where things steadied.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della told she had breast cancer, 1994\u20131996",
+     "reason": "Around your mother Della's cancer diagnosis in February 1995, within the surrounding years: your migraines in March 1994, your calling your brother most nights by April 1994, your stopping his calls by June 1995, and your distance from your mother by February 1996. These shifts in your relationship moves and your symptom fall close beside your mother's diagnosis, a change that touched everyone, and your withdrawal from home marks where the period settled.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The recount leaves three shifts that count: your mother's anxiety over money (event 9), distance from your father (event 10), and your brother's grades falling (event 12). This period is returned under a different reading with your grandfather's death as its opening.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "The recount leaves four shifts that count: your migraines (event 16), your toward move toward your brother (event 17), your away move from him (event 19), and your distance from your mother (event 20). This period is returned under a different reading with your mother's cancer diagnosis as its opening.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, within the following months: your mother's anxiety over money in March 1988, her distance from your father by May 1988, your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts cluster around a loss that touched the household, and your mother's settling marks where things steadied.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's anxiety over money in March 1988, her distance from your father by May 1988, your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts cluster around a loss that touched the household, and your mother's settling marks where things steadied.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "summary": "Around your mother Della's cancer diagnosis in February 1995, within the surrounding years: your migraines in March 1994, your calling your brother most nights by April 1994, your stopping his calls by June 1995, and your distance from your mother by February 1996. These shifts in your relationship moves and your symptom fall close beside your mother's diagnosis, a change that touched everyone, and your withdrawal from home marks where the period settled.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your mother Della's cancer diagnosis in February 1995, within the surrounding years: your migraines in March 1994, your calling your brother most nights by April 1994, your stopping his calls by June 1995, and your distance from your mother by February 1996. These shifts in your relationship moves and your symptom fall close beside your mother's diagnosis, a change that touched everyone, and your withdrawal from home marks where the period settled.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.010714
+}

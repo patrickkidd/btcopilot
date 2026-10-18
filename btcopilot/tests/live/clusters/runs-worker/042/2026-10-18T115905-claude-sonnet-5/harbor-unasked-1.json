@@ -1,0 +1,233 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      121,
+      122
+     ],
+     "name": "Teodor's collapse and death at the bus depot, 1978\u20131979",
+     "reason": "Within months of Teodor's death you said Delphine stopped cooking, went to Hazel's every evening, Duncan and Odette took distance through night shifts, Anton's drinking brought a warning at work, Odette lay awake over her mother and Anton, and Callum's ear infections ran through that winter; Delphine's move to the library in spring 1979 is where things settle, and the quarrel with Simone over selling the house is left out since nobody can place its date.",
+     "change": "Returned as the hint gave it, with the undated quarrel over the house left out since its date is unknown.",
+     "openingId": 113
+    },
+    {
+     "id": null,
+     "eventIds": [
+      129,
+      130,
+      131,
+      132,
+      134
+     ],
+     "name": "Odette's bed rest in pregnancy, 1984",
+     "reason": "Around Odette being ordered to bed for the rest of her pregnancy, within months, Hazel began overfunctioning in the house, that brought conflict between Hazel and Duncan over how she kept it, and Callum's stammer returned; Ines's birth that September sits at the close of the same months, and Maren's bedtime trouble is left out as nobody can say which month it fell in.",
+     "change": "Returned as the hint gave it, with the undated bedtime shift left out.",
+     "openingId": 129
+    },
+    {
+     "id": null,
+     "eventIds": [
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153
+     ],
+     "name": "Hazel's diagnosis with Parkinson's disease, 1986\u20131997",
+     "reason": "From Hazel's diagnosis, a long climb runs through Ambrose taking over her care, Duncan's nightly calls for news of her, her fall and the frame, the new medicine, conflict between Duncan and Lyle over who should help, her further declines, Pearl's panic spells at the wheel, Duncan's drinking and his fights with Odette, each step easing only partly before the next, until Hazel's move into the Fairlie home and Duncan cutting back his drinking mark the settling; the undated distance between Ambrose, Hazel and Lyle is left out as no year can be put to it.",
+     "change": "Returned as the hint gave it, with the undated distance shift left out and the close read at Hazel's move into care and Duncan's drinking easing.",
+     "openingId": 135
+    },
+    {
+     "id": null,
+     "eventIds": [
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      161
+     ],
+     "name": "Callum's move north for a job at the mines, 1999\u20132000",
+     "reason": "Around Callum leaving home for the mines up north, within months, conflict with his father over the plan, Odette's unsettled nights at the thought of him being far away, Duncan missing work and sitting up in the garage, and Ines skipping school pile up together; Ines back at school and passing her exams by the summer of 2000 is where it settles, and the undated start of Callum's Sunday calls is left out since no month can be put to it.",
+     "change": "Returned as the hint gave it, with the undated Sunday-calls shift left out.",
+     "openingId": 156
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1980\u20131982: the recount leaves only one shift that counts, Emil's drinking, since Duncan and Lyle's distance is told as since they were boys and has no known date besides, so there is not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2005: the shifts around Ines's car sliding off the road all fall within the same few days, with the family calm again once she was home, so this is an acute episode around a real threat, not a period.",
+     "hint": "r7",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: unanswered: Run r6 (2003-01-14 to 2003-11-15) has 4 shifts that count and came back neither as a period nor under `declined` with a reason.",
+  "answer 2: declined: Run r2 (1980-09-21 to 1982-07-15) has 2 shifts that count and was declined: 1980\u20131982: the recount leaves only one shift that counts, Emil's drinking, since Duncan and Lyle's distance is told as since they were boys and has no known date besides, so there is not enough in the diagram to choose a reading.",
+  "answer 2: declined: Run r7 (2005-11-19 to 2005-11-23) has 5 shifts that count and was declined: 2005: the shifts around Ines's car sliding off the road all fall within the same few days, with the family calm again once she was home, so this is an acute episode around a real threat, not a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Teodor's collapse and death at the bus depot, 1978\u20131979",
+   "summary": "Within months of Teodor's death you said Delphine stopped cooking, went to Hazel's every evening, Duncan and Odette took distance through night shifts, Anton's drinking brought a warning at work, Odette lay awake over her mother and Anton, and Callum's ear infections ran through that winter; Delphine's move to the library in spring 1979 is where things settle, and the quarrel with Simone over selling the house is left out since nobody can place its date.",
+   "eventIds": [
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    121,
+    122
+   ],
+   "startDate": "1978-01-27",
+   "endDate": "1979-05-15",
+   "name": "Teodor's collapse and death at the bus depot, 1978\u20131979",
+   "source": "model",
+   "reason": "Within months of Teodor's death you said Delphine stopped cooking, went to Hazel's every evening, Duncan and Odette took distance through night shifts, Anton's drinking brought a warning at work, Odette lay awake over her mother and Anton, and Callum's ear infections ran through that winter; Delphine's move to the library in spring 1979 is where things settle, and the quarrel with Simone over selling the house is left out since nobody can place its date.",
+   "setAside": false,
+   "openingEventId": 113
+  },
+  {
+   "id": "c2",
+   "title": "Odette's bed rest in pregnancy, 1984",
+   "summary": "Around Odette being ordered to bed for the rest of her pregnancy, within months, Hazel began overfunctioning in the house, that brought conflict between Hazel and Duncan over how she kept it, and Callum's stammer returned; Ines's birth that September sits at the close of the same months, and Maren's bedtime trouble is left out as nobody can say which month it fell in.",
+   "eventIds": [
+    129,
+    130,
+    131,
+    132,
+    134
+   ],
+   "startDate": "1984-03-15",
+   "endDate": "1984-09-28",
+   "name": "Odette's bed rest in pregnancy, 1984",
+   "source": "model",
+   "reason": "Around Odette being ordered to bed for the rest of her pregnancy, within months, Hazel began overfunctioning in the house, that brought conflict between Hazel and Duncan over how she kept it, and Callum's stammer returned; Ines's birth that September sits at the close of the same months, and Maren's bedtime trouble is left out as nobody can say which month it fell in.",
+   "setAside": false,
+   "openingEventId": 129
+  },
+  {
+   "id": "c3",
+   "title": "Hazel's diagnosis with Parkinson's disease, 1986\u20131997",
+   "summary": "From Hazel's diagnosis, a long climb runs through Ambrose taking over her care, Duncan's nightly calls for news of her, her fall and the frame, the new medicine, conflict between Duncan and Lyle over who should help, her further declines, Pearl's panic spells at the wheel, Duncan's drinking and his fights with Odette, each step easing only partly before the next, until Hazel's move into the Fairlie home and Duncan cutting back his drinking mark the settling; the undated distance between Ambrose, Hazel and Lyle is left out as no year can be put to it.",
+   "eventIds": [
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    142,
+    143,
+    144,
+    145,
+    146,
+    147,
+    148,
+    149,
+    150,
+    151,
+    152,
+    153
+   ],
+   "startDate": "1986-09-03",
+   "endDate": "1997-10-15",
+   "name": "Hazel's diagnosis with Parkinson's disease, 1986\u20131997",
+   "source": "model",
+   "reason": "From Hazel's diagnosis, a long climb runs through Ambrose taking over her care, Duncan's nightly calls for news of her, her fall and the frame, the new medicine, conflict between Duncan and Lyle over who should help, her further declines, Pearl's panic spells at the wheel, Duncan's drinking and his fights with Odette, each step easing only partly before the next, until Hazel's move into the Fairlie home and Duncan cutting back his drinking mark the settling; the undated distance between Ambrose, Hazel and Lyle is left out as no year can be put to it.",
+   "setAside": false,
+   "openingEventId": 135
+  },
+  {
+   "id": "c4",
+   "title": "Callum's move north for a job at the mines, 1999\u20132000",
+   "summary": "Around Callum leaving home for the mines up north, within months, conflict with his father over the plan, Odette's unsettled nights at the thought of him being far away, Duncan missing work and sitting up in the garage, and Ines skipping school pile up together; Ines back at school and passing her exams by the summer of 2000 is where it settles, and the undated start of Callum's Sunday calls is left out since no month can be put to it.",
+   "eventIds": [
+    154,
+    155,
+    156,
+    157,
+    158,
+    159,
+    161
+   ],
+   "startDate": "1999-01-15",
+   "endDate": "2000-08-15",
+   "name": "Callum's move north for a job at the mines, 1999\u20132000",
+   "source": "model",
+   "reason": "Around Callum leaving home for the mines up north, within months, conflict with his father over the plan, Odette's unsettled nights at the thought of him being far away, Duncan missing work and sitting up in the garage, and Ines skipping school pile up together; Ines back at school and passing her exams by the summer of 2000 is where it settles, and the undated start of Callum's Sunday calls is left out since no month can be put to it.",
+   "setAside": false,
+   "openingEventId": 156
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.8,
+   "f1": 0.888888888888889
+  },
+  "members": {
+   "tp": 39,
+   "fp": 0,
+   "fn": 4,
+   "precision": 1.0,
+   "recall": 0.9069767441860465,
+   "f1": 0.951219512195122
+  },
+  "openings": [
+   3,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.135352
+}

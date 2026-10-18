@@ -1,0 +1,144 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952-1953",
+     "reason": "Around Walter's move of the family to Sorrel Valley in March 1952, within a year: June's homesickness and daily letters, the distance between Walter and June as he stayed out in the trees, Glen's fights at the new school, the cutoff between Walter and his brother Harlan, June's weeks in bed, and the rows over money for new trees; June joining the choir and her letters thinning out in late 1953 is where it settles, and Faye's stomach aches and Roy being kept back, both on dates nobody is sure of, are left out of the opening though they may belong to the same spread of trouble.",
+     "change": "Faye's stomach aches and Roy's being kept back are held apart from the opening events since their dates are not known, leaving eight shifts on known dates around the move itself.",
+     "openingId": 109
+    },
+    {
+     "id": "r2",
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968-1969",
+     "reason": "Around the orchard failing in May 1968, within that year: Walter's heavy drinking, the conflict between Walter and Glen over the loan, the auction and move to Ridgeport, Glen and Marian taking over the family's money, and Carl's asthma worsening that winter; Walter's stopping drinking and taking up pruning work in October 1969 is where it settles, and the cutoff between Walter and Roy, Nora's bedwetting and Ida's heart trouble, each on a date nobody is sure of or weaker on its own, are left out of the opening.",
+     "change": "The cutoff with Roy, dated as unknown, no longer carries the opening, and the period is read as closing with Walter's return to steadier work in October 1969 rather than reaching further.",
+     "openingId": 132
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1975-1976 events fall inside the year you named as the year Dad lost his job, so your own period covers those years and no period of the coach's is drawn from them.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "Among the 1990-1991 events the only change in who is in the family or how a key member functions is Wilma's move into the house in January 1990, and the shifts that follow it (the clashes over the children, Hollis's distance and turn toward his mother, Owen's tantrums, Lily's care taken over, Nora's eczema, and the rows with Hollis) run close together until Wilma took her own flat in June 1991 and the eczema cleared that August, so this reads as a period around Wilma's move rather than a decline; it is returned as a cluster below.",
+     "hint": "r4",
+     "run": "r4"
+    },
+    {
+     "reason": "The 1994 events are several shifts within four days around the wildfire evacuation, with the family settling once allowed home and calm again within a day or two, so this is an acute episode around a real threat, not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The 1996-1997 events hold only Tess's drinking, your worry for her, the conflict with Rick, and her stopping drinking, with no change in who is in the family or in how a key member functions among them on a known date, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r2' is not one of the app's periods listed.",
+  "answer 2: declined: Run r4 (1990-01-20 to 1991-08-15) has 8 shifts that count and was declined: Among the 1990-1991 events the only change in who is in the family or how a key member functions is Wilma's move into the house in January 1990, and the shifts that follow it (the clashes over the children, Hollis's distance and turn toward his mother, Owen's tantrums, Lily's care taken over, Nora's eczema, and the rows with Hollis) run close together until Wilma took her own flat in June 1991 and the eczema cleared that August, so this reads as a period around Wilma's move rather than a decline; it is returned as a cluster below.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 5 shifts that count and was declined: The 1994 events are several shifts within four days around the wildfire evacuation, with the family settling once allowed home and calm again within a day or two, so this is an acute episode around a real threat, not a period.",
+  "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: The 1996-1997 events hold only Tess's drinking, your worry for her, the conflict with Rick, and her stopping drinking, with no change in who is in the family or in how a key member functions among them on a known date, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "the year Dad lost his job",
+   "summary": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "the year Dad lost his job",
+   "source": "user",
+   "reason": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 3,
+   "precision": 1.0,
+   "recall": 0.25,
+   "f1": 0.4
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   1
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "cluster F1 0.40 under 0.8"
+ ],
+ "cost": 0.158852
+}

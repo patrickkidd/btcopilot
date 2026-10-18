@@ -1,0 +1,212 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      194,
+      3,
+      40,
+      134,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      39
+     ],
+     "name": "Your grandfather Clifford's death, 1989\u20131992",
+     "reason": "Around your grandfather Clifford's death in mid-1991 you left for the conservatory, leaned on Rafe, hurt your wrist, lost that friendship, and sank low through early 1992, with your mother's wedding to Desmond following soon after; the earlier moves to Quarry Lane and Hollin Road and Tara's birth sit close by, while the thyroid and community-college events are left out as undated or ordinary.",
+     "change": "Reshaped from the hint to centre on Clifford's death and the conservatory collapse, dropping undated or always-true shifts.",
+     "openingId": 78
+    },
+    {
+     "id": "r3",
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      79
+     ],
+     "name": "Your grandmother Winifred's cancer, 2001\u20132004",
+     "reason": "Your burnout and failed audition in 2001\u20132002 sit beside your grandmother Winifred's cancer diagnosis, and your distance from your parents, the Marisol relationship and breakup, and the depression and return to Thornbury follow through to her death in early 2004, with contact toward friends, your father, and your therapist marking the slow settling.",
+     "change": "Kept as the hint gave it, since the shifts run continuously from the diagnosis to the death with no quiet between.",
+     "openingId": 176
+    },
+    {
+     "id": "r4",
+     "eventIds": [
+      61,
+      111,
+      112,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Your grandmother Lorna's death, 2008\u20132009",
+     "reason": "Your grandmother Lorna's death in January 2008 sits close to your distance from your mother at Alder Creek, your cutoff from her once you left for nursing school, and your aunt Imogen's stroke the following January, read together as a stretch of strain around the move.",
+     "change": "Dropped the undated visit-conflict events and the always-true calmer-dealings event, keeping only the dated shifts around the death and move.",
+     "openingId": 61
+    },
+    {
+     "id": "r5",
+     "eventIds": [
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Wren's being swamped, 2019",
+     "reason": "Within the same week in October 2019, Wren's feeling swamped, your tightening into overfunctioning, her family's fusion, her settling, and the bad night and anxiety at the lake house all fall together as a short flare-up around her mother's retirement gathering.",
+     "change": "Narrowed from the wider hint to the week of events around the retirement weekend, since the surrounding items are undated, always-true, or a lift alone.",
+     "openingId": null
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: only two shifts remain (insomnia beginning and starting with a therapist), both your own, and the family's splits with Joelle and Marisol are the person's own relationship moves with no change in the family among them, so there is not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r3' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r4' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r5' is not one of the app's periods listed.",
+  "answer 2: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: only two shifts remain (insomnia beginning and starting with a therapist), both your own, and the family's splits with Joelle and Marisol are the person's own relationship moves with no change in the family among them, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "the year I left home",
+   "summary": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1991-03-12",
+   "endDate": "1994-01-12",
+   "name": "the year I left home",
+   "source": "user",
+   "reason": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.6666666666666666,
+   "f1": 0.8
+  },
+  "members": {
+   "tp": 26,
+   "fp": 3,
+   "fn": 5,
+   "precision": 0.896551724137931,
+   "recall": 0.8387096774193549,
+   "f1": 0.8666666666666666
+  },
+  "openings": [
+   0,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.272168
+}
