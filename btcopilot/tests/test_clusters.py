@@ -5,6 +5,7 @@ The first half of this file runs without a model at all. The second half
 scripts the model and checks what the code drops, merges and keeps.
 """
 
+import dataclasses
 import datetime
 import json
 from contextlib import contextmanager
@@ -15,7 +16,7 @@ from mock import Mock, patch
 
 from btcopilot import clusters, diagramjson
 from btcopilot.clusters import (
-    MAX_SPAN_YEARS,
+    FLOOR_YEARS,
     Answer,
     ClusterCheck,
     ClusterError,
@@ -359,16 +360,24 @@ def test_a_shift_of_unknown_date_alone_seeds_no_run():
 
 def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reason():
     # R-0856, R-0850
-    """A run with three or more supporting shifts is the app's default: an
-    answer that neither returns it nor declines it is asked again with the
-    reason; a run declined with a reason is heard, the rest kept."""
+    """A run with three or more supporting shifts and a change in who is in
+    the family is the app's default: an answer that neither returns it nor
+    declines it is asked again with the reason; a run declined with a reason
+    is heard, the rest kept."""
     data = record(
         moment(1, "1994-01-01", person=1),
+        asdict(Event(id=4, kind=EventKind.Death, person=4, dateTime="1994-02-01")),
         moment(2, "1994-03-01", person=1),
         moment(3, "1994-05-01", person=2),
         moment(10, "2010-01-01", person=1),
         moment(11, "2010-02-01", person=2),
+        asdict(
+            Event(
+                id=13, kind=EventKind.Married, person=1, spouse=2, dateTime="2010-03-01"
+            )
+        ),
         moment(12, "2010-04-01", person=3),
+        people=4,
     )
     assert [(c.id, c.strong) for c in candidates(data)] == [("r1", True), ("r2", True)]
     first = answers(named(1, 2, 3))
@@ -417,6 +426,104 @@ def test_a_calmer_shift_supports_nothing_and_an_unknown_date_still_supports():
         ([1, 2, 3, 4, 5], [1, 4, 5])
     ]
     assert [e.id for e in joinable(data)] == [1, 2, 3, 4, 5]
+
+
+def test_a_shift_told_as_how_things_always_were_supports_no_hint():
+    # R-0850, R-0856
+    """Two of the three shifts after the death are told as how things always
+    were, the family's ordinary level: the one left is a reaction, so no hint
+    is offered. Told as departures, the same three make one."""
+    data = record(
+        asdict(Event(id=1, kind=EventKind.Death, person=3, dateTime="1963-01-10")),
+        moment(
+            2,
+            "1963-02-10",
+            person=1,
+            relationship=RelationshipKind.Distance,
+            description="has always bickered with her aunt",
+        ),
+        moment(
+            3,
+            "1963-03-10",
+            person=1,
+            functioning=VariableShift.Down,
+            description="for years kept the shop going on her own",
+        ),
+        moment(4, "1963-05-10", person=2, anxiety=VariableShift.Up),
+    )
+    assert grouped(data) == []
+    data.events[1]["description"] = "stopped visiting her aunt"
+    data.events[2]["description"] = "let the shop slide"
+    assert [c.shiftIds for c in candidates(data)] == [[2, 3, 4]]
+    told = [
+        "always late",
+        "forever on edge",
+        "never a moment's peace",
+        "mostly kept to herself",
+        "on the whole cheerful",
+        "for years quiet",
+    ]
+    assert all(
+        clusters.standing(Event(id=9, kind=EventKind.Shift, description=one))
+        for one in told
+    )
+    assert not clusters.standing(
+        Event(id=9, kind=EventKind.Shift, description="wholly new, nevertheless")
+    )
+
+
+def test_a_hint_is_the_default_only_with_a_change_in_the_family_on_a_known_date():
+    # R-0850, R-0856
+    """Three shifts that count make the default reading only beside a change
+    in who is in the family on a known date; without one, or with one whose
+    date nobody knows, the hint is offered as a question, never the default."""
+    shifts = [
+        moment(1, "1963-02-01", person=1),
+        moment(2, "1963-04-01", person=2),
+        moment(3, "1963-06-01", person=1),
+    ]
+    alone = record(*shifts)
+    assert [(c.shiftIds, c.strong) for c in candidates(alone)] == [([1, 2, 3], False)]
+    death = Event(id=4, kind=EventKind.Death, person=3, dateTime="1963-03-01")
+    unsure = record(
+        *shifts, asdict(dataclasses.replace(death, dateCertainty=DateCertainty.Unknown))
+    )
+    assert [(c.changeIds, c.strong) for c in candidates(unsure)] == [([], False)]
+    known = record(*shifts, asdict(death))
+    proposed = candidates(known)
+    assert [(c.changeIds, c.strong) for c in proposed] == [([4], True)]
+    prompt = clusters._prompt(proposed, joinable(known), {}, [], None)
+    hint = prompt.split("(A HINT ONLY)")[1].split("THE PEOPLE")[0]
+    assert [one["default"] for one in json.loads(hint)] == [True]
+
+
+def test_a_lift_counts_beside_another_persons_rise_in_the_same_months_and_never_alone():
+    # R-0850, R-0856
+    """A drop in one person's symptom beside another's rise is one movement
+    in the family and counts; beside only its own person's rise it counts for
+    nothing; and a lift never starts a hint, so an event more than a year and
+    a half after the last rise stays out though it is near the lift."""
+    data = record(
+        asdict(Event(id=1, kind=EventKind.Death, person=3, dateTime="1975-02-01")),
+        moment(2, "1975-03-01", person=1, symptom=VariableShift.Up),
+        moment(3, "1975-04-01", person=1, anxiety=VariableShift.Up),
+        moment(
+            4,
+            "1975-05-15",
+            person=2,
+            symptom=VariableShift.Down,
+            description="her headaches cleared",
+        ),
+        moment(5, "1976-10-01", person=2, kind=EventKind.Noted, description="new job"),
+    )
+    assert [(c.eventIds, c.shiftIds) for c in candidates(data)] == [
+        ([1, 2, 3, 4], [2, 3, 4])
+    ]
+    data.events[3]["person"] = 1
+    assert [c.shiftIds for c in candidates(data)] == [[2, 3]]
+    data.events[3]["person"] = 2
+    data.events[3]["dateTime"] = "1975-09-01"
+    assert [c.shiftIds for c in candidates(data)] == [[2, 3]]
 
 
 # The fictional Brook family: Ida (1) falls apart after her aunt Lou (2) is
@@ -869,8 +976,9 @@ def test_a_whole_history_period_given_twice_fails_the_grouping():
     assert "thrown out" in second and "1948 to 2001" in second
 
 
-def test_a_ten_year_period_is_dropped_and_the_rest_kept():
+def test_a_period_over_half_the_history_is_dropped_and_the_rest_kept():
     # R-0846
+    """1948 to 1994 is more than half of the family's 1948 to 2001."""
     long = answers(
         named(1, 2, 3, 4, 5, 6, 7, 8, name="The women of this family"),
         named(9, 10, 12, 13, 14, name="Nell and Theo"),
@@ -881,21 +989,83 @@ def test_a_ten_year_period_is_dropped_and_the_rest_kept():
     assert [c.name for c in result.clusters] == ["Nell and Theo, 1996–2001"]
 
 
-def test_without_the_ten_year_check_the_merged_answer_is_accepted():
-    # R-0837
-    with patch.object(clusters, "MAX_SPAN_YEARS", 100):
+def test_without_the_whole_history_check_the_merged_answer_is_accepted():
+    # R-0846
+    with patch.object(clusters, "HISTORY_SHARE", 1.0):
         with replies(MERGED) as ask:
             result = detect_clusters(HALE, ask)
     assert spans(result) == [("1948", "2001")]
 
 
-def test_ten_years_to_the_day_passes_and_a_day_more_is_too_long():
-    # R-0837
+def test_only_a_period_over_half_the_diagrams_dated_years_is_too_long():
+    # R-0850, R-0856, R-0846
+    """Twelve years in a family history of sixty is a period; twelve of
+    twenty is most of the history. Ten years to the day is never too long,
+    whatever the history, so a diagram told only as far as one period still
+    gets it."""
     day = datetime.date(1990, 1, 1)
-    assert not too_long([day, datetime.date(1990 + MAX_SPAN_YEARS, 1, 1)])
-    assert too_long([day, datetime.date(1990 + MAX_SPAN_YEARS, 1, 2)])
-    assert not too_long([])
-    assert not too_long([datetime.date(1996, 2, 29), datetime.date(2006, 2, 28)])
+    sixty = (datetime.date(1960, 1, 1), datetime.date(2020, 1, 1))
+    twenty = (datetime.date(1990, 1, 1), datetime.date(2010, 1, 1))
+    twelve = [day, datetime.date(2002, 1, 1)]
+    assert not too_long(twelve, sixty)
+    assert too_long(twelve, twenty)
+    ten = [day, datetime.date(1990 + FLOOR_YEARS, 1, 1)]
+    assert not too_long(ten, (day, ten[1]))
+    assert too_long([day, datetime.date(1990 + FLOOR_YEARS, 1, 2)], (day, ten[1]))
+    assert not too_long([], twenty)
+    assert not too_long(twelve, None)
+    assert not too_long(
+        [datetime.date(1996, 2, 29), datetime.date(2006, 2, 28)],
+        (datetime.date(1996, 2, 29), datetime.date(2006, 2, 28)),
+    )
+
+
+# The fictional Fenn family, 1950 to 2015: after a grandmother's death in 1990
+# Kit (1) and Jo (2) climb for more than eleven years, each step a shift with
+# only partial relief between, no quiet long enough to end it.
+CLIMB = [
+    asdict(Event(id=20, kind=EventKind.Death, person=3, dateTime="1990-01-01")),
+    moment(21, "1990-03-01", person=1, symptom=VariableShift.Up),
+    moment(22, "1991-06-01", person=1, anxiety=VariableShift.Up),
+    moment(23, "1992-09-01", person=2, functioning=VariableShift.Down),
+    moment(24, "1994-01-01", person=1, symptom=VariableShift.Up),
+    moment(25, "1995-06-01", person=2, anxiety=VariableShift.Up),
+    moment(26, "1997-01-01", person=1, functioning=VariableShift.Down),
+    moment(27, "1998-06-01", person=1, symptom=VariableShift.Up),
+    moment(28, "2000-01-01", person=2, relationship=RelationshipKind.Conflict),
+    moment(29, "2001-09-01", person=1, symptom=VariableShift.Up),
+]
+FENN = record(
+    asdict(
+        Event(id=10, kind=EventKind.Married, person=3, spouse=4, dateTime="1950-06-01")
+    ),
+    *CLIMB,
+    asdict(Event(id=30, kind=EventKind.Death, person=4, dateTime="2015-01-01")),
+    people=4,
+)
+
+
+def test_a_climb_over_more_than_ten_years_in_a_long_history_is_kept_on_one_ask():
+    # R-0850, R-0856, R-0846
+    """Eleven and a half years of a sixty-five-year history is a period; the
+    whole history as one is refused with the reason that it covers more than
+    half of the diagram's dated years."""
+    climb = [event["id"] for event in CLIMB]
+    with replies(answers(named(*climb, name="After the grandmother's death"))) as ask:
+        result = detect_clusters(FENN, ask)
+    assert ask.call_count == 1
+    assert spans(result) == [("1990", "2001")]
+    whole = answers(named(10, *climb, 30, name="The family"))
+    seen = []
+    with replies(whole, whole) as ask:
+        with pytest.raises(ClusterError):
+            detect_clusters(FENN, ask, heard(seen))
+    assert seen == [(1, ClusterCheck.TooLong), (2, ClusterCheck.TooLong)]
+    again = " ".join(ask.call_args_list[1].args[0].split())
+    assert (
+        "reaches from 1950 to 2015, more than half of the years this diagram's "
+        "events cover (1950 to 2015)" in again
+    )
 
 
 def test_the_proposals_as_given_pass():
@@ -923,7 +1093,7 @@ def test_the_grandfathers_death_joins_the_run_it_fell_in():
 
 def test_the_early_marriage_joined_to_the_first_run_passes_the_check():
     # R-0837, R-0842
-    """1948 to 1955 is seven years, under the ceiling: whether the marriage
+    """1948 to 1955 is seven years, never too long: whether the marriage
     belongs with the headaches six years on is the model's call."""
     with replies(
         answers(
@@ -1275,24 +1445,27 @@ def regrouped(test_user, data: DiagramData):
     return done, aside, drawn
 
 
-def test_refused_twice_sets_aside_a_stored_model_group_over_ten_years(test_user):
-    # R-0840, R-0850
+def test_refused_twice_sets_aside_a_stored_model_group_over_half_the_history(
+    test_user,
+):
+    # R-0840, R-0850, R-0846
+    """1972 to 2003 is most of the family's 1970 to 2003."""
     done, removed, kept = regrouped(
         test_user,
         record(
-            moment(70, "1990-01-01", person=1, anxiety=VariableShift.Up),
+            moment(70, "1972-01-01", person=1, anxiety=VariableShift.Up),
             moment(71, "1995-01-01", person=1, description="later"),
             moment(72, "2003-01-01", person=1, description="much later"),
             *EARLY,
             clusters=[
-                already(70, 71, 72, cluster_id="c1", name="Thirteen years"),
+                already(70, 71, 72, cluster_id="c1", name="Thirty-one years"),
                 already(60, 61, 62, cluster_id="c2", name="That year"),
             ],
         ),
     )
     assert done is not None
     assert [(r["setAside"], r["check"]) for r in removed] == [("c1", "too_long")]
-    assert "(1990-01-01 to 2003-01-01)" in removed[0]["detail"]
+    assert "(1972-01-01 to 2003-01-01)" in removed[0]["detail"]
     assert kept == ["c2"]
 
 
@@ -1562,6 +1735,54 @@ def test_a_name_from_the_persons_relationship_shift_is_refused_once_and_renamed(
     assert [c.name for c in result.clusters] == ["Ida's stroke and death, 2003"]
 
 
+# The fictional Marsh family: Ott (1) clashes with his stepfather (3) and
+# moves out to make films; his stepmother Ada (2) is diagnosed and dies.
+MARSH = record(
+    moment(
+        90,
+        "2011-01-01",
+        person=2,
+        symptom=VariableShift.Up,
+        description="diagnosed with a heart condition",
+    ),
+    moment(
+        91,
+        "2011-03-01",
+        person=1,
+        relationship=RelationshipKind.Conflict,
+        relationshipTargets=[3],
+        description="clashed with his stepfather",
+    ),
+    moment(
+        92,
+        "2011-06-01",
+        person=1,
+        anxiety=VariableShift.Up,
+        description="moved out to make a movie in the city",
+    ),
+    asdict(Event(id=93, kind=EventKind.Death, person=2, dateTime="2011-09-01")),
+)
+
+
+def test_a_name_is_checked_word_for_word_and_the_ordinary_relatives_are_free():
+    # R-0850, R-0856
+    """A word of the person's own events is refused only whole: "move" is not
+    "moved", "moving" is not "movie", and "stepmother" is a relative, never
+    the person's trouble, though they clashed with their stepfather."""
+    told = clusters.trouble_words(MARSH)
+    assert clusters.trouble_in("Your stepmother Ada's death, 2011", told) == []
+    assert clusters.trouble_in("Ada's illness and Bram moving house, 2011", told) == []
+    assert clusters.trouble_in("Ada's death and the move to the city, 2011", told) == [
+        "city"
+    ]
+    seen = []
+    stepmother = named(90, 91, 92, 93, name="Your stepmother Ada's death")
+    with replies(answers(stepmother)) as ask:
+        result = detect_clusters(MARSH, ask, heard(seen))
+    assert seen == []
+    assert [c.name for c in result.clusters] == ["Your stepmother Ada's death, 2011"]
+
+
 def test_a_returned_name_with_other_years_than_its_span_is_stored_with_its_span():
     # R-0853
     with replies(
@@ -1623,7 +1844,7 @@ def test_a_stored_period_is_judged_against_the_data():
     """One person's shifts make that person's run; the gaps run from the
     opening, negative when the trouble came first; two shifts that count do
     not support a period the person drew."""
-    run = clusters.judge({"eventIds": [1, 2, 3, 4, 5], "openingEventId": 1}, SLEEP)
+    run = clusters.judge({"eventIds": [1, 2, 3, 4], "openingEventId": 1}, SLEEP)
     assert (run.shiftIds, run.runOf, run.opening) == ([2, 3, 4], 1, 1)
     assert (run.toFirst, run.toLast, run.supported) == (-90, 214, True)
     theirs = clusters.judge({"eventIds": [1, 3, 5], "source": "user"}, SLEEP)

@@ -9,9 +9,10 @@ opening; which opening mattered is the model's judgement. The model returns the
 app's periods as they should now stand, and reads the periods the person named
 when asked when the most was going on, each written once as theirs; the
 person's own stay as they drew them and are judged against the data like the
-app's [Oracle: R-0853]. The code only backstops: three events at least,
-nothing over ten years, no name told in the person's trouble, two periods
-sharing days become one, and a period that fails is set aside, never deleted.
+app's [Oracle: R-0853]. The code only backstops: three events at least, no
+period covering more than half of the diagram's dated years, no name told in
+the person's trouble, two periods sharing days become one, and a period that
+fails is set aside, never deleted.
 Fewer than three supporting shifts counts against a period and never refuses
 it: the case report's refresh hears the count [Oracle: R-0850]. Spec and ruling
 ids: doc/CLUSTERS.md.
@@ -111,12 +112,29 @@ _log = logging.getLogger(__name__)
 # hypothesis, a hint is declined by what its events say and never by its count,
 # and the hints go to the call as `hints`; a declined hint comes back under
 # `hint`, so every diagram regroups on its next event change
-# [Oracle: R-0850, R-0855, R-0842, R-0851, R-0858].
-DETECTION_VERSION = 19
+# [Oracle: R-0850, R-0855, R-0842, R-0851, R-0856, R-0857].
+# 20: a shift told as how things always were supports no period, one person's
+# trouble lifting counts beside another's rise in the same months, a hint is
+# the default only with a change in who is in the family on a known date, a
+# period's name is checked word for word with the ordinary relatives free to
+# use, and only a period covering more than half of the diagram's dated years
+# is refused for its length, so every diagram regroups on its next event change
+# [Oracle: R-0850, R-0856, R-0376, R-0846].
+DETECTION_VERSION = 20
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
 RISES = (("symptom", VariableShift.Up), ("anxiety", VariableShift.Up))
+LIFTS = (("symptom", VariableShift.Down), ("anxiety", VariableShift.Down))
+# A shift whose description holds one of these words is told as how things
+# always were: the family's ordinary level, which counts toward no period
+# [Oracle: R-0850]. The words are the ones the prompt names; a standing pattern
+# told in other words is the coach's to strike when it reads the hint.
+STANDING = re.compile(r"\b(?:always|forever|never|mostly|on the whole|for years)\b")
+# How far apart, in days, one person's lift and another's rise may fall and
+# still be one movement: the same months, about three of them. Guidance, like
+# `SPAN_DAYS`, not a ruled number [Oracle: R-0850].
+LIFT_DAYS = 92
 
 # How far either side of a shift a related event is proposed as
 # part of the same cluster. A suggestion to the model, not a limit on what it
@@ -145,24 +163,19 @@ CALM_GAP_DAYS = 730
 # reaction, nothing piled up, so it is never offered; fewer than three still
 # counts against a run, never keeps it from the hint [Oracle: R-0850].
 PILE = 2
-# A returned group whose dated events span more than this is refused and the
-# model is asked again with the reason; on the second answer it is dropped and
-# the rest kept [Oracle: R-0837, R-0846]. It only catches an answer that draws
-# the family's whole span as one period; edges stay the model's call. A group
-# that long is a stage of the household or the family's ordinary level, not a
-# disturbance of it. The sources bound the number on both sides.
-# Above: the longest run of dated events any of them draws as one period of
-# stress is five years, the longest named family period a six-year plateau of
-# illness, and the one decade accepted as a single tag was events leading up to
-# a death held together by one man's long illness (Family Therapy in Clinical
-# Practice ch. 21 and ch. 3; the seminar; theory.md T105 to T108 in the corpus
-# research). Below: Bowen's typical stage of the household is "ten years"
-# (Basic Series 3, T1), and his own ten-year narrative chapter is several
-# periods of stress with calm between (ch. 21, T81). Ten is the smallest whole
-# number no wave on record reaches and the first a stage does. It binds nothing
-# inside the range the sources place waves, so the model still judges every
-# edge [Oracle: R-0842].
-MAX_SPAN_YEARS = 10
+# A returned period whose dated events cover more than this share of the years
+# the diagram's dated events cover is refused and the coach is asked again with
+# the reason; on the second answer it is dropped and the rest kept. It only
+# catches an answer that draws the family's whole history as one period, which
+# is the family's ordinary level, not a period; edges stay the coach's call. No
+# source sets a ceiling on a period's length, so a climb over more than ten
+# years is one period when its events hold together [Oracle: R-0846, R-0850].
+HISTORY_SHARE = 0.5
+# A period this many years long or shorter is never refused for its length, so
+# a diagram told only as far as one period, whose history is that period, still
+# gets it. Ten is the length the check refused at before; the share above is
+# what refuses now [Oracle: R-0846].
+FLOOR_YEARS = 10
 
 # Diagnostic and popular-psychology words the definitions the model is given do
 # not contain. The prompt forbids vocabulary from outside those definitions;
@@ -187,18 +200,23 @@ OUTSIDE_WORDS = (
 )
 
 
-# How many letters of a word the naming check compares, and the words it never
-# reads as the person's trouble whatever their descriptions say.
-STEM = 4
+# The words the naming check never reads as the person's trouble whatever their
+# descriptions say. The check compares whole words of four letters or more, so
+# "stepmother" is never read as "stepfather" nor "moving" as "moved".
 COMMON_WORDS = frozenset(
     (
         "about after again always another away back became been before could "
         "during family from going have home into less life more never only onto "
         "over period said since than that their them then they this time until "
         "were when while with would year years "
-        # Words for relatives, which name who changed, never the trouble.
-        "child children daughter husband parent parents partner sibling "
-        "siblings spouse wife"
+        # Words for relatives, which name who changed, never the trouble: the
+        # ordinary relatives with their step- and grand- forms, and the parts
+        # of those names when written with a hyphen [Oracle: R-0376, R-0426].
+        "child children daughter daughters husband parent parents partner "
+        "sibling siblings spouse wife mother mothers father fathers brother "
+        "brothers sister sisters stepmother stepmothers stepfather stepfathers "
+        "stepbrother stepbrothers stepsister stepsisters grandmother "
+        "grandmothers grandfather grandfathers step half grand great"
     ).split()
 )
 
@@ -248,10 +266,56 @@ def _enum_value(val):
     return val.value if hasattr(val, "value") else val
 
 
-def supports(event: Event) -> bool:
+def standing(event: Event) -> bool:
+    """Whether a shift is told as how things always were: this family's
+    ordinary level, not a departure from it, so it counts toward no period
+    whatever its marks say; the coach's coding of it stands [Oracle: R-0850]."""
+    return STANDING.search((event.description or "").lower()) is not None
+
+
+def lifted(event: Event) -> bool:
+    """A drop in symptom or anxiety or a rise in functioning, with nothing on
+    the event that counts by itself: someone's trouble lifting."""
+    return (
+        not troubled(event)
+        and event.relationship is None
+        and (
+            any(_enum_value(getattr(event, name)) == way for name, way in LIFTS)
+            or _enum_value(event.functioning) == VariableShift.Up
+        )
+    )
+
+
+def supports(event: Event, events: list[Event] = ()) -> bool:
     """A rise in symptom or anxiety, a fall in functioning, or a relationship
-    shift; a drop in anxiety or a rise in functioning does not [Oracle: R-0850]."""
-    return troubled(event) or event.relationship is not None
+    shift, unless it is told as how things always were. A lift in one
+    person's trouble counts only beside another person's rise in the same
+    months, both on a known date: the two are one movement in the family; a
+    lift alone, or beside only the same person's rise, counts for nothing
+    [Oracle: R-0850]. `events` are the ones a lift is read beside."""
+    if standing(event):
+        return False
+    if troubled(event) or event.relationship is not None:
+        return True
+    if not lifted(event) or unsure(event) or event.person is None:
+        return False
+    day = parse_date(event.dateTime)
+    return any(
+        other.person not in (None, event.person)
+        and troubled(other)
+        and not standing(other)
+        and not unsure(other)
+        and abs((parse_date(other.dateTime) - day).days) <= LIFT_DAYS
+        for other in events
+    )
+
+
+def opens(event: Event) -> bool:
+    """A change in who is in the family on a known date: a birth, an adoption,
+    a couple coming together, a marriage, a separation, a divorce or a death
+    whose date is not unknown. An event of unknown date opens nothing
+    [Oracle: R-0850, R-0855]."""
+    return event.kind.isStructural() and not unsure(event)
 
 
 def unsure(event: Event) -> bool:
@@ -295,23 +359,38 @@ def _years_after(day: datetime.date, count: int) -> datetime.date:
         return day.replace(year=day.year + count, day=28)
 
 
-def too_long(dates: list[datetime.date]) -> bool:
-    """Whether a group's dated events span more than MAX_SPAN_YEARS
-    [Oracle: R-0837]."""
-    return bool(dates) and max(dates) > _years_after(min(dates), MAX_SPAN_YEARS)
-
-
 Span = tuple[datetime.date, datetime.date]
 
 
-def backstop(ids: list[int], when: dict[int, datetime.date]) -> ClusterCheck | None:
+def too_long(dates: list[datetime.date], history: Span | None) -> bool:
+    """Whether a period's dated events cover more than `HISTORY_SHARE` of the
+    years the diagram's dated events cover, `history`, and more than
+    `FLOOR_YEARS`: a period covering the whole history [Oracle: R-0846]."""
+    if not dates or history is None:
+        return False
+    first, last = min(dates), max(dates)
+    return last > _years_after(first, FLOOR_YEARS) and (
+        (last - first).days > HISTORY_SHARE * (history[1] - history[0]).days
+    )
+
+
+def history_of(data: DiagramData) -> Span | None:
+    """The years the diagram's dated events cover, its first to its last."""
+    return span_of([parse_date(e.dateTime) for e in _dated(data)])
+
+
+def backstop(
+    ids: list[int], when: dict[int, datetime.date], history: Span | None
+) -> ClusterCheck | None:
     """The first check an app period fails, returned by the model or stored:
-    three events, ten years at most [Oracle: R-0850, R-0837]. `when` dates the
-    events it may hold. Its supporting shifts are never checked here: too few
-    counts against it on the case report, never refuses it [Oracle: R-0850]."""
+    three events, and not more than half of the diagram's dated years
+    [Oracle: R-0850, R-0846]. `when` dates the events it may hold, `history`
+    is `history_of` the diagram. Its supporting shifts are never checked here:
+    too few counts against it on the case report, never refuses it
+    [Oracle: R-0850]."""
     if len(ids) < MIN_CLUSTER_EVENTS:
         return ClusterCheck.TooSmall
-    if too_long([when[i] for i in ids]):
+    if too_long([when[i] for i in ids], history):
         return ClusterCheck.TooLong
     return None
 
@@ -366,9 +445,9 @@ def _dated(data: DiagramData) -> list[Event]:
 
 def joinable(data: DiagramData) -> list[Event]:
     """Every dated event a cluster may hold: the scaffolding before the
-    first supporting shift of a known date is held out."""
+    first supporting shift of a known date, never a lift, is held out."""
     events = _dated(data)
-    marked = [e for e in events if supports(e) and not unsure(e)]
+    marked = [e for e in events if seeds(e, events)]
     if not marked:
         return []
     opens = parse_date(marked[0].dateTime)
@@ -402,19 +481,32 @@ def _split(ids: list[int], when: dict, marked: set[int]) -> list[list[int]]:
     return pieces
 
 
+def seeds(event: Event, events: list[Event]) -> bool:
+    """Whether a hint may be started at an event: a supporting shift of a
+    known date that is not a lift, since a lift alone opens nothing
+    [Oracle: R-0850]."""
+    return supports(event, events) and not unsure(event) and not lifted(event)
+
+
 @dataclass
 class Candidate:
+    """`changeIds` are its events that may open it: a change in who is in
+    the family on a known date."""
+
     eventIds: list[int]
     shiftIds: list[int]
     startDate: str
     endDate: str
     id: str = ""
+    changeIds: list[int] = field(default_factory=list)
 
     @property
     def strong(self) -> bool:
-        """Three supporting shifts or more: the call's default reading, kept
-        unless it says why not [Oracle: R-0856]."""
-        return len(self.shiftIds) >= MIN_CLUSTER_EVENTS
+        """Three supporting shifts or more and a change in who is in the
+        family on a known date among its events: the call's default reading,
+        kept unless it says why not. Without such a change it is held as a
+        question, never offered as the default [Oracle: R-0856, R-0850]."""
+        return len(self.shiftIds) >= MIN_CLUSTER_EVENTS and bool(self.changeIds)
 
 
 def candidates(data: DiagramData) -> list[Candidate]:
@@ -425,17 +517,20 @@ def candidates(data: DiagramData) -> list[Candidate]:
     is offered too, its count beside it; one with a single shift is not
     [Oracle: R-0850].
     Only a shift whose date is known seeds a run: a placeholder date shows
-    nothing close in time, and may only join a run seeded near it."""
+    nothing close in time, and may only join a run seeded near it. A shift
+    told as how things always were supports no hint, and a lift supports one
+    only beside another person's rise and never starts it."""
     free = joinable(data)
-    marked = [e for e in free if supports(e)]
-    seeds = [e for e in marked if not unsure(e)]
-    if not seeds:
+    marked = [e for e in free if supports(e, free)]
+    started = [e for e in marked if seeds(e, free)]
+    if not started:
         return []
 
     when = {e.id: parse_date(e.dateTime) for e in free}
+    changes = {e.id for e in free if opens(e)}
 
     groups: list[set[int]] = []
-    for seed in seeds:
+    for seed in started:
         near = {
             e.id
             for e in free
@@ -454,6 +549,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
             shiftIds=[i for i in ids if i in marked_ids],
             startDate=when[ids[0]].isoformat(),
             endDate=when[ids[-1]].isoformat(),
+            changeIds=[i for i in ids if i in changes],
         )
         for group in groups
         for ids in _split(
@@ -495,11 +591,11 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
         (events[i] for i in cluster.get("eventIds") or [] if i in events),
         key=lambda e: (parse_date(e.dateTime), e.id),
     )
-    shifts = [e for e in held if supports(e)]
+    shifts = [e for e in held if supports(e, list(events.values()))]
     people = {e.person for e in shifts}
     named = cluster.get("openingEventId")
     changes = [e for e in held if e.id == named and not unsure(e)] or [
-        e for e in held if e.kind.isStructural() and not unsure(e)
+        e for e in held if opens(e)
     ]
     opening = changes[0] if changes else None
 
@@ -517,14 +613,14 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
     )
 
 
-def _stems(text: str | None) -> set[str]:
-    """Each word of four letters or more by its first four, so "moved" and
-    "move", or "burnout" and "burn", are one word."""
-    return {w[:STEM] for w in re.findall(r"[a-z]{4,}", (text or "").lower())}
+def _whole(text: str | None) -> set[str]:
+    """Each word of four letters or more, whole: "stepmother" and "stepfather"
+    are two words, as are "moving" and "moved"."""
+    return set(re.findall(r"[a-z]{4,}", (text or "").lower()))
 
 
 def trouble_words(data: DiagramData) -> set[str]:
-    """The words the person's own trouble is told in, by stem: those of the
+    """The words the person's own trouble is told in, whole: those of the
     descriptions of their rises in symptom or anxiety, falls in functioning
     and relationship shifts, with each relationship shift's own word (a
     cutoff, a distance), less any another event, an event's kind, a name, a
@@ -538,23 +634,26 @@ def trouble_words(data: DiagramData) -> set[str]:
         if me is not None and e.person == me and (troubled(e) or e.relationship)
     }
     told = set().union(
-        *(_stems(e.description) for e in theirs.values()),
-        *(_stems(_enum_value(e.relationship)) for e in theirs.values() if e.relationship),
+        *(_whole(e.description) for e in theirs.values()),
+        *(
+            _whole(_enum_value(e.relationship))
+            for e in theirs.values()
+            if e.relationship
+        ),
     )
     plain = set().union(
-        *(_stems(e.description) for e in events if e.id not in theirs),
-        *(_stems(kind.value) for kind in EventKind),
-        *(_stems(p.get("name")) for p in data.people if isinstance(p, dict)),
-        _stems(" ".join(TITLE_PREFIXES | COMMON_WORDS)),
+        *(_whole(e.description) for e in events if e.id not in theirs),
+        *(_whole(kind.value) for kind in EventKind),
+        *(_whole(p.get("name")) for p in data.people if isinstance(p, dict)),
+        _whole(" ".join(TITLE_PREFIXES | COMMON_WORDS)),
     )
     return told - plain
 
 
 def trouble_in(name: str, told: set[str]) -> list[str]:
-    """The words of a name that tell the person's trouble."""
-    return sorted(
-        w for w in re.findall(r"[a-z]{4,}", name.lower()) if w[:STEM] in told
-    )
+    """The words of a name that tell the person's trouble, each a whole word
+    of one of their own events."""
+    return sorted(_whole(name) & told)
 
 
 # A year or a run of years in a name, with what sets it off: "(2014)",
@@ -1340,10 +1439,11 @@ def _screen(
             claimed.add(cluster.id)
         usable.append(cluster)
     merged, absorbed = _merged(usable, when)
+    history = history_of(data)
     kept = []
     for cluster in merged:
         said = _said_of(cluster, when)
-        check = backstop(cluster.eventIds, when)
+        check = backstop(cluster.eventIds, when, history)
         if check is ClusterCheck.TooSmall:
             faults.append(
                 ClusterError(
@@ -1356,10 +1456,12 @@ def _screen(
         elif check is ClusterCheck.TooLong:
             faults.append(
                 ClusterError(
-                    f"Period {cluster.name!r} runs from {said['start'][:4]} to "
-                    f"{said['end'][:4]}: more than {MAX_SPAN_YEARS} years is this "
-                    "family's ordinary level, not a period. Return the periods "
-                    "inside it.",
+                    f"Period {cluster.name!r} reaches from {said['start'][:4]} to "
+                    f"{said['end'][:4]}, more than half of the years this "
+                    f"diagram's events cover ({history[0].year} to "
+                    f"{history[1].year}): a period covering the whole history "
+                    "is the family's ordinary level, not a period. Return the "
+                    "periods inside it.",
                     check,
                     said,
                 )
@@ -1441,20 +1543,25 @@ def _judged(
     [Oracle: R-0850, R-0853, R-0844]."""
     dated = _dated(data)
     when = {e.id: parse_date(e.dateTime) for e in dated}
+    history = history_of(data)
     kept, failing = {}, []
     for cluster in data.drawn_clusters():
         ids = [i for i in cluster.get("eventIds") or [] if i in when]
         span = span_of([when[i] for i in ids])
         name = _said(_title(cluster), span) if span else repr(_title(cluster))
         named = f"Stored grouping {cluster['id']} {name}"
-        check = backstop(ids, when)
+        check = backstop(ids, when, history)
         if not _regroupable(cluster):
             kept[str(cluster["id"])] = cluster
         elif check is ClusterCheck.TooSmall:
             failing.append((cluster, check, f"{named} holds {len(ids)} dated events"))
         elif check is ClusterCheck.TooLong:
             failing.append(
-                (cluster, check, f"{named} fails the {MAX_SPAN_YEARS}-year check")
+                (
+                    cluster,
+                    check,
+                    f"{named} covers more than half of the diagram's dated years",
+                )
             )
         elif years_name(_title(cluster)):
             failing.append(
