@@ -125,12 +125,17 @@ RISES = (("symptom", VariableShift.Up), ("anxiety", VariableShift.Up))
 # floor of three events is the one number that is ruled and enforced
 # (MIN_CLUSTER_EVENTS in schema.py), at the model's answer and again at the write.
 SPAN_DAYS = 548
-# The grouping answer's token limit, thinking included: room for the thinking
-# (its budget is 1024, yet calls on a 91-event record used up to 2454) and, per
-# event the record may group, its id in the answer and its share of the names,
-# reasons and changes (accepted answers used about 9). 89 groupable events get
-# 6232 tokens; with no limit, one answer repeated a sentence for 63000.
-THINKING_ROOM = 4096
+# The token limit of cluster detection's answer, thinking included: room for
+# the thinking and, per event the diagram may cluster, its id in the answer and
+# its share of the names, reasons and changes (accepted answers used about 9).
+# Gemini thinks within a budget of 1024 (calls on a diagram of 91 events used up
+# to 2454); Sonnet 5 at high effort sets its own thinking and used all of the
+# 8000 it was given on a diagram of 129 events, in each of ten tries. So a
+# diagram of 130 events gets 16000. The limit is a ceiling the call never shows:
+# an answer that ends below it is the same at any limit, and Haiku, which does
+# not think, used at most 4185 over both answers of a try. With no limit, one
+# answer repeated a sentence for 63000.
+THINKING_ROOM = 12880
 PER_EVENT = 24
 # Room per answer of the person's for the periods read from it: the question
 # asks for two or three times, each a name, a sentence of theirs and two years.
