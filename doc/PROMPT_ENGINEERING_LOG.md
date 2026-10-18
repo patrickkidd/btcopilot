@@ -8,13 +8,16 @@
 
 ## FD-383 job 042 — three code fixes behind the deep misses; a name checked word for word (2026-10-18)
 
-**Change**: cluster detection is version 20. Two prompt lines changed. The name line no longer says
+**Change**: cluster detection is version 20. Four prompt lines changed. The name line no longer says
 the check reads only the first four letters of a word; it says the check compares whole words, and
 that a first name, the event's kind and a word for a relative (mother, father, brother, sister and
 their step- and grand- forms) are always safe. The hint's count line no longer says the count keeps
 the shifts told as how things always were; it says the count already leaves out a shift told with
 always or forever, but not one told so in other words, which the coach still strikes before keeping
-a hint. The rest is code the prompt already described. A shift whose description says always or
+a hint. The two lines that tell the coach which shifts to strike, the one on what never counts and
+the check before answering, now name always and forever, or how things always stood in other words,
+and say a change told with never, mostly, on the whole or for years still counts. The rest is code
+the prompt already described. A shift whose description says always or
 forever supports no period and starts no hint, so a time made only of such shifts is offered as no
 hint at all; "never", "mostly", "on the whole" and "for years" also tell real changes ("never spoke
 to his father again after the funeral"), so the code leaves them to the coach. One person's
