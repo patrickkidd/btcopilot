@@ -1,0 +1,272 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      91,
+      92,
+      93,
+      86,
+      78
+     ],
+     "name": "Your grandfather Clifford's return, 1989\u20131992",
+     "reason": "Around your grandfather Clifford's return into the family in early 1989, within three years: your late nights began that autumn, you moved into the rebuilt Hollin Road house with your mother and Desmond and his children, you let your mother fill in your college forms, your wrist injury stopped your playing in your first term at the conservatory, Rafe moved out after a blow-up between you, and you found yourself lost and low unable to get going with your grandfather gone and your mother about to remarry. These shifts are yours, piling up from your late teens into early adulthood around your grandfather's reappearance and your move into a crowded household.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      104,
+      105
+     ],
+     "name": "Your grandmother Winifred's cancer, 2001\u20132003",
+     "reason": "Around your grandmother Winifred being found to have bowel cancer in 2001 or 2002, within two years: you ran out of steam for performing, you had a disastrous audition and were done with performing, you grew distant from family and friends, you left Thornbury for Gull Harbour, you met Marisol and moved to Fenwick, you split from her within the year and sank into a deep depression, you could not face your family and relied on friends instead. Your shifts cluster around the same time as your grandmother's diagnosis and the end of your performing life, both falling in 2001 and 2002.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within two and a half years: you saw your mother a bit less once Wren came along, and in October 2019 a wave of events hit in quick succession\u2014Wren swamped with one thing after another, you overfunctioning to settle her, her family fused in constant contact, then at her family's lake house for her mother's retirement you woke from early hours unable to sleep and could only pull back, and Wren anxious when you had no sleep at family occasions. These shifts are yours and Wren's together, with her family's fusion backdrop, showing you struggling to find your footing in the wider family system you joined.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: Only one shift that counts\u2014your insomnia worsened before concerts\u2014sits beside your relationship with Joelle and your separation from her. Your functioning rose at the same time, so two shifts are there, but no change in the family on a known date opens a period: Joelle's arrival and your separation are events but not changes in who mattered to this family or in how a key member functioned. Not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2008: Your grandmother Lorna's death in January opens this hint, but five of its six shifts that count are marked neverOpens or hold descriptions saying always or forever\u2014your mother's pressing to visit, the door shut on her, your cutoff from your mother, and your aunt Imogen's stroke all carry neverOpens. One shift remains, your distance from your mother at Alder Creek in July. One shift alone is a reaction, not a period, so not enough in the diagram to choose a reading.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "2017\u20132019: This hint covers the years of your marriage to Wren and her family's life, but its shifts sit mostly in October 2019, all within days of each other around her family's lake house gathering\u2014several shifts on October 21st, one on October 22nd, two on October 23rd. Shifts that pile up within the same few days around a family occasion are an acute episode, not a period. The hint's other events around your marriage in 2017 and your connection to her mother's retirement do not make a period by themselves without the episode.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      91,
+      92,
+      93,
+      86,
+      78
+     ],
+     "name": "Your grandfather Clifford's return, 1989\u20131992",
+     "reason": "Around your grandfather Clifford's return into the family in early 1989, within three years: your late nights began that autumn, you moved into the rebuilt Hollin Road house with your mother and Desmond and his children, you let your mother fill in your college forms, your wrist injury stopped your playing in your first term at the conservatory, Rafe moved out after a blow-up between you, and you found yourself lost and low unable to get going with your grandfather gone and your mother about to remarry. These shifts are yours, piling up from your late teens into early adulthood around your grandfather's reappearance and your move into a crowded household.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      19,
+      20,
+      21,
+      104,
+      105
+     ],
+     "name": "Your grandmother Winifred's cancer, 2001\u20132003",
+     "reason": "Around your grandmother Winifred being found to have bowel cancer in 2001 or 2002, within two years: you ran out of steam for performing, you had a disastrous audition and were done with performing, you grew distant from family and friends, you left Thornbury for Gull Harbour, you met Marisol and moved to Fenwick, you split from her within the year and sank into a deep depression, you could not face your family and relied on friends instead. Your shifts cluster around the same time as your grandmother's diagnosis and the end of your performing life, both falling in 2001 and 2002.",
+     "change": null,
+     "openingId": 176
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: Only one shift that counts\u2014your insomnia worsened before concerts\u2014sits beside your relationship with Joelle and your separation from her. Your functioning rose at the same time, so two shifts are there, but no change in the family on a known date opens a period: Joelle's arrival and your separation are events but not changes in who mattered to this family or in how a key member functioned. Not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2008: Your grandmother Lorna's death in January opens this hint, but five of its six shifts that count are marked neverOpens or hold descriptions saying always or forever\u2014your mother's pressing to visit, the door shut on her, your cutoff from your mother, and your aunt Imogen's stroke all carry neverOpens. One shift remains, your distance from your mother at Alder Creek in July. One shift alone is a reaction, not a period, so not enough in the diagram to choose a reading.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "2017\u20132019: The shifts in this hint sit mostly in October 2019, all within days of each other around your partner's family's lake house gathering\u2014several shifts on October 21st, one on October 22nd, two on October 23rd. Shifts that pile up within the same few days around a family occasion are an acute episode, not a period. The hint's other events around your marriage in 2017 do not make a period by themselves without the episode.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Your grandfather Clifford's return, 1989\u20131992\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period \"Your grandmother Winifred's cancer, 2001\u20132003\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: unknown_date: Period \"Your grandfather Clifford's return, 1989\u20131992\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: theirs: Period \"Your grandfather Clifford's return, 1989\u20131992\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: theirs: Period \"Your grandmother Winifred's cancer, 2001\u20132003\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: unknown_date: Period \"Your grandfather Clifford's return, 1989\u20131992\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: Only one shift that counts\u2014your insomnia worsened before concerts\u2014sits beside your relationship with Joelle and your separation from her. Your functioning rose at the same time, so two shifts are there, but no change in the family on a known date opens a period: Joelle's arrival and your separation are events but not changes in who mattered to this family or in how a key member functioned. Not enough in the diagram to choose a reading.",
+  "answer 2: declined: Run r4 (2008-01-09 to 2010-01-12) has 5 shifts that count and was declined: 2008: Your grandmother Lorna's death in January opens this hint, but five of its six shifts that count are marked neverOpens or hold descriptions saying always or forever\u2014your mother's pressing to visit, the door shut on her, your cutoff from your mother, and your aunt Imogen's stroke all carry neverOpens. One shift remains, your distance from your mother at Alder Creek in July. One shift alone is a reaction, not a period, so not enough in the diagram to choose a reading.",
+  "answer 2: declined: Run r5 (2017-03-27 to 2019-10-26) has 12 shifts that count and was declined: 2017\u20132019: The shifts in this hint sit mostly in October 2019, all within days of each other around your partner's family's lake house gathering\u2014several shifts on October 21st, one on October 22nd, two on October 23rd. Shifts that pile up within the same few days around a family occasion are an acute episode, not a period. The hint's other events around your marriage in 2017 do not make a period by themselves without the episode."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "the year I left home",
+   "summary": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1991-03-12",
+   "endDate": "1994-01-12",
+   "name": "the year I left home",
+   "source": "user",
+   "reason": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.6666666666666666,
+   "f1": 0.8
+  },
+  "members": {
+   "tp": 26,
+   "fp": 3,
+   "fn": 5,
+   "precision": 0.896551724137931,
+   "recall": 0.8387096774193549,
+   "f1": 0.8666666666666666
+  },
+  "openings": [
+   0,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.052385
+}

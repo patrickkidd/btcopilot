@@ -1,0 +1,316 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around Walter's move across the country in March 1952, within the year: June grew homesick and wrote to her sister Edna daily, then kept to her bed for weeks that first winter; Walter was out in the trees from dark to dark and rows broke out between them over money for new trees; he stopped writing to his brother Harlan over a quarrel about their father's land money. Glen had fights at school and was sent home twice. By September 1953, June joined the church choir and her letters to Edna thinned out, marking where the household settled into its new shape.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      141,
+      143
+     ],
+     "name": "Walter's orchard failed, 1968\u20131969",
+     "reason": "Around the orchard's failure in May 1968, when the late frost took the crop and the bank called in the loan: Walter drank heavily most nights and he and Glen blamed each other. After the orchard sold in October, Glen took over the family's money and talks with the bank while working at the cannery by February 1969. Carl's asthma attacks worsened that winter. You began wetting the bed again in April 1969. By October 1969, Walter stopped drinking and took work pruning trees, and the household's acute crisis eased.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      158
+     ],
+     "name": "Glen lost his job at the cannery, 1975\u20131976",
+     "reason": "Around Glen's job loss in February 1975: he sat out in the truck for hours most of that year; he and Marian fought loud fights at night over money, and she took a second job cleaning offices at night. You stopped eating properly and lost weight that summer, and by autumn you kept to your room and said little to your mother. Walter drank again after six years off it starting in December 1975. By June 1976, when Glen started the delivery truck job, you were eating again and made the track team, and the household's turmoil settled.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      178
+     ],
+     "name": "Wilma moved into your house, 1990\u20131991",
+     "reason": "Around Wilma moving in to your house in January 1990: you clashed with her over the children's bedtimes and meals, while Hollis worked late and kept out of the rows, taking his mother's side. Wilma took over Lily's care. Owen had tantrums at preschool and was sent home twice. You broke out in eczema on both hands and had rows with Hollis most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer and the household settled.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1994: The wildfire on August 12\u201316 is an acute episode\u2014several shifts dated within the same few days around a real threat, with the family calm again once home within a week. It is not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996\u20131997: The recount leaves two shifts that count: Tess's drinking in October 1996 and the conflict between Tess and Rick in March 1997. No change in who is in the family or in how a key member functions sits among these events on a known date; Tess's drinking is her own shift, which opens nothing. Not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around Walter's move across the country in March 1952, within the year: June grew homesick and wrote to her sister Edna daily, then kept to her bed for weeks that first winter; Walter was out in the trees from dark to dark and rows broke out between them over money for new trees; he stopped writing to his brother Harlan over a quarrel about their father's land money. Glen had fights at school and was sent home twice. By September 1953, June joined the church choir and her letters to Edna thinned out, marking where the household settled into its new shape.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      141,
+      143
+     ],
+     "name": "Walter's orchard failed, 1968\u20131969",
+     "reason": "Around the orchard's failure in May 1968, when the late frost took the crop and the bank called in the loan: Walter drank heavily most nights and he and Glen blamed each other. After the orchard sold in October, Glen took over the family's money and talks with the bank while working at the cannery by February 1969. Carl's asthma attacks worsened that winter. You began wetting the bed again in April 1969. By October 1969, Walter stopped drinking and took work pruning trees, and the household's acute crisis eased.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      178
+     ],
+     "name": "Wilma moved into your house, 1990\u20131991",
+     "reason": "Around Wilma moving in to your house in January 1990: you clashed with her over the children's bedtimes and meals, while Hollis worked late and kept out of the rows, taking his mother's side. Wilma took over Lily's care. Owen had tantrums at preschool and was sent home twice. You broke out in eczema on both hands and had rows with Hollis most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer and the household settled.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1968\u20131969: This hint is covered by the period 'Walter's orchard failed, 1968\u20131969', which holds the same events and dates. Leave it out.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "1975\u20131976: This hint shares days with your own period 'the year Dad lost his job'. The days outside yours do not make a period by themselves.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "1990\u20131991: This hint is covered by the period 'Wilma moved into your house, 1990\u20131991', which holds the same events and dates. Leave it out.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "1994: The wildfire on August 12\u201316 is an acute episode\u2014several shifts dated within the same few days around a real threat, with the family calm again once home within a week. It is not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996\u20131997: The recount leaves two shifts that count: Tess's drinking in October 1996 and the conflict between Tess and Rick in March 1997. No change in who is in the family or in how a key member functions sits among these events on a known date; Tess's drinking is her own shift, which opens nothing. Not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period 'Glen lost his job at the cannery, 1975\u20131976' shares days with the person's own period 'the year Dad lost his job', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 5 shifts that count and was declined: 1994: The wildfire on August 12\u201316 is an acute episode\u2014several shifts dated within the same few days around a real threat, with the family calm again once home within a week. It is not a period.",
+  "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996\u20131997: The recount leaves two shifts that count: Tess's drinking in October 1996 and the conflict between Tess and Rick in March 1997. No change in who is in the family or in how a key member functions sits among these events on a known date; Tess's drinking is her own shift, which opens nothing. Not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Around Walter's move across the country in March 1952, within the year: June grew homesick and wrote to her sister Edna daily, then kept to her bed for weeks that first winter; Walter was out in the trees from dark to dark and rows broke out between them over money for new trees; he stopped writing to his brother Harlan over a quarrel about their father's land money. Glen had fights at school and was sent home twice. By September 1953, June joined the church choir and her letters to Edna thinned out, marking where the household settled into its new shape.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    114,
+    115,
+    116,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Around Walter's move across the country in March 1952, within the year: June grew homesick and wrote to her sister Edna daily, then kept to her bed for weeks that first winter; Walter was out in the trees from dark to dark and rows broke out between them over money for new trees; he stopped writing to his brother Harlan over a quarrel about their father's land money. Glen had fights at school and was sent home twice. By September 1953, June joined the church choir and her letters to Edna thinned out, marking where the household settled into its new shape.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failed, 1968\u20131969",
+   "summary": "Around the orchard's failure in May 1968, when the late frost took the crop and the bank called in the loan: Walter drank heavily most nights and he and Glen blamed each other. After the orchard sold in October, Glen took over the family's money and talks with the bank while working at the cannery by February 1969. Carl's asthma attacks worsened that winter. You began wetting the bed again in April 1969. By October 1969, Walter stopped drinking and took work pruning trees, and the household's acute crisis eased.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    136,
+    137,
+    141,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failed, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard's failure in May 1968, when the late frost took the crop and the bank called in the loan: Walter drank heavily most nights and he and Glen blamed each other. After the orchard sold in October, Glen took over the family's money and talks with the bank while working at the cannery by February 1969. Carl's asthma attacks worsened that winter. You began wetting the bed again in April 1969. By October 1969, Walter stopped drinking and took work pruning trees, and the household's acute crisis eased.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Wilma moved into your house, 1990\u20131991",
+   "summary": "Around Wilma moving in to your house in January 1990: you clashed with her over the children's bedtimes and meals, while Hollis worked late and kept out of the rows, taking his mother's side. Wilma took over Lily's care. Owen had tantrums at preschool and was sent home twice. You broke out in eczema on both hands and had rows with Hollis most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer and the household settled.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma moved into your house, 1990\u20131991",
+   "source": "model",
+   "reason": "Around Wilma moving in to your house in January 1990: you clashed with her over the children's bedtimes and meals, while Hollis worked late and kept out of the rows, taking his mother's side. Wilma took over Lily's care. Owen had tantrums at preschool and was sent home twice. You broke out in eczema on both hands and had rows with Hollis most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer and the household settled.",
+   "setAside": false,
+   "openingEventId": 168
+  },
+  {
+   "id": "c4",
+   "title": "the year Dad lost his job",
+   "summary": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "the year Dad lost his job",
+   "source": "user",
+   "reason": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 35,
+   "fp": 0,
+   "fn": 9,
+   "precision": 1.0,
+   "recall": 0.7954545454545454,
+   "f1": 0.8860759493670886
+  },
+  "openings": [
+   3,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.041384
+}

@@ -1,0 +1,188 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39,
+      53,
+      172
+     ],
+     "name": "Your grandfather Gordon's return, 1989\u20131994",
+     "reason": "Around your grandfather Gordon coming back into the family in early 1989, within the next few years: your late nights and difficulty sleeping; your move to Hollin Road with Desmond that autumn; your wrist injury stopping your playing in the first term at the conservatory, and the blow-up with your roommate Rafe; your low mood and loss of footing once your grandfather died in June 1991 and your mother was about to remarry; your absorption in fixing radios through that time; and your stung feeling about your father not knowing your work, which lifted as you found your drive again in Portugal in early 1994. Your grandmother's thyroid treatment sits in these years but is held as the ordinary level. Your functioning fell and your anxiety rose through, with the exchange abroad marking where things settled.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your separation from Joelle, 1998\u20131999",
+     "reason": "Around your bonding with Joelle in early 1998 and your split in July 1999, within those months: your insomnia began to interfere with your playing, though you were performing at your best and winning competitions. You started with a therapist after the split. These are your shifts alone in those months, with no one else's showing then.",
+     "change": null,
+     "openingId": 12
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      79
+     ],
+     "name": "Your grandmother Winifred's bowel cancer, 2001\u20132004",
+     "reason": "Around your grandmother Winifred's bowel cancer found in 2001 or 2002, within the next couple of years: your running out of steam for performing and your disastrous audition in early 2002; your distance from your parents and move away from Thornbury; your bonding with Marisol and move to live with her, then the split within the year; your sinking into a deep depression once you returned to Thornbury in the autumn of 2003; your growing anxiety at being unable to face your family, alongside your leaning on friends; and your grandmother's death in February 2004. Your distance from your family piled up through these years as your own trouble climbed.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, within the months after: your distance from your mother deepened over the summer at Alder Creek, where she pushed to visit and you kept the door shut; your cutoff from her when you moved to Marlow Sound for nursing school that September, a silence that held for roughly a year; and your aunt Imogen's stroke in January 2009, which touched your extended family around the same time. Your anxiety and distance rose and your functioning fell through these months.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within the next couple of years: your contact with your mother eased off slightly once Wren came along; your cousin Alice was diagnosed with multiple sclerosis in October 2017; your sister Tara married and was expecting her first child; your aunt Imogen's memory loss worsened and she began lashing out; your job steadied and paid well, easing your strain, yet your anxiety rose as you felt you ought to be driving projects forward; you started a sleeping pill in October 2019 though sleep itself did not improve; and around Wren's mother's retirement party at the lake in late October 2019, Wren became swamped with one thing after another, you overfunctioned laying out a plan for her, and you had no sleep through the weekend and pulled back from the family gathering. Your anxiety and your partner's symptom and anxiety rose together through this time, with relationship shifts between you and toward your mother; your job's steadying marked a brief lift in the middle.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump, roughly ages 27 to 29",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: Two shifts count. A change in the family sits among the events: your separation from Joelle in July 1999. The period holds only your own shifts, with no one else's showing in those months, and your opening event opens the period.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  },
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-haiku-4-5-20251001: Extra data: line 57 column 1 (char 5799)"
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Your grandfather Gordon's return, 1989\u20131994\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period \"Your grandmother Winifred's bowel cancer, 2001\u20132004\" shares days with the person's own period 'the long slump, roughly ages 27 to 29', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: unknown_date: Period \"Your grandfather Gordon's return, 1989\u20131994\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: unreadable: Your answer was not the JSON asked for.",
+  "gave up: unreadable: Your answer was not the JSON asked for."
+ ],
+ "stored": [],
+ "score": {
+  "clusters": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 3,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0
+  },
+  "members": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   0
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'the year I left home' is not stored as theirs",
+  "'the long slump' is not stored as theirs",
+  "cluster F1 0.00 under 0.8"
+ ],
+ "cost": 0.064797
+}

@@ -1,0 +1,257 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      121,
+      122
+     ],
+     "name": "Your grandfather Teodor's death, 1978\u20131979",
+     "reason": "Around your grandfather Teodor's collapse at the bus depot in January 1978, within the year: your grandmother Delphine stopped cooking and went to her mother's every evening after work; your father Duncan took night shifts and distanced from your mother; your uncle Anton began drinking at lunch with a warning at work; your uncle Anton and aunt Celeste separated in August; your mother Odette lay awake over her mother and Anton; your brother Callum had ear infections all winter; and your grandmother Delphine took a job at the library by May 1979. These shifts pile up in the months after the death, each person's trouble near another's.",
+     "change": null,
+     "openingId": 113
+    },
+    {
+     "id": null,
+     "eventIds": [
+      129,
+      130,
+      131,
+      132,
+      134
+     ],
+     "name": "Your mother Odette's pregnancy bed rest, 1984",
+     "reason": "Around your mother Odette ordered to bed for the rest of her pregnancy in March 1984, within the year: your grandmother Hazel came every morning to keep the house; your father Duncan argued with his mother over how she kept it; your brother Callum stammered again after a year free of it; and your sister Ines was born in September. These shifts cluster in the months around the pregnancy crisis, with your grandmother's overfunctioning and your father's conflict with her, and your brother's symptom rising as the household reorganised.",
+     "change": null,
+     "openingId": 129
+    },
+    {
+     "id": null,
+     "eventIds": [
+      135,
+      136,
+      137,
+      138,
+      140,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      149,
+      150,
+      151
+     ],
+     "name": "Your grandmother Hazel's Parkinson's diagnosis, 1986\u20131996",
+     "reason": "Around your grandmother Hazel diagnosed with Parkinson's disease in September 1986, over the next decade: your grandfather Ambrose took over her cooking and appointments; your father Duncan phoned his father every night for news of her; your grandmother had a bad fall and her functioning declined; your father argued with his uncle Lyle over who should help their parents; your grandfather developed chest pains; your grandmother could no longer dress herself; your mother Odette took her to the clinic twice a week; your aunt Mavis came to stay one week in four to nurse her sister; your father Duncan began drinking most evenings; your aunt Pearl had panic spells at the wheel; your grandmother's functioning declined again; your grandfather gave up his workshop and hardly left her side; and your father fought with your mother over his evenings at his parents' house. The shifts build slowly over years, each step a decline in your grandmother's functioning or a rise in worry and distance among those around her, with no relief between them until her move to the nursing home in June 1997.",
+     "change": null,
+     "openingId": 135
+    },
+    {
+     "id": null,
+     "eventIds": [
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      161
+     ],
+     "name": "Your brother Callum's move north, 1999\u20132000",
+     "reason": "Around your brother Callum leaving home for a job at the mines up north in May 1999, within the year: your father Duncan and Callum argued most nights over his plans to go; your mother Odette could not settle at the thought of him so far away; your father missed days at work and sat up late in the garage; your sister Ines skipped school most of that autumn; your mother took Ines with her everywhere, even to work; and Ines was back at school full days by August 2000 and passed her exams. The moves pile up around Callum's departure, with your father's functioning falling and your mother drawing your sister close, and the trouble settling as Ines returned to school.",
+     "change": null,
+     "openingId": 156
+    },
+    {
+     "id": null,
+     "eventIds": [
+      164,
+      165,
+      166,
+      168,
+      169
+     ],
+     "name": "Your grandmother Hazel's death, 2003",
+     "reason": "Around your grandmother Hazel's death at the Fairlie home in January 2003, within the year: you could not sleep more than a few hours a night; you stopped going in to the bookshop and were let go in May; you dreaded buses and crowded shops and went out only after dark; and you took a job at the garden centre by November and slept through the night again. Every shift in these months is yours, and no one else's shows then.",
+     "change": null,
+     "openingId": 164
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1980\u20131982: the recount without shifts told as how things always were leaves two shifts, but the only change in the family on a known date among these events is your birth in September 1980, and births are not a change that opens a period when they are the person's own. The other event is a death or a marriage, which are structural events that do not themselves count as shifts. There is not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2003: these events fall within the period opened by your grandmother Hazel's death in January 2003, so they are held there.",
+     "hint": "r6",
+     "run": null
+    },
+    {
+     "reason": "2005\u20132006: the shifts cluster within four days around your sister Ines's car accident on 19 November 2005, from the accident to her home from hospital on 21 November, with the family calm again within days once she was home and up and about. This is an acute episode around a real threat, not a period.",
+     "hint": "r7",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: declined: Run r2 (1980-09-21 to 1982-07-15) has 2 shifts that count and was declined: 1980\u20131982: the recount without shifts told as how things always were leaves two shifts, but the only change in the family on a known date among these events is your birth in September 1980, and births are not a change that opens a period when they are the person's own. The other event is a death or a marriage, which are structural events that do not themselves count as shifts. There is not enough in the diagram to choose a reading.",
+  "answer 1: declined: Run r7 (2005-11-19 to 2005-11-23) has 5 shifts that count and was declined: 2005\u20132006: the shifts cluster within four days around your sister Ines's car accident on 19 November 2005, from the accident to her home from hospital on 21 November, with the family calm again within days once she was home and up and about. This is an acute episode around a real threat, not a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Teodor's death, 1978\u20131979",
+   "summary": "Around your grandfather Teodor's collapse at the bus depot in January 1978, within the year: your grandmother Delphine stopped cooking and went to her mother's every evening after work; your father Duncan took night shifts and distanced from your mother; your uncle Anton began drinking at lunch with a warning at work; your uncle Anton and aunt Celeste separated in August; your mother Odette lay awake over her mother and Anton; your brother Callum had ear infections all winter; and your grandmother Delphine took a job at the library by May 1979. These shifts pile up in the months after the death, each person's trouble near another's.",
+   "eventIds": [
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    121,
+    122
+   ],
+   "startDate": "1978-01-27",
+   "endDate": "1979-05-15",
+   "name": "Your grandfather Teodor's death, 1978\u20131979",
+   "source": "model",
+   "reason": "Around your grandfather Teodor's collapse at the bus depot in January 1978, within the year: your grandmother Delphine stopped cooking and went to her mother's every evening after work; your father Duncan took night shifts and distanced from your mother; your uncle Anton began drinking at lunch with a warning at work; your uncle Anton and aunt Celeste separated in August; your mother Odette lay awake over her mother and Anton; your brother Callum had ear infections all winter; and your grandmother Delphine took a job at the library by May 1979. These shifts pile up in the months after the death, each person's trouble near another's.",
+   "setAside": false,
+   "openingEventId": 113
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Odette's pregnancy bed rest, 1984",
+   "summary": "Around your mother Odette ordered to bed for the rest of her pregnancy in March 1984, within the year: your grandmother Hazel came every morning to keep the house; your father Duncan argued with his mother over how she kept it; your brother Callum stammered again after a year free of it; and your sister Ines was born in September. These shifts cluster in the months around the pregnancy crisis, with your grandmother's overfunctioning and your father's conflict with her, and your brother's symptom rising as the household reorganised.",
+   "eventIds": [
+    129,
+    130,
+    131,
+    132,
+    134
+   ],
+   "startDate": "1984-03-15",
+   "endDate": "1984-09-28",
+   "name": "Your mother Odette's pregnancy bed rest, 1984",
+   "source": "model",
+   "reason": "Around your mother Odette ordered to bed for the rest of her pregnancy in March 1984, within the year: your grandmother Hazel came every morning to keep the house; your father Duncan argued with his mother over how she kept it; your brother Callum stammered again after a year free of it; and your sister Ines was born in September. These shifts cluster in the months around the pregnancy crisis, with your grandmother's overfunctioning and your father's conflict with her, and your brother's symptom rising as the household reorganised.",
+   "setAside": false,
+   "openingEventId": 129
+  },
+  {
+   "id": "c3",
+   "title": "Your grandmother Hazel's Parkinson's diagnosis, 1986\u20131996",
+   "summary": "Around your grandmother Hazel diagnosed with Parkinson's disease in September 1986, over the next decade: your grandfather Ambrose took over her cooking and appointments; your father Duncan phoned his father every night for news of her; your grandmother had a bad fall and her functioning declined; your father argued with his uncle Lyle over who should help their parents; your grandfather developed chest pains; your grandmother could no longer dress herself; your mother Odette took her to the clinic twice a week; your aunt Mavis came to stay one week in four to nurse her sister; your father Duncan began drinking most evenings; your aunt Pearl had panic spells at the wheel; your grandmother's functioning declined again; your grandfather gave up his workshop and hardly left her side; and your father fought with your mother over his evenings at his parents' house. The shifts build slowly over years, each step a decline in your grandmother's functioning or a rise in worry and distance among those around her, with no relief between them until her move to the nursing home in June 1997.",
+   "eventIds": [
+    135,
+    136,
+    137,
+    138,
+    140,
+    142,
+    143,
+    144,
+    145,
+    146,
+    147,
+    149,
+    150,
+    151
+   ],
+   "startDate": "1986-09-03",
+   "endDate": "1996-12-15",
+   "name": "Your grandmother Hazel's Parkinson's diagnosis, 1986\u20131996",
+   "source": "model",
+   "reason": "Around your grandmother Hazel diagnosed with Parkinson's disease in September 1986, over the next decade: your grandfather Ambrose took over her cooking and appointments; your father Duncan phoned his father every night for news of her; your grandmother had a bad fall and her functioning declined; your father argued with his uncle Lyle over who should help their parents; your grandfather developed chest pains; your grandmother could no longer dress herself; your mother Odette took her to the clinic twice a week; your aunt Mavis came to stay one week in four to nurse her sister; your father Duncan began drinking most evenings; your aunt Pearl had panic spells at the wheel; your grandmother's functioning declined again; your grandfather gave up his workshop and hardly left her side; and your father fought with your mother over his evenings at his parents' house. The shifts build slowly over years, each step a decline in your grandmother's functioning or a rise in worry and distance among those around her, with no relief between them until her move to the nursing home in June 1997.",
+   "setAside": false,
+   "openingEventId": 135
+  },
+  {
+   "id": "c4",
+   "title": "Your brother Callum's move north, 1999\u20132000",
+   "summary": "Around your brother Callum leaving home for a job at the mines up north in May 1999, within the year: your father Duncan and Callum argued most nights over his plans to go; your mother Odette could not settle at the thought of him so far away; your father missed days at work and sat up late in the garage; your sister Ines skipped school most of that autumn; your mother took Ines with her everywhere, even to work; and Ines was back at school full days by August 2000 and passed her exams. The moves pile up around Callum's departure, with your father's functioning falling and your mother drawing your sister close, and the trouble settling as Ines returned to school.",
+   "eventIds": [
+    154,
+    155,
+    156,
+    157,
+    158,
+    159,
+    161
+   ],
+   "startDate": "1999-01-15",
+   "endDate": "2000-08-15",
+   "name": "Your brother Callum's move north, 1999\u20132000",
+   "source": "model",
+   "reason": "Around your brother Callum leaving home for a job at the mines up north in May 1999, within the year: your father Duncan and Callum argued most nights over his plans to go; your mother Odette could not settle at the thought of him so far away; your father missed days at work and sat up late in the garage; your sister Ines skipped school most of that autumn; your mother took Ines with her everywhere, even to work; and Ines was back at school full days by August 2000 and passed her exams. The moves pile up around Callum's departure, with your father's functioning falling and your mother drawing your sister close, and the trouble settling as Ines returned to school.",
+   "setAside": false,
+   "openingEventId": 156
+  },
+  {
+   "id": "c5",
+   "title": "Your grandmother Hazel's death, 2003",
+   "summary": "Around your grandmother Hazel's death at the Fairlie home in January 2003, within the year: you could not sleep more than a few hours a night; you stopped going in to the bookshop and were let go in May; you dreaded buses and crowded shops and went out only after dark; and you took a job at the garden centre by November and slept through the night again. Every shift in these months is yours, and no one else's shows then.",
+   "eventIds": [
+    164,
+    165,
+    166,
+    168,
+    169
+   ],
+   "startDate": "2003-01-14",
+   "endDate": "2003-11-15",
+   "name": "Your grandmother Hazel's death, 2003",
+   "source": "model",
+   "reason": "Around your grandmother Hazel's death at the Fairlie home in January 2003, within the year: you could not sleep more than a few hours a night; you stopped going in to the bookshop and were let go in May; you dreaded buses and crowded shops and went out only after dark; and you took a job at the garden centre by November and slept through the night again. Every shift in these months is yours, and no one else's shows then.",
+   "setAside": false,
+   "openingEventId": 164
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 5,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 40,
+   "fp": 0,
+   "fn": 9,
+   "precision": 1.0,
+   "recall": 0.8163265306122449,
+   "f1": 0.898876404494382
+  },
+  "openings": [
+   4,
+   5
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.019766
+}

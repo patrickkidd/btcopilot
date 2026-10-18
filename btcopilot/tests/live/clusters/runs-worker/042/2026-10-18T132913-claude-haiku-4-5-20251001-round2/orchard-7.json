@@ -1,0 +1,300 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around your grandfather Walter moving the family across the country to the apple orchard in March 1952, within the year: your grandmother June's homesickness and daily letters to her sister, her distance from Walter as he worked the trees, your father Glen's fights at his new school, Walter's cutoff from his brother Harlan over their father's land money, June's weeks in bed that first winter, rows between Walter and June over money for new trees, and June's move to the church choir by September where her letters thinned out and her anxiety eased. This is the opening shift, in which shifts move across people in the household and reach toward settling by autumn.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failed, 1968\u20131969",
+     "reason": "Around your grandfather Walter's orchard failing in May 1968 when the late frost took the whole crop and the bank called in the loan: Walter's heavy drinking by June, conflict between Walter and your father Glen over who was to blame for the loan, your father and mother Marian overfunctioning as your father took over the family's money and talks with the bank in November, your brother Carl's asthma attacks worsening that winter, you beginning to wet the bed in April 1969, your grandmother Ida's heart trouble found in May, and Walter stopping his drinking and taking work pruning other men's trees by October. The shifts run from the loss of the orchard through the family's rearrangement and settle as your father stabilizes his work.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      158
+     ],
+     "name": "Glen's job lost at the cannery, 1975\u20131976",
+     "reason": "Around your father Glen losing his job when the Ridgeport cannery closed in February 1975: your father out of work and sitting in the truck for hours, loud fights between your father and mother Marian over money, your mother overfunctioning by taking a second job cleaning offices at night, you stopping eating properly and losing weight that summer, you keeping to your room and distancing from your mother, and you eating again and making the track team by June 1976 where things settled. This is your own period of trouble: every shift in these months is yours or your parents', and no one else's shows then.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      178
+     ],
+     "name": "Wilma moving into your house, 1990\u20131991",
+     "reason": "Around Hollis's mother Wilma selling her farm and moving into your house in January 1990: you clashing with Wilma over the children's bedtimes and meals, you distancing from Hollis as he worked late and kept out of the kitchen rows, Hollis taking his mother's side, your son Owen's tantrums at preschool, Wilma overfunctioning by taking over your daughter Lily's care, your eczema flaring on both hands, rows between you and Hollis most nights, and your eczema clearing over the summer once Wilma took a flat in town in June 1991 where things settled. The shifts are yours, your partner's, and his mother's, moving through the household as the structure changed.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "August 1994: four days of acute episode. The wildfire ordered the family from their home on August 12; shifts in anxiety and symptoms pile within those same few days around a real threat, and the family was calm again within the week once home on August 16. This is a flare-up around the threat itself, not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996\u20131997: Tess's drinking and the family's response. After recount, event 192 is marked as a shift whose description says always how things were (Marian overfunctioning with Tess), leaving two shifts that count: Tess's drinking in October 1996 and the conflict between Tess and Rick in March 1997, with no change in the family on a known date among these events\u2014only reactions to Tess's own trouble. Not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around your grandfather Walter moving the family across the country to the apple orchard in March 1952, within the year: your grandmother June's homesickness and daily letters to her sister, her distance from Walter as he worked the trees, your father Glen's fights at his new school, Walter's cutoff from his brother Harlan over their father's land money, June's weeks in bed that first winter, rows between Walter and June over money for new trees, and June's move to the church choir by September where her letters thinned out and her anxiety eased. This is the opening shift, in which shifts move across people in the household and reach toward settling by autumn.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failed, 1968\u20131969",
+     "reason": "Around your grandfather Walter's orchard failing in May 1968 when the late frost took the whole crop and the bank called in the loan: Walter's heavy drinking by June, conflict between Walter and your father Glen over who was to blame for the loan, your father and mother Marian overfunctioning as your father took over the family's money and talks with the bank in November, your brother Carl's asthma attacks worsening that winter, you beginning to wet the bed in April 1969, your grandmother Ida's heart trouble found in May, and Walter stopping his drinking and taking work pruning other men's trees by October. The shifts run from the loss of the orchard through the family's rearrangement and settle as your father stabilizes his work.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      178
+     ],
+     "name": "Wilma moving into your house, 1990\u20131991",
+     "reason": "Around Hollis's mother Wilma selling her farm and moving into your house in January 1990: you clashing with Wilma over the children's bedtimes and meals, you distancing from Hollis as he worked late and kept out of the kitchen rows, Hollis taking his mother's side, your son Owen's tantrums at preschool, Wilma overfunctioning by taking over your daughter Lily's care, your eczema flaring on both hands, rows between you and Hollis most nights, and your eczema clearing over the summer once Wilma took a flat in town in June 1991 where things settled. The shifts are yours, your partner's, and his mother's, moving through the household as the structure changed.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "August 1994: four days of acute episode. The wildfire ordered the family from their home on August 12; shifts in anxiety and symptoms pile within those same few days around a real threat, and the family was calm again within the week once home on August 16. This is a flare-up around the threat itself, not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996\u20131997: Tess's drinking and the family's response. After recount, event 192 is marked as a shift whose description says always how things were, leaving two shifts that count: Tess's drinking in October 1996 and the conflict between Tess and Rick in March 1997, with no change in the family on a known date among these events\u2014only reactions to Tess's own trouble. Not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Glen's job lost at the cannery, 1975\u20131976\" shares days with the person's own period 'the year Dad lost his job', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 5 shifts that count and was declined: August 1994: four days of acute episode. The wildfire ordered the family from their home on August 12; shifts in anxiety and symptoms pile within those same few days around a real threat, and the family was calm again within the week once home on August 16. This is a flare-up around the threat itself, not a period.",
+  "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996\u20131997: Tess's drinking and the family's response. After recount, event 192 is marked as a shift whose description says always how things were, leaving two shifts that count: Tess's drinking in October 1996 and the conflict between Tess and Rick in March 1997, with no change in the family on a known date among these events\u2014only reactions to Tess's own trouble. Not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Around your grandfather Walter moving the family across the country to the apple orchard in March 1952, within the year: your grandmother June's homesickness and daily letters to her sister, her distance from Walter as he worked the trees, your father Glen's fights at his new school, Walter's cutoff from his brother Harlan over their father's land money, June's weeks in bed that first winter, rows between Walter and June over money for new trees, and June's move to the church choir by September where her letters thinned out and her anxiety eased. This is the opening shift, in which shifts move across people in the household and reach toward settling by autumn.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    114,
+    115,
+    116,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Around your grandfather Walter moving the family across the country to the apple orchard in March 1952, within the year: your grandmother June's homesickness and daily letters to her sister, her distance from Walter as he worked the trees, your father Glen's fights at his new school, Walter's cutoff from his brother Harlan over their father's land money, June's weeks in bed that first winter, rows between Walter and June over money for new trees, and June's move to the church choir by September where her letters thinned out and her anxiety eased. This is the opening shift, in which shifts move across people in the household and reach toward settling by autumn.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failed, 1968\u20131969",
+   "summary": "Around your grandfather Walter's orchard failing in May 1968 when the late frost took the whole crop and the bank called in the loan: Walter's heavy drinking by June, conflict between Walter and your father Glen over who was to blame for the loan, your father and mother Marian overfunctioning as your father took over the family's money and talks with the bank in November, your brother Carl's asthma attacks worsening that winter, you beginning to wet the bed in April 1969, your grandmother Ida's heart trouble found in May, and Walter stopping his drinking and taking work pruning other men's trees by October. The shifts run from the loss of the orchard through the family's rearrangement and settle as your father stabilizes his work.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    136,
+    137,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failed, 1968\u20131969",
+   "source": "model",
+   "reason": "Around your grandfather Walter's orchard failing in May 1968 when the late frost took the whole crop and the bank called in the loan: Walter's heavy drinking by June, conflict between Walter and your father Glen over who was to blame for the loan, your father and mother Marian overfunctioning as your father took over the family's money and talks with the bank in November, your brother Carl's asthma attacks worsening that winter, you beginning to wet the bed in April 1969, your grandmother Ida's heart trouble found in May, and Walter stopping his drinking and taking work pruning other men's trees by October. The shifts run from the loss of the orchard through the family's rearrangement and settle as your father stabilizes his work.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Wilma moving into your house, 1990\u20131991",
+   "summary": "Around Hollis's mother Wilma selling her farm and moving into your house in January 1990: you clashing with Wilma over the children's bedtimes and meals, you distancing from Hollis as he worked late and kept out of the kitchen rows, Hollis taking his mother's side, your son Owen's tantrums at preschool, Wilma overfunctioning by taking over your daughter Lily's care, your eczema flaring on both hands, rows between you and Hollis most nights, and your eczema clearing over the summer once Wilma took a flat in town in June 1991 where things settled. The shifts are yours, your partner's, and his mother's, moving through the household as the structure changed.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma moving into your house, 1990\u20131991",
+   "source": "model",
+   "reason": "Around Hollis's mother Wilma selling her farm and moving into your house in January 1990: you clashing with Wilma over the children's bedtimes and meals, you distancing from Hollis as he worked late and kept out of the kitchen rows, Hollis taking his mother's side, your son Owen's tantrums at preschool, Wilma overfunctioning by taking over your daughter Lily's care, your eczema flaring on both hands, rows between you and Hollis most nights, and your eczema clearing over the summer once Wilma took a flat in town in June 1991 where things settled. The shifts are yours, your partner's, and his mother's, moving through the household as the structure changed.",
+   "setAside": false,
+   "openingEventId": 168
+  },
+  {
+   "id": "c4",
+   "title": "the year Dad lost his job",
+   "summary": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "the year Dad lost his job",
+   "source": "user",
+   "reason": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 35,
+   "fp": 0,
+   "fn": 9,
+   "precision": 1.0,
+   "recall": 0.7954545454545454,
+   "f1": 0.8860759493670886
+  },
+  "openings": [
+   3,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.042102
+}
