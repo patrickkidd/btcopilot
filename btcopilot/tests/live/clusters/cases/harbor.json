@@ -1,0 +1,1112 @@
+{
+ "about": "A fictional three-generation family, the Ketterings and the Lusks. Maren is the person. Five clusters, each opened by a change the prompt's examples do not show: a death, a birth, a diagnosis, someone leaving home, and a second death after which only her own shifts show. Her answer names one hard time of her own by her age and says another time was hard for the others, not for her.",
+ "placeholder": "PLACEHOLDER: the key is written from the cluster rules, not from a real case. Patrick is the oracle and has not confirmed it.",
+ "status": "placeholder",
+ "note": "Written by hand from the cluster rules page of 2026-10-14, the fourteen decided conflicts and the prompt's rules; Patrick has not confirmed any of it. Each cluster is named by the change that opened it and its years (A6). Teodor's sudden death, January 1978, opens the first; Anton and Celeste's separation that August is a second change inside a period already under way, so it deepens that period and opens no new one. The months of trouble before Ines's birth, 1984, end at the birth: the change sits at the end. Hazel's diagnosis, September 1986, opens a climb of eleven years, each step a shift with only short relief between, no quiet of two years anywhere in it, ending after her move into the nursing home in 1997: one period longer than ten years, and far short of half of the diagram's dated years, 1949 to 2005 (decision 7). Callum leaving home, May 1999, sits in the middle of its period, with two shifts before it and five after. Hazel's death, January 2003, is followed only by Maren's own shifts: a period of one person's own trouble (decision 13, `runOf`), and the time Maren names as her own, by her age, 22, so the years 2002 and 2003; the link from the climb to her death crosses five quiet years and stays a question, not one period. Ines's accident, November 2005, is four days of trouble around a real event that soon passed, tied to no visit or occasion: an acute episode, not a period, so a try that stores it misses (decision 6). Emil's drinking, told as how it has been for most of his adult life, and Lyle's distance from Duncan, told as kept since they were boys, are standing patterns told without always or forever: the family's ordinary level, counted toward no period (decision 11), so the hint they make beside two weddings and Maren's birth, 1980-82, is declined. Events of unknown date sit inside four clusters as members and open none (A9). Nothing is in the diagram from 1960 to 1974: a quiet time of fourteen years.",
+ "expected": [
+  {
+   "name": "Her grandfather Teodor's death, 1978-79",
+   "opening": 113,
+   "eventIds": [
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122
+   ]
+  },
+  {
+   "name": "Her sister Ines's birth, 1984",
+   "opening": 134,
+   "eventIds": [
+    129,
+    130,
+    131,
+    132,
+    133,
+    134
+   ]
+  },
+  {
+   "name": "Her grandmother Hazel's Parkinson's diagnosis, 1986-97",
+   "opening": 135,
+   "eventIds": [
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    145,
+    146,
+    147,
+    148,
+    149,
+    150,
+    151,
+    152,
+    153
+   ]
+  },
+  {
+   "name": "Her brother Callum leaving home, 1999-2000",
+   "opening": 156,
+   "eventIds": [
+    154,
+    155,
+    156,
+    157,
+    158,
+    159,
+    160,
+    161
+   ]
+  },
+  {
+   "name": "Her grandmother Hazel's death, 2003",
+   "opening": 164,
+   "runOf": 1,
+   "eventIds": [
+    164,
+    165,
+    166,
+    167,
+    168,
+    169
+   ]
+  }
+ ],
+ "notClusters": [
+  {
+   "name": "Ines's car off the road on black ice, November 2005",
+   "eventIds": [
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176
+   ]
+  }
+ ],
+ "theirs": [
+  {
+   "name": "Gran Hazel dying",
+   "startYear": 2002,
+   "endYear": 2003
+  }
+ ],
+ "diagram": {
+  "people": [
+   {
+    "id": 1,
+    "name": "Maren",
+    "gender": "female",
+    "parents": 43,
+    "last_name": "Kettering",
+    "primary": true
+   },
+   {
+    "id": 2,
+    "name": "Ambrose",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 3,
+    "name": "Hazel",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 4,
+    "name": "Teodor",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Lusk"
+   },
+   {
+    "id": 5,
+    "name": "Delphine",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Lusk"
+   },
+   {
+    "id": 6,
+    "name": "Emil",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Lusk"
+   },
+   {
+    "id": 7,
+    "name": "Mavis",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Quill"
+   },
+   {
+    "id": 8,
+    "name": "Duncan",
+    "gender": "male",
+    "parents": 41,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 9,
+    "name": "Odette",
+    "gender": "female",
+    "parents": 42,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 10,
+    "name": "Lyle",
+    "gender": "male",
+    "parents": 41,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 11,
+    "name": "Philippa",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 12,
+    "name": "Pearl",
+    "gender": "female",
+    "parents": 41,
+    "last_name": "Abernathy"
+   },
+   {
+    "id": 13,
+    "name": "Gus",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Abernathy"
+   },
+   {
+    "id": 14,
+    "name": "Anton",
+    "gender": "male",
+    "parents": 42,
+    "last_name": "Lusk"
+   },
+   {
+    "id": 15,
+    "name": "Celeste",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Lusk"
+   },
+   {
+    "id": 16,
+    "name": "Simone",
+    "gender": "female",
+    "parents": 42,
+    "last_name": "Glass"
+   },
+   {
+    "id": 17,
+    "name": "Callum",
+    "gender": "male",
+    "parents": 43,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 18,
+    "name": "Ines",
+    "gender": "female",
+    "parents": 43,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 19,
+    "name": "Milo",
+    "gender": "male",
+    "parents": 45,
+    "last_name": "Lusk"
+   },
+   {
+    "id": 20,
+    "name": "Tobias",
+    "gender": "male",
+    "parents": 44,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 21,
+    "name": "Clem",
+    "gender": "female",
+    "parents": 44,
+    "last_name": "Kettering"
+   },
+   {
+    "id": 22,
+    "name": "Nadia",
+    "gender": "female",
+    "parents": 46,
+    "last_name": "Abernathy"
+   },
+   {
+    "id": 23,
+    "name": "Bram",
+    "gender": "male",
+    "parents": 46,
+    "last_name": "Abernathy"
+   },
+   {
+    "id": 24,
+    "name": "Esme",
+    "gender": "female",
+    "parents": 46,
+    "last_name": "Abernathy"
+   },
+   {
+    "id": 25,
+    "name": "Rupert",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Glass"
+   },
+   {
+    "id": 26,
+    "name": "Hattie",
+    "gender": "female",
+    "parents": 47,
+    "last_name": "Glass"
+   },
+   {
+    "id": 27,
+    "name": "Dagny",
+    "gender": "female",
+    "parents": null,
+    "last_name": "Holm"
+   },
+   {
+    "id": 28,
+    "name": "Horace",
+    "gender": "male",
+    "parents": null,
+    "last_name": "Quill"
+   }
+  ],
+  "pair_bonds": [
+   {
+    "id": 41,
+    "person_a": 2,
+    "person_b": 3,
+    "married": true
+   },
+   {
+    "id": 42,
+    "person_a": 4,
+    "person_b": 5,
+    "married": true
+   },
+   {
+    "id": 43,
+    "person_a": 8,
+    "person_b": 9,
+    "married": true
+   },
+   {
+    "id": 44,
+    "person_a": 10,
+    "person_b": 11,
+    "married": true
+   },
+   {
+    "id": 45,
+    "person_a": 14,
+    "person_b": 15,
+    "married": true
+   },
+   {
+    "id": 46,
+    "person_a": 12,
+    "person_b": 13,
+    "married": true
+   },
+   {
+    "id": 47,
+    "person_a": 16,
+    "person_b": 25,
+    "married": true
+   },
+   {
+    "id": 48,
+    "person_a": 17,
+    "person_b": 27,
+    "married": false
+   },
+   {
+    "id": 49,
+    "person_a": 7,
+    "person_b": 28,
+    "married": true
+   }
+  ],
+  "events": [
+   {
+    "id": 101,
+    "kind": "married",
+    "dateTime": "1949-06-18",
+    "dateCertainty": "certain",
+    "person": 2,
+    "spouse": 3,
+    "description": "wedding"
+   },
+   {
+    "id": 102,
+    "kind": "married",
+    "dateTime": "1950-09-15",
+    "dateCertainty": "approximate",
+    "person": 4,
+    "spouse": 5,
+    "description": "wedding; the year from a photograph"
+   },
+   {
+    "id": 103,
+    "kind": "birth",
+    "dateTime": "1951-02-07",
+    "dateCertainty": "certain",
+    "person": 2,
+    "spouse": 3,
+    "child": 8
+   },
+   {
+    "id": 104,
+    "kind": "birth",
+    "dateTime": "1952-08-15",
+    "dateCertainty": "approximate",
+    "person": 4,
+    "spouse": 5,
+    "child": 14
+   },
+   {
+    "id": 105,
+    "kind": "birth",
+    "dateTime": "1953-11-22",
+    "dateCertainty": "certain",
+    "person": 4,
+    "spouse": 5,
+    "child": 9
+   },
+   {
+    "id": 106,
+    "kind": "birth",
+    "dateTime": "1955-04-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "spouse": 3,
+    "child": 10
+   },
+   {
+    "id": 107,
+    "kind": "birth",
+    "dateTime": "1957-06-15",
+    "dateCertainty": "unknown",
+    "person": 4,
+    "spouse": 5,
+    "child": 16,
+    "description": "birth; no one has the year",
+    "notes": "Odette thinks she was three or four."
+   },
+   {
+    "id": 108,
+    "kind": "birth",
+    "dateTime": "1960-01-30",
+    "dateCertainty": "certain",
+    "person": 2,
+    "spouse": 3,
+    "child": 12
+   },
+   {
+    "id": 109,
+    "kind": "married",
+    "dateTime": "1974-06-15",
+    "dateCertainty": "approximate",
+    "person": 14,
+    "spouse": 15,
+    "description": "wedding"
+   },
+   {
+    "id": 110,
+    "kind": "married",
+    "dateTime": "1975-09-13",
+    "dateCertainty": "certain",
+    "person": 8,
+    "spouse": 9,
+    "description": "wedding"
+   },
+   {
+    "id": 111,
+    "kind": "birth",
+    "dateTime": "1976-04-15",
+    "dateCertainty": "approximate",
+    "person": 14,
+    "spouse": 15,
+    "child": 19
+   },
+   {
+    "id": 112,
+    "kind": "birth",
+    "dateTime": "1976-07-11",
+    "dateCertainty": "certain",
+    "person": 8,
+    "spouse": 9,
+    "child": 17
+   },
+   {
+    "id": 113,
+    "kind": "death",
+    "dateTime": "1978-01-27",
+    "dateCertainty": "certain",
+    "person": 4,
+    "description": "collapsed at the bus depot where he worked and died that night"
+   },
+   {
+    "id": 114,
+    "kind": "shift",
+    "dateTime": "1978-02-15",
+    "dateCertainty": "approximate",
+    "person": 5,
+    "functioning": "down",
+    "description": "stopped cooking; ate standing at the counter, when she ate"
+   },
+   {
+    "id": 115,
+    "kind": "shift",
+    "dateTime": "1978-03-15",
+    "dateCertainty": "approximate",
+    "person": 9,
+    "relationship": "toward",
+    "relationshipTargets": [
+     5
+    ],
+    "description": "went to her mother's every evening after work"
+   },
+   {
+    "id": 116,
+    "kind": "shift",
+    "dateTime": "1978-04-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "relationship": "distance",
+    "relationshipTargets": [
+     9
+    ],
+    "description": "took the night shifts; home after Callum was asleep"
+   },
+   {
+    "id": 117,
+    "kind": "shift",
+    "dateTime": "1978-05-15",
+    "dateCertainty": "approximate",
+    "person": 14,
+    "symptom": "up",
+    "description": "drinking at lunch; a warning at the plant"
+   },
+   {
+    "id": 118,
+    "kind": "separated",
+    "dateTime": "1978-08-03",
+    "dateCertainty": "certain",
+    "person": 14,
+    "spouse": 15,
+    "description": "Celeste took Milo to her parents' house"
+   },
+   {
+    "id": 119,
+    "kind": "shift",
+    "dateTime": "1978-09-15",
+    "dateCertainty": "approximate",
+    "person": 9,
+    "anxiety": "up",
+    "description": "lay awake over her mother and Anton"
+   },
+   {
+    "id": 120,
+    "kind": "shift",
+    "dateTime": "1978-11-15",
+    "dateCertainty": "unknown",
+    "person": 16,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     5
+    ],
+    "description": "quarrels with her mother over selling the house",
+    "notes": "Simone cannot place it; some time after the funeral."
+   },
+   {
+    "id": 121,
+    "kind": "shift",
+    "dateTime": "1979-02-15",
+    "dateCertainty": "approximate",
+    "person": 17,
+    "symptom": "up",
+    "description": "ear infections one after another all winter"
+   },
+   {
+    "id": 122,
+    "kind": "shift",
+    "dateTime": "1979-05-15",
+    "dateCertainty": "approximate",
+    "person": 5,
+    "functioning": "up",
+    "description": "took a job at the library; out of the house every day"
+   },
+   {
+    "id": 123,
+    "kind": "birth",
+    "dateTime": "1980-09-21",
+    "dateCertainty": "certain",
+    "person": 8,
+    "spouse": 9,
+    "child": 1
+   },
+   {
+    "id": 124,
+    "kind": "married",
+    "dateTime": "1981-03-14",
+    "dateCertainty": "certain",
+    "person": 12,
+    "spouse": 13,
+    "description": "wedding"
+   },
+   {
+    "id": 125,
+    "kind": "married",
+    "dateTime": "1981-06-13",
+    "dateCertainty": "certain",
+    "person": 10,
+    "spouse": 11,
+    "description": "wedding"
+   },
+   {
+    "id": 126,
+    "kind": "shift",
+    "dateTime": "1981-10-15",
+    "dateCertainty": "approximate",
+    "person": 6,
+    "symptom": "up",
+    "description": "for most of his adult life he has drunk more than is good for him",
+    "notes": "Teodor's younger brother."
+   },
+   {
+    "id": 127,
+    "kind": "shift",
+    "dateTime": "1982-02-15",
+    "dateCertainty": "unknown",
+    "person": 10,
+    "relationship": "distance",
+    "relationshipTargets": [
+     8
+    ],
+    "description": "has kept his distance from his brother Duncan since they were boys"
+   },
+   {
+    "id": 128,
+    "kind": "birth",
+    "dateTime": "1982-07-15",
+    "dateCertainty": "approximate",
+    "person": 10,
+    "spouse": 11,
+    "child": 20
+   },
+   {
+    "id": 129,
+    "kind": "shift",
+    "dateTime": "1984-03-15",
+    "dateCertainty": "approximate",
+    "person": 9,
+    "functioning": "down",
+    "description": "ordered to bed for the rest of the pregnancy"
+   },
+   {
+    "id": 130,
+    "kind": "shift",
+    "dateTime": "1984-04-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "relationship": "overfunctioning",
+    "relationshipTargets": [
+     9
+    ],
+    "description": "came every morning to keep Duncan and Odette's house"
+   },
+   {
+    "id": 131,
+    "kind": "shift",
+    "dateTime": "1984-05-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     3
+    ],
+    "description": "argued with his mother over how she kept the house"
+   },
+   {
+    "id": 132,
+    "kind": "shift",
+    "dateTime": "1984-06-15",
+    "dateCertainty": "approximate",
+    "person": 17,
+    "symptom": "up",
+    "description": "stammered again after a year free of it"
+   },
+   {
+    "id": 133,
+    "kind": "shift",
+    "dateTime": "1984-07-15",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "anxiety": "up",
+    "description": "would not go to sleep unless her father sat by the bed",
+    "notes": "Odette's memory; she cannot say which month."
+   },
+   {
+    "id": 134,
+    "kind": "birth",
+    "dateTime": "1984-09-28",
+    "dateCertainty": "certain",
+    "person": 8,
+    "spouse": 9,
+    "child": 18
+   },
+   {
+    "id": 135,
+    "kind": "noted",
+    "dateTime": "1986-09-03",
+    "dateCertainty": "certain",
+    "person": 3,
+    "description": "diagnosed with Parkinson's disease"
+   },
+   {
+    "id": 136,
+    "kind": "shift",
+    "dateTime": "1986-11-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "relationship": "overfunctioning",
+    "relationshipTargets": [
+     3
+    ],
+    "description": "took over the cooking and all of her appointments"
+   },
+   {
+    "id": 137,
+    "kind": "shift",
+    "dateTime": "1987-06-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "anxiety": "up",
+    "description": "phoned his father every night for news of her"
+   },
+   {
+    "id": 138,
+    "kind": "shift",
+    "dateTime": "1988-02-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "functioning": "down",
+    "description": "a bad fall in the kitchen; walked with a frame after it"
+   },
+   {
+    "id": 139,
+    "kind": "shift",
+    "dateTime": "1988-10-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "functioning": "up",
+    "description": "a new medicine; steadier on her feet for a while"
+   },
+   {
+    "id": 140,
+    "kind": "shift",
+    "dateTime": "1989-05-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     10
+    ],
+    "description": "argued with Lyle over who should help their parents"
+   },
+   {
+    "id": 141,
+    "kind": "shift",
+    "dateTime": "1990-03-15",
+    "dateCertainty": "unknown",
+    "person": 10,
+    "relationship": "distance",
+    "relationshipTargets": [
+     2,
+     3
+    ],
+    "description": "stopped visiting his parents; a card at Christmas",
+    "notes": "Pearl remembers it; no one can say the year."
+   },
+   {
+    "id": 142,
+    "kind": "shift",
+    "dateTime": "1990-12-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "symptom": "up",
+    "description": "chest pains; told by his doctor to rest"
+   },
+   {
+    "id": 143,
+    "kind": "shift",
+    "dateTime": "1991-09-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "functioning": "down",
+    "description": "could no longer dress herself; Ambrose helped her each morning"
+   },
+   {
+    "id": 144,
+    "kind": "shift",
+    "dateTime": "1992-05-15",
+    "dateCertainty": "approximate",
+    "person": 9,
+    "relationship": "overfunctioning",
+    "relationshipTargets": [
+     3
+    ],
+    "description": "took Hazel to the clinic twice a week"
+   },
+   {
+    "id": 145,
+    "kind": "shift",
+    "dateTime": "1992-10-15",
+    "dateCertainty": "approximate",
+    "person": 7,
+    "relationship": "toward",
+    "relationshipTargets": [
+     3
+    ],
+    "description": "came to stay one week in four to nurse her sister"
+   },
+   {
+    "id": 146,
+    "kind": "shift",
+    "dateTime": "1993-03-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "symptom": "up",
+    "description": "drinking most evenings"
+   },
+   {
+    "id": 147,
+    "kind": "shift",
+    "dateTime": "1993-12-15",
+    "dateCertainty": "approximate",
+    "person": 12,
+    "anxiety": "up",
+    "description": "panic spells at the wheel; stopped driving on the motorway"
+   },
+   {
+    "id": 148,
+    "kind": "shift",
+    "dateTime": "1994-08-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "functioning": "up",
+    "description": "a good summer; out in the garden in her chair"
+   },
+   {
+    "id": 149,
+    "kind": "shift",
+    "dateTime": "1995-04-15",
+    "dateCertainty": "approximate",
+    "person": 3,
+    "functioning": "down",
+    "description": "could no longer stand; a nurse came every morning"
+   },
+   {
+    "id": 150,
+    "kind": "shift",
+    "dateTime": "1996-02-15",
+    "dateCertainty": "approximate",
+    "person": 2,
+    "functioning": "down",
+    "description": "gave up his workshop; hardly left her side"
+   },
+   {
+    "id": 151,
+    "kind": "shift",
+    "dateTime": "1996-12-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     9
+    ],
+    "description": "fights with Odette over his evenings at his parents' house"
+   },
+   {
+    "id": 152,
+    "kind": "noted",
+    "dateTime": "1997-06-02",
+    "dateCertainty": "certain",
+    "person": 3,
+    "description": "moved into the Fairlie nursing home"
+   },
+   {
+    "id": 153,
+    "kind": "shift",
+    "dateTime": "1997-10-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "symptom": "down",
+    "description": "cut his drinking back to weekends"
+   },
+   {
+    "id": 154,
+    "kind": "shift",
+    "dateTime": "1999-01-15",
+    "dateCertainty": "approximate",
+    "person": 17,
+    "relationship": "conflict",
+    "relationshipTargets": [
+     8
+    ],
+    "description": "argued with his father most nights over his plans to go north"
+   },
+   {
+    "id": 155,
+    "kind": "shift",
+    "dateTime": "1999-03-15",
+    "dateCertainty": "approximate",
+    "person": 9,
+    "anxiety": "up",
+    "description": "could not settle at the thought of Callum so far away"
+   },
+   {
+    "id": 156,
+    "kind": "noted",
+    "dateTime": "1999-05-08",
+    "dateCertainty": "certain",
+    "person": 17,
+    "description": "left home for a job at the mines up north"
+   },
+   {
+    "id": 157,
+    "kind": "shift",
+    "dateTime": "1999-07-15",
+    "dateCertainty": "approximate",
+    "person": 8,
+    "functioning": "down",
+    "description": "missed days at work; sat up late in the garage"
+   },
+   {
+    "id": 158,
+    "kind": "shift",
+    "dateTime": "1999-10-15",
+    "dateCertainty": "approximate",
+    "person": 18,
+    "functioning": "down",
+    "description": "skipped school most of that autumn"
+   },
+   {
+    "id": 159,
+    "kind": "shift",
+    "dateTime": "2000-01-15",
+    "dateCertainty": "approximate",
+    "person": 9,
+    "relationship": "toward",
+    "relationshipTargets": [
+     18
+    ],
+    "description": "took Ines with her everywhere, even to work"
+   },
+   {
+    "id": 160,
+    "kind": "shift",
+    "dateTime": "2000-04-15",
+    "dateCertainty": "unknown",
+    "person": 17,
+    "relationship": "toward",
+    "relationshipTargets": [
+     9
+    ],
+    "description": "began phoning his mother every Sunday night",
+    "notes": "Odette cannot say when the calls began."
+   },
+   {
+    "id": 161,
+    "kind": "shift",
+    "dateTime": "2000-08-15",
+    "dateCertainty": "approximate",
+    "person": 18,
+    "functioning": "up",
+    "description": "back at school full days; passed her exams"
+   },
+   {
+    "id": 162,
+    "kind": "married",
+    "dateTime": "2001-07-28",
+    "dateCertainty": "certain",
+    "person": 16,
+    "spouse": 25,
+    "description": "wedding"
+   },
+   {
+    "id": 163,
+    "kind": "bonded",
+    "dateTime": "2001-08-10",
+    "dateCertainty": "certain",
+    "person": 17,
+    "spouse": 27,
+    "description": "moved in together up north"
+   },
+   {
+    "id": 164,
+    "kind": "death",
+    "dateTime": "2003-01-14",
+    "dateCertainty": "certain",
+    "person": 3,
+    "description": "died at the Fairlie home after a chest infection"
+   },
+   {
+    "id": 165,
+    "kind": "shift",
+    "dateTime": "2003-02-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "symptom": "up",
+    "description": "could not sleep more than a few hours a night"
+   },
+   {
+    "id": 166,
+    "kind": "shift",
+    "dateTime": "2003-04-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "functioning": "down",
+    "description": "stopped going in to the bookshop; let go in May"
+   },
+   {
+    "id": 167,
+    "kind": "shift",
+    "dateTime": "2003-06-15",
+    "dateCertainty": "unknown",
+    "person": 1,
+    "relationship": "distance",
+    "relationshipTargets": [
+     9
+    ],
+    "description": "stopped returning her mother's calls",
+    "notes": "Maren is not sure of the month."
+   },
+   {
+    "id": 168,
+    "kind": "shift",
+    "dateTime": "2003-08-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "anxiety": "up",
+    "description": "dreaded buses and crowded shops; went out only after dark"
+   },
+   {
+    "id": 169,
+    "kind": "shift",
+    "dateTime": "2003-11-15",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "functioning": "up",
+    "description": "took a job at the garden centre; sleeping through the night again"
+   },
+   {
+    "id": 170,
+    "kind": "noted",
+    "dateTime": "2005-11-19",
+    "dateCertainty": "certain",
+    "person": 18,
+    "description": "the car she was riding in slid off the road on black ice; two nights in hospital with a cracked rib"
+   },
+   {
+    "id": 171,
+    "kind": "shift",
+    "dateTime": "2005-11-19",
+    "dateCertainty": "certain",
+    "person": 9,
+    "anxiety": "up",
+    "description": "sat up all night by the phone"
+   },
+   {
+    "id": 172,
+    "kind": "shift",
+    "dateTime": "2005-11-20",
+    "dateCertainty": "certain",
+    "person": 8,
+    "symptom": "up",
+    "description": "could not keep food down"
+   },
+   {
+    "id": 173,
+    "kind": "shift",
+    "dateTime": "2005-11-20",
+    "dateCertainty": "certain",
+    "person": 17,
+    "relationship": "toward",
+    "relationshipTargets": [
+     18
+    ],
+    "description": "came down from the north overnight to her bedside"
+   },
+   {
+    "id": 174,
+    "kind": "shift",
+    "dateTime": "2005-11-21",
+    "dateCertainty": "certain",
+    "person": 18,
+    "anxiety": "up",
+    "description": "shook at the thought of the ride home"
+   },
+   {
+    "id": 175,
+    "kind": "noted",
+    "dateTime": "2005-11-21",
+    "dateCertainty": "certain",
+    "person": 18,
+    "description": "home from hospital"
+   },
+   {
+    "id": 176,
+    "kind": "shift",
+    "dateTime": "2005-11-23",
+    "dateCertainty": "certain",
+    "person": 9,
+    "anxiety": "down",
+    "description": "calm again once Ines was home and up and about"
+   }
+  ]
+ },
+ "said": [
+  {
+   "messageId": 1,
+   "question": "Looking back over your life so far, when was the most going on for you, and about what years?",
+   "words": "Gran Hazel dying, when I was 22, is the one I'd pick. That winter I barely slept, I lost the bookshop job by spring, and I stopped calling Mum back until the garden centre took me on in November. People say Callum going north was hard on the house too, but I was away at college then and only heard about it on the phone."
+  }
+ ]
+}
