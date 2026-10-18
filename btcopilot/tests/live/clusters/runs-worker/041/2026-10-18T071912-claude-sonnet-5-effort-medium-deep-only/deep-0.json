@@ -1,0 +1,179 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": "r2",
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      134,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      171,
+      39,
+      53,
+      172,
+      191
+     ],
+     "name": "your grandfather Gordon's death, 1989\u20131994",
+     "reason": "Shifts pile up from settling into the rebuilt Hollin Road house in 1989 through the wrist injury, roommate conflict and withdrawal into radio repair in 1991 around your grandfather Gordon's death that June, continuing through the low spell of 1992 and settling with the exchange in Portugal and your father's film comment in 1994.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": "r3",
+     "eventIds": [
+      4,
+      12,
+      22
+     ],
+     "name": "Joelle's separation, 1999",
+     "reason": "The insomnia before and the turn to a therapist after sit close to the separation from Joelle in mid-1999, and two shifts are enough since the separation falls between them.",
+     "change": "Trimmed to the events around the separation, leaving out the earlier bonding and the standalone rise in playing.",
+     "openingId": 12
+    },
+    {
+     "id": "r5",
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179,
+      130
+     ],
+     "name": "your grandmother Lorna's death, 2008\u20132009",
+     "reason": "The distance and conflict with your mother during the Alder Creek stay, the cutoff on leaving for nursing school, and your aunt Imogen's stroke all sit within the year after your grandmother Lorna's death in January 2008.",
+     "change": null,
+     "openingId": 61
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": null,
+     "endYear": null
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "After striking out the always and forever-worded shifts in 1987 (41 and 51), only one shift (145) remains, not enough in the diagram to choose a reading.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "The years 2001\u20132004 of this hint fall inside your own named stretch of ages 27 to 29 (2000\u20132003), so your own period covers them.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "The events of 21\u201323 October 2019 around the lake-house retirement weekend are an acute episode, and the remaining shifts from 2017\u20132019 (115, 190, 150, 95, 116) sit too far apart with no dated family change among them, so not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence.",
+  "answer 2: unknown_group: Period 'r2' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r3' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r5' is not one of the app's periods listed.",
+  "answer 2: no_years: The person's period 'the year I left home' has no years their words give.",
+  "answer 2: declined: Run r1 (1987-01-12 to 1987-09-12) has 3 shifts that count and was declined: After striking out the always and forever-worded shifts in 1987 (41 and 51), only one shift (145) remains, not enough in the diagram to choose a reading.",
+  "answer 2: declined: Run r6 (2017-03-27 to 2019-10-26) has 10 shifts that count and was declined: The events of 21\u201323 October 2019 around the lake-house retirement weekend are an acute episode, and the remaining shifts from 2017\u20132019 (115, 190, 150, 95, 116) sit too far apart with no dated family change among them, so not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 2,
+   "precision": 1.0,
+   "recall": 0.3333333333333333,
+   "f1": 0.5
+  },
+  "members": {
+   "tp": 14,
+   "fp": 0,
+   "fn": 5,
+   "precision": 1.0,
+   "recall": 0.7368421052631579,
+   "f1": 0.8484848484848484
+  },
+  "openings": [
+   0,
+   1
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'the year I left home' is not stored as theirs",
+  "cluster F1 0.50 under 0.8"
+ ],
+ "cost": 0.400198
+}
