@@ -118,8 +118,8 @@ _log = logging.getLogger(__name__)
 # the default only with a change in who is in the family on a known date, a
 # period's name is checked word for word with the ordinary relatives free to
 # use, and only a period covering more than half of the diagram's dated years
-# is refused for its length, so every diagram regroups on its next event change
-# [Oracle: R-0850, R-0856, R-0376, R-0846].
+# is refused for its length, so every diagram is read again on its next event
+# change [Oracle: R-0850, R-0856, R-0376, R-0846].
 DETECTION_VERSION = 20
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
@@ -517,9 +517,9 @@ def candidates(data: DiagramData) -> list[Candidate]:
     is offered too, its count beside it; one with a single shift is not
     [Oracle: R-0850].
     Only a shift whose date is known seeds a run: a placeholder date shows
-    nothing close in time, and may only join a run seeded near it. A shift
-    told as how things always were supports no hint, and a lift supports one
-    only beside another person's rise and never starts it."""
+    nothing close in time, and may only join a run seeded near it.
+    A shift told as how things always were supports no hint, and a lift
+    supports one only beside another person's rise and never starts it."""
     free = joinable(data)
     marked = [e for e in free if supports(e, free)]
     started = [e for e in marked if seeds(e, free)]

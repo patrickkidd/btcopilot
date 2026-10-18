@@ -99,8 +99,8 @@ def reasoning_args(model: str, effort: str) -> dict:
     return {"thinking": {"type": "adaptive"}, "output_config": {"effort": effort}}
 
 
-# Models on which a structured call runs with thinking switched off, as Haiku
-# 4.5 runs. Cluster detection, the only structured call, on Sonnet 5 at high
+# Models on which a structured call is made with thinking switched off, as on
+# Haiku 4.5. Cluster detection, the only structured call, on Sonnet 5 at high
 # effort spent its whole token limit thinking and was cut off in 20 of 20 tries
 # on the four-generation case. Opus 5.5, Sonnet 5.5 and Fable reject thinking
 # switched off with HTTP 400, so they are never listed here [Oracle: R-0856].

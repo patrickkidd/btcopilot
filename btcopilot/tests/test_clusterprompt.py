@@ -27,8 +27,8 @@ fragment it includes:
 
 Without a sops key these skip, as the other private prompt tests do; the
 checker's own rules, and the script that writes the ids file, are proven on
-invented text. The module carries the `conventions` marker, so CI runs it in
-the step that holds the key, and a local run passes with the key and skips the
+invented text. The module carries the `conventions` marker, so CI tries it in
+the step that holds the key; on a machine it passes with the key and skips the
 prompt's own checks cleanly without it.
 """
 
