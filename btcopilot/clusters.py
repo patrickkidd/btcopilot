@@ -104,7 +104,15 @@ _log = logging.getLogger(__name__)
 # 17: a period's name and sentences never give a cause or speak as the person,
 # so every record regroups on its next event change [Oracle: R-0864, R-0860].
 # 18: and never hold a raw event or cluster id [Oracle: R-0864].
-DETECTION_VERSION = 18
+# 19: the prompt rewritten once from the sources, every line cited to the
+# inventory: an acute episode of a few days is not a period, a lasting symptom
+# or a stage of the household's life is the family's level, a move or a job lost
+# may open a period, a time with no change in the family on a known date stays a
+# hypothesis, a hint is declined by what its events say and never by its count,
+# and the hints go to the call as `hints`; a declined hint comes back under
+# `hint`, so every diagram regroups on its next event change
+# [Oracle: R-0850, R-0855, R-0842, R-0851, R-0858].
+DETECTION_VERSION = 19
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -590,11 +598,17 @@ class TheirPeriod:
 
 @dataclass
 class Declined:
-    """A run with three or more supporting shifts the call does not make a
-    period, with its one sentence why."""
+    """A hint the call does not make a period, with its one sentence why. The
+    hint's id comes back under `hint`; `run` is the name answers gave it before
+    version 19 and is read the same way, so saved answers still replay."""
 
-    run: str
-    reason: str
+    reason: str = ""
+    hint: str | None = None
+    run: str | None = None
+
+    @property
+    def hint_id(self) -> str:
+        return self.hint or self.run or ""
 
 
 @dataclass
@@ -737,16 +751,17 @@ def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
     first = parse_date(candidate.startDate)
     earlier = [day for day in when.values() if day < first]
     if not earlier:
-        return "first group in the record"
-    return f"{silence(first - max(earlier))} with nothing recorded before this group"
+        return "the first events in the diagram"
+    return f"{silence(first - max(earlier))} with nothing in the diagram before these events"
 
 
 # Read beside each field of the answer, where the grouping call weighs them
 # more than the same words in the prompt: on Patrick's copy it declined a run
 # for its count and read a time the person only wondered about as theirs.
 DECLINED_REASON = (
-    "What in the events says this run is not a period; never its count of shifts "
-    "alone, since two shifts around a change in the family's membership are enough"
+    "What in the events says this hint is not a period, or that there is not "
+    "enough in the diagram to choose a reading; never its count of shifts or of "
+    "events alone"
 )
 THEIR_PERIOD = (
     "A time the person says stood out or was hard; never one they only wonder "
@@ -782,21 +797,24 @@ def _prompt(
         elif trouble_in(_title(cluster), told):
             shown["note"] = TROUBLE
         existing.append(shown)
+    hints = json.dumps(
+        [
+            {
+                "id": candidate.id,
+                "before": _before(candidate, when),
+                "supportingShifts": len(candidate.shiftIds),
+                "default": candidate.strong,
+                "eventIds": candidate.eventIds,
+            }
+            for candidate in cands
+        ],
+        indent=2,
+    )
+    # The open-source prompt still fills the hints under `candidates`.
     return prompts.CLUSTER_PROMPT.format(
         existing=json.dumps(existing, indent=2),
-        candidates=json.dumps(
-            [
-                {
-                    "id": candidate.id,
-                    "before": _before(candidate, when),
-                    "supportingShifts": len(candidate.shiftIds),
-                    "default": candidate.strong,
-                    "eventIds": candidate.eventIds,
-                }
-                for candidate in cands
-            ],
-            indent=2,
-        ),
+        candidates=hints,
+        hints=hints,
         people=json.dumps(list(people), indent=2),
         events=json.dumps([_event_json(e) for e in free], indent=2),
         told=json.dumps(
@@ -1373,7 +1391,7 @@ def _answered_runs(
         for cluster_id, c in stored.items()
         if cluster_id not in replaced and not _regroupable(c)
     ]
-    why = {d.run: d.reason.strip() for d in response.declined if d.reason.strip()}
+    why = {d.hint_id: d.reason.strip() for d in response.declined if d.reason.strip()}
     unanswered, declined = [], []
     for run in runs:
         if any(set(run.shiftIds) & ids for ids in held):
@@ -1483,8 +1501,10 @@ def answer_schema(
         del fields["id"]
     if runs:
         declined = schema["properties"]["declined"]["items"]
-        declined["required"] = ["run", "reason"]
-        declined["properties"]["run"]["enum"] = [run.id for run in runs]
+        declined["required"] = ["hint", "reason"]
+        # `run` stays offered, with the same ids, for answers in the old shape.
+        for key in ("hint", "run"):
+            declined["properties"][key]["enum"] = [run.id for run in runs]
         declined["properties"]["reason"]["description"] = DECLINED_REASON
     else:
         del schema["properties"]["declined"]
