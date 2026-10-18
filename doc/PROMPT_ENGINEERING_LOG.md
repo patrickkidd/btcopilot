@@ -58,7 +58,7 @@ is reverted.
 **Status**: reverted the same day. Haiku's ten tries on it (round 3, head 9f78697f) passed `deep`
 7 of 10 (round 2: 7), `deep-unasked` 8 (round 2: 10), `harbor` 7 (round 2: 8), `dense` 6 (round 2:
 7), the rest 10: worse on three cases and better on none, so the branch carries version 20 as the
-final prompt and the round 3 folder under `runs-worker/042/` stays as evidence.
+final prompt and the round 3 folder under `btcopilot-runs/clusters/runs-worker/042/` in the private corpus stays as evidence.
 
 **Change** (as tried): five lines added and two changed, aimed only at the misses Haiku's ten tries
 on version 20 showed. An acute episode was described as it shows in the events, a noted event naming
@@ -127,7 +127,7 @@ and Sonnet 5 through Bedrock, against the signed `deep` key and the placeholder 
 10. Measured, after two rounds of prompt fixes: Haiku `deep` 4 of 10 and `deep-unasked` 6 of 10, so the
 gate was not met and tuning stopped as the brief says; `orchard` 10 of 10. Sonnet was cut off on every
 `deep` try, at 16,784 output tokens and, in one try, at medium effort. The try folders are under
-`runs-worker/041/`.
+`btcopilot-runs/clusters/runs-worker/041/` in the private corpus.
 
 **Versions 10 to 18, not logged at the time (FD-381, 2026-10-14 to 2026-10-15):** 10, the approved
 rules A1 to A9: any change in the family may open a period, only rising shifts support one, events of
