@@ -168,8 +168,9 @@ event id, and whether it is set aside [Oracle: R-0205, R-0850].
 
 ## When a cluster looks wrong
 
-Patrick's ruling [Oracle: R-0857]: the expected clusters of the `deep` case stand as drafted,
-provisionally. A session started on "evaluate this cluster discrepancy" follows these steps.
+Patrick signed the expected clusters of the `deep` case on 2026-10-16: three clusters, and two
+hypotheses scored neither way [Oracle: R-0857]. A session started on "evaluate this cluster
+discrepancy" follows these steps.
 
 1. Evidence: write Patrick's question and what he saw, quoted, into the session before anything
    else (diagram, dates, the clusters shown, the clusters he expected). A new real case is evidence
@@ -193,3 +194,8 @@ provisionally. A session started on "evaluate this cluster discrepancy" follows 
 8. A new real case gets its own fictional case as a new file in `clusters/cases/`, built the way
    btcopilot/tests/live/README.md says under "Cluster F1" (dates shifted by one offset, structure
    changed outside the clusters, every word rewritten), never a real diagram.
+
+The inventory behind the cluster prompt is in the private corpus, btcopilot-sources
+`research/clusters/INVENTORY.md`: one row per source item, 237 passages (P-001 to P-237), 201
+statements of Patrick's (S-001 to S-201) and 144 rulings (R-nnnn). The prompt's citation comments
+use those ids, which are stable from that file on.
