@@ -1007,7 +1007,7 @@ def spans(result) -> list[tuple[str, str]]:
 
 
 def test_the_hale_record_proposes_three_groups_decades_apart_and_one_stray():
-    # R-0837, R-0215, R-0850
+    # R-0215, R-0850
     proposed = candidates(HALE)
     assert [c.eventIds for c in proposed] == HALE_PROPOSALS
     assert [c.startDate for c in proposed] == ["1954-02-10", "1994-03-05", "1996-09-01"]
@@ -1017,7 +1017,7 @@ def test_the_hale_record_proposes_three_groups_decades_apart_and_one_stray():
 
 
 def test_a_whole_history_period_given_twice_fails_the_grouping():
-    # R-0837, R-0846
+    # R-0846
     """One period of all fourteen events, 1948 to 2001, on both asks: it is
     dropped, nothing is left, and the grouping fails rather than store it."""
     seen = []
@@ -1123,7 +1123,7 @@ def test_a_climb_over_more_than_ten_years_in_a_long_history_is_kept_on_one_ask()
 
 
 def test_the_proposals_as_given_pass():
-    # R-0837, R-0287
+    # R-0846, R-0287
     with replies(PROPOSED) as ask:
         result = detect_clusters(HALE, ask)
     assert spans(result) == [("1954", "1955"), ("1996", "2001")]
@@ -1131,7 +1131,7 @@ def test_the_proposals_as_given_pass():
 
 
 def test_the_grandfathers_death_joins_the_run_it_fell_in():
-    # R-0837, R-0842
+    # R-0842
     joined = "Walter's death in early 1998 sits inside Nell and Theo's trouble."
     with replies(
         answers(
@@ -1146,7 +1146,7 @@ def test_the_grandfathers_death_joins_the_run_it_fell_in():
 
 
 def test_the_early_marriage_joined_to_the_first_run_passes_the_check():
-    # R-0837, R-0842
+    # R-0846, R-0842
     """1948 to 1955 is seven years, never too long: whether the marriage
     belongs with the headaches six years on is the model's call."""
     with replies(
@@ -1292,7 +1292,7 @@ def hale_diagram(test_user):
 
 
 def test_a_whole_history_answer_twice_stores_nothing_named_after_years(hale_diagram):
-    # R-0837, R-0838, R-0844
+    # R-0846, R-0838, R-0844
     """Through the turn's own path: both answers refused by the ten-year check
     write two cluster_refused rows carrying the model's own answer, the stored
     fifty-year period is set aside, and nothing is stored in its place."""
