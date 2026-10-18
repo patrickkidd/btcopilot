@@ -472,29 +472,60 @@ def test_a_shift_told_as_how_things_always_were_supports_no_hint():
     )
 
 
-def test_a_hint_is_the_default_only_with_a_change_in_the_family_on_a_known_date():
+# Three shifts that count, months apart, and a change in the family to put
+# beside them: a diagnosis noted on its own event, and a death.
+SHIFTS_ALONE = [
+    moment(1, "1963-02-01", person=1),
+    moment(2, "1963-04-01", person=2),
+    moment(3, "1963-06-01", person=1),
+]
+DIAGNOSIS = Event(
+    id=4,
+    kind=EventKind.Noted,
+    person=3,
+    dateTime="1963-03-01",
+    dateCertainty=DateCertainty.Approximate,
+    description="diagnosed with diabetes",
+)
+DEATH = Event(id=5, kind=EventKind.Death, person=3, dateTime="1963-05-01")
+
+
+def defaults(data: DiagramData) -> list[bool]:
+    """Each hint's `default` as the call is shown it."""
+    proposed = candidates(data)
+    prompt = clusters._prompt(proposed, joinable(data), {}, [], None)
+    hint = prompt.split("(A HINT ONLY)")[1].split("THE PEOPLE")[0]
+    return [one["default"] for one in json.loads(hint)]
+
+
+def test_a_hint_whose_only_change_is_a_diagnosis_on_a_known_date_is_the_default():
     # R-0850, R-0856
-    """Three shifts that count make the default reading only beside a change
-    in who is in the family on a known date; without one, or with one whose
-    date nobody knows, the hint is offered as a question, never the default."""
-    shifts = [
-        moment(1, "1963-02-01", person=1),
-        moment(2, "1963-04-01", person=2),
-        moment(3, "1963-06-01", person=1),
-    ]
-    alone = record(*shifts)
+    """A change in the family is any event the diagram lists that is not a
+    shift: a diagnosis noted on a known date, approximate or certain, makes
+    three shifts that count the default reading, as a death does."""
+    diagnosed = record(*SHIFTS_ALONE, asdict(DIAGNOSIS))
+    assert [(c.changeIds, c.strong) for c in candidates(diagnosed)] == [([4], True)]
+    assert defaults(diagnosed) == [True]
+    died = record(*SHIFTS_ALONE, asdict(DEATH))
+    assert [(c.changeIds, c.strong) for c in candidates(died)] == [([5], True)]
+
+
+def test_a_hint_with_only_shifts_or_a_change_of_unknown_date_is_not_the_default():
+    # R-0850, R-0856, R-0855
+    """Three shifts that count with no change in the family beside them, or
+    with one whose date nobody knows, are offered as a question, never the
+    default reading."""
+    alone = record(*SHIFTS_ALONE)
     assert [(c.shiftIds, c.strong) for c in candidates(alone)] == [([1, 2, 3], False)]
-    death = Event(id=4, kind=EventKind.Death, person=3, dateTime="1963-03-01")
+    assert defaults(alone) == [False]
+    unknown = DateCertainty.Unknown
     unsure = record(
-        *shifts, asdict(dataclasses.replace(death, dateCertainty=DateCertainty.Unknown))
+        *SHIFTS_ALONE,
+        asdict(dataclasses.replace(DIAGNOSIS, dateCertainty=unknown)),
+        asdict(dataclasses.replace(DEATH, dateCertainty=unknown)),
     )
     assert [(c.changeIds, c.strong) for c in candidates(unsure)] == [([], False)]
-    known = record(*shifts, asdict(death))
-    proposed = candidates(known)
-    assert [(c.changeIds, c.strong) for c in proposed] == [([4], True)]
-    prompt = clusters._prompt(proposed, joinable(known), {}, [], None)
-    hint = prompt.split("(A HINT ONLY)")[1].split("THE PEOPLE")[0]
-    assert [one["default"] for one in json.loads(hint)] == [True]
+    assert defaults(unsure) == [False]
 
 
 def test_a_lift_counts_beside_another_persons_rise_in_the_same_months_and_never_alone():
