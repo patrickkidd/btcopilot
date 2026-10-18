@@ -1,17 +1,18 @@
-"""The cluster F1 suite: the app's grouping call, `detect_clusters` on Gemini as
-production makes it, or on CLUSTER_MODEL, run CLUSTER_TRIES times (once by
+"""The cluster F1 suite: cluster detection, `detect_clusters` on Gemini as
+production calls it, or on CLUSTER_MODEL, tried CLUSTER_TRIES times (once by
 default) on each case and scored against the case's expected clusters
 (score.py) [Oracle: R-0856]. The cases are in cases/; the four-generation one,
-`deep`, is the one the prompts are tuned on, the others are placeholders until
-real cases arrive. How to run it, and what it costs: README.md, "Cluster F1".
+`deep`, is the one the prompts are tuned on, its key signed by Patrick
+[Oracle: R-0857]; the others are placeholders until real cases arrive. How to
+use it, and what it costs: README.md, "Cluster F1".
 
-CLUSTER_ANSWERS, when set, is a folder of answers served in place of the model,
+CLUSTER_ANSWERS, when set, is a folder of answers served in place of the LLM's,
 one `<case>-<try>.json` per try (or one `<case>.json` for every try) holding
 `{"answers": [...]}` in the order the calls are made, a failed call saved in
-its place: answers/ holds hand-written ones that prove the runner with no
-network, and every run's own folder under runs/ replays that run at $0. Each
-try's answers, stored clusters and score go to
-runs/<time>-<model>-<process>/<case>-<try>.json, and one line per try to the
+its place: `answers/` holds hand-written ones that prove the harness with no
+network, and the folder each earlier session wrote under `runs/` replays it at
+$0. Each try's answers, stored clusters and score go to
+`runs/<time>-<model>-<process>/<case>-<try>.json`, and one line per try to the
 eval ledger (CLUSTER_LEDGER, by default the live suite's).
 """
 
@@ -60,8 +61,8 @@ GIT = subprocess.run(
     text=True,
     check=True,
 ).stdout.strip()
-# A run's folder names its start, the model asked (or "replay") and its
-# process, so two runs started in the same second never share one.
+# Each session's folder names its start, CLUSTER_MODEL (or "replay") and its
+# process, so two sessions started in the same second never share one.
 STARTED = f"{datetime.datetime.now():%Y-%m-%dT%H%M%S}"
 RUN = HERE / "runs" / f"{STARTED}-{'replay' if ANSWERS else MODEL}-{os.getpid()}"
 CASES = load()
@@ -80,7 +81,7 @@ class Bar:
 BARS = {
     "deep": Bar(0.8, 0.7),
     "deep-unasked": Bar(0.8, 0.7),
-    # the birth must be named as the run's opening
+    # the birth must be named as the cluster's opening
     "addition": Bar(1.0, 0.8, frozenset(Rule)),
     # nothing stored: no cluster expected, so any stored one fails it
     "thin": Bar(1.0, 1.0),
@@ -104,7 +105,8 @@ def saved(case: Case, k: int) -> Path:
 
 
 class Asker:
-    """`ask` for detect_clusters: the model, or try k's saved answers."""
+    """`ask` for detect_clusters: a call to CLUSTER_MODEL, or try k's saved
+    answers."""
 
     def __init__(self, case: Case, k: int):
         self.saved = json.loads(saved(case, k).read_text()) if ANSWERS else None
@@ -154,10 +156,17 @@ def numbers(result: Score) -> dict:
         "clusters": asdict(result.clusters),
         "members": asdict(result.members),
         "openings": [agreed, of],
+        "hypotheses": len(result.hypotheses),
+        "not clusters": result.count(Rule.NotACluster),
         "voice": result.count(Rule.Voice),
         "cause": result.count(Rule.Cause),
         "id violations": result.count(Rule.Id),
     }
+
+
+def signed(case: Case) -> int:
+    """The clusters a try is scored on: the case's key less its hypotheses."""
+    return sum(not e.hypothesis for e in case.expected)
 
 
 def line(case: Case, k: int, stored, result: Score, refused: list[str], misses) -> str:
@@ -167,7 +176,7 @@ def line(case: Case, k: int, stored, result: Score, refused: list[str], misses) 
     tag = " (placeholder)" if case.placeholder else ""
     name = case.name if len(TRIES) == 1 else f"{case.name}-{k}"
     return (
-        f"{name:18}{len(case.expected):>5}{len(stored):>5}{len(result.pairs):>7}"
+        f"{name:18}{signed(case):>5}{len(stored):>5}{len(result.pairs):>7}"
         f"{c.precision:>6.2f}{c.recall:>6.2f}{c.f1:>6.2f}{result.members.f1:>10.2f}"
         f"{f'{agreed}/{of}':>9}{len(refused):>8}"
         f"{result.count(Rule.Voice):>6}{result.count(Rule.Cause):>6}  {verdict}{tag}"
@@ -225,8 +234,10 @@ def keep(
 def test_grouping_matches_the_expected_clusters(case, k, board):
     # R-0856, R-0857, R-0850, R-0853
     """Pass: the case's bar in BARS, cluster F1 and event F1 at least its
-    numbers, and none of its rules missed. Each try is one grouping call on
-    the same inputs, two when the first answer is refused."""
+    numbers, and none of its rules missed. Each try is one call of cluster
+    detection on the same inputs, two when the first answer is refused. A
+    cluster the case marks hypothesis counts neither way; storing a period the
+    case says is not a cluster misses."""
     ask = Asker(case, k)
     refused: list[str] = []
     started = time.monotonic()
@@ -244,7 +255,7 @@ def test_grouping_matches_the_expected_clusters(case, k, board):
         refused.append(f"gave up: {failed.check.value}: {failed}")
         stored = []
     ms = round((time.monotonic() - started) * 1000)
-    result = score(stored, case.expected, case.data, case.theirs)
+    result = score(stored, case.expected, case.data, case.theirs, case.not_clusters)
     bar = BARS[case.name]
     misses = result.missed(bar.rules | {Rule.Voice, Rule.Cause, Rule.Id})
     if result.clusters.f1 < bar.clusters:
@@ -253,10 +264,12 @@ def test_grouping_matches_the_expected_clusters(case, k, board):
         misses.append(f"event F1 {result.members.f1:.2f} under {bar.members}")
     keep(case, k, ask, stored, result, refused, misses, ms)
     board.append(line(case, k, stored, result, refused, misses))
+    held = {c.id: e.name for c, e in result.hypotheses}
     for cluster in stored:
+        aside = f" (the hypothesis {held[cluster.id]!r})" if cluster.id in held else ""
         print(
             f"  {cluster.source} {cluster.startDate[:7]}..{cluster.endDate[:7]} "
-            f"{cluster.eventIds} opens {cluster.openingEventId} {cluster.name!r}"
+            f"{cluster.eventIds} opens {cluster.openingEventId} {cluster.name!r}{aside}"
         )
     print(f"  {ask.model}: ${ask.cost:.4f}; {refused}")
     assert not misses
