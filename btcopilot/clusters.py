@@ -120,7 +120,13 @@ _log = logging.getLogger(__name__)
 # free to use, and only a period covering more than half of the diagram's dated years
 # is refused for its length, so every diagram is read again on its next event
 # change [Oracle: R-0850, R-0856, R-0376, R-0846].
-DETECTION_VERSION = 20
+# 21: the one prompt-fix round after version 20's tries: an acute episode's
+# events go into no period, a hint with a change on a known date and two shifts
+# is a period even when every shift is one person's, no period of the coach's
+# holds an event in the years the person named, and the answer is one JSON
+# object on the second answer too, so every diagram is read again on its next
+# event change [Oracle: R-0850, R-0853, R-0855, R-0856].
+DETECTION_VERSION = 21
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})

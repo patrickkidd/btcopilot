@@ -2,7 +2,34 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-18 (cluster detection version 20: three code fixes, a period's name checked word for word)
+**Last Updated**: 2026-10-18 (cluster detection version 21: the one prompt-fix round after version 20's tries)
+
+---
+
+## FD-383 job 042 — the one prompt-fix round after version 20's tries (2026-10-18)
+
+**Change**: cluster detection is version 21. Five lines added and two changed, aimed only at the
+misses Haiku's ten tries on version 20 showed (`deep` 7 of 10, bar 8). An acute episode is now
+described as it shows in the events, a noted event naming a party, a dinner, a visit, a trip or a
+gathering with several shifts dated within the same few days of it, and none of those events goes into
+any period's `eventIds`; a period that would reach them ends before those days, and the check before
+answering tests the `eventIds` for such days. A hint holding a change in the family on a known date
+with two or more shifts that count around it is returned as a period even when every shift is one
+person's, and a hint is never declined because its shifts are one person's or for want of a shared
+reaction; one event's `neverOpens` mark says nothing about another's. The coach writes the person's
+own periods first and then holds no period of its own with an event dated in their years, whatever
+it would be named. The answer is one JSON object with the keys `clusters`, `periods` and `declined`
+and nothing else, on the second answer too. One example added: a period cut short of an episode at
+the end of its hint.
+
+**Why**: on version 20 two `deep` tries drew the lake weekend, the acute episode, into the 2017 to
+2019 period; three `dense` tries declined the 1993 to 1996 hint, the person's own shifts around her
+leaving home and her mother's diagnosis, as one person's or for want of a shared reaction; one
+second answer was prose, not the JSON asked for; and every first answer on `deep` was refused for
+sharing days with the person's own periods, which forced the second answers.
+
+**Evals**: the cluster F1 suite, Haiku 4.5 ten tries per case, made by the job's runner after this
+head; the brief allows no tuning after it.
 
 ---
 
