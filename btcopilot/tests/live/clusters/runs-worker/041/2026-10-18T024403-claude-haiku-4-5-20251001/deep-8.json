@@ -1,0 +1,402 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      78
+     ],
+     "name": "Gordon's death, 1991\u20131992",
+     "reason": "Around your grandfather Gordon's death in June 1991, within the following year: you leaned hard on Rafe when you arrived at the conservatory in September, then a wrist injury stopped your playing in October and your anxiety rose with your functioning falling; you and Rafe clashed and he moved out in November; you were on your own, getting high and absorbed in fixing radios through the winter; by January 1992 you were lost and low, unable to get going, with your grandfather gone and your mother about to remarry, too much moving at once. You earned money fixing radios in the spring. These shifts in functioning and relationship fall close together around the loss, and no one else's shifts show in these months.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      89,
+      3,
+      40,
+      146,
+      134,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      53,
+      172
+     ],
+     "name": "Desmond settling at Hollin Road, 1989\u20131994",
+     "reason": "Around Desmond settling with your mother and you in the rebuilt Hollin Road house in September 1989, from spring through to early 1994: your mother filled in your college forms and you underfunctioned, letting it happen; you liked late nights that were out of the ordinary; you dropped chess and debate as music took over; your sister Tara was born in July 1990; you leaned hard on Rafe and then lost him over the wrist injury; you were lost and low in January 1992; you were stung that your dad had never heard of the film you were making in early 1994 and your anxiety rose as you turned toward him; you tore through your coursework after Portugal and found your drive again. The shifts cluster around the household settling into a new shape with Desmond there, and your own functioning falling and rising again across those years, each step near another's in time.",
+     "change": null,
+     "openingId": 40
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      79
+     ],
+     "name": "Winifred found to have bowel cancer, 2001\u20132004",
+     "reason": "Around your grandmother Winifred found to have bowel cancer in 2001 or 2002, from September 2001 to early 2004: your running out of steam for performing began in September 2001, your anxiety rising and functioning falling; a disastrous audition in early 2002 left you done with performing and casting about for what came next; you were on poor terms with family and friends, your relationship with your parents shifting to distance; you left Thornbury for Gull Harbour in September 2002 and left Gull Harbour for Fenwick to live with Marisol in June 2003; you split with Marisol in October 2003 and sank into a deep depression; you could not face your family, your anxiety up and your relationship distant, while you relied on friends including Silas, Corbin and Hamish; you returned to Thornbury after the split and depression and bunked with friends rather than any relative; your anxiety dropped as you began swimming laps in January 2004, requested help from your parents with therapy costs and returned to your therapist Victor Halloran, your relationship and functioning shifting toward and up. Your grandmother died of bowel cancer in February 2004. The shifts cluster tightly around your burnout and her illness, with your moves away from home and the failed relationship falling within the same years, each one's trouble near another's.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      10,
+      179,
+      130
+     ],
+     "name": "Lorna's death, 2008\u20132010",
+     "reason": "Around your grandmother Lorna's death in January 2008, from January 2008 to January 2010: your grandfather Clifford died in January 2008, the year uncertain; you did four weeks building with Silas at Alder Creek in July 2008, too drained for conversation with your mother and your relationship distant; she pressed to visit you at the lodge and your anxiety rose as you turned toward her, then you kept the door shut on her and your relationship shifted to conflict; you left for nursing school in August 2008 and stopped speaking to your mother after the lodge visit, with every call costing too much and the silence holding for roughly a year; you began the nursing programme in September 2008 at Marlow Sound. Your aunt Imogen had a stroke in January 2009 with months of rehabilitation. Within this time your partner's family had a child born in August 2010. The clustering of shifts around your grandmother's death and your move to nursing school, with your mother's pressing and your cutoff, holds the period together.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Jonah's marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, from March 2017 to late October 2019: you saw your mother a bit less once Wren came along, your relationship easing off slightly; your cousin Alice was diagnosed with multiple sclerosis in October 2017; your sister Tara married James and they flew for a regional airline; in October 2019 your job steadied and paid well, your anxiety dropping, but you constantly felt you ought to be driving your projects forward and started a sleeping pill; you were aiming for shorter, more regular calls with your mother, your relationship shifting toward; a baby was on the way for your sister, Russell's first grandchild; Wren was swamped one thing after another through late October as her family gathered at the lake house for her mother's retirement, your anxiety rising and her functioning falling; you laid out a plan too strictly to settle her when she was swamped, overfunctioning with anxiety up; Wren talks with her father and brother all day with nothing happening to one that the others don't hear, your relationship to her family marked as fusion; she settled once the weekend had a plan and her functioning came back up; you awoke from the small hours at the lake weekend with no more sleep and could only pull back as the others rose, your symptom and anxiety up and your relationship to the family distant; Wren was anxious when you'd had no sleep at family occasions and long quiet drives home afterward. Your job steadying gave way within months to unease around Wren's family gatherings, and the shifts in your sleep and functioning cluster tightly around her family's intensity and closeness in those weeks.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1987: The shifts marked at this hint\u2014conflict with Desmond, warmth with Russell despite wanting his notice, and anxiety over chess\u2014are told with language marking the ordinary level (has always, forever, angling), so struck out they leave only one shift that counts, not enough in the diagram to choose a reading, and no change in the family on a known date sits among them to open a period.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "1998\u20131999: Two shifts count at this hint\u2014insomnia interfering and performing at your best\u2014but there is no change in who is in the family or in how a key member functions on a known date among these events to open a period; Joelle bonding with you is a relationship change, not a change in the family.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "2008\u20132010: The person drew a period covering ages 27 to 29, which are years 2000\u20132003, and this hint's events fall in 2008\u20132010, outside those years, so the hint is answered by the person's own period and a period of mine covers 2008\u20132010 already under cluster r4.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94
+     ],
+     "name": "Gordon's death, 1991\u20131992",
+     "reason": "Around your grandfather Gordon's death in June 1991, within the following months: you arrived at the conservatory in September and leaned hard on Rafe; a wrist injury stopped your playing in October and your anxiety rose with your functioning falling; you and Rafe clashed and he moved out in November; you were on your own, getting high and absorbed in fixing radios through the winter; by January 1992 you were lost and low, unable to get going. You earned money fixing radios in the spring. These shifts in functioning and relationship fall close together around the loss, with no one else's shifts showing in these months.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      79
+     ],
+     "name": "Winifred found to have bowel cancer, 2001\u20132004",
+     "reason": "Around your grandmother Winifred found to have bowel cancer in 2001 or 2002, from September 2001 to February 2004: your running out of steam for performing began in September 2001, your anxiety rising and functioning falling; a disastrous audition in early 2002 left you done with performing and casting about for what came next; you were on poor terms with family and friends, your relationship with your parents shifting to distance; you left Thornbury for Gull Harbour in September 2002 and left Gull Harbour for Fenwick to live with Marisol in June 2003; you split with Marisol in October 2003 and sank into a deep depression; you could not face your family, your anxiety up and your relationship distant, while you relied on friends including Silas, Corbin and Hamish; you returned to Thornbury after the split and depression and bunked with friends rather than any relative. Your grandmother died of bowel cancer in February 2004. The shifts cluster around your burnout and her illness, with your moves away from home and the failed relationship falling within the same years.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10
+     ],
+     "name": "Lorna's death, 2008\u20132009",
+     "reason": "Around your grandmother Lorna's death in January 2008, from January 2008 through August 2008: you did four weeks building with Silas at Alder Creek in July 2008, too drained for conversation with your mother and your relationship distant; she pressed to visit you at the lodge and your anxiety rose as you turned toward her, then you kept the door shut on her and your relationship shifted to conflict; you left for nursing school in August 2008 and stopped speaking to your mother after the lodge visit, with every call costing too much and the silence holding for roughly a year. The clustering of shifts around your grandmother's death and your move to nursing school, with your mother's pressing and your cutoff, holds the period together.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      115,
+      95,
+      97,
+      116,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Wren's mother's retirement gathering, 2019",
+     "reason": "Around Wren's mother's retirement party and family gathering at the lake in late October 2019: Wren was swamped one thing after another through late October, your anxiety rising and her functioning falling; you laid out a plan too strictly to settle her when she was swamped, overfunctioning with anxiety up; Wren talks with her father and brother all day with nothing happening to one that the others don't hear, your relationship to her family marked as fusion; she settled once the weekend had a plan and her functioning came back up; you awoke from the small hours at the lake weekend with no more sleep and could only pull back as the others rose, your symptom and anxiety up and your relationship to the family distant; Wren was anxious when you'd had no sleep at family occasions. Within months your job had steadied, but unease around her family gatherings followed, with shifts in your sleep and functioning clustering tightly around her family's intensity in those weeks.",
+     "change": null,
+     "openingId": 197
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1987: The shifts marked at this hint\u2014conflict with Desmond, warmth with Russell despite wanting his notice, and anxiety over chess\u2014are told with language marking the ordinary level (has always, forever, angling), so struck out they leave only one shift that counts, not enough in the diagram to choose a reading, and no change in the family on a known date sits among them to open a period.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "1989\u20131994: This span shares days with the person's own period 'the year I left home' (1991\u20131994); the events before 1991 stand apart by more than a year of quiet and do not make a period by themselves.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "1998\u20131999: Two shifts count at this hint\u2014insomnia interfering and performing at your best\u2014but there is no change in who is in the family or in how a key member functions on a known date among these events to open a period; Joelle bonding with you is a relationship change, not a change in the family.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "2001\u20132004: This span shares days with the person's own period 'the long slump' (2000\u20132003); a cluster already holds the overlapping years.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "2008\u20132010: A cluster already holds 2008\u20132009 around Lorna's death; the remaining events at this hint in 2009\u20132010 do not pile up closely enough to form a period by themselves.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "2017\u20132019: A cluster already holds the period around Wren's mother's retirement gathering in late October 2019; the events before October 2019 are scattered across more than two years without close piling and do not form a period.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Gordon's death, 1991\u20131992\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period 'Desmond settling at Hollin Road, 1989\u20131994' shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period 'Winifred found to have bowel cancer, 2001\u20132004' shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: cause: Period \"Jonah's marriage to Wren, 2017\u20132019\" says one event brought about another ('drives'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: unknown_event: Period \"Gordon's death, 1991\u20131992\" opens at event 78, which is not one of its events.",
+  "answer 2: unknown_event: Period 'Winifred found to have bowel cancer, 2001\u20132004' opens at event 176, which is not one of its events.",
+  "answer 2: unknown_event: Period \"Wren's mother's retirement gathering, 2019\" opens at event 197, which is not one of its events.",
+  "answer 2: declined: Run r1 (1987-01-12 to 1987-09-12) has 3 shifts that count and was declined: 1987: The shifts marked at this hint\u2014conflict with Desmond, warmth with Russell despite wanting his notice, and anxiety over chess\u2014are told with language marking the ordinary level (has always, forever, angling), so struck out they leave only one shift that counts, not enough in the diagram to choose a reading, and no change in the family on a known date sits among them to open a period.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: Two shifts count at this hint\u2014insomnia interfering and performing at your best\u2014but there is no change in who is in the family or in how a key member functions on a known date among these events to open a period; Joelle bonding with you is a relationship change, not a change in the family."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Lorna's death, 2008",
+   "summary": "Around your grandmother Lorna's death in January 2008, from January 2008 through August 2008: you did four weeks building with Silas at Alder Creek in July 2008, too drained for conversation with your mother and your relationship distant; she pressed to visit you at the lodge and your anxiety rose as you turned toward her, then you kept the door shut on her and your relationship shifted to conflict; you left for nursing school in August 2008 and stopped speaking to your mother after the lodge visit, with every call costing too much and the silence holding for roughly a year. The clustering of shifts around your grandmother's death and your move to nursing school, with your mother's pressing and your cutoff, holds the period together.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-09-11",
+   "name": "Lorna's death, 2008",
+   "source": "model",
+   "reason": "Around your grandmother Lorna's death in January 2008, from January 2008 through August 2008: you did four weeks building with Silas at Alder Creek in July 2008, too drained for conversation with your mother and your relationship distant; she pressed to visit you at the lodge and your anxiety rose as you turned toward her, then you kept the door shut on her and your relationship shifted to conflict; you left for nursing school in August 2008 and stopped speaking to your mother after the lodge visit, with every call costing too much and the silence holding for roughly a year. The clustering of shifts around your grandmother's death and your move to nursing school, with your mother's pressing and your cutoff, holds the period together.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c2",
+   "title": "the year I left home",
+   "summary": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1991-03-12",
+   "endDate": "1994-01-12",
+   "name": "the year I left home",
+   "source": "user",
+   "reason": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c3",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 34,
+   "fp": 3,
+   "fn": 7,
+   "precision": 0.918918918918919,
+   "recall": 0.8292682926829268,
+   "f1": 0.8717948717948718
+  },
+  "openings": [
+   1,
+   3
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.062081
+}

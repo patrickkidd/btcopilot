@@ -1,0 +1,268 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      134,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      53,
+      172
+     ],
+     "name": "Your grandfather Gordon's death, 1989\u20131994",
+     "reason": "Around your grandfather Gordon's stroke in June 1991, within the following three years: your mother and Desmond settled in the rebuilt Hollin Road house in September 1989 as your stepfather's children joined the household; your grandfather died that June; you leaned hard on Rafe once you began at Wexley Conservatory in September 1991, then the two of you clashed when a wrist injury stopped your playing in October; you grew high and absorbed in fixing radios through the winter, then lost and low by January 1992, unable to get your footing with your grandfather gone and your mother about to remarry; your grandmother Winifred was treated for a thyroid tumour around the time of his death; you returned to performing and won competitions by 1999, though insomnia began getting in the way by then. The shifts across these years pile up around your grandfather's death and the household upheaval that surrounded it.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      107,
+      108,
+      109,
+      179
+     ],
+     "name": "Your grandmother Winifred's death, 2001\u20132004",
+     "reason": "Around your grandmother Winifred being found to have bowel cancer in 2001 or 2002, within the following two years: you were running out of steam for performing and grew less content by the month starting in September 2001; you had a disastrous audition for the national orchestra in early 2002 and were done with performing; you grew distant from your parents and left Thornbury for Gull Harbour in September 2002; you met Marisol at a winter party in early 2003 and moved to Fenwick to live with her by June 2003; you split from her within the year and sank into a deep depression once you returned to Thornbury that winter; you could not face your family and relied, gingerly, on friends instead; your aunt Imogen had a stroke in 2009 as the medical troubles in your mother's side of the family gathered pace. These shifts in your functioning, your distance from your parents, and your moves pile up around your grandmother's cancer diagnosis and her death in February 2004.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179,
+      130
+     ],
+     "name": "Your grandmother Lorna's death, 2008\u20132010",
+     "reason": "Around your grandmother Lorna's death in January 2008, within the following two years: you moved to Alder Creek for four weeks building with Silas in July 2008 to rest before nursing school; you grew too drained for conversation with your mother and could barely manage a phone call; she pressed to visit you there, and when she came you kept the door shut on her; you left for nursing school in Marlow Sound in August 2008 and stopped speaking to your mother when you moved, a silence that held for roughly a year; your aunt Imogen had a stroke in 2009. Your distance from your mother, the conflict at Alder Creek, and your cutoff from her gathered around the time of your grandmother's death and your move to nursing school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within the following three years: you saw your mother a bit less once Wren came along; your cousin Alice was diagnosed with multiple sclerosis in her forties in October 2017; your sister Tara married and had a baby on the way by October 2019; your partner's cousin Leo returned to Danfield with his family nearby by August 2019; in October 2019 you felt constantly that you ought to be driving your projects forward and started a sleeping pill though sleep itself improved little; you aimed for shorter, more regular calls with your mother to soften the distance that piles up; at her family's retirement party at the lake house in October, Wren was swamped with one thing after another and you overfunctioned laying out a plan to settle her, and then you awoke from the small hours with no more sleep while the others rose. The shifts in your anxiety, your relationship with your mother, and your functioning around Wren's family pile up around your marriage and the months that followed.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1987: One shift that counts sits beside your stepfather's separation from your mother in 1987, your anxiety about making the chess squad; a second shift alone is not enough in the diagram to choose a reading, and no change in the family on a known date opens this hint.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "1998\u20131999: The two shifts that count\u2014your insomnia beginning to interfere and your playing at its best\u2014sit on either side of your separation from Joelle in July 1999; only one shift, the separation itself, is a change in the family on a known date, and your own moves before and after it are not a period.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: merged: Period \"Your grandmother Lorna's death, 2008\u20132010\" shares days with \"Your grandmother Winifred's death, 2001\u20132004\" and is merged into it.",
+  "answer 1: declined: Run r1 (1987-01-12 to 1987-09-12) has 3 shifts that count and was declined: 1987: One shift that counts sits beside your stepfather's separation from your mother in 1987, your anxiety about making the chess squad; a second shift alone is not enough in the diagram to choose a reading, and no change in the family on a known date opens this hint.",
+  "answer 1: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: The two shifts that count\u2014your insomnia beginning to interfere and your playing at its best\u2014sit on either side of your separation from Joelle in July 1999; only one shift, the separation itself, is a change in the family on a known date, and your own moves before and after it are not a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Gordon's death, 1989\u20131994",
+   "summary": "Around your grandfather Gordon's stroke in June 1991, within the following three years: your mother and Desmond settled in the rebuilt Hollin Road house in September 1989 as your stepfather's children joined the household; your grandfather died that June; you leaned hard on Rafe once you began at Wexley Conservatory in September 1991, then the two of you clashed when a wrist injury stopped your playing in October; you grew high and absorbed in fixing radios through the winter, then lost and low by January 1992, unable to get your footing with your grandfather gone and your mother about to remarry; your grandmother Winifred was treated for a thyroid tumour around the time of his death; you returned to performing and won competitions by 1999, though insomnia began getting in the way by then. The shifts across these years pile up around your grandfather's death and the household upheaval that surrounded it.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    146,
+    134,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    53,
+    172
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1994-01-12",
+   "name": "Your grandfather Gordon's death, 1989\u20131994",
+   "source": "model",
+   "reason": "Around your grandfather Gordon's stroke in June 1991, within the following three years: your mother and Desmond settled in the rebuilt Hollin Road house in September 1989 as your stepfather's children joined the household; your grandfather died that June; you leaned hard on Rafe once you began at Wexley Conservatory in September 1991, then the two of you clashed when a wrist injury stopped your playing in October; you grew high and absorbed in fixing radios through the winter, then lost and low by January 1992, unable to get your footing with your grandfather gone and your mother about to remarry; your grandmother Winifred was treated for a thyroid tumour around the time of his death; you returned to performing and won competitions by 1999, though insomnia began getting in the way by then. The shifts across these years pile up around your grandfather's death and the household upheaval that surrounded it.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c2",
+   "title": "Your grandmother Winifred's death, 2001\u20132010",
+   "summary": "Around your grandmother Winifred being found to have bowel cancer in 2001 or 2002, within the following two years: you were running out of steam for performing and grew less content by the month starting in September 2001; you had a disastrous audition for the national orchestra in early 2002 and were done with performing; you grew distant from your parents and left Thornbury for Gull Harbour in September 2002; you met Marisol at a winter party in early 2003 and moved to Fenwick to live with her by June 2003; you split from her within the year and sank into a deep depression once you returned to Thornbury that winter; you could not face your family and relied, gingerly, on friends instead; your aunt Imogen had a stroke in 2009 as the medical troubles in your mother's side of the family gathered pace. These shifts in your functioning, your distance from your parents, and your moves pile up around your grandmother's cancer diagnosis and her death in February 2004.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    107,
+    108,
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10,
+    179,
+    130
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2010-01-12",
+   "name": "Your grandmother Winifred's death, 2001\u20132010",
+   "source": "model",
+   "reason": "Around your grandmother Winifred being found to have bowel cancer in 2001 or 2002, within the following two years: you were running out of steam for performing and grew less content by the month starting in September 2001; you had a disastrous audition for the national orchestra in early 2002 and were done with performing; you grew distant from your parents and left Thornbury for Gull Harbour in September 2002; you met Marisol at a winter party in early 2003 and moved to Fenwick to live with her by June 2003; you split from her within the year and sank into a deep depression once you returned to Thornbury that winter; you could not face your family and relied, gingerly, on friends instead; your aunt Imogen had a stroke in 2009 as the medical troubles in your mother's side of the family gathered pace. These shifts in your functioning, your distance from your parents, and your moves pile up around your grandmother's cancer diagnosis and her death in February 2004.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c3",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "Around your marriage to Wren in March 2017, within the following three years: you saw your mother a bit less once Wren came along; your cousin Alice was diagnosed with multiple sclerosis in her forties in October 2017; your sister Tara married and had a baby on the way by October 2019; your partner's cousin Leo returned to Danfield with his family nearby by August 2019; in October 2019 you felt constantly that you ought to be driving your projects forward and started a sleeping pill though sleep itself improved little; you aimed for shorter, more regular calls with your mother to soften the distance that piles up; at her family's retirement party at the lake house in October, Wren was swamped with one thing after another and you overfunctioned laying out a plan to settle her, and then you awoke from the small hours with no more sleep while the others rose. The shifts in your anxiety, your relationship with your mother, and your functioning around Wren's family pile up around your marriage and the months that followed.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202,
+    151
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-26",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your marriage to Wren in March 2017, within the following three years: you saw your mother a bit less once Wren came along; your cousin Alice was diagnosed with multiple sclerosis in her forties in October 2017; your sister Tara married and had a baby on the way by October 2019; your partner's cousin Leo returned to Danfield with his family nearby by August 2019; in October 2019 you felt constantly that you ought to be driving your projects forward and started a sleeping pill though sleep itself improved little; you aimed for shorter, more regular calls with your mother to soften the distance that piles up; at her family's retirement party at the lake house in October, Wren was swamped with one thing after another and you overfunctioned laying out a plan to settle her, and then you awoke from the small hours with no more sleep while the others rose. The shifts in your anxiety, your relationship with your mother, and your functioning around Wren's family pile up around your marriage and the months that followed.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.6666666666666666,
+   "f1": 0.8
+  },
+  "members": {
+   "tp": 24,
+   "fp": 19,
+   "fn": 7,
+   "precision": 0.5581395348837209,
+   "recall": 0.7741935483870968,
+   "f1": 0.6486486486486487
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "hypotheses": 1,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "event F1 0.65 under 0.7"
+ ],
+ "cost": 0.02634
+}

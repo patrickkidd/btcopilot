@@ -1,0 +1,111 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather Amos dying in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her distance from your father over it by May 1988, your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts cluster around the death and the months after, with your mother's earlier money worry and distance from your father forming the backdrop to the family's trouble when your grandfather died.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della told she had breast cancer, 1993\u20131996",
+     "reason": "You left home for college in September 1993, your migraines began by March 1994, you moved toward your brother by calling him most nights by April 1994, your mother was told she had breast cancer in February 1995, you moved away from your brother by June 1995 and stopped calling home by February 1996. Your own symptoms and your shifting moves toward and away from your brother, alongside your mother's diagnosis, sit close together in these years, and no one else's shifts show in these months.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos dying in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her distance from your father over it by May 1988, your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts cluster around the death and the months after, with your mother's earlier money worry and distance from your father forming the backdrop to the family's trouble when your grandfather died.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos dying in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her distance from your father over it by May 1988, your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts cluster around the death and the months after, with your mother's earlier money worry and distance from your father forming the backdrop to the family's trouble when your grandfather died.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "summary": "You left home for college in September 1993, your migraines began by March 1994, you moved toward your brother by calling him most nights by April 1994, your mother was told she had breast cancer in February 1995, you moved away from your brother by June 1995 and stopped calling home by February 1996. Your own symptoms and your shifting moves toward and away from your brother, alongside your mother's diagnosis, sit close together in these years, and no one else's shifts show in these months.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "source": "model",
+   "reason": "You left home for college in September 1993, your migraines began by March 1994, you moved toward your brother by calling him most nights by April 1994, your mother was told she had breast cancer in February 1995, you moved away from your brother by June 1995 and stopped calling home by February 1996. Your own symptoms and your shifting moves toward and away from your brother, alongside your mother's diagnosis, sit close together in these years, and no one else's shifts show in these months.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.009984
+}

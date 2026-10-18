@@ -1,0 +1,386 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      78,
+      39,
+      53
+     ],
+     "name": "Jonah's move to the conservatory, 1991\u20131992",
+     "reason": "Around his start at Wexley Conservatory in September 1991, within months: a wrist injury that stopped his playing and left him anxious and unable to function, a blow-up with his close friend Rafe who moved out, retreat into his room getting high and absorbed in radios, and a fall into feeling lost and low. His grandfather Gordon died in June 1991, and his mother remarried that autumn; with his grandfather gone and his footing gone, he had no stability. By spring 1992 he was earning money fixing radios and had some traction, though the bleak year at community college followed.",
+     "change": null,
+     "openingId": 88
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      134,
+      171,
+      53
+     ],
+     "name": "Desmond's move to Quarry Lane and the household rebuild, 1989\u20131994",
+     "reason": "Around April 1989 when Desmond took a rental on Quarry Lane while the Hollin Road house was rebuilt, within the years that follow: Jonah's late nights started that autumn and grew through his teens, he settled in the rebuilt house that fall with his mother and Desmond and Desmond's two children, loud and cramped, his mother filled in his college forms without his say, and in early 1994 he was stung that his father had never heard of the film he was making. His grandfather Clifford returned to the family around the same time the move began. The shifts in these years are Jonah's own, and no one else's shows then.",
+     "change": null,
+     "openingId": 194
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      104,
+      105
+     ],
+     "name": "Jonah's burnout and the failed audition, 2001\u20132004",
+     "reason": "Around September 2001 when Jonah's performing began to lose its hold and his anxiety rose, within the months and years that follow: his grandmother Winifred was found to have bowel cancer in 2001 or 2002, a disastrous audition for the national orchestra in early 2002 ended his performer's life, he fell into distance on poor terms with family and friends, left Thornbury for Gull Harbour and then met Marisol, moved to Fenwick with her by mid-2003, split from her that October and sank into a deep depression, returned to Thornbury and could not face his family, relied on friends Corbin, Dale, and Hamish instead. His grandmother spent her final months in his parents' home in autumn 2003 and died in February 2004. The period settles as he began swimming, returned to his therapist Victor Halloran, and requested his parents' help with therapy costs in January 2004.",
+     "change": null,
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Lorna's death and Jonah's cutoff from his mother, 2008",
+     "reason": "Around January 2008 when his grandmother Lorna died, within months: Jonah spent four weeks building with Silas at Alder Creek before nursing school, was too drained for conversation with his mother there, she pressed him to visit when the timing was wrong and the visit went badly with the door shut against her, and when he left for nursing school at Marlow Sound in August 2008 he stopped speaking to her, a silence that held for roughly a year. His other grandmother Winifred had died four years before; the cluster of deaths in his extended family sits with his move and the cutoff. The events before the silence show the gathering strain; the silence itself marks where he settled into distance.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Wren's family gathering and Jonah's sleep crisis, 2019\u20132020",
+     "reason": "Around October 2019 when Wren's mother Frances retired and the family gathered at the lake house, within days: Wren was swamped with events one after another and her symptom and anxiety rose, her functioning fell, Jonah overfunctioned laying out a plan to settle her, Wren's close fusion with her father Hugo and brother Leo meant every bit of news traveled between them, she settled once the weekend had a plan and the dinner went well, but Jonah awoke from the small hours at the lake with no more sleep and could only pull back as the others rose, his symptom and anxiety spiked and he kept his distance, and Wren became anxious when he'd had no sleep at family occasions with long quiet drives home afterward. Jonah's marriage to Wren in March 2017 had begun a slight easing of his contact with his mother; the lake weekend brought his sleep difficulties into sharp focus within Wren's family.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year he left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1987: Events 41, 51, 144, 145 fall around Jonah's secondary school start and his parents' separation, but strike event 41 told as 'has always clashed' and event 51 told as 'warm on the whole, though forever angling'; both carry the ordinary level, not a departure. Two shifts remain: his mother's separation from his stepfather Desmond, marked `neverOpens`, and his anxiety at making the chess squad. A separation is an event, not a shift; not enough in the diagram to choose a reading.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "1998\u20131999: Events 11, 4, 173, 12, 22 gather around Jonah's bonding with Joelle and their split months later. Event 4 is his insomnia beginning to interfere, event 173 is his functioning rising as he played the best he ever had and won competitions. Event 12 is the separation itself, an event, not a shift. Strike event 22, Jonah turning toward his therapist Victor Halloran, marked `neverOpens`. One shift remains, event 4 on insomnia, a single reaction; not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "2008: Events 61, 64, 111, 112, 113, 114, 109, 9, 10, 179, 130 show a mix of Jonah's story and the extended family. Event 61 is Lorna's death. Event 64 is Clifford's death, marked `neverOpens`. Strike event 9 and event 10, Jonah's move and nursing school start, marked `neverOpens`. Event 130 is a birth to Leo and Bree, marked `neverOpens`. Events 112, 113, 114 are Jonah's distance from his mother, marked `neverOpens`. Event 179 is Imogen's stroke, a symptom rise in the extended family. Jonah's cutoff from his mother stands in event 109. The period is drawn as one cluster under Lorna's death opening it in 2008.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "2017\u20132019: Events 29, 115, 190, 135, 136, 163, 150, 192, 96, 129, 95, 97, 116, 137, 195, 198, 199, 200, 201, 202, 151 span more than two years of Jonah's married life and extended family events. Strike event 96, anxiety down and his job steadying, marked `neverOpens`. Strike event 97, his sleeping pill, marked `neverOpens`. Strike event 115, his contact with his mother easing, marked `neverOpens`. Strike event 116, aiming for shorter calls with his mother, marked `neverOpens`. Event 135, his sister's airline work, marked `neverOpens`. Event 136, his sister's wedding, marked `neverOpens`. Event 163, a visit with his cousin Alice, marked `neverOpens`. Event 151, Hal driving his mother to the coast, marked `neverOpens`. Strike event 29, Jonah's marriage, an event, not a shift. Events remain: 190 Alice's MS diagnosis, 150 Imogen lashing out, 192 Maureen's heart check, 137 his sister's pregnancy, 195 Wren swamped, 198 Jonah overfunctioning, 199 Wren's fusion, 200 Wren settling, 201 Jonah's sleep crisis, 202 Wren anxious. The period around Frances's retirement and the lake house weekend is drawn as one cluster.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      78,
+      39,
+      53
+     ],
+     "name": "Jonah's start at Wexley Conservatory, 1991\u20131992",
+     "reason": "Around his beginning at Wexley Conservatory in September 1991, within months: a wrist injury that stopped his playing left him anxious and unable to function, a blow-up with his close friend Rafe who moved out, retreat into his room getting high and absorbed in radios, and a fall into feeling lost and low. His grandfather Gordon died in June 1991, and his mother remarried that autumn; with his grandfather gone and his footing gone, he had no stability. By spring 1992 he was earning money fixing radios and had some traction, though the bleak year at community college followed.",
+     "change": null,
+     "openingId": 88
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      134,
+      171,
+      53
+     ],
+     "name": "Desmond taking a rental on Quarry Lane, 1989\u20131994",
+     "reason": "Around April 1989 when Desmond took a rental on Quarry Lane while the Hollin Road house was rebuilt, within the years that follow: Jonah's late nights started that autumn and grew through his teens, he settled in the rebuilt house that fall with his mother and Desmond and Desmond's two children, loud and cramped, his mother filled in his college forms without his say, and in early 1994 he was stung that his father had never heard of the film he was making. His grandfather Clifford returned to the family around the same time the move began. The shifts in these years are Jonah's own, and no one else's shows then.",
+     "change": null,
+     "openingId": 194
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      104,
+      105
+     ],
+     "name": "Jonah's performing losing its hold, 2001\u20132004",
+     "reason": "Around September 2001 when Jonah's performing began to lose its hold and his anxiety rose, within the months and years that follow: his grandmother Winifred was found to have bowel cancer in 2001 or 2002, a disastrous audition for the national orchestra in early 2002 ended his performer's life, he fell into distance on poor terms with family and friends, left Thornbury for Gull Harbour and then met Marisol, moved to Fenwick with her by mid-2003, split from her that October and sank into a deep depression, returned to Thornbury and could not face his family, relied on friends Corbin, Dale, and Hamish instead. His grandmother spent her final months in his parents' home in autumn 2003 and died in February 2004. The period settles as he began swimming, returned to his therapist Victor Halloran, and requested his parents' help with therapy costs in January 2004.",
+     "change": null,
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      114,
+      109
+     ],
+     "name": "Lorna's death, 2008",
+     "reason": "Around January 2008 when his grandmother Lorna died, within months: Jonah spent four weeks building with Silas at Alder Creek before nursing school and was too drained for conversation with his mother there, she pressed him to visit when the timing was wrong and the visit went badly with the door shut against her, and when he left for nursing school at Marlow Sound in August 2008 he stopped speaking to her, a silence that held for roughly a year. The events before the silence show the gathering strain; the silence itself marks where he settled into distance.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Frances's retirement at the lake house, 2019",
+     "reason": "Around October 2019 when Wren's mother Frances retired and the family gathered at the lake house, within days: Wren was swamped with events one after another and her symptom and anxiety rose, her functioning fell, Jonah overfunctioned laying out a plan to settle her, Wren's close fusion with her father Hugo and brother Leo meant every bit of news travelled between them, she settled once the weekend had a plan and the dinner went well, but Jonah awoke from the small hours at the lake with no more sleep and could only pull back as the others rose, his symptom and anxiety spiked and he kept his distance, and Wren became anxious when he'd had no sleep at family occasions with long quiet drives home afterward.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year he left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1987: Events 41 and 51 are told as how things always were\u2014'has always clashed' and 'warm on the whole, though forever angling'\u2014and carry the ordinary level, not a departure. Strike both. Event 144 is the separation itself, an event not a shift; event 145 is Jonah's anxiety at making the chess squad. One shift remains, a single reaction; not enough in the diagram to choose a reading.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "1998\u20131999: Events gather around Jonah's relationship with Joelle and their split. Event 4 is his insomnia beginning; event 173 is his functioning rising as he played best and won competitions; event 12 is the separation, an event not a shift; event 22 is marked `neverOpens`. Strike event 22. One shift remains in event 4, a single reaction; not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "2008: Events 9 and 10, Jonah's move and nursing school start, are marked `neverOpens`. Event 64, Clifford's death, is marked `neverOpens`. Event 130, a birth to Leo and Bree, is marked `neverOpens`. Event 113 is marked `neverOpens`. The only change in the family on a known date among the remaining events is event 61, Lorna's death; the period is drawn as one cluster.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "2017\u20132019: Events 96, 97, 115, 116, 135, 136, 163, 151 are marked `neverOpens`. Event 29, Jonah's marriage, is an event not a shift. The remaining shifts cluster around October 2019 when Frances retired and the family gathered at the lake house; the period is drawn as one cluster.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period \"Jonah's burnout and the failed audition, 2001\u20132004\" is named by the person's trouble (['audition']); name it by the change in the family and its years.",
+  "answer 1: symptom_name: Period \"Lorna's death and Jonah's cutoff from his mother, 2008\" is named by the person's trouble (['cutoff']); name it by the change in the family and its years.",
+  "answer 1: cause: Period \"Wren's family gathering and Jonah's sleep crisis, 2019\u20132020\" says one event brought about another ('drives'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 1: merged: Period \"Desmond's move to Quarry Lane and the household rebuild, 1989\u20131994\" shares days with \"Jonah's move to the conservatory, 1991\u20131992\" and is merged into it.",
+  "answer 2: symptom_name: Period \"Jonah's performing losing its hold, 2001\u20132004\" is named by the person's trouble (['performing']); name it by the change in the family and its years.",
+  "answer 2: theirs: Period 'A change in the family, 2001\u20132003' shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: cause: Period \"Frances's retirement at the lake house, 2019\" says one event brought about another ('drives'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: no_reason: Every period needs a reason.",
+  "answer 2: merged: Period 'Desmond taking a rental on Quarry Lane, 1989\u20131994' shares days with \"Jonah's start at Wexley Conservatory, 1991\u20131992\" and is merged into it.",
+  "answer 2: renamed: The person's period 'the year he left home' is not in their own words.",
+  "answer 2: declined: Run r1 (1987-01-12 to 1987-09-12) has 3 shifts that count and was declined: 1987: Events 41 and 51 are told as how things always were\u2014'has always clashed' and 'warm on the whole, though forever angling'\u2014and carry the ordinary level, not a departure. Strike both. Event 144 is the separation itself, an event not a shift; event 145 is Jonah's anxiety at making the chess squad. One shift remains, a single reaction; not enough in the diagram to choose a reading.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: Events gather around Jonah's relationship with Joelle and their split. Event 4 is his insomnia beginning; event 173 is his functioning rising as he played best and won competitions; event 12 is the separation, an event not a shift; event 22 is marked `neverOpens`. Strike event 22. One shift remains in event 4, a single reaction; not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Jonah's start at Wexley Conservatory, 1989\u20131994",
+   "summary": "Around his beginning at Wexley Conservatory in September 1991, within months: a wrist injury that stopped his playing left him anxious and unable to function, a blow-up with his close friend Rafe who moved out, retreat into his room getting high and absorbed in radios, and a fall into feeling lost and low. His grandfather Gordon died in June 1991, and his mother remarried that autumn; with his grandfather gone and his footing gone, he had no stability. By spring 1992 he was earning money fixing radios and had some traction, though the bleak year at community college followed.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    134,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    171,
+    39,
+    53
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1994-01-12",
+   "name": "Jonah's start at Wexley Conservatory, 1989\u20131994",
+   "source": "model",
+   "reason": "Around his beginning at Wexley Conservatory in September 1991, within months: a wrist injury that stopped his playing left him anxious and unable to function, a blow-up with his close friend Rafe who moved out, retreat into his room getting high and absorbed in radios, and a fall into feeling lost and low. His grandfather Gordon died in June 1991, and his mother remarried that autumn; with his grandfather gone and his footing gone, he had no stability. By spring 1992 he was earning money fixing radios and had some traction, though the bleak year at community college followed.",
+   "setAside": false,
+   "openingEventId": 88
+  },
+  {
+   "id": "c2",
+   "title": "Lorna's death, 2008",
+   "summary": "Around January 2008 when his grandmother Lorna died, within months: Jonah spent four weeks building with Silas at Alder Creek before nursing school and was too drained for conversation with his mother there, she pressed him to visit when the timing was wrong and the visit went badly with the door shut against her, and when he left for nursing school at Marlow Sound in August 2008 he stopped speaking to her, a silence that held for roughly a year. The events before the silence show the gathering strain; the silence itself marks where he settled into distance.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    114,
+    109
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-08-11",
+   "name": "Lorna's death, 2008",
+   "source": "model",
+   "reason": "Around January 2008 when his grandmother Lorna died, within months: Jonah spent four weeks building with Silas at Alder Creek before nursing school and was too drained for conversation with his mother there, she pressed him to visit when the timing was wrong and the visit went badly with the door shut against her, and when he left for nursing school at Marlow Sound in August 2008 he stopped speaking to her, a silence that held for roughly a year. The events before the silence show the gathering strain; the silence itself marks where he settled into distance.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c3",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 29,
+   "fp": 6,
+   "fn": 12,
+   "precision": 0.8285714285714286,
+   "recall": 0.7073170731707317,
+   "f1": 0.7631578947368421
+  },
+  "openings": [
+   1,
+   3
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'the year I left home' is not stored as theirs"
+ ],
+ "cost": 0.063146
+}

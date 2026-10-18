@@ -1,0 +1,390 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond's separation from your mother, 1987",
+     "reason": "Around early 1987 when your stepfather left over the question of a baby: your distance from him, your pull toward your dad, your anxiety rising as you made the city chess squad, and the separation itself that autumn. These shifts sit within months of each other around the same change in your household.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      53
+     ],
+     "name": "Your grandfather Gordon's death, 1989\u20131992",
+     "reason": "From 1989 when your grandfather came back into the family and your stepfather moved onto Quarry Lane, through 1992 when he died: your late nights and symptom rising, your underfunctioning on college forms, your fusion with Rafe at the conservatory, then your wrist injury and blow-up with him, your anxiety climbing as you were on your own and high, your low functioning with your grandfather gone and your mother about to remarry. Your mother's thyroid tumour sat in these years as well. The shifts pile up around the loss of your grandfather and the household changes around the rebuild, each one close to the next.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      109
+     ],
+     "name": "Your grandmother Winifred's death, 2001\u20132008",
+     "reason": "From 2001 when you began to lose steam for performing and your grandmother was found to have bowel cancer, through your disastrous audition in 2002, your distance from your parents, your move away and your relationship with Marisol that ended within the year, your deep depression that winter: your anxiety and poor functioning built through these years as you were on poor terms with family, drawn toward Marisol then lost to her, then relied on friends while you could not face your parents. When you moved to nursing school in 2008 you stopped speaking to your mother; the silence held roughly a year. Your grandmother died in early 2004 within this span. Each shift sits near others across these years.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around January 2008 when your grandmother died and through the summer: you were too drained for conversation with your mother at Alder Creek, she pressed to visit and you kept the door shut on her, then you stopped speaking to her when you moved to nursing school that August. The cutoff began in the months around her death. No one else's shifts show in these months beside your mother's moves toward you.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "From your wedding in March 2017 through October 2019: you saw your mother a bit less once Wren came along, your anxiety rising as you felt you ought to drive projects forward, you started a sleeping pill, you aimed for shorter regular calls with your mother to soften the distance. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. In autumn 2019 Wren was swamped with one thing after another\u2014a street party, a fundraiser, the drive to the lake for her mother's retirement\u2014her symptom and anxiety rose and her functioning dropped; you overfunctioned laying out a plan to settle her; she talks with her father and brother all day with nothing happening to one that the others don't hear. At the lake weekend you awoke from the small hours with no more sleep and could only pull back as the others rose; your symptom and anxiety rose, you distanced, and Wren grew anxious when you had no sleep at family occasions. The shifts cluster around your marriage and the friction between your need for distance and Wren's closeness with her family.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1998\u20131999: Two shifts that count remain after striking those told as how things always were, but there is no change in the family on a known date among the events\u2014your bonding with Joelle and your insomnia are your own, and the separation that follows them is also about you\u2014so not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond's separation from your mother, 1987",
+     "reason": "Around early 1987 when your stepfather left over the question of a baby: your distance from him, your pull toward your dad, your anxiety rising as you made the city chess squad, and the separation itself that autumn. These shifts sit within months of each other around the same change in your household.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      53
+     ],
+     "name": "Your grandfather Gordon's death, 1991\u20131992",
+     "reason": "From 1989 when your grandfather came back into the family and your stepfather moved onto Quarry Lane, through 1992 when he died: your late nights and symptom rising, your underfunctioning on college forms, your fusion with Rafe at the conservatory, then your wrist injury and blow-up with him, your anxiety climbing as you were on your own and high, your low functioning with your grandfather gone and your mother about to remarry. Your mother's thyroid tumour sat in these years as well. The shifts pile up around the loss of your grandfather and the household changes around the rebuild, each one close to the next.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      109
+     ],
+     "name": "Your grandmother Winifred's diagnosis with bowel cancer, 2001\u20132008",
+     "reason": "From 2001 when you began to lose steam for performing and your grandmother was found to have bowel cancer, through your disastrous audition in 2002, your distance from your parents, your move away and your relationship with Marisol that ended within the year, your deep depression that winter: your anxiety and poor functioning built through these years as you were on poor terms with family, drawn toward Marisol then lost to her, then relied on friends while you could not face your parents. When you moved to nursing school in 2008 you stopped speaking to your mother; the silence held roughly a year. Each shift sits near others across these years.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around January 2008 when your grandmother died and through the summer: you were too drained for conversation with your mother at Alder Creek in July, she pressed to visit and you kept the door shut on her, then you stopped speaking to her when you moved to nursing school that August. The cutoff began in the months around her death.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "From your wedding in March 2017 through October 2019: you saw your mother a bit less once Wren came along, your anxiety rising as you felt you ought to drive projects forward, you started a sleeping pill, you aimed for shorter regular calls with your mother to soften the distance. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. In autumn 2019 Wren was swamped with one thing after another\u2014a street party, a fundraiser, the drive to the lake for her mother's retirement\u2014her symptom and anxiety rose and her functioning dropped; you overfunctioned laying out a plan to settle her; she talks with her father and brother all day with nothing happening to one that the others don't hear. At the lake weekend you awoke from the small hours with no more sleep and could only pull back as the others rose; your symptom and anxiety rose, you distanced, and Wren grew anxious when you had no sleep at family occasions. The shifts cluster around your marriage and the friction between your need for distance and Wren's closeness with her family.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1998\u20131999: Two shifts that count remain after striking those told as how things always were, but there is no change in the family on a known date among the events\u2014your bonding with Joelle and your insomnia are your own, and the separation that follows them is also about you\u2014so not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period \"Your stepfather Desmond's separation from your mother, 1987\" is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 1: unknown_date: Period \"Your stepfather Desmond's separation from your mother, 1987\" opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 1: merged: Period \"Your grandmother Lorna's death, 2008\" shares days with \"Your grandmother Winifred's death, 2001\u20132008\" and is merged into it.",
+  "answer 2: symptom_name: Period \"Your stepfather Desmond's separation from your mother, 1987\" is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 2: unknown_date: Period \"Your stepfather Desmond's separation from your mother, 1987\" opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: merged: Period \"Your grandmother Lorna's death, 2008\" shares days with \"Your grandmother Winifred's diagnosis with bowel cancer, 2001\u20132008\" and is merged into it.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: Two shifts that count remain after striking those told as how things always were, but there is no change in the family on a known date among the events\u2014your bonding with Joelle and your insomnia are your own, and the separation that follows them is also about you\u2014so not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "A change in the family, 1987",
+   "summary": "Around early 1987 when your stepfather left over the question of a baby: your distance from him, your pull toward your dad, your anxiety rising as you made the city chess squad, and the separation itself that autumn. These shifts sit within months of each other around the same change in your household.",
+   "eventIds": [
+    41,
+    51,
+    144,
+    145
+   ],
+   "startDate": "1987-01-12",
+   "endDate": "1987-09-12",
+   "name": "A change in the family, 1987",
+   "source": "model",
+   "reason": "Around early 1987 when your stepfather left over the question of a baby: your distance from him, your pull toward your dad, your anxiety rising as you made the city chess squad, and the separation itself that autumn. These shifts sit within months of each other around the same change in your household.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "Your grandfather Gordon's death, 1989\u20131994",
+   "summary": "From 1989 when your grandfather came back into the family and your stepfather moved onto Quarry Lane, through 1992 when he died: your late nights and symptom rising, your underfunctioning on college forms, your fusion with Rafe at the conservatory, then your wrist injury and blow-up with him, your anxiety climbing as you were on your own and high, your low functioning with your grandfather gone and your mother about to remarry. Your mother's thyroid tumour sat in these years as well. The shifts pile up around the loss of your grandfather and the household changes around the rebuild, each one close to the next.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    53
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1994-01-12",
+   "name": "Your grandfather Gordon's death, 1989\u20131994",
+   "source": "model",
+   "reason": "From 1989 when your grandfather came back into the family and your stepfather moved onto Quarry Lane, through 1992 when he died: your late nights and symptom rising, your underfunctioning on college forms, your fusion with Rafe at the conservatory, then your wrist injury and blow-up with him, your anxiety climbing as you were on your own and high, your low functioning with your grandfather gone and your mother about to remarry. Your mother's thyroid tumour sat in these years as well. The shifts pile up around the loss of your grandfather and the household changes around the rebuild, each one close to the next.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c3",
+   "title": "Your grandmother Winifred's diagnosis with bowel cancer, 2001\u20132008",
+   "summary": "From 2001 when you began to lose steam for performing and your grandmother was found to have bowel cancer, through your disastrous audition in 2002, your distance from your parents, your move away and your relationship with Marisol that ended within the year, your deep depression that winter: your anxiety and poor functioning built through these years as you were on poor terms with family, drawn toward Marisol then lost to her, then relied on friends while you could not face your parents. When you moved to nursing school in 2008 you stopped speaking to your mother; the silence held roughly a year. Each shift sits near others across these years.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    61,
+    111,
+    112,
+    113,
+    114,
+    109
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2008-08-11",
+   "name": "Your grandmother Winifred's diagnosis with bowel cancer, 2001\u20132008",
+   "source": "model",
+   "reason": "From 2001 when you began to lose steam for performing and your grandmother was found to have bowel cancer, through your disastrous audition in 2002, your distance from your parents, your move away and your relationship with Marisol that ended within the year, your deep depression that winter: your anxiety and poor functioning built through these years as you were on poor terms with family, drawn toward Marisol then lost to her, then relied on friends while you could not face your parents. When you moved to nursing school in 2008 you stopped speaking to your mother; the silence held roughly a year. Each shift sits near others across these years.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c4",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "From your wedding in March 2017 through October 2019: you saw your mother a bit less once Wren came along, your anxiety rising as you felt you ought to drive projects forward, you started a sleeping pill, you aimed for shorter regular calls with your mother to soften the distance. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. In autumn 2019 Wren was swamped with one thing after another\u2014a street party, a fundraiser, the drive to the lake for her mother's retirement\u2014her symptom and anxiety rose and her functioning dropped; you overfunctioned laying out a plan to settle her; she talks with her father and brother all day with nothing happening to one that the others don't hear. At the lake weekend you awoke from the small hours with no more sleep and could only pull back as the others rose; your symptom and anxiety rose, you distanced, and Wren grew anxious when you had no sleep at family occasions. The shifts cluster around your marriage and the friction between your need for distance and Wren's closeness with her family.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202,
+    151
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-26",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "From your wedding in March 2017 through October 2019: you saw your mother a bit less once Wren came along, your anxiety rising as you felt you ought to drive projects forward, you started a sleeping pill, you aimed for shorter regular calls with your mother to soften the distance. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. In autumn 2019 Wren was swamped with one thing after another\u2014a street party, a fundraiser, the drive to the lake for her mother's retirement\u2014her symptom and anxiety rose and her functioning dropped; you overfunctioned laying out a plan to settle her; she talks with her father and brother all day with nothing happening to one that the others don't hear. At the lake weekend you awoke from the small hours with no more sleep and could only pull back as the others rose; your symptom and anxiety rose, you distanced, and Wren grew anxious when you had no sleep at family occasions. The shifts cluster around your marriage and the friction between your need for distance and Wren's closeness with her family.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 1,
+   "fn": 1,
+   "precision": 0.6666666666666666,
+   "recall": 0.6666666666666666,
+   "f1": 0.6666666666666666
+  },
+  "members": {
+   "tp": 22,
+   "fp": 11,
+   "fn": 9,
+   "precision": 0.6666666666666666,
+   "recall": 0.7096774193548387,
+   "f1": 0.6875
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "hypotheses": 1,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 1987' is the plain name the code fell back to",
+  "cluster F1 0.67 under 0.8",
+  "event F1 0.69 under 0.7"
+ ],
+ "cost": 0.051251
+}
