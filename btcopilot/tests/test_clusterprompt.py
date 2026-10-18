@@ -1,4 +1,4 @@
-"""The citation guard on the cluster detection prompt (R-0858).
+"""The citation guard on the cluster detection prompt (R-0856, R-0857).
 
 Every rule the private cluster prompt gives rests on a source, and every source
 is a row of the prompt's inventory (btcopilot-sources,
@@ -27,7 +27,9 @@ fragment it includes:
 
 Without a sops key these skip, as the other private prompt tests do; the
 checker's own rules, and the script that writes the ids file, are proven on
-invented text in every environment.
+invented text. The module carries the `conventions` marker, so CI runs it in
+the step that holds the key, and a local run passes with the key and skips the
+prompt's own checks cleanly without it.
 """
 
 import re
@@ -40,6 +42,8 @@ import pytest
 import bin.inventoryids as inventoryids
 from btcopilot import clusters, prompts
 from btcopilot.promptdir import PromptDir, key_present, read, split
+
+pytestmark = pytest.mark.conventions
 
 PROMPT = prompts.PRIVATE / "cluster.prompty"
 # Where an include resolves, in the loader's order.
@@ -182,7 +186,7 @@ def first_cited(rows: list[Line]) -> int:
 
 
 def test_every_instruction_line_of_the_cluster_prompt_names_its_sources(bodies):
-    # R-0858
+    # R-0856, R-0857
     ids = known()
     found = [
         f"{name}:{fault}"
@@ -193,7 +197,7 @@ def test_every_instruction_line_of_the_cluster_prompt_names_its_sources(bodies):
 
 
 def test_the_cluster_prompt_includes_its_three_fragments(bodies):
-    # R-0858
+    # R-0856, R-0857
     assert {
         "fragments/cluster_terms.md",
         "fragments/cluster_vocabulary.md",
@@ -202,19 +206,19 @@ def test_the_cluster_prompt_includes_its_three_fragments(bodies):
 
 
 def test_the_rendered_cluster_prompt_holds_no_comment(rendered):
-    # R-0858
+    # R-0856, R-0857
     assert "{#" not in rendered and "#}" not in rendered
     assert "{existing}" not in rendered and "{events}" not in rendered
 
 
 def test_no_banned_word_reaches_the_rendered_cluster_prompt(rendered):
-    # R-0858
+    # R-0856, R-0857
     found = banned(rendered)
     assert not found, f"{len(found)} banned words:\n" + "\n".join(found)
 
 
 def test_the_guard_flags_a_line_whose_citation_is_taken_out(bodies):
-    # R-0858
+    # R-0856, R-0857
     body, first = bodies[PROMPT.name]
     ids = known()
     rows = lines(body, first)
@@ -229,7 +233,7 @@ def test_the_guard_flags_a_line_whose_citation_is_taken_out(bodies):
 
 
 def test_the_guard_flags_a_misspelled_id(bodies):
-    # R-0858
+    # R-0856, R-0857
     body, first = bodies[PROMPT.name]
     ids = known()
     match = next(
@@ -266,7 +270,7 @@ A rule with an unclosed comment {# P-001
 
 
 def test_the_guard_reads_lines_as_its_rule_says():
-    # R-0858
+    # R-0856, R-0857
     assert faults(SAMPLE, SAMPLE_IDS, first=10) == [
         "16: no citation: The line after that is not covered by it.",
         "19: not inventory ids: P-01",
@@ -279,13 +283,13 @@ def test_the_guard_reads_lines_as_its_rule_says():
 
 
 def test_the_guard_reads_a_long_comment_as_closing_on_its_last_line():
-    # R-0858
+    # R-0856, R-0857
     text = "{# P-001;\n   S-002 #}\nA rule under a long citation.\nAn uncited one."
     assert faults(text, SAMPLE_IDS) == ["4: no citation: An uncited one."]
 
 
 def test_banned_words_are_found_outside_quotations_only():
-    # R-0858
+    # R-0856, R-0857
     text = (
         "The coach reads a run of events and groups them into a window.\n"
         'Records spanned years; "a run they named" stays; “a stretch” stays.\n'
@@ -339,7 +343,7 @@ SAMPLE_INVENTORY = """# The inventory
 
 
 def test_the_ids_are_section_one_only_sorted_by_prefix_then_number():
-    # R-0858
+    # R-0856, R-0857
     assert inventoryids.ids(SAMPLE_INVENTORY) == [
         "DOC-07",
         "DR-01",
@@ -353,25 +357,25 @@ def test_the_ids_are_section_one_only_sorted_by_prefix_then_number():
 
 
 def test_an_id_of_no_known_shape_stops_the_script():
-    # R-0858
+    # R-0856, R-0857
     with pytest.raises(ValueError, match="P-12 is not an inventory id shape"):
         inventoryids.ids(SAMPLE_INVENTORY.replace("| P-010 |", "| P-12 |"))
 
 
 def test_an_id_given_twice_stops_the_script():
-    # R-0858
+    # R-0856, R-0857
     with pytest.raises(ValueError, match="P-002 is given twice"):
         inventoryids.ids(SAMPLE_INVENTORY.replace("| P-010 |", "| P-002 |"))
 
 
 def test_an_inventory_with_no_section_one_stops_the_script():
-    # R-0858
+    # R-0856, R-0857
     with pytest.raises(ValueError, match="no ids found"):
         inventoryids.ids(SAMPLE_INVENTORY.replace("## 1.", "## One"))
 
 
 def test_check_says_stale_and_writes_nothing(tmp_path, monkeypatch):
-    # R-0858
+    # R-0856, R-0857
     inventory = tmp_path / "INVENTORY.md"
     inventory.write_text(SAMPLE_INVENTORY)
     ids_file = tmp_path / "inventory-ids.txt"
@@ -386,7 +390,7 @@ def test_check_says_stale_and_writes_nothing(tmp_path, monkeypatch):
 def test_with_no_path_the_inventory_is_read_under_the_corpus_setting(
     tmp_path, monkeypatch
 ):
-    # R-0858
+    # R-0856, R-0857
     monkeypatch.setenv(inventoryids.SOURCES, str(tmp_path))
     assert (
         inventoryids.inventory_path([]) == tmp_path / "research/clusters/INVENTORY.md"
@@ -397,7 +401,7 @@ def test_with_no_path_the_inventory_is_read_under_the_corpus_setting(
 
 
 def test_the_committed_ids_file_is_sorted_unique_and_of_the_known_shapes():
-    # R-0858
+    # R-0856, R-0857
     listed = inventoryids.IDS_FILE.read_text().splitlines()
     assert listed
     assert all(inventoryids.SHAPES.fullmatch(one) for one in listed)
