@@ -69,8 +69,8 @@
       177,
       178
      ],
-     "name": "Wilma moved into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990, within eighteen months: Nora and Wilma clashing over the children's bedtimes and meals, Sam working late and distancing from the conflict, Sam taking his mother's side, Owen having tantrums at preschool and being sent home twice, Wilma taking over Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, and Wilma moving to a flat in town by June 1991 where Nora's eczema cleared over the summer. The shifts show the strain of three generations in one house and the triangle that formed between Nora, Sam and Wilma.",
+     "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within eighteen months: Nora and Wilma clashing over the children's bedtimes and meals, Hollis working late and distancing from the conflict, Hollis taking his mother's side, Owen having tantrums at preschool and being sent home twice, Wilma taking over Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, and Wilma moving to a flat in town by June 1991 where Nora's eczema cleared over the summer. The shifts show the strain of three generations in one house and the triangle that formed between Nora, Hollis and Wilma.",
      "change": null,
      "openingId": 168
     }
@@ -164,8 +164,8 @@
   },
   {
    "id": "c4",
-   "title": "Wilma moved into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990, within eighteen months: Nora and Wilma clashing over the children's bedtimes and meals, Sam working late and distancing from the conflict, Sam taking his mother's side, Owen having tantrums at preschool and being sent home twice, Wilma taking over Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, and Wilma moving to a flat in town by June 1991 where Nora's eczema cleared over the summer. The shifts show the strain of three generations in one house and the triangle that formed between Nora, Sam and Wilma.",
+   "title": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within eighteen months: Nora and Wilma clashing over the children's bedtimes and meals, Hollis working late and distancing from the conflict, Hollis taking his mother's side, Owen having tantrums at preschool and being sent home twice, Wilma taking over Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, and Wilma moving to a flat in town by June 1991 where Nora's eczema cleared over the summer. The shifts show the strain of three generations in one house and the triangle that formed between Nora, Hollis and Wilma.",
    "eventIds": [
     168,
     169,
@@ -180,9 +180,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moved into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990, within eighteen months: Nora and Wilma clashing over the children's bedtimes and meals, Sam working late and distancing from the conflict, Sam taking his mother's side, Owen having tantrums at preschool and being sent home twice, Wilma taking over Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, and Wilma moving to a flat in town by June 1991 where Nora's eczema cleared over the summer. The shifts show the strain of three generations in one house and the triangle that formed between Nora, Sam and Wilma.",
+   "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within eighteen months: Nora and Wilma clashing over the children's bedtimes and meals, Hollis working late and distancing from the conflict, Hollis taking his mother's side, Owen having tantrums at preschool and being sent home twice, Wilma taking over Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, and Wilma moving to a flat in town by June 1991 where Nora's eczema cleared over the summer. The shifts show the strain of three generations in one house and the triangle that formed between Nora, Hollis and Wilma.",
    "setAside": false,
    "openingEventId": 168
   }

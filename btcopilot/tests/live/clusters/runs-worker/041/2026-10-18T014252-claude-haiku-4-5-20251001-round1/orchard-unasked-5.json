@@ -69,8 +69,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into your house in January 1990: you clashed with her over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows, distancing; Sam took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma took over Lily's care, overfunctioning; you developed eczema flaring on both hands; you and Sam had rows most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer. The shifts fall close together from Wilma's arrival through the spring of 1991, and her move out settles the period.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into your house in January 1990: you clashed with her over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows, distancing; Hollis took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma took over Lily's care, overfunctioning; you developed eczema flaring on both hands; you and Hollis had rows most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer. The shifts fall close together from Wilma's arrival through the spring of 1991, and her move out settles the period.",
      "change": null,
      "openingId": 168
     }
@@ -164,8 +164,8 @@
   },
   {
    "id": "c4",
-   "title": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma selling her farm and moving into your house in January 1990: you clashed with her over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows, distancing; Sam took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma took over Lily's care, overfunctioning; you developed eczema flaring on both hands; you and Sam had rows most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer. The shifts fall close together from Wilma's arrival through the spring of 1991, and her move out settles the period.",
+   "title": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma selling her farm and moving into your house in January 1990: you clashed with her over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows, distancing; Hollis took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma took over Lily's care, overfunctioning; you developed eczema flaring on both hands; you and Hollis had rows most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer. The shifts fall close together from Wilma's arrival through the spring of 1991, and her move out settles the period.",
    "eventIds": [
     168,
     169,
@@ -180,9 +180,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma selling her farm and moving into your house in January 1990: you clashed with her over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows, distancing; Sam took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma took over Lily's care, overfunctioning; you developed eczema flaring on both hands; you and Sam had rows most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer. The shifts fall close together from Wilma's arrival through the spring of 1991, and her move out settles the period.",
+   "reason": "Around Wilma selling her farm and moving into your house in January 1990: you clashed with her over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows, distancing; Hollis took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma took over Lily's care, overfunctioning; you developed eczema flaring on both hands; you and Hollis had rows most nights. By June 1991, when Wilma took a flat in town, your eczema cleared over the summer. The shifts fall close together from Wilma's arrival through the spring of 1991, and her move out settles the period.",
    "setAside": false,
    "openingEventId": 168
   }

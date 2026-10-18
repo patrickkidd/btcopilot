@@ -68,8 +68,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Sam's mother Wilma moving into Nora and Sam's house in January 1990, within the year: Nora clashed with Wilma over the children's bedtimes and meals, Sam worked late and kept out of the rows, Sam took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, Nora's eczema flared on both hands, Nora and Sam had rows most nights from November, Wilma took a flat in town in June 1991, and Nora's eczema cleared over the summer. Event 176, Marian driving over to take Nora's side, is struck: it is told with an uncertain date and never opens a period.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Hollis's mother Wilma moving into Nora and Hollis's house in January 1990, within the year: Nora clashed with Wilma over the children's bedtimes and meals, Hollis worked late and kept out of the rows, Hollis took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, Nora's eczema flared on both hands, Nora and Hollis had rows most nights from November, Wilma took a flat in town in June 1991, and Nora's eczema cleared over the summer. Event 176, Marian driving over to take Nora's side, is struck: it is told with an uncertain date and never opens a period.",
      "change": null,
      "openingId": 168
     }
@@ -163,8 +163,8 @@
       177,
       178
      ],
-     "name": "Sam's mother Wilma moving into your house, 1990\u20131991",
-     "reason": "Around Sam's mother Wilma moving into your house in January 1990, within the year: you clashed with Wilma over the children's bedtimes and meals, Sam worked late and kept out of the rows, Sam took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, your eczema flared on both hands, you and Sam had rows most nights from November, Wilma took a flat in town in June 1991, and your eczema cleared over the summer.",
+     "name": "Hollis's mother Wilma moving into your house, 1990\u20131991",
+     "reason": "Around Hollis's mother Wilma moving into your house in January 1990, within the year: you clashed with Wilma over the children's bedtimes and meals, Hollis worked late and kept out of the rows, Hollis took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, your eczema flared on both hands, you and Hollis had rows most nights from November, Wilma took a flat in town in June 1991, and your eczema cleared over the summer.",
      "change": null,
      "openingId": 168
     }
@@ -196,7 +196,7 @@
   "answer 1: raw_id: Period \"Walter's move to Sorrel Valley, 1952\u20131953\" holds an id ('Event 113'): name events by the person and what happened, with years or dates, never by number.",
   "answer 1: raw_id: Period \"Walter's orchard failing, 1968\u20131969\" holds an id ('Event 139'): name events by the person and what happened, with years or dates, never by number.",
   "answer 1: raw_id: Period \"Glen's job loss at the cannery, 1975\u20131976\" holds an id ('Event 153'): name events by the person and what happened, with years or dates, never by number.",
-  "answer 1: raw_id: Period \"Wilma moving into Nora and Sam's house, 1990\u20131991\" holds an id ('Event 176'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 1: raw_id: Period \"Wilma moving into Nora and Hollis's house, 1990\u20131991\" holds an id ('Event 176'): name events by the person and what happened, with years or dates, never by number.",
   "answer 2: theirs: Period \"Glen's job loss at the cannery, 1975\u20131976\" shares days with the person's own period 'the year Dad lost his job', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
   "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: An acute episode: the wildfire and evacuation lasted four days from August 12 to August 15, 1994, with the family calm again within the week once home.",
   "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: Not enough in the diagram to choose a reading: a recount without the shifts told as how things always were leaves only two shifts that count, and no change in the family on a known date sits among the events to open a period around Tess's drinking."
@@ -248,8 +248,8 @@
   },
   {
    "id": "c3",
-   "title": "Sam's mother Wilma moving into your house, 1990\u20131991",
-   "summary": "Around Sam's mother Wilma moving into your house in January 1990, within the year: you clashed with Wilma over the children's bedtimes and meals, Sam worked late and kept out of the rows, Sam took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, your eczema flared on both hands, you and Sam had rows most nights from November, Wilma took a flat in town in June 1991, and your eczema cleared over the summer.",
+   "title": "Hollis's mother Wilma moving into your house, 1990\u20131991",
+   "summary": "Around Hollis's mother Wilma moving into your house in January 1990, within the year: you clashed with Wilma over the children's bedtimes and meals, Hollis worked late and kept out of the rows, Hollis took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, your eczema flared on both hands, you and Hollis had rows most nights from November, Wilma took a flat in town in June 1991, and your eczema cleared over the summer.",
    "eventIds": [
     168,
     169,
@@ -264,9 +264,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Sam's mother Wilma moving into your house, 1990\u20131991",
+   "name": "Hollis's mother Wilma moving into your house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Sam's mother Wilma moving into your house in January 1990, within the year: you clashed with Wilma over the children's bedtimes and meals, Sam worked late and kept out of the rows, Sam took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, your eczema flared on both hands, you and Sam had rows most nights from November, Wilma took a flat in town in June 1991, and your eczema cleared over the summer.",
+   "reason": "Around Hollis's mother Wilma moving into your house in January 1990, within the year: you clashed with Wilma over the children's bedtimes and meals, Hollis worked late and kept out of the rows, Hollis took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, your eczema flared on both hands, you and Hollis had rows most nights from November, Wilma took a flat in town in June 1991, and your eczema cleared over the summer.",
    "setAside": false,
    "openingEventId": 168
   },

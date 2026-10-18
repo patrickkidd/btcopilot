@@ -68,8 +68,8 @@
       177,
       178
      ],
-     "name": "Wilma's move into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma's move into Nora and Sam's house in January 1990 after selling her farm: Nora and Wilma's clashes over the children's bedtimes and meals, Sam's distance from the conflict and late work, Sam's alliance with his mother, Owen's tantrums at preschool, Wilma's takeover of Lily's care, Nora's eczema flare on both hands, rows between Nora and Sam most nights, and Nora's eczema clearing by August 1991 after Wilma took a flat in town in June. Marian's visits to take Nora's side in January 1991 sit within these months as the tension mounted.",
+     "name": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma's move into Nora and Hollis's house in January 1990 after selling her farm: Nora and Wilma's clashes over the children's bedtimes and meals, Hollis's distance from the conflict and late work, Hollis's alliance with his mother, Owen's tantrums at preschool, Wilma's takeover of Lily's care, Nora's eczema flare on both hands, rows between Nora and Hollis most nights, and Nora's eczema clearing by August 1991 after Wilma took a flat in town in June. Marian's visits to take Nora's side in January 1991 sit within these months as the tension mounted.",
      "change": null,
      "openingId": 168
     }
@@ -162,8 +162,8 @@
   },
   {
    "id": "c4",
-   "title": "Wilma's move into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma's move into Nora and Sam's house in January 1990 after selling her farm: Nora and Wilma's clashes over the children's bedtimes and meals, Sam's distance from the conflict and late work, Sam's alliance with his mother, Owen's tantrums at preschool, Wilma's takeover of Lily's care, Nora's eczema flare on both hands, rows between Nora and Sam most nights, and Nora's eczema clearing by August 1991 after Wilma took a flat in town in June. Marian's visits to take Nora's side in January 1991 sit within these months as the tension mounted.",
+   "title": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma's move into Nora and Hollis's house in January 1990 after selling her farm: Nora and Wilma's clashes over the children's bedtimes and meals, Hollis's distance from the conflict and late work, Hollis's alliance with his mother, Owen's tantrums at preschool, Wilma's takeover of Lily's care, Nora's eczema flare on both hands, rows between Nora and Hollis most nights, and Nora's eczema clearing by August 1991 after Wilma took a flat in town in June. Marian's visits to take Nora's side in January 1991 sit within these months as the tension mounted.",
    "eventIds": [
     168,
     169,
@@ -178,9 +178,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma's move into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma's move into Nora and Sam's house in January 1990 after selling her farm: Nora and Wilma's clashes over the children's bedtimes and meals, Sam's distance from the conflict and late work, Sam's alliance with his mother, Owen's tantrums at preschool, Wilma's takeover of Lily's care, Nora's eczema flare on both hands, rows between Nora and Sam most nights, and Nora's eczema clearing by August 1991 after Wilma took a flat in town in June. Marian's visits to take Nora's side in January 1991 sit within these months as the tension mounted.",
+   "reason": "Around Wilma's move into Nora and Hollis's house in January 1990 after selling her farm: Nora and Wilma's clashes over the children's bedtimes and meals, Hollis's distance from the conflict and late work, Hollis's alliance with his mother, Owen's tantrums at preschool, Wilma's takeover of Lily's care, Nora's eczema flare on both hands, rows between Nora and Hollis most nights, and Nora's eczema clearing by August 1991 after Wilma took a flat in town in June. Marian's visits to take Nora's side in January 1991 sit within these months as the tension mounted.",
    "setAside": false,
    "openingEventId": 168
   }

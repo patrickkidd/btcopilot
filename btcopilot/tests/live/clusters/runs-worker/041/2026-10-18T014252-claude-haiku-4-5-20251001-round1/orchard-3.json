@@ -67,8 +67,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the rows; he took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam fought most nights; Marian drove over twice a week to take Nora's side. When Wilma took a flat in town in June 1991, the eczema cleared over the summer. The shifts moved between Nora and Wilma, with Sam pulled toward his mother and away from Nora, and the children caught in the household's realignment.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990: Nora and Wilma clashed over the children's bedtimes and meals; Hollis worked late and kept out of the rows; he took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Hollis fought most nights; Marian drove over twice a week to take Nora's side. When Wilma took a flat in town in June 1991, the eczema cleared over the summer. The shifts moved between Nora and Wilma, with Hollis pulled toward his mother and away from Nora, and the children caught in the household's realignment.",
      "change": null,
      "openingId": 168
     }
@@ -144,8 +144,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the rows; he took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam fought most nights; Marian drove over twice a week to take Nora's side. When Wilma took a flat in town in June 1991, the eczema cleared over the summer. The shifts moved between Nora and Wilma, with Sam pulled toward his mother and away from Nora, and the children caught in the household's realignment.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990: Nora and Wilma clashed over the children's bedtimes and meals; Hollis worked late and kept out of the rows; he took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Hollis fought most nights; Marian drove over twice a week to take Nora's side. When Wilma took a flat in town in June 1991, the eczema cleared over the summer. The shifts moved between Nora and Wilma, with Hollis pulled toward his mother and away from Nora, and the children caught in the household's realignment.",
      "change": null,
      "openingId": 168
     }
@@ -175,8 +175,8 @@
  ],
  "refused": [
   "answer 1: theirs: Period \"Glen's job loss at the cannery, 1975\u20131976\" shares days with the person's own period 'the year Dad lost his job', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
-  "answer 1: cause: Period \"Wilma moving into Nora and Sam's house, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
-  "answer 2: cause: Period \"Wilma moving into Nora and Sam's house, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 1: cause: Period \"Wilma moving into Nora and Hollis's house, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: cause: Period \"Wilma moving into Nora and Hollis's house, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
   "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: An acute episode: four days in August 1994 around the wildfire, from the family ordered out to the moment allowed home with the house untouched, everyone calm again once home within the week.",
   "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: Not enough in the diagram to choose a reading: Tess's drinking in October 1996 is one shift alone, and no change in the family on a known date sits among these events, only Nora's worry and the parents' response to it."
  ],
@@ -227,8 +227,8 @@
   },
   {
    "id": "c3",
-   "title": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-   "summary": "When Wilma took a flat in town in June 1991, the eczema cleared over the summer. The shifts moved between Nora and Wilma, with Sam pulled toward his mother and away from Nora, and the children caught in the household's realignment.",
+   "title": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+   "summary": "When Wilma took a flat in town in June 1991, the eczema cleared over the summer. The shifts moved between Nora and Wilma, with Hollis pulled toward his mother and away from Nora, and the children caught in the household's realignment.",
    "eventIds": [
     168,
     169,
@@ -242,9 +242,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "When Wilma took a flat in town in June 1991, the eczema cleared over the summer. The shifts moved between Nora and Wilma, with Sam pulled toward his mother and away from Nora, and the children caught in the household's realignment.",
+   "reason": "When Wilma took a flat in town in June 1991, the eczema cleared over the summer. The shifts moved between Nora and Wilma, with Hollis pulled toward his mother and away from Nora, and the children caught in the household's realignment.",
    "setAside": false,
    "openingEventId": 168
   },

@@ -68,8 +68,8 @@
       177,
       178
      ],
-     "name": "Sam's mother Wilma moved in, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into your house in January 1990, within the year: you clashed with Wilma over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows; Sam took his mother's side; your son Owen had tantrums at preschool; Wilma took over your daughter Lily's care; you and Sam had rows most nights; you developed eczema on both hands; your mother Marian drove over twice a week to take your side; Wilma took a flat in town in June 1991 and by August your eczema cleared over the summer, your symptoms easing as things settled.",
+     "name": "Hollis's mother Wilma moved in, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into your house in January 1990, within the year: you clashed with Wilma over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows; Hollis took his mother's side; your son Owen had tantrums at preschool; Wilma took over your daughter Lily's care; you and Hollis had rows most nights; you developed eczema on both hands; your mother Marian drove over twice a week to take your side; Wilma took a flat in town in June 1991 and by August your eczema cleared over the summer, your symptoms easing as things settled.",
      "change": null,
      "openingId": 168
     }
@@ -155,8 +155,8 @@
       177,
       178
      ],
-     "name": "Sam's mother Wilma moved in, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into your house in January 1990, within months: you clashed with Wilma over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows; Sam took his mother's side; your son Owen had tantrums at preschool; Wilma took over your daughter Lily's care; you and Sam had rows most nights; you developed eczema on both hands. Your mother Marian drove over twice a week to take your side in January 1991. Wilma took a flat in town in June 1991, and by August your eczema cleared over the summer, your symptoms easing as things settled.",
+     "name": "Hollis's mother Wilma moved in, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into your house in January 1990, within months: you clashed with Wilma over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows; Hollis took his mother's side; your son Owen had tantrums at preschool; Wilma took over your daughter Lily's care; you and Hollis had rows most nights; you developed eczema on both hands. Your mother Marian drove over twice a week to take your side in January 1991. Wilma took a flat in town in June 1991, and by August your eczema cleared over the summer, your symptoms easing as things settled.",
      "change": null,
      "openingId": 168
     }
@@ -177,8 +177,8 @@
   }
  ],
  "refused": [
-  "answer 1: cause: Period \"Sam's mother Wilma moved in, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
-  "answer 2: cause: Period \"Sam's mother Wilma moved in, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 1: cause: Period \"Hollis's mother Wilma moved in, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: cause: Period \"Hollis's mother Wilma moved in, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
   "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: The wildfire in August 1994 was a real external threat lasting four days; the family was calm again within the week once home and the children returned to school, an acute episode rather than a period.",
   "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: The shifts in October 1996 and January 1997 belong to your sister Tess's own troubles and your and your mother's reactions to them, not a family movement. There is no change in who is in the family or in a key member's functioning on a known date among these events; not enough in the diagram to choose a reading."
  ],
@@ -251,8 +251,8 @@
   },
   {
    "id": "c4",
-   "title": "Sam's mother Wilma moved in, 1990\u20131991",
-   "summary": "Around Wilma selling her farm and moving into your house in January 1990, within months: you clashed with Wilma over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows; Sam took his mother's side; your son Owen had tantrums at preschool; Wilma took over your daughter Lily's care; you and Sam had rows most nights; you developed eczema on both hands. Wilma took a flat in town in June 1991, and by August your eczema cleared over the summer, your symptoms easing as things settled.",
+   "title": "Hollis's mother Wilma moved in, 1990\u20131991",
+   "summary": "Around Wilma selling her farm and moving into your house in January 1990, within months: you clashed with Wilma over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows; Hollis took his mother's side; your son Owen had tantrums at preschool; Wilma took over your daughter Lily's care; you and Hollis had rows most nights; you developed eczema on both hands. Wilma took a flat in town in June 1991, and by August your eczema cleared over the summer, your symptoms easing as things settled.",
    "eventIds": [
     168,
     169,
@@ -267,9 +267,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Sam's mother Wilma moved in, 1990\u20131991",
+   "name": "Hollis's mother Wilma moved in, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma selling her farm and moving into your house in January 1990, within months: you clashed with Wilma over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows; Sam took his mother's side; your son Owen had tantrums at preschool; Wilma took over your daughter Lily's care; you and Sam had rows most nights; you developed eczema on both hands. Wilma took a flat in town in June 1991, and by August your eczema cleared over the summer, your symptoms easing as things settled.",
+   "reason": "Around Wilma selling her farm and moving into your house in January 1990, within months: you clashed with Wilma over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows; Hollis took his mother's side; your son Owen had tantrums at preschool; Wilma took over your daughter Lily's care; you and Hollis had rows most nights; you developed eczema on both hands. Wilma took a flat in town in June 1991, and by August your eczema cleared over the summer, your symptoms easing as things settled.",
    "setAside": false,
    "openingEventId": 168
   }

@@ -67,8 +67,8 @@
       177,
       178
      ],
-     "name": "Wilma moved into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma moving into Nora and Sam's house in January 1990, within months: Nora clashed with Wilma over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows while taking his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam rowed most nights; Marian drove over twice a week to take Nora's side. By June 1991 Wilma took a flat in town, and by August 1991 Nora's eczema had cleared over the summer, and the period settles.",
+     "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma moving into Nora and Hollis's house in January 1990, within months: Nora clashed with Wilma over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows while taking his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Hollis rowed most nights; Marian drove over twice a week to take Nora's side. By June 1991 Wilma took a flat in town, and by August 1991 Nora's eczema had cleared over the summer, and the period settles.",
      "change": null,
      "openingId": 168
     }
@@ -153,8 +153,8 @@
       177,
       178
      ],
-     "name": "Wilma moved into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma moving into Nora and Sam's house in January 1990, within months: Nora clashed with Wilma over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows, and took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam rowed most nights; Marian drove over twice a week to take Nora's side. By June 1991 Wilma took a flat in town, and by August 1991 Nora's eczema had cleared over the summer, and the period settles.",
+     "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma moving into Nora and Hollis's house in January 1990, within months: Nora clashed with Wilma over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows, and took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Hollis rowed most nights; Marian drove over twice a week to take Nora's side. By June 1991 Wilma took a flat in town, and by August 1991 Nora's eczema had cleared over the summer, and the period settles.",
      "change": null,
      "openingId": 168
     }
@@ -175,8 +175,8 @@
   }
  ],
  "refused": [
-  "answer 1: cause: Period \"Wilma moved into Nora and Sam's house, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
-  "answer 2: cause: Period \"Wilma moved into Nora and Sam's house, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 1: cause: Period \"Wilma moved into Nora and Hollis's house, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: cause: Period \"Wilma moved into Nora and Hollis's house, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
   "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: 1994-08-12 to 1994-08-16: Four days from the wildfire coming over the ridge to the family being allowed home with the house untouched, everyone calm again within the week. An acute episode around a real threat, not a period.",
   "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996-10-15 to 1997-06-15: Tess's drinking began in October 1996; Nora's shifts toward her sister are in the same months as Marian's overfunctioning, but no change in who is in the family or in how a key member functions sits on a known date among these events, so there is not enough in the diagram to choose a reading."
  ],
@@ -248,7 +248,7 @@
   },
   {
    "id": "c4",
-   "title": "Wilma moved into Nora and Sam's house, 1990\u20131991",
+   "title": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
    "summary": "By June 1991 Wilma took a flat in town, and by August 1991 Nora's eczema had cleared over the summer, and the period settles.",
    "eventIds": [
     168,
@@ -264,7 +264,7 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moved into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
    "reason": "By June 1991 Wilma took a flat in town, and by August 1991 Nora's eczema had cleared over the summer, and the period settles.",
    "setAside": false,

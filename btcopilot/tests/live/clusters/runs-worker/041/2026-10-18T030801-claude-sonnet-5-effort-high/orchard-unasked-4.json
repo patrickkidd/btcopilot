@@ -79,7 +79,7 @@
       178
      ],
      "name": "Wilma's move into your house, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into your house in January 1990, within that year and into the next: your clashes with her over the children's bedtimes and meals, Sam's staying out of the kitchen rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, and your rows with Sam most nights; Wilma's taking a flat in town in June 1991 and your eczema clearing that August are where it settles.",
+     "reason": "Around Wilma selling her farm and moving into your house in January 1990, within that year and into the next: your clashes with her over the children's bedtimes and meals, Hollis's staying out of the kitchen rows, Hollis's taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, and your rows with Hollis most nights; Wilma's taking a flat in town in June 1991 and your eczema clearing that August are where it settles.",
      "change": null,
      "openingId": 168
     }
@@ -182,7 +182,7 @@
   {
    "id": "c4",
    "title": "Wilma's move into your house, 1990\u20131991",
-   "summary": "Around Wilma selling her farm and moving into your house in January 1990, within that year and into the next: your clashes with her over the children's bedtimes and meals, Sam's staying out of the kitchen rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, and your rows with Sam most nights; Wilma's taking a flat in town in June 1991 and your eczema clearing that August are where it settles.",
+   "summary": "Around Wilma selling her farm and moving into your house in January 1990, within that year and into the next: your clashes with her over the children's bedtimes and meals, Hollis's staying out of the kitchen rows, Hollis's taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, and your rows with Hollis most nights; Wilma's taking a flat in town in June 1991 and your eczema clearing that August are where it settles.",
    "eventIds": [
     168,
     169,
@@ -200,7 +200,7 @@
    "endDate": "1991-08-15",
    "name": "Wilma's move into your house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma selling her farm and moving into your house in January 1990, within that year and into the next: your clashes with her over the children's bedtimes and meals, Sam's staying out of the kitchen rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, and your rows with Sam most nights; Wilma's taking a flat in town in June 1991 and your eczema clearing that August are where it settles.",
+   "reason": "Around Wilma selling her farm and moving into your house in January 1990, within that year and into the next: your clashes with her over the children's bedtimes and meals, Hollis's staying out of the kitchen rows, Hollis's taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, and your rows with Hollis most nights; Wilma's taking a flat in town in June 1991 and your eczema clearing that August are where it settles.",
    "setAside": false,
    "openingEventId": 168
   }

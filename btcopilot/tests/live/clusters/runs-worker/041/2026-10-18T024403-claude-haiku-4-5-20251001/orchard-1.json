@@ -68,8 +68,8 @@
       177,
       178
      ],
-     "name": "Wilma's move into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma's move into the house in January 1990, within eighteen months: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the rows; Sam took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam fought most nights; and by the summer of 1991, after Wilma took a flat in town in June, Nora's eczema cleared. The period marks the disruption brought by three generations in one house, with Nora caught between Sam and his mother, her children reacting, and her own symptom rising and falling with the household's shift.",
+     "name": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma's move into the house in January 1990, within eighteen months: Nora and Wilma clashed over the children's bedtimes and meals; Hollis worked late and kept out of the rows; Hollis took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Hollis fought most nights; and by the summer of 1991, after Wilma took a flat in town in June, Nora's eczema cleared. The period marks the disruption brought by three generations in one house, with Nora caught between Hollis and his mother, her children reacting, and her own symptom rising and falling with the household's shift.",
      "change": null,
      "openingId": 168
     }
@@ -85,7 +85,7 @@
    ],
    "declined": [
     {
-     "reason": "1994\u20131994: The wildfire evacuation on 12\u201316 August 1994 is an acute episode around a real threat. The family slept three nights in the school gym, several shifts piled up within days (Nora frightened and keeping the children in sight, Lily sick to her stomach, Nora and Sam clashing, Owen unable to sleep without a light), and Nora was calm again once home by 16 August with the children back at school that week. The shifts settle within days of the start, marking an acute episode, not a period.",
+     "reason": "1994\u20131994: The wildfire evacuation on 12\u201316 August 1994 is an acute episode around a real threat. The family slept three nights in the school gym, several shifts piled up within days (Nora frightened and keeping the children in sight, Lily sick to her stomach, Nora and Hollis clashing, Owen unable to sleep without a light), and Nora was calm again once home by 16 August with the children back at school that week. The shifts settle within days of the start, marking an acute episode, not a period.",
      "hint": "r5",
      "run": null
     },
@@ -162,8 +162,8 @@
       177,
       178
      ],
-     "name": "Wilma's move into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma's move into the house in January 1990, within eighteen months: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the rows; Sam took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam fought most nights; and by the summer of 1991, after Wilma took a flat in town in June, Nora's eczema cleared. The period marks the disruption brought by three generations in one house, with Nora caught between Sam and his mother, her children reacting, and her own symptom rising and falling with the household's shift.",
+     "name": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma's move into the house in January 1990, within eighteen months: Nora and Wilma clashed over the children's bedtimes and meals; Hollis worked late and kept out of the rows; Hollis took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Hollis fought most nights; and by the summer of 1991, after Wilma took a flat in town in June, Nora's eczema cleared. The period marks the disruption brought by three generations in one house, with Nora caught between Hollis and his mother, her children reacting, and her own symptom rising and falling with the household's shift.",
      "change": null,
      "openingId": 168
     }
@@ -179,7 +179,7 @@
    ],
    "declined": [
     {
-     "reason": "1994\u20131994: The wildfire evacuation on 12\u201316 August 1994 is an acute episode around a real threat. The family slept three nights in the school gym, several shifts piled up within days (Nora frightened and keeping the children in sight, Lily sick to her stomach, Nora and Sam clashing, Owen unable to sleep without a light), and Nora was calm again once home by 16 August with the children back at school that week. The shifts settle within days of the start, marking an acute episode, not a period.",
+     "reason": "1994\u20131994: The wildfire evacuation on 12\u201316 August 1994 is an acute episode around a real threat. The family slept three nights in the school gym, several shifts piled up within days (Nora frightened and keeping the children in sight, Lily sick to her stomach, Nora and Hollis clashing, Owen unable to sleep without a light), and Nora was calm again once home by 16 August with the children back at school that week. The shifts settle within days of the start, marking an acute episode, not a period.",
      "hint": "r5",
      "run": null
     },
@@ -195,7 +195,7 @@
   "answer 1: theirs: Period \"Glen's job loss at the cannery, 1975\u20131976\" shares days with the person's own period 'the year Dad lost his job', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
   "answer 2: raw_id: Period \"Glen's job loss at the cannery, 1975\u20131976\" holds an id ('Event 155'): name events by the person and what happened, with years or dates, never by number.",
   "answer 2: theirs: Period \"Glen's job loss at the cannery, 1975\u20131976\" shares days with the person's own period 'the year Dad lost his job', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
-  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: 1994\u20131994: The wildfire evacuation on 12\u201316 August 1994 is an acute episode around a real threat. The family slept three nights in the school gym, several shifts piled up within days (Nora frightened and keeping the children in sight, Lily sick to her stomach, Nora and Sam clashing, Owen unable to sleep without a light), and Nora was calm again once home by 16 August with the children back at school that week. The shifts settle within days of the start, marking an acute episode, not a period.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: 1994\u20131994: The wildfire evacuation on 12\u201316 August 1994 is an acute episode around a real threat. The family slept three nights in the school gym, several shifts piled up within days (Nora frightened and keeping the children in sight, Lily sick to her stomach, Nora and Hollis clashing, Owen unable to sleep without a light), and Nora was calm again once home by 16 August with the children back at school that week. The shifts settle within days of the start, marking an acute episode, not a period.",
   "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996\u20131997: Tess's drinking begins in October 1996, Nora's worry follows within weeks, and Tess and Rick clash in March 1997, but Tess stops drinking and goes to meetings by June 1997. No event in this period marks a change in who is in the family or in how a key member functions on a known date; Tess's drinking itself is a shift, not an opening event. Not enough in the diagram to choose a reading."
  ],
  "stored": [
@@ -245,8 +245,8 @@
   },
   {
    "id": "c3",
-   "title": "Wilma's move into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma's move into the house in January 1990, within eighteen months: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the rows; Sam took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam fought most nights; and by the summer of 1991, after Wilma took a flat in town in June, Nora's eczema cleared. The period marks the disruption brought by three generations in one house, with Nora caught between Sam and his mother, her children reacting, and her own symptom rising and falling with the household's shift.",
+   "title": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma's move into the house in January 1990, within eighteen months: Nora and Wilma clashed over the children's bedtimes and meals; Hollis worked late and kept out of the rows; Hollis took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Hollis fought most nights; and by the summer of 1991, after Wilma took a flat in town in June, Nora's eczema cleared. The period marks the disruption brought by three generations in one house, with Nora caught between Hollis and his mother, her children reacting, and her own symptom rising and falling with the household's shift.",
    "eventIds": [
     168,
     169,
@@ -261,9 +261,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma's move into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma's move into the house in January 1990, within eighteen months: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the rows; Sam took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam fought most nights; and by the summer of 1991, after Wilma took a flat in town in June, Nora's eczema cleared. The period marks the disruption brought by three generations in one house, with Nora caught between Sam and his mother, her children reacting, and her own symptom rising and falling with the household's shift.",
+   "reason": "Around Wilma's move into the house in January 1990, within eighteen months: Nora and Wilma clashed over the children's bedtimes and meals; Hollis worked late and kept out of the rows; Hollis took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Hollis fought most nights; and by the summer of 1991, after Wilma took a flat in town in June, Nora's eczema cleared. The period marks the disruption brought by three generations in one house, with Nora caught between Hollis and his mother, her children reacting, and her own symptom rising and falling with the household's shift.",
    "setAside": false,
    "openingEventId": 168
   },

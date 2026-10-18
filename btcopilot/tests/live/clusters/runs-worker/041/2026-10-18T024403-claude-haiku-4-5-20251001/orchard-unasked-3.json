@@ -69,8 +69,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma, Sam's mother, selling her farm and moving into your house in January 1990: within months, you clashed with Wilma over the children's bedtimes and meals, you worked late and kept out of the kitchen rows, Sam took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, you broke out in eczema on both hands, you and Sam had rows most nights, and by June 1991 Wilma took a flat in town, and over the summer your eczema cleared. The shifts reach from spring through autumn, touching your conflict with Wilma, Sam's alignment with his mother, the children's disturbance, and your own physical response to the strain of the household.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma, Hollis's mother, selling her farm and moving into your house in January 1990: within months, you clashed with Wilma over the children's bedtimes and meals, you worked late and kept out of the kitchen rows, Hollis took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, you broke out in eczema on both hands, you and Hollis had rows most nights, and by June 1991 Wilma took a flat in town, and over the summer your eczema cleared. The shifts reach from spring through autumn, touching your conflict with Wilma, Hollis's alignment with his mother, the children's disturbance, and your own physical response to the strain of the household.",
      "change": null,
      "openingId": 168
     }
@@ -78,7 +78,7 @@
    "periods": [],
    "declined": [
     {
-     "reason": "1994-08-12 to 1994-08-16: the wildfire and the family's three nights in the school gym is an acute episode. All shifts fall within four days around a real threat\u2014you frightened and keeping the children in sight, Lily sick to her stomach, you and Sam snapping at each other, Owen refusing sleep without a light\u2014and the family was calm again once home within days. This is not a period.",
+     "reason": "1994-08-12 to 1994-08-16: the wildfire and the family's three nights in the school gym is an acute episode. All shifts fall within four days around a real threat\u2014you frightened and keeping the children in sight, Lily sick to her stomach, you and Hollis snapping at each other, Owen refusing sleep without a light\u2014and the family was calm again once home within days. This is not a period.",
      "hint": "r5",
      "run": null
     },
@@ -91,7 +91,7 @@
   }
  ],
  "refused": [
-  "answer 1: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: 1994-08-12 to 1994-08-16: the wildfire and the family's three nights in the school gym is an acute episode. All shifts fall within four days around a real threat\u2014you frightened and keeping the children in sight, Lily sick to her stomach, you and Sam snapping at each other, Owen refusing sleep without a light\u2014and the family was calm again once home within days. This is not a period.",
+  "answer 1: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: 1994-08-12 to 1994-08-16: the wildfire and the family's three nights in the school gym is an acute episode. All shifts fall within four days around a real threat\u2014you frightened and keeping the children in sight, Lily sick to her stomach, you and Hollis snapping at each other, Owen refusing sleep without a light\u2014and the family was calm again once home within days. This is not a period.",
   "answer 1: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996-10-15 to 1997-06-15: the recount leaves two shifts that count\u2014Tess drinking and you paying her rent and keeping Jesse\u2014but the only change in the family on a known date among these events is Tess's drinking, which is your sister's own shift and does not open a period. There is not enough in the diagram to choose a reading."
  ],
  "stored": [
@@ -164,8 +164,8 @@
   },
   {
    "id": "c4",
-   "title": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma, Sam's mother, selling her farm and moving into your house in January 1990: within months, you clashed with Wilma over the children's bedtimes and meals, you worked late and kept out of the kitchen rows, Sam took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, you broke out in eczema on both hands, you and Sam had rows most nights, and by June 1991 Wilma took a flat in town, and over the summer your eczema cleared. The shifts reach from spring through autumn, touching your conflict with Wilma, Sam's alignment with his mother, the children's disturbance, and your own physical response to the strain of the household.",
+   "title": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma, Hollis's mother, selling her farm and moving into your house in January 1990: within months, you clashed with Wilma over the children's bedtimes and meals, you worked late and kept out of the kitchen rows, Hollis took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, you broke out in eczema on both hands, you and Hollis had rows most nights, and by June 1991 Wilma took a flat in town, and over the summer your eczema cleared. The shifts reach from spring through autumn, touching your conflict with Wilma, Hollis's alignment with his mother, the children's disturbance, and your own physical response to the strain of the household.",
    "eventIds": [
     168,
     169,
@@ -180,9 +180,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma, Sam's mother, selling her farm and moving into your house in January 1990: within months, you clashed with Wilma over the children's bedtimes and meals, you worked late and kept out of the kitchen rows, Sam took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, you broke out in eczema on both hands, you and Sam had rows most nights, and by June 1991 Wilma took a flat in town, and over the summer your eczema cleared. The shifts reach from spring through autumn, touching your conflict with Wilma, Sam's alignment with his mother, the children's disturbance, and your own physical response to the strain of the household.",
+   "reason": "Around Wilma, Hollis's mother, selling her farm and moving into your house in January 1990: within months, you clashed with Wilma over the children's bedtimes and meals, you worked late and kept out of the kitchen rows, Hollis took his mother's side, Owen had tantrums at preschool and was sent home twice, Wilma took over Lily's care, you broke out in eczema on both hands, you and Hollis had rows most nights, and by June 1991 Wilma took a flat in town, and over the summer your eczema cleared. The shifts reach from spring through autumn, touching your conflict with Wilma, Hollis's alignment with his mother, the children's disturbance, and your own physical response to the strain of the household.",
    "setAside": false,
    "openingEventId": 168
   }

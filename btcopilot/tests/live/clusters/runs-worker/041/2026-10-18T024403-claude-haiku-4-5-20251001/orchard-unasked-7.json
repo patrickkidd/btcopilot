@@ -67,8 +67,8 @@
       175,
       178
      ],
-     "name": "Wilma moved into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma's move into Nora and Sam's house in January 1990: Nora clashed with Wilma over the children's bedtimes and meals, Sam worked late and kept out of the kitchen rows while taking his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, Nora's eczema flared on both hands, and rows between Nora and Sam became most nights. By June 1991, Wilma took a flat in town, and by August Nora's eczema cleared over the summer, marking where the family settled.",
+     "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma's move into Nora and Hollis's house in January 1990: Nora clashed with Wilma over the children's bedtimes and meals, Hollis worked late and kept out of the kitchen rows while taking his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, Nora's eczema flared on both hands, and rows between Nora and Hollis became most nights. By June 1991, Wilma took a flat in town, and by August Nora's eczema cleared over the summer, marking where the family settled.",
      "change": null,
      "openingId": 168
     }
@@ -161,8 +161,8 @@
   },
   {
    "id": "c4",
-   "title": "Wilma moved into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma's move into Nora and Sam's house in January 1990: Nora clashed with Wilma over the children's bedtimes and meals, Sam worked late and kept out of the kitchen rows while taking his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, Nora's eczema flared on both hands, and rows between Nora and Sam became most nights. By June 1991, Wilma took a flat in town, and by August Nora's eczema cleared over the summer, marking where the family settled.",
+   "title": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma's move into Nora and Hollis's house in January 1990: Nora clashed with Wilma over the children's bedtimes and meals, Hollis worked late and kept out of the kitchen rows while taking his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, Nora's eczema flared on both hands, and rows between Nora and Hollis became most nights. By June 1991, Wilma took a flat in town, and by August Nora's eczema cleared over the summer, marking where the family settled.",
    "eventIds": [
     168,
     169,
@@ -176,9 +176,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moved into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma's move into Nora and Sam's house in January 1990: Nora clashed with Wilma over the children's bedtimes and meals, Sam worked late and kept out of the kitchen rows while taking his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, Nora's eczema flared on both hands, and rows between Nora and Sam became most nights. By June 1991, Wilma took a flat in town, and by August Nora's eczema cleared over the summer, marking where the family settled.",
+   "reason": "Around Wilma's move into Nora and Hollis's house in January 1990: Nora clashed with Wilma over the children's bedtimes and meals, Hollis worked late and kept out of the kitchen rows while taking his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, Nora's eczema flared on both hands, and rows between Nora and Hollis became most nights. By June 1991, Wilma took a flat in town, and by August Nora's eczema cleared over the summer, marking where the family settled.",
    "setAside": false,
    "openingEventId": 168
   }

@@ -69,7 +69,7 @@
       178
      ],
      "name": "Wilma moving into your house, 1990\u20131991",
-     "reason": "Around Sam's mother Wilma selling her farm and moving into your house in January 1990, within the following year: clashes between you and Wilma over the children's bedtimes and meals, you and Sam drawing apart as he kept out of the kitchen rows and took his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows with Sam most nights, your mother driving over twice a week to take your side, Wilma taking a flat in town in June 1991, and your eczema clearing over the summer.",
+     "reason": "Around Hollis's mother Wilma selling her farm and moving into your house in January 1990, within the following year: clashes between you and Wilma over the children's bedtimes and meals, you and Hollis drawing apart as he kept out of the kitchen rows and took his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows with Hollis most nights, your mother driving over twice a week to take your side, Wilma taking a flat in town in June 1991, and your eczema clearing over the summer.",
      "change": null,
      "openingId": 168
     },
@@ -85,7 +85,7 @@
       189
      ],
      "name": "The wildfire, August 1994",
-     "reason": "A real threat came over the ridge in August 1994 when a wildfire forced the family out; within four days from the evacuation to returning home: you were frightened and kept the children in sight every minute, Lily sick to her stomach in the school gym, conflict between you and Sam over whether to drive out of the valley, Owen would not sleep without a light on, the house was untouched when you were allowed home, and you and the children were calm again once home and back at school that week; an acute episode around a real and immediate threat, settled within days once the threat passed.",
+     "reason": "A real threat came over the ridge in August 1994 when a wildfire forced the family out; within four days from the evacuation to returning home: you were frightened and kept the children in sight every minute, Lily sick to her stomach in the school gym, conflict between you and Hollis over whether to drive out of the valley, Owen would not sleep without a light on, the house was untouched when you were allowed home, and you and the children were calm again once home and back at school that week; an acute episode around a real and immediate threat, settled within days once the threat passed.",
      "change": null,
      "openingId": 183
     }
@@ -178,7 +178,7 @@
   {
    "id": "c4",
    "title": "Wilma moving into your house, 1990\u20131991",
-   "summary": "Around Sam's mother Wilma selling her farm and moving into your house in January 1990, within the following year: clashes between you and Wilma over the children's bedtimes and meals, you and Sam drawing apart as he kept out of the kitchen rows and took his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows with Sam most nights, your mother driving over twice a week to take your side, Wilma taking a flat in town in June 1991, and your eczema clearing over the summer.",
+   "summary": "Around Hollis's mother Wilma selling her farm and moving into your house in January 1990, within the following year: clashes between you and Wilma over the children's bedtimes and meals, you and Hollis drawing apart as he kept out of the kitchen rows and took his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows with Hollis most nights, your mother driving over twice a week to take your side, Wilma taking a flat in town in June 1991, and your eczema clearing over the summer.",
    "eventIds": [
     168,
     169,
@@ -195,14 +195,14 @@
    "endDate": "1991-08-15",
    "name": "Wilma moving into your house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Sam's mother Wilma selling her farm and moving into your house in January 1990, within the following year: clashes between you and Wilma over the children's bedtimes and meals, you and Sam drawing apart as he kept out of the kitchen rows and took his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows with Sam most nights, your mother driving over twice a week to take your side, Wilma taking a flat in town in June 1991, and your eczema clearing over the summer.",
+   "reason": "Around Hollis's mother Wilma selling her farm and moving into your house in January 1990, within the following year: clashes between you and Wilma over the children's bedtimes and meals, you and Hollis drawing apart as he kept out of the kitchen rows and took his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows with Hollis most nights, your mother driving over twice a week to take your side, Wilma taking a flat in town in June 1991, and your eczema clearing over the summer.",
    "setAside": false,
    "openingEventId": 168
   },
   {
    "id": "c5",
    "title": "The wildfire, August, 1994",
-   "summary": "A real threat came over the ridge in August 1994 when a wildfire forced the family out; within four days from the evacuation to returning home: you were frightened and kept the children in sight every minute, Lily sick to her stomach in the school gym, conflict between you and Sam over whether to drive out of the valley, Owen would not sleep without a light on, the house was untouched when you were allowed home, and you and the children were calm again once home and back at school that week; an acute episode around a real and immediate threat, settled within days once the threat passed.",
+   "summary": "A real threat came over the ridge in August 1994 when a wildfire forced the family out; within four days from the evacuation to returning home: you were frightened and kept the children in sight every minute, Lily sick to her stomach in the school gym, conflict between you and Hollis over whether to drive out of the valley, Owen would not sleep without a light on, the house was untouched when you were allowed home, and you and the children were calm again once home and back at school that week; an acute episode around a real and immediate threat, settled within days once the threat passed.",
    "eventIds": [
     183,
     184,
@@ -216,7 +216,7 @@
    "endDate": "1994-08-16",
    "name": "The wildfire, August, 1994",
    "source": "model",
-   "reason": "A real threat came over the ridge in August 1994 when a wildfire forced the family out; within four days from the evacuation to returning home: you were frightened and kept the children in sight every minute, Lily sick to her stomach in the school gym, conflict between you and Sam over whether to drive out of the valley, Owen would not sleep without a light on, the house was untouched when you were allowed home, and you and the children were calm again once home and back at school that week; an acute episode around a real and immediate threat, settled within days once the threat passed.",
+   "reason": "A real threat came over the ridge in August 1994 when a wildfire forced the family out; within four days from the evacuation to returning home: you were frightened and kept the children in sight every minute, Lily sick to her stomach in the school gym, conflict between you and Hollis over whether to drive out of the valley, Owen would not sleep without a light on, the house was untouched when you were allowed home, and you and the children were calm again once home and back at school that week; an acute episode around a real and immediate threat, settled within days once the threat passed.",
    "setAside": false,
    "openingEventId": 183
   }

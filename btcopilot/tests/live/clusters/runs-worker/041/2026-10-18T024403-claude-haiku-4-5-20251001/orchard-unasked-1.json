@@ -69,7 +69,7 @@
       178
      ],
      "name": "Wilma moved into your house, 1990\u20131991",
-     "reason": "Around Wilma's move into your house in January 1990 after she sold her farm: within months you clashed with her over the children's bedtimes and meals, you and Sam grew distant as he stayed late at work and kept out of the rows, Sam took his mother's side, Owen had tantrums at preschool in June, Wilma took over Lily's care, your eczema flared on both hands in September, you and Sam rowed most nights by November, and by June 1991 when Wilma took a flat in town your eczema cleared over the summer. The shifts in your symptoms and your relationship moves with Sam and with Wilma run through this period of household upheaval.",
+     "reason": "Around Wilma's move into your house in January 1990 after she sold her farm: within months you clashed with her over the children's bedtimes and meals, you and Hollis grew distant as he stayed late at work and kept out of the rows, Hollis took his mother's side, Owen had tantrums at preschool in June, Wilma took over Lily's care, your eczema flared on both hands in September, you and Hollis rowed most nights by November, and by June 1991 when Wilma took a flat in town your eczema cleared over the summer. The shifts in your symptoms and your relationship moves with Hollis and with Wilma run through this period of household upheaval.",
      "change": null,
      "openingId": 168
     }
@@ -77,7 +77,7 @@
    "periods": [],
    "declined": [
     {
-     "reason": "1994: The wildfire came over the ridge on 12 August and the family came home by 15 August, safe. All shifts fall within four days around a real threat that soon passed\u2014you were frightened and kept the children in sight, Lily was sick to her stomach in the gym, you and Sam clashed over whether to drive out, Owen would not sleep without a light on\u2014and you were calm again within the week once home. This is an acute episode around a real event, not a period of heightened family process.",
+     "reason": "1994: The wildfire came over the ridge on 12 August and the family came home by 15 August, safe. All shifts fall within four days around a real threat that soon passed\u2014you were frightened and kept the children in sight, Lily was sick to her stomach in the gym, you and Hollis clashed over whether to drive out, Owen would not sleep without a light on\u2014and you were calm again within the week once home. This is an acute episode around a real event, not a period of heightened family process.",
      "hint": "r5",
      "run": null
     },
@@ -90,7 +90,7 @@
   }
  ],
  "refused": [
-  "answer 1: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: 1994: The wildfire came over the ridge on 12 August and the family came home by 15 August, safe. All shifts fall within four days around a real threat that soon passed\u2014you were frightened and kept the children in sight, Lily was sick to her stomach in the gym, you and Sam clashed over whether to drive out, Owen would not sleep without a light on\u2014and you were calm again within the week once home. This is an acute episode around a real event, not a period of heightened family process.",
+  "answer 1: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: 1994: The wildfire came over the ridge on 12 August and the family came home by 15 August, safe. All shifts fall within four days around a real threat that soon passed\u2014you were frightened and kept the children in sight, Lily was sick to her stomach in the gym, you and Hollis clashed over whether to drive out, Owen would not sleep without a light on\u2014and you were calm again within the week once home. This is an acute episode around a real event, not a period of heightened family process.",
   "answer 1: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996\u20131997: Tess's drinking began in October 1996 and Marian began paying her rent and keeping Jesse most weekends by January 1997, but the recount without shifts told as how things always were leaves one shift that counts\u2014Tess stopped drinking and went to meetings twice a week in June 1997\u2014only one shift, so there is not enough in the diagram to choose a reading. Your worry for Tess in November 1996 and the conflict between Tess and Rick in March 1997 do not themselves count as family process changes."
  ],
  "stored": [
@@ -163,7 +163,7 @@
   {
    "id": "c4",
    "title": "Wilma moved into your house, 1990\u20131991",
-   "summary": "Around Wilma's move into your house in January 1990 after she sold her farm: within months you clashed with her over the children's bedtimes and meals, you and Sam grew distant as he stayed late at work and kept out of the rows, Sam took his mother's side, Owen had tantrums at preschool in June, Wilma took over Lily's care, your eczema flared on both hands in September, you and Sam rowed most nights by November, and by June 1991 when Wilma took a flat in town your eczema cleared over the summer. The shifts in your symptoms and your relationship moves with Sam and with Wilma run through this period of household upheaval.",
+   "summary": "Around Wilma's move into your house in January 1990 after she sold her farm: within months you clashed with her over the children's bedtimes and meals, you and Hollis grew distant as he stayed late at work and kept out of the rows, Hollis took his mother's side, Owen had tantrums at preschool in June, Wilma took over Lily's care, your eczema flared on both hands in September, you and Hollis rowed most nights by November, and by June 1991 when Wilma took a flat in town your eczema cleared over the summer. The shifts in your symptoms and your relationship moves with Hollis and with Wilma run through this period of household upheaval.",
    "eventIds": [
     168,
     169,
@@ -180,7 +180,7 @@
    "endDate": "1991-08-15",
    "name": "Wilma moved into your house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma's move into your house in January 1990 after she sold her farm: within months you clashed with her over the children's bedtimes and meals, you and Sam grew distant as he stayed late at work and kept out of the rows, Sam took his mother's side, Owen had tantrums at preschool in June, Wilma took over Lily's care, your eczema flared on both hands in September, you and Sam rowed most nights by November, and by June 1991 when Wilma took a flat in town your eczema cleared over the summer. The shifts in your symptoms and your relationship moves with Sam and with Wilma run through this period of household upheaval.",
+   "reason": "Around Wilma's move into your house in January 1990 after she sold her farm: within months you clashed with her over the children's bedtimes and meals, you and Hollis grew distant as he stayed late at work and kept out of the rows, Hollis took his mother's side, Owen had tantrums at preschool in June, Wilma took over Lily's care, your eczema flared on both hands in September, you and Hollis rowed most nights by November, and by June 1991 when Wilma took a flat in town your eczema cleared over the summer. The shifts in your symptoms and your relationship moves with Hollis and with Wilma run through this period of household upheaval.",
    "setAside": false,
    "openingEventId": 168
   }
