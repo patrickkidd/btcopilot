@@ -1,0 +1,383 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      3,
+      89,
+      39,
+      53,
+      172
+     ],
+     "name": "Your move to the conservatory, 1991\u20131994",
+     "reason": "Around your start at Wexley Conservatory in September 1991, within three years: your wrist injury that stopped your playing and left you lost and low with your grandfather's death and your mother's remarriage all in the months after, a blow-up with your roommate Rafe, your absorption in fixing radios and later your drift at community college with late nights and days asleep, alongside shifts in your relationship toward your father and your anxiety around his notice. By early 1994, when you went to Portugal and found your drive again, the tightness had lifted.",
+     "change": null,
+     "openingId": 88
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      79
+     ],
+     "name": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+     "reason": "Around your grandmother Winifred found to have bowel cancer in 2001 or 2002, within two and a half years: your own running out of steam for performing and disastrous audition, your move away from Thornbury to Gull Harbour and then to Fenwick with Marisol, your distance from family and friends, your depression once that split apart, your distance from your parents and reliance on friends, and your distance from your grandmother when you visited her sickroom. The period settled as you returned to your therapist and began swimming in early 2004, and then your grandmother died in February.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, within months: your shift to distance from your mother, her pressed visits and your conflict with her when she came to Alder Creek, and your cutoff from her when you moved to Marlow Sound for nursing school in August. Though losses of your grandparents sit in these months, the period is your own trouble: your distance, conflict and cutoff from your mother as you left for school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within three years: your shift away from your mother as Wren came along, your cousin Alice's diagnosis with multiple sclerosis in October 2017, your aunt Imogen's worsening memory loss and conflicts with your cousin Hal, alongside your own mounting anxiety that you feel you ought to drive your projects forward and your shift to a sleeping pill in late 2019. In the same months, your partner Wren's swamping with events in October 2019, your overfunctioning to settle her, her fusion with her father and brother, and your own symptom of sleeplessness and distance from her at her family's lake house weekend. The shifts around her are reactions to her distress; the period is held by the pile of your own anxiety, your partner's swamping, and the family illnesses that built through 2017 and 2018.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: Only one shift counts. Event 4 is a shift in symptom, and event 173 is a shift in functioning up, which does not count on its own. The other events are a bonded relationship and a separation, which are structural changes, not shifts. Not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2008: Only two shifts count after removing those marked neverOpens. Event 112 is a shift in relationship, and event 109 is a shift in relationship (cutoff), but this period overlaps the years of your own period the long slump, which you drew from ages 27 to 29. Your reading covers 2000\u20132003; event 61 (your grandmother Lorna's death in January 2008) sits outside those years and may belong to a cluster of its own, but the hints here do not reach back a year before the events they name. The period the long slump holds the family's reactions in these months.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "2017\u20132019: This hint shares years with your own period the long slump. Your reading covers 2000\u20132003; the events of hint r5 begin in March 2017 and end in October 2019, entirely outside your years. However, the events here are many and close, and they form a cluster of their own around your marriage to Wren.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      134,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      171,
+      39,
+      53,
+      172,
+      191
+     ],
+     "name": "Your grandfather Clifford returning to the family, 1989\u20131994",
+     "reason": "Around your grandfather Clifford coming back into the family in 1989, within five years: your move with your mother and Desmond to Quarry Lane that spring, your shift to late nights in September 1989, your settling in the rebuilt Hollin Road house, your dropping of chess and debate, your sister Tara's birth in July 1990, your mother filling in your college forms and you leaving for the conservatory in September 1991, your wrist injury that stopped your playing within weeks, your blow-up with Rafe, your absorption in fixing radios, your grandfather Gordon's death in June 1991, your loss and low functioning in early 1992, your mother's remarriage that autumn, your grandmother Winifred's thyroid treatment around the same time, and your drift at community college through 1992. Your cousin Bella's melanoma diagnosis in 1994 sits with this cluster. By early 1994, when you went to Portugal and found your drive again, the tightness had lifted.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      79
+     ],
+     "name": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+     "reason": "Around your grandmother Winifred found to have bowel cancer in 2001 or 2002, within two and a half years: your own running out of steam for performing and disastrous audition in 2002, your move away from Thornbury to Gull Harbour and then to Fenwick with Marisol, your distance from family and friends, your depression once that split apart, your distance from your parents and reliance on friends, and your distance from your grandmother when you visited her sickroom. The period settled as you returned to your therapist and began swimming in early 2004, and then your grandmother died in February.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, within months: your move to Alder Creek building with Silas in July, your shift to distance from your mother at the lodge, her pressed visit and your conflict with her when she came, and your cutoff from her when you moved to Marlow Sound for nursing school in August. The period is your own trouble: your distance, conflict and cutoff from your mother as you left for school, with the loss of your grandmother opening it.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within three years: your shift away from your mother as Wren came along, your cousin Alice's diagnosis with multiple sclerosis in October 2017, your aunt Imogen's worsening memory loss and conflicts with your cousin Hal, your own mounting anxiety that you feel you ought to drive your projects forward and your shift to a sleeping pill in late 2019. In the same months, your partner Wren's swamping with events in October 2019, your overfunctioning to settle her, her fusion with her father and brother, and your own symptom of sleeplessness and distance from her at her family's lake house weekend. The shifts around her are reactions to her distress; the period is held by the pile of your own anxiety, your partner's swamping, and the family illnesses that built through 2017 and 2018.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: Only one shift counts. Event 4 is a shift in symptom, and event 173 is a shift in functioning up, which does not count on its own. The other events are a bonded relationship and a separation, which are structural changes, not shifts. Not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2001\u20132004: This hint shares years entirely with your own period the long slump, which you drew from ages 27 to 29 (2000\u20132003). Your reading holds the family's reactions in those years. The events in this hint fall within or close to those years and are not separated from your period by enough quiet to stand as their own.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "2008: The events lie close to your grandmother Lorna's death in January 2008, but the hint reaches back only a year before those events. A second period opening in 2008 when the long slump (2000\u20132003) has settled would need a change in the family on a known date sitting among its events to open it distinctly. Event 61 (Lorna's death) does sit there and is not marked neverOpens, so a cluster is held on those grounds with the shifts that pile around it.",
+     "hint": "r4",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period 'Your move to the conservatory, 1991\u20131994' shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period \"Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: unknown_event: Period 'Your marriage to Wren, 2017\u20132019' opens at event 29, which is not one of its events.",
+  "answer 2: theirs: Period 'Your grandfather Clifford returning to the family, 1989\u20131994' shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: theirs: Period \"Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: unknown_event: Period 'Your marriage to Wren, 2017\u20132019' opens at event 29, which is not one of its events.",
+  "answer 2: unknown_date: Period 'Your grandfather Clifford returning to the family, 1989\u20131994' opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: Only one shift counts. Event 4 is a shift in symptom, and event 173 is a shift in functioning up, which does not count on its own. The other events are a bonded relationship and a separation, which are structural changes, not shifts. Not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandmother Lorna's death, 2008",
+   "summary": "Around your grandmother Lorna's death in January 2008, within months: your move to Alder Creek building with Silas in July, your shift to distance from your mother at the lodge, her pressed visit and your conflict with her when she came, and your cutoff from her when you moved to Marlow Sound for nursing school in August. The period is your own trouble: your distance, conflict and cutoff from your mother as you left for school, with the loss of your grandmother opening it.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-09-11",
+   "name": "Your grandmother Lorna's death, 2008",
+   "source": "model",
+   "reason": "Around your grandmother Lorna's death in January 2008, within months: your move to Alder Creek building with Silas in July, your shift to distance from your mother at the lodge, her pressed visit and your conflict with her when she came, and your cutoff from her when you moved to Marlow Sound for nursing school in August. The period is your own trouble: your distance, conflict and cutoff from your mother as you left for school, with the loss of your grandmother opening it.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c2",
+   "title": "the year I left home",
+   "summary": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1991-03-12",
+   "endDate": "1994-01-12",
+   "name": "the year I left home",
+   "source": "user",
+   "reason": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c3",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 34,
+   "fp": 3,
+   "fn": 7,
+   "precision": 0.918918918918919,
+   "recall": 0.8292682926829268,
+   "f1": 0.8717948717948718
+  },
+  "openings": [
+   1,
+   3
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.057336
+}

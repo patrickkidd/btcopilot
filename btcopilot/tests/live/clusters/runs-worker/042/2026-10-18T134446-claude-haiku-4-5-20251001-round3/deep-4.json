@@ -1,0 +1,402 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39,
+      53
+     ],
+     "name": "Your grandfather Gordon's return, 1989\u20131994",
+     "reason": "Around your grandfather Gordon coming back into the family in early 1989, within five years: your move to Quarry Lane that spring, late nights through secondary school from autumn 1989, settling into the rebuilt Hollin Road house that fall, your mother filling in your college forms in 1991, your grandfather's death in June 1991, your move to the conservatory that September where you leaned hard on Rafe, a wrist injury that stopped your playing in October, a blow-up with Rafe in November, getting high and absorbed in fixing radios through the winter, feeling lost and low with your grandfather gone and your mother about to remarry, earning money fixing radios in spring 1992, your stepparents' wedding that October, and by January 1994 you were stung that your dad had never heard of the film you were making and you found your drive again in Portugal. The shifts pile up from your move into the rebuilt house alongside your late nights and your mother taking over your choices, then cluster thick around your grandfather's death and your time at the conservatory; the quiet that follows your return to coursework and your exchanges abroad marks where things settled.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      79
+     ],
+     "name": "Your grandmother Winifred's cancer diagnosis, 2001\u20132004",
+     "reason": "Around your grandmother Winifred being found to have bowel cancer in 2001 or 2002, within roughly two years: you running out of steam for performing and less content by the month from September 2001, a disastrous audition for the national orchestra in early 2002 where you were done with performing, on poor terms with family and friends that same September, leaving Thornbury for Gull Harbour, meeting Marisol at a winter party in January 2003, leaving Gull Harbour to live with her that June, splitting up within the year that October, sinking into a deep depression once you split, returning to Thornbury after the split and the depression, unable to face your family with anxiety high and distance between you, relying gingerly on friends in November, and her death in February 2004. Your burnout and failed audition in 2001\u20132002 sit alongside her diagnosis; the moves, the short relationship, and the depression that followed her death in 2004 gather your own trouble and your distance from your family in the same months.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna's death, 2008\u20132009",
+     "reason": "Around your grandmother Lorna dying in January 2008, within a year: four weeks building with Silas at Alder Creek in July 2008 where you were too drained for conversation with your mother, she pressed to visit you and you kept the door shut on her, and you left for nursing school and stopped speaking to your mother when you moved to Marlow Sound that August. Your mother's push to visit and your conflict with her sit close in time at the lodge, then you cut off all contact as you left for school; the silence held for roughly a year.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within roughly two years: you saw your mother a bit less once Wren came along, your cousin Alice diagnosed with multiple sclerosis in October 2017, your sister flying for a regional airline and married by summer 2018, a family holiday that summer where you and Imogen barely talked, your aunt Imogen lashing out when muddled, your mother had a heart check-up and all was clear, your job steadied and paid well by June 2019, your partner's brother Leo returned to Danfield with his family, you felt constantly that you ought to be driving projects forward and started a sleeping pill in October 2019, you aimed for shorter regular calls with your mother, your sister expecting her first baby, Wren swamped by a street party, a fundraising dinner and a drive to the lake for her mother's retirement, you laid out a plan too strict to settle her, Wren talks with her father and brother all day with nothing happening to one that the others don't hear, she settled once the weekend had a plan, you awoke from the small hours at the lake weekend with no more sleep and could only pull back, and you felt anxious when you'd had no sleep at family occasions. The shifts gather around Wren's arrival and her family's life\u2014her mother's retirement party and her brother's return\u2014drawing your anxiety up and your distance into her family's closeness.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: two shifts that count sit beside your relationship with Joelle and your separation from her, but no change in the family on a known date opens the period; the bonding and separation are events, not shifts.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2008\u20132009: a recount of the shifts leaves fewer than two shifts that count; events 61 and 64 are deaths, not shifts, and events 111, 112, 113, 114, 109 are strikes on the recount because they are told with 'neverOpens' marks or are your own relationship moves. Event 179 about your aunt Imogen's stroke is marked 'neverOpens' and belongs to no period here.",
+     "hint": "r4",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39,
+      53
+     ],
+     "name": "Your grandfather Gordon's return, 1989\u20131994",
+     "reason": "Around your grandfather Gordon coming back into the family in early 1989, within five years: your move to Quarry Lane that spring, late nights through secondary school from autumn 1989, settling into the rebuilt Hollin Road house that fall, your mother filling in your college forms in 1991, your grandfather's death in June 1991, your move to the conservatory that September where you leaned hard on Rafe, a wrist injury that stopped your playing in October, a blow-up with Rafe in November, getting high and absorbed in fixing radios through the winter, feeling lost and low with your grandfather gone and your mother about to remarry, earning money fixing radios in spring 1992, your stepparents' wedding that October, and by January 1994 you were stung that your dad had never heard of the film you were making and you found your drive again in Portugal. The shifts pile up from your move into the rebuilt house alongside your late nights and your mother taking over your choices, then cluster thick around your grandfather's death and your time at the conservatory; the quiet that follows your return to coursework and your exchanges abroad marks where things settled.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      79
+     ],
+     "name": "Your grandmother Winifred's cancer diagnosis, 2001\u20132004",
+     "reason": "Around your grandmother Winifred being found to have bowel cancer in 2001 or 2002, within roughly two years: you running out of steam for performing and less content by the month from September 2001, a disastrous audition for the national orchestra in early 2002 where you were done with performing, on poor terms with family and friends that same September, leaving Thornbury for Gull Harbour, meeting Marisol at a winter party in January 2003, leaving Gull Harbour to live with her that June, splitting up within the year that October, sinking into a deep depression once you split, returning to Thornbury after the split and the depression, unable to face your family with anxiety high and distance between you, relying gingerly on friends in November, and her death in February 2004. Your burnout and failed audition in 2001\u20132002 sit alongside her diagnosis; the moves, the short relationship, and the depression that followed her death in 2004 gather your own trouble and your distance from your family in the same months.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      109
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna dying in January 2008, within months: four weeks building with Silas at Alder Creek in July 2008 where you were too drained for conversation with your mother, and you left for nursing school in August and stopped speaking to her when you moved to Marlow Sound. Two shifts that count\u2014distance with your mother and then cutoff\u2014sit close in time after her death, held together by your move away from the family and the silence that followed.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within roughly two and a half years: you saw your mother a bit less once Wren came along, your cousin Alice diagnosed with multiple sclerosis in October 2017, your sister flying for a regional airline and married by summer 2018, your aunt Imogen lashing out when muddled in October 2018, your mother had a heart check-up and all was clear, your job steadied and paid well by June 2019, your partner's brother Leo returned to Danfield with his family, you felt constantly that you ought to be driving projects forward and started a sleeping pill in October 2019, you aimed for shorter regular calls with your mother, your sister expecting her first baby, Wren swamped by events in late October 2019, you laid out a plan too strict to settle her, Wren fused with her father and brother all day, she settled once the weekend had a plan, you awoke from the small hours at the lake weekend with no more sleep and could only pull back, and Wren felt anxious when you'd had no sleep at family occasions. The shifts gather around Wren's arrival and her family's life\u2014her mother's retirement party and her brother's return\u2014drawing your anxiety up, your distance into her family's closeness, and your mother's contact eased as Wren's family drew you in.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year I left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: two shifts that count sit beside your relationship with Joelle and your separation from her, but no change in the family on a known date opens the period; the bonding and separation are events, not shifts.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2008\u20132009: three of the seven eventIds hold shifts that count\u2014events 112, 109 plus the cutoff relationship shift at 109; the rest are either deaths (61, 64) or events marked neverOpens (113, 114). Two shifts stand, held by your grandmother Lorna's death in January 2008; her death ends the period and no further shifts pile up after you cut off contact in August, so the period closes there and does not extend into 2009.",
+     "hint": "r4",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Your grandfather Gordon's return, 1989\u20131994\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: theirs: Period \"Your grandmother Winifred's cancer diagnosis, 2001\u20132004\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: unknown_date: Period \"Your grandfather Gordon's return, 1989\u20131994\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: theirs: Period \"Your grandfather Gordon's return, 1989\u20131994\" shares days with the person's own period 'the year I left home', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: theirs: Period \"Your grandmother Winifred's cancer diagnosis, 2001\u20132004\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: unknown_date: Period \"Your grandfather Gordon's return, 1989\u20131994\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: two shifts that count sit beside your relationship with Joelle and your separation from her, but no change in the family on a known date opens the period; the bonding and separation are events, not shifts."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandmother Lorna's death, 2008",
+   "summary": "Around your grandmother Lorna dying in January 2008, within months: four weeks building with Silas at Alder Creek in July 2008 where you were too drained for conversation with your mother, and you left for nursing school in August and stopped speaking to her when you moved to Marlow Sound. Two shifts that count\u2014distance with your mother and then cutoff\u2014sit close in time after her death, held together by your move away from the family and the silence that followed.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    109
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-08-11",
+   "name": "Your grandmother Lorna's death, 2008",
+   "source": "model",
+   "reason": "Around your grandmother Lorna dying in January 2008, within months: four weeks building with Silas at Alder Creek in July 2008 where you were too drained for conversation with your mother, and you left for nursing school in August and stopped speaking to her when you moved to Marlow Sound. Two shifts that count\u2014distance with your mother and then cutoff\u2014sit close in time after her death, held together by your move away from the family and the silence that followed.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c2",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "Around your marriage to Wren in March 2017, within roughly two and a half years: you saw your mother a bit less once Wren came along, your cousin Alice diagnosed with multiple sclerosis in October 2017, your sister flying for a regional airline and married by summer 2018, your aunt Imogen lashing out when muddled in October 2018, your mother had a heart check-up and all was clear, your job steadied and paid well by June 2019, your partner's brother Leo returned to Danfield with his family, you felt constantly that you ought to be driving projects forward and started a sleeping pill in October 2019, you aimed for shorter regular calls with your mother, your sister expecting her first baby, Wren swamped by events in late October 2019, you laid out a plan too strict to settle her, Wren fused with her father and brother all day, she settled once the weekend had a plan, you awoke from the small hours at the lake weekend with no more sleep and could only pull back, and Wren felt anxious when you'd had no sleep at family occasions. The shifts gather around Wren's arrival and her family's life\u2014her mother's retirement party and her brother's return\u2014drawing your anxiety up, your distance into her family's closeness, and your mother's contact eased as Wren's family drew you in.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your marriage to Wren in March 2017, within roughly two and a half years: you saw your mother a bit less once Wren came along, your cousin Alice diagnosed with multiple sclerosis in October 2017, your sister flying for a regional airline and married by summer 2018, your aunt Imogen lashing out when muddled in October 2018, your mother had a heart check-up and all was clear, your job steadied and paid well by June 2019, your partner's brother Leo returned to Danfield with his family, you felt constantly that you ought to be driving projects forward and started a sleeping pill in October 2019, you aimed for shorter regular calls with your mother, your sister expecting her first baby, Wren swamped by events in late October 2019, you laid out a plan too strict to settle her, Wren fused with her father and brother all day, she settled once the weekend had a plan, you awoke from the small hours at the lake weekend with no more sleep and could only pull back, and Wren felt anxious when you'd had no sleep at family occasions. The shifts gather around Wren's arrival and her family's life\u2014her mother's retirement party and her brother's return\u2014drawing your anxiety up, your distance into her family's closeness, and your mother's contact eased as Wren's family drew you in.",
+   "setAside": false,
+   "openingEventId": 29
+  },
+  {
+   "id": "c3",
+   "title": "the year I left home",
+   "summary": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "eventIds": [
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1991-03-12",
+   "endDate": "1994-01-12",
+   "name": "the year I left home",
+   "source": "user",
+   "reason": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c4",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 1,
+   "fn": 1,
+   "precision": 0.6666666666666666,
+   "recall": 0.6666666666666666,
+   "f1": 0.6666666666666666
+  },
+  "members": {
+   "tp": 26,
+   "fp": 3,
+   "fn": 5,
+   "precision": 0.896551724137931,
+   "recall": 0.8387096774193549,
+   "f1": 0.8666666666666666
+  },
+  "openings": [
+   0,
+   2
+  ],
+  "hypotheses": 1,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "cluster F1 0.67 under 0.8"
+ ],
+ "cost": 0.059024
+}

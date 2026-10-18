@@ -1,0 +1,374 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39,
+      53
+     ],
+     "name": "Your grandfather Gordon's return, 1989\u20131994",
+     "reason": "Around your grandfather's coming back into the family in 1989, within five years: you shifted toward late nights and struggled with focus through secondary school; your grandfather's stroke took him in 1991; you moved with your mother and Desmond, leaned hard on your friend Rafe, then broke with him once a wrist injury stopped your playing; you were lost and low, unable to get going by early 1992, with your grandfather gone and your mother about to remarry; your grandmother was treated for thyroid disease around then. By 1994 you were stung that your father had never heard of your film, and you found your drive again with the exchange to Lisbon. The shifts in these months are yours, and no one else's shows them.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      79
+     ],
+     "name": "Your grandmother Winifred's cancer diagnosis, 2001\u20132004",
+     "reason": "Around your grandmother's bowel cancer found in 2001 or 2002: you were running out of steam for performing and anxious by September 2001; your grandmother was found to have cancer in the same months; you had a disastrous audition and were done with performing by early 2002; you moved away from Thornbury to Gull Harbour, then to Fenwick with a new partner, then separated and sank into deep depression by that autumn; you could not face your family and relied on friends instead; your grandmother died in February 2004. You left Thornbury and moved through three places and two relationships while she declined. The period ends with her death, where things settled into a new shape for you.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179,
+      130
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother's death in January 2008 and your grandfather's death at the same time: you were training as a nurse and built a new life away; your mother pressed you to visit while you were at Alder Creek building with Silas in July, and you kept the door shut on her; you stopped speaking to your mother when you moved to Marlow Sound that summer after the lodge. Your aunt had a stroke in early 2009. Your world and your mother's pulled apart in these months around the deaths and your move, and the silence between you held for roughly a year.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017: your contact with your mother eased off slightly once she came along; your cousin Alice was diagnosed with multiple sclerosis in October 2017; your sister Tara married and flew for a regional airline; your aunt's memory loss worsened and she lashed out with confusion; your mother had a clear heart check; your job steadied and paid well by mid-2019, yet you felt you ought to be driving projects forward; you started a sleeping pill in October 2019; you aimed for shorter, more regular calls with your mother; your sister was expecting her first child; Wren became swamped one thing after another in late October with a street party, a dinner, a drive to the lake for her mother's retirement; you overfunctioned laying out a plan to settle her; she and her father and brother talk all day and nothing happens to one that the others don't hear; at the lake house weekend you had no sleep from the small hours on, felt you didn't belong, and could only pull back as the others rose; Wren was anxious when you'd had no sleep, and the drives home afterward were long and quiet. The shifts in these months gather around your marriage, Wren's closeness to her family, and your own place in it all.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1998\u20131999: two shifts that count\u2014your insomnia began getting in the way and you were playing the best you ever had, winning competitions\u2014but no change in the family on a known date lies among these events; a recount shows nothing new.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39,
+      53
+     ],
+     "name": "Your grandfather Gordon's return, 1989\u20131994",
+     "reason": "Around your grandfather coming back into the family in 1989, within five years: you shifted toward late nights and struggled with focus through secondary school; your grandfather died of a stroke in 1991; you moved with your mother and Desmond, leaned hard on your friend Rafe, then broke with him once a wrist injury stopped your playing; you were lost and low, unable to get going by early 1992, with your grandfather gone and your mother about to remarry; your grandmother was treated for thyroid disease around then. By 1994 you were stung that your father had never heard of your film, and you found your drive again with the exchange to Lisbon. The shifts in these months are yours, and no one else's shows them.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      79
+     ],
+     "name": "Your grandmother Winifred's cancer diagnosis, 2001\u20132004",
+     "reason": "Around your grandmother's bowel cancer found in 2001 or 2002: you were running out of steam for performing and anxious by September 2001; your grandmother was found to have cancer in the same months; you had a disastrous audition and were done with performing by early 2002; you moved away from Thornbury to Gull Harbour, then to Fenwick with a new partner, then separated and sank into deep depression by that autumn; you could not face your family and relied on friends instead. Your grandmother died in February 2004, where things settled into a new shape for you.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother's death in January 2008 and your grandfather's death at the same time: you were training as a nurse and built a new life away; your mother pressed you to visit while you were at Alder Creek building with Silas in July, and you kept the door shut on her; you stopped speaking to your mother when you moved to Marlow Sound that summer. Your aunt had a stroke in early 2009. Your world and your mother's pulled apart in these months around the deaths and your move, and the silence between you held for roughly a year.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017: your contact with your mother eased off slightly once she came along; your cousin Alice was diagnosed with multiple sclerosis in October 2017; your sister Tara married and flew for a regional airline; your aunt's memory loss worsened and she lashed out with confusion; your mother had a clear heart check; your job steadied and paid well by mid-2019, yet you felt you ought to be driving projects forward; you started a sleeping pill in October 2019; you aimed for shorter, more regular calls with your mother; your sister was expecting her first child. In late October with a street party, a dinner, a drive to the lake for her mother's retirement, Wren became swamped one thing after another; you laid out a plan to settle her; she and her father and brother talk all day and nothing happens to one that the others don't hear. At the lake house weekend you had no sleep from the small hours on, felt you didn't belong, and could only pull back as the others rose; Wren was anxious when you'd had no sleep, and the drives home afterward were long and quiet.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1998\u20131999: two shifts that count\u2014your insomnia began getting in the way and you were playing the best you ever had, winning competitions\u2014but no change in the family on a known date lies among these events; a recount shows nothing new.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cause: Period 'Your marriage to Wren, 2017\u20132019' says one event brought about another ('drives'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 1: unknown_date: Period \"Your grandfather Gordon's return, 1989\u20131994\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: cause: Period 'Your marriage to Wren, 2017\u20132019' says one event brought about another ('drives'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: unknown_date: Period \"Your grandfather Gordon's return, 1989\u20131994\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: two shifts that count\u2014your insomnia began getting in the way and you were playing the best you ever had, winning competitions\u2014but no change in the family on a known date lies among these events; a recount shows nothing new."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Gordon's return, 1989\u20131994",
+   "summary": "Around your grandfather coming back into the family in 1989, within five years: you shifted toward late nights and struggled with focus through secondary school; your grandfather died of a stroke in 1991; you moved with your mother and Desmond, leaned hard on your friend Rafe, then broke with him once a wrist injury stopped your playing; you were lost and low, unable to get going by early 1992, with your grandfather gone and your mother about to remarry; your grandmother was treated for thyroid disease around then. By 1994 you were stung that your father had never heard of your film, and you found your drive again with the exchange to Lisbon. The shifts in these months are yours, and no one else's shows them.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    39,
+    53
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1994-01-12",
+   "name": "Your grandfather Gordon's return, 1989\u20131994",
+   "source": "model",
+   "reason": "Around your grandfather coming back into the family in 1989, within five years: you shifted toward late nights and struggled with focus through secondary school; your grandfather died of a stroke in 1991; you moved with your mother and Desmond, leaned hard on your friend Rafe, then broke with him once a wrist injury stopped your playing; you were lost and low, unable to get going by early 1992, with your grandfather gone and your mother about to remarry; your grandmother was treated for thyroid disease around then. By 1994 you were stung that your father had never heard of your film, and you found your drive again with the exchange to Lisbon. The shifts in these months are yours, and no one else's shows them.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "Your grandmother Winifred's cancer diagnosis, 2001\u20132004",
+   "summary": "Around your grandmother's bowel cancer found in 2001 or 2002: you were running out of steam for performing and anxious by September 2001; your grandmother was found to have cancer in the same months; you had a disastrous audition and were done with performing by early 2002; you moved away from Thornbury to Gull Harbour, then to Fenwick with a new partner, then separated and sank into deep depression by that autumn; you could not face your family and relied on friends instead. Your grandmother died in February 2004, where things settled into a new shape for you.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    79
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-02-18",
+   "name": "Your grandmother Winifred's cancer diagnosis, 2001\u20132004",
+   "source": "model",
+   "reason": "Around your grandmother's bowel cancer found in 2001 or 2002: you were running out of steam for performing and anxious by September 2001; your grandmother was found to have cancer in the same months; you had a disastrous audition and were done with performing by early 2002; you moved away from Thornbury to Gull Harbour, then to Fenwick with a new partner, then separated and sank into deep depression by that autumn; you could not face your family and relied on friends instead. Your grandmother died in February 2004, where things settled into a new shape for you.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c3",
+   "title": "Your grandmother Lorna's death, 2008\u20132009",
+   "summary": "Around your grandmother's death in January 2008 and your grandfather's death at the same time: you were training as a nurse and built a new life away; your mother pressed you to visit while you were at Alder Creek building with Silas in July, and you kept the door shut on her; you stopped speaking to your mother when you moved to Marlow Sound that summer. Your aunt had a stroke in early 2009. Your world and your mother's pulled apart in these months around the deaths and your move, and the silence between you held for roughly a year.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10,
+    179
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2009-01-11",
+   "name": "Your grandmother Lorna's death, 2008\u20132009",
+   "source": "model",
+   "reason": "Around your grandmother's death in January 2008 and your grandfather's death at the same time: you were training as a nurse and built a new life away; your mother pressed you to visit while you were at Alder Creek building with Silas in July, and you kept the door shut on her; you stopped speaking to your mother when you moved to Marlow Sound that summer. Your aunt had a stroke in early 2009. Your world and your mother's pulled apart in these months around the deaths and your move, and the silence between you held for roughly a year.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c4",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "Around your marriage to Wren in March 2017: your contact with your mother eased off slightly once she came along; your cousin Alice was diagnosed with multiple sclerosis in October 2017; your sister Tara married and flew for a regional airline; your aunt's memory loss worsened and she lashed out with confusion; your mother had a clear heart check; your job steadied and paid well by mid-2019, yet you felt you ought to be driving projects forward; you started a sleeping pill in October 2019; you aimed for shorter, more regular calls with your mother; your sister was expecting her first child. In late October with a street party, a dinner, a drive to the lake for her mother's retirement, Wren became swamped one thing after another; you laid out a plan to settle her; she and her father and brother talk all day and nothing happens to one that the others don't hear.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your marriage to Wren in March 2017: your contact with your mother eased off slightly once she came along; your cousin Alice was diagnosed with multiple sclerosis in October 2017; your sister Tara married and flew for a regional airline; your aunt's memory loss worsened and she lashed out with confusion; your mother had a clear heart check; your job steadied and paid well by mid-2019, yet you felt you ought to be driving projects forward; you started a sleeping pill in October 2019; you aimed for shorter, more regular calls with your mother; your sister was expecting her first child. In late October with a street party, a dinner, a drive to the lake for her mother's retirement, Wren became swamped one thing after another; you laid out a plan to settle her; she and her father and brother talk all day and nothing happens to one that the others don't hear.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 34,
+   "fp": 5,
+   "fn": 7,
+   "precision": 0.8717948717948718,
+   "recall": 0.8292682926829268,
+   "f1": 0.8500000000000001
+  },
+  "openings": [
+   2,
+   3
+  ],
+  "hypotheses": 1,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.051318
+}

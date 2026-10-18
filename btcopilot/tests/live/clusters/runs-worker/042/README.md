@@ -7,13 +7,15 @@ Ten tries per case of cluster detection, on Bedrock, each folder with its ledger
 | `2026-10-18T112620-claude-haiku-4-5-20251001-round1` | Haiku 4.5 | 280b57b8 | `ledger.jsonl`, its Haiku lines |
 | `2026-10-18T115905-claude-sonnet-5` | Sonnet 5, thinking off | 280b57b8 | `ledger.jsonl`, its Sonnet lines |
 | `2026-10-18T132913-claude-haiku-4-5-20251001-round2` | Haiku 4.5 | 81978261 | `round2-ledger.jsonl` |
+| `2026-10-18T134446-claude-haiku-4-5-20251001-round3` | Haiku 4.5 | 9f78697f | `round3-ledger.jsonl` |
 
 Round 1 and the Sonnet tries were measured on 280b57b8, before the word list that marks a
 shift as a standing pattern was narrowed to "always" and "forever", in code and in the prompt
-(83832b78, 69a6bb0f, 81978261). Round 2 is Haiku again on 81978261. The round 1 folder was
-renamed after its tries; its files are unchanged.
+(83832b78, 69a6bb0f, 81978261). Round 2 is Haiku again on 81978261. Round 3 is Haiku on
+9f78697f, the final prompt (version 21, the one prompt-fix round); rounds 1 and 2 are kept
+as evidence. The round 1 folder was renamed after its tries; its files are unchanged.
 
-Sonnet was not tried again on 81978261. Its failure is that no first answer could be read:
+Sonnet was not tried again on 81978261 or 9f78697f. Its failure is that no first answer could be read:
 cut off at the length limit on deep and deep-unasked, and not the JSON asked for on the other
 cases. The word list does not touch either.
 

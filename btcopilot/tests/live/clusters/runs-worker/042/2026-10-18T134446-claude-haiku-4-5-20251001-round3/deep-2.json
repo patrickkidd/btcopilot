@@ -1,0 +1,402 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39,
+      53,
+      172
+     ],
+     "name": "Jonah leaving home, 1989\u20131994",
+     "reason": "Around your grandfather Gordon's return to the family in early 1989 and your move into the rebuilt house that autumn, within months: your late nights and difficulty sleeping began, you leaned hard on Rafe at the conservatory and then clashed with him once a wrist injury stopped your playing in October 1991. Your functioning fell and your anxiety rose through that first term and into 1992, when you were lost and low with your grandfather gone and much moving at once; you dropped out and spent a bleak year at community college. Your father's shift toward his own father sits in these months. The events show the period reaching from early 1989 through your exchange to Portugal in early 1994, when you found your drive again. Events of your sister's birth in 1990 and your mother's wedding in autumn 1992 sit within it but open nothing of their own.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      107,
+      108,
+      79
+     ],
+     "name": "Jonah's move away from family, 2001\u20132004",
+     "reason": "Around the autumn of 2001, when your grandmother Winifred was found to have bowel cancer and you ran out of steam for performing: your functioning fell and your anxiety rose as you prepared for a disastrous audition in early 2002. Within months you were on poor terms with your family and friends, left Thornbury for Gull Harbour, met Marisol, moved to Fenwick with her, and when that split came apart that October you sank into deep depression. You could not face your family, but relied on friends\u2014Corbin, Dale and Hamish\u2014and began swimming and therapy. Your father came closer through Corbin's talks with him. By January 2004 you were requesting help from your parents with therapy costs and returning to your therapist; your functioning began to rise. Your grandmother died in February 2004. The period reaches from autumn 2001 through the start of 2004, where your recovery pointed you toward nursing.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10
+     ],
+     "name": "Lorna's death and Jonah's cutoff from his mother, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, your own functioning and relationship moves shifted sharply. In July, at Alder Creek with Silas before nursing school, you were too drained for conversation with your mother; she pressed to visit you, your anxiety rose, and when she arrived you kept the door shut. Within weeks of leaving for nursing school in Marlow Sound in September, you stopped speaking to your mother\u2014a cutoff that held for roughly a year. The period is short and sharp, its shifts piling within two months around a structural loss, and reaches from July through September 2008 where the cutoff began.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Wren joining the family and Jonah's anxiety, 2017\u20132019",
+     "reason": "Around your wedding to Wren in March 2017, shifts began in your contact with your mother and in your own functioning. You saw her a bit less once Wren came along; by October 2019, you were aiming for shorter, more regular calls. In that same autumn, your sister Tara's pregnancy was on the way\u2014your father's first grandchild\u2014and your job steadied and paid well, yet your anxiety rose as you constantly felt you ought to be driving your projects forward. You started a sleeping pill. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. Around the lake house weekend for your mother-in-law Frances's retirement in late October 2019, your anxiety and your wife's rose sharply: you lay awake from the small hours with no more sleep and could only pull back as the others rose; you felt you didn't belong. Your wife settled once the weekend had a plan, but your own sleep worsened around her family. The period holds shifts in your own anxiety and functioning alongside changes in your marriage and your place in Wren's family, reaching from your wedding through the lake house weekend in October 2019.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year he left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: Not enough in the diagram to choose a reading. Event 11 (bonding with Joelle in January 1998) is a structural change and not a shift of your own. Event 4 (insomnia began getting in the way in January 1999) is a shift that counts, and event 173 (playing the best you ever had, winning competitions in January 1999) is a shift up in functioning that does not count on its own; event 12 (separated in July 1999) is a structural event, not a shift. Event 22 (started with a therapist in August 1999) is a structural event. The recount leaves only one shift that counts as a departure from your ordinary level, so there is not enough to hold the diagram as a period.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2001\u20132004: This period is covered by the time you named, 'the long slump', which runs from ages 27 to 29, or 2000\u20132003. Your reading of those years stands.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39,
+      53,
+      172
+     ],
+     "name": "Your grandfather Gordon coming back to the family, 1989\u20131994",
+     "reason": "Around your grandfather Gordon's return to the family in early 1989 and your move into the rebuilt house on Hollin Road that autumn, within months: your late nights and difficulty sleeping began, you leaned hard on Rafe at the conservatory and then clashed with him once a wrist injury stopped your playing in October 1991. Your functioning fell and your anxiety rose through that first term and into 1992, when you were lost and low with your grandfather gone and much moving at once; you dropped out and spent a bleak year at community college. Your father's shift toward his own father sits in these months. The events show the period reaching from early 1989 through your exchange to Portugal in early 1994, when you found your drive again.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, your own functioning and relationship moves shifted sharply. In July, at Alder Creek with Silas before nursing school, you were too drained for conversation with your mother; she pressed to visit you, your anxiety rose, and when she arrived you kept the door shut. Within weeks of leaving for nursing school in Marlow Sound in September, you stopped speaking to your mother\u2014a cutoff that held for roughly a year. The period is short and sharp, its shifts piling within two months around a structural loss, and reaches from July through September 2008 where the cutoff began.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your wedding to Wren in March 2017, shifts began in your contact with your mother and in your own functioning. You saw her a bit less once Wren came along; by October 2019, you were aiming for shorter, more regular calls. In that same autumn, your sister Tara's pregnancy was on the way\u2014your father's first grandchild\u2014and your job steadied and paid well, yet your anxiety rose as you constantly felt you ought to be driving your projects forward. You started a sleeping pill. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. Around the lake house weekend for your mother-in-law Frances's retirement in late October 2019, your anxiety and your wife's rose sharply: you lay awake from the small hours with no more sleep and could only pull back as the others rose; you felt you didn't belong. Your wife settled once the weekend had a plan, but your own sleep worsened around her family. The period holds shifts in your own anxiety and functioning alongside changes in your marriage and your place in Wren's family, reaching from your wedding through the lake house weekend in October 2019.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year he left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1998\u20131999: Not enough in the diagram to choose a reading. Event 11 (bonding with Joelle in January 1998) is a structural change and not a shift of your own. Event 4 (insomnia began getting in the way in January 1999) is a shift that counts, and event 173 (playing the best you ever had, winning competitions in January 1999) is a shift up in functioning that does not count on its own; event 12 (separated in July 1999) is a structural event, not a shift. Event 22 (started with a therapist in August 1999) is a structural event. The recount leaves only one shift that counts as a departure from your ordinary level, so there is not enough to hold the diagram as a period.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2001\u20132004: This period is covered by the time you named, 'the long slump', which runs from ages 27 to 29, or 2000\u20132003. Your reading of those years stands.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Jonah's move away from family, 2001\u20132004\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: symptom_name: Period \"Lorna's death and Jonah's cutoff from his mother, 2008\" is named by the person's trouble (['cutoff']); name it by the change in the family and its years.",
+  "answer 1: unknown_date: Period 'Jonah leaving home, 1989\u20131994' opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: unknown_date: Period 'Your grandfather Gordon coming back to the family, 1989\u20131994' opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: renamed: The person's period 'the year he left home' is not in their own words.",
+  "answer 2: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: Not enough in the diagram to choose a reading. Event 11 (bonding with Joelle in January 1998) is a structural change and not a shift of your own. Event 4 (insomnia began getting in the way in January 1999) is a shift that counts, and event 173 (playing the best you ever had, winning competitions in January 1999) is a shift up in functioning that does not count on its own; event 12 (separated in July 1999) is a structural event, not a shift. Event 22 (started with a therapist in August 1999) is a structural event. The recount leaves only one shift that counts as a departure from your ordinary level, so there is not enough to hold the diagram as a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Gordon coming back to the family, 1989\u20131994",
+   "summary": "Around your grandfather Gordon's return to the family in early 1989 and your move into the rebuilt house on Hollin Road that autumn, within months: your late nights and difficulty sleeping began, you leaned hard on Rafe at the conservatory and then clashed with him once a wrist injury stopped your playing in October 1991. Your functioning fell and your anxiety rose through that first term and into 1992, when you were lost and low with your grandfather gone and much moving at once; you dropped out and spent a bleak year at community college. Your father's shift toward his own father sits in these months. The events show the period reaching from early 1989 through your exchange to Portugal in early 1994, when you found your drive again.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    146,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    39,
+    53,
+    172
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1994-01-12",
+   "name": "Your grandfather Gordon coming back to the family, 1989\u20131994",
+   "source": "model",
+   "reason": "Around your grandfather Gordon's return to the family in early 1989 and your move into the rebuilt house on Hollin Road that autumn, within months: your late nights and difficulty sleeping began, you leaned hard on Rafe at the conservatory and then clashed with him once a wrist injury stopped your playing in October 1991. Your functioning fell and your anxiety rose through that first term and into 1992, when you were lost and low with your grandfather gone and much moving at once; you dropped out and spent a bleak year at community college. Your father's shift toward his own father sits in these months. The events show the period reaching from early 1989 through your exchange to Portugal in early 1994, when you found your drive again.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "Your grandmother Lorna's death, 2008",
+   "summary": "Around your grandmother Lorna's death in January 2008, your own functioning and relationship moves shifted sharply. In July, at Alder Creek with Silas before nursing school, you were too drained for conversation with your mother; she pressed to visit you, your anxiety rose, and when she arrived you kept the door shut. Within weeks of leaving for nursing school in Marlow Sound in September, you stopped speaking to your mother\u2014a cutoff that held for roughly a year. The period is short and sharp, its shifts piling within two months around a structural loss, and reaches from July through September 2008 where the cutoff began.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-09-11",
+   "name": "Your grandmother Lorna's death, 2008",
+   "source": "model",
+   "reason": "Around your grandmother Lorna's death in January 2008, your own functioning and relationship moves shifted sharply. In July, at Alder Creek with Silas before nursing school, you were too drained for conversation with your mother; she pressed to visit you, your anxiety rose, and when she arrived you kept the door shut. Within weeks of leaving for nursing school in Marlow Sound in September, you stopped speaking to your mother\u2014a cutoff that held for roughly a year. The period is short and sharp, its shifts piling within two months around a structural loss, and reaches from July through September 2008 where the cutoff began.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c3",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "Around your wedding to Wren in March 2017, shifts began in your contact with your mother and in your own functioning. You saw her a bit less once Wren came along; by October 2019, you were aiming for shorter, more regular calls. In that same autumn, your sister Tara's pregnancy was on the way\u2014your father's first grandchild\u2014and your job steadied and paid well, yet your anxiety rose as you constantly felt you ought to be driving your projects forward. You started a sleeping pill. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. Around the lake house weekend for your mother-in-law Frances's retirement in late October 2019, your anxiety and your wife's rose sharply: you lay awake from the small hours with no more sleep and could only pull back as the others rose; you felt you didn't belong. Your wife settled once the weekend had a plan, but your own sleep worsened around her family. The period holds shifts in your own anxiety and functioning alongside changes in your marriage and your place in Wren's family, reaching from your wedding through the lake house weekend in October 2019.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202,
+    151
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-26",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your wedding to Wren in March 2017, shifts began in your contact with your mother and in your own functioning. You saw her a bit less once Wren came along; by October 2019, you were aiming for shorter, more regular calls. In that same autumn, your sister Tara's pregnancy was on the way\u2014your father's first grandchild\u2014and your job steadied and paid well, yet your anxiety rose as you constantly felt you ought to be driving your projects forward. You started a sleeping pill. Your cousin Alice was diagnosed with multiple sclerosis in October 2017. Around the lake house weekend for your mother-in-law Frances's retirement in late October 2019, your anxiety and your wife's rose sharply: you lay awake from the small hours with no more sleep and could only pull back as the others rose; you felt you didn't belong. Your wife settled once the weekend had a plan, but your own sleep worsened around her family. The period holds shifts in your own anxiety and functioning alongside changes in your marriage and your place in Wren's family, reaching from your wedding through the lake house weekend in October 2019.",
+   "setAside": false,
+   "openingEventId": 29
+  },
+  {
+   "id": "c4",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 34,
+   "fp": 7,
+   "fn": 7,
+   "precision": 0.8292682926829268,
+   "recall": 0.8292682926829268,
+   "f1": 0.8292682926829268
+  },
+  "openings": [
+   1,
+   3
+  ],
+  "hypotheses": 1,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'the year I left home' is not stored as theirs"
+ ],
+ "cost": 0.056764
+}

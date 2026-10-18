@@ -1,0 +1,308 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around Walter moving the family across the country in March 1952 and buying an apple orchard: within the year, June wrote to her sister Edna every day in May, she and Walter grew distant by June, Glen fought at his new school in October, Walter cut off his brother Harlan in January 1953, June kept to her bed for weeks that winter, and Walter and June rowed over money for trees in April. By September 1953 June joined the church choir and her letters thinned out, marking a shift in the family's settling. These shifts in anxiety, functioning, and relationship move together around the move and its aftermath.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failed, 1968\u20131969",
+     "reason": "Around the orchard failing in May 1968 when a late frost took the whole crop and the bank called in the loan: Walter drank heavily by June, he and Glen blamed each other in July, Glen and Marian took over family finances in November, Carl's asthma worsened that winter, Ida's heart trouble was found in May 1969, and you began wetting the bed in April 1969. Walter stopped drinking and took work pruning trees by October 1969, marking where the family settled. The shifts move from Walter's symptom and the conflict with Glen, through Carl's symptom, to your own symptom and Ida's, with Glen overfunctioning to steady the household.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      158
+     ],
+     "name": "Glen lost his job at the cannery, 1975\u20131976",
+     "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975: Glen was out of work most of that year sitting in the truck, he and Marian fought loudly over money in June, Marian took a second job cleaning offices at night, you stopped eating and lost weight that summer, you kept to your room and grew distant from Marian in October, Walter began drinking again in December, and Glen started driving a delivery truck in March 1976. You began eating again and made the track team by June 1976, marking where things settled. The shifts spread across the household\u2014Glen's functioning down, conflict between Glen and Marian, Marian overfunctioning, your symptom and distance, Walter's relapse\u2014with the family moving through a year of instability.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      177,
+      178
+     ],
+     "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma moving in January 1990, selling her farm and moving into your house: you clashed with her over the children's bedtimes and meals in April, you and Hollis grew distant in May while he took his mother's side, Owen had tantrums at preschool in June, Wilma took over Lily's care in August, you developed eczema on both hands in September, and you and Hollis rowed most nights by November. Your mother drove over twice a week to take your side in January 1991, and Wilma took a flat in town in June 1991, marking where things shifted. Your eczema cleared over the summer of 1991. The period holds conflict between you and Wilma, distance between you and Hollis, Wilma's overfunctioning with Lily, and your symptoms rising then falling as the household changed shape.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1994: Events fall within the same few days of a wildfire and evacuation to a school gym (noted event 183 on August 12), with shifts on August 12, 13, 14, and 15 showing immediate acute reactions to a real threat. Within a week of August 16 when the family was allowed home, you and the children were calm again and back at school. This is an acute episode\u2014a short reaction to a real event that settles within days\u2014not a period of heightened difficulty in the family's emotional process.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996\u20131997: The recount of shifts that count is two: Tess's drinking in October 1996 and your anxiety phoning her every night in November 1996. One shift alone is a reaction, and two shifts are not enough in the diagram to choose a reading around them. Event 192 (your mother paying Tess's rent and keeping Jesse most weekends) is told with an unknown date and marked `neverOpens`, so it does not open a period. There is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around Walter moving the family across the country in March 1952 and buying an apple orchard: June wrote to her sister Edna every day in May with her anxiety up, she and Walter grew distant by June, Glen fought at his new school in October with his symptom up, Walter cut off his brother Harlan in January 1953, June kept to her bed for weeks that first winter with her functioning down, and Walter and June rowed over money for trees in April. By September 1953 June joined the church choir and her letters thinned out, with her anxiety down and functioning up, marking where the family settled.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failed, 1968\u20131969",
+     "reason": "Around the orchard failing in May 1968 when a late frost took the whole crop and the bank called in the loan: Walter drank heavily by June with his symptom up, he and Glen blamed each other in July with conflict between them, Glen and Marian took over family finances in November with Glen overfunctioning, Carl's asthma worsened that winter with his symptom up, Carl's asthma eased once spring came in April 1969 with his symptom down, you began wetting the bed in April 1969 with your symptom up, Ida's heart trouble was found in May 1969 with her symptom up, and Walter stopped drinking and took work pruning trees by October 1969 with his functioning up, marking where the family settled.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      158
+     ],
+     "name": "Glen lost his job at the cannery, 1975\u20131976",
+     "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975: Glen was out of work most of that year with his functioning down, he and Marian fought loudly over money in June with conflict between them, Marian took a second job cleaning offices at night with her overfunctioning, you stopped eating and lost weight that summer with your symptom up, you kept to your room and grew distant from Marian in October with distance between you, Walter began drinking again in December with his symptom up, and Glen started driving a delivery truck in March 1976. You began eating again and made the track team by June 1976 with your functioning up, marking where things settled.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      177,
+      178
+     ],
+     "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma moving in January 1990 when she sold her farm and moved into your house: you clashed with her over the children's bedtimes and meals in April with conflict between you, you and Hollis grew distant in May while he took his mother's side toward her, Owen had tantrums at preschool in June with his symptom up, Wilma took over Lily's care in August with her overfunctioning, you developed eczema on both hands in September with your symptom up, and you and Hollis rowed most nights by November with conflict between you. Wilma took a flat in town in June 1991, and your eczema cleared over the summer of 1991 with your symptom down, marking where things settled.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1994: Events fall within the same few days of a wildfire and evacuation to a school gym, with shifts on August 12, 13, 14, and 15 showing immediate acute reactions to a real threat. Within a week of August 16 when the family was allowed home, you and the children were calm again and back at school. This is an acute episode, not a period of heightened difficulty in the family's emotional process.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996\u20131997: The recount of shifts that count is two: Tess's symptom up with drinking in October 1996 and your anxiety up phoning her every night in November 1996. There is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cause: Period \"Wilma moved into Nora and Hollis's house, 1990\u20131991\" says one event brought about another ('drove'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 5 shifts that count and was declined: 1994: Events fall within the same few days of a wildfire and evacuation to a school gym, with shifts on August 12, 13, 14, and 15 showing immediate acute reactions to a real threat. Within a week of August 16 when the family was allowed home, you and the children were calm again and back at school. This is an acute episode, not a period of heightened difficulty in the family's emotional process.",
+  "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996\u20131997: The recount of shifts that count is two: Tess's symptom up with drinking in October 1996 and your anxiety up phoning her every night in November 1996. There is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Around Walter moving the family across the country in March 1952 and buying an apple orchard: June wrote to her sister Edna every day in May with her anxiety up, she and Walter grew distant by June, Glen fought at his new school in October with his symptom up, Walter cut off his brother Harlan in January 1953, June kept to her bed for weeks that first winter with her functioning down, and Walter and June rowed over money for trees in April. By September 1953 June joined the church choir and her letters thinned out, with her anxiety down and functioning up, marking where the family settled.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    114,
+    115,
+    116,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Around Walter moving the family across the country in March 1952 and buying an apple orchard: June wrote to her sister Edna every day in May with her anxiety up, she and Walter grew distant by June, Glen fought at his new school in October with his symptom up, Walter cut off his brother Harlan in January 1953, June kept to her bed for weeks that first winter with her functioning down, and Walter and June rowed over money for trees in April. By September 1953 June joined the church choir and her letters thinned out, with her anxiety down and functioning up, marking where the family settled.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failed, 1968\u20131969",
+   "summary": "Around the orchard failing in May 1968 when a late frost took the whole crop and the bank called in the loan: Walter drank heavily by June with his symptom up, he and Glen blamed each other in July with conflict between them, Glen and Marian took over family finances in November with Glen overfunctioning, Carl's asthma worsened that winter with his symptom up, Carl's asthma eased once spring came in April 1969 with his symptom down, you began wetting the bed in April 1969 with your symptom up, Ida's heart trouble was found in May 1969 with her symptom up, and Walter stopped drinking and took work pruning trees by October 1969 with his functioning up, marking where the family settled.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    136,
+    137,
+    140,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failed, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard failing in May 1968 when a late frost took the whole crop and the bank called in the loan: Walter drank heavily by June with his symptom up, he and Glen blamed each other in July with conflict between them, Glen and Marian took over family finances in November with Glen overfunctioning, Carl's asthma worsened that winter with his symptom up, Carl's asthma eased once spring came in April 1969 with his symptom down, you began wetting the bed in April 1969 with your symptom up, Ida's heart trouble was found in May 1969 with her symptom up, and Walter stopped drinking and took work pruning trees by October 1969 with his functioning up, marking where the family settled.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Glen lost his job at the cannery, 1975\u20131976",
+   "summary": "Around Glen losing his job when the Ridgeport cannery closed in February 1975: Glen was out of work most of that year with his functioning down, he and Marian fought loudly over money in June with conflict between them, Marian took a second job cleaning offices at night with her overfunctioning, you stopped eating and lost weight that summer with your symptom up, you kept to your room and grew distant from Marian in October with distance between you, Walter began drinking again in December with his symptom up, and Glen started driving a delivery truck in March 1976. You began eating again and made the track team by June 1976 with your functioning up, marking where things settled.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    154,
+    155,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "Glen lost his job at the cannery, 1975\u20131976",
+   "source": "model",
+   "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975: Glen was out of work most of that year with his functioning down, he and Marian fought loudly over money in June with conflict between them, Marian took a second job cleaning offices at night with her overfunctioning, you stopped eating and lost weight that summer with your symptom up, you kept to your room and grew distant from Marian in October with distance between you, Walter began drinking again in December with his symptom up, and Glen started driving a delivery truck in March 1976. You began eating again and made the track team by June 1976 with your functioning up, marking where things settled.",
+   "setAside": false,
+   "openingEventId": 148
+  },
+  {
+   "id": "c4",
+   "title": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma moving in January 1990 when she sold her farm and moved into your house: you clashed with her over the children's bedtimes and meals in April with conflict between you, you and Hollis grew distant in May while he took his mother's side toward her, Owen had tantrums at preschool in June with his symptom up, Wilma took over Lily's care in August with her overfunctioning, you developed eczema on both hands in September with your symptom up, and you and Hollis rowed most nights by November with conflict between you. Wilma took a flat in town in June 1991, and your eczema cleared over the summer of 1991 with your symptom down, marking where things settled.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    177,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma moved into Nora and Hollis's house, 1990\u20131991",
+   "source": "model",
+   "reason": "Around Wilma moving in January 1990 when she sold her farm and moved into your house: you clashed with her over the children's bedtimes and meals in April with conflict between you, you and Hollis grew distant in May while he took his mother's side toward her, Owen had tantrums at preschool in June with his symptom up, Wilma took over Lily's care in August with her overfunctioning, you developed eczema on both hands in September with your symptom up, and you and Hollis rowed most nights by November with conflict between you. Wilma took a flat in town in June 1991, and your eczema cleared over the summer of 1991 with your symptom down, marking where things settled.",
+   "setAside": false,
+   "openingEventId": 168
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 35,
+   "fp": 0,
+   "fn": 9,
+   "precision": 1.0,
+   "recall": 0.7954545454545454,
+   "f1": 0.8860759493670886
+  },
+  "openings": [
+   4,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.043215
+}

@@ -1,0 +1,111 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money and her distance from your father on that subject, your brother's grades falling, and your mother calmer once back at work by March 1990; these shifts in your mother and brother fall close together across the death, and your mother's settling marks where things steadied.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della's cancer diagnosis, 1993\u20131996",
+     "reason": "From your leaving for college in September 1993 through your mother's cancer diagnosis in February 1995 and after: your migraines, your closeness to your brother by phone, your mother's diagnosis, your distance from your brother, and your distance from your mother by early 1996; every shift in these years is yours, and no one else's shows then, but the pile of your own shifts beside your mother's diagnosis and your moves toward and then away from your brother hold the period together.",
+     "change": null,
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money and her distance from your father on that subject, your brother's grades falling, and your mother calmer once back at work by March 1990; these shifts in your mother and brother fall close together across the death, and your mother's settling marks where things steadied.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money and her distance from your father on that subject, your brother's grades falling, and your mother calmer once back at work by March 1990; these shifts in your mother and brother fall close together across the death, and your mother's settling marks where things steadied.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della's cancer diagnosis, 1993\u20131996",
+   "summary": "From your leaving for college in September 1993 through your mother's cancer diagnosis in February 1995 and after: your migraines, your closeness to your brother by phone, your mother's diagnosis, your distance from your brother, and your distance from your mother by early 1996; every shift in these years is yours, and no one else's shows then, but the pile of your own shifts beside your mother's diagnosis and your moves toward and then away from your brother hold the period together.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della's cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "From your leaving for college in September 1993 through your mother's cancer diagnosis in February 1995 and after: your migraines, your closeness to your brother by phone, your mother's diagnosis, your distance from your brother, and your distance from your mother by early 1996; every shift in these years is yours, and no one else's shows then, but the pile of your own shifts beside your mother's diagnosis and your moves toward and then away from your brother hold the period together.",
+   "setAside": false,
+   "openingEventId": 15
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.010268
+}
