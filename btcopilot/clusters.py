@@ -23,6 +23,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
+from typing import ClassVar
 
 from btcopilot.extensions import db
 from btcopilot.llmutil import (
@@ -618,6 +619,12 @@ class Declined:
 
 @dataclass
 class ClusterListResponse:
+    # Cluster detection is asked at medium effort, one level under the other
+    # structured calls: at high, Sonnet 5 thought through all 16784 tokens it
+    # was given on a diagram of 129 events and was cut off in every try. Haiku
+    # does not think, so no effort is sent to it.
+    EFFORT: ClassVar[str] = "medium"
+
     clusters: list[ModelCluster] = field(default_factory=list)
     periods: list[TheirPeriod] = field(default_factory=list)
     declined: list[Declined] = field(default_factory=list)
