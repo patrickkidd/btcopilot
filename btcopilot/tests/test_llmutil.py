@@ -10,9 +10,10 @@ import pytest
 from anthropic.types import Message, Usage
 from anthropic.types.beta import BetaMessage, BetaUsage
 
-from btcopilot import llmutil
-from btcopilot.coachmodel import CoachModel, Spent
+from btcopilot import coachmodel, llmutil
+from btcopilot.coachmodel import COACH_EFFORT, CoachModel, Spent
 from btcopilot.pricing import cost, price
+from btcopilot.provider import SETTING, Provider
 
 
 def unset() -> dict:
@@ -197,3 +198,81 @@ def test_gemini_3_1_pro_preview_has_its_own_price():
     # R-0405
     rate = price("gemini-3.1-pro-preview")
     assert (rate.input, rate.output, rate.cache_read) == (2, 12, Decimal("0.20"))
+
+
+class Sent(Exception):
+    """Stops a call once its request is seen."""
+
+
+class Seen:
+    """A client that keeps each request it is sent and answers none."""
+
+    def __init__(self, sent: list, *args, **kwargs):
+        self.sent = sent
+        self.beta = self
+        self.messages = self
+
+    def stream(self, **kwargs):
+        self.sent.append(kwargs)
+        raise Sent
+
+    async def create(self, **kwargs):
+        self.sent.append(kwargs)
+        raise Sent
+
+
+class AsyncSeen(Seen):
+    async def close(self):
+        pass
+
+
+class SyncSeen(Seen):
+    def close(self):
+        pass
+
+
+def test_only_the_cluster_call_on_sonnet_5_runs_without_thinking(anthropic_env):
+    # R-0856
+    """Cluster detection, the structured call, sends thinking switched off on
+    Sonnet 5 and no setting on Haiku 4.5, as before; on the coach's model it
+    keeps adaptive thinking at the structured effort. A text call on Sonnet 5
+    keeps adaptive thinking at the text effort, and the coach's turn on Sonnet
+    5 sends its own effort and no thinking setting, as before."""
+    anthropic_env.setenv(SETTING, Provider.Anthropic.value)
+    sent: list[dict] = []
+    anthropic_env.setattr(
+        llmutil, "_extraction_anthropic_client", lambda: AsyncSeen(sent)
+    )
+    anthropic_env.setattr(llmutil, "_anthropic_client", lambda: AsyncSeen(sent))
+    anthropic_env.setattr(
+        coachmodel, "anthropic_client", lambda **options: SyncSeen(sent)
+    )
+
+    def structured(model: str) -> dict:
+        with pytest.raises(Sent):
+            asyncio.run(llmutil.claude_structured("prompt", Named, model, {}, 100))
+        return sent.pop()
+
+    def thinking(request: dict) -> tuple:
+        return request.get("thinking"), request.get("output_config")
+
+    assert thinking(structured("claude-sonnet-5")) == ({"type": "disabled"}, None)
+    assert thinking(structured("claude-haiku-4-5-20251001")) == (None, None)
+    assert thinking(structured(llmutil.RESPONSE_MODEL)) == (
+        {"type": "adaptive"},
+        {"effort": llmutil.STRUCTURED_EFFORT},
+    )
+    with pytest.raises(Sent):
+        llmutil.claude_text_sync("prompt", model="claude-sonnet-5")
+    assert thinking(sent.pop()) == (
+        {"type": "adaptive"},
+        {"effort": llmutil.TEXT_EFFORT},
+    )
+    with pytest.raises(Sent):
+        list(
+            CoachModel(model="sonnet-5").turn(
+                "system", [{"role": "user", "content": "hello"}], []
+            )
+        )
+    assert thinking(sent.pop()) == (None, {"effort": COACH_EFFORT})
+    assert sent == []
