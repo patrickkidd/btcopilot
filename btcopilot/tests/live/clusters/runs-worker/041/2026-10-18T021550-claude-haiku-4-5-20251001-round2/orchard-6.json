@@ -1,0 +1,324 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around Walter moving the family across the country in March 1952 and buying an apple orchard, within the year: June grew homesick and wrote daily to her sister, then kept to her bed for weeks that first winter; Walter spent long hours in the trees away from June; Glen began fights at his new school; Walter and his brother Harlan stopped speaking after a quarrel over their father's land money; Walter and June had rows over money for new trees. By September 1953, June joined the church choir and her letters thinned out, where the shifts settle.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      141,
+      143
+     ],
+     "name": "Walter's orchard failure, 1968\u20131969",
+     "reason": "Around the orchard failing in May 1968 when a late frost took the whole crop and the bank called in the loan, within the year: Walter began drinking heavily; he and Glen blamed each other for the loan; Glen and Marian took over the family's money and talks with the bank; Glen's son Carl's asthma attacks worsened that winter; Nora began wetting the bed again in April; Walter stopped drinking in October and took work pruning other men's trees, where the shifts settle. Nora's bedwetting and her father's symptoms shifted together in these months.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      158
+     ],
+     "name": "Glen's job loss at the cannery, 1975\u20131976",
+     "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975, within the year: Glen sat out of work in the truck for hours; he and Marian had loud fights at night over money; Marian took a second job cleaning offices at night; Nora stopped eating properly and lost weight that summer; Nora kept to her room and said little to her mother; Walter began drinking again after six years; Nora's eating returned and she made the track team by June 1976, where the shifts settle.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      177,
+      178
+     ],
+     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+     "reason": "Around Wilma, Sam's widowed mother, selling her farm and moving into Nora and Sam's house in January 1990, within the year: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows; Sam took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam had rows most nights. By June 1991, Wilma took a flat in town, and Nora's eczema cleared over the summer, where the shifts settle.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "An acute episode: the wildfire of August 1994 was a real threat lasting three days, with the family calm again once home and the children back at school that week; the shifts fall within four days and do not show a broader family process.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "Not enough in the diagram to choose a reading: the shifts around Tess's drinking in late 1996 and early 1997 show Nora's worry and her mother's overfunctioning toward Tess, but no change in who is in the family or in how a key member functions on a known date among these events; Tess's drinking itself is told with no date anyone is sure of.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around Walter moving the family across the country in March 1952 and buying an apple orchard, within the year: June grew homesick and wrote daily to her sister, then kept to her bed for weeks that first winter; Walter spent long hours in the trees away from June; Glen began fights at his new school; Walter and his brother Harlan stopped speaking after a quarrel over their father's land money; Walter and June had rows over money for new trees. By September 1953, June joined the church choir and her letters thinned out, where the shifts settle.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      136,
+      137,
+      141,
+      143
+     ],
+     "name": "Walter's orchard failure, 1968\u20131969",
+     "reason": "Around the orchard failing in May 1968 when a late frost took the whole crop and the bank called in the loan, within the year: Walter began drinking heavily; he and Glen blamed each other for the loan; Glen and Marian took over the family's money and talks with the bank; Glen's son Carl's asthma attacks worsened that winter; Nora began wetting the bed again in April; Walter stopped drinking in October and took work pruning other men's trees, where the shifts settle. Nora's bedwetting and her father's symptoms shifted together in these months.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      177,
+      178
+     ],
+     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+     "reason": "Around Wilma, Sam's widowed mother, selling her farm and moving into Nora and Sam's house in January 1990, within the year: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows; Sam took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam had rows most nights. By June 1991, Wilma took a flat in town, and Nora's eczema cleared over the summer, where the shifts settle.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "Not enough in the diagram to choose a reading: event 113 (Faye's stomach aches) is told as 'the first winter in the valley' with no date anyone can confirm, and when struck from the count, only seven shifts remain with no known change in the family to open the period.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "Not enough in the diagram to choose a reading: event 139 (Roy stopped speaking to his father) is told with no date anyone agrees on, and when struck from the count along with event 117 (Roy kept back a year, whose year is unknown), only five shifts remain that count.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "Not enough in the diagram to choose a reading: event 156 (Tess's nightmares) is told with no date anyone is sure of, and when struck from the count, only seven shifts remain; no change in who is in the family or in how a key member functions on a known date sits among these events to open a period.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "Not enough in the diagram to choose a reading: event 176 (Marian drove over to take Nora's side) is told with no date anyone is sure of, and when struck from the count, only seven shifts remain; this period overlaps the person's own named years of 1975\u20131976.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "An acute episode: the wildfire of August 1994 was a real threat lasting three days, with the family calm again once home and the children back at school that week; the shifts fall within four days and do not show a broader family process.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "Not enough in the diagram to choose a reading: event 190 (Tess's drinking) is told with no date anyone is sure of, and when struck from the count, only three shifts remain; no change in who is in the family or in how a key member functions on a known date among the remaining events opens a period.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: theirs: Period \"Glen's job loss at the cannery, 1975\u20131976\" shares days with the person's own period 'the year Dad lost his job', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: An acute episode: the wildfire of August 1994 was a real threat lasting three days, with the family calm again once home and the children back at school that week; the shifts fall within four days and do not show a broader family process.",
+  "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: Not enough in the diagram to choose a reading: event 190 (Tess's drinking) is told with no date anyone is sure of, and when struck from the count, only three shifts remain; no change in who is in the family or in how a key member functions on a known date among the remaining events opens a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Around Walter moving the family across the country in March 1952 and buying an apple orchard, within the year: June grew homesick and wrote daily to her sister, then kept to her bed for weeks that first winter; Walter spent long hours in the trees away from June; Glen began fights at his new school; Walter and his brother Harlan stopped speaking after a quarrel over their father's land money; Walter and June had rows over money for new trees. By September 1953, June joined the church choir and her letters thinned out, where the shifts settle.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    114,
+    115,
+    116,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Around Walter moving the family across the country in March 1952 and buying an apple orchard, within the year: June grew homesick and wrote daily to her sister, then kept to her bed for weeks that first winter; Walter spent long hours in the trees away from June; Glen began fights at his new school; Walter and his brother Harlan stopped speaking after a quarrel over their father's land money; Walter and June had rows over money for new trees. By September 1953, June joined the church choir and her letters thinned out, where the shifts settle.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failure, 1968\u20131969",
+   "summary": "Around the orchard failing in May 1968 when a late frost took the whole crop and the bank called in the loan, within the year: Walter began drinking heavily; he and Glen blamed each other for the loan; Glen and Marian took over the family's money and talks with the bank; Glen's son Carl's asthma attacks worsened that winter; Nora began wetting the bed again in April; Walter stopped drinking in October and took work pruning other men's trees, where the shifts settle. Nora's bedwetting and her father's symptoms shifted together in these months.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    136,
+    137,
+    141,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failure, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard failing in May 1968 when a late frost took the whole crop and the bank called in the loan, within the year: Walter began drinking heavily; he and Glen blamed each other for the loan; Glen and Marian took over the family's money and talks with the bank; Glen's son Carl's asthma attacks worsened that winter; Nora began wetting the bed again in April; Walter stopped drinking in October and took work pruning other men's trees, where the shifts settle. Nora's bedwetting and her father's symptoms shifted together in these months.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+   "summary": "Around Wilma, Sam's widowed mother, selling her farm and moving into Nora and Sam's house in January 1990, within the year: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows; Sam took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam had rows most nights. By June 1991, Wilma took a flat in town, and Nora's eczema cleared over the summer, where the shifts settle.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    177,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+   "source": "model",
+   "reason": "Around Wilma, Sam's widowed mother, selling her farm and moving into Nora and Sam's house in January 1990, within the year: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows; Sam took his mother's side; Owen had tantrums at preschool; Wilma took over Lily's care; Nora's eczema flared on both hands; Nora and Sam had rows most nights. By June 1991, Wilma took a flat in town, and Nora's eczema cleared over the summer, where the shifts settle.",
+   "setAside": false,
+   "openingEventId": 168
+  },
+  {
+   "id": "c4",
+   "title": "the year Dad lost his job",
+   "summary": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "the year Dad lost his job",
+   "source": "user",
+   "reason": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 36,
+   "fp": 0,
+   "fn": 8,
+   "precision": 1.0,
+   "recall": 0.8181818181818182,
+   "f1": 0.9
+  },
+  "openings": [
+   3,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.041109
+}

@@ -1,0 +1,478 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond and his separation from your father, 1987",
+     "reason": "Around your stepfather's separation from your father in 1987 over a baby, within months: your distance from him, your pull toward your dad, his separation and return, and your anxiety rising as you made the city chess squad. No shift in anyone else's life shows then.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      134,
+      89,
+      90,
+      91,
+      92,
+      93,
+      86,
+      78,
+      83,
+      53
+     ],
+     "name": "Your grandfather Gordon's return to the family, 1989\u20131992",
+     "reason": "Around your grandfather Gordon coming back into the family in 1989 after years away, within three years: your late nights and symptoms rising, your mother's move and the house rebuild, your birth sister Tara, your underfunctioning with college forms, your fusion with Rafe once at conservatory, your wrist injury stopping your playing, conflict with Rafe, your drug use and isolation, your anxiety and lost functioning, your grandfather Gordon's death, your grandmother Winifred's thyroid surgery, and your stung feeling toward your dad. The pile builds through shifts in you and touches others: your dad's move toward his father, your stepmother's separation, your grandmother's surgery. The period reaches to where you found your footing again in Portugal.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your separation from Joelle, 1998\u20131999",
+     "reason": "Around your eighteen-month relationship with Joelle ending in 1999, within that year: your insomnia worsening before concerts, your functioning rising as you won competitions, your separation, and your move toward your therapist Victor. These months are your own trouble, and no one else's shifts show then.",
+     "change": null,
+     "openingId": 12
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      177,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      79
+     ],
+     "name": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+     "reason": "Around your grandmother Winifred's bowel cancer found in 2001 or 2002, within three years: your anxiety rising and functioning dropping as you ran out of steam for performing, your disastrous audition, your distance from your parents and friends, your move from Thornbury to Gull Harbour, your relationship with Marisol and move to Fenwick, your separation from her, your deep depression sinking in that winter, your distance from your family, your anxiety rising as you could not face them, your reliance on friends Silas, Corbin and Hamish, your dad and Corbin speaking together, your request for help from your parents with therapy, your return to your therapist, your grandmother in her final months in your parents' home, and her death in February 2004. The shifts reach from your own trouble to touches in others: your dad's talk with Corbin. The period settles where you began swimming and your functioning lifted.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      10,
+      179,
+      130
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, within months: your grandfather Clifford's death the same month, your time building with Silas at Alder Creek where you were too drained for your mother, her anxiety rising as she pressed to visit, your conflict with her when she came, your cutoff from her when you moved to nursing school in August, your aunt Imogen's stroke, and your partner's brother's first child born. Your distance from your mother, her push toward you, and your cutoff belong together around this shift in your life. The period settles once you began nursing school and the year of silence held.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within two and a half years: your distance from your mother easing slightly, your cousin Alice diagnosed with multiple sclerosis, your sister Tara marrying and moving for work, your aunt Imogen's memory worsening and her lashing out at her son, your mother's heart check-up after her siblings' illnesses, your anxiety dropping as your work steadied, your constant drive to push projects forward rising, your start on a sleeping pill, your aim for shorter regular calls with your mother, your sister's first grandchild on the way for your dad, your partner Wren swamped one after another, her anxiety and functioning down, your overfunctioning to settle her, her family's fusion with each other, her settling once the weekend had a plan, your anxiety rising at the lake house with her family, your sleep worst around them, your distance from them, and your partner's anxiety. The shifts move from you to her family and back. The period holds as you and Wren settle into marriage and the touch reaches her relatives.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "One shift that counts sits beside your separation from Joelle in July 1999, your move toward your therapist; one shift alone is not enough to open a period, and no other shift in the family shows then.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your father Russell's separation from your stepmother Bettina, 1987",
+     "reason": "Around your father's separation from your stepmother over a baby in 1987, within months: your distance from your stepfather, your pull toward your dad, and your anxiety rising as you made the city chess squad. No shift in anyone else's life shows then.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      134,
+      89,
+      90,
+      91,
+      92,
+      93,
+      86,
+      78,
+      83,
+      53
+     ],
+     "name": "Your grandfather Gordon's return to the family, 1989\u20131992",
+     "reason": "Around your grandfather Gordon coming back into the family in 1989 after years away, within three years: your late nights and symptoms rising, your mother's move and the house rebuild, your birth sister Tara, your underfunctioning with college forms, your fusion with Rafe once at conservatory, your wrist injury stopping your playing, conflict with Rafe, your drug use and isolation, your anxiety and lost functioning, your grandfather Gordon's death, your grandmother Winifred's thyroid surgery, and your stung feeling toward your dad. The pile builds through shifts in you and touches others: your dad's move toward his father, your stepmother's separation, your grandmother's surgery. The period reaches to where you found your footing again in Portugal.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your separation from Joelle, 1998\u20131999",
+     "reason": "Around your eighteen-month relationship with Joelle ending in 1999, within that year: your insomnia worsening before concerts, your functioning rising as you won competitions, your separation, and your move toward your therapist Victor. These months are your own trouble, and no one else's shifts show then.",
+     "change": null,
+     "openingId": 12
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      177,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      79
+     ],
+     "name": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+     "reason": "Around your grandmother Winifred's bowel cancer found in 2001 or 2002, within three years: your anxiety rising and functioning dropping as you ran out of steam for performing, your disastrous audition, your distance from your parents and friends, your move from Thornbury to Gull Harbour, your relationship with Marisol and move to Fenwick, your separation from her, your deep depression sinking in that winter, your distance from your family, your anxiety rising as you could not face them, your reliance on friends Silas, Corbin and Hamish, your dad and Corbin speaking together, your request for help from your parents with therapy, your return to your therapist, your grandmother in her final months in your parents' home, and her death in February 2004. The shifts reach from your own trouble to touches in others: your dad's talk with Corbin. The period settles where you began swimming and your functioning lifted.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      10,
+      179,
+      130
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, within months: your grandfather Clifford's death the same month, your time building with Silas at Alder Creek where you were too drained for your mother, her anxiety rising as she pressed to visit, your conflict with her when she came, your cutoff from her when you moved to nursing school in August, your aunt Imogen's stroke, and your partner's brother's first child born. Your distance from your mother, her push toward you, and your cutoff belong together around this shift in your life. The period settles once you began nursing school and the year of silence held.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within two and a half years: your distance from your mother easing slightly, your cousin Alice diagnosed with multiple sclerosis, your sister Tara marrying and moving for work, your aunt Imogen's memory worsening and her lashing out at her son, your mother's heart check-up after her siblings' illnesses, your anxiety dropping as your work steadied, your constant drive to push projects forward rising, your start on a sleeping pill, your aim for shorter regular calls with your mother, your sister's first grandchild on the way for your dad, your partner Wren swamped one after another, her anxiety and functioning down, your overfunctioning to settle her, her family's fusion with each other, her settling once the weekend had a plan, your anxiety rising at the lake house with her family, your sleep worst around them, your distance from them, and your partner's anxiety. The shifts move from you to her family and back. The period holds as you and Wren settle into marriage and the touch reaches her relatives.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "One shift that counts sits beside your separation from Joelle in July 1999, your move toward your therapist; one shift alone is not enough to open a period, and no other shift in the family shows then.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period 'Your stepfather Desmond and his separation from your father, 1987' is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 1: unknown_date: Period 'Your stepfather Desmond and his separation from your father, 1987' opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 1: unknown_date: Period \"Your grandfather Gordon's return to the family, 1989\u20131992\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: symptom_name: Period \"Your father Russell's separation from your stepmother Bettina, 1987\" is named by the person's trouble (['stepmother']); name it by the change in the family and its years.",
+  "answer 2: unknown_date: Period \"Your father Russell's separation from your stepmother Bettina, 1987\" opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: unknown_date: Period \"Your grandfather Gordon's return to the family, 1989\u20131992\" opens at event 60, whose date is unknown; an event of unknown date opens nothing."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "A change in the family, 1987",
+   "summary": "Around your father's separation from your stepmother over a baby in 1987, within months: your distance from your stepfather, your pull toward your dad, and your anxiety rising as you made the city chess squad. No shift in anyone else's life shows then.",
+   "eventIds": [
+    41,
+    51,
+    144,
+    145
+   ],
+   "startDate": "1987-01-12",
+   "endDate": "1987-09-12",
+   "name": "A change in the family, 1987",
+   "source": "model",
+   "reason": "Around your father's separation from your stepmother over a baby in 1987, within months: your distance from your stepfather, your pull toward your dad, and your anxiety rising as you made the city chess squad. No shift in anyone else's life shows then.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "Your grandfather Gordon's return to the family, 1989\u20131994",
+   "summary": "Around your grandfather Gordon coming back into the family in 1989 after years away, within three years: your late nights and symptoms rising, your mother's move and the house rebuild, your birth sister Tara, your underfunctioning with college forms, your fusion with Rafe once at conservatory, your wrist injury stopping your playing, conflict with Rafe, your drug use and isolation, your anxiety and lost functioning, your grandfather Gordon's death, your grandmother Winifred's thyroid surgery, and your stung feeling toward your dad. The pile builds through shifts in you and touches others: your dad's move toward his father, your stepmother's separation, your grandmother's surgery. The period reaches to where you found your footing again in Portugal.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    134,
+    89,
+    90,
+    91,
+    92,
+    93,
+    86,
+    78,
+    83,
+    53
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1994-01-12",
+   "name": "Your grandfather Gordon's return to the family, 1989\u20131994",
+   "source": "model",
+   "reason": "Around your grandfather Gordon coming back into the family in 1989 after years away, within three years: your late nights and symptoms rising, your mother's move and the house rebuild, your birth sister Tara, your underfunctioning with college forms, your fusion with Rafe once at conservatory, your wrist injury stopping your playing, conflict with Rafe, your drug use and isolation, your anxiety and lost functioning, your grandfather Gordon's death, your grandmother Winifred's thyroid surgery, and your stung feeling toward your dad. The pile builds through shifts in you and touches others: your dad's move toward his father, your stepmother's separation, your grandmother's surgery. The period reaches to where you found your footing again in Portugal.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c3",
+   "title": "Your separation from Joelle, 1998\u20131999",
+   "summary": "Around your eighteen-month relationship with Joelle ending in 1999, within that year: your insomnia worsening before concerts, your functioning rising as you won competitions, your separation, and your move toward your therapist Victor. These months are your own trouble, and no one else's shifts show then.",
+   "eventIds": [
+    11,
+    4,
+    173,
+    12,
+    22
+   ],
+   "startDate": "1998-01-12",
+   "endDate": "1999-08-12",
+   "name": "Your separation from Joelle, 1998\u20131999",
+   "source": "model",
+   "reason": "Around your eighteen-month relationship with Joelle ending in 1999, within that year: your insomnia worsening before concerts, your functioning rising as you won competitions, your separation, and your move toward your therapist Victor. These months are your own trouble, and no one else's shifts show then.",
+   "setAside": false,
+   "openingEventId": 12
+  },
+  {
+   "id": "c4",
+   "title": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+   "summary": "Around your grandmother Winifred's bowel cancer found in 2001 or 2002, within three years: your anxiety rising and functioning dropping as you ran out of steam for performing, your disastrous audition, your distance from your parents and friends, your move from Thornbury to Gull Harbour, your relationship with Marisol and move to Fenwick, your separation from her, your deep depression sinking in that winter, your distance from your family, your anxiety rising as you could not face them, your reliance on friends Silas, Corbin and Hamish, your dad and Corbin speaking together, your request for help from your parents with therapy, your return to your therapist, your grandmother in her final months in your parents' home, and her death in February 2004. The shifts reach from your own trouble to touches in others: your dad's talk with Corbin. The period settles where you began swimming and your functioning lifted.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106,
+    24,
+    107,
+    108,
+    79
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-02-18",
+   "name": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+   "source": "model",
+   "reason": "Around your grandmother Winifred's bowel cancer found in 2001 or 2002, within three years: your anxiety rising and functioning dropping as you ran out of steam for performing, your disastrous audition, your distance from your parents and friends, your move from Thornbury to Gull Harbour, your relationship with Marisol and move to Fenwick, your separation from her, your deep depression sinking in that winter, your distance from your family, your anxiety rising as you could not face them, your reliance on friends Silas, Corbin and Hamish, your dad and Corbin speaking together, your request for help from your parents with therapy, your return to your therapist, your grandmother in her final months in your parents' home, and her death in February 2004. The shifts reach from your own trouble to touches in others: your dad's talk with Corbin. The period settles where you began swimming and your functioning lifted.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c5",
+   "title": "Your grandmother Lorna's death, 2008\u20132010",
+   "summary": "Around your grandmother Lorna's death in January 2008, within months: your grandfather Clifford's death the same month, your time building with Silas at Alder Creek where you were too drained for your mother, her anxiety rising as she pressed to visit, your conflict with her when she came, your cutoff from her when you moved to nursing school in August, your aunt Imogen's stroke, and your partner's brother's first child born. Your distance from your mother, her push toward you, and your cutoff belong together around this shift in your life. The period settles once you began nursing school and the year of silence held.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    10,
+    179,
+    130
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2010-01-12",
+   "name": "Your grandmother Lorna's death, 2008\u20132010",
+   "source": "model",
+   "reason": "Around your grandmother Lorna's death in January 2008, within months: your grandfather Clifford's death the same month, your time building with Silas at Alder Creek where you were too drained for your mother, her anxiety rising as she pressed to visit, your conflict with her when she came, your cutoff from her when you moved to nursing school in August, your aunt Imogen's stroke, and your partner's brother's first child born. Your distance from your mother, her push toward you, and your cutoff belong together around this shift in your life. The period settles once you began nursing school and the year of silence held.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c6",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "Around your marriage to Wren in March 2017, within two and a half years: your distance from your mother easing slightly, your cousin Alice diagnosed with multiple sclerosis, your sister Tara marrying and moving for work, your aunt Imogen's memory worsening and her lashing out at her son, your mother's heart check-up after her siblings' illnesses, your anxiety dropping as your work steadied, your constant drive to push projects forward rising, your start on a sleeping pill, your aim for shorter regular calls with your mother, your sister's first grandchild on the way for your dad, your partner Wren swamped one after another, her anxiety and functioning down, your overfunctioning to settle her, her family's fusion with each other, her settling once the weekend had a plan, your anxiety rising at the lake house with her family, your sleep worst around them, your distance from them, and your partner's anxiety. The shifts move from you to her family and back. The period holds as you and Wren settle into marriage and the touch reaches her relatives.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202,
+    151
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-26",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your marriage to Wren in March 2017, within two and a half years: your distance from your mother easing slightly, your cousin Alice diagnosed with multiple sclerosis, your sister Tara marrying and moving for work, your aunt Imogen's memory worsening and her lashing out at her son, your mother's heart check-up after her siblings' illnesses, your anxiety dropping as your work steadied, your constant drive to push projects forward rising, your start on a sleeping pill, your aim for shorter regular calls with your mother, your sister's first grandchild on the way for your dad, your partner Wren swamped one after another, her anxiety and functioning down, your overfunctioning to settle her, her family's fusion with each other, her settling once the weekend had a plan, your anxiety rising at the lake house with her family, your sleep worst around them, your distance from them, and your partner's anxiety. The shifts move from you to her family and back. The period holds as you and Wren settle into marriage and the touch reaches her relatives.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.75,
+   "recall": 1.0,
+   "f1": 0.8571428571428571
+  },
+  "members": {
+   "tp": 35,
+   "fp": 7,
+   "fn": 6,
+   "precision": 0.8333333333333334,
+   "recall": 0.8536585365853658,
+   "f1": 0.8433734939759037
+  },
+  "openings": [
+   2,
+   3
+  ],
+  "hypotheses": 2,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 1987' is the plain name the code fell back to"
+ ],
+ "cost": 0.052613
+}

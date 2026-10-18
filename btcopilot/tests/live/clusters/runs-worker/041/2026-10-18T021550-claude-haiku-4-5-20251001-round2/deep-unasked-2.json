@@ -1,0 +1,401 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your father Russell's separation from your stepmother, 1987",
+     "reason": "Around the time your stepmother left over starting a family in 1987, you clashed more with your stepfather while staying warm toward your dad, and you made the city chess squad that autumn but felt out of your depth; the shifts pile up around the same months when your household was unsettled by the separation.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94
+     ],
+     "name": "Your grandfather Gordon's death, 1991\u20131992",
+     "reason": "Around your grandfather's death in June 1991 and the months after, your father's father came back into the family, you moved into the rebuilt house with your mother and Desmond in the autumn, you began at the conservatory leaning hard on your roommate Rafe, and within weeks a wrist injury stopped your playing and you had a blow-up with Rafe; by early 1992 you were lost and low with no footing, high most days and absorbed in radios. Your mother filled in your college forms that spring while you underfunctioned. Your grandfather's death sits among these shifts, and the period settles as you earned money from radio repair that summer.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      108
+     ],
+     "name": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+     "reason": "Around 2001 when your grandmother was found to have bowel cancer, you were running out of steam for performing and then had a disastrous audition in 2002 that left you done with it; you were on poor terms with family and friends, left Thornbury for Gull Harbour, met Marisol and left again to live with her, then split from her within the year. You sank into a deep depression back in Thornbury that winter, could not face your parents, and relied on friends like Corbin and Hamish. Your grandmother spent her final months in your parents' home; you dropped in briefly hung over on the way to the airport. The period settles as you began to recover through therapy in early 2004, and your grandmother died that February.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      10,
+      179,
+      130
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother's death in January 2008, you spent four weeks building at Alder Creek in July and were too drained for a phone call with your mother; she pressed to visit against your wishes, you kept the door shut on her, and when you left for nursing school in August you stopped speaking to her altogether. A stroke struck your aunt Imogen around the same time in early 2009; your grandmother's death and the months after hold your shifts toward isolation from your mother and your move away to school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your partner Wren's mother's retirement party, 2019",
+     "reason": "Around the lake house weekend for your partner's mother's retirement in late October 2019, your partner was swamped by events leading up to it and you overfunctioned laying out a plan while she stayed fused with her father and brother; once the weekend had structure she settled, but you were awake from the small hours with no more sleep and could only pull back as others rose, feeling you did not belong. Your job had steadied that summer and your partner's brother had returned to Danfield; the shifts in your partner's anxiety and your own pile up around the same days, held together by the family occasion and the household's gathering momentum.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "Not enough in the diagram to choose a reading; the recount without the shifts told as how things always were leaves one shift only, and no event lists a change in the family on a known date among them.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "This period shares years with the period you drew around your partner Wren's mother's retirement party, so it is held by your drawing, not returned here.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond moving in, 1987",
+     "reason": "Around when your stepfather Desmond was in the household in 1987, you clashed more with him while staying warm toward your dad, and you made the city chess squad that autumn but felt out of your depth; the shifts pile up around the same months when your father's separation from his wife was unsettling the household.",
+     "change": null,
+     "openingId": 49
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94
+     ],
+     "name": "Your grandfather Gordon's death, 1991\u20131992",
+     "reason": "Around your grandfather's death in June 1991 and the months after, your father's father came back into the family, you moved into the rebuilt house with your mother and Desmond in the autumn, you began at the conservatory leaning hard on your roommate Rafe, and within weeks a wrist injury stopped your playing and you had a blow-up with Rafe; by early 1992 you were lost and low with no footing, high most days and absorbed in radios. Your mother filled in your college forms that spring while you underfunctioned. Your grandfather's death sits among these shifts, and the period settles as you earned money from radio repair that summer.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      108
+     ],
+     "name": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+     "reason": "Around 2001 when your grandmother was found to have bowel cancer, you were running out of steam for performing and then had a disastrous audition in 2002 that left you done with it; you were on poor terms with family and friends, left Thornbury for Gull Harbour, met Marisol and left again to live with her, then split from her within the year. You sank into a deep depression back in Thornbury that winter, could not face your parents, and relied on friends like Corbin and Hamish. Your grandmother spent her final months in your parents' home; you dropped in briefly hung over on the way to the airport. The period settles as you began to recover through therapy in early 2004, and your grandmother died that February.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      10,
+      179,
+      130
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother's death in January 2008, you spent four weeks building at Alder Creek in July and were too drained for a phone call with your mother; she pressed to visit against your wishes, you kept the door shut on her, and when you left for nursing school in August you stopped speaking to her altogether. A stroke struck your aunt Imogen around the same time in early 2009; your grandmother's death and the months after hold your shifts toward isolation from your mother and your move away to school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your partner Wren's mother's retirement party, 2019",
+     "reason": "Around the lake house weekend for your partner's mother's retirement in late October 2019, your partner was swamped by events leading up to it and you overfunctioned laying out a plan while she stayed fused with her father and brother; once the weekend had structure she settled, but you were awake from the small hours with no more sleep and could only pull back as others rose, feeling you did not belong. Your job had steadied that summer and your partner's brother had returned to Danfield; the shifts in your partner's anxiety and your own pile up around the same days, held together by the family occasion and the household's gathering momentum.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "Not enough in the diagram to choose a reading; the recount without the shifts told as how things always were leaves one shift only, and no event lists a change in the family on a known date among them.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "This period shares years with the period you drew around your partner Wren's mother's retirement party, so it is held by your drawing, not returned here.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period \"Your father Russell's separation from your stepmother, 1987\" is named by the person's trouble (['stepmother']); name it by the change in the family and its years.",
+  "answer 1: unknown_date: Period \"Your father Russell's separation from your stepmother, 1987\" opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: unknown_event: Period 'Your stepfather Desmond moving in, 1987' opens at event 49, which is not one of its events.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: Not enough in the diagram to choose a reading; the recount without the shifts told as how things always were leaves one shift only, and no event lists a change in the family on a known date among them."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Gordon's death, 1989\u20131992",
+   "summary": "Around your grandfather's death in June 1991 and the months after, your father's father came back into the family, you moved into the rebuilt house with your mother and Desmond in the autumn, you began at the conservatory leaning hard on your roommate Rafe, and within weeks a wrist injury stopped your playing and you had a blow-up with Rafe; by early 1992 you were lost and low with no footing, high most days and absorbed in radios. Your mother filled in your college forms that spring while you underfunctioned. Your grandfather's death sits among these shifts, and the period settles as you earned money from radio repair that summer.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    89,
+    78,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1992-03-11",
+   "name": "Your grandfather Gordon's death, 1989\u20131992",
+   "source": "model",
+   "reason": "Around your grandfather's death in June 1991 and the months after, your father's father came back into the family, you moved into the rebuilt house with your mother and Desmond in the autumn, you began at the conservatory leaning hard on your roommate Rafe, and within weeks a wrist injury stopped your playing and you had a blow-up with Rafe; by early 1992 you were lost and low with no footing, high most days and absorbed in radios. Your mother filled in your college forms that spring while you underfunctioned. Your grandfather's death sits among these shifts, and the period settles as you earned money from radio repair that summer.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c2",
+   "title": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+   "summary": "Around 2001 when your grandmother was found to have bowel cancer, you were running out of steam for performing and then had a disastrous audition in 2002 that left you done with it; you were on poor terms with family and friends, left Thornbury for Gull Harbour, met Marisol and left again to live with her, then split from her within the year. You sank into a deep depression back in Thornbury that winter, could not face your parents, and relied on friends like Corbin and Hamish. Your grandmother spent her final months in your parents' home; you dropped in briefly hung over on the way to the airport. The period settles as you began to recover through therapy in early 2004, and your grandmother died that February.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106,
+    108
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-01-12",
+   "name": "Your grandmother Winifred's bowel cancer diagnosis, 2001\u20132004",
+   "source": "model",
+   "reason": "Around 2001 when your grandmother was found to have bowel cancer, you were running out of steam for performing and then had a disastrous audition in 2002 that left you done with it; you were on poor terms with family and friends, left Thornbury for Gull Harbour, met Marisol and left again to live with her, then split from her within the year. You sank into a deep depression back in Thornbury that winter, could not face your parents, and relied on friends like Corbin and Hamish. Your grandmother spent her final months in your parents' home; you dropped in briefly hung over on the way to the airport. The period settles as you began to recover through therapy in early 2004, and your grandmother died that February.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c3",
+   "title": "Your grandmother Lorna's death, 2008\u20132010",
+   "summary": "Around your grandmother's death in January 2008, you spent four weeks building at Alder Creek in July and were too drained for a phone call with your mother; she pressed to visit against your wishes, you kept the door shut on her, and when you left for nursing school in August you stopped speaking to her altogether. A stroke struck your aunt Imogen around the same time in early 2009; your grandmother's death and the months after hold your shifts toward isolation from your mother and your move away to school.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    10,
+    179,
+    130
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2010-01-12",
+   "name": "Your grandmother Lorna's death, 2008\u20132010",
+   "source": "model",
+   "reason": "Around your grandmother's death in January 2008, you spent four weeks building at Alder Creek in July and were too drained for a phone call with your mother; she pressed to visit against your wishes, you kept the door shut on her, and when you left for nursing school in August you stopped speaking to her altogether. A stroke struck your aunt Imogen around the same time in early 2009; your grandmother's death and the months after hold your shifts toward isolation from your mother and your move away to school.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c4",
+   "title": "Your partner Wren's mother's retirement party, 2017\u20132019",
+   "summary": "Around the lake house weekend for your partner's mother's retirement in late October 2019, your partner was swamped by events leading up to it and you overfunctioned laying out a plan while she stayed fused with her father and brother; once the weekend had structure she settled, but you were awake from the small hours with no more sleep and could only pull back as others rose, feeling you did not belong. Your job had steadied that summer and your partner's brother had returned to Danfield; the shifts in your partner's anxiety and your own pile up around the same days, held together by the family occasion and the household's gathering momentum.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202,
+    151
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-26",
+   "name": "Your partner Wren's mother's retirement party, 2017\u20132019",
+   "source": "model",
+   "reason": "Around the lake house weekend for your partner's mother's retirement in late October 2019, your partner was swamped by events leading up to it and you overfunctioned laying out a plan while she stayed fused with her father and brother; once the weekend had structure she settled, but you were awake from the small hours with no more sleep and could only pull back as others rose, feeling you did not belong. Your job had steadied that summer and your partner's brother had returned to Danfield; the shifts in your partner's anxiety and your own pile up around the same days, held together by the family occasion and the household's gathering momentum.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 31,
+   "fp": 5,
+   "fn": 10,
+   "precision": 0.8611111111111112,
+   "recall": 0.7560975609756098,
+   "f1": 0.8051948051948052
+  },
+  "openings": [
+   3,
+   3
+  ],
+  "hypotheses": 1,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.049593
+}

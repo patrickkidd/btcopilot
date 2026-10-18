@@ -1,0 +1,355 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond joining the family, 1987",
+     "reason": "Around 1987, when you began secondary school, your stepfather had left your father's home over the question of a baby, and you found yourself clashing with him while staying warm toward your dad. You made the chess squad that autumn and hated sitting at the bottom of the ladder, anxious and out of your depth. The shifts in your relationships and your anxiety pile up as the household was reshaped around Desmond's presence.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      90,
+      91,
+      92,
+      93,
+      86
+     ],
+     "name": "Your grandfather Gordon dying, 1989\u20131992",
+     "reason": "Your grandfather came back into the family around 1989 after years away, and within months your father and stepmother took a rental while the house was rebuilt. You moved into the crowded rebuilt home that autumn and began sleeping late. Your mother filled in your college forms while you underfunctioned. Your grandfather died in June 1991, and within months you injured your wrist and stopped playing. You leaned hard on Rafe, then clashed with him and he moved out. You were on your own, getting high, absorbed in fixing radios. By early 1992 you were lost and low, unable to get going. Each shift follows the next across these years, and your functioning stayed down through it all.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      104,
+      105
+     ],
+     "name": "Your grandmother Winifred found to have bowel cancer, 2001\u20132003",
+     "reason": "Around September 2001, you began running out of steam for performing and were less content by the month. Your grandmother was found to have bowel cancer in 2001 or 2002, and you had a disastrous audition for the national orchestra that left you done with performing. You were on poor terms with family and friends and left Thornbury for Gull Harbour. You met Marisol at a winter party, moved to Fenwick with her by summer, then split within the year. Once back in Thornbury that winter you sank into a deep depression, unable to face your family. You could barely manage a phone call with your mother and relied, gingerly, on friends. The trouble moves through you and your family across these two years as your performing life collapsed and your grandmother faced cancer.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna dying, 2008",
+     "reason": "Your grandmother Lorna died in January 2008, and in July you went to Alder Creek to build with Silas. Your mother pressed to visit you there, ringing and pushing though you told her repeatedly the timing was wrong. You kept the door shut on her and the visit went wrong. When you left for nursing school that August, you stopped speaking to your mother; the silence held for roughly a year. Your distance from her shifted to cutoff as you moved away, and these events cluster around your grandmother's death and your mother's pushiness in the months that followed.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "You married Wren in March 2017, and once she came along you saw your mother a bit less. In October 2019, around her mother's retirement party at the lake, Wren was swamped with one thing after another\u2014a street party, a dinner, the drive to the lake. You were too strict laying out a plan to settle her. Wren's family talks all day and nothing happens to one that the others don't hear; she and her father and brother are fused. Once the weekend had a plan she settled and the dinner went well. But you awoke from the small hours with no more sleep and could only pull back as the others rose. You felt you didn't belong. Your anxiety and symptom rose, and your distance from her family grew, while she grew anxious when you had had no sleep at family occasions. The trouble is in you and between you around her family's closeness and your own need for rest.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "One shift that counts sits beside your separation from Joelle and your start with a therapist in August 1999, and you said you were playing the best you ever had and winning competitions; one shift alone is a reaction, so there is not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "These events span from March 2017 to October 2019 with long gaps between them, and no change in the family on a known date sits among them to open the period. Your mother's heart check-up was clear, your cousin Alice's diagnosis came months after the others, and your sister's pregnancy and return home are recorded but no family shift clusters around them. Not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your father's separation from your stepmother, 1987",
+     "reason": "Around 1987, your father and stepmother separated over the question of a baby. You found yourself clashing with your stepfather while staying warm toward your dad, and you made the chess squad that autumn, anxious and out of your depth. The shifts in your relationships and your anxiety cluster around the household's instability as your parents' separation played out.",
+     "change": null,
+     "openingId": 144
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      90,
+      91,
+      92,
+      93,
+      86
+     ],
+     "name": "Your grandfather Gordon dying, 1989\u20131992",
+     "reason": "Your grandfather came back into the family around 1989 after years away, and within months your father and stepmother took a rental while the house was rebuilt. You moved into the crowded rebuilt home that autumn and began sleeping late. Your mother filled in your college forms while you underfunctioned. Your grandfather died in June 1991, and within months you injured your wrist and stopped playing. You leaned hard on Rafe, then clashed with him and he moved out. You were on your own, getting high, absorbed in fixing radios. By early 1992 you were lost and low, unable to get going. Each shift follows the next across these years, and your functioning stayed down through it all.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      104,
+      105
+     ],
+     "name": "Your grandmother Winifred found to have bowel cancer, 2001\u20132003",
+     "reason": "Around September 2001, you began running out of steam for performing and were less content by the month. Your grandmother was found to have bowel cancer in 2001 or 2002, and you had a disastrous audition for the national orchestra that left you done with performing. You were on poor terms with family and friends and left Thornbury for Gull Harbour. You met Marisol at a winter party, moved to Fenwick with her by summer, then split within the year. Once back in Thornbury that winter you sank into a deep depression, unable to face your family. You could barely manage a phone call with your mother and relied, gingerly, on friends. The trouble moves through you and your family across these two years as your performing life collapsed and your grandmother faced cancer.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109
+     ],
+     "name": "Your grandmother Lorna dying, 2008",
+     "reason": "Your grandmother Lorna died in January 2008, and in July you went to Alder Creek to build with Silas. Your mother pressed to visit you there, ringing and pushing though you told her repeatedly the timing was wrong. You kept the door shut on her and the visit went wrong. When you left for nursing school that August, you stopped speaking to your mother; the silence held for roughly a year. Your distance from her shifted to cutoff as you moved away, and these events cluster around your grandmother's death and your mother's pushiness in the months that followed.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "You married Wren in March 2017, and once she came along you saw your mother a bit less. In October 2019, around her family gathering at the lake house, you awoke from the small hours with no more sleep and could only pull back as the others rose. You felt you didn't belong. Your anxiety and symptom rose, and your distance from her family grew, while she grew anxious when you had had no sleep at family occasions. The trouble is in you and at the boundary of two families whose rhythms do not match.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "One shift that counts sits beside your separation from Joelle and your start with a therapist in August 1999, and you said you were playing the best you ever had and winning competitions; one shift alone is a reaction, so there is not enough in the diagram to choose a reading.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "These events span from March 2017 to October 2019 with long gaps between them, and no change in the family on a known date sits among them to open the period. Your mother's heart check-up was clear, your cousin Alice's diagnosis came months after the others, and your sister's pregnancy and return home are recorded but no family shift clusters around them. Not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period 'Your stepfather Desmond joining the family, 1987' is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 1: unknown_date: Period 'Your stepfather Desmond joining the family, 1987' opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: symptom_name: Period \"Your father's separation from your stepmother, 1987\" is named by the person's trouble (['stepmother']); name it by the change in the family and its years.",
+  "answer 2: unknown_date: Period \"Your father's separation from your stepmother, 1987\" opens at event 144, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: declined: Run r3 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: One shift that counts sits beside your separation from Joelle and your start with a therapist in August 1999, and you said you were playing the best you ever had and winning competitions; one shift alone is a reaction, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "A change in the family, 1987",
+   "summary": "Around 1987, your father and stepmother separated over the question of a baby. You found yourself clashing with your stepfather while staying warm toward your dad, and you made the chess squad that autumn, anxious and out of your depth. The shifts in your relationships and your anxiety cluster around the household's instability as your parents' separation played out.",
+   "eventIds": [
+    41,
+    51,
+    144,
+    145
+   ],
+   "startDate": "1987-01-12",
+   "endDate": "1987-09-12",
+   "name": "A change in the family, 1987",
+   "source": "model",
+   "reason": "Around 1987, your father and stepmother separated over the question of a baby. You found yourself clashing with your stepfather while staying warm toward your dad, and you made the chess squad that autumn, anxious and out of your depth. The shifts in your relationships and your anxiety cluster around the household's instability as your parents' separation played out.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "Your grandfather Gordon dying, 1989\u20131992",
+   "summary": "Your grandfather came back into the family around 1989 after years away, and within months your father and stepmother took a rental while the house was rebuilt. You moved into the crowded rebuilt home that autumn and began sleeping late. Your mother filled in your college forms while you underfunctioned. Your grandfather died in June 1991, and within months you injured your wrist and stopped playing. You leaned hard on Rafe, then clashed with him and he moved out. You were on your own, getting high, absorbed in fixing radios. By early 1992 you were lost and low, unable to get going. Each shift follows the next across these years, and your functioning stayed down through it all.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    89,
+    78,
+    90,
+    91,
+    92,
+    93,
+    86
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1992-01-12",
+   "name": "Your grandfather Gordon dying, 1989\u20131992",
+   "source": "model",
+   "reason": "Your grandfather came back into the family around 1989 after years away, and within months your father and stepmother took a rental while the house was rebuilt. You moved into the crowded rebuilt home that autumn and began sleeping late. Your mother filled in your college forms while you underfunctioned. Your grandfather died in June 1991, and within months you injured your wrist and stopped playing. You leaned hard on Rafe, then clashed with him and he moved out. You were on your own, getting high, absorbed in fixing radios. By early 1992 you were lost and low, unable to get going. Each shift follows the next across these years, and your functioning stayed down through it all.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c3",
+   "title": "Your grandmother Winifred found to have bowel cancer, 2001\u20132003",
+   "summary": "Around September 2001, you began running out of steam for performing and were less content by the month. Your grandmother was found to have bowel cancer in 2001 or 2002, and you had a disastrous audition for the national orchestra that left you done with performing. You were on poor terms with family and friends and left Thornbury for Gull Harbour. You met Marisol at a winter party, moved to Fenwick with her by summer, then split within the year. Once back in Thornbury that winter you sank into a deep depression, unable to face your family. You could barely manage a phone call with your mother and relied, gingerly, on friends. The trouble moves through you and your family across these two years as your performing life collapsed and your grandmother faced cancer.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    104,
+    105
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-11-12",
+   "name": "Your grandmother Winifred found to have bowel cancer, 2001\u20132003",
+   "source": "model",
+   "reason": "Around September 2001, you began running out of steam for performing and were less content by the month. Your grandmother was found to have bowel cancer in 2001 or 2002, and you had a disastrous audition for the national orchestra that left you done with performing. You were on poor terms with family and friends and left Thornbury for Gull Harbour. You met Marisol at a winter party, moved to Fenwick with her by summer, then split within the year. Once back in Thornbury that winter you sank into a deep depression, unable to face your family. You could barely manage a phone call with your mother and relied, gingerly, on friends. The trouble moves through you and your family across these two years as your performing life collapsed and your grandmother faced cancer.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c4",
+   "title": "Your grandmother Lorna dying, 2008",
+   "summary": "Your grandmother Lorna died in January 2008, and in July you went to Alder Creek to build with Silas. Your mother pressed to visit you there, ringing and pushing though you told her repeatedly the timing was wrong. You kept the door shut on her and the visit went wrong. When you left for nursing school that August, you stopped speaking to your mother; the silence held for roughly a year. Your distance from her shifted to cutoff as you moved away, and these events cluster around your grandmother's death and your mother's pushiness in the months that followed.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-08-11",
+   "name": "Your grandmother Lorna dying, 2008",
+   "source": "model",
+   "reason": "Your grandmother Lorna died in January 2008, and in July you went to Alder Creek to build with Silas. Your mother pressed to visit you there, ringing and pushing though you told her repeatedly the timing was wrong. You kept the door shut on her and the visit went wrong. When you left for nursing school that August, you stopped speaking to your mother; the silence held for roughly a year. Your distance from her shifted to cutoff as you moved away, and these events cluster around your grandmother's death and your mother's pushiness in the months that followed.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c5",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "You married Wren in March 2017, and once she came along you saw your mother a bit less. In October 2019, around her family gathering at the lake house, you awoke from the small hours with no more sleep and could only pull back as the others rose. You felt you didn't belong. Your anxiety and symptom rose, and your distance from her family grew, while she grew anxious when you had had no sleep at family occasions. The trouble is in you and at the boundary of two families whose rhythms do not match.",
+   "eventIds": [
+    29,
+    115,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "You married Wren in March 2017, and once she came along you saw your mother a bit less. In October 2019, around her family gathering at the lake house, you awoke from the small hours with no more sleep and could only pull back as the others rose. You felt you didn't belong. Your anxiety and symptom rose, and your distance from her family grew, while she grew anxious when you had had no sleep at family occasions. The trouble is in you and at the boundary of two families whose rhythms do not match.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 2,
+   "fn": 0,
+   "precision": 0.6,
+   "recall": 1.0,
+   "f1": 0.7499999999999999
+  },
+  "members": {
+   "tp": 25,
+   "fp": 4,
+   "fn": 16,
+   "precision": 0.8620689655172413,
+   "recall": 0.6097560975609756,
+   "f1": 0.7142857142857144
+  },
+  "openings": [
+   3,
+   3
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 1987' is the plain name the code fell back to",
+  "cluster F1 0.75 under 0.8"
+ ],
+ "cost": 0.050357
+}

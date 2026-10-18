@@ -1,0 +1,117 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather's death in July 1989, within the following months: your mother's worry over money in March 1988 and her move to distance from your father over money in May 1988, your brother's grades falling in November 1989, and your mother calmer once back at work by March 1990. The shifts pile up across the loss and settle within a year of it.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della told she had breast cancer, 1995\u20131996",
+     "reason": "Within months of your mother's diagnosis in February 1995: your migraines keeping you in bed from March 1994 as you were away at college from September 1993, your calls to your brother most nights from April 1994, your stop returning his calls by June 1995, and your distance from your mother by February 1996. Every shift in these months is yours, and no one else's shows then.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The event opening this hint is the death of Greta, whose date nobody is sure of and which is marked never to open a period; the other events in the hint\u2014your leaving home for college, your migraines, your calls to your brother, your mother's diagnosis, your distance from your brother and your mother\u2014make a period, but the period is shaped by your mother's diagnosis as the opening event on a known date, not by Greta's death on an unknown one.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather's death in July 1989, within the following months: your mother's worry over money in March 1988 and her move to distance from your father over money in May 1988, your brother's grades falling in November 1989, and your mother calmer once back at work by March 1990. The shifts pile up across the loss and settle within a year of it.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather's death in July 1989, within the following months: your mother's worry over money in March 1988 and her move to distance from your father over money in May 1988, your brother's grades falling in November 1989, and your mother calmer once back at work by March 1990. The shifts pile up across the loss and settle within a year of it.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "summary": "Within months of your mother's diagnosis in February 1995: your migraines keeping you in bed from March 1994 as you were away at college from September 1993, your calls to your brother most nights from April 1994, your stop returning his calls by June 1995, and your distance from your mother by February 1996. Every shift in these months is yours, and no one else's shows then.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "source": "model",
+   "reason": "Within months of your mother's diagnosis in February 1995: your migraines keeping you in bed from March 1994 as you were away at college from September 1993, your calls to your brother most nights from April 1994, your stop returning his calls by June 1995, and your distance from your mother by February 1996. Every shift in these months is yours, and no one else's shows then.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.009796
+}

@@ -1,0 +1,122 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather's death in July 1989, within the following year: your mother lay awake over money in March 1988 and stopped talking with your father about it by May 1988; your brother's grades fell in November 1989; your mother grew calmer once back at work by March 1990. The shifts pile up around a loss in the extended family, and the period settles as your mother returned to work.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother told she had breast cancer, 1995\u20131996",
+     "reason": "Around your mother's diagnosis in February 1995, within the following year: you developed migraines that kept you in bed in March 1994, called your brother most nights by April 1994, then stopped returning his calls by June 1995 and stopped calling home by February 1996. Your shifts in relationship toward and away from your brother, and your distance from your mother, fall in the months after her diagnosis; every shift in these months is yours, and no one else's shows then.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events in this hint fall across 1988\u20131990, but two of its shifts are told as how your mother was during those years\u2014lying awake over money and stopping talk about it\u2014so they are the ordinary level for this time; only one shift that counts remains (your brother's grades falling), and that alone is a reaction, not enough in the diagram to choose a reading.",
+     "hint": "r1",
+     "run": null
+    },
+    {
+     "reason": "Your mother's breast cancer diagnosis in 1995 is a change in the family and opens a period; the hint's events fall after it, but the period they belong to is drawn from the diagnosis itself and the shifts around it.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather's death in July 1989, within the following year: your mother lay awake over money in March 1988 and stopped talking with your father about it by May 1988; your brother's grades fell in November 1989; your mother grew calmer once back at work by March 1990. The shifts pile up around a loss in the extended family, and the period settles as your mother returned to work.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather's death in July 1989, within the following year: your mother lay awake over money in March 1988 and stopped talking with your father about it by May 1988; your brother's grades fell in November 1989; your mother grew calmer once back at work by March 1990. The shifts pile up around a loss in the extended family, and the period settles as your mother returned to work.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother told she had breast cancer, 1993\u20131996",
+   "summary": "Around your mother's diagnosis in February 1995, within the following year: you developed migraines that kept you in bed in March 1994, called your brother most nights by April 1994, then stopped returning his calls by June 1995 and stopped calling home by February 1996. Your shifts in relationship toward and away from your brother, and your distance from your mother, fall in the months after her diagnosis; every shift in these months is yours, and no one else's shows then.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother told she had breast cancer, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your mother's diagnosis in February 1995, within the following year: you developed migraines that kept you in bed in March 1994, called your brother most nights by April 1994, then stopped returning his calls by June 1995 and stopped calling home by February 1996. Your shifts in relationship toward and away from your brother, and your distance from your mother, fall in the months after her diagnosis; every shift in these months is yours, and no one else's shows then.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.010141
+}
