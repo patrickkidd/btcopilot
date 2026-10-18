@@ -72,7 +72,7 @@
       178
      ],
      "name": "Wilma moving into your house, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into your house in January 1990: you and Wilma clashed over the children's bedtimes and meals, Sam worked late and kept away from the kitchen rows, Sam took his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, you developed eczema on both hands, you and Sam fought most nights, and your mother drove over twice a week to take your side. By June 1991 Wilma took a flat in town, and your eczema cleared that summer. The shifts show you caught between Wilma and Sam, with the children reacting and you developing a symptom that lifted when Wilma left.",
+     "reason": "Around Wilma selling her farm and moving into your house in January 1990: you and Wilma clashed over the children's bedtimes and meals, Hollis worked late and kept away from the kitchen rows, Hollis took his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, you developed eczema on both hands, you and Hollis fought most nights, and your mother drove over twice a week to take your side. By June 1991 Wilma took a flat in town, and your eczema cleared that summer. The shifts show you caught between Wilma and Hollis, with the children reacting and you developing a symptom that lifted when Wilma left.",
      "change": null,
      "openingId": 168
     }
@@ -170,7 +170,7 @@
       178
      ],
      "name": "Wilma's move into your house, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into your house in January 1990: you and Wilma clashed over the children's bedtimes and meals, Sam worked late and kept away from the kitchen rows, Sam took his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, you developed eczema on both hands, you and Sam fought most nights, and your mother drove over twice a week to take your side. By June 1991 Wilma took a flat in town, and your eczema cleared that summer. The shifts show you caught between Wilma and Sam, with the children reacting and you developing a symptom that lifted when Wilma left.",
+     "reason": "Around Wilma selling her farm and moving into your house in January 1990: you and Wilma clashed over the children's bedtimes and meals, Hollis worked late and kept away from the kitchen rows, Hollis took his mother's side, Owen had tantrums at preschool, Wilma took over Lily's care, you developed eczema on both hands, you and Hollis fought most nights, and your mother drove over twice a week to take your side. By June 1991 Wilma took a flat in town, and your eczema cleared that summer. The shifts show you caught between Wilma and Hollis, with the children reacting and you developing a symptom that lifted when Wilma left.",
      "change": null,
      "openingId": 168
     }
@@ -257,7 +257,7 @@
   {
    "id": "c3",
    "title": "Wilma's move into your house, 1990\u20131991",
-   "summary": "By June 1991 Wilma took a flat in town, and your eczema cleared that summer. The shifts show you caught between Wilma and Sam, with the children reacting and you developing a symptom that lifted when Wilma left.",
+   "summary": "By June 1991 Wilma took a flat in town, and your eczema cleared that summer. The shifts show you caught between Wilma and Hollis, with the children reacting and you developing a symptom that lifted when Wilma left.",
    "eventIds": [
     168,
     169,
@@ -274,7 +274,7 @@
    "endDate": "1991-08-15",
    "name": "Wilma's move into your house, 1990\u20131991",
    "source": "model",
-   "reason": "By June 1991 Wilma took a flat in town, and your eczema cleared that summer. The shifts show you caught between Wilma and Sam, with the children reacting and you developing a symptom that lifted when Wilma left.",
+   "reason": "By June 1991 Wilma took a flat in town, and your eczema cleared that summer. The shifts show you caught between Wilma and Hollis, with the children reacting and you developing a symptom that lifted when Wilma left.",
    "setAside": false,
    "openingEventId": 168
   },

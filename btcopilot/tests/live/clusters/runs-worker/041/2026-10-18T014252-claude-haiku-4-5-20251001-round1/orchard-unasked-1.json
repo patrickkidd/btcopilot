@@ -67,8 +67,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990, within the following year: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows, distancing from Nora; Sam took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma overfunctioned, taking over Lily's care; Nora's eczema flared on both hands; Nora and Sam fought most nights; and by June 1991, when Wilma took a flat in town, and August 1991, when Nora's eczema cleared, the period settled.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within the following year: Nora and Wilma clashed over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows, distancing from Nora; Hollis took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma overfunctioned, taking over Lily's care; Nora's eczema flared on both hands; Nora and Hollis fought most nights; and by June 1991, when Wilma took a flat in town, and August 1991, when Nora's eczema cleared, the period settled.",
      "change": null,
      "openingId": 168
     }
@@ -161,8 +161,8 @@
   },
   {
    "id": "c4",
-   "title": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990, within the following year: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows, distancing from Nora; Sam took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma overfunctioned, taking over Lily's care; Nora's eczema flared on both hands; Nora and Sam fought most nights; and by June 1991, when Wilma took a flat in town, and August 1991, when Nora's eczema cleared, the period settled.",
+   "title": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within the following year: Nora and Wilma clashed over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows, distancing from Nora; Hollis took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma overfunctioned, taking over Lily's care; Nora's eczema flared on both hands; Nora and Hollis fought most nights; and by June 1991, when Wilma took a flat in town, and August 1991, when Nora's eczema cleared, the period settled.",
    "eventIds": [
     168,
     169,
@@ -176,9 +176,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990, within the following year: Nora and Wilma clashed over the children's bedtimes and meals; Sam worked late and kept out of the kitchen rows, distancing from Nora; Sam took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma overfunctioned, taking over Lily's care; Nora's eczema flared on both hands; Nora and Sam fought most nights; and by June 1991, when Wilma took a flat in town, and August 1991, when Nora's eczema cleared, the period settled.",
+   "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within the following year: Nora and Wilma clashed over the children's bedtimes and meals; Hollis worked late and kept out of the kitchen rows, distancing from Nora; Hollis took his mother's side; Owen had tantrums at preschool and was sent home twice; Wilma overfunctioned, taking over Lily's care; Nora's eczema flared on both hands; Nora and Hollis fought most nights; and by June 1991, when Wilma took a flat in town, and August 1991, when Nora's eczema cleared, the period settled.",
    "setAside": false,
    "openingEventId": 168
   }

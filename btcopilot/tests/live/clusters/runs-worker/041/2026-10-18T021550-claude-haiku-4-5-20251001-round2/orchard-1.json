@@ -68,8 +68,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma moving into your house in January 1990, within the year and into 1991: you and Wilma clashing over the children's bedtimes and meals, Sam working late and keeping out of the rows, Sam taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows between you and Sam most nights, Wilma taking a flat in town by June 1991, and your eczema clearing over the summer, where your symptom eased.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma moving into your house in January 1990, within the year and into 1991: you and Wilma clashing over the children's bedtimes and meals, Hollis working late and keeping out of the rows, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows between you and Hollis most nights, Wilma taking a flat in town by June 1991, and your eczema clearing over the summer, where your symptom eased.",
      "change": null,
      "openingId": 168
     }
@@ -146,8 +146,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma moving into your house in January 1990, within the year and into 1991: you and Wilma clashing over the children's bedtimes and meals, Sam working late and keeping out of the rows, Sam taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows between you and Sam most nights, Wilma taking a flat in town by June 1991, and your eczema clearing over the summer, where your symptom eased.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma moving into your house in January 1990, within the year and into 1991: you and Wilma clashing over the children's bedtimes and meals, Hollis working late and keeping out of the rows, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows between you and Hollis most nights, Wilma taking a flat in town by June 1991, and your eczema clearing over the summer, where your symptom eased.",
      "change": null,
      "openingId": 168
     }
@@ -178,7 +178,7 @@
      "run": null
     },
     {
-     "reason": "This period is already held in the cluster of Wilma moving into Nora and Sam's house, 1990\u20131991, which covers the same events and settlement; it is declined to avoid duplication.",
+     "reason": "This period is already held in the cluster of Wilma moving into Nora and Hollis's house, 1990\u20131991, which covers the same events and settlement; it is declined to avoid duplication.",
      "hint": "r4",
      "run": null
     },
@@ -247,8 +247,8 @@
   },
   {
    "id": "c3",
-   "title": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma moving into your house in January 1990, within the year and into 1991: you and Wilma clashing over the children's bedtimes and meals, Sam working late and keeping out of the rows, Sam taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows between you and Sam most nights, Wilma taking a flat in town by June 1991, and your eczema clearing over the summer, where your symptom eased.",
+   "title": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma moving into your house in January 1990, within the year and into 1991: you and Wilma clashing over the children's bedtimes and meals, Hollis working late and keeping out of the rows, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows between you and Hollis most nights, Wilma taking a flat in town by June 1991, and your eczema clearing over the summer, where your symptom eased.",
    "eventIds": [
     168,
     169,
@@ -263,9 +263,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma moving into your house in January 1990, within the year and into 1991: you and Wilma clashing over the children's bedtimes and meals, Sam working late and keeping out of the rows, Sam taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows between you and Sam most nights, Wilma taking a flat in town by June 1991, and your eczema clearing over the summer, where your symptom eased.",
+   "reason": "Around Wilma moving into your house in January 1990, within the year and into 1991: you and Wilma clashing over the children's bedtimes and meals, Hollis working late and keeping out of the rows, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring on both hands, rows between you and Hollis most nights, Wilma taking a flat in town by June 1991, and your eczema clearing over the summer, where your symptom eased.",
    "setAside": false,
    "openingEventId": 168
   },

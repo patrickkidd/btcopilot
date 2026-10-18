@@ -68,8 +68,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990: Nora and Wilma clashing over the children's bedtimes and meals, Sam working late and keeping out of the rows, Sam taking his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, Nora's eczema flaring on both hands, Nora and Sam having rows most nights, and Wilma moving to a flat in town by June 1991, with Nora's eczema clearing over the summer. The period settles as Nora's symptom lifts.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990: Nora and Wilma clashing over the children's bedtimes and meals, Hollis working late and keeping out of the rows, Hollis taking his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, Nora's eczema flaring on both hands, Nora and Hollis having rows most nights, and Wilma moving to a flat in town by June 1991, with Nora's eczema clearing over the summer. The period settles as Nora's symptom lifts.",
      "change": null,
      "openingId": 168
     },
@@ -174,8 +174,8 @@
   },
   {
    "id": "c4",
-   "title": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990: Nora and Wilma clashing over the children's bedtimes and meals, Sam working late and keeping out of the rows, Sam taking his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, Nora's eczema flaring on both hands, Nora and Sam having rows most nights, and Wilma moving to a flat in town by June 1991, with Nora's eczema clearing over the summer. The period settles as Nora's symptom lifts.",
+   "title": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990: Nora and Wilma clashing over the children's bedtimes and meals, Hollis working late and keeping out of the rows, Hollis taking his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, Nora's eczema flaring on both hands, Nora and Hollis having rows most nights, and Wilma moving to a flat in town by June 1991, with Nora's eczema clearing over the summer. The period settles as Nora's symptom lifts.",
    "eventIds": [
     168,
     169,
@@ -190,9 +190,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma selling her farm and moving into Nora and Sam's house in January 1990: Nora and Wilma clashing over the children's bedtimes and meals, Sam working late and keeping out of the rows, Sam taking his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, Nora's eczema flaring on both hands, Nora and Sam having rows most nights, and Wilma moving to a flat in town by June 1991, with Nora's eczema clearing over the summer. The period settles as Nora's symptom lifts.",
+   "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990: Nora and Wilma clashing over the children's bedtimes and meals, Hollis working late and keeping out of the rows, Hollis taking his mother's side, Owen having tantrums at preschool, Wilma taking over Lily's care, Nora's eczema flaring on both hands, Nora and Hollis having rows most nights, and Wilma moving to a flat in town by June 1991, with Nora's eczema clearing over the summer. The period settles as Nora's symptom lifts.",
    "setAside": false,
    "openingEventId": 168
   },

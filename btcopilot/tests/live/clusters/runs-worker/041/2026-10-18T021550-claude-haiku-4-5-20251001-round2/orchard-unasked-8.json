@@ -70,8 +70,8 @@
       177,
       178
      ],
-     "name": "Wilma's move into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma moving into Nora and Sam's house in January 1990, within a year and some months: clashes between Nora and Wilma over the children's bedtimes and meals, Sam working late and distant from Nora, Sam taking his mother's side, Owen's tantrums at preschool, Wilma overfunctioning with Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, Wilma taking a flat in town in June 1991, and Nora's eczema clearing over the summer. Marian driving over twice a week to take Nora's side is told with an unknown date and marked neverOpens, so it is left out.",
+     "name": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma moving into Nora and Hollis's house in January 1990, within a year and some months: clashes between Nora and Wilma over the children's bedtimes and meals, Hollis working late and distant from Nora, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma overfunctioning with Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, Wilma taking a flat in town in June 1991, and Nora's eczema clearing over the summer. Marian driving over twice a week to take Nora's side is told with an unknown date and marked neverOpens, so it is left out.",
      "change": null,
      "openingId": 168
     }
@@ -166,8 +166,8 @@
   },
   {
    "id": "c4",
-   "title": "Wilma's move into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma moving into Nora and Sam's house in January 1990, within a year and some months: clashes between Nora and Wilma over the children's bedtimes and meals, Sam working late and distant from Nora, Sam taking his mother's side, Owen's tantrums at preschool, Wilma overfunctioning with Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, Wilma taking a flat in town in June 1991, and Nora's eczema clearing over the summer. Marian driving over twice a week to take Nora's side is told with an unknown date and marked neverOpens, so it is left out.",
+   "title": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma moving into Nora and Hollis's house in January 1990, within a year and some months: clashes between Nora and Wilma over the children's bedtimes and meals, Hollis working late and distant from Nora, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma overfunctioning with Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, Wilma taking a flat in town in June 1991, and Nora's eczema clearing over the summer. Marian driving over twice a week to take Nora's side is told with an unknown date and marked neverOpens, so it is left out.",
    "eventIds": [
     168,
     169,
@@ -182,9 +182,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma's move into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma moving into Nora and Sam's house in January 1990, within a year and some months: clashes between Nora and Wilma over the children's bedtimes and meals, Sam working late and distant from Nora, Sam taking his mother's side, Owen's tantrums at preschool, Wilma overfunctioning with Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, Wilma taking a flat in town in June 1991, and Nora's eczema clearing over the summer. Marian driving over twice a week to take Nora's side is told with an unknown date and marked neverOpens, so it is left out.",
+   "reason": "Around Wilma moving into Nora and Hollis's house in January 1990, within a year and some months: clashes between Nora and Wilma over the children's bedtimes and meals, Hollis working late and distant from Nora, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma overfunctioning with Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, Wilma taking a flat in town in June 1991, and Nora's eczema clearing over the summer. Marian driving over twice a week to take Nora's side is told with an unknown date and marked neverOpens, so it is left out.",
    "setAside": false,
    "openingEventId": 168
   }

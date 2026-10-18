@@ -68,8 +68,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma's move into the house in January 1990, within eighteen months: clashes between Nora and Wilma over the children's bedtimes and meals, Sam's distance from the rows as he worked late, Sam's alignment with his mother, Owen's tantrums at preschool, Wilma's overfunctioning in Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, and Wilma's move to a flat in town by June 1991, after which Nora's eczema cleared. The shifts show tension radiating from Wilma's presence through the couple and toward the children, settling once she moved out.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma's move into the house in January 1990, within eighteen months: clashes between Nora and Wilma over the children's bedtimes and meals, Hollis's distance from the rows as he worked late, Hollis's alignment with his mother, Owen's tantrums at preschool, Wilma's overfunctioning in Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, and Wilma's move to a flat in town by June 1991, after which Nora's eczema cleared. The shifts show tension radiating from Wilma's presence through the couple and toward the children, settling once she moved out.",
      "change": null,
      "openingId": 168
     }
@@ -146,8 +146,8 @@
       177,
       178
      ],
-     "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-     "reason": "Around Wilma's move into the house in January 1990, within eighteen months: clashes between Nora and Wilma over the children's bedtimes and meals, Sam's distance from the rows as he worked late, Sam's alignment with his mother, Owen's tantrums at preschool, Wilma's overfunctioning in Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, and Wilma's move to a flat in town by June 1991, after which Nora's eczema cleared. The shifts show tension radiating from Wilma's presence through the couple and toward the children, settling once she moved out.",
+     "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma's move into the house in January 1990, within eighteen months: clashes between Nora and Wilma over the children's bedtimes and meals, Hollis's distance from the rows as he worked late, Hollis's alignment with his mother, Owen's tantrums at preschool, Wilma's overfunctioning in Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, and Wilma's move to a flat in town by June 1991, after which Nora's eczema cleared. The shifts show tension radiating from Wilma's presence through the couple and toward the children, settling once she moved out.",
      "change": null,
      "openingId": 168
     }
@@ -227,8 +227,8 @@
   },
   {
    "id": "c3",
-   "title": "Wilma moving into Nora and Sam's house, 1990\u20131991",
-   "summary": "Around Wilma's move into the house in January 1990, within eighteen months: clashes between Nora and Wilma over the children's bedtimes and meals, Sam's distance from the rows as he worked late, Sam's alignment with his mother, Owen's tantrums at preschool, Wilma's overfunctioning in Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, and Wilma's move to a flat in town by June 1991, after which Nora's eczema cleared. The shifts show tension radiating from Wilma's presence through the couple and toward the children, settling once she moved out.",
+   "title": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
+   "summary": "Around Wilma's move into the house in January 1990, within eighteen months: clashes between Nora and Wilma over the children's bedtimes and meals, Hollis's distance from the rows as he worked late, Hollis's alignment with his mother, Owen's tantrums at preschool, Wilma's overfunctioning in Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, and Wilma's move to a flat in town by June 1991, after which Nora's eczema cleared. The shifts show tension radiating from Wilma's presence through the couple and toward the children, settling once she moved out.",
    "eventIds": [
     168,
     169,
@@ -243,9 +243,9 @@
    ],
    "startDate": "1990-01-20",
    "endDate": "1991-08-15",
-   "name": "Wilma moving into Nora and Sam's house, 1990\u20131991",
+   "name": "Wilma moving into Nora and Hollis's house, 1990\u20131991",
    "source": "model",
-   "reason": "Around Wilma's move into the house in January 1990, within eighteen months: clashes between Nora and Wilma over the children's bedtimes and meals, Sam's distance from the rows as he worked late, Sam's alignment with his mother, Owen's tantrums at preschool, Wilma's overfunctioning in Lily's care, Nora's eczema flaring on both hands, rows between Nora and Sam most nights, and Wilma's move to a flat in town by June 1991, after which Nora's eczema cleared. The shifts show tension radiating from Wilma's presence through the couple and toward the children, settling once she moved out.",
+   "reason": "Around Wilma's move into the house in January 1990, within eighteen months: clashes between Nora and Wilma over the children's bedtimes and meals, Hollis's distance from the rows as he worked late, Hollis's alignment with his mother, Owen's tantrums at preschool, Wilma's overfunctioning in Lily's care, Nora's eczema flaring on both hands, rows between Nora and Hollis most nights, and Wilma's move to a flat in town by June 1991, after which Nora's eczema cleared. The shifts show tension radiating from Wilma's presence through the couple and toward the children, settling once she moved out.",
    "setAside": false,
    "openingEventId": 168
   },
