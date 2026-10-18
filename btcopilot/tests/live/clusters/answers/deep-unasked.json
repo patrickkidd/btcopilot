@@ -81,11 +81,7 @@
    "periods": [],
    "declined": [
     {
-     "run": "r1",
-     "reason": "The 1987 shifts are told as how things already stood that year, not as a change at a known date."
-    },
-    {
-     "run": "r6",
+     "run": "r5",
      "reason": "The shifts from 2017 on are spread over two and a half years with no date where they draw close together."
     }
    ]
