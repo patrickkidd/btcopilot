@@ -1,0 +1,117 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather's death in July 1989, within the following months: your mother grew anxious over money and stopped talking with your father about it by May 1988, your brother's grades fell by November 1989, and your mother was calmer once back at work by March 1990. The shifts in your parents' relationship and your brother's functioning fall close to the death, and your mother's anxiety lifts as the period settles.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother's breast cancer diagnosis, 1995\u20131996",
+     "reason": "Around your mother's breast cancer diagnosis in February 1995, within the following months: you developed migraines by March 1994, drew toward your brother by April 1994, stopped returning his calls by June 1995, and stopped calling home by February 1996. Your shifts in closeness to your brother and your mother, and your symptom of migraines, fall near the diagnosis and the months after it; no one else's shifts show in those months.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events hold your own trouble\u2014migraines, distance from your brother and mother\u2014but the diagnosis of your mother's cancer in February 1995 sits among them, so the period is drawn from the diagnosis forward, not held as a question.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather's death in July 1989, within the following months: your mother grew anxious over money and stopped talking with your father about it by May 1988, your brother's grades fell by November 1989, and your mother was calmer once back at work by March 1990. The shifts in your parents' relationship and your brother's functioning fall close to the death, and your mother's anxiety lifts as the period settles.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather's death in July 1989, within the following months: your mother grew anxious over money and stopped talking with your father about it by May 1988, your brother's grades fell by November 1989, and your mother was calmer once back at work by March 1990. The shifts in your parents' relationship and your brother's functioning fall close to the death, and your mother's anxiety lifts as the period settles.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother's breast cancer diagnosis, 1993\u20131996",
+   "summary": "Around your mother's breast cancer diagnosis in February 1995, within the following months: you developed migraines by March 1994, drew toward your brother by April 1994, stopped returning his calls by June 1995, and stopped calling home by February 1996. Your shifts in closeness to your brother and your mother, and your symptom of migraines, fall near the diagnosis and the months after it; no one else's shifts show in those months.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother's breast cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your mother's breast cancer diagnosis in February 1995, within the following months: you developed migraines by March 1994, drew toward your brother by April 1994, stopped returning his calls by June 1995, and stopped calling home by February 1996. Your shifts in closeness to your brother and your mother, and your symptom of migraines, fall near the diagnosis and the months after it; no one else's shifts show in those months.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.008995
+}

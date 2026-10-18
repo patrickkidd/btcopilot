@@ -1,0 +1,111 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather's death in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her distance from your father over it by May 1988, then your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts pile up over more than a year, each step with only partial relief between them: money worry, then distance between your parents, then your brother's functioning down after the death, then your mother's anxiety lifting as she returned to her own life.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother's breast cancer diagnosis, 1994\u20131996",
+     "reason": "Around your mother being told she had breast cancer in February 1995, within the months before and after: you developed migraines in March 1994 after leaving home for college in September 1993, called your brother most nights by April 1994, then after your mother's diagnosis you stopped returning his calls by June 1995, and stopped calling home by February 1996. Your symptom rose, you moved toward your brother, then away from him, then away from your mother, all within the two years your mother faced her illness.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather's death in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her distance from your father over it by May 1988, then your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts pile up over more than a year, each step with only partial relief between them: money worry, then distance between your parents, then your brother's functioning down after the death, then your mother's anxiety lifting as she returned to her own life.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather's death in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her distance from your father over it by May 1988, then your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts pile up over more than a year, each step with only partial relief between them: money worry, then distance between your parents, then your brother's functioning down after the death, then your mother's anxiety lifting as she returned to her own life.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother's breast cancer diagnosis, 1993\u20131996",
+   "summary": "Around your mother being told she had breast cancer in February 1995, within the months before and after: you developed migraines in March 1994 after leaving home for college in September 1993, called your brother most nights by April 1994, then after your mother's diagnosis you stopped returning his calls by June 1995, and stopped calling home by February 1996. Your symptom rose, you moved toward your brother, then away from him, then away from your mother, all within the two years your mother faced her illness.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother's breast cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your mother being told she had breast cancer in February 1995, within the months before and after: you developed migraines in March 1994 after leaving home for college in September 1993, called your brother most nights by April 1994, then after your mother's diagnosis you stopped returning his calls by June 1995, and stopped calling home by February 1996. Your symptom rose, you moved toward your brother, then away from him, then away from your mother, all within the two years your mother faced her illness.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.008825
+}

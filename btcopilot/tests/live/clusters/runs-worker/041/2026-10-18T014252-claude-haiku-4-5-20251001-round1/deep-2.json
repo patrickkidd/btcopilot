@@ -1,0 +1,519 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond settling into the home, 1987",
+     "reason": "Around 1987 when you were fourteen, your stepfather moved in and you began secondary school: you grew distant from him while staying warm toward your dad, your dad's parents separated over a baby, and you made the city chess squad and hated it. These shifts in how you stood with your stepfather and the anxiety over chess sit close together as you adjusted to a new household and new school.",
+     "change": null,
+     "openingId": 41
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      134,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      171,
+      39,
+      53,
+      172,
+      191
+     ],
+     "name": "Your grandfather's return and death, 1989\u20131994",
+     "reason": "Between 1989 when your grandfather came back into the family after years away and 1994 when you found your drive again in Portugal, events piled up: your family moved into the rebuilt house on Hollin Road where you liked late nights, you dropped chess and debate, your sister Tara was born, your grandfather died of a stroke when you were in your first term at the conservatory, you hurt your wrist and couldn't play, you fell into a deep drift at community college, and your cousin Bella was treated for melanoma. Your own shifts\u2014the wrist injury, the fall in functioning, the loss of footing\u2014sit alongside your grandfather's death and your mother's remarriage that autumn, and your functioning came back once you went to Portugal in early 1994.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your split with Joelle, 1998\u20131999",
+     "reason": "In 1998 you and Joelle became a couple; within a year your insomnia worsened though you were playing the best you ever had and winning competitions. You separated in July 1999 and started therapy with Victor that August. Your functioning rose alongside your insomnia rising, which marks a shift in the balance; the two moves together sit near the end of your relationship and its break.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      177,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Your grandmother's death and your depression, 2001\u20132004",
+     "reason": "Between September 2001 when you ran out of steam for performing and February 2004 when your grandmother died, the family moved through a long crisis around you. Your anxiety rose and functioning fell as you burned out; your grandmother was found to have bowel cancer around the same time; you had a disastrous audition and left Thornbury for Gull Harbour, then Fenwick with Marisol, and when that split in late 2003 you sank into a deep depression. You withdrew from your parents\u2014you couldn't face them and they seemed a world away\u2014while you relied on friends Corbin, Dale, Silas and Hamish; your dad and Corbin talked several times during your stay; you began swimming and asked your parents for help with therapy costs; you returned to Victor Halloran and your functioning began to climb. Your grandmother spent her final months in your parents' home and you dropped in briefly, hung over, on your way to the airport. Each shift of yours sits near shifts in the family around her illness and your move away, and the settling began once you started therapy in January 2004 and your functioning rose.",
+     "change": null,
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179,
+      130
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "In January 2008 your grandmother Lorna died and around the same month your grandfather Clifford died; that summer you took four weeks building with Silas at Alder Creek before nursing school. You grew distant from your mother there\u2014too drained for conversation\u2014and she pressed you to visit, you kept the door shut on her, and once you moved to Marlow Sound in August for nursing school you stopped speaking to her altogether, a cutoff that held for roughly a year. Your aunt Imogen had a stroke with months of rehabilitation that winter. The distance between you and your mother piled up over those weeks and months; the cutoff settled once you moved to nursing school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202,
+      151
+     ],
+     "name": "Your marriage to Wren and her family's life, 2017\u20132019",
+     "reason": "From your marriage to Wren in March 2017 through the autumn of 2019, events clustered around you stepping into her family's closeness. In October 2019 she was swamped with events and you overfunctioned laying out a plan to settle her; her family talks all day with nothing happening to one that the others don't hear; at her mother's retirement party at the lake that October you woke from the small hours with no more sleep and could only pull back as the others rose, your worst sleep around her family because you feel you don't belong. Your sister Tara married James and had a baby on the way; your cousin Alice was diagnosed with multiple sclerosis; your aunt Imogen's memory slipped and she lashed out when muddled; your uncle Gregory's health was checked; your job steadied and your anxiety dropped, but you feel constantly that you ought to drive your projects forward and started a sleeping pill. You aimed for shorter, more regular calls with your mother to soften the distance. Your anxiety rose and functioning fell as you moved into this marriage and its family, peaked around the lake weekend in late October, and began to settle as you planned more regular contact with your mother.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year you left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": []
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      41,
+      51,
+      144,
+      145
+     ],
+     "name": "Your stepfather Desmond moving in, 1987",
+     "reason": "Around 1987 when you were fourteen, your stepfather moved in: you grew distant from him while staying warm toward your dad, your dad and his partner separated over a baby, and you made the city chess squad and felt out of your depth. These shifts in how you stood with your stepfather and your anxiety over chess sit close together as you adjusted to a new household and new school.",
+     "change": null,
+     "openingId": 41
+    },
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      146,
+      134,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      171,
+      39,
+      53,
+      172,
+      191
+     ],
+     "name": "Your grandfather Gordon's return and death, 1989\u20131994",
+     "reason": "Between 1989 when your grandfather came back into the family after years away and 1994 when you found your drive again in Portugal, events piled up around you. Your family moved into the rebuilt house on Hollin Road where you liked late nights; you dropped chess and debate for music; your sister Tara was born in 1990; your grandfather died of a stroke in June 1991 when you were in your first term at the conservatory; you hurt your wrist and couldn't play; you fell into a deep drift at community college; and your cousin Bella was treated for melanoma. Your anxiety rose and functioning fell as you hurt your wrist and lost your footing after your grandfather's death and your mother's remarriage that autumn, and your functioning came back once you went to Portugal in early 1994.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your split with Joelle, 1998\u20131999",
+     "reason": "In 1998 you and Joelle became a couple; within a year your insomnia worsened though you were playing the best you ever had and winning competitions. You separated in July 1999 and started therapy with Victor that August. Your functioning rose alongside your insomnia rising, which marks a shift in the balance; the two moves together sit near the end of your relationship and its break.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108
+     ],
+     "name": "Your move away and depression, 2001\u20132004",
+     "reason": "Between September 2001 when you ran out of steam for performing and early 2004 when you returned to therapy, events piled up around you. Your anxiety rose and functioning fell as you burned out; your grandmother was found to have bowel cancer around the same time; you had a disastrous audition and left Thornbury for Gull Harbour, then Fenwick with Marisol, and when that split in late 2003 you sank into a deep depression. You withdrew from your parents while you relied on friends Corbin, Dale, Silas and Hamish; your dad and Corbin talked several times during your stay; you began swimming and asked your parents for help with therapy costs; you returned to Victor Halloran and your functioning began to climb. Each shift of yours sits near moves away and back, and the settling began once you started therapy in January 2004.",
+     "change": null,
+     "openingId": 174
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Your grandmother Lorna's death and your move to nursing school, 2008",
+     "reason": "In January 2008 your grandmother Lorna died; that summer you took four weeks building with Silas at Alder Creek before nursing school. You grew distant from your mother there and she pressed you to visit, you kept the door shut on her, and once you moved to Marlow Sound in August for nursing school you stopped speaking to her altogether, a cutoff that held for roughly a year. Your aunt Imogen had a stroke that winter. The distance between you and your mother piled up over those weeks and months; the cutoff settled once you moved to nursing school.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "From your marriage to Wren in March 2017 through the autumn of 2019, events clustered around you stepping into her family's closeness. In October 2019 she was swamped with events and you overfunctioned laying out a plan to settle her; her family talks all day with nothing happening to one that the others don't hear; at her mother's retirement party at the lake that October you woke from the small hours with no more sleep and could only pull back as the others rose, your worst sleep around her family because you feel you don't belong. Within this time your sister Tara married, your cousin Alice was diagnosed with multiple sclerosis, your aunt Imogen's memory slipped and she lashed out, your job steadied but you feel constantly that you ought to drive your projects forward. Your anxiety rose and functioning fell as you moved into this marriage and its family, peaked around the lake weekend in late October, and began to settle as you planned more regular contact with your mother.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year you left home",
+     "words": "The first is the year I left home: I went off to the conservatory, hurt my wrist in the first term and couldn't play, dropped out and drifted at my mother's place, then spent a bleak spell at the community college shooting pool every night until an exchange in Portugal snapped me out of it and I tore through the rest of my coursework.",
+     "startYear": 1991,
+     "endYear": 1994
+    },
+    {
+     "messageId": 1,
+     "name": "the long slump",
+     "words": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+     "startYear": 2000,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "Only two shifts count when told without those marked as how things always were, and no change in the family on a known date sits among these events to open a period.",
+     "hint": "r3",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: symptom_name: Period 'Your stepfather Desmond settling into the home, 1987' is named by the person's trouble (['stepfather']); name it by the change in the family and its years.",
+  "answer 1: theirs: Period \"Your grandmother's death and your depression, 2001\u20132004\" shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 1: cause: Period \"Your marriage to Wren and her family's life, 2017\u20132019\" says one event brought about another ('because'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 1: unknown_date: Period \"Your grandfather's return and death, 1989\u20131994\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: symptom_name: Period 'Your stepfather Desmond moving in, 1987' is named by the person's trouble (['moving', 'stepfather']); name it by the change in the family and its years.",
+  "answer 2: theirs: Period 'Your move away and depression, 2001\u20132004' shares days with the person's own period 'the long slump', which stays as they drew it; leave yours out unless the days outside theirs make a period by themselves.",
+  "answer 2: cause: Period 'Your marriage to Wren, 2017\u20132019' says one event brought about another ('because'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: unknown_date: Period \"Your grandfather Gordon's return and death, 1989\u20131994\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: renamed: The person's period 'the year you left home' is not in their own words."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "A change in the family, 1987",
+   "summary": "Around 1987 when you were fourteen, your stepfather moved in: you grew distant from him while staying warm toward your dad, your dad and his partner separated over a baby, and you made the city chess squad and felt out of your depth. These shifts in how you stood with your stepfather and your anxiety over chess sit close together as you adjusted to a new household and new school.",
+   "eventIds": [
+    41,
+    51,
+    144,
+    145
+   ],
+   "startDate": "1987-01-12",
+   "endDate": "1987-09-12",
+   "name": "A change in the family, 1987",
+   "source": "model",
+   "reason": "Around 1987 when you were fourteen, your stepfather moved in: you grew distant from him while staying warm toward your dad, your dad and his partner separated over a baby, and you made the city chess squad and felt out of your depth. These shifts in how you stood with your stepfather and your anxiety over chess sit close together as you adjusted to a new household and new school.",
+   "setAside": false,
+   "openingEventId": 41
+  },
+  {
+   "id": "c2",
+   "title": "Your grandfather Gordon's return and death, 1989\u20131994",
+   "summary": "Between 1989 when your grandfather came back into the family after years away and 1994 when you found your drive again in Portugal, events piled up around you. Your family moved into the rebuilt house on Hollin Road where you liked late nights; you dropped chess and debate for music; your sister Tara was born in 1990; your grandfather died of a stroke in June 1991 when you were in your first term at the conservatory; you hurt your wrist and couldn't play; you fell into a deep drift at community college; and your cousin Bella was treated for melanoma. Your anxiety rose and functioning fell as you hurt your wrist and lost your footing after your grandfather's death and your mother's remarriage that autumn, and your functioning came back once you went to Portugal in early 1994.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    146,
+    134,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    171,
+    39,
+    53,
+    172,
+    191
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1994-01-12",
+   "name": "Your grandfather Gordon's return and death, 1989\u20131994",
+   "source": "model",
+   "reason": "Between 1989 when your grandfather came back into the family after years away and 1994 when you found your drive again in Portugal, events piled up around you. Your family moved into the rebuilt house on Hollin Road where you liked late nights; you dropped chess and debate for music; your sister Tara was born in 1990; your grandfather died of a stroke in June 1991 when you were in your first term at the conservatory; you hurt your wrist and couldn't play; you fell into a deep drift at community college; and your cousin Bella was treated for melanoma. Your anxiety rose and functioning fell as you hurt your wrist and lost your footing after your grandfather's death and your mother's remarriage that autumn, and your functioning came back once you went to Portugal in early 1994.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c3",
+   "title": "Your split with Joelle, 1998\u20131999",
+   "summary": "In 1998 you and Joelle became a couple; within a year your insomnia worsened though you were playing the best you ever had and winning competitions. You separated in July 1999 and started therapy with Victor that August. Your functioning rose alongside your insomnia rising, which marks a shift in the balance; the two moves together sit near the end of your relationship and its break.",
+   "eventIds": [
+    11,
+    4,
+    173,
+    12,
+    22
+   ],
+   "startDate": "1998-01-12",
+   "endDate": "1999-08-12",
+   "name": "Your split with Joelle, 1998\u20131999",
+   "source": "model",
+   "reason": "In 1998 you and Joelle became a couple; within a year your insomnia worsened though you were playing the best you ever had and winning competitions. You separated in July 1999 and started therapy with Victor that August. Your functioning rose alongside your insomnia rising, which marks a shift in the balance; the two moves together sit near the end of your relationship and its break.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c4",
+   "title": "Your grandmother Lorna's death and your move to nursing school, 2008\u20132009",
+   "summary": "In January 2008 your grandmother Lorna died; that summer you took four weeks building with Silas at Alder Creek before nursing school. You grew distant from your mother there and she pressed you to visit, you kept the door shut on her, and once you moved to Marlow Sound in August for nursing school you stopped speaking to her altogether, a cutoff that held for roughly a year. Your aunt Imogen had a stroke that winter. The distance between you and your mother piled up over those weeks and months; the cutoff settled once you moved to nursing school.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10,
+    179
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2009-01-11",
+   "name": "Your grandmother Lorna's death and your move to nursing school, 2008\u20132009",
+   "source": "model",
+   "reason": "In January 2008 your grandmother Lorna died; that summer you took four weeks building with Silas at Alder Creek before nursing school. You grew distant from your mother there and she pressed you to visit, you kept the door shut on her, and once you moved to Marlow Sound in August for nursing school you stopped speaking to her altogether, a cutoff that held for roughly a year. Your aunt Imogen had a stroke that winter. The distance between you and your mother piled up over those weeks and months; the cutoff settled once you moved to nursing school.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c5",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "From your marriage to Wren in March 2017 through the autumn of 2019, events clustered around you stepping into her family's closeness. Within this time your sister Tara married, your cousin Alice was diagnosed with multiple sclerosis, your aunt Imogen's memory slipped and she lashed out, your job steadied but you feel constantly that you ought to drive your projects forward. Your anxiety rose and functioning fell as you moved into this marriage and its family, peaked around the lake weekend in late October, and began to settle as you planned more regular contact with your mother.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "From your marriage to Wren in March 2017 through the autumn of 2019, events clustered around you stepping into her family's closeness. Within this time your sister Tara married, your cousin Alice was diagnosed with multiple sclerosis, your aunt Imogen's memory slipped and she lashed out, your job steadied but you feel constantly that you ought to drive your projects forward. Your anxiety rose and functioning fell as you moved into this marriage and its family, peaked around the lake weekend in late October, and began to settle as you planned more regular contact with your mother.",
+   "setAside": false,
+   "openingEventId": 29
+  },
+  {
+   "id": "c6",
+   "title": "the long slump",
+   "summary": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    177,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2003-12-12",
+   "name": "the long slump",
+   "source": "user",
+   "reason": "The second is the long slump, roughly ages 27 to 29, when nothing at home felt right, I moved to Gull Harbour away from nearly everyone I knew, then followed Marisol to Fenwick, and when that fell apart I went under, a depression I only really climbed out of after nursing school.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 1,
+   "fn": 0,
+   "precision": 0.75,
+   "recall": 1.0,
+   "f1": 0.8571428571428571
+  },
+  "members": {
+   "tp": 35,
+   "fp": 9,
+   "fn": 6,
+   "precision": 0.7954545454545454,
+   "recall": 0.8536585365853658,
+   "f1": 0.8235294117647058
+  },
+  "openings": [
+   1,
+   3
+  ],
+  "hypotheses": 2,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'A change in the family, 1987' is the plain name the code fell back to",
+  "'the year I left home' is not stored as theirs"
+ ],
+ "cost": 0.055729
+}
