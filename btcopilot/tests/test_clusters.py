@@ -360,9 +360,9 @@ def test_a_shift_of_unknown_date_alone_seeds_no_run():
 
 def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reason():
     # R-0856, R-0850
-    """A run with three or more supporting shifts and a change in who is in
+    """A hint with three or more supporting shifts and a change in who is in
     the family is the app's default: an answer that neither returns it nor
-    declines it is asked again with the reason; a run declined with a reason
+    declines it is asked again with the reason; a hint declined with a reason
     is heard, the rest kept."""
     data = record(
         moment(1, "1994-01-01", person=1),

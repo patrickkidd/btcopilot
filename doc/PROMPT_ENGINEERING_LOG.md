@@ -20,7 +20,7 @@ the default only when it holds three shifts that count and a change in who is in
 known date; without one it is offered as a question. A period is refused for its length only when it
 covers more than half of the years the diagram's dated events cover, never at ten years or under, and
 the refusal says so; a climb over more than ten years in a long history stands. Cluster detection
-on Sonnet 5 runs with thinking switched off, as Haiku 4.5 runs.
+on Sonnet 5 is called with thinking switched off, as on Haiku 4.5.
 
 **Why**: job 041's gate on the four-generation case was 4 of 10 on Haiku. An independent check
 found three causes in the code, not the prompt: the four-letter check refused names it should not
