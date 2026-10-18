@@ -808,7 +808,8 @@ async def claude_structured(prompt, response_format, model, schema, limit):
     async with client.beta.messages.stream(
         model=resolved_model,
         max_tokens=limit,
-        **reasoning_args(model, STRUCTURED_EFFORT),
+        # An answer's type may name its own effort, as cluster detection's does.
+        **reasoning_args(model, getattr(response_format, "EFFORT", STRUCTURED_EFFORT)),
         messages=[{"role": "user", "content": full_prompt}],
         **fallback_args(resolved_model),
     ) as stream:
