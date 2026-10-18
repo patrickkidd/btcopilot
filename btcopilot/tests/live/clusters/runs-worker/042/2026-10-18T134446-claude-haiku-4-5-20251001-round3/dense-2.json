@@ -1,0 +1,117 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's anxiety rising as she lay awake over money in March 1988, her move to distance from your father over money by May 1988, your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts pile up across a year and a half, with the death sitting among them and your mother's anxiety settling after she returned to work.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della's breast cancer diagnosis, 1993\u20131996",
+     "reason": "Around your mother Della's breast cancer diagnosis in February 1995, within the surrounding years: your migraines kept you in bed starting March 1994, you called your brother most nights by April 1994, you told she had breast cancer in February 1995, you stopped returning your brother's calls by June 1995, and you stopped calling home by February 1996. Every shift in these months is yours, with your diagnosis of a threat to your mother sitting in the middle of your own shifting toward and then away from your brother, and your movement away from home.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1993\u20131996: the period drawn holds the events of this hint; no separate reading is needed.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, within the following months: your mother's anxiety rising as she lay awake over money in March 1988, her move to distance from your father over money by May 1988, your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts pile up across a year and a half, with the death sitting among them and your mother's anxiety settling after she returned to work.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's anxiety rising as she lay awake over money in March 1988, her move to distance from your father over money by May 1988, your brother's grades falling by November 1989, and your mother calmer once back at work by March 1990. The shifts pile up across a year and a half, with the death sitting among them and your mother's anxiety settling after she returned to work.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della's breast cancer diagnosis, 1993\u20131996",
+   "summary": "Around your mother Della's breast cancer diagnosis in February 1995, within the surrounding years: your migraines kept you in bed starting March 1994, you called your brother most nights by April 1994, you told she had breast cancer in February 1995, you stopped returning your brother's calls by June 1995, and you stopped calling home by February 1996. Every shift in these months is yours, with your diagnosis of a threat to your mother sitting in the middle of your own shifting toward and then away from your brother, and your movement away from home.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della's breast cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your mother Della's breast cancer diagnosis in February 1995, within the surrounding years: your migraines kept you in bed starting March 1994, you called your brother most nights by April 1994, you told she had breast cancer in February 1995, you stopped returning your brother's calls by June 1995, and you stopped calling home by February 1996. Every shift in these months is yours, with your diagnosis of a threat to your mother sitting in the middle of your own shifting toward and then away from your brother, and your movement away from home.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.010713
+}

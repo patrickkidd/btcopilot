@@ -1,0 +1,86 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her distance from your father on money matters in May 1988, your grandfather's death in July 1989, your brother Felix's grades falling in November 1989, and your mother calmer once back at work in March 1990. The shifts pile up across more than a year with no long quiet between them, reaching from the money worry through the death and your brother's difficulty to your mother's return to steadier footing.",
+     "change": null,
+     "openingId": 9
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1993\u20131996: your own shifts in migraines, calls to and from your brother, and distance from home sit in these years, and your mother's breast cancer diagnosis in February 1995 is the only change in the family on a known date among the events. The diagnosis touches your mother, who is important to this family, so a period could turn on it, but Greta's death in 1993 is undated and marked neverOpens, and cannot open a period. Your shifts around your mother's cancer belong to you alone\u2014no one else's shifts show in these months\u2014and while a period of one person's trouble can stand, the shifts here (migraines, calling your brother, then pulling away) read as your own reaction to your mother's illness and your time away at college, not as a broader disturbance in the family's balance that would hold the period together across the years from 1993 onward. The events do not pile up close enough or show enough of a shared reaction to carry it.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: declined: Run r2 (1993-01-01 to 1996-02-01) has 4 shifts that count and was declined: 1993\u20131996: your own shifts in migraines, calls to and from your brother, and distance from home sit in these years, and your mother's breast cancer diagnosis in February 1995 is the only change in the family on a known date among the events. The diagnosis touches your mother, who is important to this family, so a period could turn on it, but Greta's death in 1993 is undated and marked neverOpens, and cannot open a period. Your shifts around your mother's cancer belong to you alone\u2014no one else's shifts show in these months\u2014and while a period of one person's trouble can stand, the shifts here (migraines, calling your brother, then pulling away) read as your own reaction to your mother's illness and your time away at college, not as a broader disturbance in the family's balance that would hold the period together across the years from 1993 onward. The events do not pile up close enough or show enough of a shared reaction to carry it."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her distance from your father on money matters in May 1988, your grandfather's death in July 1989, your brother Felix's grades falling in November 1989, and your mother calmer once back at work in March 1990. The shifts pile up across more than a year with no long quiet between them, reaching from the money worry through the death and your brother's difficulty to your mother's return to steadier footing.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, within the following months: your mother's worry over money beginning in March 1988 and her distance from your father on money matters in May 1988, your grandfather's death in July 1989, your brother Felix's grades falling in November 1989, and your mother calmer once back at work in March 1990. The shifts pile up across more than a year with no long quiet between them, reaching from the money worry through the death and your brother's difficulty to your mother's return to steadier footing.",
+   "setAside": false,
+   "openingEventId": 9
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.5,
+   "f1": 0.6666666666666666
+  },
+  "members": {
+   "tp": 5,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   1
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "cluster F1 0.67 under 0.8"
+ ],
+ "cost": 0.010848
+}

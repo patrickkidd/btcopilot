@@ -1,0 +1,320 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      121
+     ],
+     "name": "Teodor's death, 1978\u20131979",
+     "reason": "Around Teodor's death in January 1978, within months: Delphine stopped cooking and went to her mother's every evening; Duncan took night shifts and distanced from Odette; Anton drank at lunch and was warned at work; Odette's anxiety rose over her mother and Anton; Callum had ear infections through the winter. These shifts pile up across the family through the year after the death, each one's timing near another's.",
+     "change": null,
+     "openingId": 113
+    },
+    {
+     "id": null,
+     "eventIds": [
+      129,
+      130,
+      131,
+      132
+     ],
+     "name": "Odette's bed rest in pregnancy, 1984",
+     "reason": "Around March 1984 when Odette was ordered to bed for the rest of her pregnancy: Hazel came every morning to keep the house; Duncan argued with his mother over how she kept it; Callum stammered again after a year free of it. The shifts pile up within months around Odette's loss of functioning, each one close in time to another.",
+     "change": null,
+     "openingId": 129
+    },
+    {
+     "id": null,
+     "eventIds": [
+      135,
+      136,
+      137,
+      140,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      150,
+      151
+     ],
+     "name": "Hazel's Parkinson's diagnosis, 1986\u20131996",
+     "reason": "Around Hazel's diagnosis in September 1986, over the next decade: Ambrose took over her cooking and appointments; Duncan phoned his father every night for news of her; Duncan and Lyle argued over who should help their parents; Ambrose had chest pains; Hazel fell and needed a frame; Duncan drank most evenings; Pearl had panic spells at the wheel; Odette took Hazel to the clinic twice a week and came to stay one week in four to nurse Mavis; Duncan fought with Odette over his evenings at his parents' house. The shifts climb over years with no long quiet between them, each one's timing within a year or so of another's.",
+     "change": null,
+     "openingId": 135
+    },
+    {
+     "id": null,
+     "eventIds": [
+      154,
+      155,
+      157,
+      158,
+      159
+     ],
+     "name": "Callum's move north, 1999\u20132000",
+     "reason": "Around May 1999 when Callum left home for a job up north: he and Duncan argued most nights over his plans; Odette could not settle at the thought of him so far away; Duncan missed days at work and sat up late in the garage; Ines skipped school most of that autumn; Odette took Ines with her everywhere. The shifts pile up across the family within a year of Callum's departure, each one's timing near another's.",
+     "change": null,
+     "openingId": 156
+    },
+    {
+     "id": null,
+     "eventIds": [
+      164,
+      165,
+      166,
+      168,
+      169
+     ],
+     "name": "Hazel's death, 2003",
+     "reason": "Around Hazel's death in January 2003: you could not sleep more than a few hours a night; you stopped going in to the bookshop and were let go in May; you dreaded buses and crowded shops and went out only after dark; you took a job at the garden centre and slept through the night again by November. Every shift in these months is yours, and no one else's shows then. Your shifts climb from loss of sleep through loss of functioning into heightened anxiety over months, settling as you took work.",
+     "change": null,
+     "openingId": 164
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1980\u20131982: the hint holds your birth in September 1980, two weddings, and the birth of your cousin Tobias, with only two shifts that count among the events. The two shifts are Emil's lifetime drinking and Duncan's distance from Lyle, both told as how things always were, so neither counts. Not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2005\u20132005: Ines's car accident on 19 November 2005 and her return home on 21 November, with shifts piling up over those few days\u2014Odette sat up all night by the phone, Duncan could not keep food down, Callum came down from the north overnight, Ines shook at the thought of the ride home, and Odette was calm again once Ines was home and about. These shifts fall within the same few days around a real event that soon passed; it is an acute episode, not a period.",
+     "hint": "r7",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      121
+     ],
+     "name": "Teodor's death, 1978\u20131979",
+     "reason": "Around Teodor's death in January 1978, within months: Delphine stopped cooking and went to her mother's every evening; Duncan took night shifts and distanced from Odette; Anton drank at lunch and was warned at work; Odette's anxiety rose over her mother and Anton; Callum had ear infections through the winter. These shifts pile up across the family through the year after the death, each one's timing near another's.",
+     "change": null,
+     "openingId": 113
+    },
+    {
+     "id": null,
+     "eventIds": [
+      129,
+      130,
+      131,
+      132
+     ],
+     "name": "Odette's bed rest in pregnancy, 1984",
+     "reason": "Around March 1984 when Odette was ordered to bed for the rest of her pregnancy: Hazel came every morning to keep the house; Duncan argued with his mother over how she kept it; Callum stammered again after a year free of it. The shifts pile up within months around Odette's loss of functioning, each one close in time to another.",
+     "change": null,
+     "openingId": 129
+    },
+    {
+     "id": null,
+     "eventIds": [
+      135,
+      136,
+      137,
+      140,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      150,
+      151
+     ],
+     "name": "Hazel's Parkinson's diagnosis, 1986\u20131996",
+     "reason": "Around Hazel's diagnosis in September 1986, over the next decade: Ambrose took over her cooking and appointments; Duncan phoned his father every night for news of her; Duncan and Lyle argued over who should help their parents; Ambrose had chest pains; Hazel fell and needed a frame; Duncan drank most evenings; Pearl had panic spells at the wheel; Odette took Hazel to the clinic twice a week and came to stay one week in four to nurse Mavis; Duncan fought with Odette over his evenings at his parents' house. The shifts climb over years with no long quiet between them, each one's timing within a year or so of another's.",
+     "change": null,
+     "openingId": 135
+    },
+    {
+     "id": null,
+     "eventIds": [
+      154,
+      155,
+      157,
+      158,
+      159,
+      161
+     ],
+     "name": "Callum's move north, 1999\u20132000",
+     "reason": "Around May 1999 when Callum left home for a job up north: he and Duncan argued most nights over his plans; Odette could not settle at the thought of him so far away; Duncan missed days at work and sat up late in the garage; Ines skipped school most of that autumn; Odette took Ines with her everywhere. These shifts pile up across the family within a year of Callum's departure, each one's timing near another's. Ines was back at school full days by August 2000.",
+     "change": null,
+     "openingId": 156
+    },
+    {
+     "id": null,
+     "eventIds": [
+      164,
+      165,
+      166,
+      168,
+      169
+     ],
+     "name": "Hazel's death, 2003",
+     "reason": "Around Hazel's death in January 2003: you could not sleep more than a few hours a night; you stopped going in to the bookshop and were let go in May; you dreaded buses and crowded shops and went out only after dark; you took a job at the garden centre and slept through the night again by November. Every shift in these months is yours, and no one else's shows then. Your shifts climb from loss of sleep through loss of functioning into heightened anxiety over months, settling as you took work.",
+     "change": null,
+     "openingId": 164
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1980\u20131982: the hint holds your birth in September 1980, two weddings, and the birth of your cousin Tobias, with only two shifts that count among the events. The two shifts are Emil's lifetime drinking and Duncan's distance from Lyle, both told as how things always were, so neither counts. Not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2005\u20132005: Ines's car accident on 19 November 2005 and her return home on 21 November, with shifts piling up over those few days\u2014Odette sat up all night by the phone, Duncan could not keep food down, Callum came down from the north overnight, Ines shook at the thought of the ride home, and Odette was calm again once Ines was home and about. These shifts fall within the same few days around a real event that soon passed; it is an acute episode, not a period.",
+     "hint": "r7",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unknown_event: Period \"Callum's move north, 1999\u20132000\" opens at event 156, which is not one of its events.",
+  "answer 2: unknown_event: Period \"Callum's move north, 1999\u20132000\" opens at event 156, which is not one of its events.",
+  "answer 2: declined: Run r2 (1980-09-21 to 1982-07-15) has 2 shifts that count and was declined: 1980\u20131982: the hint holds your birth in September 1980, two weddings, and the birth of your cousin Tobias, with only two shifts that count among the events. The two shifts are Emil's lifetime drinking and Duncan's distance from Lyle, both told as how things always were, so neither counts. Not enough in the diagram to choose a reading.",
+  "answer 2: declined: Run r7 (2005-11-19 to 2005-11-23) has 5 shifts that count and was declined: 2005\u20132005: Ines's car accident on 19 November 2005 and her return home on 21 November, with shifts piling up over those few days\u2014Odette sat up all night by the phone, Duncan could not keep food down, Callum came down from the north overnight, Ines shook at the thought of the ride home, and Odette was calm again once Ines was home and about. These shifts fall within the same few days around a real event that soon passed; it is an acute episode, not a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Teodor's death, 1978\u20131979",
+   "summary": "Around Teodor's death in January 1978, within months: Delphine stopped cooking and went to her mother's every evening; Duncan took night shifts and distanced from Odette; Anton drank at lunch and was warned at work; Odette's anxiety rose over her mother and Anton; Callum had ear infections through the winter. These shifts pile up across the family through the year after the death, each one's timing near another's.",
+   "eventIds": [
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    121
+   ],
+   "startDate": "1978-01-27",
+   "endDate": "1979-02-15",
+   "name": "Teodor's death, 1978\u20131979",
+   "source": "model",
+   "reason": "Around Teodor's death in January 1978, within months: Delphine stopped cooking and went to her mother's every evening; Duncan took night shifts and distanced from Odette; Anton drank at lunch and was warned at work; Odette's anxiety rose over her mother and Anton; Callum had ear infections through the winter. These shifts pile up across the family through the year after the death, each one's timing near another's.",
+   "setAside": false,
+   "openingEventId": 113
+  },
+  {
+   "id": "c2",
+   "title": "Odette's bed rest in pregnancy, 1984",
+   "summary": "Around March 1984 when Odette was ordered to bed for the rest of her pregnancy: Hazel came every morning to keep the house; Duncan argued with his mother over how she kept it; Callum stammered again after a year free of it. The shifts pile up within months around Odette's loss of functioning, each one close in time to another.",
+   "eventIds": [
+    129,
+    130,
+    131,
+    132
+   ],
+   "startDate": "1984-03-15",
+   "endDate": "1984-06-15",
+   "name": "Odette's bed rest in pregnancy, 1984",
+   "source": "model",
+   "reason": "Around March 1984 when Odette was ordered to bed for the rest of her pregnancy: Hazel came every morning to keep the house; Duncan argued with his mother over how she kept it; Callum stammered again after a year free of it. The shifts pile up within months around Odette's loss of functioning, each one close in time to another.",
+   "setAside": false,
+   "openingEventId": 129
+  },
+  {
+   "id": "c3",
+   "title": "Hazel's Parkinson's diagnosis, 1986\u20131996",
+   "summary": "Around Hazel's diagnosis in September 1986, over the next decade: Ambrose took over her cooking and appointments; Duncan phoned his father every night for news of her; Duncan and Lyle argued over who should help their parents; Ambrose had chest pains; Hazel fell and needed a frame; Duncan drank most evenings; Pearl had panic spells at the wheel; Odette took Hazel to the clinic twice a week and came to stay one week in four to nurse Mavis; Duncan fought with Odette over his evenings at his parents' house. The shifts climb over years with no long quiet between them, each one's timing within a year or so of another's.",
+   "eventIds": [
+    135,
+    136,
+    137,
+    140,
+    142,
+    143,
+    144,
+    145,
+    146,
+    147,
+    150,
+    151
+   ],
+   "startDate": "1986-09-03",
+   "endDate": "1996-12-15",
+   "name": "Hazel's Parkinson's diagnosis, 1986\u20131996",
+   "source": "model",
+   "reason": "Around Hazel's diagnosis in September 1986, over the next decade: Ambrose took over her cooking and appointments; Duncan phoned his father every night for news of her; Duncan and Lyle argued over who should help their parents; Ambrose had chest pains; Hazel fell and needed a frame; Duncan drank most evenings; Pearl had panic spells at the wheel; Odette took Hazel to the clinic twice a week and came to stay one week in four to nurse Mavis; Duncan fought with Odette over his evenings at his parents' house. The shifts climb over years with no long quiet between them, each one's timing within a year or so of another's.",
+   "setAside": false,
+   "openingEventId": 135
+  },
+  {
+   "id": "c4",
+   "title": "Hazel's death, 2003",
+   "summary": "Around Hazel's death in January 2003: you could not sleep more than a few hours a night; you stopped going in to the bookshop and were let go in May; you dreaded buses and crowded shops and went out only after dark; you took a job at the garden centre and slept through the night again by November. Every shift in these months is yours, and no one else's shows then. Your shifts climb from loss of sleep through loss of functioning into heightened anxiety over months, settling as you took work.",
+   "eventIds": [
+    164,
+    165,
+    166,
+    168,
+    169
+   ],
+   "startDate": "2003-01-14",
+   "endDate": "2003-11-15",
+   "name": "Hazel's death, 2003",
+   "source": "model",
+   "reason": "Around Hazel's death in January 2003: you could not sleep more than a few hours a night; you stopped going in to the bookshop and were let go in May; you dreaded buses and crowded shops and went out only after dark; you took a job at the garden centre and slept through the night again by November. Every shift in these months is yours, and no one else's shows then. Your shifts climb from loss of sleep through loss of functioning into heightened anxiety over months, settling as you took work.",
+   "setAside": false,
+   "openingEventId": 164
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.8,
+   "f1": 0.888888888888889
+  },
+  "members": {
+   "tp": 29,
+   "fp": 0,
+   "fn": 12,
+   "precision": 1.0,
+   "recall": 0.7073170731707317,
+   "f1": 0.8285714285714285
+  },
+  "openings": [
+   3,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.039129
+}

@@ -1,0 +1,149 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      121
+     ],
+     "name": "Teodor's death, 1978\u20131979",
+     "reason": "Around your grandfather Teodor's death in January 1978, within months: your grandmother Delphine stopped cooking and went to your mother's house every evening, your father took night shifts and distanced from your mother, your uncle Anton's drinking rose and his marriage separated, and your father lay awake anxious over your mother and Anton. Your brother Callum's ear infections began that winter. The shifts pile up from February through May 1979, when your grandmother took a job at the library and her functioning rose.",
+     "change": null,
+     "openingId": 113
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "Gran Hazel dying",
+     "words": "Gran Hazel dying, when I was 22, is the one I'd pick.",
+     "startYear": 2002,
+     "endYear": 2003
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1980\u20131982: Two shifts that count, but no change in the family on a known date among these events. Event 123 is your birth, event 128 is your cousin's birth, and events 124 and 125 are weddings: none opens a period. Events 126 and 127 are told as how things always were (your uncle's drinking for most of his adult life, your father's distance since they were boys), so they do not count. Not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "1984: Your mother's functioning down and your grandmother Hazel's overfunctioning sit beside her bed rest in pregnancy, which opens the period. Your brother Callum's stammer and your anxiety at bedtime are shifts that count. However, this period falls within the years 2002\u20132003 that you named, so your reading carries those years. The events of 1984 stay outside it.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "1986\u20131997: Your grandmother Hazel's diagnosis of Parkinson's disease in September 1986 opens this period. Fourteen shifts count among the events, but three are told as how things always were or with unknown dates and neverOpens marks: event 141 (your uncle's distance), and these do not count toward the period. The remaining shifts show your grandfather Ambrose overfunctioning, your father's anxiety and later his drinking, your aunt Pearl's panic spells, and your grandmother's functioning rising and falling over years, with your father's conflicts with his brother and his wife. The period settles after your grandmother moved to the nursing home in June 1997 and your father cut his drinking back to weekends by October 1997.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "1999\u20132000: Your brother Callum left home for a job in May 1999. Your father argued with him over the move and later missed days at work and sat up late in the garage; your mother's anxiety rose and she could not settle at the thought of Callum so far away; your sister Ines skipped school that autumn and your mother took her everywhere. The period settles by August 2000 when Ines returned to school full days and passed her exams, and by January 2000 when she began phoning your brother every Sunday night. However, this period falls within the years 2002\u20132003 that you named, so your reading carries those years. The events of 1999\u20132000 stay outside it.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "2003: Your grandmother Hazel died in January 2003. Within months after her death: you could not sleep, your functioning fell as you stopped going to the bookshop and were let go in May, you stopped returning your mother's calls, and your anxiety rose as you dreaded buses and crowded shops. By November 2003 you took a job at the garden centre and slept through the night again. This period is the one you named. It shares all its years with your period, so it is declined and your reading stands.",
+     "hint": "r6",
+     "run": null
+    },
+    {
+     "reason": "2005-11-19 to 2005-11-23: Your sister Ines was in a car accident on black ice and spent two nights in hospital. Your mother sat up all night by the phone, your father could not keep food down, your brother Callum came down from the north overnight to her bedside, and your sister shook at the thought of the ride home. Your mother was calm again once Ines was home and up and about by November 23rd. This is an acute episode around a real threat lasting four days, not a period.",
+     "hint": "r7",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: declined: Run r2 (1980-09-21 to 1982-07-15) has 2 shifts that count and was declined: 1980\u20131982: Two shifts that count, but no change in the family on a known date among these events. Event 123 is your birth, event 128 is your cousin's birth, and events 124 and 125 are weddings: none opens a period. Events 126 and 127 are told as how things always were (your uncle's drinking for most of his adult life, your father's distance since they were boys), so they do not count. Not enough in the diagram to choose a reading.",
+  "answer 1: declined: Run r3 (1984-03-15 to 1984-09-28) has 5 shifts that count and was declined: 1984: Your mother's functioning down and your grandmother Hazel's overfunctioning sit beside her bed rest in pregnancy, which opens the period. Your brother Callum's stammer and your anxiety at bedtime are shifts that count. However, this period falls within the years 2002\u20132003 that you named, so your reading carries those years. The events of 1984 stay outside it.",
+  "answer 1: declined: Run r4 (1986-09-03 to 1997-10-15) has 14 shifts that count and was declined: 1986\u20131997: Your grandmother Hazel's diagnosis of Parkinson's disease in September 1986 opens this period. Fourteen shifts count among the events, but three are told as how things always were or with unknown dates and neverOpens marks: event 141 (your uncle's distance), and these do not count toward the period. The remaining shifts show your grandfather Ambrose overfunctioning, your father's anxiety and later his drinking, your aunt Pearl's panic spells, and your grandmother's functioning rising and falling over years, with your father's conflicts with his brother and his wife. The period settles after your grandmother moved to the nursing home in June 1997 and your father cut his drinking back to weekends by October 1997.",
+  "answer 1: declined: Run r5 (1999-01-15 to 2000-08-15) has 6 shifts that count and was declined: 1999\u20132000: Your brother Callum left home for a job in May 1999. Your father argued with him over the move and later missed days at work and sat up late in the garage; your mother's anxiety rose and she could not settle at the thought of Callum so far away; your sister Ines skipped school that autumn and your mother took her everywhere. The period settles by August 2000 when Ines returned to school full days and passed her exams, and by January 2000 when she began phoning your brother every Sunday night. However, this period falls within the years 2002\u20132003 that you named, so your reading carries those years. The events of 1999\u20132000 stay outside it.",
+  "answer 1: declined: Run r7 (2005-11-19 to 2005-11-23) has 5 shifts that count and was declined: 2005-11-19 to 2005-11-23: Your sister Ines was in a car accident on black ice and spent two nights in hospital. Your mother sat up all night by the phone, your father could not keep food down, your brother Callum came down from the north overnight to her bedside, and your sister shook at the thought of the ride home. Your mother was calm again once Ines was home and up and about by November 23rd. This is an acute episode around a real threat lasting four days, not a period."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Teodor's death, 1978\u20131979",
+   "summary": "Around your grandfather Teodor's death in January 1978, within months: your grandmother Delphine stopped cooking and went to your mother's house every evening, your father took night shifts and distanced from your mother, your uncle Anton's drinking rose and his marriage separated, and your father lay awake anxious over your mother and Anton. Your brother Callum's ear infections began that winter. The shifts pile up from February through May 1979, when your grandmother took a job at the library and her functioning rose.",
+   "eventIds": [
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    121
+   ],
+   "startDate": "1978-01-27",
+   "endDate": "1979-02-15",
+   "name": "Teodor's death, 1978\u20131979",
+   "source": "model",
+   "reason": "Around your grandfather Teodor's death in January 1978, within months: your grandmother Delphine stopped cooking and went to your mother's house every evening, your father took night shifts and distanced from your mother, your uncle Anton's drinking rose and his marriage separated, and your father lay awake anxious over your mother and Anton. Your brother Callum's ear infections began that winter. The shifts pile up from February through May 1979, when your grandmother took a job at the library and her functioning rose.",
+   "setAside": false,
+   "openingEventId": 113
+  },
+  {
+   "id": "c2",
+   "title": "Gran Hazel dying",
+   "summary": "Gran Hazel dying, when I was 22, is the one I'd pick.",
+   "eventIds": [
+    164,
+    165,
+    166,
+    167,
+    168,
+    169
+   ],
+   "startDate": "2003-01-14",
+   "endDate": "2003-11-15",
+   "name": "Gran Hazel dying",
+   "source": "user",
+   "reason": "Gran Hazel dying, when I was 22, is the one I'd pick.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 3,
+   "precision": 1.0,
+   "recall": 0.4,
+   "f1": 0.5714285714285715
+  },
+  "members": {
+   "tp": 14,
+   "fp": 0,
+   "fn": 2,
+   "precision": 1.0,
+   "recall": 0.875,
+   "f1": 0.9333333333333333
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "cluster F1 0.57 under 0.8"
+ ],
+ "cost": 0.019361
+}
