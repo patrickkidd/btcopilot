@@ -2,7 +2,36 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-18 (the cluster prompt rewritten once from the sources, every line cited)
+**Last Updated**: 2026-10-18 (cluster detection version 20: three code fixes, a period's name checked word for word)
+
+---
+
+## FD-383 job 042 — three code fixes behind the deep misses; a name checked word for word (2026-10-18)
+
+**Change**: cluster detection is version 20. One prompt line changed: the name line no longer says
+the check reads only the first four letters of a word; it says the check compares whole words, and
+that a first name, the event's kind and a word for a relative (mother, father, brother, sister and
+their step- and grand- forms) are always safe. The rest is code the prompt already described. A shift
+whose description says always, forever, never, mostly, on the whole or for years supports no period
+and starts no hint, so a time made only of such shifts is offered as no hint at all. One person's
+trouble lifting counts beside another person's rise in the same months, both on a known date, as one
+movement in the family; a lift alone counts for nothing and never starts a hint. A hint is marked
+the default only when it holds three shifts that count and a change in who is in the family on a
+known date; without one it is offered as a question. A period is refused for its length only when it
+covers more than half of the years the diagram's dated events cover, never at ten years or under, and
+the refusal says so; a climb over more than ten years in a long history stands. Cluster detection
+on Sonnet 5 runs with thinking switched off, as Haiku 4.5 runs.
+
+**Why**: job 041's gate on the four-generation case was 4 of 10 on Haiku. An independent check
+found three causes in the code, not the prompt: the four-letter check refused names it should not
+(a relative's word that began like a word of the person's own); the default hint counted shifts told as how things
+always were, so a time made of them was offered as the default and drawn; and the ten-year refusal
+contradicted the prompt's own line that only a period covering the whole history is the family's
+ordinary level. Sonnet 5 at high effort spent its whole limit thinking in 20 of 20 tries.
+
+**Evals**: unit tests in `btcopilot/tests/test_clusters.py` and `test_llmutil.py`, each seen to fail
+with its fix taken out; the cluster F1 suite's ten tries on Haiku 4.5 and Sonnet 5 follow in the
+same job.
 
 ---
 
