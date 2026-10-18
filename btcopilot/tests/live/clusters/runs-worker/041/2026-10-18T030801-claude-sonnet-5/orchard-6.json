@@ -1,0 +1,321 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley and the orchard, 1952\u20131953",
+     "reason": "Within about a year of Walter's move to Sorrel Valley and the orchard purchase in March 1952, you see June's homesickness and daily letters to Edna, Walter's long hours away from June, Glen's fights at the new school, Faye's stomach aches, the cutoff between Walter and his brother Harlan, June's weeks kept to her bed, and rows over money for new trees, all landing within the same stretch, with Roy's being kept back a year, dated only to around then, held in alongside them as a guess; June's turn to the choir in September 1953 is where things look to settle.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968\u20131969",
+     "reason": "Around the orchard failing in May 1968 and its sale at auction that October, you see Walter's heavy drinking, the conflict between Walter and Glen over the loan, Glen and Marian taking over the family's money and talks with the bank, Carl's asthma worsening then easing alongside your own bed-wetting starting again in April 1969, and Ida's heart trouble that May, with the cutoff between Walter and Roy dated only to around then; Walter's stopping drinking and taking up pruning work that October is where things look to settle.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178
+     ],
+     "name": "Wilma's move into your house, 1990\u20131991",
+     "reason": "Within months of Wilma selling her farm and moving into your house in January 1990, you see the clashes with her over the children's bedtimes, your distance from Sam as he kept out of the kitchen rows, Sam's turn toward his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, your own eczema, the rows with Sam most nights, and your mother Marian's drives over to take your side, dated only to around then; Wilma's move to a flat in June 1991 and the eczema clearing that August is where things look to settle.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "These events run from February 1975 to June 1976, the same years you named as the year your father lost his job, so your own period covers those years.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "These events of August 12 to 16, 1994 sit within a few days around the wildfire evacuation, with everyone calm again once allowed home that same week, which reads as a short-lived reaction to a real threat rather than a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The shifts around Tess's drinking and your worry for her in 1996 and 1997 gather with no change in who is in the family or in how a key member functions on a known date nearby, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley and the orchard, 1952\u20131953",
+     "reason": "Within about a year of Walter's move to Sorrel Valley and the orchard purchase in March 1952, you see June's homesickness and daily letters to Edna, Walter's long hours away from June, Glen's fights at the new school, Faye's stomach aches, the cutoff between Walter and his brother Harlan, June's weeks kept to her bed, and rows over money for new trees, all landing within the same stretch, with Roy's being kept back a year, dated only to around then, held in alongside them as a guess; June's turn to the choir in September 1953 is where things look to settle.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968\u20131969",
+     "reason": "Around the orchard failing in May 1968 and its sale at auction that October, you see Walter's heavy drinking, the conflict between Walter and Glen over the loan, Glen and Marian taking over the family's money and talks with the bank, Carl's asthma worsening then easing alongside your own bed-wetting starting again in April 1969, and Ida's heart trouble that May, with the cutoff between Walter and Roy dated only to around then; Walter's stopping drinking and taking up pruning work that October is where things look to settle.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178
+     ],
+     "name": "Wilma's move into your house, 1990\u20131991",
+     "reason": "Within months of Wilma selling her farm and moving into your house in January 1990, you see the clashes with her over the children's bedtimes, your distance from Sam as he kept out of the kitchen rows, Sam's turn toward his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, your own eczema, the rows with Sam most nights, and your mother Marian's trips over to take your side, dated only to around then; Wilma's move to a flat in June 1991 and the eczema clearing that August is where things look to settle.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "These events run from February 1975 to June 1976, the same years you named as the year your father lost his job, so your own period covers those years.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "These events of August 12 to 16, 1994 sit within a few days around the wildfire evacuation, with everyone calm again once allowed home that same week, which reads as a short-lived reaction to a real threat rather than a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The shifts around Tess's drinking and your worry for her in 1996 and 1997 gather with no change in who is in the family or in how a key member functions on a known date nearby, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cause: Period \"Wilma's move into your house, 1990\u20131991\" says one event brought about another ('drives'): say which events fell close together and when, side by side, never that one created, caused or led to another.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: These events of August 12 to 16, 1994 sit within a few days around the wildfire evacuation, with everyone calm again once allowed home that same week, which reads as a short-lived reaction to a real threat rather than a period.",
+  "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: The shifts around Tess's drinking and your worry for her in 1996 and 1997 gather with no change in who is in the family or in how a key member functions on a known date nearby, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley and the orchard, 1952\u20131953",
+   "summary": "Within about a year of Walter's move to Sorrel Valley and the orchard purchase in March 1952, you see June's homesickness and daily letters to Edna, Walter's long hours away from June, Glen's fights at the new school, Faye's stomach aches, the cutoff between Walter and his brother Harlan, June's weeks kept to her bed, and rows over money for new trees, all landing within the same stretch, with Roy's being kept back a year, dated only to around then, held in alongside them as a guess; June's turn to the choir in September 1953 is where things look to settle.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley and the orchard, 1952\u20131953",
+   "source": "model",
+   "reason": "Within about a year of Walter's move to Sorrel Valley and the orchard purchase in March 1952, you see June's homesickness and daily letters to Edna, Walter's long hours away from June, Glen's fights at the new school, Faye's stomach aches, the cutoff between Walter and his brother Harlan, June's weeks kept to her bed, and rows over money for new trees, all landing within the same stretch, with Roy's being kept back a year, dated only to around then, held in alongside them as a guess; June's turn to the choir in September 1953 is where things look to settle.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failing, 1968\u20131969",
+   "summary": "Around the orchard failing in May 1968 and its sale at auction that October, you see Walter's heavy drinking, the conflict between Walter and Glen over the loan, Glen and Marian taking over the family's money and talks with the bank, Carl's asthma worsening then easing alongside your own bed-wetting starting again in April 1969, and Ida's heart trouble that May, with the cutoff between Walter and Roy dated only to around then; Walter's stopping drinking and taking up pruning work that October is where things look to settle.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failing, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard failing in May 1968 and its sale at auction that October, you see Walter's heavy drinking, the conflict between Walter and Glen over the loan, Glen and Marian taking over the family's money and talks with the bank, Carl's asthma worsening then easing alongside your own bed-wetting starting again in April 1969, and Ida's heart trouble that May, with the cutoff between Walter and Roy dated only to around then; Walter's stopping drinking and taking up pruning work that October is where things look to settle.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Wilma's move into your house, 1990\u20131991",
+   "summary": "Within months of Wilma selling her farm and moving into your house in January 1990, you see the clashes with her over the children's bedtimes, your distance from Sam as he kept out of the kitchen rows, Sam's turn toward his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, your own eczema, the rows with Sam most nights, and your mother Marian's trips over to take your side, dated only to around then; Wilma's move to a flat in June 1991 and the eczema clearing that August is where things look to settle.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma's move into your house, 1990\u20131991",
+   "source": "model",
+   "reason": "Within months of Wilma selling her farm and moving into your house in January 1990, you see the clashes with her over the children's bedtimes, your distance from Sam as he kept out of the kitchen rows, Sam's turn toward his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, your own eczema, the rows with Sam most nights, and your mother Marian's trips over to take your side, dated only to around then; Wilma's move to a flat in June 1991 and the eczema clearing that August is where things look to settle.",
+   "setAside": false,
+   "openingEventId": 168
+  },
+  {
+   "id": "c4",
+   "title": "the year Dad lost his job",
+   "summary": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "the year Dad lost his job",
+   "source": "user",
+   "reason": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 44,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   3,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.203312
+}

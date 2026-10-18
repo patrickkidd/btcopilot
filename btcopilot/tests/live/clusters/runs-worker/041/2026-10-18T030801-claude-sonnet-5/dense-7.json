@@ -1,0 +1,81 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1988\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989: your mother Della's lying awake over money and stopping talking with your father about money in 1988, and your brother Felix's grades falling that November, with Della calmer back at work in early 1990 marking where things settled.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": "r2",
+     "eventIds": [
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della told she had breast cancer, 1994\u20131996",
+     "reason": "Around your mother Della's being told she had breast cancer in February 1995: your migraines keeping you in bed in March 1994, calling your brother Felix most nights that April, then stopping returning his calls in mid-1995 and stopping calling home in early 1996, with no settling shown in between.",
+     "change": "This period keeps the shifts nearest your mother Della's diagnosis, leaving out the death with no known date and your own move away to college since they fall outside those months.",
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r2' is not one of the app's periods listed.",
+  "gave up: unknown_group: Period 'r1' is not one of the app's periods listed."
+ ],
+ "stored": [],
+ "score": {
+  "clusters": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 2,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0
+  },
+  "members": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   0
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "cluster F1 0.00 under 0.8"
+ ],
+ "cost": 0.259772
+}

@@ -1,0 +1,324 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118
+     ],
+     "name": "Your grandfather Walter's move across the country, 1952\u20131953",
+     "reason": "Within about a year of your grandfather Walter moving the family to Sorrel Valley in March 1952, the shifts pile up through 1953: June's homesickness and daily letters to her sister Edna, Walter and June's distance from each other in the orchard, Glen's fights at the new school, Walter's cutoff from his brother Harlan over the land money, June's weeks kept to her bed, their rows over money for new trees, and Faye's stomach aches and Roy's being kept back a year, both on dates nobody is sure of. June's joining the church choir in September 1953, with her letters thinning out, is where things look settled.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": "r2",
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Your grandfather Walter's orchard failing, 1968\u20131969",
+     "reason": "Around the orchard failing and the bank calling in the loan in May 1968, the shifts pile up over the following year: Walter's heavy drinking, his blaming Glen over the loan, the auction and the move to Ridgeport, Glen and Marian taking over the family's money and bank talks, Carl's worse asthma that winter, Walter's cutoff from Roy over the sale, the asthma easing alongside your own bedwetting starting again in April 1969, and Ida's heart trouble found that May. Walter's stopping drinking and taking up pruning other men's trees in October 1969 is where things look settled.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": "r3",
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158
+     ],
+     "name": "Your father Glen's job loss at the cannery, 1975\u20131976",
+     "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975, the shifts pile up over the following year: his months out of work, the loud fights with Marian over money, the second job cleaning offices at night, your not eating properly that summer, your keeping to your room with little said to your mother, Walter's drinking again after six years off it, Carl's nights at his girlfriend Gail's family's house, and Tess's nightmares that winter on a date nobody is sure of. Your eating again and joining the track team by mid-1976, alongside Glen starting the delivery job, is where things look settled.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": "r4",
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178
+     ],
+     "name": "Wilma's move into the house, 1990\u20131991",
+     "reason": "Within months of Wilma selling her farm and moving into your and Sam's house in January 1990, the shifts pile up over the next year and a half: the clashes with Wilma over the children's bedtimes and meals, Sam's working late and keeping out of the rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, the nightly rows with Sam, and your mother Marian's driving over to take your side on a date nobody is sure of. Wilma's taking a flat in town in June 1991, with your eczema clearing that summer, is where things look settled.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events of August 12\u201316, 1994 sit within the few days of the wildfire evacuation, with the house found untouched and calm again, and the children back at school within days: an acute episode around a real threat, not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The shifts around Tess's drinking and your worry for her from late 1996 into 1997 have no change in the family on a known date near them among the events, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Your grandfather Walter's move across the country, 1952\u20131953",
+     "reason": "Within about a year of your grandfather Walter moving the family to Sorrel Valley in March 1952, the shifts pile up through 1953: June's homesickness and daily letters to her sister Edna, Walter and June's distance from each other in the orchard, Glen's fights at the new school, Walter's cutoff from his brother Harlan over the land money, June's weeks kept to her bed, and their rows over money for new trees. June's joining the church choir in September 1953, with her letters thinning out, is where things look settled.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Your grandfather Walter's orchard failing, 1968\u20131969",
+     "reason": "Around the orchard failing and the bank calling in the loan in May 1968, the shifts pile up over the following year: Walter's heavy drinking, his blaming Glen over the loan, the auction and the move to Ridgeport, Glen and Marian taking over the family's money and bank talks, Carl's worse asthma that winter, the asthma easing alongside your own bedwetting starting again in April 1969, and Ida's heart trouble found that May. Walter's stopping drinking and taking up pruning other men's trees in October 1969 is where things look settled.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      157,
+      158
+     ],
+     "name": "Your father Glen's job loss at the cannery, 1975\u20131976",
+     "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975, the shifts pile up over the following year: his months out of work, the loud fights with Marian over money, the second job cleaning offices at night, your not eating properly that summer, your keeping to your room with little said to your mother, and Walter's drinking again after six years off it. Your eating again and joining the track team by mid-1976, alongside Glen starting the delivery job, is where things look settled.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      177,
+      178
+     ],
+     "name": "Wilma's move into the house, 1990\u20131991",
+     "reason": "Within months of Wilma selling her farm and moving into your and Sam's house in January 1990, the shifts pile up over the next year and a half: the clashes with Wilma over the children's bedtimes and meals, Sam's working late and keeping out of the rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, and the nightly rows with Sam. Wilma's taking a flat in town in June 1991, with your eczema clearing that summer, is where things look settled.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events of August 12\u201316, 1994 sit within the few days of the wildfire evacuation, with the house found untouched and calm again, and the children back at school within days: an acute episode around a real threat, not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The shifts around Tess's drinking and your worry for her from late 1996 into 1997 have no change in the family on a known date near them among the events, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 1: unknown_group: Period 'r2' is not one of the app's periods listed.",
+  "answer 1: unknown_group: Period 'r3' is not one of the app's periods listed.",
+  "answer 1: unknown_group: Period 'r4' is not one of the app's periods listed.",
+  "answer 2: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: The events of August 12\u201316, 1994 sit within the few days of the wildfire evacuation, with the house found untouched and calm again, and the children back at school within days: an acute episode around a real threat, not a period.",
+  "answer 2: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: The shifts around Tess's drinking and your worry for her from late 1996 into 1997 have no change in the family on a known date near them among the events, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Walter's move across the country, 1952\u20131953",
+   "summary": "Within about a year of your grandfather Walter moving the family to Sorrel Valley in March 1952, the shifts pile up through 1953: June's homesickness and daily letters to her sister Edna, Walter and June's distance from each other in the orchard, Glen's fights at the new school, Walter's cutoff from his brother Harlan over the land money, June's weeks kept to her bed, and their rows over money for new trees. June's joining the church choir in September 1953, with her letters thinning out, is where things look settled.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    114,
+    115,
+    116,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Your grandfather Walter's move across the country, 1952\u20131953",
+   "source": "model",
+   "reason": "Within about a year of your grandfather Walter moving the family to Sorrel Valley in March 1952, the shifts pile up through 1953: June's homesickness and daily letters to her sister Edna, Walter and June's distance from each other in the orchard, Glen's fights at the new school, Walter's cutoff from his brother Harlan over the land money, June's weeks kept to her bed, and their rows over money for new trees. June's joining the church choir in September 1953, with her letters thinning out, is where things look settled.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Your grandfather Walter's orchard failing, 1968\u20131969",
+   "summary": "Around the orchard failing and the bank calling in the loan in May 1968, the shifts pile up over the following year: Walter's heavy drinking, his blaming Glen over the loan, the auction and the move to Ridgeport, Glen and Marian taking over the family's money and bank talks, Carl's worse asthma that winter, the asthma easing alongside your own bedwetting starting again in April 1969, and Ida's heart trouble found that May. Walter's stopping drinking and taking up pruning other men's trees in October 1969 is where things look settled.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    140,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Your grandfather Walter's orchard failing, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard failing and the bank calling in the loan in May 1968, the shifts pile up over the following year: Walter's heavy drinking, his blaming Glen over the loan, the auction and the move to Ridgeport, Glen and Marian taking over the family's money and bank talks, Carl's worse asthma that winter, the asthma easing alongside your own bedwetting starting again in April 1969, and Ida's heart trouble found that May. Walter's stopping drinking and taking up pruning other men's trees in October 1969 is where things look settled.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Your father Glen's job loss at the cannery, 1975\u20131976",
+   "summary": "Around Glen losing his job when the Ridgeport cannery closed in February 1975, the shifts pile up over the following year: his months out of work, the loud fights with Marian over money, the second job cleaning offices at night, your not eating properly that summer, your keeping to your room with little said to your mother, and Walter's drinking again after six years off it. Your eating again and joining the track team by mid-1976, alongside Glen starting the delivery job, is where things look settled.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    154,
+    155,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "Your father Glen's job loss at the cannery, 1975\u20131976",
+   "source": "model",
+   "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975, the shifts pile up over the following year: his months out of work, the loud fights with Marian over money, the second job cleaning offices at night, your not eating properly that summer, your keeping to your room with little said to your mother, and Walter's drinking again after six years off it. Your eating again and joining the track team by mid-1976, alongside Glen starting the delivery job, is where things look settled.",
+   "setAside": false,
+   "openingEventId": 148
+  },
+  {
+   "id": "c4",
+   "title": "Wilma's move into the house, 1990\u20131991",
+   "summary": "Within months of Wilma selling her farm and moving into your and Sam's house in January 1990, the shifts pile up over the next year and a half: the clashes with Wilma over the children's bedtimes and meals, Sam's working late and keeping out of the rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, and the nightly rows with Sam. Wilma's taking a flat in town in June 1991, with your eczema clearing that summer, is where things look settled.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    177,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma's move into the house, 1990\u20131991",
+   "source": "model",
+   "reason": "Within months of Wilma selling her farm and moving into your and Sam's house in January 1990, the shifts pile up over the next year and a half: the clashes with Wilma over the children's bedtimes and meals, Sam's working late and keeping out of the rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, and the nightly rows with Sam. Wilma's taking a flat in town in June 1991, with your eczema clearing that summer, is where things look settled.",
+   "setAside": false,
+   "openingEventId": 168
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 37,
+   "fp": 0,
+   "fn": 7,
+   "precision": 1.0,
+   "recall": 0.8409090909090909,
+   "f1": 0.9135802469135803
+  },
+  "openings": [
+   4,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.211146
+}

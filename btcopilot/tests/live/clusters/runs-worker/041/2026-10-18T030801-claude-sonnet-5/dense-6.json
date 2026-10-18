@@ -1,0 +1,109 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1988\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, you said your mother Della was lying awake over money from March 1988 and stopped talking with your father about money that May, and your brother Felix's grades fell that November; her being calmer back at work by March 1990 is where this settles.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della's breast cancer diagnosis, 1994\u20131996",
+     "reason": "Around your mother Della's being told she had breast cancer in February 1995, you said your migraines kept you in bed from March 1994 and you called your brother Felix most nights that April, then stopped returning his calls by June 1995 and stopped calling home in February 1996; Greta's death, its date unclear, and your leaving home for college in September 1993 sit outside this and are left out.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, you said your mother Della was lying awake over money from March 1988 and stopped talking with your father about money that May, and your brother Felix's grades fell that November; her being calmer back at work by March 1990 is where this settles.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, you said your mother Della was lying awake over money from March 1988 and stopped talking with your father about money that May, and your brother Felix's grades fell that November; her being calmer back at work by March 1990 is where this settles.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della's breast cancer diagnosis, 1994\u20131996",
+   "summary": "Around your mother Della's being told she had breast cancer in February 1995, you said your migraines kept you in bed from March 1994 and you called your brother Felix most nights that April, then stopped returning his calls by June 1995 and stopped calling home in February 1996; Greta's death, its date unclear, and your leaving home for college in September 1993 sit outside this and are left out.",
+   "eventIds": [
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1994-03-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della's breast cancer diagnosis, 1994\u20131996",
+   "source": "model",
+   "reason": "Around your mother Della's being told she had breast cancer in February 1995, you said your migraines kept you in bed from March 1994 and you called your brother Felix most nights that April, then stopped returning his calls by June 1995 and stopped calling home in February 1996; Greta's death, its date unclear, and your leaving home for college in September 1993 sit outside this and are left out.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 10,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.9090909090909091,
+   "f1": 0.9523809523809523
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.140904
+}

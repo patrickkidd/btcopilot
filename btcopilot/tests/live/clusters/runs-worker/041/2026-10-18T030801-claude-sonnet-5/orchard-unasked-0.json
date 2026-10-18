@@ -1,0 +1,237 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Within about a year and a half of Walter moving the family to Sorrel Valley and buying the orchard in March 1952, you see June's homesickness and daily letters to her sister Edna, Walter's long hours away from the house, Glen's fights at the new school, Walter's stopping contact with his brother Harlan, June's weeks in bed, and rows between Walter and June over money for new trees, with Faye's stomach aches and Roy's being kept back a year noted though their dates are uncertain; things look settled when June joins the choir and her letters to Edna thin out in September 1953.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968\u20131969",
+     "reason": "Within about a year and a half of the orchard failing in May 1968, you see Walter's heavy drinking, his conflict with Glen over the loan, Glen and Marian taking over the family's money, Carl's worse asthma, Walter's stopping contact with Roy, Carl's asthma easing alongside Nora's bedwetting starting again that same month, and Ida's heart trouble found, with the orchard's sale and Glen's start at the cannery falling in the same months; things look settled once Walter stops drinking and takes up pruning work in October 1969.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158
+     ],
+     "name": "Glen's job loss at the cannery, 1975\u20131976",
+     "reason": "Within the year after Glen's job loss when the Ridgeport cannery closed in February 1975, you see his months out of work, loud fights with Marian over money, their taking a second job, Nora's loss of appetite, Carl spending nights away at his girlfriend's family, Nora's withdrawal from her mother, Walter's return to drinking, and Tess's nightmares, all close together; things look settled once Glen starts the delivery job in March 1976 and Nora is eating again and on the track team that summer.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178
+     ],
+     "name": "Wilma moving in, 1990\u20131991",
+     "reason": "Within about a year and a half of Wilma selling her farm and moving into your house with Sam in January 1990, you see your clashes with her over the children's bedtimes and meals, Sam's working late and keeping out of the rows, Sam siding with his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, your rows with Sam most nights, and your mother driving over to take your side though its date is uncertain; things look settled once Wilma takes a flat in town in June 1991 and your eczema clears that summer.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The wildfire evacuation of August 12-16, 1994 is a few days around a real threat, with the family settled again within days once allowed home, so this is an acute episode, not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The shifts between October 1996 and March 1997 (Tess's drinking, your worry calls, Marian taking over her care, the conflict with Rick) have no change in the family on a known date near them, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: The wildfire evacuation of August 12-16, 1994 is a few days around a real threat, with the family settled again within days once allowed home, so this is an acute episode, not a period.",
+  "answer 1: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: The shifts between October 1996 and March 1997 (Tess's drinking, your worry calls, Marian taking over her care, the conflict with Rick) have no change in the family on a known date near them, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Within about a year and a half of Walter moving the family to Sorrel Valley and buying the orchard in March 1952, you see June's homesickness and daily letters to her sister Edna, Walter's long hours away from the house, Glen's fights at the new school, Walter's stopping contact with his brother Harlan, June's weeks in bed, and rows between Walter and June over money for new trees, with Faye's stomach aches and Roy's being kept back a year noted though their dates are uncertain; things look settled when June joins the choir and her letters to Edna thin out in September 1953.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Within about a year and a half of Walter moving the family to Sorrel Valley and buying the orchard in March 1952, you see June's homesickness and daily letters to her sister Edna, Walter's long hours away from the house, Glen's fights at the new school, Walter's stopping contact with his brother Harlan, June's weeks in bed, and rows between Walter and June over money for new trees, with Faye's stomach aches and Roy's being kept back a year noted though their dates are uncertain; things look settled when June joins the choir and her letters to Edna thin out in September 1953.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failing, 1968\u20131969",
+   "summary": "Within about a year and a half of the orchard failing in May 1968, you see Walter's heavy drinking, his conflict with Glen over the loan, Glen and Marian taking over the family's money, Carl's worse asthma, Walter's stopping contact with Roy, Carl's asthma easing alongside Nora's bedwetting starting again that same month, and Ida's heart trouble found, with the orchard's sale and Glen's start at the cannery falling in the same months; things look settled once Walter stops drinking and takes up pruning work in October 1969.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failing, 1968\u20131969",
+   "source": "model",
+   "reason": "Within about a year and a half of the orchard failing in May 1968, you see Walter's heavy drinking, his conflict with Glen over the loan, Glen and Marian taking over the family's money, Carl's worse asthma, Walter's stopping contact with Roy, Carl's asthma easing alongside Nora's bedwetting starting again that same month, and Ida's heart trouble found, with the orchard's sale and Glen's start at the cannery falling in the same months; things look settled once Walter stops drinking and takes up pruning work in October 1969.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Glen's job loss at the cannery, 1975\u20131976",
+   "summary": "Within the year after Glen's job loss when the Ridgeport cannery closed in February 1975, you see his months out of work, loud fights with Marian over money, their taking a second job, Nora's loss of appetite, Carl spending nights away at his girlfriend's family, Nora's withdrawal from her mother, Walter's return to drinking, and Tess's nightmares, all close together; things look settled once Glen starts the delivery job in March 1976 and Nora is eating again and on the track team that summer.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "Glen's job loss at the cannery, 1975\u20131976",
+   "source": "model",
+   "reason": "Within the year after Glen's job loss when the Ridgeport cannery closed in February 1975, you see his months out of work, loud fights with Marian over money, their taking a second job, Nora's loss of appetite, Carl spending nights away at his girlfriend's family, Nora's withdrawal from her mother, Walter's return to drinking, and Tess's nightmares, all close together; things look settled once Glen starts the delivery job in March 1976 and Nora is eating again and on the track team that summer.",
+   "setAside": false,
+   "openingEventId": 148
+  },
+  {
+   "id": "c4",
+   "title": "Wilma moving in, 1990\u20131991",
+   "summary": "Within about a year and a half of Wilma selling her farm and moving into your house with Sam in January 1990, you see your clashes with her over the children's bedtimes and meals, Sam's working late and keeping out of the rows, Sam siding with his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, your rows with Sam most nights, and your mother driving over to take your side though its date is uncertain; things look settled once Wilma takes a flat in town in June 1991 and your eczema clears that summer.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma moving in, 1990\u20131991",
+   "source": "model",
+   "reason": "Within about a year and a half of Wilma selling her farm and moving into your house with Sam in January 1990, you see your clashes with her over the children's bedtimes and meals, Sam's working late and keeping out of the rows, Sam siding with his mother, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, your rows with Sam most nights, and your mother driving over to take your side though its date is uncertain; things look settled once Wilma takes a flat in town in June 1991 and your eczema clears that summer.",
+   "setAside": false,
+   "openingEventId": 168
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 44,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   4,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.17344
+}

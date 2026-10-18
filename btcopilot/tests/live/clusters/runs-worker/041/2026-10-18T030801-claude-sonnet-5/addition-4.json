@@ -1,0 +1,78 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "your sister Bea's birth, 1995\u20131996",
+     "reason": "Within a year of your sister Bea's birth in March 1995, your mother Lena's tiredness and edge with the baby, your parents working late and growing distant from each other, your stomach aches and missed school, the shouting matches between your father Paul and your brother Jonah, and your mother not going back to her job all fall between August 1995 and September 1996. The move to the city for college in 2003 sits years later and is left out, since nothing ties it to these months.",
+     "change": null,
+     "openingId": 4
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "your sister Bea's birth, 1995\u20131996",
+   "summary": "Within a year of your sister Bea's birth in March 1995, your mother Lena's tiredness and edge with the baby, your parents working late and growing distant from each other, your stomach aches and missed school, the shouting matches between your father Paul and your brother Jonah, and your mother not going back to her job all fall between August 1995 and September 1996. The move to the city for college in 2003 sits years later and is left out, since nothing ties it to these months.",
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "startDate": "1995-03-02",
+   "endDate": "1996-09-01",
+   "name": "your sister Bea's birth, 1995\u20131996",
+   "source": "model",
+   "reason": "Within a year of your sister Bea's birth in March 1995, your mother Lena's tiredness and edge with the baby, your parents working late and growing distant from each other, your stomach aches and missed school, the shouting matches between your father Paul and your brother Jonah, and your mother not going back to her job all fall between August 1995 and September 1996. The move to the city for college in 2003 sits years later and is left out, since nothing ties it to these months.",
+   "setAside": false,
+   "openingEventId": 4
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.045232
+}

@@ -1,0 +1,78 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "Bea's birth, 1995-1996",
+     "reason": "Within about a year and a half of Bea's birth in March 1995, you said: Lena being worn out and on edge with the baby, Paul and Lena's distance as he worked late most nights, your own stomach aches and missing school, the shouting matches between Paul and Jonah, and Lena not going back to her job, fall close together and are held as a guess that the family's balance moved around the new baby; the move to the city in 2003 and the death in 2007 are far enough removed in time to be left out.",
+     "change": null,
+     "openingId": 4
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Bea's birth, 1995\u20131996",
+   "summary": "Within about a year and a half of Bea's birth in March 1995, you said: Lena being worn out and on edge with the baby, Paul and Lena's distance as he worked late most nights, your own stomach aches and missing school, the shouting matches between Paul and Jonah, and Lena not going back to her job, fall close together and are held as a guess that the family's balance moved around the new baby; the move to the city in 2003 and the death in 2007 are far enough removed in time to be left out.",
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "startDate": "1995-03-02",
+   "endDate": "1996-09-01",
+   "name": "Bea's birth, 1995\u20131996",
+   "source": "model",
+   "reason": "Within about a year and a half of Bea's birth in March 1995, you said: Lena being worn out and on edge with the baby, Paul and Lena's distance as he worked late most nights, your own stomach aches and missing school, the shouting matches between Paul and Jonah, and Lena not going back to her job, fall close together and are held as a guess that the family's balance moved around the new baby; the move to the city in 2003 and the death in 2007 are far enough removed in time to be left out.",
+   "setAside": false,
+   "openingEventId": 4
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.046192
+}
