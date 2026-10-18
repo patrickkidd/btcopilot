@@ -146,6 +146,7 @@ prove the runner on the hand-written answers with `CLUSTER_ANSWERS=btcopilot/tes
 CLUSTER_LEDGER=<a scratch file>`; the scorer's own tests run in the same command.
 
 `CLUSTER_TRIES=10` runs each case ten times, one grouping call a try (two when the first answer is refused), each try's answers in `runs/<time>-<model>-<process>/<case>-<try>.json`, which a replay with the same setting reads back.
+Saved worker runs live in the private corpus at `$BTCOPILOT_SOURCES/btcopilot-runs/clusters/runs-worker/<job>/<folder>` and are replayed with `CLUSTER_ANSWERS=<that path>`.
 `CLUSTER_MODEL` names the model the grouping call asks in place of Gemini, such as `claude-haiku-4-5-20251001` or `claude-sonnet-5`.
 `uv run python -m btcopilot.tests.live.clusters.passrate <ledger>` prints per model and case the tries, passes, cost and tokens per call, and the cost per user-month.
 

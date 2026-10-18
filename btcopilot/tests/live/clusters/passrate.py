@@ -4,8 +4,8 @@ from the eval ledger's `clusters/` lines and printed as a markdown table
 
     uv run python -m btcopilot.tests.live.clusters.passrate [ledger.jsonl]
 
-The ledger is the live suite's unless one is named, such as a run's own under
-runs-worker/. Point it at one run's lines: tries are counted per line. The cost
+The ledger is the live suite's unless one is named, such as a saved worker run's own in the private
+corpus under $BTCOPILOT_SOURCES/btcopilot-runs/clusters/runs-worker/. Point it at one run's lines: tries are counted per line. The cost
 columns read the paid lines only, so a ledger of replays shows its pass rate
 with no cost. Per user-month is the cost of one call times 37.8 calls: 4.5
 turns a day for 30 days, 28% of them making a grouping call.
