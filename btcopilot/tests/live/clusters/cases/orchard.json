@@ -145,7 +145,7 @@
    },
    {
     "id": 6,
-    "name": "Leon",
+    "name": "Ansel",
     "gender": "male",
     "parents": null,
     "last_name": "Ferrand"
@@ -271,7 +271,7 @@
    },
    {
     "id": 24,
-    "name": "Sam",
+    "name": "Hollis",
     "gender": "male",
     "parents": 43,
     "last_name": "Whitlock"
@@ -873,7 +873,7 @@
     "dateTime": "1971-09-20",
     "dateCertainty": "certain",
     "person": 8,
-    "description": "a heart attack when Sam was eleven"
+    "description": "a heart attack when Hollis was eleven"
    },
    {
     "id": 146,
@@ -1089,8 +1089,8 @@
     "dateTime": "1990-01-20",
     "dateCertainty": "certain",
     "person": 9,
-    "description": "sold her farm and moved into Nora and Sam's house",
-    "notes": "Sam's mother; widowed since 1971."
+    "description": "sold her farm and moved into Nora and Hollis's house",
+    "notes": "Hollis's mother; widowed since 1971."
    },
    {
     "id": 169,
@@ -1168,7 +1168,7 @@
     "relationshipTargets": [
      24
     ],
-    "description": "rows with Sam most nights"
+    "description": "rows with Hollis most nights"
    },
    {
     "id": 176,
