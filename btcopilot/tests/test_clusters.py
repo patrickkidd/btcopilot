@@ -447,7 +447,7 @@ def test_a_shift_told_as_how_things_always_were_supports_no_hint():
             "1963-03-10",
             person=1,
             functioning=VariableShift.Down,
-            description="for years kept the shop going on her own",
+            description="has forever kept the shop going on her own",
         ),
         moment(4, "1963-05-10", person=2, anxiety=VariableShift.Up),
     )
@@ -455,14 +455,7 @@ def test_a_shift_told_as_how_things_always_were_supports_no_hint():
     data.events[1]["description"] = "stopped visiting her aunt"
     data.events[2]["description"] = "let the shop slide"
     assert [c.shiftIds for c in candidates(data)] == [[2, 3, 4]]
-    told = [
-        "always late",
-        "forever on edge",
-        "never a moment's peace",
-        "mostly kept to herself",
-        "on the whole cheerful",
-        "for years quiet",
-    ]
+    told = ["always late", "forever on edge", "how things always were"]
     assert all(
         clusters.standing(Event(id=9, kind=EventKind.Shift, description=one))
         for one in told
@@ -470,6 +463,36 @@ def test_a_shift_told_as_how_things_always_were_supports_no_hint():
     assert not clusters.standing(
         Event(id=9, kind=EventKind.Shift, description="wholly new, nevertheless")
     )
+
+
+def test_a_change_told_with_never_or_for_years_still_supports_a_hint():
+    # R-0850, R-0856
+    """Only always and forever mark a shift as how things always were: a
+    cutoff told with "never" and a drinking told with "for years" are changes
+    after a loss, and they count."""
+    data = record(
+        asdict(Event(id=1, kind=EventKind.Death, person=4, dateTime="1981-02-01")),
+        moment(
+            2,
+            "1981-03-01",
+            person=1,
+            relationship=RelationshipKind.Cutoff,
+            relationshipTargets=[3],
+            description="never spoke to his father again after the funeral",
+        ),
+        moment(
+            3,
+            "1981-06-01",
+            person=2,
+            symptom=VariableShift.Up,
+            description="drank heavily for years after the divorce",
+        ),
+        moment(4, "1981-09-01", person=1, anxiety=VariableShift.Up),
+        people=4,
+    )
+    events = clusters._events(data)
+    assert [clusters.supports(e, events) for e in events[1:3]] == [True, True]
+    assert [(c.shiftIds, c.strong) for c in candidates(data)] == [([2, 3, 4], True)]
 
 
 # Three shifts that count, months apart, and a change in the family to put
@@ -1812,6 +1835,21 @@ def test_a_name_is_checked_word_for_word_and_the_ordinary_relatives_are_free():
         result = detect_clusters(MARSH, ask, heard(seen))
     assert seen == []
     assert [c.name for c in result.clusters] == ["Your stepmother Ada's death, 2011"]
+
+
+def test_a_relative_the_person_also_names_is_still_free_to_use_in_a_name():
+    # R-0850, R-0856, R-0426
+    """When the person's own words say "stepmother", the same whole word in a
+    name is still allowed: a word for a relative names who changed, never the
+    person's trouble."""
+    data = record(*MARSH.events)
+    data.events[1] = {**data.events[1], "description": "clashed with his stepmother"}
+    told = clusters.trouble_words(data)
+    assert "stepmother" not in told
+    assert clusters.trouble_in("Your stepmother Ada's death, 2011", told) == []
+    assert clusters.trouble_in("Ada's death and the clashed years, 2011", told) == [
+        "clashed"
+    ]
 
 
 def test_a_returned_name_with_other_years_than_its_span_is_stored_with_its_span():
