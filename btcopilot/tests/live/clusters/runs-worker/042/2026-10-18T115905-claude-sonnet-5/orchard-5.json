@@ -1,0 +1,126 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952-1953",
+     "reason": "Within a year of Walter's move of the family to Sorrel Valley you said homesickness and distance between Walter and June, fights at the new school for Glen, a cutoff between Walter and his brother Harlan, and rows between Walter and June over money, settling once June joined the choir and her letters thinned out; Faye's stomach aches and Roy being kept back a year are left out since no one is sure of their dates.",
+     "change": "Two events with dates nobody is sure of, Faye's stomach aches and Roy's held-back year, are left out of the shifts counted though they may belong to the same months.",
+     "openingId": 109
+    },
+    {
+     "id": "r2",
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968-1969",
+     "reason": "Around the orchard's failure and sale you said Walter drinking heavily, conflict between Walter and Glen over the loan, Glen and Marian taking over the family's money, Carl's asthma worsening then easing, your own bedwetting beginning again, and Ida's heart trouble, with things settling once Walter stopped drinking and took up pruning work in late 1969; the cutoff between Walter and Roy is left out since its date is not known.",
+     "change": "The cutoff between Walter and Roy is left out as a shift told on a date nobody is sure of, so it no longer figures among the counted shifts.",
+     "openingId": 132
+    },
+    {
+     "id": "r4",
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      177
+     ],
+     "name": "Wilma's move into Nora and Hollis's house, 1990-1991",
+     "reason": "Within months of Wilma moving into your house you said clashes with her over the children's routines, Hollis working late and keeping out of the rows, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, your eczema flaring, and rows with Hollis most nights, settling once Wilma took a flat of her own in mid-1991; your mother's drives over to take your side are left out since the date is not known.",
+     "change": "Your mother Marian's drives over to take your side are left out as a shift on a date nobody is sure of, so it no longer figures among the counted shifts.",
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events of 1975-1976 fall inside the time you yourself named as the year your father lost his job, so your own period covers those years and this hint's events are answered there rather than as a period of mine.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "The wildfire of August 1994 and the shifts around it settle within days of the family returning home, which is the mark of an acute episode around a real threat, not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The 1996-1997 events recount to three shifts that count, Tess's drinking, your worry for her, and the conflict between Tess and Rick, but no change in the family on a known date sits among them, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r2' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r4' is not one of the app's periods listed.",
+  "gave up: unknown_group: Period 'r1' is not one of the app's periods listed."
+ ],
+ "stored": [],
+ "score": {
+  "clusters": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 4,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0
+  },
+  "members": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   0
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'the year Dad lost his job' is not stored as theirs",
+  "cluster F1 0.00 under 0.8"
+ ],
+ "cost": 0.182002
+}

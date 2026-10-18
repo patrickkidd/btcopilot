@@ -1,0 +1,115 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Amos's death, 1988\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, within a year on either side: your mother Della's lying awake over money and her stopping talking with Victor about money, your brother Felix's grades falling, and Della's calming once back at work, which settles the period by March 1990.",
+     "change": "Returned as the hint read, since the shifts and the death sit within the same period.",
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      19,
+      20
+     ],
+     "name": "Rhea's leaving home for college, 1993\u20131996",
+     "reason": "Around your leaving home for college in September 1993: your migraines keeping you in bed, your calling your brother Felix most nights, then your stopping returning his calls, and your stopping calling home, each shift following the one before into 1996.",
+     "change": "Greta's death is left out since its date is unknown and it never opens a period; the remaining shifts of yours still hang together around your leaving home.",
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, within a year on either side: your mother Della's lying awake over money and her stopping talking with Victor about money, your brother Felix's grades falling, and Della's calming once back at work, which settles the period by March 1990.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, within a year on either side: your mother Della's lying awake over money and her stopping talking with Victor about money, your brother Felix's grades falling, and Della's calming once back at work, which settles the period by March 1990.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Rhea's leaving home for college, 1993\u20131996",
+   "summary": "Around your leaving home for college in September 1993: your migraines keeping you in bed, your calling your brother Felix most nights, then your stopping returning his calls, and your stopping calling home, each shift following the one before into 1996.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Rhea's leaving home for college, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your leaving home for college in September 1993: your migraines keeping you in bed, your calling your brother Felix most nights, then your stopping returning his calls, and your stopping calling home, each shift following the one before into 1996.",
+   "setAside": false,
+   "openingEventId": 15
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 10,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.9090909090909091,
+   "f1": 0.9523809523809523
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.108786
+}

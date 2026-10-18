@@ -1,0 +1,225 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      39,
+      53,
+      172
+     ],
+     "name": "Your grandfather Gordon's death, 1989\u20131994",
+     "reason": "Around your grandfather Gordon's death in June 1991, within about three years: your move to Quarry Lane in spring 1989, your late nights and shift away from chess and debate, settling into the rebuilt Hollin Road house that autumn, your mother filling in your college forms as you underfunctioned, your wrist injury stopping your playing in October 1991, conflict with your friend Rafe and his move out of your room in November, getting high and absorbed in fixing radios, feeling lost and low with your grandfather gone and your mother about to remarry, your father Clifford coming back into the family that January, and your anxiety rising as you stung that your dad had never heard of the film you were making in early 1994. Your exchange in Lisbon and return to your degree leave these months settled.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      79
+     ],
+     "name": "Your grandmother Winifred's cancer diagnosis, 2001\u20132004",
+     "reason": "Around your grandmother Winifred's bowel cancer diagnosis in 2001 or 2002, alongside your own running out of steam for performing and your disastrous audition in early 2002: you grew distant from your family and friends, left Thornbury for Gull Harbour, met Marisol at a winter party in early 2003, moved to Fenwick to live with her by June, then split within the year and sank into deep depression once you were back in Thornbury that winter. Your anxiety rose as you could not face your family, though you relied on friends Corbin, Dale and Silas, and your functioning began to recover in early 2004 as you returned to your therapist and requested help with therapy costs. Your grandmother died of the cancer in February 2004, and the family settled as you began swimming laps and your recovery pointed you toward nursing.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      190,
+      135,
+      136,
+      163,
+      150,
+      192,
+      96,
+      129,
+      95,
+      97,
+      116,
+      137,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your marriage to Wren, 2017\u20132019",
+     "reason": "Around your marriage to Wren in March 2017, within about two and a half years: your contact eased off slightly with your mother once Wren came along, your anxiety dropping as your job steadied by June 2019, then rising again by October as you felt you ought to be driving projects forward. In late October 2019, around her mother Frances's retirement party at the lake house, Wren grew swamped with a street party, fundraising dinner and the drive to the lake, her anxiety and symptom rising and functioning falling; you moved into overfunctioning, laying out a plan too strictly to settle her. She talks with her father and brother all day, nothing happening to one that the others don't hear. She settled once the weekend had a plan and the dinner went well, but you awoke from the small hours at the lake with no more sleep, could only pull back as the others rose, feeling you don't belong; your sister Tara is expecting a baby, and her new work and marriage sit alongside these months. You have been aiming for shorter, more regular calls with your mother to soften the distance that piled up, your anxiety down on the sleeping pill though sleep itself is no better.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1998\u20131999: your insomnia began getting in the way alongside your playing the best you ever had and winning competitions, then you separated from Joelle in July 1999. Two shifts that count sit in these months, but no change in the family on a known date opens this time: your split is an event, not a shift, and the only other change near these months is your relationship with Joelle bonding in January 1998, which is the move into the family, not a change in how a key member functions. Not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2008: your grandmother Lorna died in January and your grandfather Clifford in January or thereabouts; you spent four weeks building at Alder Creek with Silas in July, grew too drained for conversation with your mother, she pressed to visit you and the visit went wrong, then you left for nursing school in August and stopped speaking to your mother for roughly a year. Five shifts that count, but two are told as how things always were: the description of being drained says you could 'barely manage' a call, which is how you remember the ordinary state; and stopping speaking to your mother when you moved is coded as your shift, which is never a change in the family that opens a period. Three shifts remain around your moves and your mother's push to visit. The events pile up over six months around your grandparents' deaths and your moves, but the silence that holds afterward settles the time. Your recovery as you returned to your therapist and your functioning rose in early 2004 marks the family settled from the earlier period, so this cluster stays outside.",
+     "hint": "r4",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unknown_date: Period \"Your grandfather Gordon's death, 1989\u20131994\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 1: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998\u20131999: your insomnia began getting in the way alongside your playing the best you ever had and winning competitions, then you separated from Joelle in July 1999. Two shifts that count sit in these months, but no change in the family on a known date opens this time: your split is an event, not a shift, and the only other change near these months is your relationship with Joelle bonding in January 1998, which is the move into the family, not a change in how a key member functions. Not enough in the diagram to choose a reading.",
+  "answer 1: declined: Run r4 (2008-01-09 to 2010-01-12) has 5 shifts that count and was declined: 2008: your grandmother Lorna died in January and your grandfather Clifford in January or thereabouts; you spent four weeks building at Alder Creek with Silas in July, grew too drained for conversation with your mother, she pressed to visit you and the visit went wrong, then you left for nursing school in August and stopped speaking to your mother for roughly a year. Five shifts that count, but two are told as how things always were: the description of being drained says you could 'barely manage' a call, which is how you remember the ordinary state; and stopping speaking to your mother when you moved is coded as your shift, which is never a change in the family that opens a period. Three shifts remain around your moves and your mother's push to visit. The events pile up over six months around your grandparents' deaths and your moves, but the silence that holds afterward settles the time. Your recovery as you returned to your therapist and your functioning rose in early 2004 marks the family settled from the earlier period, so this cluster stays outside."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Gordon's death, 1989\u20131994",
+   "summary": "Around your grandfather Gordon's death in June 1991, within about three years: your move to Quarry Lane in spring 1989, your late nights and shift away from chess and debate, settling into the rebuilt Hollin Road house that autumn, your mother filling in your college forms as you underfunctioned, your wrist injury stopping your playing in October 1991, conflict with your friend Rafe and his move out of your room in November, getting high and absorbed in fixing radios, feeling lost and low with your grandfather gone and your mother about to remarry, your father Clifford coming back into the family that January, and your anxiety rising as you stung that your dad had never heard of the film you were making in early 1994. Your exchange in Lisbon and return to your degree leave these months settled.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    39,
+    53,
+    172
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1994-01-12",
+   "name": "Your grandfather Gordon's death, 1989\u20131994",
+   "source": "model",
+   "reason": "Around your grandfather Gordon's death in June 1991, within about three years: your move to Quarry Lane in spring 1989, your late nights and shift away from chess and debate, settling into the rebuilt Hollin Road house that autumn, your mother filling in your college forms as you underfunctioned, your wrist injury stopping your playing in October 1991, conflict with your friend Rafe and his move out of your room in November, getting high and absorbed in fixing radios, feeling lost and low with your grandfather gone and your mother about to remarry, your father Clifford coming back into the family that January, and your anxiety rising as you stung that your dad had never heard of the film you were making in early 1994. Your exchange in Lisbon and return to your degree leave these months settled.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "Your grandmother Winifred's cancer diagnosis, 2001\u20132004",
+   "summary": "Around your grandmother Winifred's bowel cancer diagnosis in 2001 or 2002, alongside your own running out of steam for performing and your disastrous audition in early 2002: you grew distant from your family and friends, left Thornbury for Gull Harbour, met Marisol at a winter party in early 2003, moved to Fenwick to live with her by June, then split within the year and sank into deep depression once you were back in Thornbury that winter. Your anxiety rose as you could not face your family, though you relied on friends Corbin, Dale and Silas, and your functioning began to recover in early 2004 as you returned to your therapist and requested help with therapy costs. Your grandmother died of the cancer in February 2004, and the family settled as you began swimming laps and your recovery pointed you toward nursing.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    79
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-02-18",
+   "name": "Your grandmother Winifred's cancer diagnosis, 2001\u20132004",
+   "source": "model",
+   "reason": "Around your grandmother Winifred's bowel cancer diagnosis in 2001 or 2002, alongside your own running out of steam for performing and your disastrous audition in early 2002: you grew distant from your family and friends, left Thornbury for Gull Harbour, met Marisol at a winter party in early 2003, moved to Fenwick to live with her by June, then split within the year and sank into deep depression once you were back in Thornbury that winter. Your anxiety rose as you could not face your family, though you relied on friends Corbin, Dale and Silas, and your functioning began to recover in early 2004 as you returned to your therapist and requested help with therapy costs. Your grandmother died of the cancer in February 2004, and the family settled as you began swimming laps and your recovery pointed you toward nursing.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c3",
+   "title": "Your marriage to Wren, 2017\u20132019",
+   "summary": "Around your marriage to Wren in March 2017, within about two and a half years: your contact eased off slightly with your mother once Wren came along, your anxiety dropping as your job steadied by June 2019, then rising again by October as you felt you ought to be driving projects forward. In late October 2019, around her mother Frances's retirement party at the lake house, Wren grew swamped with a street party, fundraising dinner and the drive to the lake, her anxiety and symptom rising and functioning falling; you moved into overfunctioning, laying out a plan too strictly to settle her. She talks with her father and brother all day, nothing happening to one that the others don't hear. She settled once the weekend had a plan and the dinner went well, but you awoke from the small hours at the lake with no more sleep, could only pull back as the others rose, feeling you don't belong; your sister Tara is expecting a baby, and her new work and marriage sit alongside these months. You have been aiming for shorter, more regular calls with your mother to soften the distance that piled up, your anxiety down on the sleeping pill though sleep itself is no better.",
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your marriage to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your marriage to Wren in March 2017, within about two and a half years: your contact eased off slightly with your mother once Wren came along, your anxiety dropping as your job steadied by June 2019, then rising again by October as you felt you ought to be driving projects forward. In late October 2019, around her mother Frances's retirement party at the lake house, Wren grew swamped with a street party, fundraising dinner and the drive to the lake, her anxiety and symptom rising and functioning falling; you moved into overfunctioning, laying out a plan too strictly to settle her. She talks with her father and brother all day, nothing happening to one that the others don't hear. She settled once the weekend had a plan and the dinner went well, but you awoke from the small hours at the lake with no more sleep, could only pull back as the others rose, feeling you don't belong; your sister Tara is expecting a baby, and her new work and marriage sit alongside these months. You have been aiming for shorter, more regular calls with your mother to soften the distance that piled up, your anxiety down on the sleeping pill though sleep itself is no better.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.6666666666666666,
+   "f1": 0.8
+  },
+  "members": {
+   "tp": 23,
+   "fp": 6,
+   "fn": 8,
+   "precision": 0.7931034482758621,
+   "recall": 0.7419354838709677,
+   "f1": 0.7666666666666667
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 1,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.02547
+}

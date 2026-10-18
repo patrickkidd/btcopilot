@@ -1,0 +1,240 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      194,
+      3,
+      40,
+      134,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39
+     ],
+     "name": "Clifford's return to the family, 1989\u20131992",
+     "reason": "Around Clifford's coming back into the family in 1989, you said late nights, the move into the rebuilt house, a half-sister's birth, your mother filling in your college forms, your grandfather's death, leaning on Rafe then falling out with him, the wrist injury, being high and absorbed in radios, feeling lost and low, and Winifred's thyroid trouble all fall close together into 1992, settling by your mother's wedding that autumn; Rafe's arguing over the exact year is left out since it names no date.",
+     "change": "Kept mostly as the hint gave it, but 146 and 171 are left out as told with no date and no clear tie to this stretch, and 60 stands as the opening since it is the nearest change in the family on a known-enough date.",
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Winifred's bowel cancer, 2001\u20132004",
+     "reason": "Around Winifred's bowel cancer found in 2001, your running out of steam for performing, the failed audition, poor terms with your parents, the move to Gull Harbour, meeting and following Marisol to Fenwick then splitting, the depression back in Thornbury, leaning on friends, asking your parents for therapy help, returning to your therapist, and a last hurried visit to her sickroom all fall together through to her death in February 2004, where this settles.",
+     "change": "Kept as the hint gave it, with 177 left out as a date nobody is sure of that adds nothing dated to the stretch.",
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Lorna's death, 2008\u20132009",
+     "reason": "Around Lorna's death in January 2008, your weeks building with Silas, being too drained to talk with your mother, leaving for nursing school with a year's silence toward her, and your aunt Imogen's stroke in early 2009 fall within little more than a year, settling once the nursing programme was under way.",
+     "change": "Kept as the hint gave it, with 64, 113, 114 and 130 left out: 64's date is unsure and marked never-opening, and 113, 114 and 130 sit on dates nobody is sure of or outside this close run.",
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      135,
+      137,
+      192,
+      195,
+      198,
+      199,
+      200,
+      197,
+      201,
+      202
+     ],
+     "name": "Tara's pregnancy, 2019",
+     "reason": "Around Tara's first pregnancy becoming known in October 2019, Wren feeling swamped and then settling, your stepping in to help her, her fusion with her father and brother, your mother's heart check, and the sleepless, anxious weekend at her family's lake house all fall within the same weeks, settling once the lake weekend passed.",
+     "change": "Narrowed from the fuller hint to the run of shifts actually close around Tara's pregnancy becoming known, dropping the wedding (29), the earlier 2017 and 2018 items, and the later items as either the person's own ordinary pattern or too far off to belong.",
+     "openingId": 137
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1998 to 1999: only the start of therapy and the insomnia shift count once the ordinary-level wording is set aside, leaving a single shift beside the breakup, so not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "2008 to 2010: this run is answered under the id it grew into (the Lorna's death period above); the remaining items (64, 113, 114, 130) are left out as unsure-dated, never-opening, or outside the close run.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "2017 to 2019: this run is answered under the id it grew into (Tara's pregnancy period above); the 2017\u20132018 items (115, 190, 135, 136, 163, 150) and the steady-job and sleeping-pill shifts (96, 129, 95, 97, 116) are the person's long-running pattern or sit too far from the 2019 run to count with it.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence.",
+  "answer 2: unknown_event: Period \"Clifford's return to the family, 1989\u20131992\" opens at event 60, which is not one of its events.",
+  "answer 2: raw_id: Period \"Tara's pregnancy, 2019\" holds an id ('(29)'): name events by the person and what happened, with years or dates, never by number.",
+  "answer 2: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: 1998 to 1999: only the start of therapy and the insomnia shift count once the ordinary-level wording is set aside, leaving a single shift beside the breakup, so not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Winifred's bowel cancer, 2001\u20132004",
+   "summary": "Around Winifred's bowel cancer found in 2001, your running out of steam for performing, the failed audition, poor terms with your parents, the move to Gull Harbour, meeting and following Marisol to Fenwick then splitting, the depression back in Thornbury, leaning on friends, asking your parents for therapy help, returning to your therapist, and a last hurried visit to her sickroom all fall together through to her death in February 2004, where this settles.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106,
+    24,
+    107,
+    108,
+    178,
+    79
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-02-18",
+   "name": "Winifred's bowel cancer, 2001\u20132004",
+   "source": "model",
+   "reason": "Around Winifred's bowel cancer found in 2001, your running out of steam for performing, the failed audition, poor terms with your parents, the move to Gull Harbour, meeting and following Marisol to Fenwick then splitting, the depression back in Thornbury, leaning on friends, asking your parents for therapy help, returning to your therapist, and a last hurried visit to her sickroom all fall together through to her death in February 2004, where this settles.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c2",
+   "title": "Lorna's death, 2008\u20132009",
+   "summary": "Around Lorna's death in January 2008, your weeks building with Silas, being too drained to talk with your mother, leaving for nursing school with a year's silence toward her, and your aunt Imogen's stroke in early 2009 fall within little more than a year, settling once the nursing programme was under way.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    109,
+    9,
+    10,
+    179
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2009-01-11",
+   "name": "Lorna's death, 2008\u20132009",
+   "source": "model",
+   "reason": "Around Lorna's death in January 2008, your weeks building with Silas, being too drained to talk with your mother, leaving for nursing school with a year's silence toward her, and your aunt Imogen's stroke in early 2009 fall within little more than a year, settling once the nursing programme was under way.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c3",
+   "title": "Tara's pregnancy, 2017\u20132019",
+   "summary": "Around Tara's first pregnancy becoming known in October 2019, Wren feeling swamped and then settling, your stepping in to help her, her fusion with her father and brother, your mother's heart check, and the sleepless, anxious weekend at her family's lake house all fall within the same weeks, settling once the lake weekend passed.",
+   "eventIds": [
+    29,
+    115,
+    135,
+    137,
+    192,
+    195,
+    198,
+    199,
+    200,
+    197,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Tara's pregnancy, 2017\u20132019",
+   "source": "model",
+   "reason": "Around Tara's first pregnancy becoming known in October 2019, Wren feeling swamped and then settling, your stepping in to help her, her fusion with her father and brother, your mother's heart check, and the sleepless, anxious weekend at her family's lake house all fall within the same weeks, settling once the lake weekend passed.",
+   "setAside": false,
+   "openingEventId": 137
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 1,
+   "fn": 1,
+   "precision": 0.6666666666666666,
+   "recall": 0.6666666666666666,
+   "f1": 0.6666666666666666
+  },
+  "members": {
+   "tp": 25,
+   "fp": 0,
+   "fn": 4,
+   "precision": 1.0,
+   "recall": 0.8620689655172413,
+   "f1": 0.9259259259259259
+  },
+  "openings": [
+   2,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 1,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "\"Tara's pregnancy, 2017\u20132019\" is 'The family weekend at the lake, 2019', not a cluster",
+  "'the year I left home' is not stored as theirs",
+  "'the long slump' is not stored as theirs",
+  "cluster F1 0.67 under 0.8"
+ ],
+ "cost": 0.273238
+}

@@ -1,0 +1,325 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      194,
+      40,
+      3,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39
+     ],
+     "name": "Your grandfather Clifford's death, 1991-1992",
+     "reason": "Around your grandfather Clifford's death in June 1991, within the year: your wrist injury ending your playing, the blow-up with Rafe and his move out, your being holed up getting high and fixing radios, and your lost, low stretch after; your mother's wedding to Desmond that autumn and your grandmother's thyroid trouble the next year sit close by and are held with it, while the rental on Quarry Lane and your dropping chess years earlier are left out as too early to belong.",
+     "change": null,
+     "openingId": 78
+    },
+    {
+     "id": null,
+     "eventIds": [
+      53,
+      172,
+      191
+     ],
+     "name": "Your cousin Bella's melanoma, 1994",
+     "reason": "Only your cousin Bella's melanoma treatment and your own sting at your dad not knowing of your film sit together in early 1994, so this is held loosely; your Lisbon exchange the same year is a lift that is not counted alone.",
+     "change": "This is narrowed from the larger hint to just these two shifts, since the rest of that hint's events belong to other, separated times.",
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      11,
+      4,
+      173,
+      12,
+      22
+     ],
+     "name": "Your split with Joelle, 1998-1999",
+     "reason": "Your insomnia before concerts and your split with Joelle fall close together in 1999, and your turning to Victor Halloran afterward sits right beside it, which is enough to hold as your own period; your run of winning competitions is a lift counted alongside since it shares the months.",
+     "change": null,
+     "openingId": 12
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Your grandmother Winifred's bowel cancer, 2001-2004",
+     "reason": "Around your grandmother Winifred's bowel cancer from late 2001, over the next two years: your burnout and failed audition, your move between towns, your relationship with Marisol and its end, your deep depression back in Thornbury, your distance from your parents and leaning on friends, and your return to Victor Halloran, ending close to her death in February 2004; her move into your mother's home that autumn is left out as its date is unsure.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      64,
+      111,
+      112,
+      113,
+      114,
+      109,
+      9,
+      10
+     ],
+     "name": "Your grandmother Lorna's death, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, within the year: your exhaustion at Alder Creek, your mother's pressing visit and the shut door, and your cutoff from her once you left for nursing school, settling as the silence held into the next year; your grandfather Clifford's death the same year is held with it since its date is unsure.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      115,
+      195,
+      198,
+      199,
+      200,
+      201,
+      202
+     ],
+     "name": "Your wedding to Wren, 2017-2019",
+     "reason": "Around your wedding to Wren in 2017, your contact with your mother eased off, and by October 2019 a run of close occasions brought Wren's swamped stretch, your too-strict plan to settle her, her family's constant talk among themselves, and your bad nights and distance at her family's lake weekend, settling once the weekend passed; her father's retirement gathering itself is the occasion these shifts cluster around, not a change on its own.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "This hint's events are returned above as a period of their own, since a change in the family, your split with Joelle, sits among them.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "This hint's events from 2001 to 2004 are returned above as a period built around your grandmother Winifred's cancer, with two events of unsure date left out.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "This hint's 2008-2009 events are returned above as a period around your grandmother Lorna's death; your aunt Imogen's stroke the following January is too far past the settling to belong and is left out.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "This hint's 2017-2019 events are returned above as a period around your wedding to Wren; your job steadying and starting a sleeping pill are lifts or drops in anxiety that do not count alone and are left out, as are your cousin's and aunt's unrelated health notes from other years.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Clifford's death, 1989\u20131992",
+   "summary": "Around your grandfather Clifford's death in June 1991, within the year: your wrist injury ending your playing, the blow-up with Rafe and his move out, your being holed up getting high and fixing radios, and your lost, low stretch after; your mother's wedding to Desmond that autumn and your grandmother's thyroid trouble the next year sit close by and are held with it, while the rental on Quarry Lane and your dropping chess years earlier are left out as too early to belong.",
+   "eventIds": [
+    194,
+    40,
+    3,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    39
+   ],
+   "startDate": "1989-04-12",
+   "endDate": "1992-10-11",
+   "name": "Your grandfather Clifford's death, 1989\u20131992",
+   "source": "model",
+   "reason": "Around your grandfather Clifford's death in June 1991, within the year: your wrist injury ending your playing, the blow-up with Rafe and his move out, your being holed up getting high and fixing radios, and your lost, low stretch after; your mother's wedding to Desmond that autumn and your grandmother's thyroid trouble the next year sit close by and are held with it, while the rental on Quarry Lane and your dropping chess years earlier are left out as too early to belong.",
+   "setAside": false,
+   "openingEventId": 78
+  },
+  {
+   "id": "c2",
+   "title": "Your cousin Bella's melanoma, 1994",
+   "summary": "Only your cousin Bella's melanoma treatment and your own sting at your dad not knowing of your film sit together in early 1994, so this is held loosely; your Lisbon exchange the same year is a lift that is not counted alone.",
+   "eventIds": [
+    53,
+    172,
+    191
+   ],
+   "startDate": "1994-01-12",
+   "endDate": "1994-01-12",
+   "name": "Your cousin Bella's melanoma, 1994",
+   "source": "model",
+   "reason": "Only your cousin Bella's melanoma treatment and your own sting at your dad not knowing of your film sit together in early 1994, so this is held loosely; your Lisbon exchange the same year is a lift that is not counted alone.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c3",
+   "title": "Your split with Joelle, 1998\u20131999",
+   "summary": "Your insomnia before concerts and your split with Joelle fall close together in 1999, and your turning to Victor Halloran afterward sits right beside it, which is enough to hold as your own period; your run of winning competitions is a lift counted alongside since it shares the months.",
+   "eventIds": [
+    11,
+    4,
+    173,
+    12,
+    22
+   ],
+   "startDate": "1998-01-12",
+   "endDate": "1999-08-12",
+   "name": "Your split with Joelle, 1998\u20131999",
+   "source": "model",
+   "reason": "Your insomnia before concerts and your split with Joelle fall close together in 1999, and your turning to Victor Halloran afterward sits right beside it, which is enough to hold as your own period; your run of winning competitions is a lift counted alongside since it shares the months.",
+   "setAside": false,
+   "openingEventId": 12
+  },
+  {
+   "id": "c4",
+   "title": "Your grandmother Winifred's bowel cancer, 2001\u20132004",
+   "summary": "Around your grandmother Winifred's bowel cancer from late 2001, over the next two years: your burnout and failed audition, your move between towns, your relationship with Marisol and its end, your deep depression back in Thornbury, your distance from your parents and leaning on friends, and your return to Victor Halloran, ending close to her death in February 2004; her move into your mother's home that autumn is left out as its date is unsure.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    104,
+    105,
+    106,
+    24,
+    107,
+    108,
+    178,
+    79
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-02-18",
+   "name": "Your grandmother Winifred's bowel cancer, 2001\u20132004",
+   "source": "model",
+   "reason": "Around your grandmother Winifred's bowel cancer from late 2001, over the next two years: your burnout and failed audition, your move between towns, your relationship with Marisol and its end, your deep depression back in Thornbury, your distance from your parents and leaning on friends, and your return to Victor Halloran, ending close to her death in February 2004; her move into your mother's home that autumn is left out as its date is unsure.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c5",
+   "title": "Your grandmother Lorna's death, 2008",
+   "summary": "Around your grandmother Lorna's death in January 2008, within the year: your exhaustion at Alder Creek, your mother's pressing visit and the shut door, and your cutoff from her once you left for nursing school, settling as the silence held into the next year; your grandfather Clifford's death the same year is held with it since its date is unsure.",
+   "eventIds": [
+    61,
+    64,
+    111,
+    112,
+    113,
+    114,
+    109,
+    9,
+    10
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-09-11",
+   "name": "Your grandmother Lorna's death, 2008",
+   "source": "model",
+   "reason": "Around your grandmother Lorna's death in January 2008, within the year: your exhaustion at Alder Creek, your mother's pressing visit and the shut door, and your cutoff from her once you left for nursing school, settling as the silence held into the next year; your grandfather Clifford's death the same year is held with it since its date is unsure.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c6",
+   "title": "Your wedding to Wren, 2017\u20132019",
+   "summary": "Around your wedding to Wren in 2017, your contact with your mother eased off, and by October 2019 a run of close occasions brought Wren's swamped stretch, your too-strict plan to settle her, her family's constant talk among themselves, and your bad nights and distance at her family's lake weekend, settling once the weekend passed; her father's retirement gathering itself is the occasion these shifts cluster around, not a change on its own.",
+   "eventIds": [
+    29,
+    115,
+    195,
+    198,
+    199,
+    200,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your wedding to Wren, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your wedding to Wren in 2017, your contact with your mother eased off, and by October 2019 a run of close occasions brought Wren's swamped stretch, your too-strict plan to settle her, her family's constant talk among themselves, and your bad nights and distance at her family's lake weekend, settling once the weekend passed; her father's retirement gathering itself is the occasion these shifts cluster around, not a change on its own.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 3,
+   "fp": 2,
+   "fn": 0,
+   "precision": 0.6,
+   "recall": 1.0,
+   "f1": 0.7499999999999999
+  },
+  "members": {
+   "tp": 38,
+   "fp": 3,
+   "fn": 3,
+   "precision": 0.926829268292683,
+   "recall": 0.926829268292683,
+   "f1": 0.926829268292683
+  },
+  "openings": [
+   3,
+   3
+  ],
+  "hypotheses": 1,
+  "not clusters": 1,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'Your wedding to Wren, 2017\u20132019' is 'The family weekend at the lake, 2019', not a cluster",
+  "cluster F1 0.75 under 0.8"
+ ],
+ "cost": 0.270748
+}

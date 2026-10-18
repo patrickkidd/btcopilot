@@ -1,0 +1,148 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      194,
+      40,
+      3,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      39
+     ],
+     "name": "Clifford's return and Victor's death, 1989-1992",
+     "reason": "Around your grandfather Victor's death in 1991 and your mother's remarriage in 1992, you said the wrist injury, the break with Rafe, the solitary spell with radios and the low, lost stretch all fall close together in those same months.",
+     "change": "Removed 146, 171 and 172 since they are told as the ordinary run of those years, and left out the undated gambling and conflict notes that never open a period.",
+     "openingId": 78
+    },
+    {
+     "id": "r3",
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      23,
+      104,
+      105,
+      106,
+      24,
+      107,
+      108,
+      178,
+      79
+     ],
+     "name": "Winifred's cancer and your parting from Marisol, 2001-2004",
+     "reason": "Around your grandmother Winifred's bowel cancer from 2001 and her death in 2004, you said the burnt-out performing, the failed audition, the move from Thornbury, the split from Marisol and the depression that followed, with the leaning on friends and the return to your therapist, all sit close together across those years.",
+     "change": null,
+     "openingId": 79
+    },
+    {
+     "id": "r4",
+     "eventIds": [
+      61,
+      111,
+      112,
+      109,
+      9,
+      10,
+      179
+     ],
+     "name": "Lorna's death and your move to nursing school, 2008",
+     "reason": "Around your grandmother Lorna's death in January 2008, you said the drained spell at Alder Creek, the cutoff from your mother and the move to nursing school all fall within months of each other that year.",
+     "change": "Dropped 64, 113, 114 and 130 as undated, unopened, or events outside the family's own shifts.",
+     "openingId": 61
+    },
+    {
+     "id": "r5",
+     "eventIds": [
+      190,
+      150,
+      192,
+      95,
+      97,
+      116,
+      195,
+      198,
+      199,
+      201,
+      202
+     ],
+     "name": "Alice's diagnosis and the lake weekend, 2017-2019",
+     "reason": "Around your cousin Alice's multiple sclerosis diagnosis in 2017 and across 2018-2019, you said your own anxious driving streak, the sleeping pill, the push for shorter calls with your mother, and the swamped weekend with Wren's family and its sleepless, anxious night at the lake all cluster together.",
+     "change": "Removed 29, 115, 135, 136, 163, 129, 96, 137 and 200 as the marriage, undated or always-true notes, or a lift with no accompanying rise.",
+     "openingId": 190
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "1998-1999 events: only your own relationship ending and turning to a therapist read as shifts once the always-worded insomnia note is set aside, so there is not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r3' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r4' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r5' is not one of the app's periods listed.",
+  "gave up: unknown_group: Period 'r1' is not one of the app's periods listed."
+ ],
+ "stored": [],
+ "score": {
+  "clusters": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 3,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0
+  },
+  "members": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   0
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'the year I left home' is not stored as theirs",
+  "'the long slump' is not stored as theirs",
+  "cluster F1 0.00 under 0.8"
+ ],
+ "cost": 0.268368
+}

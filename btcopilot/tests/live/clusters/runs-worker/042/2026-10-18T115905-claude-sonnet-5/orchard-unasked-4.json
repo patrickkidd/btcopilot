@@ -1,0 +1,138 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      114,
+      115,
+      116,
+      118
+     ],
+     "name": "Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around Walter's move of the family to Sorrel Valley in March 1952, within the year: June's homesickness and letters to Edna, Walter out in the trees from dark to dark, Glen's fights at the new school, the cutoff between Walter and his brother Harlan, June's weeks in bed, and rows between Walter and June over money for new trees; June joining the choir in 1953 is where things settle, and Faye's stomach aches and Roy being kept back a year are left out since no one can confirm their years.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": "r2",
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      140,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968\u20131969",
+     "reason": "Around the orchard failing in May 1968, within the following year and a half: Walter's heavy drinking, the conflict between Walter and Glen over the loan, the auction and move to Ridgeport, Glen and Marian taking over the family's money, Carl's worse asthma easing again by spring, and Ida's heart trouble found; Walter stopping drinking and taking up pruning work in late 1969 is where things settle, and the cutoff between Walter and Roy on an unknown date is left out.",
+     "change": "Nora's bedwetting in April 1969 is left out of this period since it sits with the next change in Glen's work rather than with the orchard's aftermath.",
+     "openingId": 132
+    },
+    {
+     "id": "r3",
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      154,
+      155,
+      157,
+      158
+     ],
+     "name": "Glen's job loss at the cannery, 1975\u20131976",
+     "reason": "Around Glen losing his job when the Ridgeport cannery closed in February 1975, within the following year: his months out of work, the loud fights with Marian over money, their taking on a second job, Nora's loss of weight and her withdrawal into her room, and Walter's drinking again after years off it; Glen starting the delivery job in March 1976 and Nora eating again and joining the track team that June are where things settle, and Carl's time at his girlfriend's house and Tess's nightmares are left out since their dates are unknown.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": "r4",
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      177,
+      178
+     ],
+     "name": "Wilma's move into Nora and Hollis's house, 1990\u20131991",
+     "reason": "Around Wilma selling her farm and moving into Nora and Hollis's house in January 1990, within the following year and a half: the clashes between Nora and Wilma over the children's bedtimes, Hollis working late and keeping out of the rows, Hollis taking his mother's side, Owen's tantrums at preschool, Wilma taking over Lily's care, Nora's eczema, and the nightly rows between Nora and Hollis; Wilma taking a flat in town in June 1991 and the eczema clearing that summer are where things settle, and Marian's drives over to take Nora's side is left out since its date is unknown.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events of August 1994 fall within a few days around the wildfire evacuation, with the family calm again within days of returning home, so this is an acute episode around a real threat, not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The events of 1996\u20131997 include Tess's drinking, Nora's worry and phone calls, and conflict and recovery between Tess and Rick, but no change in who is in the family or in how a key member functions appears on a known date among them, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r2' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r3' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r4' is not one of the app's periods listed.",
+  "gave up: unknown_group: Period 'r1' is not one of the app's periods listed."
+ ],
+ "stored": [],
+ "score": {
+  "clusters": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 4,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0
+  },
+  "members": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   0
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "cluster F1 0.00 under 0.8"
+ ],
+ "cost": 0.146582
+}

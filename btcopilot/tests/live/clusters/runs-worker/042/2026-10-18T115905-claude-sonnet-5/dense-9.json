@@ -1,0 +1,81 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "Unreadable",
+   "error": "claude_structured claude-sonnet-5: Expecting value: line 1 column 1 (char 0)"
+  },
+  {
+   "clusters": [
+    {
+     "id": "r1",
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Amos's death, 1988-1990",
+     "reason": "Around your grandfather Amos's death in July 1989, within the year either side: you said your mother Della lay awake over money and stopped talking with your father Victor about it, and your brother Felix's grades fell, with things calmer for your mother once back at work by early 1990, so the period reaches to the spring of 1990.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": "r2",
+     "eventIds": [
+      15,
+      16,
+      17,
+      19,
+      20
+     ],
+     "name": "Rhea's leaving home for college, 1993-1996",
+     "reason": "Around your own leaving home for college in September 1993, over the following years: you said migraines kept you in bed, you called your brother Felix most nights and then stopped returning his calls, and you stopped calling home, so these shifts are held together as yours and your brother's moving through those years; Greta's death on an unknown date is held in the period as a guess but does not set its edges.",
+     "change": null,
+     "openingId": 15
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: unreadable: Your answer was not the JSON asked for.",
+  "answer 2: unknown_group: Period 'r1' is not one of the app's periods listed.",
+  "answer 2: unknown_group: Period 'r2' is not one of the app's periods listed.",
+  "gave up: unknown_group: Period 'r1' is not one of the app's periods listed."
+ ],
+ "stored": [],
+ "score": {
+  "clusters": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 2,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0
+  },
+  "members": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   0,
+   0
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "cluster F1 0.00 under 0.8"
+ ],
+ "cost": 0.128546
+}

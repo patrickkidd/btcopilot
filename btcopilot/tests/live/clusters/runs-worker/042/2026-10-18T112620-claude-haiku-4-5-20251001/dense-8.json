@@ -1,0 +1,111 @@
+{
+ "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1989\u20131990",
+     "reason": "Around your grandfather Amos's death in July 1989, within the year: your mother's worry over money in March 1988 and her distance from your father over it by May 1988, your grandfather's death in July 1989, your brother's grades falling in November 1989, and your mother calmer once back at work in March 1990. The shifts on money and distance sit beside your grandfather's death and your brother's drop in functioning, so the period reaches from 1988 through 1990.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother's cancer diagnosis, 1993\u20131996",
+     "reason": "Around your mother Della's diagnosis with breast cancer in February 1995, within a year before and after: you left for college in September 1993, your migraines kept you in bed in March 1994, you called your brother most nights in April 1994, your mother was told she had breast cancer in February 1995, you stopped returning your brother's calls in June 1995, and you stopped calling home in February 1996. Your shifts toward your brother turn to distance from him and then distance from your mother in the months after her diagnosis, so the period reaches from 1993 through 1996.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around your grandfather Amos's death in July 1989, within the year: your mother's worry over money in March 1988 and her distance from your father over it by May 1988, your grandfather's death in July 1989, your brother's grades falling in November 1989, and your mother calmer once back at work in March 1990. The shifts on money and distance sit beside your grandfather's death and your brother's drop in functioning, so the period reaches from 1988 through 1990.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around your grandfather Amos's death in July 1989, within the year: your mother's worry over money in March 1988 and her distance from your father over it by May 1988, your grandfather's death in July 1989, your brother's grades falling in November 1989, and your mother calmer once back at work in March 1990. The shifts on money and distance sit beside your grandfather's death and your brother's drop in functioning, so the period reaches from 1988 through 1990.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother's cancer diagnosis, 1993\u20131996",
+   "summary": "Around your mother Della's diagnosis with breast cancer in February 1995, within a year before and after: you left for college in September 1993, your migraines kept you in bed in March 1994, you called your brother most nights in April 1994, your mother was told she had breast cancer in February 1995, you stopped returning your brother's calls in June 1995, and you stopped calling home in February 1996. Your shifts toward your brother turn to distance from him and then distance from your mother in the months after her diagnosis, so the period reaches from 1993 through 1996.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother's cancer diagnosis, 1993\u20131996",
+   "source": "model",
+   "reason": "Around your mother Della's diagnosis with breast cancer in February 1995, within a year before and after: you left for college in September 1993, your migraines kept you in bed in March 1994, you called your brother most nights in April 1994, your mother was told she had breast cancer in February 1995, you stopped returning your brother's calls in June 1995, and you stopped calling home in February 1996. Your shifts toward your brother turn to distance from him and then distance from your mother in the months after her diagnosis, so the period reaches from 1993 through 1996.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.010144
+}

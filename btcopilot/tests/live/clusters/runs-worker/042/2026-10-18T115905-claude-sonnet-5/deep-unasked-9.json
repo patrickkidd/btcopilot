@@ -1,0 +1,280 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      60,
+      194,
+      3,
+      40,
+      89,
+      78,
+      88,
+      90,
+      91,
+      92,
+      93,
+      86,
+      94,
+      83,
+      39
+     ],
+     "name": "Clifford's return and Victor's death, 1989-1992",
+     "reason": "Around Clifford's 1989 return into the family and Victor's 1991 death, you moved into the conservatory, leaned hard on Rafe then had a blow-up with him, hurt your wrist, got low and absorbed in radios, and your mother remarried in 1992; a few events with dates nobody is sure of sit near these months and are weighed lightly but not used to set the edges.",
+     "change": null,
+     "openingId": 60
+    },
+    {
+     "id": null,
+     "eventIds": [
+      53,
+      172,
+      191
+     ],
+     "name": "Bella's melanoma, 1994",
+     "reason": "In 1994 you were stung your dad had not heard of your film and your cousin Bella was treated for melanoma; only your own shift and one relative's shift show, so these two shifts standing together are enough to mark the time, with the Lisbon exchange left out as a settling rather than a further shift.",
+     "change": "Trimmed from the larger hint to these three events, since the surrounding items either never open a period or fall outside these months.",
+     "openingId": null
+    },
+    {
+     "id": null,
+     "eventIds": [
+      174,
+      176,
+      175,
+      16,
+      17,
+      104,
+      105,
+      107
+     ],
+     "name": "Winifred's bowel cancer, 2001-2004",
+     "reason": "Around your grandmother Winifred's bowel cancer found near 2001, your performing wound down, you failed the national orchestra audition, moved cities, fell on poor terms with your parents, and later leaned on friends and asked your parents for help; the later family events (her last months, death, and your own return and recovery) sit in the next period instead.",
+     "change": null,
+     "openingId": 176
+    },
+    {
+     "id": null,
+     "eventIds": [
+      21,
+      23,
+      108,
+      178,
+      79
+     ],
+     "name": "Marisol's separation and Winifred's death, 2003-2004",
+     "reason": "Within weeks of splitting from Marisol in late 2003 you sank low, returned to Thornbury, went back to your therapist, and your grandmother Winifred died in February 2004 after a last, cut-short visit; the settling shows once you were back with your therapist and the depression eased.",
+     "change": null,
+     "openingId": 20
+    },
+    {
+     "id": null,
+     "eventIds": [
+      61,
+      111,
+      112,
+      109,
+      9,
+      10
+     ],
+     "name": "Lorna's death and nursing school, 2008",
+     "reason": "Near your grandmother Lorna's death in January 2008, you worked at Alder Creek feeling too drained to talk with your mother, then left for nursing school and stopped speaking with her for a time; this reaches to the start of the programme where things settled into the new routine.",
+     "change": null,
+     "openingId": 61
+    },
+    {
+     "id": null,
+     "eventIds": [
+      29,
+      195,
+      198,
+      199,
+      200,
+      197,
+      201,
+      202
+     ],
+     "name": "Your wedding and the lake weekend, 2017-2019",
+     "reason": "Around your wedding to Wren, a run of days in October 2019 piles up close together: Wren felt swamped, you laid out a plan for her, her fused talk with her father and brother, the family gathering at the lake, your bad night and pulling back, and her anxious drive home after; this stays an acute run around one weekend's occasions rather than reaching further back or forward.",
+     "change": null,
+     "openingId": 29
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "In 1998-1999 only your relationship beginning and ending with Joelle and starting with a therapist show as shifts, and these together with the bonding and separation do not reach two shifts that count beyond the events themselves, so there is not enough in the diagram to choose a reading.",
+     "hint": "r2",
+     "run": null
+    },
+    {
+     "reason": "The 2008-2009 events (deaths, Alder Creek, nursing school) are answered under the period grown from this hint; the remaining items, a stroke dated only approximately and a birth, are events or weakly dated shifts left outside it.",
+     "hint": "r4",
+     "run": null
+    },
+    {
+     "reason": "The 2017-2019 events are answered under the period grown from this hint; the earlier items in it, such as the job steadying and the sleeping pill starting, read as settling (anxiety down) and do not themselves pile up with a change in the family.",
+     "hint": "r5",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence.",
+  "answer 2: unknown_event: Period \"Marisol's separation and Winifred's death, 2003-2004\" opens at event 20, which is not one of its events.",
+  "answer 2: unknown_date: Period \"Clifford's return and Victor's death, 1989-1992\" opens at event 60, whose date is unknown; an event of unknown date opens nothing.",
+  "answer 2: declined: Run r2 (1998-01-12 to 1999-08-12) has 2 shifts that count and was declined: In 1998-1999 only your relationship beginning and ending with Joelle and starting with a therapist show as shifts, and these together with the bonding and separation do not reach two shifts that count beyond the events themselves, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Clifford's return and Victor's death, 1989\u20131992",
+   "summary": "Around Clifford's 1989 return into the family and Victor's 1991 death, you moved into the conservatory, leaned hard on Rafe then had a blow-up with him, hurt your wrist, got low and absorbed in radios, and your mother remarried in 1992; a few events with dates nobody is sure of sit near these months and are weighed lightly but not used to set the edges.",
+   "eventIds": [
+    60,
+    194,
+    3,
+    40,
+    89,
+    78,
+    88,
+    90,
+    91,
+    92,
+    93,
+    86,
+    94,
+    83,
+    39
+   ],
+   "startDate": "1989-01-11",
+   "endDate": "1992-10-11",
+   "name": "Clifford's return and Victor's death, 1989\u20131992",
+   "source": "model",
+   "reason": "Around Clifford's 1989 return into the family and Victor's 1991 death, you moved into the conservatory, leaned hard on Rafe then had a blow-up with him, hurt your wrist, got low and absorbed in radios, and your mother remarried in 1992; a few events with dates nobody is sure of sit near these months and are weighed lightly but not used to set the edges.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c2",
+   "title": "Bella's melanoma, 1994",
+   "summary": "In 1994 you were stung your dad had not heard of your film and your cousin Bella was treated for melanoma; only your own shift and one relative's shift show, so these two shifts standing together are enough to mark the time, with the Lisbon exchange left out as a settling rather than a further shift.",
+   "eventIds": [
+    53,
+    172,
+    191
+   ],
+   "startDate": "1994-01-12",
+   "endDate": "1994-01-12",
+   "name": "Bella's melanoma, 1994",
+   "source": "model",
+   "reason": "In 1994 you were stung your dad had not heard of your film and your cousin Bella was treated for melanoma; only your own shift and one relative's shift show, so these two shifts standing together are enough to mark the time, with the Lisbon exchange left out as a settling rather than a further shift.",
+   "setAside": false,
+   "openingEventId": null
+  },
+  {
+   "id": "c3",
+   "title": "Winifred's bowel cancer, 2001\u20132004",
+   "summary": "Around your grandmother Winifred's bowel cancer found near 2001, your performing wound down, you failed the national orchestra audition, moved cities, fell on poor terms with your parents, and later leaned on friends and asked your parents for help; the later family events (her last months, death, and your own return and recovery) sit in the next period instead.",
+   "eventIds": [
+    174,
+    176,
+    175,
+    16,
+    17,
+    104,
+    105,
+    107
+   ],
+   "startDate": "2001-09-12",
+   "endDate": "2004-01-12",
+   "name": "Winifred's bowel cancer, 2001\u20132004",
+   "source": "model",
+   "reason": "Around your grandmother Winifred's bowel cancer found near 2001, your performing wound down, you failed the national orchestra audition, moved cities, fell on poor terms with your parents, and later leaned on friends and asked your parents for help; the later family events (her last months, death, and your own return and recovery) sit in the next period instead.",
+   "setAside": false,
+   "openingEventId": 176
+  },
+  {
+   "id": "c4",
+   "title": "Lorna's death and nursing school, 2008",
+   "summary": "Near your grandmother Lorna's death in January 2008, you worked at Alder Creek feeling too drained to talk with your mother, then left for nursing school and stopped speaking with her for a time; this reaches to the start of the programme where things settled into the new routine.",
+   "eventIds": [
+    61,
+    111,
+    112,
+    109,
+    9,
+    10
+   ],
+   "startDate": "2008-01-09",
+   "endDate": "2008-09-11",
+   "name": "Lorna's death and nursing school, 2008",
+   "source": "model",
+   "reason": "Near your grandmother Lorna's death in January 2008, you worked at Alder Creek feeling too drained to talk with your mother, then left for nursing school and stopped speaking with her for a time; this reaches to the start of the programme where things settled into the new routine.",
+   "setAside": false,
+   "openingEventId": 61
+  },
+  {
+   "id": "c5",
+   "title": "Your wedding and the lake weekend, 2017\u20132019",
+   "summary": "Around your wedding to Wren, a run of days in October 2019 piles up close together: Wren felt swamped, you laid out a plan for her, her fused talk with her father and brother, the family gathering at the lake, your bad night and pulling back, and her anxious drive home after; this stays an acute run around one weekend's occasions rather than reaching further back or forward.",
+   "eventIds": [
+    29,
+    195,
+    198,
+    199,
+    200,
+    197,
+    201,
+    202
+   ],
+   "startDate": "2017-03-27",
+   "endDate": "2019-10-23",
+   "name": "Your wedding and the lake weekend, 2017\u20132019",
+   "source": "model",
+   "reason": "Around your wedding to Wren, a run of days in October 2019 piles up close together: Wren felt swamped, you laid out a plan for her, her fused talk with her father and brother, the family gathering at the lake, your bad night and pulling back, and her anxious drive home after; this stays an acute run around one weekend's occasions rather than reaching further back or forward.",
+   "setAside": false,
+   "openingEventId": 29
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 3,
+   "fn": 1,
+   "precision": 0.4,
+   "recall": 0.6666666666666666,
+   "f1": 0.5
+  },
+  "members": {
+   "tp": 17,
+   "fp": 4,
+   "fn": 5,
+   "precision": 0.8095238095238095,
+   "recall": 0.7727272727272727,
+   "f1": 0.7906976744186046
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 1,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [
+  "'Your wedding and the lake weekend, 2017\u20132019' is 'The family weekend at the lake, 2019', not a cluster",
+  "cluster F1 0.50 under 0.8"
+ ],
+ "cost": 0.268188
+}
