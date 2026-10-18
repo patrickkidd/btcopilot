@@ -1,0 +1,145 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1988\u20131990",
+     "reason": "Shifts pile up between 1988 and 1989: your mother Della's lying awake over money in March 1988 and her falling out of talk with your father Victor over money two months later, together with your brother Felix's grades falling in November 1989, sit within a year and a half of your grandfather Amos's death in July 1989; her calming down once back at work by March 1990 is where this settles.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": "r2",
+     "eventIds": [
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della being told she had breast cancer, 1994\u20131996",
+     "reason": "Your migraines keeping you in bed and your calling your brother Felix most nights in early 1994 are followed by your stopping his calls by mid-1995 and your stopping calling home by early 1996, with these shifts falling around your mother Della being told she had breast cancer in February 1995; nothing further close by suggests this had settled by the time your grandmother Opal died in 1998.",
+     "change": "Your leaving home for college in 1993 sits too far ahead of the next shift to join this period, and Greta's death has no sure date, so the period is kept to the shifts beside your mother's diagnosis from 1994 to 1996.",
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "Your grandfather Amos's death, 1988\u20131990",
+     "reason": "Shifts pile up between 1988 and 1989: your mother Della's lying awake over money in March 1988 and her falling out of talk with your father Victor over money two months later, together with your brother Felix's grades falling in November 1989, sit within a year and a half of your grandfather Amos's death in July 1989; her calming down once back at work by March 1990 is where this settles.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della being told she had breast cancer, 1994\u20131996",
+     "reason": "Your migraines keeping you in bed and your calling your brother Felix most nights in early 1994 are followed by your stopping his calls by mid-1995 and your stopping calling home by early 1996, with these shifts falling around your mother Della being told she had breast cancer in February 1995; nothing further close by suggests this had settled by the time your grandmother Opal died in 1998.",
+     "change": "Your leaving home for college in 1993 sits too far ahead of the next shift to join this period, and Greta's death has no sure date, so the period is kept to the shifts beside your mother's diagnosis from 1994 to 1996.",
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: unknown_group: Period 'r2' is not one of the app's periods listed."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Amos's death, 1988\u20131990",
+   "summary": "Shifts pile up between 1988 and 1989: your mother Della's lying awake over money in March 1988 and her falling out of talk with your father Victor over money two months later, together with your brother Felix's grades falling in November 1989, sit within a year and a half of your grandfather Amos's death in July 1989; her calming down once back at work by March 1990 is where this settles.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "Your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Shifts pile up between 1988 and 1989: your mother Della's lying awake over money in March 1988 and her falling out of talk with your father Victor over money two months later, together with your brother Felix's grades falling in November 1989, sit within a year and a half of your grandfather Amos's death in July 1989; her calming down once back at work by March 1990 is where this settles.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della being told she had breast cancer, 1994\u20131996",
+   "summary": "Your migraines keeping you in bed and your calling your brother Felix most nights in early 1994 are followed by your stopping his calls by mid-1995 and your stopping calling home by early 1996, with these shifts falling around your mother Della being told she had breast cancer in February 1995; nothing further close by suggests this had settled by the time your grandmother Opal died in 1998.",
+   "eventIds": [
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1994-03-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della being told she had breast cancer, 1994\u20131996",
+   "source": "model",
+   "reason": "Your migraines keeping you in bed and your calling your brother Felix most nights in early 1994 are followed by your stopping his calls by mid-1995 and your stopping calling home by early 1996, with these shifts falling around your mother Della being told she had breast cancer in February 1995; nothing further close by suggests this had settled by the time your grandmother Opal died in 1998.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 10,
+   "fp": 0,
+   "fn": 1,
+   "precision": 1.0,
+   "recall": 0.9090909090909091,
+   "f1": 0.9523809523809523
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.155284
+}

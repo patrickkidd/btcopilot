@@ -1,0 +1,237 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118
+     ],
+     "name": "Your grandfather Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Around your grandfather Walter's move to Sorrel Valley in March 1952, within about a year: June's homesickness and daily letters to her sister Edna, Walter's long hours away from June, Glen's fights at the new school, Walter's cutoff from his brother Harlan, June's weeks kept to her bed, and rows between Walter and June over money for new trees, settling by the autumn of 1953 when June joined the choir and her letters to Edna thinned out.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Your grandfather Walter's orchard failing, 1968\u20131969",
+     "reason": "Around the orchard failing in May 1968, within the following year: Walter's heavy drinking, his conflict with Glen over blame for the loan, Glen and Marian taking over the family's money and the bank talks, Carl's worsening asthma, Roy's stopping speaking to his father over the sale, and Nora's bedwetting beginning again, settling by the autumn of 1969 when Walter stopped drinking and took up pruning other men's trees; Wade's birth that spring is left out, since nothing of the family's shifts around it ties to the orchard's trouble.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158
+     ],
+     "name": "Your father Glen's cannery closing, 1975\u20131976",
+     "reason": "Around Glen's cannery job ending in February 1975, within the following year: his months out of work, loud fights with Marian over money, Marian's taking a second job, Nora's loss of appetite, her distance from her mother, and Walter's drinking again after years off it, settling by the spring of 1976 when Glen took on the delivery job and Nora was eating again and made the track team.",
+     "change": null,
+     "openingId": 148
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178
+     ],
+     "name": "Your partner's mother Wilma moving in, 1990\u20131991",
+     "reason": "Around Wilma's moving into Nora and Sam's house in January 1990, within the following year: your rows with her over the children's bedtimes and meals, Sam's late work away from the kitchen rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, and your rows with Sam most nights, settling as Wilma took a flat in town in June 1991 and your eczema cleared that summer.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "reason": "The events of August 12\u201316, 1994, pile up around the wildfire evacuation and settle within days once the family was allowed home and calm again, the mark of an episode around a real threat rather than a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "The events of 1996\u20131997 around Tess's drinking and your nightly calls to her leave four shifts, but no change in who is in the family or in how a key member functions falls on a known date near them, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: The events of August 12\u201316, 1994, pile up around the wildfire evacuation and settle within days once the family was allowed home and calm again, the mark of an episode around a real threat rather than a period.",
+  "answer 1: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: The events of 1996\u20131997 around Tess's drinking and your nightly calls to her leave four shifts, but no change in who is in the family or in how a key member functions falls on a known date near them, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Around your grandfather Walter's move to Sorrel Valley in March 1952, within about a year: June's homesickness and daily letters to her sister Edna, Walter's long hours away from June, Glen's fights at the new school, Walter's cutoff from his brother Harlan, June's weeks kept to her bed, and rows between Walter and June over money for new trees, settling by the autumn of 1953 when June joined the choir and her letters to Edna thinned out.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Your grandfather Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Around your grandfather Walter's move to Sorrel Valley in March 1952, within about a year: June's homesickness and daily letters to her sister Edna, Walter's long hours away from June, Glen's fights at the new school, Walter's cutoff from his brother Harlan, June's weeks kept to her bed, and rows between Walter and June over money for new trees, settling by the autumn of 1953 when June joined the choir and her letters to Edna thinned out.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Your grandfather Walter's orchard failing, 1968\u20131969",
+   "summary": "Around the orchard failing in May 1968, within the following year: Walter's heavy drinking, his conflict with Glen over blame for the loan, Glen and Marian taking over the family's money and the bank talks, Carl's worsening asthma, Roy's stopping speaking to his father over the sale, and Nora's bedwetting beginning again, settling by the autumn of 1969 when Walter stopped drinking and took up pruning other men's trees; Wade's birth that spring is left out, since nothing of the family's shifts around it ties to the orchard's trouble.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Your grandfather Walter's orchard failing, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard failing in May 1968, within the following year: Walter's heavy drinking, his conflict with Glen over blame for the loan, Glen and Marian taking over the family's money and the bank talks, Carl's worsening asthma, Roy's stopping speaking to his father over the sale, and Nora's bedwetting beginning again, settling by the autumn of 1969 when Walter stopped drinking and took up pruning other men's trees; Wade's birth that spring is left out, since nothing of the family's shifts around it ties to the orchard's trouble.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Your father Glen's cannery closing, 1975\u20131976",
+   "summary": "Around Glen's cannery job ending in February 1975, within the following year: his months out of work, loud fights with Marian over money, Marian's taking a second job, Nora's loss of appetite, her distance from her mother, and Walter's drinking again after years off it, settling by the spring of 1976 when Glen took on the delivery job and Nora was eating again and made the track team.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "Your father Glen's cannery closing, 1975\u20131976",
+   "source": "model",
+   "reason": "Around Glen's cannery job ending in February 1975, within the following year: his months out of work, loud fights with Marian over money, Marian's taking a second job, Nora's loss of appetite, her distance from her mother, and Walter's drinking again after years off it, settling by the spring of 1976 when Glen took on the delivery job and Nora was eating again and made the track team.",
+   "setAside": false,
+   "openingEventId": 148
+  },
+  {
+   "id": "c4",
+   "title": "Your partner's mother Wilma moving in, 1990\u20131991",
+   "summary": "Around Wilma's moving into Nora and Sam's house in January 1990, within the following year: your rows with her over the children's bedtimes and meals, Sam's late work away from the kitchen rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, and your rows with Sam most nights, settling as Wilma took a flat in town in June 1991 and your eczema cleared that summer.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Your partner's mother Wilma moving in, 1990\u20131991",
+   "source": "model",
+   "reason": "Around Wilma's moving into Nora and Sam's house in January 1990, within the following year: your rows with her over the children's bedtimes and meals, Sam's late work away from the kitchen rows, Sam's taking his mother's side, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, and your rows with Sam most nights, settling as Wilma took a flat in town in June 1991 and your eczema cleared that summer.",
+   "setAside": false,
+   "openingEventId": 168
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 44,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   4,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.1824
+}

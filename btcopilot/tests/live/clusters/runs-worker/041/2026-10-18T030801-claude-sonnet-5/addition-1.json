@@ -1,0 +1,78 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "name": "Bea's birth, 1995\u20131996",
+     "reason": "Around Bea's birth in March 1995, within about a year and a half: Lena's exhaustion and being on edge with the baby, Paul working late and distance between him and Lena, Ada's stomach aches and missing school, shouting matches between Paul and Jonah, and Lena not going back to her job, which are held as a guess that the household's balance shifted around the new baby; the 1982 marriage and the 2003 move for college sit far off in time and are left out.",
+     "change": null,
+     "openingId": 4
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Bea's birth, 1995\u20131996",
+   "summary": "Around Bea's birth in March 1995, within about a year and a half: Lena's exhaustion and being on edge with the baby, Paul working late and distance between him and Lena, Ada's stomach aches and missing school, shouting matches between Paul and Jonah, and Lena not going back to her job, which are held as a guess that the household's balance shifted around the new baby; the 1982 marriage and the 2003 move for college sit far off in time and are left out.",
+   "eventIds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "startDate": "1995-03-02",
+   "endDate": "1996-09-01",
+   "name": "Bea's birth, 1995\u20131996",
+   "source": "model",
+   "reason": "Around Bea's birth in March 1995, within about a year and a half: Lena's exhaustion and being on edge with the baby, Paul working late and distance between him and Lena, Ada's stomach aches and missing school, shouting matches between Paul and Jonah, and Lena not going back to her job, which are held as a guess that the household's balance shifted around the new baby; the 1982 marriage and the 2003 move for college sit far off in time and are left out.",
+   "setAside": false,
+   "openingEventId": 4
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 1,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 6,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   1
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.044252
+}

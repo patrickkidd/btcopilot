@@ -1,0 +1,117 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "failed": "OutputTruncatedError",
+   "error": "LLM response truncated due to token limit. Input data too large."
+  },
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     "name": "your grandfather Amos's death, 1988\u20131990",
+     "reason": "Around 1988 to 1990, Della's anxiety over money and her distance from Victor sit beside Amos's death in July 1989 and Felix's grades falling that November, with Della calmer again by March 1990, and nothing else nearby ties in these months.",
+     "change": null,
+     "openingId": 11
+    },
+    {
+     "id": null,
+     "eventIds": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+     ],
+     "name": "Your mother Della told she had breast cancer, 1993\u20131996",
+     "reason": "From 1993 into 1996, your migraines and nightly calls to Felix sit beside Della being told she had breast cancer in February 1995, your stopping returning Felix's calls, and then stopping calling home, with nothing else nearby tying in these years.",
+     "change": null,
+     "openingId": 18
+    }
+   ],
+   "periods": [],
+   "declined": []
+  }
+ ],
+ "refused": [
+  "answer 1: cut_off: Your answer ran past its length limit. Give each name, reason and change in one short sentence."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "your grandfather Amos's death, 1988\u20131990",
+   "summary": "Around 1988 to 1990, Della's anxiety over money and her distance from Victor sit beside Amos's death in July 1989 and Felix's grades falling that November, with Della calmer again by March 1990, and nothing else nearby ties in these months.",
+   "eventIds": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "startDate": "1988-03-01",
+   "endDate": "1990-03-01",
+   "name": "your grandfather Amos's death, 1988\u20131990",
+   "source": "model",
+   "reason": "Around 1988 to 1990, Della's anxiety over money and her distance from Victor sit beside Amos's death in July 1989 and Felix's grades falling that November, with Della calmer again by March 1990, and nothing else nearby ties in these months.",
+   "setAside": false,
+   "openingEventId": 11
+  },
+  {
+   "id": "c2",
+   "title": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "summary": "From 1993 into 1996, your migraines and nightly calls to Felix sit beside Della being told she had breast cancer in February 1995, your stopping returning Felix's calls, and then stopping calling home, with nothing else nearby tying in these years.",
+   "eventIds": [
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ],
+   "startDate": "1993-09-01",
+   "endDate": "1996-02-01",
+   "name": "Your mother Della told she had breast cancer, 1993\u20131996",
+   "source": "model",
+   "reason": "From 1993 into 1996, your migraines and nightly calls to Felix sit beside Della being told she had breast cancer in February 1995, your stopping returning Felix's calls, and then stopping calling home, with nothing else nearby tying in these years.",
+   "setAside": false,
+   "openingEventId": 18
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 11,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   1,
+   2
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.266582
+}

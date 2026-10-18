@@ -1,0 +1,230 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118
+     ],
+     "name": "Your grandfather Walter's move to Sorrel Valley, 1952\u20131953",
+     "reason": "Within about a year and a half of your grandfather Walter moving the family to Sorrel Valley and buying the orchard in March 1952, June and her sister Edna's homesickness, Walter and June's distance from each other, Glen's fights at the new school, Faye's stomach aches, Walter's cutoff from his brother Harlan, June's weeks in bed, and the Walter-June rows over money for new trees all sit close together through 1952 and into 1953, with June's turn to the church choir in September 1953 read as where things settle; Roy's being kept back a year, dated only to his second year in the valley, is weighed as a guess within the same stretch.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Your grandfather Walter's orchard failing, 1968\u20131969",
+     "reason": "Around your grandfather Walter's orchard failing in May 1968 and the move to Ridgeport that October, his heavy drinking, his conflict with Glen over the loan, Glen and Marian taking over the family's money and the bank talks, Carl's worse asthma, your bedwetting starting again in April 1969 beside Carl's asthma easing, Ida's heart trouble found that May, and Walter's falling silent with Roy, dated only to sometime after the auction, all sit within this year and a half, with Walter's stopping drinking in October 1969 read as where things settle. Wade's birth, dated only to the late 1960s, is left out as it sits in another branch of the family with no shift of its own nearby.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178
+     ],
+     "name": "Your partner's mother Wilma's move into your house, 1990\u20131991",
+     "reason": "Within months of your partner's mother Wilma selling her farm and moving into your house in January 1990, your clashes with her over the children's bedtimes and meals, Sam's late hours and distance from the kitchen rows, Sam's turn toward his mother, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, and your rows with Sam most nights all sit within the following year and a half, with Wilma's taking a flat in town in June 1991 and your eczema clearing that August read as where things settle. Your mother Marian's weekly visits to take your side, dated only to around then, are weighed as a guess within the same stretch.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "Your own answer names 1975\u20131976 as the year Dad lost his job, and all these events run from February 1975 to June 1976, inside those years, so your named period covers them rather than a separate reading.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "These events run across four days in August 1994 around the wildfire evacuation, with the family back home and calm within days, so this reads as a short acute episode and not a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "Tess's drinking, your worry calls, Marian's help, and the conflict with Rick fall between October 1996 and June 1997, but no event among them or nearby marks a change in who is in the family or in how a key member functions on a known date, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: These events run across four days in August 1994 around the wildfire evacuation, with the family back home and calm within days, so this reads as a short acute episode and not a period.",
+  "answer 1: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: Tess's drinking, your worry calls, Marian's help, and the conflict with Rick fall between October 1996 and June 1997, but no event among them or nearby marks a change in who is in the family or in how a key member functions on a known date, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Within about a year and a half of your grandfather Walter moving the family to Sorrel Valley and buying the orchard in March 1952, June and her sister Edna's homesickness, Walter and June's distance from each other, Glen's fights at the new school, Faye's stomach aches, Walter's cutoff from his brother Harlan, June's weeks in bed, and the Walter-June rows over money for new trees all sit close together through 1952 and into 1953, with June's turn to the church choir in September 1953 read as where things settle; Roy's being kept back a year, dated only to his second year in the valley, is weighed as a guess within the same stretch.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Your grandfather Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Within about a year and a half of your grandfather Walter moving the family to Sorrel Valley and buying the orchard in March 1952, June and her sister Edna's homesickness, Walter and June's distance from each other, Glen's fights at the new school, Faye's stomach aches, Walter's cutoff from his brother Harlan, June's weeks in bed, and the Walter-June rows over money for new trees all sit close together through 1952 and into 1953, with June's turn to the church choir in September 1953 read as where things settle; Roy's being kept back a year, dated only to his second year in the valley, is weighed as a guess within the same stretch.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Your grandfather Walter's orchard failing, 1968\u20131969",
+   "summary": "Around your grandfather Walter's orchard failing in May 1968 and the move to Ridgeport that October, his heavy drinking, his conflict with Glen over the loan, Glen and Marian taking over the family's money and the bank talks, Carl's worse asthma, your bedwetting starting again in April 1969 beside Carl's asthma easing, Ida's heart trouble found that May, and Walter's falling silent with Roy, dated only to sometime after the auction, all sit within this year and a half, with Walter's stopping drinking in October 1969 read as where things settle. Wade's birth, dated only to the late 1960s, is left out as it sits in another branch of the family with no shift of its own nearby.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Your grandfather Walter's orchard failing, 1968\u20131969",
+   "source": "model",
+   "reason": "Around your grandfather Walter's orchard failing in May 1968 and the move to Ridgeport that October, his heavy drinking, his conflict with Glen over the loan, Glen and Marian taking over the family's money and the bank talks, Carl's worse asthma, your bedwetting starting again in April 1969 beside Carl's asthma easing, Ida's heart trouble found that May, and Walter's falling silent with Roy, dated only to sometime after the auction, all sit within this year and a half, with Walter's stopping drinking in October 1969 read as where things settle. Wade's birth, dated only to the late 1960s, is left out as it sits in another branch of the family with no shift of its own nearby.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Your partner's mother Wilma's move into your house, 1990\u20131991",
+   "summary": "Within months of your partner's mother Wilma selling her farm and moving into your house in January 1990, your clashes with her over the children's bedtimes and meals, Sam's late hours and distance from the kitchen rows, Sam's turn toward his mother, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, and your rows with Sam most nights all sit within the following year and a half, with Wilma's taking a flat in town in June 1991 and your eczema clearing that August read as where things settle. Your mother Marian's weekly visits to take your side, dated only to around then, are weighed as a guess within the same stretch.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Your partner's mother Wilma's move into your house, 1990\u20131991",
+   "source": "model",
+   "reason": "Within months of your partner's mother Wilma selling her farm and moving into your house in January 1990, your clashes with her over the children's bedtimes and meals, Sam's late hours and distance from the kitchen rows, Sam's turn toward his mother, Owen's tantrums at preschool, Wilma's taking over Lily's care, your eczema flaring, and your rows with Sam most nights all sit within the following year and a half, with Wilma's taking a flat in town in June 1991 and your eczema clearing that August read as where things settle. Your mother Marian's weekly visits to take your side, dated only to around then, are weighed as a guess within the same stretch.",
+   "setAside": false,
+   "openingEventId": 168
+  },
+  {
+   "id": "c4",
+   "title": "the year Dad lost his job",
+   "summary": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "the year Dad lost his job",
+   "source": "user",
+   "reason": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 44,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   3,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.19288
+}

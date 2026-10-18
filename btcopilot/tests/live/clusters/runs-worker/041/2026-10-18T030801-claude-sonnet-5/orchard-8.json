@@ -1,0 +1,230 @@
+{
+ "model": "claude-sonnet-5",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "id": null,
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118
+     ],
+     "name": "Your grandfather Walter's move to Sorrel Valley, 1952-1953",
+     "reason": "Your grandfather Walter's move to Sorrel Valley and the orchard purchase in March 1952 sit close to a run of shifts over the next year and a half: your grandmother June's homesickness and daily letters to her sister Edna, Walter being out among the trees and distant from June, your father Glen's fights at the new school, Walter's cutoff from his brother Harlan over the land money, June's weeks in bed and her rows with Walter over money for new trees, with Faye's stomach aches and Roy's being kept back a year told on dates nobody is sure of. June's turn to the church choir in the autumn of 1953 is where it settles.",
+     "change": null,
+     "openingId": 109
+    },
+    {
+     "id": null,
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Walter's orchard failing, 1968-1969",
+     "reason": "Around the orchard's failure and the bank calling in the loan in May 1968, within about a year and a half: Walter's heavy drinking, his conflict with your father Glen over the loan, the auction and the move to a rented house, Glen and Marian taking over the family's money and the bank talks, your brother Carl's asthma worse that winter and easier by spring beside your own return of bed-wetting in April 1969, your grandmother Ida's heart trouble that May, and Walter's cutoff from his son Roy on a date nobody is sure of. Walter's move into pruning work that autumn, off the drink, is where it settles.",
+     "change": null,
+     "openingId": 132
+    },
+    {
+     "id": null,
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178
+     ],
+     "name": "Wilma's selling her farm and moving in, 1990-1991",
+     "reason": "Around Wilma selling her farm and moving into your and Sam's home in January 1990, within the following year and a half: your rows with Wilma over the children's bedtimes and meals, Sam working late and keeping out of the kitchen rows, Sam taking his mother's side, your son Owen's tantrums at preschool, Wilma taking over your daughter Lily's care, your eczema flaring and your rows with Sam most nights, with your mother Marian driving over to take your side on a date nobody is sure of. Wilma's move to a flat in June 1991 and your eczema clearing that summer are where it settles.",
+     "change": null,
+     "openingId": 168
+    }
+   ],
+   "periods": [
+    {
+     "messageId": 1,
+     "name": "the year Dad lost his job",
+     "words": "The one that stands out is the year Dad lost his job, when I was 14.",
+     "startYear": 1975,
+     "endYear": 1976
+    }
+   ],
+   "declined": [
+    {
+     "reason": "1975 to 1976: the cannery job loss, your father's months out of work, the fights with your mother Marian, her second job, your weight loss, your father's drinking again and your staying in your room all fall within the years you named as your own hardest time, so your own telling of it stands and no period of mine is drawn from this hint.",
+     "hint": "r3",
+     "run": null
+    },
+    {
+     "reason": "1994: the wildfire evacuation and the days around it, with the family calm again within days of returning home, read as a short episode around a real threat rather than a period.",
+     "hint": "r5",
+     "run": null
+    },
+    {
+     "reason": "1996 to 1997: Tess's drinking, your nightly calls to her, the conflict with Rick and her return to not drinking pile up, but no change in who is in the family or in how a key member functions falls on a known date near them, so there is not enough in the diagram to choose a reading.",
+     "hint": "r6",
+     "run": null
+    }
+   ]
+  }
+ ],
+ "refused": [
+  "answer 1: declined: Run r5 (1994-08-12 to 1994-08-16) has 4 shifts that count and was declined: 1994: the wildfire evacuation and the days around it, with the family calm again within days of returning home, read as a short episode around a real threat rather than a period.",
+  "answer 1: declined: Run r6 (1996-10-15 to 1997-06-15) has 4 shifts that count and was declined: 1996 to 1997: Tess's drinking, your nightly calls to her, the conflict with Rick and her return to not drinking pile up, but no change in who is in the family or in how a key member functions falls on a known date near them, so there is not enough in the diagram to choose a reading."
+ ],
+ "stored": [
+  {
+   "id": "c1",
+   "title": "Your grandfather Walter's move to Sorrel Valley, 1952\u20131953",
+   "summary": "Your grandfather Walter's move to Sorrel Valley and the orchard purchase in March 1952 sit close to a run of shifts over the next year and a half: your grandmother June's homesickness and daily letters to her sister Edna, Walter being out among the trees and distant from June, your father Glen's fights at the new school, Walter's cutoff from his brother Harlan over the land money, June's weeks in bed and her rows with Walter over money for new trees, with Faye's stomach aches and Roy's being kept back a year told on dates nobody is sure of. June's turn to the church choir in the autumn of 1953 is where it settles.",
+   "eventIds": [
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118
+   ],
+   "startDate": "1952-03-15",
+   "endDate": "1953-09-15",
+   "name": "Your grandfather Walter's move to Sorrel Valley, 1952\u20131953",
+   "source": "model",
+   "reason": "Your grandfather Walter's move to Sorrel Valley and the orchard purchase in March 1952 sit close to a run of shifts over the next year and a half: your grandmother June's homesickness and daily letters to her sister Edna, Walter being out among the trees and distant from June, your father Glen's fights at the new school, Walter's cutoff from his brother Harlan over the land money, June's weeks in bed and her rows with Walter over money for new trees, with Faye's stomach aches and Roy's being kept back a year told on dates nobody is sure of. June's turn to the church choir in the autumn of 1953 is where it settles.",
+   "setAside": false,
+   "openingEventId": 109
+  },
+  {
+   "id": "c2",
+   "title": "Walter's orchard failing, 1968\u20131969",
+   "summary": "Around the orchard's failure and the bank calling in the loan in May 1968, within about a year and a half: Walter's heavy drinking, his conflict with your father Glen over the loan, the auction and the move to a rented house, Glen and Marian taking over the family's money and the bank talks, your brother Carl's asthma worse that winter and easier by spring beside your own return of bed-wetting in April 1969, your grandmother Ida's heart trouble that May, and Walter's cutoff from his son Roy on a date nobody is sure of. Walter's move into pruning work that autumn, off the drink, is where it settles.",
+   "eventIds": [
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143
+   ],
+   "startDate": "1968-05-02",
+   "endDate": "1969-10-15",
+   "name": "Walter's orchard failing, 1968\u20131969",
+   "source": "model",
+   "reason": "Around the orchard's failure and the bank calling in the loan in May 1968, within about a year and a half: Walter's heavy drinking, his conflict with your father Glen over the loan, the auction and the move to a rented house, Glen and Marian taking over the family's money and the bank talks, your brother Carl's asthma worse that winter and easier by spring beside your own return of bed-wetting in April 1969, your grandmother Ida's heart trouble that May, and Walter's cutoff from his son Roy on a date nobody is sure of. Walter's move into pruning work that autumn, off the drink, is where it settles.",
+   "setAside": false,
+   "openingEventId": 132
+  },
+  {
+   "id": "c3",
+   "title": "Wilma's selling her farm and moving in, 1990\u20131991",
+   "summary": "Around Wilma selling her farm and moving into your and Sam's home in January 1990, within the following year and a half: your rows with Wilma over the children's bedtimes and meals, Sam working late and keeping out of the kitchen rows, Sam taking his mother's side, your son Owen's tantrums at preschool, Wilma taking over your daughter Lily's care, your eczema flaring and your rows with Sam most nights, with your mother Marian driving over to take your side on a date nobody is sure of. Wilma's move to a flat in June 1991 and your eczema clearing that summer are where it settles.",
+   "eventIds": [
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    178
+   ],
+   "startDate": "1990-01-20",
+   "endDate": "1991-08-15",
+   "name": "Wilma's selling her farm and moving in, 1990\u20131991",
+   "source": "model",
+   "reason": "Around Wilma selling her farm and moving into your and Sam's home in January 1990, within the following year and a half: your rows with Wilma over the children's bedtimes and meals, Sam working late and keeping out of the kitchen rows, Sam taking his mother's side, your son Owen's tantrums at preschool, Wilma taking over your daughter Lily's care, your eczema flaring and your rows with Sam most nights, with your mother Marian driving over to take your side on a date nobody is sure of. Wilma's move to a flat in June 1991 and your eczema clearing that summer are where it settles.",
+   "setAside": false,
+   "openingEventId": 168
+  },
+  {
+   "id": "c4",
+   "title": "the year Dad lost his job",
+   "summary": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "eventIds": [
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158
+   ],
+   "startDate": "1975-02-28",
+   "endDate": "1976-06-15",
+   "name": "the year Dad lost his job",
+   "source": "user",
+   "reason": "The one that stands out is the year Dad lost his job, when I was 14.",
+   "setAside": false,
+   "openingEventId": null
+  }
+ ],
+ "score": {
+  "clusters": {
+   "tp": 4,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "members": {
+   "tp": 44,
+   "fp": 0,
+   "fn": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0
+  },
+  "openings": [
+   3,
+   4
+  ],
+  "hypotheses": 0,
+  "not clusters": 0,
+  "voice": 0,
+  "cause": 0,
+  "id violations": 0
+ },
+ "misses": [],
+ "cost": 0.17232
+}
