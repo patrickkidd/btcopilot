@@ -1,0 +1,92 @@
+{
+ "model": "hand-written",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "eventIds": [
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118
+     ],
+     "name": "The move west to Sorrel Valley",
+     "reason": "The family moved from Millbrook to Sorrel Valley in March 1952; over the next eighteen months June, Walter, Glen, Faye and Roy shifted, and Walter's brother Harlan stopped writing.",
+     "openingId": 109
+    },
+    {
+     "eventIds": [
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143
+     ],
+     "name": "Losing the orchard",
+     "reason": "The frost and the bank's call on the loan came in May 1968; Walter's drinking, his quarrel with Glen, Marian taking over the money, Carl's asthma, Nora's bedwetting and Ida's heart trouble came within the next year and a half.",
+     "openingId": 132
+    },
+    {
+     "eventIds": [
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158
+     ],
+     "name": "Glen's layoff at the cannery",
+     "reason": "Glen lost his job in February 1975; within the year he sat at home out of work, he and Marian fought, she took a second job, and Nora, Carl, Tess and Walter each shifted.",
+     "openingId": 148
+    },
+    {
+     "eventIds": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178
+     ],
+     "name": "Wilma moving in",
+     "reason": "Wilma moved into Nora and Sam's house in January 1990; over the next eighteen months Nora clashed with her, Sam pulled back from Nora and took his mother's side, and Owen had tantrums, until Wilma took a flat in town in June 1991.",
+     "openingId": 168
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "run": "r5",
+     "reason": "Five days of trouble around the wildfire evacuation in August 1994 that passed once the family was home: an acute episode, not a period."
+    },
+    {
+     "run": "r6",
+     "reason": "Tess's drinking and the worry around it in 1996 and 1997 come with no change in who is in the family on a known date, so this time is held as a hypothesis."
+    }
+   ]
+  }
+ ]
+}

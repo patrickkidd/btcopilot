@@ -81,6 +81,8 @@ class Bar:
 BARS = {
     "deep": Bar(0.8, 0.7),
     "deep-unasked": Bar(0.8, 0.7),
+    "orchard": Bar(0.8, 0.7),
+    "orchard-unasked": Bar(0.8, 0.7),
     # the birth must be named as the cluster's opening
     "addition": Bar(1.0, 0.8, frozenset(Rule)),
     # nothing stored: no cluster expected, so any stored one fails it
