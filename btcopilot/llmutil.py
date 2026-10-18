@@ -99,6 +99,23 @@ def reasoning_args(model: str, effort: str) -> dict:
     return {"thinking": {"type": "adaptive"}, "output_config": {"effort": effort}}
 
 
+# Models on which a structured call runs with thinking switched off, as Haiku
+# 4.5 runs. Cluster detection, the only structured call, on Sonnet 5 at high
+# effort spent its whole token limit thinking and was cut off in 20 of 20 tries
+# on the four-generation case. Opus 5.5, Sonnet 5.5 and Fable reject thinking
+# switched off with HTTP 400, so they are never listed here [Oracle: R-0856].
+STRUCTURED_THINKING_OFF = {"claude-sonnet-5"}
+
+
+def structured_reasoning_args(model: str) -> dict:
+    """What a structured call sends for thinking (app names): none on a model
+    in `STRUCTURED_THINKING_OFF`, else what `reasoning_args` gives at
+    `STRUCTURED_EFFORT`. The coach's turn and the text calls never come here."""
+    if model in STRUCTURED_THINKING_OFF:
+        return {"thinking": {"type": "disabled"}}
+    return reasoning_args(model, STRUCTURED_EFFORT)
+
+
 def bedrock_models() -> set[str]:
     """Every Claude model the app may name, each of which Bedrock must serve."""
     named = {*MODEL_ALIASES.values(), RESPONSE_MODEL, GEMINI_STAND_IN}
@@ -808,7 +825,7 @@ async def claude_structured(prompt, response_format, model, schema, limit):
     async with client.beta.messages.stream(
         model=resolved_model,
         max_tokens=limit,
-        **reasoning_args(model, STRUCTURED_EFFORT),
+        **structured_reasoning_args(model),
         messages=[{"role": "user", "content": full_prompt}],
         **fallback_args(resolved_model),
     ) as stream:
