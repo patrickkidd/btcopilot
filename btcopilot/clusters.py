@@ -115,9 +115,9 @@ _log = logging.getLogger(__name__)
 # [Oracle: R-0850, R-0855, R-0842, R-0851, R-0856, R-0857].
 # 20: a shift told as how things always were supports no period, one person's
 # trouble lifting counts beside another's rise in the same months, a hint is
-# the default only with a change in who is in the family on a known date, a
-# period's name is checked word for word with the ordinary relatives free to
-# use, and only a period covering more than half of the diagram's dated years
+# the default only with a change in the family on a known date (any event not a
+# shift), a period's name is checked word for word with the ordinary relatives
+# free to use, and only a period covering more than half of the diagram's dated years
 # is refused for its length, so every diagram is read again on its next event
 # change [Oracle: R-0850, R-0856, R-0376, R-0846].
 DETECTION_VERSION = 20
@@ -310,12 +310,14 @@ def supports(event: Event, events: list[Event] = ()) -> bool:
     )
 
 
-def opens(event: Event) -> bool:
-    """A change in who is in the family on a known date: a birth, an adoption,
-    a couple coming together, a marriage, a separation, a divorce or a death
-    whose date is not unknown. An event of unknown date opens nothing
-    [Oracle: R-0850, R-0855]."""
-    return event.kind.isStructural() and not unsure(event)
+def changes(event: Event) -> bool:
+    """A change in the family on a known date, as the prompt defines one: any
+    event the diagram lists that is not a shift, dated certain or approximate.
+    A birth, a death, a marriage or a separation is one, and so is a noted
+    event such as a diagnosis, a move, a job lost or someone leaving home. A
+    shift is never one, nor is an event of unknown date
+    [Oracle: R-0850, R-0855, R-0364]."""
+    return event.kind is not EventKind.Shift and not unsure(event)
 
 
 def unsure(event: Event) -> bool:
@@ -490,8 +492,8 @@ def seeds(event: Event, events: list[Event]) -> bool:
 
 @dataclass
 class Candidate:
-    """`changeIds` are its events that may open it: a change in who is in
-    the family on a known date."""
+    """`changeIds` are its events that may open it: a change in the family
+    on a known date, as `changes` reads one."""
 
     eventIds: list[int]
     shiftIds: list[int]
@@ -502,10 +504,10 @@ class Candidate:
 
     @property
     def strong(self) -> bool:
-        """Three supporting shifts or more and a change in who is in the
-        family on a known date among its events: the call's default reading,
-        kept unless it says why not. Without such a change it is held as a
-        question, never offered as the default [Oracle: R-0856, R-0850]."""
+        """Three supporting shifts or more and a change in the family on a
+        known date among its events: the call's default reading, kept unless
+        it says why not. Without such a change it is held as a question,
+        never offered as the default [Oracle: R-0856, R-0850]."""
         return len(self.shiftIds) >= MIN_CLUSTER_EVENTS and bool(self.changeIds)
 
 
@@ -527,7 +529,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
         return []
 
     when = {e.id: parse_date(e.dateTime) for e in free}
-    changes = {e.id for e in free if opens(e)}
+    known_changes = {e.id for e in free if changes(e)}
 
     groups: list[set[int]] = []
     for seed in started:
@@ -549,7 +551,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
             shiftIds=[i for i in ids if i in marked_ids],
             startDate=when[ids[0]].isoformat(),
             endDate=when[ids[-1]].isoformat(),
-            changeIds=[i for i in ids if i in changes],
+            changeIds=[i for i in ids if i in known_changes],
         )
         for group in groups
         for ids in _split(
@@ -595,7 +597,7 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
     people = {e.person for e in shifts}
     named = cluster.get("openingEventId")
     changes = [e for e in held if e.id == named and not unsure(e)] or [
-        e for e in held if opens(e)
+        e for e in held if e.kind.isStructural() and not unsure(e)
     ]
     opening = changes[0] if changes else None
 
