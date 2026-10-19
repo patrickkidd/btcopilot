@@ -292,7 +292,27 @@ def test_the_structured_call_sends_the_schema_as_the_output_format(anthropic_env
     assert haiku["messages"] == [{"role": "user", "content": "the family"}]
     assert "thinking" not in haiku
     assert haiku["output_config"] == {"format": form}
-    assert not hasattr(llmutil, "CLAUDE_JSON_INSTRUCTION")
+    assert "OUTPUT FORMAT" not in haiku["messages"][0]["content"]
+
+
+def test_the_local_model_gets_the_schema_in_the_prompt(anthropic_env):
+    # R-0856, R-0857
+    anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
+    anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
+    sent: list[dict] = []
+    anthropic_env.setattr(
+        llmutil, "_extraction_anthropic_client", lambda: AsyncSeen(sent)
+    )
+    with pytest.raises(Sent):
+        asyncio.run(
+            llmutil.claude_structured("the family", Named, "qwen3:8b", SHAPE, 100)
+        )
+    request = sent.pop()
+    schema = json.dumps(SHAPE)
+    assert request["messages"][0]["content"] == (
+        "the family" + llmutil.CLAUDE_JSON_INSTRUCTION.format(schema=schema)
+    )
+    assert "format" in request["output_config"]
 
 
 def test_an_answer_that_is_not_the_json_asked_for_is_unreadable(anthropic_env):

@@ -817,13 +817,24 @@ def output_format(schema: dict) -> dict:
     return {"type": "json_schema", "schema": closed(schema)}
 
 
+CLAUDE_JSON_INSTRUCTION = """
+
+OUTPUT FORMAT: Respond with ONLY a single valid JSON object conforming to this JSON Schema. No markdown fences, no commentary, no text before or after the JSON. Omit optional fields rather than emitting null.
+
+{schema}"""
+
+
 async def claude_structured(prompt, response_format, model, schema, limit):
     """The answer is forced to `schema` by Claude's structured output option
-    (the schema is the request's output format, never pasted into the prompt),
-    so the only parse is loading the returned JSON [Oracle: R-0856]."""
+    (the schema is the request's output format), so the only parse is loading
+    the returned JSON [Oracle: R-0856]. The local model ignores the output
+    format, so only its prompt carries the schema."""
     start_time = time.time()
     reasoning = structured_reasoning_args(model)
     config = dict(reasoning.pop("output_config", {}), format=output_format(schema))
+
+    if local_model():
+        prompt += CLAUDE_JSON_INSTRUCTION.format(schema=json.dumps(schema))
 
     client = _extraction_anthropic_client()
     resolved_model = wire_model(model)
