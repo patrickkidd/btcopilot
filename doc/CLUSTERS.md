@@ -121,8 +121,8 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    `user` holding every dated event in the family inside those years, its dates
    the first and last of them. It is not written, and is a cluster_refused row
    instead, when the message is not one of the answers, the name or sentence is
-   not the person's words in order, the years are missing, the years hold fewer
-   than three events, or it shares days with another stored period of theirs
+   not the person's words in order, the years are missing, the years hold no
+   event, or it shares days with another stored period of theirs
    or one read before it in the same answer. None of these is asked again. A
    period read again under the name of one of theirs already stored is that
    period: the new reading replaces the stored copy's events, dates and

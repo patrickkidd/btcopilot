@@ -9,7 +9,8 @@ opening; which opening mattered is the model's judgement. The model returns the
 app's periods as they should now stand, and reads the periods the person named
 when asked when the most was going on, each written once as theirs; the
 person's own stay as they drew them and are judged against the data like the
-app's [Oracle: R-0853]. The code only backstops: three events at least, no
+app's [Oracle: R-0853]. The code only backstops: three events at least in
+the app's (one in the person's), no
 period covering more than half of the diagram's dated years, no name told in
 the person's trouble, two periods sharing days become one, and a period that
 fails is set aside, never deleted.
@@ -1257,10 +1258,11 @@ def _read_theirs(
     data: DiagramData,
 ) -> tuple[list[Named], list[ClusterError]]:
     """The periods the person named, each with every dated event in the family
-    inside its years, never reshaped [Oracle: R-0853]. One with no readable
-    years, not in their own words, too few events, or sharing days with a
-    period of theirs already stored or read first is not written; each such is
-    a fault, never asked again, since asking cannot add years to their words.
+    inside its years, never reshaped, and kept under three events [Oracle:
+    R-0853]. One with no readable years, not in their own words, no event in
+    its years, or sharing days with a period of theirs already stored or read
+    first is not written; each such is a fault, never asked again, since
+    asking cannot add years to their words.
     A period read again under the name of one of theirs already stored is
     that period, not one beside it: the new reading replaces the stored
     copy's events and sentence."""
@@ -1330,10 +1332,9 @@ def _read_theirs(
             )
             continue
         ids = [e.id for e in events if years[0] <= when[e.id] <= years[1]]
-        if len(ids) < MIN_CLUSTER_EVENTS:
+        if not ids:
             fault(
-                f"The person's period {period.name!r} holds {len(ids)} events in "
-                f"its years; anything under {MIN_CLUSTER_EVENTS} is never a period.",
+                f"The person's period {period.name!r} holds no events in its years.",
                 ClusterCheck.TooSmall,
                 period,
                 ids,

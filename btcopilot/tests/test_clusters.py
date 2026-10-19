@@ -2115,6 +2115,23 @@ def test_an_unsupported_period_of_theirs_is_kept_and_judged_unsupported():
     assert not clusters.judge(asdict(theirs), ASH).supported
 
 
+def test_a_period_of_theirs_with_two_events_is_stored_as_theirs():
+    # R-0853
+    data = record(*[e for e in ASH.events if e["id"] != 41])
+    seen = []
+    with replies(ClusterListResponse(periods=[period(7)])) as ask:
+        result = detect_clusters(
+            data, ask, heard(seen), [Answer(7, "When?", ROWAN_SAID)]
+        )
+    [theirs] = result.clusters
+    assert (theirs.name, theirs.source, theirs.eventIds) == (
+        DIVORCE,
+        ClusterSource.User,
+        [40, 42],
+    )
+    assert seen == []
+
+
 def test_ages_the_person_gives_are_read_as_years_from_their_birth_date():
     # R-0853
     born = datetime.date(1978, 4, 1)
