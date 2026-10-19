@@ -11,7 +11,6 @@ import logging
 import re
 import uuid
 
-from btcopilot.recordtext import version_line
 from btcopilot.review import adapter
 from btcopilot.schema import DateCertainty, EventKind, event_title
 
@@ -146,8 +145,7 @@ def write(coding, statement, said: str, model=None) -> dict:
     """One coding turn. Returns the edit lines it wrote, or the one question it
     asked instead."""
     turn_id = uuid.uuid4().hex
-    diagram = adapter.diagram_of(coding.diagram_id)
-    record = adapter.record_of(diagram)
+    record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     question = unclear(said, record.get("people") or [])
     if question:
         _log.info(f"Scribe asked before the model: {question}")
@@ -162,18 +160,7 @@ def write(coding, statement, said: str, model=None) -> dict:
         adapter.Purpose.Scribe,
         model=model or adapter.coach_model(MODEL, effort=None),
     )
-    # The version a change to an existing item must name: the scribe has no
-    # read tool to learn it from.
-    system = adapter.scribe_prompt(
-        "\n\n".join(
-            part
-            for part in (
-                adapter.render_record(coding.diagram_id),
-                version_line(diagram.version),
-            )
-            if part
-        )
-    )
+    system = adapter.scribe_prompt(adapter.render_record(coding.diagram_id))
     messages = [
         {
             "role": "user",
