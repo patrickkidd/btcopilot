@@ -1,8 +1,17 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { answer, device, plan, Plan, reach, Reach, type Device } from "../src/push";
+import { answer, device, landing, plan, Plan, reach, Reach, type Device } from "../src/push";
+import { Failed, openNotification } from "../src/api";
 
 vi.mock("../src/track", () => ({ Feature: { NotificationsOn: "on" }, tap: () => {} }));
-vi.mock("../src/api", () => ({ call: () => new Promise(() => {}), openNotification: () => {} }));
+vi.mock("../src/api", () => ({
+  call: () => new Promise(() => {}),
+  openNotification: vi.fn(),
+  Failed: class extends Error {
+    constructor(readonly status: number) {
+      super(String(status));
+    }
+  },
+}));
 
 const at = (d: Partial<Device>): Device => ({
   supported: true,
@@ -76,4 +85,21 @@ it("never asks in a browser tab, and Not now spends the ask too", async () => {
   answer(false);
   expect(requestPermission).not.toHaveBeenCalled();
   expect(plan(await device())).toBe(Plan.Nothing);
+});
+
+// R-0614
+it("opens the app on a tapped push whose notification row is gone, with nothing rejected", async () => {
+  const rejected = vi.fn();
+  process.on("unhandledRejection", rejected);
+  vi.mocked(openNotification).mockRejectedValueOnce(new (Failed as any)(404));
+  vi.stubGlobal("location", { search: "?notification=15", pathname: "/app/", hash: "" });
+  vi.stubGlobal("history", { replaceState: vi.fn() });
+  vi.stubGlobal("navigator", {});
+  const land = vi.fn(async () => {});
+  landing(land);
+  await new Promise((r) => setTimeout(r, 0));
+  process.off("unhandledRejection", rejected);
+  expect(openNotification).toHaveBeenCalledWith(15);
+  expect(land).not.toHaveBeenCalled();
+  expect(rejected).not.toHaveBeenCalled();
 });
