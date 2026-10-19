@@ -99,12 +99,23 @@ def reasoning_args(model: str, effort: str) -> dict:
     return {"thinking": {"type": "adaptive"}, "output_config": {"effort": effort}}
 
 
+# Models on which the structured call is made with thinking switched off, as
+# on Haiku 4.5. Cluster detection, the only structured call, on Sonnet 5 with
+# adaptive thinking at high effort ran past its token limit in every try on the
+# four-generation case; the structured output format holds the answer's shape
+# without thinking. Opus 5.5, Sonnet 5.5 and Fable reject thinking switched off
+# with HTTP 400, so they are never listed here [Oracle: R-0856].
+STRUCTURED_THINKING_OFF = {"claude-sonnet-5"}
+
+
 def structured_reasoning_args(model: str) -> dict:
-    """What a structured call sends for thinking (app names): what
-    `reasoning_args` gives at `STRUCTURED_EFFORT`. The answer's shape is held by
-    the schema sent as the output format, so thinking stays on wherever the
-    model takes it [Oracle: R-0856]. The coach's turn and the text calls never
-    come here."""
+    """What a structured call sends for thinking (app names): thinking switched
+    off on a model in `STRUCTURED_THINKING_OFF`, else what `reasoning_args`
+    gives at `STRUCTURED_EFFORT`. The answer's shape is held by the schema sent
+    as the output format [Oracle: R-0856]. The coach's turn and the text calls
+    never come here."""
+    if model in STRUCTURED_THINKING_OFF:
+        return {"thinking": {"type": "disabled"}}
     return reasoning_args(model, STRUCTURED_EFFORT)
 
 

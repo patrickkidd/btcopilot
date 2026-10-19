@@ -250,8 +250,8 @@ def test_the_structured_call_sends_the_schema_as_the_output_format(anthropic_env
     # R-0856, R-0857
     """Cluster detection, the structured call, sends its schema as Claude's
     structured output format, every object closed, and the prompt exactly as
-    given, with no schema in it; Sonnet 5 keeps adaptive thinking at the
-    structured effort, Haiku 4.5 sends no thinking setting."""
+    given, with no schema in it; Sonnet 5 sends thinking switched off and
+    no effort, Haiku 4.5 sends no thinking setting."""
     anthropic_env.setenv(SETTING, Provider.Anthropic.value)
     sent: list[dict] = []
     anthropic_env.setattr(
@@ -283,11 +283,8 @@ def test_the_structured_call_sends_the_schema_as_the_output_format(anthropic_env
     form = {"type": "json_schema", "schema": closed}
     sonnet = structured("claude-sonnet-5")
     assert sonnet["messages"] == [{"role": "user", "content": "the family"}]
-    assert sonnet["thinking"] == {"type": "adaptive"}
-    assert sonnet["output_config"] == {
-        "effort": llmutil.STRUCTURED_EFFORT,
-        "format": form,
-    }
+    assert sonnet["thinking"] == {"type": "disabled"}
+    assert sonnet["output_config"] == {"format": form}
     haiku = structured("claude-haiku-4-5-20251001")
     assert haiku["messages"] == [{"role": "user", "content": "the family"}]
     assert "thinking" not in haiku
