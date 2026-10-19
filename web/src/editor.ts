@@ -430,6 +430,22 @@ export async function save(
   done();
 }
 
+export const SUBMITTED = "This coding is submitted, so it can no longer be changed.";
+
+/** A form on a submitted coding is there to read: no Save, no Delete, nothing
+ * to type into or pick, and the reason at the top (R-0869). */
+export function lock(editor: HTMLElement): HTMLElement {
+  editor.querySelector(".acts")?.remove();
+  editor
+    .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(".f")
+    .forEach((one) => (one.readOnly = true));
+  editor
+    .querySelectorAll<HTMLButtonElement>(".seg, .parents, .bondrow")
+    .forEach((one) => (one.disabled = true));
+  editor.prepend(el("div", "refused", esc(SUBMITTED)));
+  return editor;
+}
+
 /** Why Save did nothing, over the Save button, until a field changes or the
  * editor closes and takes it along. */
 function refuse(editor: HTMLElement, text: string): void {

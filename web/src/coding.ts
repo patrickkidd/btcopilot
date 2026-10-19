@@ -138,7 +138,13 @@ export class Coding {
     // The drawer edits the record this coding is of, never the coder's own
     // family, so it is built on that record's id (R-0267).
     const coded = this.thread.diagram_id;
-    this.drawer = new Menu(this.rows, () => this.reread(), () => coded);
+    this.drawer = new Menu(
+      this.rows,
+      () => this.reread(),
+      () => coded,
+      undefined,
+      () => this.finished(),
+    );
     this.drawer.onTab = (tab) => this.markTab(tab);
     this.handlers.onTitle({
       name: this.thread.session,
