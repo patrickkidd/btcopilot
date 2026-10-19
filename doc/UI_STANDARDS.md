@@ -55,6 +55,7 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
   is a deliberate shortcut, named as such, and both write the same value. The only
   ruled shortcut today is speak-replies on the chat view mirroring preferences.
 - No surface repeats another surface's list.
+- Nothing a person reads names how the code works underneath: no version, step, id, tool, model or call. When a write does not go in, the screen says what went in and that the rest did not, never the model's or the server's own words. [Oracle: R-0869]
 
 ## Behaviour
 - A control that starts something starts it immediately, not on the next tick of a

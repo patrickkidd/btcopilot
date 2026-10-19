@@ -203,17 +203,19 @@ def write(coding, statement, said: str, model=None) -> dict:
             _log.warning(f"Scribe step {step} was refused: {results}")
 
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
-    # Every call is committed as it lands, so a loop that ran out of steps has
-    # written part of the sentence; the coder is told which part, never shown
-    # it as done (R-0302: no silent loss).
+    # Every call is committed as it lands, so a loop that ran out of steps or
+    # gave up on a refusal has written part of the sentence; the coder is told
+    # which part, never shown it as done (R-0302: no silent loss), and never
+    # the model's or the tool's words, which speak of how the code works
+    # (R-0869).
     if unfinished:
-        raise Refused(_short(lines))
-    # A model that falls silent after a refusal has given up on it; the coder
-    # is told what was refused, in words the page shows after the colon.
-    if refused and not asked:
-        raise Refused(f"The scribe stopped{_kept(lines)}: {' '.join(refused)}")
+        _log.warning("Scribe ran out of steps")
+        raise Refused(_rest(lines))
+    if refused:
+        _log.warning(f"Scribe gave up after a refusal, saying {asked!r}: {refused}")
+        raise Refused(_rest(lines))
     if not lines and not asked:
-        raise Refused("the scribe wrote nothing and said nothing")
+        raise Refused(_rest(lines))
     if asked and not lines:
         _log.info(f"Scribe asked instead of writing: {asked}")
     return {
@@ -224,13 +226,16 @@ def write(coding, statement, said: str, model=None) -> dict:
     }
 
 
-def _short(lines: list[str]) -> str:
-    return f"The scribe stopped: it ran out of steps{_kept(lines)}. Say it again in one sentence."
-
-
-def _kept(lines: list[str]) -> str:
+def _rest(lines: list[str]) -> str:
+    """What the coder reads when not all of it went in: the page shows the
+    words after the first colon."""
+    if not lines:
+        return "Scribe stopped: That did not go in. Say it again in one sentence."
     wrote = ", ".join(line.removeprefix("+ ") for line in lines)
-    return f" after adding {wrote}" if wrote else ""
+    return (
+        f"Scribe stopped: {wrote} went in. The rest did not. "
+        "Say the rest again in one sentence."
+    )
 
 
 def made(deltas: list[dict]) -> list[dict]:

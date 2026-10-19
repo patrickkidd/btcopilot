@@ -169,14 +169,14 @@ class Endless:
 
 
 def test_says_so_when_it_runs_out_of_steps(coder, cut, turns):
-    # R-0411
+    # R-0411, R-0869
     """What was written stays, and the coder is told, never shown it as done."""
     coding = coded(coder.user, cut, {"people": []}, done=False)
     response = scribe(coder, coding, turns[0], Endless(), "a sentence that never ends")
     assert response.status_code == 400
-    assert response.get_data(as_text=True).split(": ", 1)[1].startswith(
-        "it ran out of steps after adding Person 1, Person 2"
-    )
+    shown = response.get_data(as_text=True).split(": ", 1)[1]
+    assert shown.startswith("Person 1, Person 2")
+    assert shown.endswith(" went in. The rest did not. Say the rest again in one sentence.")
 
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     assert len(record["people"]) == 8
@@ -399,14 +399,27 @@ def test_a_second_request_changes_an_existing_event(coder, cut, turns):
     assert [e["title"] for e in events] == ["Drank much more", "Slept much less"]
 
 
-def test_a_refusal_the_scribe_gives_up_on_reaches_the_coder(coder, cut, turns):
-    # R-0270, R-0453
+SHIFT = {"date_certainty": "certain", "kind": "shift", "description": "could not sleep", "symptom": "up", "date": "2010-01-01", "person": "1"}
+NOTHING = "That did not go in. Say it again in one sentence."
+
+
+def test_a_refusal_the_scribe_falls_silent_on_says_it_did_not_go_in(coder, cut, turns):
+    # R-0270, R-0869
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    response = scribe(coder, coding, turns[0], Scripted([("edit_event", SHIFT)]), "Marcus could not sleep")
+    assert response.status_code == 400
+    assert response.get_data(as_text=True).split(": ", 1)[1] == NOTHING
+
+
+def test_a_refusal_the_scribe_talks_about_shows_only_what_went_in(coder, cut, turns):
+    # R-0270, R-0869
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
-        [("edit_event", {"date_certainty": "certain", "kind": "shift", "description": "could not sleep", "symptom": "up", "date": "2010-01-01", "person": "1"})]
+        [("edit_person", {"name": "James Cooper"}), ("edit_event", SHIFT)],
+        said="I need to see the updated record to write this change with the current version number.",
     )
-    response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
+    response = scribe(coder, coding, turns[0], model, "James Cooper came and Marcus could not sleep")
     assert response.status_code == 400
-    assert response.get_data(as_text=True).split(": ", 1)[1].startswith(
-        "A shift event needs a title of 2 to 4 words"
+    assert response.get_data(as_text=True).split(": ", 1)[1] == (
+        "James Cooper went in. The rest did not. Say the rest again in one sentence."
     )
