@@ -1,4 +1,5 @@
 import datetime
+import re
 
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
@@ -104,6 +105,25 @@ def test_done_freezes_the_coders_record(coder, cut):
 
     coder.patch(f"/review/codings/{coding['id']}", json={"done_at": True})
     assert frozen(coding["diagram_id"])
+
+
+def test_an_edit_after_submitting_is_refused_in_plain_words(coder, cut):
+    # R-0271, R-0869
+    coding = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
+    coder.patch(f"/review/codings/{coding['id']}", json={"done_at": True})
+    refused = coder.post(
+        f"/app/people?diagram_id={coding['diagram_id']}", json={"name": "Bo"}
+    )
+    assert refused.status_code == 409
+    assert refused.get_data(as_text=True) == (
+        "This coding is submitted, so it can no longer be changed."
+    )
+
+
+def test_the_coding_task_counts_new_lines_without_numbering_them(coder, cut):
+    # R-0869
+    detail = coder.get("/review/tasks").get_json()["task"]["detail"]
+    assert re.fullmatch(r"\d+ new lines? · about \d+ min", detail)
 
 
 def test_a_coder_sees_no_one_elses_coding_until_their_own_is_done(

@@ -43,9 +43,9 @@ def _value_error(e):
 @bp.errorhandler(adapter.Invalid)
 def _invalid_record(e):
     """A decision the record itself refuses — a shift with no variable, say. The
-    room chose it, so it is told in the record's own words rather than shown a
-    server error."""
-    return str(e), 400
+    room chose it, so it is told in plain words rather than shown a server
+    error or the coach's wording (R-0869)."""
+    return e.plain, 400
 
 
 @bp.context_processor

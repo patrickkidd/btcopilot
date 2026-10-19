@@ -387,7 +387,7 @@ def test_a_person_can_be_decided_before_what_they_stand_on_is_ratified(
 def test_a_decision_the_record_refuses_is_the_rooms_fault(
     patrick, test_user, test_user_2, cut
 ):
-    # R-0453
+    # R-0453, R-0869
     """A shift with no variable is refused in the record's own words, not as a
     server error."""
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
@@ -403,7 +403,10 @@ def test_a_decision_the_record_refuses_is_the_rooms_fault(
         f"/review/items/{item.id}", json={"choice": "change", "value": bare}
     )
     assert refused.status_code == 400
-    assert "variable" in refused.get_data(as_text=True)
+    assert refused.get_data(as_text=True) == (
+        "A shift needs to say what moved and which way: symptom, anxiety, "
+        "functioning or a relationship."
+    )
 
 
 def test_a_cut_that_is_not_ratified_has_no_result(patrick, cut):
