@@ -238,7 +238,7 @@ def write(coding, statement, said: str, model=None) -> dict:
 
 
 def _short(lines: list[str]) -> str:
-    return f"The scribe stopped before it finished{_kept(lines)}. Say it again in one sentence."
+    return f"The scribe stopped: it ran out of steps{_kept(lines)}. Say it again in one sentence."
 
 
 def _kept(lines: list[str]) -> str:
