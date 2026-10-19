@@ -1814,7 +1814,7 @@ relationship-move event, not toward alone, needs a target, refused with a warnin
 [R-0585, defect on event 66's miscoding]; the four ruled chip pre-text phrases in the chat box
 [R-0586]; both the drawer's own question and a coach reply's closing question now tap like any
 other amber chip [R-0587]. R-0585's first wording read narrower than what Patrick said and what was
-built — louann caught it — and was reworded to cover every move kind, not toward alone; the
+built — a tester caught it — and was reworded to cover every move kind, not toward alone; the
 evidence already held his full words, so only the statement changed.
 
 **The size ceiling, fought on every round.** Adding new rulings pushed the index over its
