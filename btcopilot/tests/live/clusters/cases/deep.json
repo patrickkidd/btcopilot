@@ -193,6 +193,13 @@
     "parents": 48
    },
    {
+    "id": 44,
+    "name": "Rowan",
+    "gender": "male",
+    "parents": 48,
+    "last_name": "Okafor"
+   },
+   {
     "id": 45,
     "name": "Ada",
     "gender": "female",
@@ -406,6 +413,12 @@
    {
     "id": 153,
     "name": "Evan",
+    "gender": "male",
+    "parents": 158
+   },
+   {
+    "id": 154,
+    "name": "Theo",
     "gender": "male",
     "parents": 158
    },
@@ -769,6 +782,16 @@
     "child": 188
    },
    {
+    "id": 162,
+    "kind": "birth",
+    "dateTime": "1971-01-12",
+    "dateCertainty": "unknown",
+    "person": 138,
+    "spouse": 152,
+    "child": 154,
+    "notes": "Born a few years before Jonah; one of Sylvia's two eldest."
+   },
+   {
     "id": 33,
     "kind": "married",
     "dateTime": "1972-01-12",
@@ -1028,6 +1051,16 @@
     "description": "birth"
    },
    {
+    "id": 207,
+    "kind": "shift",
+    "dateTime": "1991-01-12",
+    "dateCertainty": "unknown",
+    "person": 36,
+    "anxiety": "up",
+    "description": "first of two hard court cases over a bridge his firm designed, before the move east; he won",
+    "notes": "Maureen kept the firm's books, so the case weighed on them both. The year is unsure."
+   },
+   {
     "id": 89,
     "kind": "shift",
     "dateTime": "1991-03-12",
@@ -1041,6 +1074,15 @@
     "notes": "He let it happen and chose wherever his closest friend was headed."
    },
    {
+    "id": 217,
+    "kind": "noted",
+    "dateTime": "1991-06-12",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "description": "moved east to Fenwick with Desmond for about a year",
+    "notes": "She gave the months in a message: early summer to the next summer. Her father died that same month."
+   },
+   {
     "id": 78,
     "kind": "death",
     "dateTime": "1991-06-14",
@@ -1048,6 +1090,20 @@
     "person": 72,
     "description": "death",
     "notes": "A stroke after years of kidney disease; he smoked a pipe."
+   },
+   {
+    "id": 215,
+    "kind": "shift",
+    "dateTime": "1991-06-14",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "relationship": "toward",
+    "relationshipTargets": [
+     36
+    ],
+    "anxiety": "down",
+    "description": "content with Desmond in the months after her father died, though both families were on edge",
+    "notes": "She wrote later that the two of them got on well then, with plenty of unease in the wider family."
    },
    {
     "id": 88,
@@ -1188,6 +1244,14 @@
     "notes": "The year is estimated."
    },
    {
+    "id": 209,
+    "kind": "death",
+    "dateTime": "1996-11-06",
+    "dateCertainty": "certain",
+    "person": 44,
+    "description": "died"
+   },
+   {
     "id": 180,
     "kind": "shift",
     "dateTime": "1997-01-11",
@@ -1196,6 +1260,58 @@
     "symptom": "up",
     "description": "had a kidney removed for a tumour",
     "notes": "From Maureen's family health notes; surgery only."
+   },
+   {
+    "id": 208,
+    "kind": "shift",
+    "dateTime": "1997-01-11",
+    "dateCertainty": "approximate",
+    "person": 36,
+    "anxiety": "up",
+    "description": "the same case brought back to court; he won again, at great strain",
+    "notes": "Maureen still ran the firm's office, so the second hearing fell on the pair of them."
+   },
+   {
+    "id": 210,
+    "kind": "shift",
+    "dateTime": "1997-03-12",
+    "dateCertainty": "approximate",
+    "person": 205,
+    "symptom": "up",
+    "description": "told she had a heart failure that could not be treated"
+   },
+   {
+    "id": 212,
+    "kind": "noted",
+    "dateTime": "1997-03-12",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "description": "she and Desmond nursed Nell at home to the end and then settled her affairs",
+    "notes": "Nell never married; she had been a regular at their table for years."
+   },
+   {
+    "id": 213,
+    "kind": "noted",
+    "dateTime": "1997-03-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "on his own in Thornbury, his first winter after the conservatory"
+   },
+   {
+    "id": 211,
+    "kind": "death",
+    "dateTime": "1997-04-12",
+    "dateCertainty": "approximate",
+    "person": 205,
+    "description": "died of the heart failure some weeks after it was found"
+   },
+   {
+    "id": 214,
+    "kind": "noted",
+    "dateTime": "1997-05-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "drove his van to friends' graduations across the country, then up to Tallow Ridge for the first time"
    },
    {
     "id": 11,
@@ -1452,6 +1568,20 @@
     "dateCertainty": "certain",
     "person": 73,
     "description": "died of the bowel cancer"
+   },
+   {
+    "id": 216,
+    "kind": "shift",
+    "dateTime": "2004-02-18",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "relationship": "toward",
+    "relationshipTargets": [
+     36
+    ],
+    "anxiety": "down",
+    "description": "content with Desmond in the months after her mother died, though both families were on edge",
+    "notes": "She wrote later that the two of them got on well then too, with plenty of unease in the wider family."
    },
    {
     "id": 66,
