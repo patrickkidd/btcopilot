@@ -12,7 +12,7 @@ from btcopilot.llmutil import Served
 from btcopilot.models import Change, ModelCall, Purpose
 from btcopilot.review import adapter
 from btcopilot.review.scribe import written
-from btcopilot.tests.review.conftest import coded, person
+from btcopilot.tests.review.conftest import coded, person, shift
 
 HAIKU = Served("claude-haiku-4-5")
 
@@ -355,3 +355,58 @@ def test_a_reopened_thread_says_which_events_each_line_wrote(coder, cut, turns):
     thread = coder.get(f"/review/codings/{coding.id}/thread").json
     said = {turn["id"]: turn["said"] for turn in thread["turns"]}
     assert said[turns[0].id][0]["event_ids"] == [int(one["id"]) for one in made]
+
+
+class Versioned:
+    """A model that changes existing events, each step naming the record
+    version its system prompt shows; with none shown it guesses 1, as Haiku
+    did on production."""
+
+    def __init__(self, *steps):
+        self.steps = list(steps)
+
+    def turn(self, system, messages, tools, turn_id=""):
+        if False:
+            yield
+        if not self.steps:
+            return ModelTurn(text="", served=HAIKU)
+        shown = re.search(r"Record version (\d+)\.", system)
+        version = int(shown.group(1)) if shown else 1
+        calls = [
+            ToolCall(id=f"call-{i}", name=name, args=dict(args, version=version))
+            for i, (name, args) in enumerate(self.steps.pop(0))
+        ]
+        return ModelTurn(calls=calls, blocks=[], served=HAIKU)
+
+
+def test_a_second_request_changes_an_existing_event(coder, cut, turns):
+    # R-0270, R-0480
+    record = {"people": [person(1, "Marcus")], "events": [shift(2, 1, "drank more"), shift(3, 1, "slept less")]}
+    coding = coded(coder.user, cut, record, done=False)
+    first = Scripted([("edit_person", {"name": "James Cooper"})], said="Added him.")
+    assert scribe(coder, coding, turns[0], first, "James Cooper came to stay").status_code == 200
+
+    model = Versioned(
+        [
+            ("edit_event", {"id": 2, "title": "Drank much more"}),
+            ("edit_event", {"id": 3, "title": "Slept much less"}),
+        ]
+    )
+    response = scribe(coder, coding, turns[0], model, "both got worse")
+    assert response.status_code == 200
+
+    events = adapter.record_of(adapter.diagram_of(coding.diagram_id))["events"]
+    assert [e["title"] for e in events] == ["Drank much more", "Slept much less"]
+
+
+def test_a_refusal_the_scribe_gives_up_on_reaches_the_coder(coder, cut, turns):
+    # R-0270, R-0453
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        [("edit_event", {"date_certainty": "certain", "kind": "shift", "description": "could not sleep", "symptom": "up", "date": "2010-01-01", "person": "1"})]
+    )
+    response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
+    assert response.status_code == 400
+    assert response.get_data(as_text=True).split(": ", 1)[1].startswith(
+        "A shift event needs a title of 2 to 4 words"
+    )
