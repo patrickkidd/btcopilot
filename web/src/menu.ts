@@ -1,6 +1,6 @@
 import { eventDetail, personDetail, type DetailHooks } from "./detail";
 import { closeX, el, flash, slideOver } from "./dom";
-import { openEditor, openPersonEditor } from "./editor";
+import { lock, openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
 import { eventDivider, eventRow, fullName, personRow, sections } from "./rows";
 import type { Questions } from "./questions";
@@ -81,7 +81,14 @@ export class Menu {
      * the chat app's own drawer. The coding screen passes none, and keeps the
      * forms, since coders change the record they code by hand. */
     private detail?: Pick<DetailHooks, "talk" | "cluster" | "said">,
+    /** On the coding screen, whether the coding is submitted: its forms are
+     * then there to read, never to write (R-0869). */
+    private submitted: () => boolean = () => false,
   ) {}
+
+  private held(form: HTMLElement): HTMLElement {
+    return this.submitted() ? lock(form) : form;
+  }
 
   add(): void {
     this.editing = null;
@@ -306,12 +313,14 @@ export class Menu {
    * editing back, let page() return null for people: the row then opens this
    * form under it, as it still does on the coding screen. */
   private personEditor(person: Person | null): HTMLElement {
-    return openPersonEditor(person, {
-      done: () => this.done(),
-      goToEvent: (eventId: number) => this.goTo(Tab.Events, eventId),
-      diagramId: this.diagramId(),
-      family: this.data,
-    });
+    return this.held(
+      openPersonEditor(person, {
+        done: () => this.done(),
+        goToEvent: (eventId: number) => this.goTo(Tab.Events, eventId),
+        diagramId: this.diagramId(),
+        family: this.data,
+      }),
+    );
   }
 
   private hooks(): DetailHooks {
@@ -340,12 +349,14 @@ export class Menu {
    * for events: the row then opens this form under it, as it still does on
    * the coding screen. */
   private editor(event: TimelineEvent | null): HTMLElement {
-    return openEditor(
-      event,
-      this.data.people,
-      () => this.done(),
-      (personId) => this.goTo(Tab.People, personId),
-      this.diagramId(),
+    return this.held(
+      openEditor(
+        event,
+        this.data.people,
+        () => this.done(),
+        (personId) => this.goTo(Tab.People, personId),
+        this.diagramId(),
+      ),
     );
   }
 }

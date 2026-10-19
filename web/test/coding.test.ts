@@ -6,6 +6,8 @@ vi.stubGlobal("window", {
 
 const { Coding, missed, writtenConcepts } = await import("../src/coding");
 const { Failed } = await import("../src/api");
+const { Menu } = await import("../src/menu");
+const { standInForm } = await import("./standin");
 
 /** The sheet that asks a coder to finish, drawn by the screen's own code on
  * stand-ins for the elements it writes into. */
@@ -134,5 +136,34 @@ describe("the lines across the thread", () => {
     expect(here).toContain("cut here · Oct 12");
     expect(last).toContain("last cut · ratified Oct 5");
     expect(here + last).not.toMatch(/turn|42|30/);
+  });
+});
+
+describe("the drawer's forms on a coding", () => {
+  type Held = { held(form: HTMLElement): HTMLElement };
+  const held = (submitted: boolean) => {
+    vi.stubGlobal("document", { createElement: () => ({ innerHTML: "", className: "" }) });
+    const form = standInForm();
+    const menu = new Menu({} as HTMLElement, async () => ({}) as never, () => 1, undefined, () => submitted);
+    (menu as unknown as Held).held(form as unknown as HTMLElement);
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    return form;
+  };
+
+  // R-0869
+  it("are locked once the coding is submitted, and left as they are before", () => {
+    expect(held(true).acts.removed).toBe(true);
+    expect(held(false).acts.removed).toBe(false);
+  });
+
+  // R-0869
+  it("follow the coding's own submitted state", () => {
+    const finished = (done_at: string | null) =>
+      Coding.prototype.finished.call({ thread: { done_at } } as unknown as InstanceType<typeof Coding>);
+    expect(finished("2026-10-19")).toBe(true);
+    expect(finished(null)).toBe(false);
   });
 });
