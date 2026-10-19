@@ -32,7 +32,7 @@ from btcopilot.models import (
     SpeakerType,
     Statement,
 )
-from btcopilot.recordtext import date_text, render
+from btcopilot.recordtext import date_text, render, version_line
 from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
 from btcopilot.models import (
     Diagram,
@@ -167,8 +167,11 @@ def diagram_of(diagram_id: int) -> Diagram:
 
 
 def render_record(diagram_id: int) -> str:
-    """The record as the models read it."""
-    return render(diagram_of(diagram_id).get_diagram_data())
+    """The record as the models read it, ending with its version: the scribe
+    has no read tool to learn the version a change must name from (R-0480)."""
+    diagram = diagram_of(diagram_id)
+    text = render(diagram.get_diagram_data())
+    return "\n\n".join(s for s in (text, version_line(diagram.version)) if s)
 
 
 def to_json(value):
