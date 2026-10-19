@@ -12,6 +12,9 @@ from btcopilot.chips import ChipKind
 from btcopilot.clusters import (
     ClusterError,
     ClusterListResponse,
+    PER_ANSWER,
+    PER_EVENT,
+    THINKING_ROOM,
     ModelCluster,
     sync,
 )
@@ -751,7 +754,7 @@ def test_an_answer_cut_off_at_its_limit_is_refused_and_asked_again(family):
         side_effect=[cut, parsed(GROUPED)],
     ) as asked:
         sync(family.id, turn_id="t1", user_id=family.user_id)
-    assert [c.kwargs["limit"] for c in asked.call_args_list] == [4096 + 24 * 6 + 160] * 2
+    assert [c.kwargs["limit"] for c in asked.call_args_list] == [THINKING_ROOM + PER_EVENT * 6 + PER_ANSWER] * 2
     assert noted(ObservationKind.ClusterRefused) == [(1, "cut_off", 0, 0)]
     assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert ModelCall.query.filter_by(purpose=Purpose.Cluster).count() == 2
