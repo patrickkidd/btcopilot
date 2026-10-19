@@ -205,22 +205,21 @@ def write(coding, statement, said: str, model=None) -> dict:
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
     # Every call is committed as it lands, so a loop that ran out of steps or
     # gave up on a refusal has written part of the sentence; the coder is told
-    # which part, never shown it as done (R-0302: no silent loss), and never
-    # the model's or the tool's words, which speak of how the code works
-    # (R-0869).
+    # which part, never shown it as done (R-0302: no silent loss). The model's
+    # own words never reach the coder: they speak of how the code works, and
+    # the only question a coder reads is the one asked before the model
+    # (R-0869, R-0270).
+    if asked:
+        _log.info(f"Scribe said: {asked!r}")
     if unfinished:
         _log.warning("Scribe ran out of steps")
-        raise Refused(_rest(lines))
     if refused:
-        _log.warning(f"Scribe gave up after a refusal, saying {asked!r}: {refused}")
+        _log.warning(f"Scribe gave up after a refusal: {refused}")
+    if unfinished or refused or not lines:
         raise Refused(_rest(lines))
-    if not lines and not asked:
-        raise Refused(_rest(lines))
-    if asked and not lines:
-        _log.info(f"Scribe asked instead of writing: {asked}")
     return {
         "lines": lines,
-        "asked": "" if lines else asked,
+        "asked": "",
         "made": made(toolbox.deltas),
         "turn_id": turn_id,
     }
