@@ -3,10 +3,10 @@ import { TaskKind, type FinishedTask, type Tasks } from "../src/types";
 
 vi.stubGlobal("window", { BOOTSTRAP: { user: { coder: true } } });
 
-const found: { tasks: Tasks } = { tasks: { task: null, done: [] } };
+const found: { tasks: Tasks; help: boolean } = { tasks: { task: null, done: [] }, help: false };
 vi.mock("../src/api", () => ({
   tasks: async () => found.tasks,
-  preferences: async () => ({ how_it_works: false }),
+  preferences: async () => ({ how_it_works: found.help }),
 }));
 
 const { finishedRow, OneTask } = await import("../src/task");
@@ -75,5 +75,17 @@ describe("the coder's screen", () => {
     expect(html).not.toContain("addbtn");
     expect(html).not.toMatch(/<(ul|ol|li)\b/);
     expect(html).toContain("Nothing is on the agenda to code yet.");
+  });
+});
+
+describe("how the coding task is explained", () => {
+  // R-0869
+  it("says the app writes onto the family diagram, never into the record", async () => {
+    found.help = true;
+    const html = await screenFor({ task: open, done: [] });
+    found.help = false;
+    expect(html).toContain("The app writes what you type onto the family diagram for you.");
+    expect(html).not.toMatch(/\brecord\b/);
+    expect(html).toContain("A cut is the part of one conversation");
   });
 });

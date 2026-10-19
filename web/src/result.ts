@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { wordedLine } from "./ballot";
 import { esc, type Title } from "./dom";
 import { flagLine } from "./rules";
 import { toast } from "./toast";
@@ -178,9 +179,9 @@ export class ResultScreen {
 
   private arow(one: Differed): string {
     return (
-      `<div class="arow"><span>${esc(one.label)}</span>` +
-      `<span class="s2">the room: ${esc(one.room)}</span>` +
-      `<span class="s2">the AI: ${esc(one.coach)}</span>` +
+      `<div class="arow"><span>${esc(wordedLine(one.label))}</span>` +
+      `<span class="s2">the room: ${esc(wordedLine(one.room))}</span>` +
+      `<span class="s2">the AI: ${esc(wordedLine(one.coach))}</span>` +
       `<span>${esc(one.reason ?? "no reason was given")}</span></div>`
     );
   }
