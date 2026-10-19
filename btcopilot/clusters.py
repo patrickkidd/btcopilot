@@ -826,9 +826,20 @@ def compute_cache_key(events: list[Event], told_ids: tuple[int, ...] = ()) -> st
         }
         for e in events
     ]
-    return hash_sarf_dicts(
+    digest = hash_sarf_dicts(
         [{"detectionVersion": DETECTION_VERSION, "told": sorted(told_ids)}] + event_data
     )
+    return f"v{DETECTION_VERSION}:{digest}"
+
+
+def older(cache_key: str | None) -> bool:
+    """Whether a diagram's clusters were made under an older detection version
+    than the code's; a key with no version predates the version in the key,
+    and a diagram never grouped has no clusters of the model's to compare."""
+    if not cache_key:
+        return False
+    version, _, digest = cache_key.partition(":")
+    return not digest or int(version[1:]) < DETECTION_VERSION
 
 
 def _event_json(event: Event) -> dict:
@@ -1656,7 +1667,11 @@ def _answered(ask, prompt: str, schema: dict, limit: int) -> "ClusterListRespons
 
 
 def detect_clusters(
-    data: DiagramData, ask, refused=None, said: list[Answer] = ()
+    data: DiagramData,
+    ask,
+    refused=None,
+    said: list[Answer] = (),
+    fresh: bool = False,
 ) -> ClusterResult:
     """`ask` takes the prompt, the answer's schema and its token limit and
     returns the model's ClusterListResponse; `refused`, when given, hears each
@@ -1668,7 +1683,9 @@ def detect_clusters(
     A first answer with any fault is asked for once more with the reasons. On
     the second, a cluster that still fails is dropped and the rest kept; an
     answer that cannot be read, or keeps nothing out of what it returned,
-    raises [Oracle: R-0846, R-0844]."""
+    raises [Oracle: R-0846, R-0844]. `fresh` hands the model none of the
+    stored model clusters, only the person's own periods, so a new prompt's
+    answer is not anchored on the old one's [Oracle: R-0772, R-0851]."""
     cache_key = compute_cache_key(
         _events(data), tuple(sorted(one.messageId for one in said))
     )
@@ -1681,6 +1698,8 @@ def detect_clusters(
         str(c["id"]) for c in data.clusters if isinstance(c, dict) and c.get("id")
     }
     existing = mine(data)
+    if fresh:
+        existing = {i: c for i, c in existing.items() if not _regroupable(c)}
     told = trouble_words(data)
     prompt = _prompt(cands, free, existing, said, birth(data), told, _cast(data, free))
     schema = answer_schema(existing, said, cands)
@@ -1975,9 +1994,12 @@ def sync(
     session_id: int | None = None,
     metered: Metered | None = None,
     force: bool = False,
+    fresh: bool = False,
 ) -> Regroup | None:
     """Re-group the record's events and store the grouping. `force` regroups a
-    record whose events are as they were at its last grouping.
+    record whose events are as they were at its last grouping. `fresh`, or
+    clusters made under an older detection version, regroups from scratch:
+    every stored model cluster the answer does not return is set aside.
 
     Clusters are stored, not derived on read, so the coach can point at one and
     have it still be there next turn. The rules' runs are a hint; the model
@@ -1991,6 +2013,7 @@ def sync(
     cache_key = compute_cache_key(events, tuple(one.messageId for one in said))
     if not force and cache_key == data.clusterCacheKey:
         return None
+    fresh = fresh or older(data.clusterCacheKey)
 
     dates = {e.id: e.dateTime for e in _dated(data)}
     metered = metered or Metered(user_id, diagram_id, turn_id, Purpose.Cluster)
@@ -2039,6 +2062,7 @@ def sync(
             ),
             refused,
             said,
+            fresh,
         )
     except ClusterError as failed:
         # No usable answer: the clusters that pass stay, a stored model cluster

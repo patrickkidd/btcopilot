@@ -12,6 +12,7 @@ from btcopilot.chips import ChipKind
 from btcopilot.clusters import (
     ClusterError,
     ClusterListResponse,
+    DETECTION_VERSION,
     PER_ANSWER,
     PER_EVENT,
     THINKING_ROOM,
@@ -793,3 +794,95 @@ def test_a_grouping_call_that_fails_twice_never_fails_the_turn(discussion, famil
     assert (failed.detail["check"], failed.detail["fallback"]) == ("call_failed", False)
     assert clusters_of(family) == {}
     assert not family.get_diagram_data().clusterCacheKey
+
+
+def stored_beside_theirs(family, cache_key: str) -> None:
+    data = family.get_diagram_data()
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="c1",
+                title="A cold spring",
+                summary="",
+                name="A cold spring",
+                eventIds=[10, 11, 12],
+                source=ClusterSource.Model,
+            )
+        ),
+        asdict(
+            Cluster(
+                id="c2",
+                title="When he left",
+                summary="",
+                name="When he left",
+                eventIds=[13, 14, 15],
+                source=ClusterSource.User,
+            )
+        ),
+    ]
+    data.clusterCacheKey = cache_key
+    family.set_diagram_data(data)
+    db.session.commit()
+
+
+def asked_with(cluster_id: str | None):
+    """The grouping model, answering one cluster on the first three events and
+    keeping what it was handed: the prompt and the schema of each call."""
+    seen = []
+
+    def answer(prompt, response_format, large=False, schema=None, limit=None):
+        seen.append((prompt, schema))
+        group = ModelCluster(eventIds=[10, 11, 12], name="A cold spring", reason="r")
+        group.id = cluster_id
+        return parsed(ClusterListResponse(clusters=[group]))
+
+    return seen, patch("btcopilot.metered.gemini_structured_sync", side_effect=answer)
+
+
+def test_clusters_from_an_older_version_are_not_handed_back_and_are_set_aside(family):
+    # R-0772, R-0851
+    """After a prompt change the old answer's clusters would anchor the new
+    one: the model is handed only the person's own period, and every stored
+    model cluster it does not return is set aside, never deleted."""
+    stored_beside_theirs(family, f"v{DETECTION_VERSION - 1}:0123456789abcdef")
+    seen, model = asked_with(None)
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    (prompt, schema), = seen
+    assert "A cold spring" not in prompt
+    assert "When he left" in prompt
+    assert "id" not in schema["properties"]["clusters"]["items"]["properties"]
+    stored = clusters_of(family)
+    assert stored["c1"]["setAside"]
+    assert not stored["c2"]["setAside"]
+    assert [
+        (c["eventIds"], c["source"]) for i, c in stored.items() if i not in ("c1", "c2")
+    ] == [([10, 11, 12], ClusterSource.Model.value)]
+
+
+def test_the_catch_up_regroups_from_scratch_on_the_same_version(family):
+    # R-0772, R-0851
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    seen, model = asked_with(None)
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id, force=True, fresh=True)
+    (prompt, _), = seen
+    assert "A cold spring" not in prompt
+    assert "When he left" in prompt
+    assert clusters_of(family)["c1"]["setAside"]
+
+
+def test_clusters_from_the_same_version_are_handed_back(family):
+    # R-0772, R-0851
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    seen, model = asked_with("c1")
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    (prompt, schema), = seen
+    assert "A cold spring" in prompt
+    assert "When he left" in prompt
+    fields = schema["properties"]["clusters"]["items"]["properties"]
+    assert fields["id"]["enum"] == ["c1"]
+    stored = clusters_of(family)
+    assert sorted(stored) == ["c1", "c2"]
+    assert not stored["c1"]["setAside"]

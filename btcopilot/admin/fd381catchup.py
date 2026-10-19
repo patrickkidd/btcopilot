@@ -349,7 +349,11 @@ def caught_up(entry: dict, made: str, regroup: bool, marks: bool) -> None:
         turn_id = TURN.format(diagram.id, made)
         try:
             clusters.sync(
-                diagram.id, turn_id=turn_id, user_id=diagram.user_id, force=True
+                diagram.id,
+                turn_id=turn_id,
+                user_id=diagram.user_id,
+                force=True,
+                fresh=True,
             )
         except (clusters.ClusterError, record.Invalid) as refused:
             check = getattr(refused, "check", None)

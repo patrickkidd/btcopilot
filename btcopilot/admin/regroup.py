@@ -78,7 +78,11 @@ def regroup(diagram_id, apply):
         if apply:
             turn_id = TURN.format(diagram.id, stamp)
             done = clusters.sync(
-                diagram.id, turn_id=turn_id, user_id=diagram.user_id, force=True
+                diagram.id,
+                turn_id=turn_id,
+                user_id=diagram.user_id,
+                force=True,
+                fresh=True,
             )
             db.session.commit()
             row["regrouped"] = len(diagram.get_diagram_data().clusters)
