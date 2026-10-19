@@ -4,7 +4,8 @@ vi.stubGlobal("window", {
   BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
 });
 
-const { Coding, writtenConcepts } = await import("../src/coding");
+const { Coding, missed, writtenConcepts } = await import("../src/coding");
+const { Failed } = await import("../src/api");
 
 /** The sheet that asks a coder to finish, drawn by the screen's own code on
  * stand-ins for the elements it writes into. */
@@ -94,5 +95,44 @@ describe("the concept pages under what the scribe wrote", () => {
     vi.unstubAllGlobals();
     const line = nodes.find((node) => node.innerHTML.includes("Mom"));
     expect(line?.innerHTML).toContain('href="/app/theory/anxiety"');
+  });
+});
+
+describe("what a coder reads when a statement did not go in", () => {
+  // R-0869
+  it("says one plain sentence when the server broke or never answered", () => {
+    const again = "That did not go in. Try again in a minute.";
+    expect(missed(new Failed(500, "POST /scribe", "Traceback"))).toBe(again);
+    expect(missed(new Failed(0, "POST /scribe", "timed out"))).toBe(again);
+  });
+});
+
+describe("the lines across the thread", () => {
+  const label = (now: boolean) =>
+    (
+      Coding.prototype as unknown as {
+        cutline(thread: object, now: boolean): { innerHTML: string };
+      }
+    ).cutline(
+      {
+        turns: [{ order: 42 }],
+        cut_day: "Oct 12",
+        agreed: { order: 30, ratified: "Oct 5" },
+      },
+      now,
+    ).innerHTML;
+
+  // R-0869
+  it("say where the cut is and when it was ratified, never a turn number", () => {
+    vi.stubGlobal("document", { createElement: () => ({ dataset: {}, innerHTML: "", className: "" }) });
+    const here = label(true);
+    const last = label(false);
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    expect(here).toContain("cut here · Oct 12");
+    expect(last).toContain("last cut · ratified Oct 5");
+    expect(here + last).not.toMatch(/turn|42|30/);
   });
 });

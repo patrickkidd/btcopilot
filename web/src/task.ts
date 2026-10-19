@@ -44,7 +44,7 @@ const CHECK = "&#10003;";
 const HOW_IT_WORKS = [
   "A cut is the part of one conversation Patrick put on the agenda for the next meeting.",
   "Tap a line of it and type what that line tells you happened.",
-  "The app writes what you type into the record for you.",
+  "The app writes what you type onto the family diagram for you.",
   "When you are finished, tap Done, then Submit for the meeting, before the meeting day.",
 ];
 

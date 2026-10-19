@@ -72,4 +72,13 @@ describe("save", () => {
     expect(done).not.toHaveBeenCalled();
     expect(refused).toHaveBeenCalledWith("The end date is before the start date.");
   });
+
+  // R-0869
+  it("shows the server's own sentence when a submitted coding refuses the write", async () => {
+    const said = "This coding was submitted, so it can no longer be changed.";
+    refusal.error = new Failed(409, "PATCH /app/events/4", said);
+    const refused = vi.fn();
+    await save(null, shift(), vi.fn(), refused);
+    expect(refused).toHaveBeenCalledWith(said);
+  });
 });
