@@ -302,7 +302,7 @@ def test_haiku_is_sent_no_thinking_and_no_effort(bedrock_machine, model, reasons
         asyncio.run(llmutil.claude_structured("prompt", Named, model, None, 32000))
     for call in sent:
         assert ("thinking" in call) is reasons
-        assert ("output_config" in call) is reasons
+        assert ("effort" in call.get("output_config", {})) is reasons
 
 
 @pytest.mark.parametrize(

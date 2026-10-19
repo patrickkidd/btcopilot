@@ -99,20 +99,12 @@ def reasoning_args(model: str, effort: str) -> dict:
     return {"thinking": {"type": "adaptive"}, "output_config": {"effort": effort}}
 
 
-# Models on which a structured call is made with thinking switched off, as on
-# Haiku 4.5. Cluster detection, the only structured call, on Sonnet 5 at high
-# effort spent its whole token limit thinking and was cut off in 20 of 20 tries
-# on the four-generation case. Opus 5.5, Sonnet 5.5 and Fable reject thinking
-# switched off with HTTP 400, so they are never listed here [Oracle: R-0856].
-STRUCTURED_THINKING_OFF = {"claude-sonnet-5"}
-
-
 def structured_reasoning_args(model: str) -> dict:
-    """What a structured call sends for thinking (app names): none on a model
-    in `STRUCTURED_THINKING_OFF`, else what `reasoning_args` gives at
-    `STRUCTURED_EFFORT`. The coach's turn and the text calls never come here."""
-    if model in STRUCTURED_THINKING_OFF:
-        return {"thinking": {"type": "disabled"}}
+    """What a structured call sends for thinking (app names): what
+    `reasoning_args` gives at `STRUCTURED_EFFORT`. The answer's shape is held by
+    the schema sent as the output format, so thinking stays on wherever the
+    model takes it [Oracle: R-0856]. The coach's turn and the text calls never
+    come here."""
     return reasoning_args(model, STRUCTURED_EFFORT)
 
 
@@ -644,9 +636,9 @@ async def claude_text(prompt=None, **kwargs):
             asked,
             {
                 "model": resolved_model,
-                "effort": None
-                if resolved_model in NO_ADAPTIVE_THINKING
-                else TEXT_EFFORT,
+                "effort": (
+                    None if resolved_model in NO_ADAPTIVE_THINKING else TEXT_EFFORT
+                ),
                 "max_tokens": max_output_tokens,
                 "system": system_instruction or "",
                 "messages": messages,
@@ -783,7 +775,9 @@ async def gemini_structured(
     try:
         result = from_dict(response_format, json.loads(response.text))
     except (ValueError, TypeError, KeyError) as error:
-        raise Unreadable(f"gemini_structured {model}: {error}", answered, spent) from error
+        raise Unreadable(
+            f"gemini_structured {model}: {error}", answered, spent
+        ) from error
     _log.debug(f"gemini_structured(): --> {result}")
     return Parsed(result, spent, answered)
 
@@ -805,28 +799,40 @@ def gemini_structured_sync(
 
 CLAUDE_STRUCTURED_USAGE = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
 
-# Constrained decoding (output_config.format) rejects the PDPDeltas schema:
-# >16 nullable params is over the union limit, and subset-required objects
-# time out grammar compilation. Schema goes in the prompt instead; the JSON
-# is validated client-side by from_dict().
-CLAUDE_JSON_INSTRUCTION = """
 
-OUTPUT FORMAT: Respond with ONLY a single valid JSON object conforming to this JSON Schema. No markdown fences, no commentary, no text before or after the JSON. Omit optional fields rather than emitting null.
+def output_format(schema: dict) -> dict:
+    """`schema` as Claude's structured output format: every object closed to
+    properties it does not name, as the format requires."""
 
-{schema}"""
+    def closed(node):
+        if isinstance(node, dict):
+            node = {key: closed(value) for key, value in node.items()}
+            if node.get("type") == "object":
+                node["additionalProperties"] = False
+            return node
+        if isinstance(node, list):
+            return [closed(item) for item in node]
+        return node
+
+    return {"type": "json_schema", "schema": closed(schema)}
 
 
 async def claude_structured(prompt, response_format, model, schema, limit):
+    """The answer is forced to `schema` by Claude's structured output option
+    (the schema is the request's output format, never pasted into the prompt),
+    so the only parse is loading the returned JSON [Oracle: R-0856]."""
     start_time = time.time()
-    full_prompt = prompt + CLAUDE_JSON_INSTRUCTION.format(schema=json.dumps(schema))
+    reasoning = structured_reasoning_args(model)
+    config = dict(reasoning.pop("output_config", {}), format=output_format(schema))
 
     client = _extraction_anthropic_client()
     resolved_model = wire_model(model)
     async with client.beta.messages.stream(
         model=resolved_model,
         max_tokens=limit,
-        **structured_reasoning_args(model),
-        messages=[{"role": "user", "content": full_prompt}],
+        **reasoning,
+        output_config=config,
+        messages=[{"role": "user", "content": prompt}],
         **fallback_args(resolved_model),
     ) as stream:
         response = await stream.get_final_message()
@@ -848,15 +854,17 @@ async def claude_structured(prompt, response_format, model, schema, limit):
             spent,
         )
     if response.stop_reason == "refusal":
-        raise Billed(f"claude_structured refusal: {response.stop_details}", answered, spent)
+        raise Billed(
+            f"claude_structured refusal: {response.stop_details}", answered, spent
+        )
 
-    text = next(b.text for b in response.content if b.type == "text").strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+    text = next((b.text for b in response.content if b.type == "text"), "")
     try:
         result = from_dict(response_format, json.loads(text))
     except (ValueError, TypeError, KeyError) as error:
-        raise Unreadable(f"claude_structured {model}: {error}", answered, spent) from error
+        raise Unreadable(
+            f"claude_structured {model}: {error}", answered, spent
+        ) from error
     _log.debug(f"claude_structured(): --> {result}")
     return Parsed(result, spent, answered)
 
