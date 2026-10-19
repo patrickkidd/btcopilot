@@ -257,7 +257,7 @@ def test_a_marriage_and_a_child_are_written_and_said_back(coder, cut, turns):
     )
     assert response.status_code == 200
     assert response.json["lines"] == [
-        "Marcus & Delphine · married · Jun 1970",
+        "Marcus & Delphine · Married · Jun 1970",
         "Corinne · daughter of Marcus & Delphine",
     ]
 
@@ -286,7 +286,7 @@ def test_a_marriage_reads_as_both_names_and_the_year():
     # R-0326
     """The line the coder sees for a structure write (R-0326, drawing 1a)."""
     assert written(STRUCTURE, ["20"], [], ["10"]) == [
-        "Marcus & Delphine · married · Jun 1970"
+        "Marcus & Delphine · Married · Jun 1970"
     ]
 
 
@@ -302,7 +302,7 @@ def test_a_bond_with_no_event_says_it_has_no_date_yet():
     # R-0013
     record = dict(STRUCTURE, events=[])
     assert written(record, [], [], ["10"]) == [
-        "Marcus & Delphine · married · no date yet"
+        "Marcus & Delphine · Married · no date yet"
     ]
 
 
@@ -321,7 +321,7 @@ def test_a_year_the_coder_only_said_as_a_year_reads_as_the_year():
         ],
     )
     assert written(record, ["20"], [], ["10"]) == [
-        "Marcus & Delphine · married · 1970"
+        "Marcus & Delphine · Married · 1970"
     ]
 
 
@@ -338,7 +338,7 @@ def test_a_january_date_the_coder_stated_keeps_its_month():
         ],
     )
     assert written(record, ["20"], [], ["10"]) == [
-        "Marcus & Delphine · married · Jan 1970"
+        "Marcus & Delphine · Married · Jan 1970"
     ]
 
 
@@ -463,3 +463,18 @@ def test_an_empty_diagram_is_asked_about_as_the_diagram(coder, cut, turns):
     coding = coded(coder.user, cut, {"people": []}, done=False)
     response = scribe(coder, coding, turns[0], Never(), "she could not sleep")
     assert response.json["asked"] == "Which person is this about? The diagram has nobody in it yet."
+
+
+def test_a_death_reads_as_its_kind_name():
+    # R-0869
+    data = {
+        "people": [person(1, "Rose")],
+        "events": [
+            {"id": 2, "kind": "death", "person": 1, "dateTime": "2011-02-01"},
+            {"id": 3, "kind": "death", "person": 1, "description": "in Oklahoma", "dateTime": "2011-02-01"},
+        ],
+    }
+    assert written(data, ["2", "3"]) == [
+        "Rose · Death · Feb 2011",
+        "Rose · Death · in Oklahoma · Feb 2011",
+    ]
