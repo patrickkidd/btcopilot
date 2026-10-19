@@ -34,12 +34,18 @@ def unset() -> dict:
         text=True,
         check=True,
     )
-    return dict(zip(("model", "alias", "none"), json.loads(said.stdout.splitlines()[-1])))
+    return dict(
+        zip(("model", "alias", "none"), json.loads(said.stdout.splitlines()[-1]))
+    )
 
 
 def test_the_conversation_runs_on_opus_5_5():
     # R-0405
-    assert unset() == {"model": "claude-opus-5-5", "alias": "claude-opus-5-5", "none": "claude-opus-5-5"}
+    assert unset() == {
+        "model": "claude-opus-5-5",
+        "alias": "claude-opus-5-5",
+        "none": "claude-opus-5-5",
+    }
 
 
 def test_opus_5_5_costs_less_than_the_opus_it_replaced():
@@ -231,37 +237,98 @@ class SyncSeen(Seen):
         pass
 
 
-def test_only_the_cluster_call_on_sonnet_5_runs_without_thinking(anthropic_env):
-    # R-0856
-    """Cluster detection, the structured call, sends thinking switched off on
-    Sonnet 5 and no setting on Haiku 4.5, as before; on the coach's model it
-    keeps adaptive thinking at the structured effort. A text call on Sonnet 5
-    keeps adaptive thinking at the text effort, and the coach's turn on Sonnet
-    5 sends its own effort and no thinking setting, as before."""
+SHAPE = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "kin": {"type": "array", "items": {"type": "object", "properties": {}}},
+    },
+}
+
+
+def test_the_structured_call_sends_the_schema_as_the_output_format(anthropic_env):
+    # R-0856, R-0857
+    """Cluster detection, the structured call, sends its schema as Claude's
+    structured output format, every object closed, and the prompt exactly as
+    given, with no schema in it; Sonnet 5 keeps adaptive thinking at the
+    structured effort, Haiku 4.5 sends no thinking setting."""
     anthropic_env.setenv(SETTING, Provider.Anthropic.value)
     sent: list[dict] = []
     anthropic_env.setattr(
         llmutil, "_extraction_anthropic_client", lambda: AsyncSeen(sent)
     )
+
+    def structured(model: str) -> dict:
+        with pytest.raises(Sent):
+            asyncio.run(
+                llmutil.claude_structured("the family", Named, model, SHAPE, 100)
+            )
+        return sent.pop()
+
+    closed = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "kin": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "additionalProperties": False,
+    }
+    form = {"type": "json_schema", "schema": closed}
+    sonnet = structured("claude-sonnet-5")
+    assert sonnet["messages"] == [{"role": "user", "content": "the family"}]
+    assert sonnet["thinking"] == {"type": "adaptive"}
+    assert sonnet["output_config"] == {
+        "effort": llmutil.STRUCTURED_EFFORT,
+        "format": form,
+    }
+    haiku = structured("claude-haiku-4-5-20251001")
+    assert haiku["messages"] == [{"role": "user", "content": "the family"}]
+    assert "thinking" not in haiku
+    assert haiku["output_config"] == {"format": form}
+    assert not hasattr(llmutil, "CLAUDE_JSON_INSTRUCTION")
+
+
+def test_an_answer_that_is_not_the_json_asked_for_is_unreadable(anthropic_env):
+    # R-0856, R-0857
+    """Only the returned JSON is loaded: a reply in prose is refused as
+    unreadable, never searched for JSON."""
+
+    class Prose(Client):
+        def __init__(self):
+            super().__init__()
+            said = self.beta.messages.message
+            text = said.content[0].model_copy(
+                update={"text": 'Thinking it over: {"name": "Harold"}'}
+            )
+            self.beta.messages.message = said.model_copy(update={"content": [text]})
+
+    anthropic_env.setattr(llmutil, "_extraction_anthropic_client", Prose)
+    with pytest.raises(llmutil.Unreadable):
+        asyncio.run(llmutil.claude_structured("prompt", Named, "qwen3:8b", {}, 100))
+
+
+def test_the_coachs_turn_and_the_text_calls_are_unchanged(anthropic_env):
+    # R-0856, R-0857
+    """A text call on Sonnet 5 keeps adaptive thinking at the text effort and
+    sends no output format, and the coach's turn on Sonnet 5 sends its own
+    effort and no thinking setting, as before."""
+    anthropic_env.setenv(SETTING, Provider.Anthropic.value)
+    sent: list[dict] = []
     anthropic_env.setattr(llmutil, "_anthropic_client", lambda: AsyncSeen(sent))
     anthropic_env.setattr(
         coachmodel, "anthropic_client", lambda **options: SyncSeen(sent)
     )
 
-    def structured(model: str) -> dict:
-        with pytest.raises(Sent):
-            asyncio.run(llmutil.claude_structured("prompt", Named, model, {}, 100))
-        return sent.pop()
-
     def thinking(request: dict) -> tuple:
         return request.get("thinking"), request.get("output_config")
 
-    assert thinking(structured("claude-sonnet-5")) == ({"type": "disabled"}, None)
-    assert thinking(structured("claude-haiku-4-5-20251001")) == (None, None)
-    assert thinking(structured(llmutil.RESPONSE_MODEL)) == (
-        {"type": "adaptive"},
-        {"effort": llmutil.STRUCTURED_EFFORT},
-    )
     with pytest.raises(Sent):
         llmutil.claude_text_sync("prompt", model="claude-sonnet-5")
     assert thinking(sent.pop()) == (
