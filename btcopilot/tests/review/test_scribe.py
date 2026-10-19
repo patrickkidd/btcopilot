@@ -257,8 +257,8 @@ def test_a_marriage_and_a_child_are_written_and_said_back(coder, cut, turns):
     )
     assert response.status_code == 200
     assert response.json["lines"] == [
-        "+ Marcus & Delphine · married · Jun 1970",
-        "+ Corinne · daughter of Marcus & Delphine",
+        "Marcus & Delphine · married · Jun 1970",
+        "Corinne · daughter of Marcus & Delphine",
     ]
 
 
@@ -286,15 +286,15 @@ def test_a_marriage_reads_as_both_names_and_the_year():
     # R-0326
     """The line the coder sees for a structure write (R-0326, drawing 1a)."""
     assert written(STRUCTURE, ["20"], [], ["10"]) == [
-        "+ Marcus & Delphine · married · Jun 1970"
+        "Marcus & Delphine · married · Jun 1970"
     ]
 
 
 def test_a_child_reads_as_whose_child_they_are():
     # R-0326
     assert written(STRUCTURE, [], ["3", "4"]) == [
-        "+ Corinne · daughter of Marcus & Delphine",
-        "+ Theo · son of Marcus & Delphine",
+        "Corinne · daughter of Marcus & Delphine",
+        "Theo · son of Marcus & Delphine",
     ]
 
 
@@ -302,7 +302,7 @@ def test_a_bond_with_no_event_says_it_has_no_date_yet():
     # R-0013
     record = dict(STRUCTURE, events=[])
     assert written(record, [], [], ["10"]) == [
-        "+ Marcus & Delphine · married · no date yet"
+        "Marcus & Delphine · married · no date yet"
     ]
 
 
@@ -321,7 +321,7 @@ def test_a_year_the_coder_only_said_as_a_year_reads_as_the_year():
         ],
     )
     assert written(record, ["20"], [], ["10"]) == [
-        "+ Marcus & Delphine · married · 1970"
+        "Marcus & Delphine · married · 1970"
     ]
 
 
@@ -338,7 +338,7 @@ def test_a_january_date_the_coder_stated_keeps_its_month():
         ],
     )
     assert written(record, ["20"], [], ["10"]) == [
-        "+ Marcus & Delphine · married · Jan 1970"
+        "Marcus & Delphine · married · Jan 1970"
     ]
 
 
@@ -447,3 +447,19 @@ def test_the_question_asked_before_the_model_reaches_the_coder(coder, cut, turns
     response = scribe(coder, coding, turns[0], Never(), "Marcus could not sleep")
     assert response.status_code == 200
     assert response.json["asked"] == "Which person is this about — Marcus Smith or Marcus Jones?"
+
+
+def test_a_shift_reads_as_its_title():
+    # R-0681, R-0869
+    data = {
+        "people": [person(1, "Ann")],
+        "events": [dict(shift(2, 1, "could not sleep", date="1990-01-01"), title="Sleep problems began")],
+    }
+    assert written(data, ["2"]) == ["Ann · Sleep problems began · Jan 1990"]
+
+
+def test_an_empty_diagram_is_asked_about_as_the_diagram(coder, cut, turns):
+    # R-0270, R-0869
+    coding = coded(coder.user, cut, {"people": []}, done=False)
+    response = scribe(coder, coding, turns[0], Never(), "she could not sleep")
+    assert response.json["asked"] == "Which person is this about? The diagram has nobody in it yet."

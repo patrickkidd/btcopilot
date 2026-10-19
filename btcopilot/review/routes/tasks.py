@@ -71,9 +71,8 @@ def _to_vote(cut: Cut, mine: Coding, ready: bool) -> dict:
 
 def _since(cut: Cut, turns, user) -> str:
     """How much is new, and how long it will take."""
-    orders = adapter.statement_order(cut.diagram_id)
-    at = [orders[t.id] for t in turns]
-    span = f"turns {min(at)} to {max(at)} are new" if at else "nothing new yet"
+    count = len(turns)
+    span = f"{count} new line{'' if count == 1 else 's'}" if turns else "nothing new yet"
     last = _last_done(cut.diagram_id, user)
     when = f" since you pressed Done on {_day(last.done_at)}" if last else ""
     minutes = max(

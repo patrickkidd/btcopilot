@@ -135,7 +135,7 @@ def _new_name(words: list[str]) -> bool:
 def _which(people: list[dict]) -> str:
     named = [_name(person) for person in people]
     if not named:
-        return "Which person is this about? The record has nobody in it yet."
+        return "Which person is this about? The diagram has nobody in it yet."
     if len(named) == 1:
         return f"Is this about {named[0]}?"
     return f"Which person is this about — {', '.join(named[:-1])} or {named[-1]}?"
@@ -230,7 +230,7 @@ def _rest(lines: list[str]) -> str:
     words after the first colon."""
     if not lines:
         return "Scribe stopped: That did not go in. Say it again in one sentence."
-    wrote = ", ".join(line.removeprefix("+ ") for line in lines)
+    wrote = ", ".join(lines)
     return (
         f"Scribe stopped: {wrote} went in. The rest did not. "
         "Say the rest again in one sentence."
@@ -320,7 +320,7 @@ def written(data: dict, event_ids, person_ids=(), bond_ids=()) -> list[str]:
     for one in person_ids:
         person = people.get(str(one))
         if person is not None:
-            _add(out, f"+ {_person_words(person, people, bonds)}")
+            _add(out, _person_words(person, people, bonds))
     return out
 
 
@@ -362,7 +362,7 @@ def _bond_words(bond: dict, people: dict, events: dict) -> str:
     ]
     word = "married" if bond.get("married") else "together"
     when = _when(*_dated(started[0])) if started else "no date yet"
-    return f"+ {_both(bond, people)} · {word} · {when}"
+    return f"{_both(bond, people)} · {word} · {when}"
 
 
 def _add(out: list[str], line: str):
@@ -378,17 +378,18 @@ def _event_words(event: dict, people: dict) -> str:
     kind = _plain(event.get("kind"))
     if kind in PAIR_KINDS and event.get("spouse") is not None:
         both = _joined(people, event.get("person"), event.get("spouse"))
-        return f"+ {both} · {kind} · {_when(*_dated(event))}"
+        return f"{both} · {kind} · {_when(*_dated(event))}"
     about = event.get("child")
     if about is None:
         about = event.get("person")
     who = _name(people.get(str(about), {})) if about is not None else "the family"
-    # A noted event's title is what happened; its kind says nothing.
-    if kind == EventKind.Noted.value:
+    # A noted event's or a shift's title is what happened; its kind says
+    # nothing (R-0681).
+    if kind in (EventKind.Noted.value, EventKind.Shift.value):
         said = event_title(event)
     else:
         said = kind or "event"
-    return f"+ {who} · {said} · {_when(*_dated(event))}"
+    return f"{who} · {said} · {_when(*_dated(event))}"
 
 
 MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
