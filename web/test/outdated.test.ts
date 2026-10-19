@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { ask, phase, Phase, stamp } from "../src/outdated";
+import { ask, lineClass, phase, Phase, stamp } from "../src/outdated";
 import type { OutOfDate } from "../src/types";
 
 const out: OutOfDate = { change_id: 41, at: "2026-10-07T09:00:00", sentence: "Delphine's 1995 diagnosis was added after the coach wrote this report." };
@@ -42,4 +42,11 @@ it("asks with the change's own sentence, Refresh the report and Show the last re
   expect(sheet).toContain(">Refresh the report<");
   expect(sheet).toContain(">Show the last report<");
   expect(sheet).not.toContain("cardx");
+});
+
+// R-0825
+it("shows the three dots a working button shows on the grey line while the coach rewrites, and only then", () => {
+  expect(lineClass(Phase.Rewriting).split(" ")).toContain("dots3");
+  expect(lineClass(Phase.Asking).split(" ")).not.toContain("dots3");
+  expect(lineClass(Phase.Behind).split(" ")).not.toContain("dots3");
 });

@@ -9,7 +9,7 @@ import { BACK } from "./tokens";
 import { CLUSTER, esc, flash, slideOver } from "./dom";
 import { Drawer, frameOn } from "./drawer";
 import { Lens } from "./lens";
-import { ask, dismiss, dismissed, phase, Phase, REWRITING, stamp } from "./outdated";
+import { ask, dismiss, dismissed, lineClass, phase, Phase, REWRITING, stamp } from "./outdated";
 import { Sheet } from "./sheet";
 import { untold } from "./snapshots";
 import type { Opened, Part, View } from "./store";
@@ -218,7 +218,7 @@ export class CaseReport implements View {
     if (now === Phase.Current) return;
     const line = document.createElement("button");
     line.type = "button";
-    line.className = "aged";
+    line.className = lineClass(now);
     line.disabled = now === Phase.Rewriting;
     line.textContent = now === Phase.Rewriting ? REWRITING : out!.sentence;
     this.body.querySelector(".case")?.prepend(line);
@@ -249,16 +249,16 @@ export class CaseReport implements View {
    * another family opened meanwhile is neither dimmed nor reloaded. */
   private async rewrite(id: number): Promise<void> {
     let job: Rewrite | null;
-    try {
-      job = await this.hooks.fetch(api.rewriteReport);
-    } catch (error) {
-      if (!(error instanceof api.Failed) || error.status !== 409) throw error;
-      toast("The report is already being rewritten, or this family has no session yet");
-      return;
-    }
     this.rewriting.add(id);
     this.render();
     try {
+      try {
+        job = await this.hooks.fetch(api.rewriteReport);
+      } catch (error) {
+        if (!(error instanceof api.Failed) || error.status !== 409) throw error;
+        toast("The report is already being rewritten, or this family has no session yet");
+        return;
+      }
       while (job?.state === RewriteState.Running) {
         await new Promise((done) => window.setTimeout(done, POLL_MS));
         job = await api.reportRewrite(job.id).catch((error: unknown) => {
@@ -267,6 +267,8 @@ export class CaseReport implements View {
         });
       }
       if (job?.state === RewriteState.Failed) throw new Error(`the coach could not rewrite the case report, rewrite ${job.id}`);
+      // a family opened since the tap is not the one rewritten
+      if (this.opened?.diagram?.id === id) await this.hooks.reload();
     } catch (error) {
       toast("The coach could not rewrite the report. Try again.");
       throw error;
@@ -274,8 +276,6 @@ export class CaseReport implements View {
       this.rewriting.delete(id);
       this.render();
     }
-    // a family opened since the tap is not the one rewritten
-    if (this.opened?.diagram?.id === id) await this.hooks.reload();
   }
 
   /** A chip on the report: an event lights on the timeline as in the chat; a

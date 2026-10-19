@@ -29,6 +29,10 @@ export function phase(out: OutOfDate | null, answered: (string | null)[], rewrit
 /** The line at the top of the cards while the coach rewrites them. */
 export const REWRITING = "The coach is rewriting its eight cards from the diagram as it stands now.";
 
+/** The grey line's classes: while the coach rewrites, the three dots a
+ * working button shows, as the coach's turn does while it waits. */
+export const lineClass = (now: Phase): string => (now === Phase.Rewriting ? "aged dots3" : "aged");
+
 /** The sheet that asks on opening an out-of-date report. */
 export const ask = (sentence: string, esc: (s: string) => string): string =>
   `<div class="cf-t">This report is out of date</div>` +
