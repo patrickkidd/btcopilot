@@ -360,7 +360,7 @@ def _bond_words(bond: dict, people: dict, events: dict) -> str:
         if _plain(event.get("kind")) in ("married", "bonded")
         and _pair_of(event.get("person"), event.get("spouse")) == pair
     ]
-    word = "married" if bond.get("married") else "together"
+    word = "Married" if bond.get("married") else "Together"
     when = _when(*_dated(started[0])) if started else "no date yet"
     return f"{_both(bond, people)} · {word} · {when}"
 
@@ -376,20 +376,27 @@ def _dated(event: dict) -> tuple:
 
 def _event_words(event: dict, people: dict) -> str:
     kind = _plain(event.get("kind"))
+    said = _what(event, kind)
     if kind in PAIR_KINDS and event.get("spouse") is not None:
         both = _joined(people, event.get("person"), event.get("spouse"))
-        return f"{both} · {kind} · {_when(*_dated(event))}"
+        return f"{both} · {said} · {_when(*_dated(event))}"
     about = event.get("child")
     if about is None:
         about = event.get("person")
     who = _name(people.get(str(about), {})) if about is not None else "the family"
-    # A noted event's or a shift's title is what happened; its kind says
-    # nothing (R-0681).
-    if kind in (EventKind.Noted.value, EventKind.Shift.value):
-        said = event_title(event)
-    else:
-        said = kind or "event"
     return f"{who} · {said} · {_when(*_dated(event))}"
+
+
+def _what(event: dict, kind: str) -> str:
+    """A noted event or a shift reads by its title (R-0681); any other kind is
+    its own name, with its description after it only when that says more."""
+    if kind in (EventKind.Noted.value, EventKind.Shift.value):
+        return event_title(event)
+    word = kind.capitalize()
+    description = (event.get("description") or "").strip()
+    if description.lower() in ("", kind):
+        return word
+    return f"{word} · {description}"
 
 
 MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
