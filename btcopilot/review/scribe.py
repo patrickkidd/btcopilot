@@ -393,7 +393,7 @@ def _what(event: dict, kind: str) -> str:
     if kind in (EventKind.Noted.value, EventKind.Shift.value):
         return event_title(event)
     word = kind.capitalize()
-    description = (event.get("description") or "").strip()
+    description = (event.get("description") or "").strip().removesuffix(".").strip()
     if description.lower() in ("", kind):
         return word
     return f"{word} · {description}"
