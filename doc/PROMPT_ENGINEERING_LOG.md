@@ -2,9 +2,18 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-18 (cluster detection version 20 final; version 21 tried and reverted)
+**Last Updated**: 2026-10-19 (case report refresh prompt: examples from an invented family; three rules made clearer)
 
 ---
+
+## FD-383 — the case report's examples from an invented family; three rules made clearer (2026-10-19)
+
+Patrick's yes to edit the refresh prompt, frozen since 2026-10-15, came on 2026-10-19. Subscription, $0; three tries per eval.
+- Examples: every example line of the refresh prompt and of the impressions fragment that came from Patrick's own diagram (sleep before races, worst at family gatherings, the grandmother taken in, the contact kept light, the 1999 and 1940 years, the latch-on reading, the sleep before a breakup, Nell and 1998) now comes from one invented family: a son's diagnosis, the husband taking a second job, the person's back trouble, a father-in-law's death; not the orchard, harbor, deep or printing families. Each keeps its teaching point. The three that were also in the public copies (the races, the contact since, the latch-on reading) changed there too; both goldens re-captured. The minimum of three supporting shifts is code and stays.
+- Coach's guess, time order (R-0850, R-0864): each period that does not fit is told at its place in the account, every year after the one before, none twice; a side taken in a triangle is never named as not fitting. Old prompt 1 of 3, new 3 of 3.
+- For lines, how things stood after (R-0850, R-0864): every For line ends on how things stood after its cluster's last event, or says nothing in the diagram says it changed after that. Old prompt 2 of 3 (1 of 3 on 2026-10-15), new 3 of 3; a first wording that let the line say "not known" dropped to 1 of 3 and was replaced.
+- Executive Summary (R-0850), refresh prompt and impressions fragment alike: it names the symptom without listing its episodes or their dates, its pattern sentence names the way the strain was held and the people it ran through, one year at most and none in the pattern sentence. Chat eval old prompt 0 of 3, new 2 of 3.
+- Second family: five evals in `test_casereportcards.py` prove the same rules on the Brandts (strain through the parents' fights, father's side, a cluster with two shifts, one with only the person's own): time order and what does not fit 2 of 3, For lines and where it is worst 3 of 3, thin cluster and one person's run 3 of 3, part, prognosis and family place 3 of 3, no cause and the summary's opening 3 of 3. The rest of the case report evals were not rerun on the new prompt.
 
 ## FD-383 job 042 — three code fixes behind the deep misses; a name checked word for word (2026-10-18)
 
