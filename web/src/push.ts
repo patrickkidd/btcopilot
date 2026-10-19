@@ -1,4 +1,4 @@
-import { call, openNotification } from "./api";
+import { call, Failed, openNotification } from "./api";
 import { el } from "./dom";
 import { Feature, tap } from "./track";
 import type { Delivery } from "./types";
@@ -188,7 +188,14 @@ export async function offerNotifications(): Promise<void> {
  * notification in the address when it opens the app, and in a message when
  * the app is already open; both land through the one function. */
 export function landing(land: (where: Delivery) => Promise<void>): void {
-  const reach = async (id: number) => land(await openNotification(id));
+  // a push can outlive its row: one whose row is gone opens the app and stops there
+  const reach = async (id: number) => {
+    const one = await openNotification(id).catch((e: unknown) => {
+      if (e instanceof Failed && e.status === 404) return null;
+      throw e;
+    });
+    if (one) await land(one);
+  };
   const id = new URLSearchParams(location.search).get("notification");
   if (id) {
     history.replaceState(null, "", location.pathname + location.hash);
