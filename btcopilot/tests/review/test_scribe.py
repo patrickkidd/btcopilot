@@ -174,8 +174,8 @@ def test_says_so_when_it_runs_out_of_steps(coder, cut, turns):
     coding = coded(coder.user, cut, {"people": []}, done=False)
     response = scribe(coder, coding, turns[0], Endless(), "a sentence that never ends")
     assert response.status_code == 400
-    assert response.get_data(as_text=True).startswith(
-        "The scribe stopped before it finished after adding Person 1, Person 2"
+    assert response.get_data(as_text=True).split(": ", 1)[1].startswith(
+        "it ran out of steps after adding Person 1, Person 2"
     )
 
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
