@@ -9,7 +9,7 @@ import { BACK } from "./tokens";
 import { CLUSTER, esc, flash, slideOver } from "./dom";
 import { Drawer, frameOn } from "./drawer";
 import { Lens } from "./lens";
-import { ask, dismiss, dismissed, phase, Phase, REWRITING } from "./outdated";
+import { ask, dismiss, dismissed, phase, Phase, REWRITING, stamp } from "./outdated";
 import { Sheet } from "./sheet";
 import { untold } from "./snapshots";
 import type { Opened, Part, View } from "./store";
@@ -76,7 +76,7 @@ export class CaseReport implements View {
   /** The diagrams whose report the coach is rewriting now. */
   private readonly rewriting = new Set<number>();
   /** Per diagram, the change "Refresh the report" was tapped for this time the app is open, so a failed rewrite does not ask again at once. */
-  private readonly refreshed = new Map<number, number>();
+  private readonly refreshed = new Map<number, string>();
 
   constructor(
     private readonly root: HTMLElement,
@@ -210,8 +210,8 @@ export class CaseReport implements View {
     const opened = this.opened!;
     const out = opened.record.report_out_of_date ?? null;
     const id = opened.diagram?.id ?? null;
-    const shown = id === null ? [] : [dismissed(id), this.refreshed.get(id) ?? null].filter((n): n is number => n !== null);
-    const now = phase(out, shown.length ? Math.max(...shown) : null, id !== null && this.rewriting.has(id));
+    const answered = id === null ? [] : [dismissed(id), this.refreshed.get(id) ?? null];
+    const now = phase(out, answered, id !== null && this.rewriting.has(id));
     this.body.querySelectorAll<HTMLElement>(".level[data-card]").forEach((l) =>
       l.classList.toggle("dim", now === Phase.Rewriting && WRITTEN.has(l.dataset.card as Card)),
     );
@@ -234,11 +234,11 @@ export class CaseReport implements View {
     this.sheet.lower();
     const id = this.opened!.diagram!.id;
     if (act === "refresh") {
-      this.refreshed.set(id, out.change_id);
+      this.refreshed.set(id, stamp(out));
       void this.rewrite(id);
       return;
     }
-    dismiss(id, out.change_id);
+    dismiss(id, out);
     this.render();
   }
 

@@ -10,16 +10,20 @@ export enum Phase {
   Current = "current",
   /** Out of date and not yet answered on this device: the sheet asks. */
   Asking = "asking",
-  /** Out of date, and "Show the last report" was chosen for this change or a later one. */
+  /** Out of date, and "Show the last report" was chosen for this same out-of-date state. */
   Behind = "behind",
   /** The coach is rewriting its cards. */
   Rewriting = "rewriting",
 }
 
-export function phase(out: OutOfDate | null, dismissed: number | null, rewriting: boolean): Phase {
+/** One out-of-date state: its change and when it was made, so any other
+ * state, a later change or the catch-up's mark, asks again. */
+export const stamp = (out: OutOfDate): string => `${out.change_id}@${out.at}`;
+
+export function phase(out: OutOfDate | null, answered: (string | null)[], rewriting: boolean): Phase {
   if (rewriting) return Phase.Rewriting;
   if (!out) return Phase.Current;
-  return dismissed !== null && dismissed >= out.change_id ? Phase.Behind : Phase.Asking;
+  return answered.includes(stamp(out)) ? Phase.Behind : Phase.Asking;
 }
 
 /** The line at the top of the cards while the coach rewrites them. */
@@ -37,19 +41,18 @@ export const ask = (sentence: string, esc: (s: string) => string): string =>
 
 const key = (diagramId: number) => `fd-report-last-shown-${diagramId}`;
 
-/** The change "Show the last report" was chosen for on this device, if any. */
-export function dismissed(diagramId: number): number | null {
+/** The out-of-date state "Show the last report" was chosen for on this device, if any. */
+export function dismissed(diagramId: number): string | null {
   try {
-    const kept = window.localStorage.getItem(key(diagramId));
-    return kept === null ? null : Number(kept);
+    return window.localStorage.getItem(key(diagramId));
   } catch {
     return null;
   }
 }
 
-export function dismiss(diagramId: number, changeId: number): void {
+export function dismiss(diagramId: number, out: OutOfDate): void {
   try {
-    window.localStorage.setItem(key(diagramId), String(changeId));
+    window.localStorage.setItem(key(diagramId), stamp(out));
   } catch {
     // a device that refuses to remember asks again next time the report opens
   }
