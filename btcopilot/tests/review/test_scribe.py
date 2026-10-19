@@ -472,9 +472,11 @@ def test_a_death_reads_as_its_kind_name():
         "events": [
             {"id": 2, "kind": "death", "person": 1, "dateTime": "2011-02-01"},
             {"id": 3, "kind": "death", "person": 1, "description": "in Oklahoma", "dateTime": "2011-02-01"},
+            {"id": 4, "kind": "death", "person": 1, "description": "Died in hospital. ", "dateTime": "2011-02-01"},
         ],
     }
-    assert written(data, ["2", "3"]) == [
+    assert written(data, ["2", "3", "4"]) == [
         "Rose · Death · Feb 2011",
         "Rose · Death · in Oklahoma · Feb 2011",
+        "Rose · Death · Died in hospital · Feb 2011",
     ]
