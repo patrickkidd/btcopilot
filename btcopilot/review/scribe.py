@@ -11,6 +11,7 @@ import logging
 import re
 import uuid
 
+from btcopilot.recordtext import version_line
 from btcopilot.review import adapter
 from btcopilot.schema import DateCertainty, EventKind, event_title
 
@@ -145,7 +146,8 @@ def write(coding, statement, said: str, model=None) -> dict:
     """One coding turn. Returns the edit lines it wrote, or the one question it
     asked instead."""
     turn_id = uuid.uuid4().hex
-    record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
+    diagram = adapter.diagram_of(coding.diagram_id)
+    record = adapter.record_of(diagram)
     question = unclear(said, record.get("people") or [])
     if question:
         _log.info(f"Scribe asked before the model: {question}")
@@ -160,7 +162,18 @@ def write(coding, statement, said: str, model=None) -> dict:
         adapter.Purpose.Scribe,
         model=model or adapter.coach_model(MODEL, effort=None),
     )
-    system = adapter.scribe_prompt(adapter.render_record(coding.diagram_id))
+    # The version a change to an existing item must name: the scribe has no
+    # read tool to learn it from.
+    system = adapter.scribe_prompt(
+        "\n\n".join(
+            part
+            for part in (
+                adapter.render_record(coding.diagram_id),
+                version_line(diagram.version),
+            )
+            if part
+        )
+    )
     messages = [
         {
             "role": "user",
@@ -172,6 +185,7 @@ def write(coding, statement, said: str, model=None) -> dict:
     tools = adapter.write_tools()
     asked = ""
     unfinished = False
+    refused: list[str] = []
 
     for step in range(MAX_STEPS):
         turn = _say(coach, system, messages, tools)
@@ -180,14 +194,17 @@ def write(coding, statement, said: str, model=None) -> dict:
         if not turn.calls:
             break
         results = []
+        refused = []
         for call in turn.calls:
-            text, refused = _call(toolbox, call)
+            text, plain = _call(toolbox, call)
+            if plain:
+                refused.append(plain)
             results.append(
                 {
                     "type": "tool_result",
                     "tool_use_id": call.id,
                     "content": text,
-                    "is_error": refused,
+                    "is_error": bool(plain),
                 }
             )
         messages.append({"role": "assistant", "content": turn.blocks})
@@ -195,7 +212,7 @@ def write(coding, statement, said: str, model=None) -> dict:
         # A turn ends on words, never on a tool call: adding the person the
         # event is about is one step, writing the event is the next.
         asked = ""
-        if any(r["is_error"] for r in results):
+        if refused:
             _log.warning(f"Scribe step {step} was refused: {results}")
 
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
@@ -204,6 +221,10 @@ def write(coding, statement, said: str, model=None) -> dict:
     # it as done (R-0302: no silent loss).
     if unfinished:
         raise Refused(_short(lines))
+    # A model that falls silent after a refusal has given up on it; the coder
+    # is told what was refused, in words the page shows after the colon.
+    if refused and not asked:
+        raise Refused(f"The scribe stopped{_kept(lines)}: {' '.join(refused)}")
     if not lines and not asked:
         raise Refused("the scribe wrote nothing and said nothing")
     if asked and not lines:
@@ -217,9 +238,12 @@ def write(coding, statement, said: str, model=None) -> dict:
 
 
 def _short(lines: list[str]) -> str:
+    return f"The scribe stopped before it finished{_kept(lines)}. Say it again in one sentence."
+
+
+def _kept(lines: list[str]) -> str:
     wrote = ", ".join(line.removeprefix("+ ") for line in lines)
-    kept = f" after adding {wrote}" if wrote else ""
-    return f"The scribe stopped before it finished{kept}. Say it again in one sentence."
+    return f" after adding {wrote}" if wrote else ""
 
 
 def made(deltas: list[dict]) -> list[dict]:
@@ -247,12 +271,14 @@ def _say(model, system: str, messages: list[dict], tools: list[dict]):
             return stop.value
 
 
-def _call(toolbox, call) -> tuple[str, bool]:
+def _call(toolbox, call) -> tuple[str, str]:
+    """What the model reads back, and the refusal's plain words when the
+    record refused the call."""
     try:
         text, _ = toolbox.call(call.name, call.args)
     except adapter.ToolError as e:
-        return str(e), True
-    return text, False
+        return str(e), e.plain
+    return text, ""
 
 
 def edit_lines(diagram_id: int, deltas: list[dict]) -> list[str]:
