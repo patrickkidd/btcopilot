@@ -423,3 +423,27 @@ def test_a_refusal_the_scribe_talks_about_shows_only_what_went_in(coder, cut, tu
     assert response.get_data(as_text=True).split(": ", 1)[1] == (
         "James Cooper went in. The rest did not. Say the rest again in one sentence."
     )
+
+
+def test_the_scribe_talking_instead_of_writing_says_it_did_not_go_in(coder, cut, turns):
+    # R-0270, R-0869
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        said=(
+            "I need to reread the current record. Let me check what events are there "
+            "now and get the correct version number for event 2. Could you provide the "
+            "current version number shown in the record for event 2?"
+        )
+    )
+    response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
+    assert response.status_code == 400
+    assert response.get_data(as_text=True).split(": ", 1)[1] == NOTHING
+
+
+def test_the_question_asked_before_the_model_reaches_the_coder(coder, cut, turns):
+    # R-0270
+    people = [person(1, "Marcus Smith"), person(2, "Marcus Jones")]
+    coding = coded(coder.user, cut, {"people": people}, done=False)
+    response = scribe(coder, coding, turns[0], Never(), "Marcus could not sleep")
+    assert response.status_code == 200
+    assert response.json["asked"] == "Which person is this about — Marcus Smith or Marcus Jones?"
