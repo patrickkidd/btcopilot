@@ -678,22 +678,32 @@ def by_side(data: DiagramData) -> str:
     person's last relationship event with each one on it, the only contact
     the diagram holds, so a card gives the contact now or says it is not
     known (R-0850)."""
-    named = _named(data)
     deaths = {e.get("person"): e for e in data.events if enum_val(e.get("kind")) == EventKind.Death.value}
     lines = []
     for parent, side in coverage.sides(data).items():
         people = sorted(side)
         count = sum(any(record.involves(e, pid) for pid in side) for e in data.events)
-        died = [f"{named[pid]} {_year(deaths[pid])}" for pid in people if pid in deaths]
-        living = [named[pid] for pid in people if pid not in deaths]
+        died = [f"{_on_side(data, pid, parent)} {_year(deaths[pid])}" for pid in people if pid in deaths]
+        living = [_on_side(data, pid, parent) for pid in people if pid not in deaths]
         lines.append(
             f"the side of {_who(data, parent)}: {count} events; "
             f"died: {', '.join(died) or 'none in the diagram'}; "
-            f"no death in the diagram: {', '.join(living) or 'none'}; "
+            f"no death among them in the diagram: {', '.join(living) or 'none'}; "
             f"the person's last relationship event with each one on it: "
             f"{_contact(data, side) or 'none in the diagram'}"
         )
     return "\n".join(lines)
+
+
+def _on_side(data: DiagramData, pid: int, parent: int) -> str:
+    """Someone on a parent's side as the cards name them: a parent's brother
+    or sister is that parent's, "mother's sister", never the person's aunt or
+    uncle, which a card read as the parent's own aunt or uncle."""
+    role = coverage.role(data, pid)
+    if role not in coverage.AUNT_ROLE:
+        return _who(data, pid)
+    sibling = coverage.SIB[coverage.AUNT_ROLE.index(role)]
+    return f"{_named(data)[pid]} ({coverage.role(data, parent)}'s {sibling})"
 
 
 def _contact(data: DiagramData, side: set[int]) -> str:

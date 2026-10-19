@@ -756,10 +756,11 @@ def test_the_refresh_reads_each_close_pairs_relationship_events_by_date_and_coun
 def test_the_refresh_reads_each_side_of_the_family_its_events_its_deaths_and_the_persons_last_contact():
     # R-0850
     assert casereport.by_side(_wrens()).splitlines() == [
-        "the side of 2 Ada (mother): 7 events; died: 5 Gran 1998; "
-        "no death in the diagram: 2 Ada, 6 Gramps, 7 Ivy, 15 Jo; "
+        "the side of 2 Ada (mother): 7 events; died: 5 Gran (grandmother) 1998; "
+        "no death among them in the diagram: 2 Ada (mother), 6 Gramps (grandfather), 7 Ivy (mother's sister), 15 Jo; "
         "the person's last relationship event with each one on it: 2 Ada 2015 Wren cutoff “Cut off from her mother”",
-        "the side of 3 Cal (father): 0 events; died: none in the diagram; no death in the diagram: 3 Cal, 8 Nan; "
+        "the side of 3 Cal (father): 0 events; died: none in the diagram; "
+        "no death among them in the diagram: 3 Cal (father), 8 Nan (grandmother); "
         "the person's last relationship event with each one on it: none in the diagram",
     ]
 
