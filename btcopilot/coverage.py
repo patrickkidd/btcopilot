@@ -423,6 +423,24 @@ def role(data: DiagramData, pid: int) -> str | None:
     return _role_of(data, ItemKind.Person, pid)
 
 
+def roles(data: DiagramData) -> dict[int, str]:
+    """What each person is to the person, as `role` says, from one walk of
+    the family."""
+    found: dict[int, str] = {}
+    for (_, kind, iid), said in _walk(data).items():
+        if kind is ItemKind.Person:
+            found.setdefault(iid, said)
+    return found
+
+
+def labels(data: DiagramData, roles: dict[int, str]) -> dict[int, str]:
+    """Every person as `label` names them, from `roles` already walked."""
+    return {
+        p["id"]: _label(data, ItemKind.Person, p["id"], roles.get(p["id"]))
+        for p in data.people
+    }
+
+
 def in_birth_order(data: DiagramData, pid: int) -> list[int]:
     """The person and their brothers and sisters, full, half and step, in
     birth order; one with no dated birth comes last."""
