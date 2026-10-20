@@ -491,7 +491,15 @@ def test_the_coach_is_not_one_of_the_coders_the_agenda_waits_on(
 
 
 def test_taking_a_conversation_off_the_agenda(patrick, cut):
-    # R-0346
+    # R-0346, R-0870
+    kept = patrick.delete(f"/review/cuts/{cut.id}")
+    assert kept.status_code == 400
+    assert kept.get_data(as_text=True) == (
+        "This cut has a meeting date, so it cannot be deleted. Clear the date first."
+    )
+    assert db.session.get(Cut, cut.id) is not None
+
+    patrick.patch(f"/review/cuts/{cut.id}", json={"meeting_date": None})
     gone = patrick.delete(f"/review/cuts/{cut.id}")
     assert gone.status_code == 200
     assert db.session.get(Cut, cut.id) is None

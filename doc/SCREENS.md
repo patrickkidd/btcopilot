@@ -637,6 +637,7 @@ What it is for: Patrick choosing what gets coded, and everyone seeing one thing 
 - Placing the cut returns to Next meeting. A newly placed cut joins the next meeting: the soonest meeting date on the agenda, or no date while none has one. [built] {R-0267, R-0629}
 - A cut's row on Next meeting names the person whose diagram it is, then the days it spans with the year and how many sittings, as "10 to 17 Mar 2026 · 2 sittings". Tapping the row opens that cut in the family's thread, ringed, to move its lines; the cross takes it off before anyone has started. [built] {R-0629}
 - No end of a cut can be placed at or before the last point that was already ratified. [built] {R-0267}
+- A cut with a meeting date cannot be deleted, since its coders have been told of it; the date is cleared first, and then it can go. [built] {R-0870}
 - A cut placed at the end of a finished conversation or recording takes in the whole thing, so a whole transcript is not a different kind of task. [drawn] {R-0267}
 - Anything that changed since the last cut is coded again. [drawn] {R-0267}
 - The agenda screen is the whole of Patrick's administration: the meeting date, what is on the agenda, and who is done. [drawn] {R-0259, R-0267}
