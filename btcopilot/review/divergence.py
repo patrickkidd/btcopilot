@@ -11,8 +11,9 @@ import re
 
 import anthropic
 
-from btcopilot.review import adapter, snapshot
+from btcopilot.review import adapter, scribe, snapshot
 from btcopilot.review.models import Item, ReviewStatus
+from btcopilot.schema import ItemKind
 
 _log = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ def rows(cut) -> list[dict]:
             {
                 "review_item_id": item.id,
                 "item_kind": item.item_kind.value,
-                "label": _label(mine["item"], room),
+                "label": _label(item, mine["item"], room),
                 "room": _words(room, apart) if room else "not an item at all",
                 "coach": _words(mine["item"], apart),
                 "reason": None,
@@ -86,13 +87,24 @@ def differs(mine: dict, room: dict | None) -> list[str]:
     ]
 
 
+#: The variables, whose "up" or "down" says nothing without the field named.
+VARIABLES = ("symptom", "anxiety", "functioning")
+
+
 def _words(value: dict, fields: list[str]) -> str:
-    said = [str(value.get(field)) for field in fields if value.get(field)]
+    said = [
+        f"{field}: {value[field]}" if field in VARIABLES else str(value[field])
+        for field in fields
+        if value.get(field)
+    ]
     return " · ".join(said) or "as written"
 
 
-def _label(mine: dict, room: dict | None) -> str:
+def _label(item: Item, mine: dict, room: dict | None) -> str:
+    """An event by the words the scribe's lines read it by (R-0681, R-0869)."""
     source = room or mine
+    if item.item_kind is ItemKind.Event:
+        return scribe._what(source, scribe._plain(source.get("kind")))
     return str(source.get("description") or source.get("kind") or "an item")
 
 
