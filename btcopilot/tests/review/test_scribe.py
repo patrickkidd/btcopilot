@@ -9,7 +9,7 @@ from mock import patch
 from btcopilot import prompts
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.llmutil import Served
-from btcopilot.models import Change, ModelCall, Purpose, TurnEvent
+from btcopilot.models import Change, ModelCall, Observation, ObservationKind, Purpose, TurnEvent
 from btcopilot.review import adapter
 from btcopilot.review.scribe import written
 from btcopilot.tests.review.conftest import coded, person, shift
@@ -510,3 +510,14 @@ def test_an_earlier_statement_keeps_its_line_after_a_later_one_changes_the_event
     said = {turn["id"]: turn["said"] for turn in thread["turns"]}
     assert said[turns[0].id][0]["lines"] == ["Tom · Moved to Glasgow · Sep 2007"]
     assert said[turns[1].id][0]["lines"] == ["Tom · Moved to Glasgow · Sep 2007"]
+
+
+def test_a_refused_scribe_call_is_written_down_as_the_coachs_are(coder, cut, turns):
+    # R-0871, R-0517
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted([("edit_event", SHIFT)], [("edit_person", {"name": "James Cooper"})])
+    scribe(coder, coding, turns[0], model, "James Cooper came and Marcus could not sleep")
+    rows = Observation.query.all()
+    assert [(r.kind, r.diagram_id, r.detail["tool"], r.detail["retried"]) for r in rows] == [
+        (ObservationKind.ToolRefused, coding.diagram_id, "edit_event", False)
+    ]
