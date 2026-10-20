@@ -110,7 +110,19 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    the cache key is written, so no turn makes the same calls again until the
    events or the person's answers change.
 6. Every stored app period the answer did not return is set aside. The person's
-   own are never changed by a regroup.
+   own are never changed by a regroup. A period holds every event with a stored
+   date, however sure, on or between its first and last day, whichever events
+   the model named: an event added inside a cluster's years joins it at the next
+   detection, decided by the code [Oracle: R-0873].
+6a. A new app period that opens at no live app period's opening event, proposed
+   while the diagram has a live app period, is stored set aside with
+   `proposedAt`, the cache key of that detection, and is never handed to the
+   model. When the next detection proposes a period opening at the same event,
+   that row is shown under its id with the new answer's days and name, and
+   `proposedAt` is cleared; not proposed again, it stays set aside with
+   `proposedAt` cleared. A diagram's first detection and a from-scratch catch-up
+   show their periods at once. A set aside the person made carries no
+   `proposedAt` [Oracle: R-0873].
 7. The person's periods [Oracle: R-0853]. The call also gets the person's
    answers to the `most_going_on` item (each closed question's `answer`, the
    message it cites; for a question closed as answered before that link was
@@ -164,7 +176,8 @@ After the deploy carrying FD-381, with a database backup first: `flask admin fd3
 ## What a stored cluster holds
 
 Name, reason, source (model or user), event ids, the dates they span, the opening
-event id, and whether it is set aside [Oracle: R-0205, R-0850].
+event id, whether it is set aside, and, while it waits for a second detection,
+`proposedAt` [Oracle: R-0205, R-0850, R-0873].
 
 ## When a cluster looks wrong
 

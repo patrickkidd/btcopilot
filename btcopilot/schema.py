@@ -467,6 +467,9 @@ class Cluster:
     reason: str | None = None
     setAside: bool = False
     openingEventId: int | None = None
+    # The cache key of the detection that first proposed it, while it waits set
+    # aside for the next detection to propose it again (R-0873).
+    proposedAt: str | None = None
 
 
 class ItemKind(enum.StrEnum):

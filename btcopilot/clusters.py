@@ -1881,6 +1881,7 @@ STORED_FIELDS = (
     "source",
     "setAside",
     "openingEventId",
+    "proposedAt",
 )
 
 
@@ -1947,24 +1948,56 @@ def grouped(cache_key: str) -> dict:
     }
 
 
-def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[dict]:
+def _deltas(
+    stored: list[dict], detected: list[Cluster], dates: dict, waits: str | None = None
+) -> list[dict]:
     """Every app cluster the answer did not return is set aside, never
-    deleted; the person's own are kept as they drew them [Oracle: R-0850]."""
-    stored = [
-        c
+    deleted; the person's own are kept as they drew them [Oracle: R-0850].
+    A new app cluster opening at the event a waiting one opens at is that one,
+    shown now. With `waits`, the detection's key, a new app cluster opening at
+    no live app cluster's opening event is stored set aside under that key
+    until the next detection proposes it again; a waiting one not proposed
+    again stays aside, no longer waiting [Oracle: R-0873]."""
+    rows = {
+        str(c["id"]): c
         for c in stored
-        if isinstance(c, dict) and c.get("id") is not None and not c.get("setAside")
-    ]
-    held = {str(c["id"]): c for c in stored}
-    kept = _detected(stored, detected, dates)
+        if isinstance(c, dict) and c.get("id") is not None
+    }
+    held = {i: c for i, c in rows.items() if not c.get("setAside")}
+    marked = [i for i, c in rows.items() if c.get("proposedAt")]
+    waiting = {
+        rows[i]["openingEventId"]: i
+        for i in marked
+        if rows[i].get("openingEventId") is not None
+    }
+    opens = {c.get("openingEventId") for c in held.values() if _regroupable(c)} - {None}
+    kept = {}
+    for cluster in _detected(list(held.values()), detected, dates).values():
+        if cluster.id not in held and cluster.source is ClusterSource.Model:
+            again = waiting.get(cluster.openingEventId)
+            if again:
+                cluster.id = again
+            elif waits and cluster.openingEventId not in opens:
+                cluster.setAside, cluster.proposedAt = True, waits
+        kept[cluster.id] = cluster
 
     deltas = set_aside(
         cluster_id
         for cluster_id, cluster in held.items()
         if cluster_id not in kept and _regroupable(cluster)
     )
+    deltas += [
+        {
+            "item_kind": ItemKind.Cluster.value,
+            "item_id": cluster_id,
+            "field": "proposedAt",
+            "after": None,
+        }
+        for cluster_id in marked
+        if cluster_id not in kept
+    ]
     for cluster_id, cluster in kept.items():
-        was = held.get(cluster_id, {})
+        was = rows.get(cluster_id, {})
         now = asdict(cluster)
         deltas += [
             {
@@ -2033,6 +2066,11 @@ def sync(
     if not force and cache_key == data.clusterCacheKey:
         return None
     fresh = fresh or older(data.clusterCacheKey)
+    waits = (
+        None
+        if fresh or not any(_regroupable(c) for c in data.drawn_clusters())
+        else cache_key
+    )
 
     dates = {e.id: e.dateTime for e in _dated(data)}
     metered = metered or Metered(user_id, diagram_id, turn_id, Purpose.Cluster)
@@ -2114,7 +2152,7 @@ def sync(
             session_id=session_id,
         )
         return Regroup(change=change, sentences=[])
-    deltas = _deltas(data.clusters, result.clusters, dates)
+    deltas = _deltas(data.clusters, result.clusters, dates, waits)
     deltas.append(grouped(cache_key))
     change = record.apply(
         diagram_id,
