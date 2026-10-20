@@ -182,4 +182,9 @@ describe("the values a coder reads", () => {
     const said = wordedLine("1971-03-02 · shift · distance · left for Juneau");
     expect(said).toBe(`${when("1971-03-02")} · a shift · relationship: distance · left for Juneau`);
   });
+
+  // R-0869
+  it("names the variable an up or a down belongs to", () => {
+    expect(wordedLine("symptom: up · anxiety: down")).toBe("symptom up · anxiety down");
+  });
 });

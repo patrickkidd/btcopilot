@@ -73,11 +73,14 @@ export function worded(field: string, value: string): string {
 }
 
 /** A line the server already joined from an item's values, each value worded
- * by what it is, since the line no longer says which field it came from. */
+ * by what it is. A variable comes named, "symptom: up", since "up" alone says
+ * nothing; any other value is told by its look. */
 export function wordedLine(said: string): string {
   return said
     .split(" · ")
     .map((value) => {
+      const named = /^(symptom|anxiety|functioning): (.+)$/.exec(value);
+      if (named) return worded(named[1], named[2]);
       if (/^\d{4}(-\d{2}){0,2}$/.test(value)) return worded("dateTime", value);
       if (Object.hasOwn(KIND_WORDS, value)) return worded("kind", value);
       if (RELATIONSHIPS.has(value)) return worded("relationship", value);
