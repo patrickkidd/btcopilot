@@ -161,11 +161,16 @@ def cut_patch(cut_id: int):
 @bp.route("/cuts/<int:cut_id>", methods=["DELETE"])
 def cut_delete(cut_id: int):
     """Taking a conversation off the agenda, which is one tap and only before
-    anyone has started coding it."""
+    anyone has started coding it, and never while its meeting date has gone
+    out to the coders (R-0870)."""
     admin()
     cut = cut_or_404(cut_id)
     if cut.codings:
         raise ValueError("someone has already started coding that one")
+    if cut.meeting_date:
+        raise ValueError(
+            "This cut has a meeting date, so it cannot be deleted. Clear the date first."
+        )
     db.session.delete(cut)
     db.session.commit()
     return jsonify({"id": cut_id})

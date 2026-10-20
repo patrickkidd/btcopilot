@@ -11,8 +11,9 @@ import re
 
 import anthropic
 
-from btcopilot.review import adapter, snapshot
+from btcopilot.review import adapter, scribe, snapshot
 from btcopilot.review.models import Item, ReviewStatus
+from btcopilot.schema import ItemKind
 
 _log = logging.getLogger(__name__)
 
@@ -42,7 +43,12 @@ def rows(cut) -> list[dict]:
     coding = snapshot.coach_coding(cut)
     if coding is None:
         return []
-    people = {c.id for c in snapshot.voters(cut)}
+    voters = snapshot.voters(cut)
+    people = {c.id for c in voters}
+    records = {
+        c.id: adapter.record_of(adapter.diagram_of(c.diagram_id))
+        for c in voters + [coding]
+    }
     found = []
     for item in sorted(cut.items, key=lambda i: i.id):
         mine = next(
@@ -59,7 +65,7 @@ def rows(cut) -> list[dict]:
             {
                 "review_item_id": item.id,
                 "item_kind": item.item_kind.value,
-                "label": _label(mine["item"], room),
+                "label": _label(item, theirs[0] if room else mine, records),
                 "room": _words(room, apart) if room else "not an item at all",
                 "coach": _words(mine["item"], apart),
                 "reason": None,
@@ -86,14 +92,26 @@ def differs(mine: dict, room: dict | None) -> list[str]:
     ]
 
 
+#: The variables, whose "up" or "down" says nothing without the field named.
+VARIABLES = ("symptom", "anxiety", "functioning")
+
+
 def _words(value: dict, fields: list[str]) -> str:
-    said = [str(value.get(field)) for field in fields if value.get(field)]
+    said = [
+        f"{field}: {value[field]}" if field in VARIABLES else str(value[field])
+        for field in fields
+        if value.get(field)
+    ]
     return " · ".join(said) or "as written"
 
 
-def _label(mine: dict, room: dict | None) -> str:
-    source = room or mine
-    return str(source.get("description") or source.get("kind") or "an item")
+def _label(item: Item, opinion: dict, records: dict[int, dict]) -> str:
+    """An event by the scribe's line for it, who, what and when, so two events
+    with one title read apart (R-0869)."""
+    said = opinion["item"]
+    if item.item_kind is ItemKind.Event:
+        return scribe.written(records[opinion["coding_id"]], [said["id"]])[0]
+    return str(said.get("description") or said.get("kind") or "an item")
 
 
 def ratifying(cut, user_id: int, model=None) -> adapter.Metered:

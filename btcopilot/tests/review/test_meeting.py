@@ -27,7 +27,7 @@ def three_readings(test_user, test_user_2, coach_user, cut):
     """Two people and the coach, each reading the same two moments: everyone
     has the first, the coach alone dates the second differently."""
     shared = shift(10, 1, "mother got sick")
-    apart = shift(11, 1, "father left", "2021-06-01")
+    apart = dict(shift(11, 1, "father left", "2021-06-01"), title="Father left")
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shared, apart]})
     coded(
         test_user_2,
@@ -39,7 +39,10 @@ def three_readings(test_user, test_user_2, coach_user, cut):
         cut,
         {
             "people": [person(1, "Ann")],
-            "events": [dict(shared, id=30), dict(apart, id=31, dateTime="2022-01-01")],
+            "events": [
+                dict(shared, id=30),
+                dict(apart, id=31, dateTime="2022-01-01", symptom="down"),
+            ],
         },
         agent=COACH,
     )
@@ -297,7 +300,7 @@ def test_the_result_scores_the_coachs_own_pass(
 def test_where_the_coach_differed_is_written_once_at_ratification(
     patrick, test_user, test_user_2, coach_user, cut
 ):
-    # R-0254
+    # R-0254, R-0869
     three_readings(test_user, test_user_2, coach_user, cut)
     open_vote(patrick, cut)
     decide_all(patrick, cut)
@@ -305,7 +308,15 @@ def test_where_the_coach_differed_is_written_once_at_ratification(
         patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
 
     result = patrick.get(f"/review/result?cut_id={cut.id}").get_json()
-    assert any("father left" in row["label"] for row in result["differed"])
+    assert [
+        (row["label"], row["room"], row["coach"]) for row in result["differed"]
+    ] == [
+        (
+            "Ann · Father left · Jan 2022",
+            "not an item at all",
+            "2022-01-01 · shift · father left · symptom: down",
+        )
+    ]
 
 
 def test_a_rule_carries_the_decision_it_came_from(
@@ -387,7 +398,7 @@ def test_a_person_can_be_decided_before_what_they_stand_on_is_ratified(
 def test_a_decision_the_record_refuses_is_the_rooms_fault(
     patrick, test_user, test_user_2, cut
 ):
-    # R-0453
+    # R-0453, R-0869
     """A shift with no variable is refused in the record's own words, not as a
     server error."""
     coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "a")]})
@@ -403,7 +414,10 @@ def test_a_decision_the_record_refuses_is_the_rooms_fault(
         f"/review/items/{item.id}", json={"choice": "change", "value": bare}
     )
     assert refused.status_code == 400
-    assert "variable" in refused.get_data(as_text=True)
+    assert refused.get_data(as_text=True) == (
+        "A shift needs to say what moved and which way: symptom, anxiety, "
+        "functioning or a relationship."
+    )
 
 
 def test_a_cut_that_is_not_ratified_has_no_result(patrick, cut):

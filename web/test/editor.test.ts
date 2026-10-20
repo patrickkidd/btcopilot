@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Failed } from "../src/api";
+import { standInForm } from "./standin";
 import { EventKind, type TimelineEvent } from "../src/types";
 
 const refusal: { error: Error | null } = { error: null };
@@ -10,7 +11,7 @@ vi.mock("../src/api", async (original) => ({
   },
 }));
 
-const { Direction, MAX_FIELD_LINES, Relationship, grownHeight, moved, save, unsaid } =
+const { Direction, MAX_FIELD_LINES, Relationship, SUBMITTED, grownHeight, lock, moved, save, unsaid } =
   await import("../src/editor");
 
 describe("grownHeight", () => {
@@ -71,5 +72,29 @@ describe("save", () => {
     await save(null, shift(), done, refused);
     expect(done).not.toHaveBeenCalled();
     expect(refused).toHaveBeenCalledWith("The end date is before the start date.");
+  });
+
+  // R-0869
+  it("shows the server's own sentence when a submitted coding refuses the write", async () => {
+    const said = "This coding was submitted, so it can no longer be changed.";
+    refusal.error = new Failed(409, "PATCH /app/events/4", said);
+    const refused = vi.fn();
+    await save(null, shift(), vi.fn(), refused);
+    expect(refused).toHaveBeenCalledWith(said);
+  });
+});
+
+describe("a form on a submitted coding", () => {
+  // R-0869
+  it("offers no Save or Delete, nothing to type or pick, and says why at the top", () => {
+    vi.stubGlobal("document", { createElement: () => ({ innerHTML: "", className: "" }) });
+    const form = standInForm();
+    lock(form as unknown as HTMLElement);
+    vi.unstubAllGlobals();
+    expect(form.acts.removed).toBe(true);
+    expect(form.fields.every((one) => one.readOnly)).toBe(true);
+    expect(form.picks.every((one) => one.disabled)).toBe(true);
+    expect(form.top.map((one) => one.textContent)).toEqual([SUBMITTED]);
+    expect(SUBMITTED).toBe("This coding is submitted, so it can no longer be changed.");
   });
 });

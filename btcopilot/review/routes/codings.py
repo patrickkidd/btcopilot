@@ -223,7 +223,7 @@ def _said_by_turn(
     correction to an event still reads as the record has it (R-0270), and the
     events those lines are, whose codes' concept pages hang under them
     (R-0541)."""
-    by_scribe_turn = _events_by_scribe_turn(diagram_id)
+    by_scribe_turn = adapter.touched_by_turn(diagram_id)
     by_turn: dict[int, list[dict]] = {}
     notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc())
     for note in notes:
@@ -235,15 +235,6 @@ def _said_by_turn(
                 "event_ids": event_ids,
             }
         )
-    return by_turn
-
-
-def _events_by_scribe_turn(diagram_id: int) -> dict[str, list[int]]:
-    by_turn: dict[str, list[int]] = {}
-    for event_id, where in adapter.coded_in(diagram_id).items():
-        turn_id = where.get("turn_id")
-        if turn_id is not None:
-            by_turn.setdefault(turn_id, []).append(event_id)
     return by_turn
 
 

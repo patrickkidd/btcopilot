@@ -5,7 +5,7 @@ import uuid
 
 from flask import Blueprint, abort, request
 from flask_wtf.csrf import CSRFError, generate_csrf
-from werkzeug.exceptions import Forbidden
+from werkzeug.exceptions import Conflict, Forbidden
 
 import btcopilot
 from btcopilot import auth
@@ -88,6 +88,10 @@ class ReadOnly(Forbidden):
     description = "this diagram is open read-only"
 
 
+class Submitted(Conflict):
+    description = "This coding is submitted, so it can no longer be changed."
+
+
 class FetchSite(enum.StrEnum):
     SameOrigin = "same-origin"
     Typed = "none"
@@ -139,6 +143,12 @@ def _csrf_error(e):
 def _read_only(e):
     """Said in words, where every other refusal is a bare Forbidden."""
     return e.description, 403
+
+
+@bp.errorhandler(Submitted)
+def _submitted(e):
+    """Said in plain words, not as the server's own error page (R-0869)."""
+    return e.description, 409
 
 
 @bp.errorhandler(ValueError)
@@ -225,7 +235,7 @@ def require_write_access(dia):
     if not dia.check_write_access(auth.current_user()):
         raise ReadOnly()
     if frozen(dia.id):
-        abort(409, "that coding is done and its record no longer takes edits")
+        raise Submitted()
     return dia
 
 

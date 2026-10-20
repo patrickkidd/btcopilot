@@ -6,6 +6,7 @@ import {
   openBondEditor,
   openEditor,
   openPersonEditor,
+  Relationship,
   type Family,
 } from "./editor";
 import { toast } from "./toast";
@@ -57,11 +58,38 @@ export const TELLING = [
 ] as const;
 
 const WORDS: Record<string, (value: string) => string> = {
+  dateTime: (value) => when(value),
+  kind: (value) => KIND_WORDS[value] ?? value,
   symptom: (value) => `symptom ${value}`,
   anxiety: (value) => `anxiety ${value}`,
   functioning: (value) => `functioning ${value}`,
-  relationship: (value) => `relationship: ${value}`,
+  relationship: (value) => `relationship: ${value.replaceAll("-", " ")}`,
 };
+
+/** One value of an item said the way a coder reads it, never the stored slug
+ * or date (R-0869). */
+export function worded(field: string, value: string): string {
+  return WORDS[field] ? WORDS[field](value) : value;
+}
+
+/** A line the server already joined from an item's values, each value worded
+ * by what it is. A variable comes named, "symptom: up", since "up" alone says
+ * nothing; any other value is told by its look. */
+export function wordedLine(said: string): string {
+  return said
+    .split(" · ")
+    .map((value) => {
+      const named = /^(symptom|anxiety|functioning): (.+)$/.exec(value);
+      if (named) return worded(named[1], named[2]);
+      if (/^\d{4}(-\d{2}){0,2}$/.test(value)) return worded("dateTime", value);
+      if (Object.hasOwn(KIND_WORDS, value)) return worded("kind", value);
+      if (RELATIONSHIPS.has(value)) return worded("relationship", value);
+      return value;
+    })
+    .join(" · ");
+}
+
+const RELATIONSHIPS = new Set<string>(Object.values(Relationship));
 
 /** One dot per event, as the picture draws a line of them. */
 export const LINE = { width: 400, height: 66, y: 34, edge: 16 };
@@ -191,9 +219,8 @@ export function words(opinion: Opinion, fields: readonly string[]): string {
         field === "person_name" ? opinion.person_name : opinion.item[field];
       if (value === null || value === undefined || value === "") return "";
       const text = String(value);
-      if (field === "dateTime") return when(text);
       if (field === "person_name") return `→ ${text}`;
-      return WORDS[field] ? WORDS[field](text) : text;
+      return worded(field, text);
     })
     .filter(Boolean);
   return said.join(" · ");

@@ -135,7 +135,7 @@ def _new_name(words: list[str]) -> bool:
 def _which(people: list[dict]) -> str:
     named = [_name(person) for person in people]
     if not named:
-        return "Which person is this about? The record has nobody in it yet."
+        return "Which person is this about? The diagram has nobody in it yet."
     if len(named) == 1:
         return f"Is this about {named[0]}?"
     return f"Which person is this about — {', '.join(named[:-1])} or {named[-1]}?"
@@ -172,6 +172,8 @@ def write(coding, statement, said: str, model=None) -> dict:
     tools = adapter.write_tools()
     asked = ""
     unfinished = False
+    refused: list[str] = []
+    kept: list[dict] = []
 
     for step in range(MAX_STEPS):
         turn = _say(coach, system, messages, tools)
@@ -180,14 +182,19 @@ def write(coding, statement, said: str, model=None) -> dict:
         if not turn.calls:
             break
         results = []
+        refused = []
         for call in turn.calls:
-            text, refused = _call(toolbox, call)
+            asked_for = adapter.toolcall(toolbox.data, call.name, call.args)
+            text, plain = _call(toolbox, call)
+            kept.append(dict(asked_for, refusal=plain or None, result=text))
+            if plain:
+                refused.append(plain)
             results.append(
                 {
                     "type": "tool_result",
                     "tool_use_id": call.id,
                     "content": text,
-                    "is_error": refused,
+                    "is_error": bool(plain),
                 }
             )
         messages.append({"role": "assistant", "content": turn.blocks})
@@ -195,31 +202,43 @@ def write(coding, statement, said: str, model=None) -> dict:
         # A turn ends on words, never on a tool call: adding the person the
         # event is about is one step, writing the event is the next.
         asked = ""
-        if any(r["is_error"] for r in results):
+        if refused:
             _log.warning(f"Scribe step {step} was refused: {results}")
 
+    adapter.keep_calls(turn_id, statement.discussion_id, coding.diagram_id, kept)
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
-    # Every call is committed as it lands, so a loop that ran out of steps has
-    # written part of the sentence; the coder is told which part, never shown
-    # it as done (R-0302: no silent loss).
+    # Every call is committed as it lands, so a loop that ran out of steps or
+    # gave up on a refusal has written part of the sentence; the coder is told
+    # which part, never shown it as done (R-0302: no silent loss). The model's
+    # own words never reach the coder: they speak of how the code works, and
+    # the only question a coder reads is the one asked before the model
+    # (R-0869, R-0270).
+    if asked:
+        _log.info(f"Scribe said: {asked!r}")
     if unfinished:
-        raise Refused(_short(lines))
-    if not lines and not asked:
-        raise Refused("the scribe wrote nothing and said nothing")
-    if asked and not lines:
-        _log.info(f"Scribe asked instead of writing: {asked}")
+        _log.warning("Scribe ran out of steps")
+    if refused:
+        _log.warning(f"Scribe gave up after a refusal: {refused}")
+    if unfinished or refused or not lines:
+        raise Refused(_rest(lines))
     return {
         "lines": lines,
-        "asked": "" if lines else asked,
+        "asked": "",
         "made": made(toolbox.deltas),
         "turn_id": turn_id,
     }
 
 
-def _short(lines: list[str]) -> str:
-    wrote = ", ".join(line.removeprefix("+ ") for line in lines)
-    kept = f" after adding {wrote}" if wrote else ""
-    return f"The scribe stopped before it finished{kept}. Say it again in one sentence."
+def _rest(lines: list[str]) -> str:
+    """What the coder reads when not all of it went in: the page shows the
+    words after the first colon."""
+    if not lines:
+        return "Scribe stopped: That did not go in. Say it again in one sentence."
+    wrote = ", ".join(lines)
+    return (
+        f"Scribe stopped: {wrote} went in. The rest did not. "
+        "Say the rest again in one sentence."
+    )
 
 
 def made(deltas: list[dict]) -> list[dict]:
@@ -247,12 +266,14 @@ def _say(model, system: str, messages: list[dict], tools: list[dict]):
             return stop.value
 
 
-def _call(toolbox, call) -> tuple[str, bool]:
+def _call(toolbox, call) -> tuple[str, str]:
+    """What the model reads back, and the refusal's plain words when the
+    record refused the call."""
     try:
         text, _ = toolbox.call(call.name, call.args)
     except adapter.ToolError as e:
-        return str(e), True
-    return text, False
+        return str(e), e.plain
+    return text, ""
 
 
 def edit_lines(diagram_id: int, deltas: list[dict]) -> list[str]:
@@ -303,7 +324,7 @@ def written(data: dict, event_ids, person_ids=(), bond_ids=()) -> list[str]:
     for one in person_ids:
         person = people.get(str(one))
         if person is not None:
-            _add(out, f"+ {_person_words(person, people, bonds)}")
+            _add(out, _person_words(person, people, bonds))
     return out
 
 
@@ -343,9 +364,9 @@ def _bond_words(bond: dict, people: dict, events: dict) -> str:
         if _plain(event.get("kind")) in ("married", "bonded")
         and _pair_of(event.get("person"), event.get("spouse")) == pair
     ]
-    word = "married" if bond.get("married") else "together"
+    word = "Married" if bond.get("married") else "Together"
     when = _when(*_dated(started[0])) if started else "no date yet"
-    return f"+ {_both(bond, people)} · {word} · {when}"
+    return f"{_both(bond, people)} · {word} · {when}"
 
 
 def _add(out: list[str], line: str):
@@ -359,19 +380,27 @@ def _dated(event: dict) -> tuple:
 
 def _event_words(event: dict, people: dict) -> str:
     kind = _plain(event.get("kind"))
+    said = _what(event, kind)
     if kind in PAIR_KINDS and event.get("spouse") is not None:
         both = _joined(people, event.get("person"), event.get("spouse"))
-        return f"+ {both} · {kind} · {_when(*_dated(event))}"
+        return f"{both} · {said} · {_when(*_dated(event))}"
     about = event.get("child")
     if about is None:
         about = event.get("person")
     who = _name(people.get(str(about), {})) if about is not None else "the family"
-    # A noted event's title is what happened; its kind says nothing.
-    if kind == EventKind.Noted.value:
-        said = event_title(event)
-    else:
-        said = kind or "event"
-    return f"+ {who} · {said} · {_when(*_dated(event))}"
+    return f"{who} · {said} · {_when(*_dated(event))}"
+
+
+def _what(event: dict, kind: str) -> str:
+    """A noted event or a shift reads by its title (R-0681); any other kind is
+    its own name, with its description after it only when that says more."""
+    if kind in (EventKind.Noted.value, EventKind.Shift.value):
+        return event_title(event)
+    word = kind.capitalize()
+    description = (event.get("description") or "").strip().removesuffix(".").strip()
+    if description.lower() in ("", kind):
+        return word
+    return f"{word} · {description}"
 
 
 MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()

@@ -4,7 +4,10 @@ vi.stubGlobal("window", {
   BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
 });
 
-const { Coding, writtenConcepts } = await import("../src/coding");
+const { Coding, missed, writtenConcepts } = await import("../src/coding");
+const { Failed } = await import("../src/api");
+const { Menu } = await import("../src/menu");
+const { standInForm } = await import("./standin");
 
 /** The sheet that asks a coder to finish, drawn by the screen's own code on
  * stand-ins for the elements it writes into. */
@@ -94,5 +97,73 @@ describe("the concept pages under what the scribe wrote", () => {
     vi.unstubAllGlobals();
     const line = nodes.find((node) => node.innerHTML.includes("Mom"));
     expect(line?.innerHTML).toContain('href="/app/theory/anxiety"');
+  });
+});
+
+describe("what a coder reads when a statement did not go in", () => {
+  // R-0869
+  it("says one plain sentence when the server broke or never answered", () => {
+    const again = "That did not go in. Try again in a minute.";
+    expect(missed(new Failed(500, "POST /scribe", "Traceback"))).toBe(again);
+    expect(missed(new Failed(0, "POST /scribe", "timed out"))).toBe(again);
+  });
+});
+
+describe("the lines across the thread", () => {
+  const label = (now: boolean) =>
+    (
+      Coding.prototype as unknown as {
+        cutline(thread: object, now: boolean): { innerHTML: string };
+      }
+    ).cutline(
+      {
+        turns: [{ order: 42 }],
+        cut_day: "Oct 12",
+        agreed: { order: 30, ratified: "Oct 5" },
+      },
+      now,
+    ).innerHTML;
+
+  // R-0869
+  it("say where the cut is and when it was ratified, never a turn number", () => {
+    vi.stubGlobal("document", { createElement: () => ({ dataset: {}, innerHTML: "", className: "" }) });
+    const here = label(true);
+    const last = label(false);
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    expect(here).toContain("cut here · Oct 12");
+    expect(last).toContain("last cut · ratified Oct 5");
+    expect(here + last).not.toMatch(/turn|42|30/);
+  });
+});
+
+describe("the drawer's forms on a coding", () => {
+  type Held = { held(form: HTMLElement): HTMLElement };
+  const held = (submitted: boolean) => {
+    vi.stubGlobal("document", { createElement: () => ({ innerHTML: "", className: "" }) });
+    const form = standInForm();
+    const menu = new Menu({} as HTMLElement, async () => ({}) as never, () => 1, undefined, () => submitted);
+    (menu as unknown as Held).held(form as unknown as HTMLElement);
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    return form;
+  };
+
+  // R-0869
+  it("are locked once the coding is submitted, and left as they are before", () => {
+    expect(held(true).acts.removed).toBe(true);
+    expect(held(false).acts.removed).toBe(false);
+  });
+
+  // R-0869
+  it("follow the coding's own submitted state", () => {
+    const finished = (done_at: string | null) =>
+      Coding.prototype.finished.call({ thread: { done_at } } as unknown as InstanceType<typeof Coding>);
+    expect(finished("2026-10-19")).toBe(true);
+    expect(finished(null)).toBe(false);
   });
 });

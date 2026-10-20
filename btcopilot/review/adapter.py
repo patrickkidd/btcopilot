@@ -32,7 +32,8 @@ from btcopilot.models import (
     SpeakerType,
     Statement,
 )
-from btcopilot.recordtext import date_text, render
+from btcopilot.recordtext import date_text, render, version_line
+from btcopilot.toolnames import toolcall
 from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
 from btcopilot.models import (
     Diagram,
@@ -54,6 +55,7 @@ __all__ = [
     "ToolError",
     "Toolbox",
     "coded_in",
+    "touched_by_turn",
     "date_text",
     "diagram_of",
     "discussion_of",
@@ -62,6 +64,8 @@ __all__ = [
     "render_record",
     "scribe_prompt",
     "scribe_toolbox",
+    "keep_calls",
+    "toolcall",
     "write_tools",
     "Diagram",
     "Discussion",
@@ -102,6 +106,21 @@ def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict
     return record.coded_in(diagram_id, kind)
 
 
+def touched_by_turn(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[str, list[int]]:
+    """Every item of one kind each turn added or changed, oldest first, from
+    the command log: an item changed later still belongs to each turn that
+    touched it, where coded_in gives it to the last one only."""
+    by_turn: dict[str, list[int]] = {}
+    for change in Change.query.filter_by(diagram_id=diagram_id).order_by(Change.id):
+        for delta in change.deltas or []:
+            if change.turn_id is None or delta.get("item_kind") != kind.value:
+                continue
+            ids = by_turn.setdefault(change.turn_id, [])
+            if int(delta["item_id"]) not in ids:
+                ids.append(int(delta["item_id"]))
+    return by_turn
+
+
 def scribe_prompt(record_text: str) -> str:
     """The scribe's system prompt, read at call time so fdserver's override is
     the one in force (R-0314)."""
@@ -118,6 +137,18 @@ def scribe_toolbox(diagram_id: int, user_id: int, statement_id: int, turn_id: st
         author=Author.Review,
         statement_id=statement_id,
     )
+
+
+def keep_calls(
+    turn_id: str, discussion_id: int, diagram_id: int, kept: list[dict]
+) -> None:
+    """A scribe turn's tool calls, kept as turn_events rows the way a coach
+    turn keeps its own, and its refused calls written down as the coach's are,
+    so the learning loop counts them the same (R-0871)."""
+    turnstore.save(turn_id, discussion_id, kept)
+    db.session.flush()
+    observer.refusals(diagram_id, turn_id)
+    db.session.commit()
 
 
 def discussion_of(discussion_id: int) -> Discussion:
@@ -167,8 +198,11 @@ def diagram_of(diagram_id: int) -> Diagram:
 
 
 def render_record(diagram_id: int) -> str:
-    """The record as the models read it."""
-    return render(diagram_of(diagram_id).get_diagram_data())
+    """The record as the models read it, ending with its version: the scribe
+    has no read tool to learn the version a change must name from (R-0480)."""
+    diagram = diagram_of(diagram_id)
+    text = render(diagram.get_diagram_data())
+    return "\n\n".join(s for s in (text, version_line(diagram.version)) if s)
 
 
 def to_json(value):

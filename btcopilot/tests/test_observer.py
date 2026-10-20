@@ -11,7 +11,7 @@ from mock import patch
 from btcopilot.coachmodel import Refusal
 from btcopilot.llmutil import Served, Spent
 from btcopilot.extensions import db
-from btcopilot import turns
+from btcopilot import observer, turns, turnstore
 from btcopilot.models import Observation, ObservationKind
 from btcopilot.schema import DiagramData
 from btcopilot.toolbox import ToolName
@@ -364,3 +364,13 @@ def test_notes_with_no_correction_write_nothing(web, token, test_user, monkeypat
     )
     post(web, token)
     assert seen() == []
+
+
+def test_a_turn_with_no_statement_has_only_its_refusals_written_down(test_user, discussion):
+    # R-0871, R-0517
+    added = {"type": "tool_call", "name": ToolName.EditPerson.value, "args": {"name": "Nell"}, "refusal": None}
+    refused = dict(added, name=ToolName.EditEvent.value, args={"kind": "shift"}, refusal="A shift needs a title.")
+    turnstore.save("scribe-turn", discussion.id, [refused, added])
+    db.session.flush()
+    observer.refusals(test_user.free_diagram_id, "scribe-turn")
+    assert [k for k, d in seen()] == [ObservationKind.ToolRefused]

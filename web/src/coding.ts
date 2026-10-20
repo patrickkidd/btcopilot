@@ -54,6 +54,14 @@ export function writtenConcepts(ids: number[], events: TimelineEvent[]): string 
   return conceptLinks(conceptsOf(events.filter((event) => ids.includes(event.id))));
 }
 
+/** Why a statement did not go in, in a coder's words: a server that broke or
+ * never answered is one plain sentence, never how the server failed (R-0869). */
+export function missed(error: unknown): string {
+  if (error instanceof api.Failed && (error.silent || error.status >= 500))
+    return "That did not go in. Try again in a minute.";
+  return api.whatFailed(error);
+}
+
 /** Which record events a piece of the thread wrote, for the concept pages
  * hung under it once the record is read. */
 function wrote(node: HTMLElement, ids: number[]): HTMLElement {
@@ -130,7 +138,13 @@ export class Coding {
     // The drawer edits the record this coding is of, never the coder's own
     // family, so it is built on that record's id (R-0267).
     const coded = this.thread.diagram_id;
-    this.drawer = new Menu(this.rows, () => this.reread(), () => coded);
+    this.drawer = new Menu(
+      this.rows,
+      () => this.reread(),
+      () => coded,
+      undefined,
+      () => this.finished(),
+    );
     this.drawer.onTab = (tab) => this.markTab(tab);
     this.handlers.onTitle({
       name: this.thread.session,
@@ -365,7 +379,7 @@ export class Coding {
     } catch (error) {
       this.after(
         turn,
-        el("div", `bub coach sub${side}`, `<div class="did q">${esc(api.whatFailed(error))}</div>`),
+        el("div", `bub coach sub${side}`, `<div class="did q">${esc(missed(error))}</div>`),
         turn,
       );
       // A scribe that stopped part way has still written that part.
@@ -479,10 +493,9 @@ export class Coding {
   /** The two lines across the thread: the last ratified cut as a faint
    * hairline, and this cut, dashed amber, with nothing shown after it. */
   private cutline(thread: CodingThread, now: boolean): HTMLElement {
-    const last = thread.turns[thread.turns.length - 1];
     const label = now
-      ? `cut here · turn ${last?.order ?? 0} · ${thread.cut_day}`
-      : `last cut · turn ${thread.agreed?.order ?? 0} · ratified ${thread.agreed?.ratified}`;
+      ? `cut here · ${thread.cut_day}`
+      : `last cut · ratified ${thread.agreed?.ratified}`;
     return el(
       "div",
       `cutline${now ? " now" : ""}`,

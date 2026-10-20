@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { drawTimeline, eventsOf, litCoding, names, what, when } from "../src/ballot";
+import {
+  drawTimeline,
+  eventsOf,
+  litCoding,
+  names,
+  what,
+  when,
+  wordedLine,
+  words,
+} from "../src/ballot";
 import {
   ItemKind,
   ItemStatus,
@@ -151,5 +160,31 @@ describe("the agreement timeline", () => {
     // two different readings of event 2; event 3 was written one way only
     const counts = [...svg.matchAll(/<text class="d-n"[^>]*>(\d+)<\/text>/g)].map((m) => m[1]);
     expect(counts).toEqual(["2"]);
+  });
+});
+
+describe("the values a coder reads", () => {
+  // R-0869
+  it("words an opinion's kind, date and relationship, never the stored slug", () => {
+    const opinion = {
+      person_name: "Rosa",
+      item: { dateTime: "1971-03-02", kind: "shift", relationship: "defined-self" },
+    } as never;
+    const said = words(opinion, ["dateTime", "person_name", "kind", "relationship"]);
+    expect(said).toContain(when("1971-03-02"));
+    expect(said).toContain("a shift");
+    expect(said).toContain("defined self");
+    expect(said).not.toMatch(/1971-03-02|defined-self|· shift/);
+  });
+
+  // R-0869
+  it("words a line the server already joined, value by value", () => {
+    const said = wordedLine("1971-03-02 · shift · distance · left for Juneau");
+    expect(said).toBe(`${when("1971-03-02")} · a shift · relationship: distance · left for Juneau`);
+  });
+
+  // R-0869
+  it("names the variable an up or a down belongs to", () => {
+    expect(wordedLine("symptom: up · anxiety: down")).toBe("symptom up · anxiety down");
   });
 });

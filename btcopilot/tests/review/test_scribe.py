@@ -9,10 +9,10 @@ from mock import patch
 from btcopilot import prompts
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.llmutil import Served
-from btcopilot.models import Change, ModelCall, Purpose
+from btcopilot.models import Change, ModelCall, Observation, ObservationKind, Purpose, TurnEvent
 from btcopilot.review import adapter
 from btcopilot.review.scribe import written
-from btcopilot.tests.review.conftest import coded, person
+from btcopilot.tests.review.conftest import coded, person, shift
 
 HAIKU = Served("claude-haiku-4-5")
 
@@ -169,14 +169,14 @@ class Endless:
 
 
 def test_says_so_when_it_runs_out_of_steps(coder, cut, turns):
-    # R-0411
+    # R-0411, R-0869
     """What was written stays, and the coder is told, never shown it as done."""
     coding = coded(coder.user, cut, {"people": []}, done=False)
     response = scribe(coder, coding, turns[0], Endless(), "a sentence that never ends")
     assert response.status_code == 400
-    assert response.get_data(as_text=True).startswith(
-        "The scribe stopped before it finished after adding Person 1, Person 2"
-    )
+    shown = response.get_data(as_text=True).split(": ", 1)[1]
+    assert shown.startswith("Person 1, Person 2")
+    assert shown.endswith(" went in. The rest did not. Say the rest again in one sentence.")
 
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     assert len(record["people"]) == 8
@@ -257,8 +257,8 @@ def test_a_marriage_and_a_child_are_written_and_said_back(coder, cut, turns):
     )
     assert response.status_code == 200
     assert response.json["lines"] == [
-        "+ Marcus & Delphine · married · Jun 1970",
-        "+ Corinne · daughter of Marcus & Delphine",
+        "Marcus & Delphine · Married · Jun 1970",
+        "Corinne · daughter of Marcus & Delphine",
     ]
 
 
@@ -286,15 +286,15 @@ def test_a_marriage_reads_as_both_names_and_the_year():
     # R-0326
     """The line the coder sees for a structure write (R-0326, drawing 1a)."""
     assert written(STRUCTURE, ["20"], [], ["10"]) == [
-        "+ Marcus & Delphine · married · Jun 1970"
+        "Marcus & Delphine · Married · Jun 1970"
     ]
 
 
 def test_a_child_reads_as_whose_child_they_are():
     # R-0326
     assert written(STRUCTURE, [], ["3", "4"]) == [
-        "+ Corinne · daughter of Marcus & Delphine",
-        "+ Theo · son of Marcus & Delphine",
+        "Corinne · daughter of Marcus & Delphine",
+        "Theo · son of Marcus & Delphine",
     ]
 
 
@@ -302,7 +302,7 @@ def test_a_bond_with_no_event_says_it_has_no_date_yet():
     # R-0013
     record = dict(STRUCTURE, events=[])
     assert written(record, [], [], ["10"]) == [
-        "+ Marcus & Delphine · married · no date yet"
+        "Marcus & Delphine · Married · no date yet"
     ]
 
 
@@ -321,7 +321,7 @@ def test_a_year_the_coder_only_said_as_a_year_reads_as_the_year():
         ],
     )
     assert written(record, ["20"], [], ["10"]) == [
-        "+ Marcus & Delphine · married · 1970"
+        "Marcus & Delphine · Married · 1970"
     ]
 
 
@@ -338,7 +338,7 @@ def test_a_january_date_the_coder_stated_keeps_its_month():
         ],
     )
     assert written(record, ["20"], [], ["10"]) == [
-        "+ Marcus & Delphine · married · Jan 1970"
+        "Marcus & Delphine · Married · Jan 1970"
     ]
 
 
@@ -355,3 +355,169 @@ def test_a_reopened_thread_says_which_events_each_line_wrote(coder, cut, turns):
     thread = coder.get(f"/review/codings/{coding.id}/thread").json
     said = {turn["id"]: turn["said"] for turn in thread["turns"]}
     assert said[turns[0].id][0]["event_ids"] == [int(one["id"]) for one in made]
+
+
+class Versioned:
+    """A model that changes existing events, each step naming the record
+    version its system prompt shows; with none shown it guesses 1, as Haiku
+    did on production."""
+
+    def __init__(self, *steps):
+        self.steps = list(steps)
+
+    def turn(self, system, messages, tools, turn_id=""):
+        if False:
+            yield
+        if not self.steps:
+            return ModelTurn(text="", served=HAIKU)
+        shown = re.search(r"Record version (\d+)\.", system)
+        version = int(shown.group(1)) if shown else 1
+        calls = [
+            ToolCall(id=f"call-{i}", name=name, args=dict(args, version=version))
+            for i, (name, args) in enumerate(self.steps.pop(0))
+        ]
+        return ModelTurn(calls=calls, blocks=[], served=HAIKU)
+
+
+def test_a_second_request_changes_an_existing_event(coder, cut, turns):
+    # R-0270, R-0480
+    record = {"people": [person(1, "Marcus")], "events": [shift(2, 1, "drank more"), shift(3, 1, "slept less")]}
+    coding = coded(coder.user, cut, record, done=False)
+    first = Scripted([("edit_person", {"name": "James Cooper"})], said="Added him.")
+    assert scribe(coder, coding, turns[0], first, "James Cooper came to stay").status_code == 200
+
+    model = Versioned(
+        [
+            ("edit_event", {"id": 2, "title": "Drank much more"}),
+            ("edit_event", {"id": 3, "title": "Slept much less"}),
+        ]
+    )
+    response = scribe(coder, coding, turns[0], model, "both got worse")
+    assert response.status_code == 200
+
+    events = adapter.record_of(adapter.diagram_of(coding.diagram_id))["events"]
+    assert [e["title"] for e in events] == ["Drank much more", "Slept much less"]
+
+
+SHIFT = {"date_certainty": "certain", "kind": "shift", "description": "could not sleep", "symptom": "up", "date": "2010-01-01", "person": "1"}
+NOTHING = "That did not go in. Say it again in one sentence."
+
+
+def test_a_refusal_the_scribe_falls_silent_on_says_it_did_not_go_in(coder, cut, turns):
+    # R-0270, R-0869
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    response = scribe(coder, coding, turns[0], Scripted([("edit_event", SHIFT)]), "Marcus could not sleep")
+    assert response.status_code == 400
+    assert response.get_data(as_text=True).split(": ", 1)[1] == NOTHING
+
+
+def test_a_refusal_the_scribe_talks_about_shows_only_what_went_in(coder, cut, turns):
+    # R-0270, R-0869
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        [("edit_person", {"name": "James Cooper"}), ("edit_event", SHIFT)],
+        said="I need to see the updated record to write this change with the current version number.",
+    )
+    response = scribe(coder, coding, turns[0], model, "James Cooper came and Marcus could not sleep")
+    assert response.status_code == 400
+    assert response.get_data(as_text=True).split(": ", 1)[1] == (
+        "James Cooper went in. The rest did not. Say the rest again in one sentence."
+    )
+
+
+def test_the_scribe_talking_instead_of_writing_says_it_did_not_go_in(coder, cut, turns):
+    # R-0270, R-0869
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        said=(
+            "I need to reread the current record. Let me check what events are there "
+            "now and get the correct version number for event 2. Could you provide the "
+            "current version number shown in the record for event 2?"
+        )
+    )
+    response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
+    assert response.status_code == 400
+    assert response.get_data(as_text=True).split(": ", 1)[1] == NOTHING
+
+
+def test_the_question_asked_before_the_model_reaches_the_coder(coder, cut, turns):
+    # R-0270
+    people = [person(1, "Marcus Smith"), person(2, "Marcus Jones")]
+    coding = coded(coder.user, cut, {"people": people}, done=False)
+    response = scribe(coder, coding, turns[0], Never(), "Marcus could not sleep")
+    assert response.status_code == 200
+    assert response.json["asked"] == "Which person is this about — Marcus Smith or Marcus Jones?"
+
+
+def test_a_shift_reads_as_its_title():
+    # R-0681, R-0869
+    data = {
+        "people": [person(1, "Ann")],
+        "events": [dict(shift(2, 1, "could not sleep", date="1990-01-01"), title="Sleep problems began")],
+    }
+    assert written(data, ["2"]) == ["Ann · Sleep problems began · Jan 1990"]
+
+
+def test_an_empty_diagram_is_asked_about_as_the_diagram(coder, cut, turns):
+    # R-0270, R-0869
+    coding = coded(coder.user, cut, {"people": []}, done=False)
+    response = scribe(coder, coding, turns[0], Never(), "she could not sleep")
+    assert response.json["asked"] == "Which person is this about? The diagram has nobody in it yet."
+
+
+def test_a_death_reads_as_its_kind_name():
+    # R-0869
+    data = {
+        "people": [person(1, "Rose")],
+        "events": [
+            {"id": 2, "kind": "death", "person": 1, "dateTime": "2011-02-01"},
+            {"id": 3, "kind": "death", "person": 1, "description": "in Oklahoma", "dateTime": "2011-02-01"},
+            {"id": 4, "kind": "death", "person": 1, "description": "Died in hospital. ", "dateTime": "2011-02-01"},
+        ],
+    }
+    assert written(data, ["2", "3", "4"]) == [
+        "Rose · Death · Feb 2011",
+        "Rose · Death · in Oklahoma · Feb 2011",
+        "Rose · Death · Died in hospital · Feb 2011",
+    ]
+
+
+def test_a_scribe_turn_keeps_its_calls_with_the_turn(coder, cut, turns):
+    # R-0871, R-0517
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted([("edit_event", SHIFT)], [("edit_person", {"name": "James Cooper"})])
+    scribe(coder, coding, turns[0], model, "James Cooper came and Marcus could not sleep")
+    kept = TurnEvent.query.order_by(TurnEvent.seq).all()
+    assert [(e.kind, e.payload["name"], bool(e.payload["refusal"])) for e in kept] == [
+        ("tool_call", "edit_event", True),
+        ("tool_call", "edit_person", False),
+    ]
+    assert {e.discussion_id for e in kept} == {turns[0].discussion_id}
+    assert len({e.turn_id for e in kept}) == 1
+
+
+def test_an_earlier_statement_keeps_its_line_after_a_later_one_changes_the_event(coder, cut, turns):
+    # R-0270
+    coding = coded(coder.user, cut, {"people": [person(1, "Tom")]}, done=False)
+    moved = {"date_certainty": "certain", "kind": "noted", "title": "Moved to Glasgow", "description": "moved", "date": "2006-09-01", "person": "1"}
+    scribe(coder, coding, turns[0], Scripted([("edit_event", moved)]), "Tom moved to Glasgow in 2006")
+    event_id = adapter.record_of(adapter.diagram_of(coding.diagram_id))["events"][0]["id"]
+    later = Versioned([("edit_event", {"id": event_id, "date": "2007-09-01", "date_certainty": "certain"})])
+    fixed = scribe(coder, coding, turns[1], later, "it was 2007, not 2006")
+    assert fixed.status_code == 200, fixed.get_data(as_text=True)
+
+    thread = coder.get(f"/review/codings/{coding.id}/thread").json
+    said = {turn["id"]: turn["said"] for turn in thread["turns"]}
+    assert said[turns[0].id][0]["lines"] == ["Tom · Moved to Glasgow · Sep 2007"]
+    assert said[turns[1].id][0]["lines"] == ["Tom · Moved to Glasgow · Sep 2007"]
+
+
+def test_a_refused_scribe_call_is_written_down_as_the_coachs_are(coder, cut, turns):
+    # R-0871, R-0517
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted([("edit_event", SHIFT)], [("edit_person", {"name": "James Cooper"})])
+    scribe(coder, coding, turns[0], model, "James Cooper came and Marcus could not sleep")
+    rows = Observation.query.all()
+    assert [(r.kind, r.diagram_id, r.detail["tool"], r.detail["retried"]) for r in rows] == [
+        (ObservationKind.ToolRefused, coding.diagram_id, "edit_event", False)
+    ]

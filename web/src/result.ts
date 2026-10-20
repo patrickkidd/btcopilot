@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { wordedLine } from "./ballot";
 import { esc, type Title } from "./dom";
 import { flagLine } from "./rules";
 import { toast } from "./toast";
@@ -58,6 +59,16 @@ function tends(one: Tendency): string[] {
       `${one.name} differs on ${one.leans} more than anything else (${one.leans_count} times).`,
     );
   return said;
+}
+
+/** One event the AI read differently, named by who, what and when, each side worded. */
+export function arow(one: Differed): string {
+  return (
+    `<div class="arow"><span>${esc(wordedLine(one.label))}</span>` +
+    `<span class="s2">the room: ${esc(wordedLine(one.room))}</span>` +
+    `<span class="s2">the AI: ${esc(wordedLine(one.coach))}</span>` +
+    `<span>${esc(one.reason ?? "no reason was given")}</span></div>`
+  );
 }
 
 export class ResultScreen {
@@ -171,17 +182,8 @@ export class ResultScreen {
       );
     return (
       `${head} · ${found.differed.length}</h4>` +
-      found.differed.map((one) => this.arow(one)).join("") +
+      found.differed.map(arow).join("") +
       `</div>`
-    );
-  }
-
-  private arow(one: Differed): string {
-    return (
-      `<div class="arow"><span>${esc(one.label)}</span>` +
-      `<span class="s2">the room: ${esc(one.room)}</span>` +
-      `<span class="s2">the AI: ${esc(one.coach)}</span>` +
-      `<span>${esc(one.reason ?? "no reason was given")}</span></div>`
     );
   }
 
