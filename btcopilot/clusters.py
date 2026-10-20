@@ -600,10 +600,10 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
     shifts = [e for e in held if supports(e, list(events.values()))]
     people = {e.person for e in shifts}
     named = cluster.get("openingEventId")
-    changes = [e for e in held if e.id == named and not unsure(e)] or [
+    openers = [e for e in held if e.id == named and not unsure(e)] or [
         e for e in held if e.kind.isStructural() and not unsure(e)
     ]
-    opening = changes[0] if changes else None
+    opening = openers[0] if openers else None
 
     def gap(shift: Event) -> int | None:
         if opening is None:
@@ -1780,7 +1780,7 @@ def detect_clusters(
     when = {e.id: e.dateTime for e in free}
     known = set(when)
     days = {e.id: parse_date(e.dateTime) for e in _dated(data)}
-    clusters, changes = [], []
+    clusters, reshaped = [], []
     for cluster in screened.kept:
         spanned = sorted(when[event_id] for event_id in cluster.eventIds)
         cluster_id = cluster.id or next_id(taken)
@@ -1814,7 +1814,7 @@ def detect_clusters(
             )
         )
         if cluster.change:
-            changes.append(cluster.change)
+            reshaped.append(cluster.change)
             _log.info(f"Regrouped {cluster.name!r}: {cluster.change}")
     dated = {e.id: e.dateTime for e in _dated(data)}
     for one in screened.named:
@@ -1835,7 +1835,7 @@ def detect_clusters(
         )
         _log.info(f"Wrote the person's period {one.period.name!r}")
     clusters += _grown(data, {one.replaces for one in screened.named})
-    return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=changes)
+    return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=reshaped)
 
 
 def _inside(
