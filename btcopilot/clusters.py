@@ -1499,9 +1499,9 @@ def _screen(
                     f"Period {cluster.name!r} reaches from {said['start'][:4]} to "
                     f"{said['end'][:4]}, more than half of the years this "
                     f"diagram's events after its early births cover "
-                    f"({history[0].year} to {history[1].year}): a period covering the whole history "
-                    "is the family's ordinary level, not a period. Return the "
-                    "periods inside it.",
+                    f"({history[0].year} to {history[1].year}): a period "
+                    "covering the whole history is the family's ordinary "
+                    "level, not a period. Return the periods inside it.",
                     check,
                     said,
                 )
