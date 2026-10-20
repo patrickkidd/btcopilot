@@ -205,7 +205,7 @@ def write(coding, statement, said: str, model=None) -> dict:
         if refused:
             _log.warning(f"Scribe step {step} was refused: {results}")
 
-    adapter.keep_calls(turn_id, statement.discussion_id, kept)
+    adapter.keep_calls(turn_id, statement.discussion_id, coding.diagram_id, kept)
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
     # Every call is committed as it lands, so a loop that ran out of steps or
     # gave up on a refusal has written part of the sentence; the coder is told

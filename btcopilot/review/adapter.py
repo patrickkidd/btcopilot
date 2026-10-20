@@ -139,10 +139,15 @@ def scribe_toolbox(diagram_id: int, user_id: int, statement_id: int, turn_id: st
     )
 
 
-def keep_calls(turn_id: str, discussion_id: int, kept: list[dict]) -> None:
+def keep_calls(
+    turn_id: str, discussion_id: int, diagram_id: int, kept: list[dict]
+) -> None:
     """A scribe turn's tool calls, kept as turn_events rows the way a coach
-    turn keeps its own, so the learning loop counts them the same (R-0871)."""
+    turn keeps its own, and its refused calls written down as the coach's are,
+    so the learning loop counts them the same (R-0871)."""
     turnstore.save(turn_id, discussion_id, kept)
+    db.session.flush()
+    observer.refusals(diagram_id, turn_id)
     db.session.commit()
 
 

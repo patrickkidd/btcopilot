@@ -87,6 +87,19 @@ def observe(diagram_id: int, turn_id: str, data: DiagramData) -> None:
         )
 
 
+def refusals(diagram_id: int, turn_id: str) -> None:
+    """Only the refused calls of a turn with no statement of its own, the
+    scribe's on a coding: it has no read tool and no reply, so the rest of the
+    watch does not apply to it [Oracle: R-0871]."""
+    kept = turnstore.kept({turn_id}).get(turn_id, [])
+    for kind, detail in _refused(kept):
+        db.session.add(
+            Observation(
+                diagram_id=diagram_id, turn_id=turn_id, kind=kind, detail=detail
+            )
+        )
+
+
 def _same(kind: ObservationKind, items: list[dict], touched: set, key) -> list:
     groups: dict[tuple, list] = {}
     for item in items:
