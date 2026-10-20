@@ -255,6 +255,19 @@ class ClusterCheck(enum.StrEnum):
     Cause = "cause"
     FirstPerson = "first_person"
     RawId = "raw_id"
+    # Not a refusal: a new cluster held back for a second detection, and what
+    # became of it (`Wait`).
+    Waiting = "waiting"
+
+
+class Wait(enum.StrEnum):
+    """What became of a new cluster held back for a second detection: each is
+    an observations row, so how often two detections disagree is counted
+    [Oracle: R-0873, R-0517]."""
+
+    Parked = "held_for_a_second_detection"
+    Promoted = "shown_on_a_second_detection"
+    Dropped = "not_proposed_again"
 
 
 class ClusterError(Exception):
@@ -1977,7 +1990,11 @@ def _again(cluster: Cluster, waiting: dict[str, dict]) -> str | None:
 
 
 def _deltas(
-    stored: list[dict], detected: list[Cluster], dates: dict, waits: str | None = None
+    stored: list[dict],
+    detected: list[Cluster],
+    dates: dict,
+    waits: str | None = None,
+    heard=None,
 ) -> list[dict]:
     """Every app cluster the answer did not return is set aside, never
     deleted; the person's own are kept as they drew them [Oracle: R-0850].
@@ -1987,7 +2004,9 @@ def _deltas(
     return is set aside. With `waits`, the detection's key, any other new app
     cluster is stored set aside under that key until the next detection
     proposes it again; a waiting one not proposed again stays aside, no longer
-    waiting [Oracle: R-0873]."""
+    waiting [Oracle: R-0873]. `heard`, when given, hears each cluster parked,
+    shown on a second detection or not proposed again, with its id, its events
+    and the key of the detection that first proposed it [Oracle: R-0517]."""
     rows = {
         str(c["id"]): c
         for c in stored
@@ -2000,19 +2019,28 @@ def _deltas(
     opens = {c.get("openingEventId") for c in live} - {None}
     shown = {i for c in live for i in c.get("eventIds") or []}
     kept = {}
+    told: list[tuple[Wait, str, list[int], str]] = []
     for cluster in _detected(list(held.values()), detected, dates).values():
         if cluster.id not in held and cluster.source is ClusterSource.Model:
             again = _again(cluster, waiting)
             if again:
                 cluster.id = again
-                del waiting[again]
+                proposed = waiting.pop(again)["proposedAt"]
+                told.append((Wait.Promoted, again, cluster.eventIds, proposed))
             elif (
                 waits
                 and cluster.openingEventId not in opens
                 and not shown & set(cluster.eventIds)
             ):
                 cluster.setAside, cluster.proposedAt = True, waits
+                told.append((Wait.Parked, cluster.id, cluster.eventIds, waits))
         kept[cluster.id] = cluster
+    told += [
+        (Wait.Dropped, cluster_id, row.get("eventIds") or [], row["proposedAt"])
+        for cluster_id, row in waiting.items()
+    ]
+    for one in told if heard else []:
+        heard(*one)
 
     deltas = set_aside(
         cluster_id
@@ -2026,8 +2054,7 @@ def _deltas(
             "field": "proposedAt",
             "after": None,
         }
-        for cluster_id in marked
-        if cluster_id not in kept
+        for cluster_id in waiting
     ]
     for cluster_id, cluster in kept.items():
         was = rows.get(cluster_id, {})
@@ -2130,6 +2157,19 @@ def sync(
             },
         )
 
+    def waited(wait: Wait, cluster_id: str, ids: list[int], proposed: str) -> None:
+        observe(
+            ObservationKind.ClusterRefused,
+            {
+                "check": ClusterCheck.Waiting.value,
+                "reason": wait.value,
+                "cluster": cluster_id,
+                "eventIds": ids,
+                "proposedAt": proposed,
+                "key": cache_key,
+            },
+        )
+
     failing = broken(data)
     for cluster, check, why in failing:
         _log.warning(f"Turn {turn_id} sets aside: {why}")
@@ -2185,7 +2225,7 @@ def sync(
             session_id=session_id,
         )
         return Regroup(change=change, sentences=[])
-    deltas = _deltas(data.clusters, result.clusters, dates, waits)
+    deltas = _deltas(data.clusters, result.clusters, dates, waits, waited)
     deltas.append(grouped(cache_key))
     change = record.apply(
         diagram_id,
