@@ -1,4 +1,5 @@
-"""One grouping scored against a case's expected clusters [Oracle: R-0856].
+"""One try of cluster detection scored against a case's expected clusters
+[Oracle: R-0856].
 
 Pairing reuses the F1 suite's cluster match (matching.py): a stored cluster
 pairs with an expected one when the events they share are at least
@@ -8,11 +9,18 @@ within the paired clusters. An expected cluster may be met by the app's period
 or the person's, since a period the person names over the same days is stored
 as theirs and the app's then gives way [Oracle: R-0853].
 
+A key Patrick signed may hold two more kinds of period [Oracle: R-0856,
+R-0857]. A cluster marked `hypothesis` counts neither way: a
+stored cluster that pairs with it is neither a hit nor an extra, one left out is
+not a miss, and its opening is not checked. A period the case lists in
+`notClusters` is one he said is not a cluster: a stored cluster that pairs with
+it is an extra in cluster F1 and a miss named beside it.
+
 The rules that are not F1 are checked beside it, each miss named:
 - A6: no app period is named by the person's trouble, and none fell back to
   the plain name the code gives when the answer twice did [Oracle: R-0376].
-- A9: no period opens at an event of unknown date, and a period expected as one
-  person's run holds only that person's shifts [Oracle: R-0850].
+- A9: no period opens at an event of unknown date, and a period expected to
+  hold one person's shifts holds only that person's [Oracle: R-0850].
 - The person's own periods come back as theirs, and no app period shares their
   days [Oracle: R-0853].
 - Voice and cause: no cluster the app made speaks as the person outside
@@ -56,20 +64,32 @@ from btcopilot.schema import (
 class Rule(enum.StrEnum):
     TroubleName = "A6 named by the person's trouble"
     UnknownOpening = "A9 opens at an unknown date"
-    RunOf = "A9 not the one person's run"
+    RunOf = "A9 not the one person's shifts"
     Theirs = "the person's period missing or changed"
     Voice = "speaks as the person"
     Cause = "gives a cause"
     Id = "id violations"
     Opening = "opening differs"
+    NotACluster = "a period the case says is not a cluster"
 
 
 @dataclass
 class Expected:
+    """A cluster of the key; `hypothesis` marks one scored neither way."""
+
     name: str
     eventIds: list[int]
     opening: int | None = None
     runOf: int | None = None
+    hypothesis: bool = False
+
+
+@dataclass
+class NotCluster:
+    """A period the key says is not a cluster: a try that stores it misses."""
+
+    name: str
+    eventIds: list[int]
 
 
 @dataclass
@@ -87,6 +107,7 @@ class Score:
     members: F1Metrics
     pairs: list[tuple[Cluster, Expected]]
     misses: list[tuple[Rule, str]] = field(default_factory=list)
+    hypotheses: list[tuple[Cluster, Expected]] = field(default_factory=list)
 
     def count(self, rule: Rule) -> int:
         return sum(r is rule for r, _ in self.misses)
@@ -130,16 +151,26 @@ def score(
     expected: list[Expected],
     data: DiagramData,
     theirs: list[Theirs] = (),
+    not_clusters: list[NotCluster] = (),
 ) -> Score:
     every = {e.id: e for e in events(data)}
     when = {i: parse_date(e.dateTime) for i, e in every.items() if e.dateTime}
     identity = {i: i for i in every}
-    wanted = [_as_cluster(n, e.name, e.eventIds) for n, e in enumerate(expected)]
+    key = [*expected, *not_clusters]
+    wanted = [_as_cluster(n, e.name, e.eventIds) for n, e in enumerate(key)]
     matched = match_clusters(stored, wanted, identity)
-    by_id = {w.id: e for w, e in zip(wanted, expected)}
-    pairs = [(c, by_id[w.id]) for c, w in matched.matched_pairs]
+    by_id = {w.id: e for w, e in zip(wanted, key)}
+    paired = [(c, by_id[w.id]) for c, w in matched.matched_pairs]
+    pairs = [(c, e) for c, e in paired if isinstance(e, Expected) and not e.hypothesis]
+    held = [(c, e) for c, e in paired if isinstance(e, Expected) and e.hypothesis]
+    ruled_out = [(c, e) for c, e in paired if isinstance(e, NotCluster)]
+    left_out = [
+        w
+        for w in matched.gt_unmatched
+        if isinstance(by_id[w.id], Expected) and not by_id[w.id].hypothesis
+    ]
     clusters = calculate_f1_from_counts(
-        len(pairs), len(matched.ai_unmatched), len(matched.gt_unmatched)
+        len(pairs), len(matched.ai_unmatched) + len(ruled_out), len(left_out)
     )
     tp = sum(len(set(c.eventIds) & set(e.eventIds)) for c, e in pairs)
     members = calculate_f1_from_counts(
@@ -147,7 +178,11 @@ def score(
         sum(len(c.eventIds) for c, _ in pairs) - tp,
         sum(len(e.eventIds) for _, e in pairs) - tp,
     )
-    result = Score(clusters=clusters, members=members, pairs=pairs)
+    result = Score(clusters=clusters, members=members, pairs=pairs, hypotheses=held)
+    for c, e in ruled_out:
+        result.misses.append(
+            (Rule.NotACluster, f"{c.name!r} is {e.name!r}, not a cluster")
+        )
 
     told = trouble_words(data)
     for c in stored:
@@ -193,7 +228,7 @@ def score(
             run = judge({"eventIds": c.eventIds}, data).runOf
             if run != e.runOf:
                 result.misses.append(
-                    (Rule.RunOf, f"{c.name!r}: the run of {run}, not of {e.runOf}")
+                    (Rule.RunOf, f"{c.name!r}: the shifts of {run}, not of {e.runOf}")
                 )
         if e.opening is not None and c.openingEventId != e.opening:
             result.misses.append(

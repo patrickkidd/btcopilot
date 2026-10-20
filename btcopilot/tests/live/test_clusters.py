@@ -3,7 +3,7 @@ apart and one stray, the shape of the fault seen on production. An older
 prompt let the model fold them into one period of fifty years. Read as
 hypotheses of a family process, the periods stay apart across the quiet
 decades, each named for the change in the family that opened it, never for
-its years or the person's trouble (R-0841, R-0844, R-0837, R-0838, R-0850).
+its years or the person's trouble (R-0841, R-0844, R-0846, R-0838, R-0850).
 The periods the person names when asked when the most was going on come back
 as hers, in her words (R-0853). Fewer than three of the shifts that count
 weighs against a period and never keeps it out: the 1994 run, offered with its
@@ -137,7 +137,7 @@ YEARS_ONLY = re.compile(r"^\W*\d{4}(\W+\d{2,4})?\W*$")
 
 @passes(8, of=10)
 def test_runs_decades_apart_stay_apart_as_named_hypotheses():
-    # R-0841, R-0837
+    # R-0841, R-0850
     """One to three periods come back; none spans 1955 and 1994; none is named
     by its years alone; the grandfather's 1998 death sits with Nell and Theo's
     trouble or in none; and no name or reason reaches outside its own events."""

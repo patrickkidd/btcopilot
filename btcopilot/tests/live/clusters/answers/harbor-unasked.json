@@ -1,0 +1,104 @@
+{
+ "model": "hand-written",
+ "answers": [
+  {
+   "clusters": [
+    {
+     "eventIds": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120,
+      121,
+      122
+     ],
+     "name": "Your grandfather Teodor's death",
+     "reason": "Your grandfather Teodor died suddenly in January 1978, and within the year your grandmother Delphine stopped cooking, your mother went to her every evening, your father took the night shifts, your uncle Anton was drinking at lunch and separated from Celeste that August, Simone quarrelled with her mother and Callum had ear infections all winter, until Delphine took the library job in May 1979.",
+     "openingId": 113
+    },
+    {
+     "eventIds": [
+      129,
+      130,
+      131,
+      132,
+      133,
+      134
+     ],
+     "name": "Your sister Ines's birth",
+     "reason": "In the months before your sister Ines was born in September 1984, your mother was ordered to bed, your grandmother Hazel came every morning to keep the house, your father argued with her, Callum stammered again and you would not go to sleep unless your father sat by you; nothing more piles up after the birth.",
+     "openingId": 134
+    },
+    {
+     "eventIds": [
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153
+     ],
+     "name": "Your grandmother Hazel diagnosed with Parkinson's disease",
+     "reason": "From your grandmother Hazel's diagnosis in September 1986 to her move into the nursing home in June 1997 the shifts climb step by step, with only short relief between them and no quiet year: your grandfather Ambrose taking over her care, his chest pains and his giving up the workshop, your father's nightly calls, his arguments with Lyle and later with your mother, his drinking, Lyle's visits stopping, your mother and Mavis nursing her and Pearl's panic spells, until your father cut his drinking back that autumn.",
+     "openingId": 135
+    },
+    {
+     "eventIds": [
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      160,
+      161
+     ],
+     "name": "Your brother Callum leaving home",
+     "reason": "Around Callum leaving home for the mines in May 1999: in the months before, he and your father argued most nights and your mother could not settle; after it, your father missed days at work, Ines skipped school that autumn, your mother took Ines everywhere and Callum phoned home on Sundays, until Ines was back at school full days in the summer of 2000.",
+     "openingId": 156
+    },
+    {
+     "eventIds": [
+      164,
+      165,
+      166,
+      167,
+      168,
+      169
+     ],
+     "name": "Your grandmother Hazel's death",
+     "reason": "In the year after your grandmother Hazel died in January 2003 you slept only a few hours a night, left the bookshop, stopped returning your mother's calls and kept off buses and out of shops, until the garden centre job that November; only your own shifts are in the diagram for those months, and no one else's.",
+     "openingId": 164
+    }
+   ],
+   "periods": [],
+   "declined": [
+    {
+     "hint": "r2",
+     "reason": "1980 to 1982: Emil's drinking is told as how it has been for most of his adult life and Lyle's distance from your father as kept since they were boys, so both are this family's ordinary level, and once they are struck out no shift is left beside the two weddings and your birth: the family's ordinary level."
+    },
+    {
+     "hint": "r7",
+     "reason": "November 2005: four days from Ines's car going off the road on black ice to your mother calm again once Ines was home, everyone back as before within the week: an acute episode around a real event that soon passed, not a period."
+    }
+   ]
+  }
+ ]
+}

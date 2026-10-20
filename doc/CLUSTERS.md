@@ -88,8 +88,10 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    first four letters, less those another event, an event kind, a name, a word
    for a relative or a common word also uses), no days shared with
    the person's own period. Then the app's periods sharing a day or an event are
-   merged into the one holding more. Then at least three events and no more than
-   ten years [Oracle: R-0846, R-0837]. Fewer than three supporting shifts never
+   merged into the one holding more. Then at least three events, and no more
+   than half of the years the events a period may hold cover (the early births
+   no period can hold are left out of that history) unless ten years or fewer
+   [Oracle: R-0846, R-0837]. Fewer than three supporting shifts never
    refuses a period: it counts against it (A1), on that cluster's Against line of
    the coach's guess (step 8) [Oracle: R-0850]. A first answer with any fault is
    asked once more with the reasons; on the second, a failing period is dropped,
@@ -110,7 +112,28 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    the cache key is written, so no turn makes the same calls again until the
    events or the person's answers change.
 6. Every stored app period the answer did not return is set aside. The person's
-   own are never changed by a regroup.
+   own are never changed by a regroup. A period holds every event with a stored
+   date, however sure, on or between its first and last day, whichever events
+   the model named: an event added inside a cluster's years joins it at the next
+   detection, decided by the code. An event no period holds, dated on the day
+   one period ends and the next begins, joins only the one whose opening event
+   (else its first day) is nearer in time, the earlier on a tie; an event one
+   period holds never joins another [Oracle: R-0873].
+6a. A new app period that shares an event or the opening event with a live app
+   period reshapes it and is shown at once; the live one it does not return is
+   set aside. A new app period that shares no event with any live app period
+   and opens at none of their opening events, proposed while the diagram has a
+   live app period, is stored set aside with
+   `proposedAt`, the cache key of that detection, and is never handed to the
+   model. When the next detection proposes a period opening at the same event,
+   or holding the same events or at least half of the larger's (so one with no
+   opening event can be shown), that row is shown under its id with the new
+   answer's days and name, and `proposedAt` is cleared; not proposed again, it
+   stays set aside with `proposedAt` cleared. Each period held back, shown on
+   the second detection, or not proposed again is a cluster_refused row with
+   check `waiting` [Oracle: R-0517]. A diagram's first detection and a from-scratch catch-up
+   show their periods at once. A set aside the person made carries no
+   `proposedAt` [Oracle: R-0873].
 7. The person's periods [Oracle: R-0853]. The call also gets the person's
    answers to the `most_going_on` item (each closed question's `answer`, the
    message it cites; for a question closed as answered before that link was
@@ -121,9 +144,10 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    `user` holding every dated event in the family inside those years, its dates
    the first and last of them. It is not written, and is a cluster_refused row
    instead, when the message is not one of the answers, the name or sentence is
-   not the person's words in order, the years are missing, the years hold fewer
-   than three events, or it shares days with another stored period of theirs
-   or one read before it in the same answer. None of these is asked again. A
+   not the person's words in order, the years are missing, the years hold no
+   event, or it shares days with another stored period of theirs
+   or one read before it in the same answer. None of these is asked again. It
+   may hold one event or more; the app's periods and the coach's need three. A
    period read again under the name of one of theirs already stored is that
    period: the new reading replaces the stored copy's events, dates and
    sentence under its id. The app's periods never share their days. Once
@@ -146,7 +170,7 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
 ## When it runs
 
 After any coach turn that adds or changes an event, when the cache key (the
-events' dates, date certainty and shifts, the message ids of the person's
+events' kinds, people, descriptions, dates, date certainty and shifts, the message ids of the person's
 answers to when the most was going on, plus `DETECTION_VERSION`, now 16)
 differs from the stored one; `flask admin diagrams regroup` reruns diagrams that
 are behind. Version 12 regroups every diagram on its next event change, so
@@ -164,12 +188,14 @@ After the deploy carrying FD-381, with a database backup first: `flask admin fd3
 ## What a stored cluster holds
 
 Name, reason, source (model or user), event ids, the dates they span, the opening
-event id, and whether it is set aside [Oracle: R-0205, R-0850].
+event id, whether it is set aside, and, while it waits for a second detection,
+`proposedAt` [Oracle: R-0205, R-0850, R-0873].
 
 ## When a cluster looks wrong
 
-Patrick's ruling [Oracle: R-0857]: the expected clusters of the `deep` case stand as drafted,
-provisionally. A session started on "evaluate this cluster discrepancy" follows these steps.
+Patrick signed the expected clusters of the `deep` case on 2026-10-16: three clusters, and two
+hypotheses scored neither way [Oracle: R-0857]. A session started on "evaluate this cluster
+discrepancy" follows these steps.
 
 1. Evidence: write Patrick's question and what he saw, quoted, into the session before anything
    else (diagram, dates, the clusters shown, the clusters he expected). A new real case is evidence
@@ -193,3 +219,8 @@ provisionally. A session started on "evaluate this cluster discrepancy" follows 
 8. A new real case gets its own fictional case as a new file in `clusters/cases/`, built the way
    btcopilot/tests/live/README.md says under "Cluster F1" (dates shifted by one offset, structure
    changed outside the clusters, every word rewritten), never a real diagram.
+
+The inventory behind the cluster prompt is in the private corpus, btcopilot-sources
+`research/clusters/INVENTORY.md`: one row per source item, 237 passages (P-001 to P-237), 201
+statements of Patrick's (S-001 to S-201) and 144 rulings (R-nnnn). The prompt's citation comments
+use those ids, which are stable from that file on.

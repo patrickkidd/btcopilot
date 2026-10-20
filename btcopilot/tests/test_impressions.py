@@ -24,7 +24,7 @@ from btcopilot.tests.test_turnhistory import coach, family, post, say_in, statem
 from btcopilot.toolbox import ToolError, ToolName, schemas
 
 TENSE = "When things get tense, your father gets busy and your mother goes quiet."
-LATCH = "You latch on hard to someone, then go deep into something alone."
+LATCH = "You take on a second job, then drop everything else."
 DOESNT_FIT = "You said that one doesn't fit."
 
 

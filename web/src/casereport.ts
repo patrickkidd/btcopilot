@@ -9,11 +9,11 @@ import { BACK } from "./tokens";
 import { CLUSTER, esc, flash, slideOver } from "./dom";
 import { Drawer, frameOn } from "./drawer";
 import { Lens } from "./lens";
-import { ask, dismiss, dismissed, phase, Phase, REWRITING } from "./outdated";
+import { ask, dismiss, dismissed, lineClass, phase, Phase, REWRITING, rewritten, stamp } from "./outdated";
 import { Sheet } from "./sheet";
 import { untold } from "./snapshots";
 import type { Opened, Part, View } from "./store";
-import { ChipKind, ChipTone, InteractionKind, ItemKind, RewriteState, type Chip, type Rewrite, type Timeline } from "./types";
+import { ChipKind, ChipTone, InteractionKind, ItemKind, type Chip, type Timeline } from "./types";
 import { Feature } from "./track";
 import { toast } from "./toast";
 import { AWAY_PX, fold, type Fold } from "./viewport";
@@ -76,7 +76,7 @@ export class CaseReport implements View {
   /** The diagrams whose report the coach is rewriting now. */
   private readonly rewriting = new Set<number>();
   /** Per diagram, the change "Refresh the report" was tapped for this time the app is open, so a failed rewrite does not ask again at once. */
-  private readonly refreshed = new Map<number, number>();
+  private readonly refreshed = new Map<number, string>();
 
   constructor(
     private readonly root: HTMLElement,
@@ -210,15 +210,15 @@ export class CaseReport implements View {
     const opened = this.opened!;
     const out = opened.record.report_out_of_date ?? null;
     const id = opened.diagram?.id ?? null;
-    const shown = id === null ? [] : [dismissed(id), this.refreshed.get(id) ?? null].filter((n): n is number => n !== null);
-    const now = phase(out, shown.length ? Math.max(...shown) : null, id !== null && this.rewriting.has(id));
+    const answered = id === null ? [] : [dismissed(id), this.refreshed.get(id) ?? null];
+    const now = phase(out, answered, id !== null && this.rewriting.has(id));
     this.body.querySelectorAll<HTMLElement>(".level[data-card]").forEach((l) =>
       l.classList.toggle("dim", now === Phase.Rewriting && WRITTEN.has(l.dataset.card as Card)),
     );
     if (now === Phase.Current) return;
     const line = document.createElement("button");
     line.type = "button";
-    line.className = "aged";
+    line.className = lineClass(now);
     line.disabled = now === Phase.Rewriting;
     line.textContent = now === Phase.Rewriting ? REWRITING : out!.sentence;
     this.body.querySelector(".case")?.prepend(line);
@@ -234,48 +234,35 @@ export class CaseReport implements View {
     this.sheet.lower();
     const id = this.opened!.diagram!.id;
     if (act === "refresh") {
-      this.refreshed.set(id, out.change_id);
+      this.refreshed.set(id, stamp(out));
       void this.rewrite(id);
       return;
     }
-    dismiss(id, out.change_id);
+    dismiss(id, out);
     this.render();
   }
 
-  /** The coach rewrites its eight cards (R-0825); the report is read again
-   * when it is done. One the server will not start now (already running, or
-   * no session yet) says so; a failed one, or one the server no longer knows,
-   * says so and puts the cards back as they were. Kept per diagram, so
-   * another family opened meanwhile is neither dimmed nor reloaded. */
+  /** The coach rewrites its eight cards (`rewritten`, R-0825), and the
+   * report is read again when it is done, the cards dimmed until it is read
+   * back; a failed read is never told as a failed rewrite, and one that
+   * failed puts the cards back as they were. Kept per diagram, so another
+   * family opened meanwhile is neither dimmed nor reloaded. */
   private async rewrite(id: number): Promise<void> {
-    let job: Rewrite | null;
-    try {
-      job = await this.hooks.fetch(api.rewriteReport);
-    } catch (error) {
-      if (!(error instanceof api.Failed) || error.status !== 409) throw error;
-      toast("The report is already being rewritten, or this family has no session yet");
-      return;
-    }
     this.rewriting.add(id);
     this.render();
     try {
-      while (job?.state === RewriteState.Running) {
-        await new Promise((done) => window.setTimeout(done, POLL_MS));
-        job = await api.reportRewrite(job.id).catch((error: unknown) => {
-          if (error instanceof api.Failed && error.status === 404) return { id: job!.id, state: RewriteState.Failed };
-          throw error;
-        });
-      }
-      if (job?.state === RewriteState.Failed) throw new Error(`the coach could not rewrite the case report, rewrite ${job.id}`);
-    } catch (error) {
-      toast("The coach could not rewrite the report. Try again.");
-      throw error;
+      const done = await rewritten({
+        start: () => this.hooks.fetch(api.rewriteReport),
+        poll: api.reportRewrite,
+        pause: () => new Promise((go) => window.setTimeout(go, POLL_MS)),
+        say: toast,
+      });
+      // a family opened since the tap is not the one rewritten
+      if (done && this.opened?.diagram?.id === id) await this.hooks.reload();
     } finally {
       this.rewriting.delete(id);
       this.render();
     }
-    // a family opened since the tap is not the one rewritten
-    if (this.opened?.diagram?.id === id) await this.hooks.reload();
   }
 
   /** A chip on the report: an event lights on the timeline as in the chat; a

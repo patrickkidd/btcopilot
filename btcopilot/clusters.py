@@ -9,9 +9,13 @@ opening; which opening mattered is the model's judgement. The model returns the
 app's periods as they should now stand, and reads the periods the person named
 when asked when the most was going on, each written once as theirs; the
 person's own stay as they drew them and are judged against the data like the
-app's [Oracle: R-0853]. The code only backstops: three events at least,
-nothing over ten years, no name told in the person's trouble, two periods
-sharing days become one, and a period that fails is set aside, never deleted.
+app's [Oracle: R-0853]. The code only backstops: three events at least in
+the app's (one in the person's), no
+period covering more than half of the years the events a period may hold
+cover, no name told in
+the person's trouble, two periods sharing days become one, and a period that
+fails is set aside, never deleted. A period holds every dated event inside its
+days, whichever the model named [Oracle: R-0873].
 Fewer than three supporting shifts counts against a period and never refuses
 it: the case report's refresh hears the count [Oracle: R-0850]. Spec and ruling
 ids: doc/CLUSTERS.md.
@@ -43,6 +47,7 @@ from btcopilot import coverage, profile, prompts
 from btcopilot.models import Diagram, Discussion, Statement
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
+    least_events,
     DateCertainty,
     VariableShift,
     Cluster,
@@ -104,11 +109,38 @@ _log = logging.getLogger(__name__)
 # 17: a period's name and sentences never give a cause or speak as the person,
 # so every record regroups on its next event change [Oracle: R-0864, R-0860].
 # 18: and never hold a raw event or cluster id [Oracle: R-0864].
-DETECTION_VERSION = 18
+# 19: the prompt rewritten once from the sources, every line cited to the
+# inventory: an acute episode of a few days is not a period, a lasting symptom
+# or a stage of the household's life is the family's level, a move or a job lost
+# may open a period, a time with no change in the family on a known date stays a
+# hypothesis, a hint is declined by what its events say and never by its count,
+# and the hints go to the call as `hints`; a declined hint comes back under
+# `hint`, so every diagram regroups on its next event change
+# [Oracle: R-0850, R-0855, R-0842, R-0851, R-0856, R-0857].
+# 20: a shift told as how things always were supports no period, one person's
+# trouble lifting counts beside another's rise in the same months, a hint is
+# the default only with a change in the family on a known date (any event not a
+# shift), a period's name is checked word for word with the ordinary relatives
+# free to use, and only a period covering more than half of the diagram's dated years
+# is refused for its length, so every diagram is read again on its next event
+# change [Oracle: R-0850, R-0856, R-0376, R-0846].
+DETECTION_VERSION = 20
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
 RISES = (("symptom", VariableShift.Up), ("anxiety", VariableShift.Up))
+LIFTS = (("symptom", VariableShift.Down), ("anxiety", VariableShift.Down))
+# A shift whose description says always or forever is told as how things always
+# were: the family's ordinary level, which counts toward no period
+# [Oracle: R-0850]. Only those two words: "never", "mostly", "on the whole" and
+# "for years" also tell real changes ("never spoke to him again after the
+# funeral"), so a standing pattern told in other words is the coach's to strike
+# when it reads the hint.
+STANDING = re.compile(r"\b(?:always|forever)\b")
+# How far apart, in days, one person's lift and another's rise may fall and
+# still be one movement: the same months, about three of them. Guidance, like
+# `SPAN_DAYS`, not a ruled number [Oracle: R-0850].
+LIFT_DAYS = 92
 
 # How far either side of a shift a related event is proposed as
 # part of the same cluster. A suggestion to the model, not a limit on what it
@@ -117,12 +149,17 @@ RISES = (("symptom", VariableShift.Up), ("anxiety", VariableShift.Up))
 # floor of three events is the one number that is ruled and enforced
 # (MIN_CLUSTER_EVENTS in schema.py), at the model's answer and again at the write.
 SPAN_DAYS = 548
-# The grouping answer's token limit, thinking included: room for the thinking
-# (its budget is 1024, yet calls on a 91-event record used up to 2454) and, per
-# event the record may group, its id in the answer and its share of the names,
-# reasons and changes (accepted answers used about 9). 89 groupable events get
-# 6232 tokens; with no limit, one answer repeated a sentence for 63000.
-THINKING_ROOM = 4096
+# The token limit of cluster detection's answer, thinking included: room for
+# the thinking and, per event the diagram may cluster, its id in the answer and
+# its share of the names, reasons and changes (accepted answers used about 9).
+# Gemini thinks within a budget of 1024 (calls on a diagram of 91 events used up
+# to 2454); Sonnet 5 at high effort sets its own thinking and used all of the
+# 8000 it was given on a diagram of 129 events, in each of ten tries. So a
+# diagram of 130 events gets 16000. The limit is a ceiling the call never shows:
+# an answer that ends below it is the same at any limit, and Haiku, which does
+# not think, used at most 4185 over both answers of a try. With no limit, one
+# answer repeated a sentence for 63000.
+THINKING_ROOM = 12880
 PER_EVENT = 24
 # Room per answer of the person's for the periods read from it: the question
 # asks for two or three times, each a name, a sentence of theirs and two years.
@@ -132,24 +169,19 @@ CALM_GAP_DAYS = 730
 # reaction, nothing piled up, so it is never offered; fewer than three still
 # counts against a run, never keeps it from the hint [Oracle: R-0850].
 PILE = 2
-# A returned group whose dated events span more than this is refused and the
-# model is asked again with the reason; on the second answer it is dropped and
-# the rest kept [Oracle: R-0837, R-0846]. It only catches an answer that draws
-# the family's whole span as one period; edges stay the model's call. A group
-# that long is a stage of the household or the family's ordinary level, not a
-# disturbance of it. The sources bound the number on both sides.
-# Above: the longest run of dated events any of them draws as one period of
-# stress is five years, the longest named family period a six-year plateau of
-# illness, and the one decade accepted as a single tag was events leading up to
-# a death held together by one man's long illness (Family Therapy in Clinical
-# Practice ch. 21 and ch. 3; the seminar; theory.md T105 to T108 in the corpus
-# research). Below: Bowen's typical stage of the household is "ten years"
-# (Basic Series 3, T1), and his own ten-year narrative chapter is several
-# periods of stress with calm between (ch. 21, T81). Ten is the smallest whole
-# number no wave on record reaches and the first a stage does. It binds nothing
-# inside the range the sources place waves, so the model still judges every
-# edge [Oracle: R-0842].
-MAX_SPAN_YEARS = 10
+# A returned period whose dated events cover more than this share of the years
+# the diagram's dated events cover is refused and the coach is asked again with
+# the reason; on the second answer it is dropped and the rest kept. It only
+# catches an answer that draws the family's whole history as one period, which
+# is the family's ordinary level, not a period; edges stay the coach's call. No
+# source sets a ceiling on a period's length, so a climb over more than ten
+# years is one period when its events hold together [Oracle: R-0846, R-0850].
+HISTORY_SHARE = 0.5
+# A period this many years long or shorter is never refused for its length, so
+# a diagram told only as far as one period, whose history is that period, still
+# gets it. Ten is the length the check refused at before; the share above is
+# what refuses now [Oracle: R-0846].
+FLOOR_YEARS = 10
 
 # Diagnostic and popular-psychology words the definitions the model is given do
 # not contain. The prompt forbids vocabulary from outside those definitions;
@@ -174,18 +206,23 @@ OUTSIDE_WORDS = (
 )
 
 
-# How many letters of a word the naming check compares, and the words it never
-# reads as the person's trouble whatever their descriptions say.
-STEM = 4
+# The words the naming check never reads as the person's trouble whatever their
+# descriptions say. The check compares whole words of four letters or more, so
+# "stepmother" is never read as "stepfather" nor "moving" as "moved".
 COMMON_WORDS = frozenset(
     (
         "about after again always another away back became been before could "
         "during family from going have home into less life more never only onto "
         "over period said since than that their them then they this time until "
         "were when while with would year years "
-        # Words for relatives, which name who changed, never the trouble.
-        "child children daughter husband parent parents partner sibling "
-        "siblings spouse wife"
+        # Words for relatives, which name who changed, never the trouble: the
+        # ordinary relatives with their step- and grand- forms, and the parts
+        # of those names when written with a hyphen [Oracle: R-0376, R-0426].
+        "child children daughter daughters husband parent parents partner "
+        "sibling siblings spouse wife mother mothers father fathers brother "
+        "brothers sister sisters stepmother stepmothers stepfather stepfathers "
+        "stepbrother stepbrothers stepsister stepsisters grandmother "
+        "grandmothers grandfather grandfathers step half grand great"
     ).split()
 )
 
@@ -235,10 +272,58 @@ def _enum_value(val):
     return val.value if hasattr(val, "value") else val
 
 
-def supports(event: Event) -> bool:
+def standing(event: Event) -> bool:
+    """Whether a shift is told as how things always were: this family's
+    ordinary level, not a departure from it, so it counts toward no period
+    whatever its marks say; the coach's coding of it stands [Oracle: R-0850]."""
+    return STANDING.search((event.description or "").lower()) is not None
+
+
+def lifted(event: Event) -> bool:
+    """A drop in symptom or anxiety or a rise in functioning, with nothing on
+    the event that counts by itself: someone's trouble lifting."""
+    return (
+        not troubled(event)
+        and event.relationship is None
+        and (
+            any(_enum_value(getattr(event, name)) == way for name, way in LIFTS)
+            or _enum_value(event.functioning) == VariableShift.Up
+        )
+    )
+
+
+def supports(event: Event, events: list[Event] = ()) -> bool:
     """A rise in symptom or anxiety, a fall in functioning, or a relationship
-    shift; a drop in anxiety or a rise in functioning does not [Oracle: R-0850]."""
-    return troubled(event) or event.relationship is not None
+    shift, unless it is told as how things always were. A lift in one
+    person's trouble counts only beside another person's rise in the same
+    months, both on a known date: the two are one movement in the family; a
+    lift alone, or beside only the same person's rise, counts for nothing
+    [Oracle: R-0850]. `events` are the ones a lift is read beside."""
+    if standing(event):
+        return False
+    if troubled(event) or event.relationship is not None:
+        return True
+    if not lifted(event) or unsure(event) or event.person is None:
+        return False
+    day = parse_date(event.dateTime)
+    return any(
+        other.person not in (None, event.person)
+        and troubled(other)
+        and not standing(other)
+        and not unsure(other)
+        and abs((parse_date(other.dateTime) - day).days) <= LIFT_DAYS
+        for other in events
+    )
+
+
+def changes(event: Event) -> bool:
+    """A change in the family on a known date, as the prompt defines one: any
+    event the diagram lists that is not a shift, dated certain or approximate.
+    A birth, a death, a marriage or a separation is one, and so is a noted
+    event such as a diagnosis, a move, a job lost or someone leaving home. A
+    shift is never one, nor is an event of unknown date
+    [Oracle: R-0850, R-0855, R-0364]."""
+    return event.kind is not EventKind.Shift and not unsure(event)
 
 
 def unsure(event: Event) -> bool:
@@ -282,23 +367,41 @@ def _years_after(day: datetime.date, count: int) -> datetime.date:
         return day.replace(year=day.year + count, day=28)
 
 
-def too_long(dates: list[datetime.date]) -> bool:
-    """Whether a group's dated events span more than MAX_SPAN_YEARS
-    [Oracle: R-0837]."""
-    return bool(dates) and max(dates) > _years_after(min(dates), MAX_SPAN_YEARS)
-
-
 Span = tuple[datetime.date, datetime.date]
 
 
-def backstop(ids: list[int], when: dict[int, datetime.date]) -> ClusterCheck | None:
+def too_long(dates: list[datetime.date], history: Span | None) -> bool:
+    """Whether a period's dated events cover more than `HISTORY_SHARE` of the
+    years `history` covers, and more than `FLOOR_YEARS`: a period covering the
+    whole history [Oracle: R-0846]."""
+    if not dates or history is None:
+        return False
+    first, last = min(dates), max(dates)
+    return last > _years_after(first, FLOOR_YEARS) and (
+        (last - first).days > HISTORY_SHARE * (history[1] - history[0]).days
+    )
+
+
+def history_of(free: list[Event]) -> Span | None:
+    """The years the events a period may hold cover, `joinable`'s first to its
+    last: the early births no period can hold are no part of the history a
+    period is measured against, so detection and the check read one set of
+    events [Oracle: R-0846]."""
+    return span_of([parse_date(e.dateTime) for e in free])
+
+
+def backstop(
+    ids: list[int], when: dict[int, datetime.date], history: Span | None
+) -> ClusterCheck | None:
     """The first check an app period fails, returned by the model or stored:
-    three events, ten years at most [Oracle: R-0850, R-0837]. `when` dates the
-    events it may hold. Its supporting shifts are never checked here: too few
-    counts against it on the case report, never refuses it [Oracle: R-0850]."""
+    three events, and not more than half of the years the events a period may
+    hold cover [Oracle: R-0850, R-0846]. `when` dates the events it may hold,
+    `history` is `history_of` them. Its supporting shifts are never checked here:
+    too few counts against it on the case report, never refuses it
+    [Oracle: R-0850]."""
     if len(ids) < MIN_CLUSTER_EVENTS:
         return ClusterCheck.TooSmall
-    if too_long([when[i] for i in ids]):
+    if too_long([when[i] for i in ids], history):
         return ClusterCheck.TooLong
     return None
 
@@ -353,9 +456,12 @@ def _dated(data: DiagramData) -> list[Event]:
 
 def joinable(data: DiagramData) -> list[Event]:
     """Every dated event a cluster may hold: the scaffolding before the
-    first supporting shift of a known date is held out."""
-    events = _dated(data)
-    marked = [e for e in events if supports(e) and not unsure(e)]
+    first supporting shift of a known date, never a lift, is held out."""
+    return _joinable(_dated(data))
+
+
+def _joinable(events: list[Event]) -> list[Event]:
+    marked = [e for e in events if seeds(e, events)]
     if not marked:
         return []
     opens = parse_date(marked[0].dateTime)
@@ -389,19 +495,32 @@ def _split(ids: list[int], when: dict, marked: set[int]) -> list[list[int]]:
     return pieces
 
 
+def seeds(event: Event, events: list[Event]) -> bool:
+    """Whether a hint may be started at an event: a supporting shift of a
+    known date that is not a lift, since a lift alone opens nothing
+    [Oracle: R-0850]."""
+    return supports(event, events) and not unsure(event) and not lifted(event)
+
+
 @dataclass
 class Candidate:
+    """`changeIds` are its events that may open it: a change in the family
+    on a known date, as `changes` reads one."""
+
     eventIds: list[int]
     shiftIds: list[int]
     startDate: str
     endDate: str
     id: str = ""
+    changeIds: list[int] = field(default_factory=list)
 
     @property
     def strong(self) -> bool:
-        """Three supporting shifts or more: the call's default reading, kept
-        unless it says why not [Oracle: R-0856]."""
-        return len(self.shiftIds) >= MIN_CLUSTER_EVENTS
+        """Three supporting shifts or more and a change in the family on a
+        known date among its events: the call's default reading, kept unless
+        it says why not. Without such a change it is held as a question,
+        never offered as the default [Oracle: R-0856, R-0850]."""
+        return len(self.shiftIds) >= MIN_CLUSTER_EVENTS and bool(self.changeIds)
 
 
 def candidates(data: DiagramData) -> list[Candidate]:
@@ -412,17 +531,20 @@ def candidates(data: DiagramData) -> list[Candidate]:
     is offered too, its count beside it; one with a single shift is not
     [Oracle: R-0850].
     Only a shift whose date is known seeds a run: a placeholder date shows
-    nothing close in time, and may only join a run seeded near it."""
+    nothing close in time, and may only join a run seeded near it.
+    A shift told as how things always were supports no hint, and a lift
+    supports one only beside another person's rise and never starts it."""
     free = joinable(data)
-    marked = [e for e in free if supports(e)]
-    seeds = [e for e in marked if not unsure(e)]
-    if not seeds:
+    marked = [e for e in free if supports(e, free)]
+    started = [e for e in marked if seeds(e, free)]
+    if not started:
         return []
 
     when = {e.id: parse_date(e.dateTime) for e in free}
+    known_changes = {e.id for e in free if changes(e)}
 
     groups: list[set[int]] = []
-    for seed in seeds:
+    for seed in started:
         near = {
             e.id
             for e in free
@@ -441,6 +563,7 @@ def candidates(data: DiagramData) -> list[Candidate]:
             shiftIds=[i for i in ids if i in marked_ids],
             startDate=when[ids[0]].isoformat(),
             endDate=when[ids[-1]].isoformat(),
+            changeIds=[i for i in ids if i in known_changes],
         )
         for group in groups
         for ids in _split(
@@ -482,13 +605,14 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
         (events[i] for i in cluster.get("eventIds") or [] if i in events),
         key=lambda e: (parse_date(e.dateTime), e.id),
     )
-    shifts = [e for e in held if supports(e)]
+    listed = list(events.values())
+    shifts = [e for e in held if supports(e, listed)]
     people = {e.person for e in shifts}
     named = cluster.get("openingEventId")
-    changes = [e for e in held if e.id == named and not unsure(e)] or [
+    openers = [e for e in held if e.id == named and not unsure(e)] or [
         e for e in held if e.kind.isStructural() and not unsure(e)
     ]
-    opening = changes[0] if changes else None
+    opening = openers[0] if openers else None
 
     def gap(shift: Event) -> int | None:
         if opening is None:
@@ -504,14 +628,14 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
     )
 
 
-def _stems(text: str | None) -> set[str]:
-    """Each word of four letters or more by its first four, so "moved" and
-    "move", or "burnout" and "burn", are one word."""
-    return {w[:STEM] for w in re.findall(r"[a-z]{4,}", (text or "").lower())}
+def _whole(text: str | None) -> set[str]:
+    """Each word of four letters or more, whole: "stepmother" and "stepfather"
+    are two words, as are "moving" and "moved"."""
+    return set(re.findall(r"[a-z]{4,}", (text or "").lower()))
 
 
 def trouble_words(data: DiagramData) -> set[str]:
-    """The words the person's own trouble is told in, by stem: those of the
+    """The words the person's own trouble is told in, whole: those of the
     descriptions of their rises in symptom or anxiety, falls in functioning
     and relationship shifts, with each relationship shift's own word (a
     cutoff, a distance), less any another event, an event's kind, a name, a
@@ -525,23 +649,26 @@ def trouble_words(data: DiagramData) -> set[str]:
         if me is not None and e.person == me and (troubled(e) or e.relationship)
     }
     told = set().union(
-        *(_stems(e.description) for e in theirs.values()),
-        *(_stems(_enum_value(e.relationship)) for e in theirs.values() if e.relationship),
+        *(_whole(e.description) for e in theirs.values()),
+        *(
+            _whole(_enum_value(e.relationship))
+            for e in theirs.values()
+            if e.relationship
+        ),
     )
     plain = set().union(
-        *(_stems(e.description) for e in events if e.id not in theirs),
-        *(_stems(kind.value) for kind in EventKind),
-        *(_stems(p.get("name")) for p in data.people if isinstance(p, dict)),
-        _stems(" ".join(TITLE_PREFIXES | COMMON_WORDS)),
+        *(_whole(e.description) for e in events if e.id not in theirs),
+        *(_whole(kind.value) for kind in EventKind),
+        *(_whole(p.get("name")) for p in data.people if isinstance(p, dict)),
+        _whole(" ".join(TITLE_PREFIXES | COMMON_WORDS)),
     )
     return told - plain
 
 
 def trouble_in(name: str, told: set[str]) -> list[str]:
-    """The words of a name that tell the person's trouble."""
-    return sorted(
-        w for w in re.findall(r"[a-z]{4,}", name.lower()) if w[:STEM] in told
-    )
+    """The words of a name that tell the person's trouble, each a whole word
+    of one of their own events."""
+    return sorted(_whole(name) & told)
 
 
 # A year or a run of years in a name, with what sets it off: "(2014)",
@@ -590,11 +717,11 @@ class TheirPeriod:
 
 @dataclass
 class Declined:
-    """A run with three or more supporting shifts the call does not make a
-    period, with its one sentence why."""
+    """A hint the call does not make a period, with its one sentence why,
+    under the hint's id."""
 
-    run: str
-    reason: str
+    reason: str = ""
+    hint: str | None = None
 
 
 @dataclass
@@ -692,9 +819,16 @@ def most_going_on(diagram_id: int, data: DiagramData) -> list[Answer]:
 
 
 def compute_cache_key(events: list[Event], told_ids: tuple[int, ...] = ()) -> str:
+    """What detection reads of each event, so editing any of it regroups: an
+    event's kind sets what may open a period, its description whether a shift
+    is how things always were, and its person whether a lift counts beside
+    another's rise [Oracle: R-0853, R-0850]."""
     event_data = [
         {
             "id": e.id,
+            "kind": _enum_value(e.kind),
+            "person": e.person,
+            "description": e.description,
             "dateTime": e.dateTime,
             "symptom": _enum_value(e.symptom) if e.symptom else None,
             "anxiety": _enum_value(e.anxiety) if e.anxiety else None,
@@ -704,9 +838,20 @@ def compute_cache_key(events: list[Event], told_ids: tuple[int, ...] = ()) -> st
         }
         for e in events
     ]
-    return hash_sarf_dicts(
+    digest = hash_sarf_dicts(
         [{"detectionVersion": DETECTION_VERSION, "told": sorted(told_ids)}] + event_data
     )
+    return f"v{DETECTION_VERSION}:{digest}"
+
+
+def older(cache_key: str | None) -> bool:
+    """Whether a diagram's clusters were made under an older detection version
+    than the code's; a key with no version predates the version in the key,
+    and a diagram never grouped has no clusters of the model's to compare."""
+    if not cache_key:
+        return False
+    version, _, digest = cache_key.partition(":")
+    return not digest or int(version[1:]) < DETECTION_VERSION
 
 
 def _event_json(event: Event) -> dict:
@@ -737,16 +882,17 @@ def _before(candidate: Candidate, when: dict[int, datetime.date]) -> str:
     first = parse_date(candidate.startDate)
     earlier = [day for day in when.values() if day < first]
     if not earlier:
-        return "first group in the record"
-    return f"{silence(first - max(earlier))} with nothing recorded before this group"
+        return "the first events in the diagram"
+    return f"{silence(first - max(earlier))} with nothing in the diagram before these events"
 
 
 # Read beside each field of the answer, where the grouping call weighs them
 # more than the same words in the prompt: on Patrick's copy it declined a run
 # for its count and read a time the person only wondered about as theirs.
 DECLINED_REASON = (
-    "What in the events says this run is not a period; never its count of shifts "
-    "alone, since two shifts around a change in the family's membership are enough"
+    "What in the events says this hint is not a period, or that there is not "
+    "enough in the diagram to choose a reading; never its count of shifts or of "
+    "events alone"
 )
 THEIR_PERIOD = (
     "A time the person says stood out or was hard; never one they only wonder "
@@ -782,21 +928,24 @@ def _prompt(
         elif trouble_in(_title(cluster), told):
             shown["note"] = TROUBLE
         existing.append(shown)
+    hints = json.dumps(
+        [
+            {
+                "id": candidate.id,
+                "before": _before(candidate, when),
+                "supportingShifts": len(candidate.shiftIds),
+                "default": candidate.strong,
+                "eventIds": candidate.eventIds,
+            }
+            for candidate in cands
+        ],
+        indent=2,
+    )
+    # The open-source prompt still fills the hints under `candidates`.
     return prompts.CLUSTER_PROMPT.format(
         existing=json.dumps(existing, indent=2),
-        candidates=json.dumps(
-            [
-                {
-                    "id": candidate.id,
-                    "before": _before(candidate, when),
-                    "supportingShifts": len(candidate.shiftIds),
-                    "default": candidate.strong,
-                    "eventIds": candidate.eventIds,
-                }
-                for candidate in cands
-            ],
-            indent=2,
-        ),
+        candidates=hints,
+        hints=hints,
         people=json.dumps(list(people), indent=2),
         events=json.dumps([_event_json(e) for e in free], indent=2),
         told=json.dumps(
@@ -1120,10 +1269,11 @@ def _read_theirs(
     data: DiagramData,
 ) -> tuple[list[Named], list[ClusterError]]:
     """The periods the person named, each with every dated event in the family
-    inside its years, never reshaped [Oracle: R-0853]. One with no readable
-    years, not in their own words, too few events, or sharing days with a
-    period of theirs already stored or read first is not written; each such is
-    a fault, never asked again, since asking cannot add years to their words.
+    inside its years, never reshaped, and kept under three events [Oracle:
+    R-0853]. One with no readable years, not in their own words, no event in
+    its years, or sharing days with a period of theirs already stored or read
+    first is not written; each such is a fault, never asked again, since
+    asking cannot add years to their words.
     A period read again under the name of one of theirs already stored is
     that period, not one beside it: the new reading replaces the stored
     copy's events and sentence."""
@@ -1193,10 +1343,9 @@ def _read_theirs(
             )
             continue
         ids = [e.id for e in events if years[0] <= when[e.id] <= years[1]]
-        if len(ids) < MIN_CLUSTER_EVENTS:
+        if not ids:
             fault(
-                f"The person's period {period.name!r} holds {len(ids)} events in "
-                f"its years; anything under {MIN_CLUSTER_EVENTS} is never a period.",
+                f"The person's period {period.name!r} holds no events in its years.",
                 ClusterCheck.TooSmall,
                 period,
                 ids,
@@ -1317,10 +1466,11 @@ def _screen(
             claimed.add(cluster.id)
         usable.append(cluster)
     merged, absorbed = _merged(usable, when)
+    history = history_of(free)
     kept = []
     for cluster in merged:
         said = _said_of(cluster, when)
-        check = backstop(cluster.eventIds, when)
+        check = backstop(cluster.eventIds, when, history)
         if check is ClusterCheck.TooSmall:
             faults.append(
                 ClusterError(
@@ -1333,10 +1483,12 @@ def _screen(
         elif check is ClusterCheck.TooLong:
             faults.append(
                 ClusterError(
-                    f"Period {cluster.name!r} runs from {said['start'][:4]} to "
-                    f"{said['end'][:4]}: more than {MAX_SPAN_YEARS} years is this "
-                    "family's ordinary level, not a period. Return the periods "
-                    "inside it.",
+                    f"Period {cluster.name!r} reaches from {said['start'][:4]} to "
+                    f"{said['end'][:4]}, more than half of the years this "
+                    f"diagram's events after its early births cover "
+                    f"({history[0].year} to {history[1].year}): a period "
+                    "covering the whole history is the family's ordinary "
+                    "level, not a period. Return the periods inside it.",
                     check,
                     said,
                 )
@@ -1373,7 +1525,7 @@ def _answered_runs(
         for cluster_id, c in stored.items()
         if cluster_id not in replaced and not _regroupable(c)
     ]
-    why = {d.run: d.reason.strip() for d in response.declined if d.reason.strip()}
+    why = {d.hint: d.reason.strip() for d in response.declined if d.reason.strip()}
     unanswered, declined = [], []
     for run in runs:
         if any(set(run.shiftIds) & ids for ids in held):
@@ -1418,20 +1570,26 @@ def _judged(
     [Oracle: R-0850, R-0853, R-0844]."""
     dated = _dated(data)
     when = {e.id: parse_date(e.dateTime) for e in dated}
+    history = history_of(_joinable(dated))
     kept, failing = {}, []
     for cluster in data.drawn_clusters():
         ids = [i for i in cluster.get("eventIds") or [] if i in when]
         span = span_of([when[i] for i in ids])
         name = _said(_title(cluster), span) if span else repr(_title(cluster))
         named = f"Stored grouping {cluster['id']} {name}"
-        check = backstop(ids, when)
+        check = backstop(ids, when, history)
         if not _regroupable(cluster):
             kept[str(cluster["id"])] = cluster
         elif check is ClusterCheck.TooSmall:
             failing.append((cluster, check, f"{named} holds {len(ids)} dated events"))
         elif check is ClusterCheck.TooLong:
             failing.append(
-                (cluster, check, f"{named} fails the {MAX_SPAN_YEARS}-year check")
+                (
+                    cluster,
+                    check,
+                    f"{named} covers more than half of the years the events a "
+                    "period may hold cover",
+                )
             )
         elif years_name(_title(cluster)):
             failing.append(
@@ -1483,8 +1641,8 @@ def answer_schema(
         del fields["id"]
     if runs:
         declined = schema["properties"]["declined"]["items"]
-        declined["required"] = ["run", "reason"]
-        declined["properties"]["run"]["enum"] = [run.id for run in runs]
+        declined["required"] = ["hint", "reason"]
+        declined["properties"]["hint"]["enum"] = [run.id for run in runs]
         declined["properties"]["reason"]["description"] = DECLINED_REASON
     else:
         del schema["properties"]["declined"]
@@ -1520,7 +1678,11 @@ def _answered(ask, prompt: str, schema: dict, limit: int) -> "ClusterListRespons
 
 
 def detect_clusters(
-    data: DiagramData, ask, refused=None, said: list[Answer] = ()
+    data: DiagramData,
+    ask,
+    refused=None,
+    said: list[Answer] = (),
+    fresh: bool = False,
 ) -> ClusterResult:
     """`ask` takes the prompt, the answer's schema and its token limit and
     returns the model's ClusterListResponse; `refused`, when given, hears each
@@ -1532,7 +1694,9 @@ def detect_clusters(
     A first answer with any fault is asked for once more with the reasons. On
     the second, a cluster that still fails is dropped and the rest kept; an
     answer that cannot be read, or keeps nothing out of what it returned,
-    raises [Oracle: R-0846, R-0844]."""
+    raises [Oracle: R-0846, R-0844]. `fresh` hands the model none of the
+    stored model clusters, only the person's own periods, so a new prompt's
+    answer is not anchored on the old one's [Oracle: R-0772, R-0851]."""
     cache_key = compute_cache_key(
         _events(data), tuple(sorted(one.messageId for one in said))
     )
@@ -1545,6 +1709,8 @@ def detect_clusters(
         str(c["id"]) for c in data.clusters if isinstance(c, dict) and c.get("id")
     }
     existing = mine(data)
+    if fresh:
+        existing = {i: c for i, c in existing.items() if not _regroupable(c)}
     told = trouble_words(data)
     prompt = _prompt(cands, free, existing, said, birth(data), told, _cast(data, free))
     schema = answer_schema(existing, said, cands)
@@ -1622,7 +1788,10 @@ def detect_clusters(
 
     when = {e.id: e.dateTime for e in free}
     known = set(when)
-    clusters, changes = [], []
+    days = {e.id: parse_date(e.dateTime) for e in _dated(data)}
+    clusters: list[Cluster] = []
+    spans: list[Span] = []
+    reshaped = []
     for cluster in screened.kept:
         spanned = sorted(when[event_id] for event_id in cluster.eventIds)
         cluster_id = cluster.id or next_id(taken)
@@ -1650,8 +1819,9 @@ def detect_clusters(
                 ),
             )
         )
+        spans.append((parse_date(spanned[0]), parse_date(spanned[-1])))
         if cluster.change:
-            changes.append(cluster.change)
+            reshaped.append(cluster.change)
             _log.info(f"Regrouped {cluster.name!r}: {cluster.change}")
     dated = {e.id: e.dateTime for e in _dated(data)}
     for one in screened.named:
@@ -1670,30 +1840,56 @@ def detect_clusters(
                 source=ClusterSource.User,
             )
         )
+        spans.append((days[one.eventIds[0]], days[one.eventIds[-1]]))
         _log.info(f"Wrote the person's period {one.period.name!r}")
-    clusters += _grown(data, {one.replaces for one in screened.named})
-    return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=changes)
+    theirs, their_spans = _theirs(data, {one.replaces for one in screened.named}, days)
+    was = [list(cluster.eventIds) for cluster in theirs]
+    _inside([*clusters, *theirs], [*spans, *their_spans], days)
+    clusters += [c for c, ids in zip(theirs, was) if c.eventIds != ids]
+    return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=reshaped)
 
 
-def _grown(data: DiagramData, replaced: set[str | None]) -> list[Cluster]:
-    """The person's periods with every dated event added since inside their
-    days: the data they are judged against grows, their name, sentence and
-    days stay as written [Oracle: R-0853, R-0850]."""
-    when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
-    grown = []
+def _inside(
+    clusters: list[Cluster], spans: list[Span], days: dict[int, datetime.date]
+) -> None:
+    """Gives each cluster every dated event, however sure its date, on or
+    between the first and last day of its span, that no cluster holds: a
+    cluster is the events within its period, decided here and never by the
+    model. An event on a day two clusters share joins only the one whose
+    opening event is nearer in time, the earlier cluster on a tie, a cluster's
+    first day standing for an opening it does not name [Oracle: R-0873]."""
+    held = {i for cluster in clusters for i in cluster.eventIds}
+    opens = [
+        days.get(cluster.openingEventId) or span[0]
+        for cluster, span in zip(clusters, spans)
+    ]
+    for event_id, day in days.items():
+        if event_id in held:
+            continue
+        near = [n for n, (start, end) in enumerate(spans) if start <= day <= end]
+        if near:
+            n = min(near, key=lambda n: (abs((day - opens[n]).days), spans[n][0]))
+            clusters[n].eventIds.append(event_id)
+
+
+def _theirs(
+    data: DiagramData, replaced: set[str | None], days: dict[int, datetime.date]
+) -> tuple[list[Cluster], list[Span]]:
+    """The person's stored periods not read again, each with its span, to be
+    given every dated event added since inside their days: the data they are
+    judged against grows, their name, sentence and days stay as written
+    [Oracle: R-0853, R-0850, R-0873]. One with no dated event has no days to
+    grow in."""
+    theirs, spans = [], []
     for cluster in data.drawn_clusters():
         if _source(cluster) is not ClusterSource.User or str(cluster["id"]) in replaced:
             continue
-        held = cluster["eventIds"]
-        span = span_of([when[i] for i in held if i in when])
-        added = [
-            i
-            for i, day in when.items()
-            if span and span[0] <= day <= span[1] and i not in held
-        ]
-        if added:
-            grown.append(from_dict(Cluster, {**cluster, "eventIds": [*held, *added]}))
-    return grown
+        span = span_of([days[i] for i in cluster["eventIds"] if i in days])
+        if span:
+            held = list(cluster["eventIds"])
+            theirs.append(from_dict(Cluster, {**cluster, "eventIds": held}))
+            spans.append(span)
+    return theirs, spans
 
 
 STORED_FIELDS = (
@@ -1707,6 +1903,7 @@ STORED_FIELDS = (
     "source",
     "setAside",
     "openingEventId",
+    "proposedAt",
 )
 
 
@@ -1732,15 +1929,17 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     statement of which stored cluster it is, so what the coach said about it
     last turn still points at something the diagram holds. `dates` are the
     dated events, however sure; the span is theirs, and an event with no date
-    a stored period held stays on it [Oracle: R-0850]. A grouping under the
-    minimum is a bug in whatever produced it and raises."""
+    a stored period held stays on it [Oracle: R-0850]. A grouping under its
+    minimum, three for the app's and one for the person's own, is a bug in
+    whatever produced it and raises [Oracle: R-0853]."""
     taken = {str(c["id"]) for c in stored}
     kept: dict[str, Cluster] = {}
     for cluster in detected:
-        if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
+        least = least_events(cluster.source)
+        if len(cluster.eventIds) < least:
             raise ClusterError(
                 f"Grouping {cluster.eventIds} arrived holding fewer than "
-                f"{MIN_CLUSTER_EVENTS} events.",
+                f"{least} events.",
                 ClusterCheck.TooSmall,
             )
         cluster.name = cluster.name or cluster.title
@@ -1773,24 +1972,78 @@ def grouped(cache_key: str) -> dict:
     }
 
 
-def _deltas(stored: list[dict], detected: list[Cluster], dates: dict) -> list[dict]:
+def _again(cluster: Cluster, waiting: dict[str, dict]) -> str | None:
+    """The waiting cluster a new one is: the one opening at the event it opens
+    at, else one holding the same events or sharing at least half of the
+    larger's, so a cluster with no opening event can still be shown
+    [Oracle: R-0873]."""
+    ids = set(cluster.eventIds)
+    if cluster.openingEventId is not None:
+        for cluster_id, row in waiting.items():
+            if row.get("openingEventId") == cluster.openingEventId:
+                return cluster_id
+    for cluster_id, row in waiting.items():
+        theirs = set(row.get("eventIds") or [])
+        if 2 * len(ids & theirs) >= max(len(ids), len(theirs)):
+            return cluster_id
+    return None
+
+
+def _deltas(
+    stored: list[dict], detected: list[Cluster], dates: dict, waits: str | None = None
+) -> list[dict]:
     """Every app cluster the answer did not return is set aside, never
-    deleted; the person's own are kept as they drew them [Oracle: R-0850]."""
-    stored = [
-        c
+    deleted; the person's own are kept as they drew them [Oracle: R-0850].
+    A new app cluster that is a waiting one (`_again`) takes its id and is
+    shown now. A new app cluster sharing an event or an opening event with a
+    live app cluster reshapes it and is shown now; the live one it does not
+    return is set aside. With `waits`, the detection's key, any other new app
+    cluster is stored set aside under that key until the next detection
+    proposes it again; a waiting one not proposed again stays aside, no longer
+    waiting [Oracle: R-0873]."""
+    rows = {
+        str(c["id"]): c
         for c in stored
-        if isinstance(c, dict) and c.get("id") is not None and not c.get("setAside")
-    ]
-    held = {str(c["id"]): c for c in stored}
-    kept = _detected(stored, detected, dates)
+        if isinstance(c, dict) and c.get("id") is not None
+    }
+    held = {i: c for i, c in rows.items() if not c.get("setAside")}
+    marked = [i for i, c in rows.items() if c.get("proposedAt")]
+    waiting = {i: rows[i] for i in marked}
+    live = [c for c in held.values() if _regroupable(c)]
+    opens = {c.get("openingEventId") for c in live} - {None}
+    shown = {i for c in live for i in c.get("eventIds") or []}
+    kept = {}
+    for cluster in _detected(list(held.values()), detected, dates).values():
+        if cluster.id not in held and cluster.source is ClusterSource.Model:
+            again = _again(cluster, waiting)
+            if again:
+                cluster.id = again
+                del waiting[again]
+            elif (
+                waits
+                and cluster.openingEventId not in opens
+                and not shown & set(cluster.eventIds)
+            ):
+                cluster.setAside, cluster.proposedAt = True, waits
+        kept[cluster.id] = cluster
 
     deltas = set_aside(
         cluster_id
         for cluster_id, cluster in held.items()
         if cluster_id not in kept and _regroupable(cluster)
     )
+    deltas += [
+        {
+            "item_kind": ItemKind.Cluster.value,
+            "item_id": cluster_id,
+            "field": "proposedAt",
+            "after": None,
+        }
+        for cluster_id in marked
+        if cluster_id not in kept
+    ]
     for cluster_id, cluster in kept.items():
-        was = held.get(cluster_id, {})
+        was = rows.get(cluster_id, {})
         now = asdict(cluster)
         deltas += [
             {
@@ -1839,9 +2092,12 @@ def sync(
     session_id: int | None = None,
     metered: Metered | None = None,
     force: bool = False,
+    fresh: bool = False,
 ) -> Regroup | None:
     """Re-group the record's events and store the grouping. `force` regroups a
-    record whose events are as they were at its last grouping.
+    record whose events are as they were at its last grouping. `fresh`, or
+    clusters made under an older detection version, regroups from scratch:
+    every stored model cluster the answer does not return is set aside.
 
     Clusters are stored, not derived on read, so the coach can point at one and
     have it still be there next turn. The rules' runs are a hint; the model
@@ -1855,6 +2111,12 @@ def sync(
     cache_key = compute_cache_key(events, tuple(one.messageId for one in said))
     if not force and cache_key == data.clusterCacheKey:
         return None
+    fresh = fresh or older(data.clusterCacheKey)
+    waits = (
+        None
+        if fresh or not any(_regroupable(c) for c in data.drawn_clusters())
+        else cache_key
+    )
 
     dates = {e.id: e.dateTime for e in _dated(data)}
     metered = metered or Metered(user_id, diagram_id, turn_id, Purpose.Cluster)
@@ -1903,6 +2165,7 @@ def sync(
             ),
             refused,
             said,
+            fresh,
         )
     except ClusterError as failed:
         # No usable answer: the clusters that pass stay, a stored model cluster
@@ -1935,7 +2198,7 @@ def sync(
             session_id=session_id,
         )
         return Regroup(change=change, sentences=[])
-    deltas = _deltas(data.clusters, result.clusters, dates)
+    deltas = _deltas(data.clusters, result.clusters, dates, waits)
     deltas.append(grouped(cache_key))
     change = record.apply(
         diagram_id,

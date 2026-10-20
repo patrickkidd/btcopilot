@@ -394,6 +394,8 @@ def rewrite_applied(path: pathlib.Path) -> dict:
         casereport.box(diagram, owner, turn_id),
         [ToolCall(*call) for call in plan["calls"]],
     )
+    casereport.cleared(diagram, cards)
+    db.session.commit()
     changes = [
         c.id
         for c in Change.query.filter(

@@ -1,6 +1,7 @@
 import { book } from "./case";
 import { nameOnly } from "./caseview";
 import { DateCertainty } from "./certainty";
+import { called } from "./diagram";
 import { closeX, esc, pan, still } from "./dom";
 import { Shift } from "./marks";
 // this line draws pills, dots and the wire
@@ -602,10 +603,14 @@ export function keysOf(
   you: number | null,
   people: Map<number, string>,
 ): { event: TimelineEvent; key: Key; label: string }[] {
-  const first = (e: TimelineEvent) => ((e.person !== null && people.get(e.person)) || e.person_name || "").split(" ")[0];
+  const first = (e: TimelineEvent) => {
+    const name = (e.person !== null && people.get(e.person)) || e.person_name || "";
+    return called({ n: name }).n;
+  };
+  const whose = (e: TimelineEvent) => (/['’]s$/.test(first(e)) ? first(e) : `${first(e)}'s`);
   return events.flatMap((e): { event: TimelineEvent; key: Key; label: string }[] => {
     if (e.kind === EventKind.Death)
-      return [{ event: e, key: Key.Death, label: first(e) ? `${first(e)}'s death` : e.label }];
+      return [{ event: e, key: Key.Death, label: first(e) ? `${whose(e)} death` : e.label }];
     if (e.kind === EventKind.Shift && e.symptom === Shift.Up && e.person !== you)
       return [{ event: e, key: Key.Illness, label: first(e) ? `${first(e)}: ${e.label}` : e.label }];
     if (e.id === opening) return [{ event: e, key: Key.Opening, label: e.label }];

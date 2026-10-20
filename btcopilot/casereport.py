@@ -678,18 +678,32 @@ def by_side(data: DiagramData) -> str:
     person's last relationship event with each one on it, the only contact
     the diagram holds, so a card gives the contact now or says it is not
     known (R-0850)."""
-    named = _named(data)
     deaths = {e.get("person"): e for e in data.events if enum_val(e.get("kind")) == EventKind.Death.value}
+    roles = coverage.roles(data)
+    who = coverage.labels(data, roles)
+    named = _named(data)
+
+    def on_side(pid: int, parent: int) -> str:
+        """Someone on a parent's side as the cards name them: a parent's
+        brother or sister is that parent's, "mother's sister", never the
+        person's aunt or uncle, which a card read as the parent's own aunt or
+        uncle."""
+        role = roles.get(pid)
+        if role not in coverage.AUNT_ROLE:
+            return who[pid]
+        sibling = coverage.SIB[coverage.AUNT_ROLE.index(role)]
+        return f"{named[pid]} ({roles.get(parent)}'s {sibling})"
+
     lines = []
     for parent, side in coverage.sides(data).items():
         people = sorted(side)
         count = sum(any(record.involves(e, pid) for pid in side) for e in data.events)
-        died = [f"{named[pid]} {_year(deaths[pid])}" for pid in people if pid in deaths]
-        living = [named[pid] for pid in people if pid not in deaths]
+        died = [f"{on_side(pid, parent)} {_year(deaths[pid])}" for pid in people if pid in deaths]
+        living = [on_side(pid, parent) for pid in people if pid not in deaths]
         lines.append(
-            f"the side of {_who(data, parent)}: {count} events; "
+            f"the side of {who[parent]}: {count} events; "
             f"died: {', '.join(died) or 'none in the diagram'}; "
-            f"no death in the diagram: {', '.join(living) or 'none'}; "
+            f"no death among them in the diagram: {', '.join(living) or 'none'}; "
             f"the person's last relationship event with each one on it: "
             f"{_contact(data, side) or 'none in the diagram'}"
         )
@@ -999,8 +1013,7 @@ def run(turn_id: str, diagram_id: int, user_id: int) -> dict:
         _end(diagram_id, turn_id, {"type": TurnEventKind.Failed.value, "message": BROKE})
         raise
     TokenMeter.charge(user_id, meter.spent)
-    if cards:
-        diagram.case_report_forced_out_of_date = False
+    cleared(diagram, cards)
     db.session.commit()
     db.session.refresh(diagram)
     return _end(
@@ -1008,6 +1021,13 @@ def run(turn_id: str, diagram_id: int, user_id: int) -> dict:
         turn_id,
         {"type": TurnEventKind.Done.value, "turn_id": turn_id, "cards": cards, "version": diagram.version},
     )
+
+
+def cleared(diagram: Diagram, cards: list[str]) -> None:
+    """Cards written anew take off the out-of-date mark the catch-up put on
+    the report (R-0772)."""
+    if cards:
+        diagram.case_report_forced_out_of_date = False
 
 
 def _taken_back(diagram_id: int, turn_id: str) -> None:

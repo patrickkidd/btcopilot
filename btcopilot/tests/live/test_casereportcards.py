@@ -13,7 +13,9 @@ lays the people out in time order, names a triangle only when the events mark
 one, and its For lines carry the changes in the family, who was rearranged,
 how the trouble came on and how things stood after; only what to work on says
 what will come, with what that rests on. Written to fail on the prompt before
-these lines; not yet run.
+these lines; not yet run. Last, the same rules on a second family of another
+shape, the Brandts, whose strain runs through the parents' fights on the
+father's side, so no rule is proven on one family only.
 
 Invented names only.
 """
@@ -24,7 +26,7 @@ from btcopilot import diagramjson, record
 from btcopilot.casereport import FORETOLD, MARK
 from btcopilot.extensions import db
 from btcopilot.schema import CardLine, Cluster, ClusterSource, asdict
-from btcopilot.tests.live.conftest import FATHER, MOTHER
+from btcopilot.tests.live.conftest import FATHER, ME, MOTHER
 from btcopilot.tests.live.criterion import passes
 from btcopilot.tests.live.test_casereportrewrite import first_answer_refused
 from btcopilot.toolbox import ToolName
@@ -237,14 +239,18 @@ WORKING = told(69, "noted", "2026-09-01", 1, "Working on visiting her mother eve
 SLEEP = "I haven't slept well for years. It comes and goes."
 
 
-def formulated(coach, *said, events=(), people=(), bonds=GRAND, clusters=CLUSTERS) -> dict[str, dict]:
-    events = events or [IVY_BORN, *ILLNESS, SIDED, *LOSS]
-    coach.record(people=[ADA, HUGH, RUTH, WALT, IVY, NAN, *people], pair_bonds=bonds, events=events)
+def clustered(coach, people, bonds, events, clusters) -> None:
+    coach.record(people=people, pair_bonds=bonds, events=events)
     diagram = coach.user.free_diagram
     data = diagramjson.loads(diagram.data)
     data["clusters"] = [asdict(one) for one in clusters]
     diagram.data = diagramjson.dumps(data)
     db.session.commit()
+
+
+def formulated(coach, *said, events=(), people=(), bonds=GRAND, clusters=CLUSTERS) -> dict[str, dict]:
+    events = events or [IVY_BORN, *ILLNESS, SIDED, *LOSS]
+    clustered(coach, [ADA, HUGH, RUTH, WALT, IVY, NAN, *people], bonds, events, clusters)
     return written(coach, *(said or (SLEEP,)))
 
 
@@ -513,3 +519,117 @@ def test_the_couple_card_is_one_note_on_the_early_years_with_event_chips(coach):
     written(coach, "Owen and I met in 2006 and married three years later; after that I called my mother less.")
     couple = notes(coach, "couple")
     assert len(couple) == 1 and chips(couple[0], "event") & {"51", "52"} and "50" not in chips(couple[0], "event"), couple
+
+
+# A second family of another shape, so no rule above is proven on one family
+# only: Cal, the elder of two, his parents Lise and Rafe, Rafe's parents Otto
+# and Greta and brother Bram, Lise's mother Hedda. The strain runs through the
+# parents' fights, on the father's side: Otto's stroke and death with Rafe
+# taking over the bakery (three people's shifts), Bram's move abroad with two
+# shifts, Lise taking Cal's side against Rafe in 2005, Hedda's death in 2008
+# with no trouble near it, and Greta's death followed only by Cal's own shifts.
+CAL = dict(ME, name="Cal", last_name="Brandt", gender="male")
+LISE = {"id": 2, "name": "Lise", "last_name": "Brandt", "gender": "female", "parents": 11}
+RAFE = {"id": 3, "name": "Rafe", "last_name": "Brandt", "gender": "male", "parents": 12}
+NINA = {"id": 4, "name": "Nina", "last_name": "Brandt", "gender": "female", "parents": 10}
+OTTO = {"id": 5, "name": "Otto", "last_name": "Brandt", "gender": "male"}
+GRETA = {"id": 6, "name": "Greta", "last_name": "Brandt", "gender": "female"}
+BRAM = {"id": 7, "name": "Bram", "last_name": "Brandt", "gender": "male", "parents": 12}
+HEDDA = {"id": 8, "name": "Hedda", "last_name": "Lund", "gender": "female"}
+BRANDTS = [CAL, LISE, RAFE, NINA, OTTO, GRETA, BRAM, HEDDA]
+BRANDT_BONDS = [{"id": 11, "person_a": 8, "person_b": None}, {"id": 12, "person_a": 5, "person_b": 6, "married": True}]
+BRANDT_EVENTS = [
+    {"id": 89, "kind": "birth", "person": 2, "spouse": 3, "child": 4, "dateTime": "1989-06-01"},
+    told(90, "noted", "1996-02-01", 5, "Had a stroke"),
+    told(91, "noted", "1996-05-01", 3, "Took over his father's bakery"),
+    told(92, "shift", "1996-09-01", 2, "Fought with her husband most nights", relationship="conflict",
+         relationshipTargets=[3]),
+    told(93, "shift", "1996-11-01", 1, "Stomach pains, missed weeks of school", symptom="up"),
+    told(94, "shift", "1997-01-01", 3, "Drinking most evenings", symptom="up"),
+    told(95, "death", "1997-06-01", 5),
+    told(96, "noted", "2003-04-01", 7, "Moved to Canada"),
+    told(97, "shift", "2003-06-01", 1, "Failed his exams", functioning="down"),
+    told(98, "shift", "2003-08-01", 3, "Stopped speaking to his brother", relationship="cutoff", relationshipTargets=[7]),
+    told(99, "shift", "2005-05-01", 2, "Took her son's side against his father", relationship="inside",
+         relationshipTargets=[1], relationshipTriangles=[3]),
+    told(100, "death", "2008-02-01", 8),
+    told(101, "death", "2011-03-01", 6),
+    told(102, "shift", "2011-05-01", 1, "Drinking most nights", symptom="up"),
+    told(103, "shift", "2011-09-01", 1, "Lost his job", functioning="down"),
+    told(104, "shift", "2012-01-01", 1, "Stopped seeing his father", relationship="distance", relationshipTargets=[3]),
+]
+BRANDT_CLUSTERS = [
+    Cluster(id="c1", title="Otto's stroke and death", summary="", name="Otto's stroke and death",
+            eventIds=[90, 91, 92, 93, 94, 95], source=ClusterSource.User, startDate="1996-02-01", endDate="1997-06-01"),
+    Cluster(id="c2", title="Bram's move to Canada", summary="", name="Bram's move to Canada",
+            eventIds=[96, 97, 98], source=ClusterSource.User, startDate="2003-04-01", endDate="2003-08-01"),
+    Cluster(id="c3", title="Greta's death", summary="", name="Greta's death",
+            eventIds=[101, 102, 103, 104], source=ClusterSource.User, startDate="2011-03-01", endDate="2012-01-01"),
+]
+STOMACH = ("My stomach has been bad on and off since I was a kid, and these days I drink more than I should. "
+           "It's always worst around the holidays at my dad's.")
+
+
+def brandts(coach) -> dict[str, dict]:
+    clustered(coach, BRANDTS, BRANDT_BONDS, BRANDT_EVENTS, BRANDT_CLUSTERS)
+    return written(coach, STOMACH)
+
+
+def on(guess: dict, cluster: str, *marks: CardLine) -> str:
+    return " ".join(line for mark in marks for line in marked(guess, mark) if cluster in line)
+
+
+@passes(2, of=3)
+def test_on_a_second_family_the_coachs_guess_keeps_time_order_and_names_what_does_not_fit(coach):
+    # R-0850, R-0864
+    # pass: the statement's years are in order, and it names 2008, Hedda's death with no trouble near it, as not fitting
+    guess = statement(brandts(coach)["coach_guess"])
+    years = [int(y) for y in re.findall(r"\b(?:19|20)\d\d\b", guess)]
+    assert len(years) >= 2 and years == sorted(years), guess
+    assert "2008" in guess and re.search(r"not fit|n't fit|exception|except|no trouble|apart from|outside", guess, re.I), guess
+
+
+@passes(2, of=3)
+def test_on_a_second_family_the_for_lines_say_how_things_stood_after_and_where_it_is_worst(coach):
+    # R-0850, R-0864
+    # pass: a For line says how things stood after its cluster, and a For or Against line speaks of the holidays at his father's
+    guess = brandts(coach)["coach_guess"]
+    after = " ".join(marked(guess, CardLine.For)).lower()
+    assert re.search(r"still|stayed|went on|from then|after that|since|remained|continued", after), guess["text"]
+    lines = " ".join(marked(guess, CardLine.For) + marked(guess, CardLine.Against)).lower()
+    assert "holiday" in lines, guess["text"]
+
+
+@passes(2, of=3)
+def test_on_a_second_family_a_thin_cluster_and_one_persons_run_are_said_so(coach):
+    # R-0850
+    # pass: the Against line on c2 gives its shortfall; a line on c3 says its shifts are all Cal's, and the Open line asks about the others
+    guess = brandts(coach)["coach_guess"]
+    assert re.search(r"\b(only|two|fewer)\b", on(guess, "c2", CardLine.Against), re.I), guess["text"]
+    assert re.search(r"\b(every|all|only)\b", on(guess, "c3", CardLine.For, CardLine.Against), re.I), guess["text"]
+    opened = " ".join(marked(guess, CardLine.Open))
+    assert re.search(r"\b(Lise|Rafe|Nina|Bram|others?|rest of|mother|father|sister|uncle)\b", opened), guess["text"]
+
+
+@passes(2, of=3)
+def test_on_a_second_family_the_part_prognosis_and_family_cards_keep_their_shape(coach):
+    # R-0850, R-0868
+    # pass: the part card ends on an Other way question, the Prognosis line hedges and says to watch, and the family card says Cal is the elder
+    cards = brandts(coach)
+    other = marked(cards.get("own_part"), CardLine.OtherWay)
+    assert other and other[-1].rstrip().endswith("?"), cards.get("own_part")
+    line = " ".join(marked(cards.get("work_on"), CardLine.Prognosis)).split(":", 1)[-1]
+    assert re.search(r"\b(might|may|could)\b", line, re.I) and re.search(r"watch|keep an eye|see (whether|if)|notice", line, re.I), line
+    family = " ".join(words(n) for n in notes(coach, "family"))
+    assert re.search(r"\b(eldest|oldest|elder|older of|first of|first-born|firstborn|first child)\b", family, re.I), family
+
+
+@passes(2, of=3)
+def test_on_a_second_family_no_card_gives_a_cause_and_the_summary_opens_on_the_symptom(coach):
+    # R-0850, R-0864
+    # pass: no card says one event caused another, and the summary is three sentences at most, the first naming his stomach or drinking
+    cards = brandts(coach)
+    spoken = {c: q["text"] for c, q in cards.items()}
+    assert {c: record.caused(t) for c, t in spoken.items()} == dict.fromkeys(spoken), spoken
+    sentences = [s for s in record.SENTENCE.split(" ".join(words(cards["main_guess"]).split())) if s]
+    assert len(sentences) <= 3 and re.search(r"stomach|drink", sentences[0], re.I), cards["main_guess"]["text"]

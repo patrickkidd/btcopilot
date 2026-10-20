@@ -1,17 +1,22 @@
-"""The cluster F1 scorer on hand-written groupings of the dense placeholder
-case, no model involved. Under live/ these collect with the suite and run with
---e2e (offline with LIVE_REPLAY=only, $0)."""
+"""The cluster F1 scorer on hand-written tries of the dense placeholder case
+and of the signed deep case, no LLM call. Under live/ these are collected with
+the suite and need --e2e (offline with LIVE_REPLAY=only, $0)."""
+
+import dataclasses
 
 import pytest
 
 from btcopilot.clusters import ModelCluster, plain_name
 from btcopilot.schema import Cluster, ClusterSource, parse_date
 from btcopilot.tests.live.clusters.cases import load
-from btcopilot.tests.live.clusters.score import Rule, Theirs, score
+from btcopilot.tests.live.clusters.score import NotCluster, Rule, Theirs, score
 from btcopilot.tests.live.criterion import once
 
 DENSE = next(case for case in load() if case.name == "dense")
 DEATH, LEAVING = (e.eventIds for e in DENSE.expected)
+DEEP = next(case for case in load() if case.name == "deep")
+# the dense key with its second cluster held as a hypothesis
+HELD = [DENSE.expected[0], dataclasses.replace(DENSE.expected[1], hypothesis=True)]
 
 
 def stored(
@@ -134,3 +139,78 @@ def test_time_closeness_and_quoted_words_pass():
     cluster.summary = "The move came around the same time."
     result = scored(stored(DEATH), stored(LEAVING), cluster)
     assert (result.count(Rule.Voice), result.count(Rule.Cause)) == (0, 0)
+
+
+@once
+def test_a_hypothesis_stored_or_left_out_counts_neither_way():
+    # R-0856, R-0857
+    left_out = score([stored(DEATH, opening=11)], HELD, DENSE.data)
+    proposed = score(
+        [stored(DEATH, opening=11), stored(LEAVING, opening=15)], HELD, DENSE.data
+    )
+    for result in (left_out, proposed):
+        assert (result.clusters.f1, result.members.f1, result.misses) == (1.0, 1.0, [])
+    assert (len(proposed.pairs), len(proposed.hypotheses)) == (1, 1)
+    # signed, the same omission costs recall; out of the key, the same
+    # proposal costs precision
+    assert scored(stored(DEATH, opening=11)).clusters.recall == 0.5
+    outside = score(
+        [stored(DEATH, opening=11), stored(LEAVING, opening=15)],
+        HELD[:1],
+        DENSE.data,
+    )
+    assert outside.clusters.precision == 0.5
+
+
+@once
+def test_a_hypothesis_is_not_checked_for_its_opening_its_persons_shifts_or_its_events():
+    # R-0856, R-0857
+    tries = [stored(DEATH, opening=11), stored([*LEAVING, 12], opening=16)]
+    held = score(tries, HELD, DENSE.data)
+    assert (held.clusters.f1, held.members.f1, held.misses) == (1.0, 1.0, [])
+    assert held.openings == (1, 1)
+    signed = scored(*tries)
+    assert sorted(rule for rule, _ in signed.misses) == sorted(
+        [Rule.RunOf, Rule.Opening]
+    )
+    assert signed.members.f1 < 1.0
+
+
+@once
+def test_storing_a_period_the_case_says_is_not_a_cluster_misses():
+    # R-0856, R-0857
+    told = NotCluster("A death and a move, 1998", [21, 22, 23])
+    tries = [stored(DEATH, opening=11), stored(LEAVING, opening=15), stored([21, 22])]
+    named = score(tries, DENSE.expected, DENSE.data, not_clusters=[told])
+    assert named.missed(frozenset({Rule.NotACluster})) == [
+        "'A change in the household' is 'A death and a move, 1998', not a cluster"
+    ]
+    assert named.clusters.precision == pytest.approx(2 / 3)
+    unlisted = scored(*tries)
+    assert (unlisted.count(Rule.NotACluster), unlisted.clusters.precision) == (
+        0,
+        pytest.approx(2 / 3),
+    )
+    left_out = score(tries[:2], DENSE.expected, DENSE.data, not_clusters=[told])
+    assert (left_out.clusters.f1, left_out.misses) == (1.0, [])
+
+
+@once
+def test_the_signed_deep_key_holds_three_clusters_two_hypotheses_and_the_lake_weekend():
+    # R-0856, R-0857
+    signed = [e for e in DEEP.expected if not e.hypothesis]
+    held = [e for e in DEEP.expected if e.hypothesis]
+    assert (len(signed), len(held), len(DEEP.not_clusters)) == (3, 2, 1)
+
+    def tried(*clusters):
+        return score(list(clusters), DEEP.expected, DEEP.data, [], DEEP.not_clusters)
+
+    three = [stored(e.eventIds) for e in signed]
+    alone, with_both = tried(*three), tried(*three, *(stored(e.eventIds) for e in held))
+    for result in (alone, with_both):
+        assert (result.clusters.f1, result.members.f1) == (1.0, 1.0)
+        assert result.count(Rule.NotACluster) == 0
+    assert len(with_both.hypotheses) == 2
+    weekend = tried(*three, stored(DEEP.not_clusters[0].eventIds))
+    assert weekend.count(Rule.NotACluster) == 1
+    assert weekend.clusters.precision == pytest.approx(3 / 4)

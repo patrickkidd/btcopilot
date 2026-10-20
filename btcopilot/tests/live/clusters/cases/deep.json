@@ -1,7 +1,9 @@
 {
- "about": "A fictional four-generation family. Jonah is the person. His answer about the busiest stretches of his life gives an age range for one of his periods and no years for the other.",
+ "about": "A fictional four-generation family. Jonah is the person. His answer about the busiest periods of his life gives an age range for one of his periods and no years for the other.",
  "placeholder": false,
- "draft": "ACCEPTED PROVISIONALLY: the expected clusters below stand as drafted until a cluster detection problem is pointed out (R-0857, builds on R-0856); of the four open questions on them, the second half of question 2 (the run in the case's last two years, around the lake weekend) is answered: not a cluster; the rest stay open.",
+ "status": "signed",
+ "signedOn": "2026-10-16",
+ "note": "Patrick signed the three clusters not marked hypothesis on 2026-10-16 (R-0857, builds on R-0856). The two marked hypothesis are scored neither way: a try that stores one, or leaves it out, neither gains nor loses. The lake weekend is not a cluster, too short, an acute problem: a try that stores it misses. The 2001-04 cluster opens at the grandmother's illness (event 176), dated approximate: the diagram it copies gives the year as one of two, which R-0855 calls approximate; the copy had marked it unknown in error. Each member list holds every event within its cluster's signed dates (R-0873): events 215 and 217 (1991) and 216 (2004), added to the diagram after the signing, were added to the lists on 2026-10-20, the dates unchanged.",
  "expected": [
   {
    "name": "Jonah's maternal grandfather Gordon's death, 1991-92",
@@ -18,7 +20,9 @@
     94,
     83,
     171,
-    39
+    39,
+    217,
+    215
    ]
   },
   {
@@ -30,11 +34,12 @@
     173,
     12,
     22
-   ]
+   ],
+   "hypothesis": true
   },
   {
    "name": "His maternal grandmother Winifred's illness and death, 2001-04",
-   "opening": null,
+   "opening": 176,
    "eventIds": [
     174,
     176,
@@ -54,11 +59,12 @@
     107,
     108,
     178,
-    79
+    79,
+    216
    ]
   },
   {
-   "name": "His paternal grandparents' deaths, 2008-09",
+   "name": "His paternal grandmother Lorna's death, 2008-09",
    "opening": 61,
    "eventIds": [
     61,
@@ -71,6 +77,41 @@
     9,
     10,
     179
+   ]
+  },
+  {
+   "name": "His marriage and after, 2017-19",
+   "opening": 29,
+   "eventIds": [
+    29,
+    115,
+    190,
+    135,
+    136,
+    163,
+    150,
+    192,
+    96,
+    129,
+    95,
+    97,
+    116,
+    137
+   ],
+   "hypothesis": true
+  }
+ ],
+ "notClusters": [
+  {
+   "name": "The family weekend at the lake, 2019",
+   "eventIds": [
+    195,
+    198,
+    199,
+    200,
+    197,
+    201,
+    202
    ]
   }
  ],
@@ -153,6 +194,13 @@
     "name": "Felix",
     "gender": "male",
     "parents": 48
+   },
+   {
+    "id": 44,
+    "name": "Rowan",
+    "gender": "male",
+    "parents": 48,
+    "last_name": "Okafor"
    },
    {
     "id": 45,
@@ -368,6 +416,12 @@
    {
     "id": 153,
     "name": "Evan",
+    "gender": "male",
+    "parents": 158
+   },
+   {
+    "id": 154,
+    "name": "Theo",
     "gender": "male",
     "parents": 158
    },
@@ -731,6 +785,16 @@
     "child": 188
    },
    {
+    "id": 162,
+    "kind": "birth",
+    "dateTime": "1971-01-12",
+    "dateCertainty": "unknown",
+    "person": 138,
+    "spouse": 152,
+    "child": 154,
+    "notes": "Born a few years before Jonah; one of Sylvia's two eldest."
+   },
+   {
     "id": 33,
     "kind": "married",
     "dateTime": "1972-01-12",
@@ -990,6 +1054,16 @@
     "description": "birth"
    },
    {
+    "id": 207,
+    "kind": "shift",
+    "dateTime": "1991-01-12",
+    "dateCertainty": "unknown",
+    "person": 36,
+    "anxiety": "up",
+    "description": "first of two hard court cases over a bridge his firm designed, before the move east; he won",
+    "notes": "Maureen kept the firm's books, so the case weighed on them both. The year is unsure."
+   },
+   {
     "id": 89,
     "kind": "shift",
     "dateTime": "1991-03-12",
@@ -1003,6 +1077,15 @@
     "notes": "He let it happen and chose wherever his closest friend was headed."
    },
    {
+    "id": 217,
+    "kind": "noted",
+    "dateTime": "1991-06-12",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "description": "moved east to Fenwick with Desmond for about a year",
+    "notes": "She gave the months in a message: early summer to the next summer. Her father died that same month."
+   },
+   {
     "id": 78,
     "kind": "death",
     "dateTime": "1991-06-14",
@@ -1010,6 +1093,20 @@
     "person": 72,
     "description": "death",
     "notes": "A stroke after years of kidney disease; he smoked a pipe."
+   },
+   {
+    "id": 215,
+    "kind": "shift",
+    "dateTime": "1991-06-14",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "relationship": "toward",
+    "relationshipTargets": [
+     36
+    ],
+    "anxiety": "down",
+    "description": "content with Desmond in the months after her father died, though both families were on edge",
+    "notes": "She wrote later that the two of them got on well then, with plenty of unease in the wider family."
    },
    {
     "id": 88,
@@ -1150,6 +1247,14 @@
     "notes": "The year is estimated."
    },
    {
+    "id": 209,
+    "kind": "death",
+    "dateTime": "1996-11-06",
+    "dateCertainty": "certain",
+    "person": 44,
+    "description": "died"
+   },
+   {
     "id": 180,
     "kind": "shift",
     "dateTime": "1997-01-11",
@@ -1158,6 +1263,58 @@
     "symptom": "up",
     "description": "had a kidney removed for a tumour",
     "notes": "From Maureen's family health notes; surgery only."
+   },
+   {
+    "id": 208,
+    "kind": "shift",
+    "dateTime": "1997-01-11",
+    "dateCertainty": "approximate",
+    "person": 36,
+    "anxiety": "up",
+    "description": "the same case brought back to court; he won again, at great strain",
+    "notes": "Maureen still ran the firm's office, so the second hearing fell on the pair of them."
+   },
+   {
+    "id": 210,
+    "kind": "shift",
+    "dateTime": "1997-03-12",
+    "dateCertainty": "approximate",
+    "person": 205,
+    "symptom": "up",
+    "description": "told she had a heart failure that could not be treated"
+   },
+   {
+    "id": 212,
+    "kind": "noted",
+    "dateTime": "1997-03-12",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "description": "she and Desmond nursed Nell at home to the end and then settled her affairs",
+    "notes": "Nell never married; she had been a regular at their table for years."
+   },
+   {
+    "id": 213,
+    "kind": "noted",
+    "dateTime": "1997-03-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "on his own in Thornbury, his first winter after the conservatory"
+   },
+   {
+    "id": 211,
+    "kind": "death",
+    "dateTime": "1997-04-12",
+    "dateCertainty": "approximate",
+    "person": 205,
+    "description": "died of the heart failure some weeks after it was found"
+   },
+   {
+    "id": 214,
+    "kind": "noted",
+    "dateTime": "1997-05-12",
+    "dateCertainty": "approximate",
+    "person": 1,
+    "description": "drove his van to friends' graduations across the country, then up to Tallow Ridge for the first time"
    },
    {
     "id": 11,
@@ -1222,11 +1379,11 @@
     "id": 176,
     "kind": "shift",
     "dateTime": "2001-09-12",
-    "dateCertainty": "unknown",
+    "dateCertainty": "approximate",
     "person": 73,
     "symptom": "up",
-    "description": "found to have bowel cancer, the year uncertain",
-    "notes": "Jonah's mother cannot place the year; it ran alongside his burnout and the failed audition. Operations, then chemotherapy."
+    "description": "found to have bowel cancer in 2001 or 2002",
+    "notes": "Jonah's mother places it in 2001 or 2002, alongside his burnout and the failed audition. Operations, then chemotherapy."
    },
    {
     "id": 175,
@@ -1414,6 +1571,20 @@
     "dateCertainty": "certain",
     "person": 73,
     "description": "died of the bowel cancer"
+   },
+   {
+    "id": 216,
+    "kind": "shift",
+    "dateTime": "2004-02-18",
+    "dateCertainty": "approximate",
+    "person": 31,
+    "relationship": "toward",
+    "relationshipTargets": [
+     36
+    ],
+    "anxiety": "down",
+    "description": "content with Desmond in the months after her mother died, though both families were on edge",
+    "notes": "She wrote later that the two of them got on well then too, with plenty of unease in the wider family."
    },
    {
     "id": 66,

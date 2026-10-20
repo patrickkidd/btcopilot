@@ -87,8 +87,8 @@ shift: the `reason` and `change` name which events fell close together and
 when, one beside the next, and never claim that one event brought about,
 caused, drove, triggered or led to another, or that a shift appeared, emerged
 or began as a fact. When events are close in time, say they are close ("around
-the same time", "within three months of"), never that one produced the other, and a shift is given as the person told it ("you said you
-couldn't sleep before races"). Write the name, `reason` and `change` as the
+the same time", "within three months of"), never that one produced the other, and a shift is given as the person told it ("you said
+..."). Write the name, `reason` and `change` as the
 coach speaking to the person, calling them "you"; never write "I", "me" or
 "my" as if you were them. Their own words appear only inside quotation marks.
 
@@ -107,7 +107,7 @@ you were given.
 Return one entry under `clusters` per period of yours: `id` when it grew out of
 a listed one, `eventIds`, `name`, `reason`, `openingId` when an event opened it,
 and `change` when it is not exactly as given. List under `declined` each
-run you do not return, with its `run` id and `reason`. Before you decline a
+run you do not return, with its id under `hint` and a `reason`. Before you decline a
 run with fewer than three shifts that count, look among its events for someone
 joining or leaving the family, or for a key member whose functioning changes,
 and when you find one, return the run as a period. A `reason` says what in the run's events

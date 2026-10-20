@@ -2,7 +2,155 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-08 (clusters as hypotheses of a family process)
+**Last Updated**: 2026-10-19 (case report refresh prompt: examples from an invented family; three rules made clearer)
+
+---
+
+## FD-383 — the case report's examples from an invented family; three rules made clearer (2026-10-19)
+
+Patrick's yes to edit the refresh prompt, frozen since 2026-10-15, came on 2026-10-19. Subscription, $0; three tries per eval.
+- Examples: every example line of the refresh prompt and of the impressions fragment that came from Patrick's own diagram (a sleep line, worst at family gatherings, the grandmother taken in, the contact kept light, the 1999 and 1940 years, the latch-on reading, the sleep before a breakup, Nell and 1998) now comes from one invented family: a son's diagnosis, the husband taking a second job, the person's back trouble, a father-in-law's death; not the orchard, harbor, deep or printing families. Each keeps its teaching point. The three that were also in the public copies (the races, the contact since, the latch-on reading) changed there too; both goldens re-captured. The minimum of three supporting shifts is code and stays.
+- Coach's guess, time order (R-0850, R-0864): each period that does not fit is told at its place in the account, every year after the one before, none twice; a side taken in a triangle is never named as not fitting. Old prompt 1 of 3, new 3 of 3.
+- For lines, how things stood after (R-0850, R-0864): every For line ends on how things stood after its cluster's last event, or says nothing in the diagram says it changed after that. Old prompt 2 of 3 (1 of 3 on 2026-10-15), new 3 of 3; a first wording that let the line say "not known" dropped to 1 of 3 and was replaced.
+- Executive Summary (R-0850), refresh prompt and impressions fragment alike: it names the symptom without listing its episodes or their dates, its pattern sentence names the way the strain was held and the people it ran through, one year at most and none in the pattern sentence. Chat eval old prompt 0 of 3, new 2 of 3.
+- Second family: five evals in `test_casereportcards.py` prove the same rules on the Brandts (strain through the parents' fights, father's side, a cluster with two shifts, one with only the person's own): time order and what does not fit 2 of 3, For lines and where it is worst 3 of 3, thin cluster and one person's run 3 of 3, part, prognosis and family place 3 of 3, no cause and the summary's opening 3 of 3. The rest of the case report evals were not rerun on the new prompt.
+
+## FD-383 job 042 — three code fixes behind the deep misses; a name checked word for word (2026-10-18)
+
+**Change**: cluster detection is version 20. Four prompt lines changed. The name line no longer says
+the check reads only the first four letters of a word; it says the check compares whole words, and
+that a first name, the event's kind and a word for a relative (mother, father, brother, sister and
+their step- and grand- forms) are always safe. The hint's count line no longer says the count keeps
+the shifts told as how things always were; it says the count already leaves out a shift told with
+always or forever, but not one told so in other words, which the coach still strikes before keeping
+a hint. The two lines that tell the coach which shifts to strike, the one on what never counts and
+the check before answering, now name always and forever, or how things always stood in other words,
+and say a change told with never, mostly, on the whole or for years still counts. The rest is code
+the prompt already described. A shift whose description says always or
+forever supports no period and starts no hint, so a time made only of such shifts is offered as no
+hint at all; "never", "mostly", "on the whole" and "for years" also tell real changes ("never spoke
+to his father again after the funeral"), so the code leaves them to the coach. One person's
+trouble lifting counts beside another person's rise in the same months, both on a known date, as one
+movement in the family; a lift alone counts for nothing and never starts a hint. A hint is marked
+the default only when it holds three shifts that count and a change in the family on a known date:
+any event the diagram lists that is not a shift, a death or a birth, a diagnosis, a move, a job lost
+or someone leaving home; without one it is offered as a question. A period is refused for its length only when it
+covers more than half of the years the diagram's dated events cover, never at ten years or under, and
+the refusal says so; a climb over more than ten years in a long history stands. Cluster detection
+on Sonnet 5 is called with thinking switched off, as on Haiku 4.5.
+
+**Why**: job 041's gate on the four-generation case was 4 of 10 on Haiku. An independent check
+found three causes in the code, not the prompt: the four-letter check refused names it should not
+(a relative's word that began like a word of the person's own); the default hint counted shifts told as how things
+always were, so a time made of them was offered as the default and drawn; and the ten-year refusal
+contradicted the prompt's own line that only a period covering the whole history is the family's
+ordinary level. Sonnet 5 at high effort spent its whole limit thinking in 20 of 20 tries.
+
+**Evals**: unit tests in `btcopilot/tests/test_clusters.py` and `test_llmutil.py`, each seen to fail
+with its fix taken out. The cluster F1 suite, Haiku 4.5 ten tries per case through Bedrock, passes of 10 (bar 8 on `deep`):
+
+| Round | Head | Prompt | `deep` | `deep-unasked` | `harbor` | `dense` | the rest |
+|---|---|---|---|---|---|---|---|
+| 1 | 280b57b8 | version 20 before the always-and-forever narrowing | 8 | 9 | 5 | 10 | 10 |
+| 2 | 81978261 | version 20, the final prompt | 7 | 10 | 8 | 7 | 10 |
+| 3 | 9f78697f | version 21, reverted | 7 | 8 | 7 | 6 | 10 |
+
+Sonnet 5 without thinking, measured on 280b57b8: 66 of 80 first answers could not be read as the
+JSON asked for, so its column measures the answer's shape, not cluster detection. The final prompt
+is version 20 at 81978261 (round 2); version 21 measured worse on three cases and better on none and
+is reverted.
+
+---
+
+## FD-383 job 042 — version 21, the one prompt-fix round after version 20's tries (2026-10-18; reverted 2026-10-18: measured worse)
+
+**Status**: reverted the same day. Haiku's ten tries on it (round 3, head 9f78697f) passed `deep`
+7 of 10 (round 2: 7), `deep-unasked` 8 (round 2: 10), `harbor` 7 (round 2: 8), `dense` 6 (round 2:
+7), the rest 10: worse on three cases and better on none, so the branch carries version 20 as the
+final prompt and the round 3 folder under `btcopilot-runs/clusters/runs-worker/042/` in the private corpus stays as evidence.
+
+**Change** (as tried): five lines added and two changed, aimed only at the misses Haiku's ten tries
+on version 20 showed. An acute episode was described as it shows in the events, a noted event naming
+a party, a dinner, a visit, a trip or a gathering with several shifts dated within the same few days of
+it, none of those events going into any period's `eventIds`, a period that would reach them ending
+before those days, and the check before answering testing the `eventIds` for such days. A hint
+holding a change in the family on a known date with two or more shifts that count around it was
+returned as a period even when every shift was one person's, never declined as one person's or for
+want of a shared reaction; one event's `neverOpens` mark said nothing about another's. The coach
+wrote the person's own periods first and then held no period of its own with an event dated in their
+years. The answer was one JSON object with the keys `clusters`, `periods` and `declined` and nothing
+else, on the second answer too. One example added: a period cut short of an episode at the end of its
+hint.
+
+**Why**: on version 20 two `deep` tries drew the lake weekend, the acute episode, into the 2017 to
+2019 period; three `dense` tries declined the 1993 to 1996 hint, the person's own shifts around her
+leaving home and her mother's diagnosis, as one person's or for want of a shared reaction; one
+second answer was prose, not the JSON asked for; and every first answer on `deep` was refused for
+sharing days with the person's own periods, which forced the second answers.
+
+**Evals**: round 3 above. The brief allowed no tuning after it.
+
+---
+
+## FD-383 job 041 — the cluster prompt rewritten once from the sources, every line cited (2026-10-18)
+
+**Change**: cluster detection's prompt (private) and its three fragments are version 19, written
+once from the inventory of every passage, statement and ruling behind the prompt (btcopilot-sources,
+`research/clusters/INVENTORY.md`) and the fourteen conflicts decided there. Every instruction line
+carries a comment naming its sources by inventory id, stripped at render; the guard
+`btcopilot/tests/test_clusterprompt.py` fails a line with no source, an id not in the inventory, or a
+banned word in the rendered text. Kept: every version 18 line the inventory maps to a source. Dropped
+or rewritten: the lines resting on a commit message alone, the flat ten-year line (the whole-history
+line stays), the terms fragment's "its name says what seems to have shifted", and every word his
+vocabulary rule bans (the hints go to the call as `hints`; a declined hint comes back under `hint`). Added, one sentence each: an acute episode of a few days around a visit or a
+family occasion is not a period, while a flare-up of a couple of weeks can be; a lasting symptom, a
+lasting drop in functioning, a changed atmosphere or a stage of the household's life is the family's
+level, never a period, and a settled family may keep a symptom; a move, a retirement, a job lost or
+changed, money trouble, a business failing or a relative moving in may open a period; a lift in one
+person's trouble in the same months as another's rise is one movement; a lasting complaint is coded
+as functioning down and counts toward no period; a period's events hang together as reactions
+passing from person to person, and the one who shifts may be someone not close to the one lost; a
+partner's family is this family from the day the couple formed; a quick onset points to the extended
+family, a slow build to the household; a death or a turn to a helper may end a period as well as open
+one; a change inside a period under way deepens it; a climb over years is one period only while no
+settling quiet falls between its steps, and events on either side of such a quiet stay apart; a time
+whose shifts pile up around no change in the family on a known date is held as a question for the
+coach, declined with "not enough in the diagram to choose a reading", never drawn; a period of one
+person's own trouble can be a cluster when its reason says no one else's shifts show; the numbers
+(three events, two shifts) are guidance with the reason naming why fewer suffice, and one shift alone
+is still no period; a stored period is kept while the events still read as they did and reshaped,
+with `change` saying what moved it, when they do not; a period left out is set aside, never deleted;
+a period is named by the change that opened it and its years, who and what as the people list says,
+never by anything the person did or felt, never with a word from the person's own shifts; the name,
+reason and change never name a book, the theory or the word cluster. The example lines are from a
+third invented family (a printing family of the 1940s to 1970s), unlike both Patrick's diagram and
+the orchard case, so neither gate is told its key by the prompt; none is from a real diagram. DETECTION_VERSION 19.
+
+**Why**: Patrick, 2026-10-16 and 2026-10-17: the vocabulary is mandatory everywhere, prompt text
+included; this rewrite is to be the last for a while, fitted to his signed clusters and to the
+literature rather than to the last failed try. Rulings behind the new lines are cited in the prompt
+by inventory id; the fourteen decisions are in `research/clusters/CONFLICTS-DECIDED.md`.
+
+**Evals**: the cluster F1 suite (`btcopilot/tests/live/clusters/`), ten tries per model on Haiku 4.5
+and Sonnet 5 through Bedrock, against the signed `deep` key and the placeholder `orchard` key, bar 8 of
+10. Measured, after two rounds of prompt fixes: Haiku `deep` 4 of 10 and `deep-unasked` 6 of 10, so the
+gate was not met and tuning stopped as the brief says; `orchard` 10 of 10. Sonnet was cut off on every
+`deep` try, at 16,784 output tokens and, in one try, at medium effort. The try folders are under
+`btcopilot-runs/clusters/runs-worker/041/` in the private corpus.
+
+**Versions 10 to 18, not logged at the time (FD-381, 2026-10-14 to 2026-10-15):** 10, the approved
+rules A1 to A9: any change in the family may open a period, only rising shifts support one, events of
+unknown date are left out, a period is named by the change, the person's periods are kept, a failing
+period is set aside, the opening event is stored. 11, the periods the person names when asked when the
+most was going on are written as theirs. 12, fewer than three supporting shifts counts against a period
+and no longer refuses it. 13, the hints offered include those with fewer than three supporting shifts,
+each with its count. 14, an event of unknown date is offered and may belong to a period but never
+opens one; a name is checked against every word the person's own trouble is told in. 15, a hint is
+seeded only at a shift of known date and needs two supporting shifts, the people are offered with what
+each is to the person, every hint comes back as a period or is declined with a reason, and a second
+call sees the first answer. 16, the person's period read again replaces its stored copy. 17, a
+period's name and sentences never give a cause or speak as the person. 18, and never hold a raw
+event or cluster id.
 
 ---
 

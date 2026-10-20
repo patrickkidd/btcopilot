@@ -12,6 +12,10 @@ from btcopilot.chips import ChipKind
 from btcopilot.clusters import (
     ClusterError,
     ClusterListResponse,
+    DETECTION_VERSION,
+    PER_ANSWER,
+    PER_EVENT,
+    THINKING_ROOM,
     ModelCluster,
     sync,
 )
@@ -327,8 +331,8 @@ def test_the_coach_groups_three_events_as_the_user_own_grouping(family):
     assert [c["source"] for c in stored.values()] == [ClusterSource.User.value]
 
 
-def _grandfathered(diagram):
-    """A grouping the owner made when two events were enough."""
+def _grandfathered(diagram, source=ClusterSource.User):
+    """A grouping made when two events were enough."""
     data = diagram.get_diagram_data()
     data.clusters = [
         asdict(
@@ -338,7 +342,7 @@ def _grandfathered(diagram):
                 summary="",
                 name="When he left",
                 eventIds=[10, 11],
-                source=ClusterSource.User,
+                source=source,
             )
         )
     ]
@@ -395,8 +399,9 @@ def test_a_grouping_stuck_under_the_floor_can_still_be_removed(family):
 def test_undoing_the_removal_of_such_a_grouping_reads_as_words_too(family):
     # R-0215
     """Undo commits without going through the apply path, so it needs the same
-    translation: the coach is told why, not handed an exception."""
-    _grandfathered(family)
+    translation: the coach is told why, not handed an exception. Only the
+    app's own cluster needs three: the person's period may hold fewer."""
+    _grandfathered(family, ClusterSource.Model)
     Toolbox(family.id, turn_id="t1").call(
         ToolName.Remove.value,
         {"item_kind": ItemKind.Cluster.value, "item_id": "c1", "version": version(family)},
@@ -751,7 +756,7 @@ def test_an_answer_cut_off_at_its_limit_is_refused_and_asked_again(family):
         side_effect=[cut, parsed(GROUPED)],
     ) as asked:
         sync(family.id, turn_id="t1", user_id=family.user_id)
-    assert [c.kwargs["limit"] for c in asked.call_args_list] == [4096 + 24 * 6 + 160] * 2
+    assert [c.kwargs["limit"] for c in asked.call_args_list] == [THINKING_ROOM + PER_EVENT * 6 + PER_ANSWER] * 2
     assert noted(ObservationKind.ClusterRefused) == [(1, "cut_off", 0, 0)]
     assert [c["title"] for c in clusters_of(family).values()] == ["A hard year, 1994"]
     assert ModelCall.query.filter_by(purpose=Purpose.Cluster).count() == 2
@@ -790,3 +795,288 @@ def test_a_grouping_call_that_fails_twice_never_fails_the_turn(discussion, famil
     assert (failed.detail["check"], failed.detail["fallback"]) == ("call_failed", False)
     assert clusters_of(family) == {}
     assert not family.get_diagram_data().clusterCacheKey
+
+
+def stored_beside_theirs(family, cache_key: str) -> None:
+    data = family.get_diagram_data()
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="c1",
+                title="A cold spring",
+                summary="",
+                name="A cold spring",
+                eventIds=[10, 11, 12],
+                source=ClusterSource.Model,
+            )
+        ),
+        asdict(
+            Cluster(
+                id="c2",
+                title="When he left",
+                summary="",
+                name="When he left",
+                eventIds=[13, 14, 15],
+                source=ClusterSource.User,
+            )
+        ),
+    ]
+    data.clusterCacheKey = cache_key
+    family.set_diagram_data(data)
+    db.session.commit()
+
+
+def asked_with(cluster_id: str | None):
+    """The grouping model, answering one cluster on the first three events and
+    keeping what it was handed: the prompt and the schema of each call."""
+    seen = []
+
+    def answer(prompt, response_format, large=False, schema=None, limit=None):
+        seen.append((prompt, schema))
+        group = ModelCluster(eventIds=[10, 11, 12], name="A cold spring", reason="r")
+        group.id = cluster_id
+        return parsed(ClusterListResponse(clusters=[group]))
+
+    return seen, patch("btcopilot.metered.gemini_structured_sync", side_effect=answer)
+
+
+def test_clusters_from_an_older_version_are_not_handed_back_and_are_set_aside(family):
+    # R-0772, R-0851
+    """After a prompt change the old answer's clusters would anchor the new
+    one: the model is handed only the person's own period, and every stored
+    model cluster it does not return is set aside, never deleted."""
+    stored_beside_theirs(family, f"v{DETECTION_VERSION - 1}:0123456789abcdef")
+    seen, model = asked_with(None)
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    (prompt, schema), = seen
+    assert "A cold spring" not in prompt
+    assert "When he left" in prompt
+    assert "id" not in schema["properties"]["clusters"]["items"]["properties"]
+    stored = clusters_of(family)
+    assert stored["c1"]["setAside"]
+    assert not stored["c2"]["setAside"]
+    assert [
+        (c["eventIds"], c["source"]) for i, c in stored.items() if i not in ("c1", "c2")
+    ] == [([10, 11, 12], ClusterSource.Model.value)]
+
+
+def test_the_catch_up_regroups_from_scratch_on_the_same_version(family):
+    # R-0772, R-0851
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    seen, model = asked_with(None)
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id, force=True, fresh=True)
+    (prompt, _), = seen
+    assert "A cold spring" not in prompt
+    assert "When he left" in prompt
+    assert clusters_of(family)["c1"]["setAside"]
+
+
+def test_clusters_from_the_same_version_are_handed_back(family):
+    # R-0772, R-0851
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    seen, model = asked_with("c1")
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    (prompt, schema), = seen
+    assert "A cold spring" in prompt
+    assert "When he left" in prompt
+    fields = schema["properties"]["clusters"]["items"]["properties"]
+    assert fields["id"]["enum"] == ["c1"]
+    stored = clusters_of(family)
+    assert sorted(stored) == ["c1", "c2"]
+    assert not stored["c1"]["setAside"]
+
+
+def added(family, *events: Event) -> None:
+    data = family.get_diagram_data()
+    data.events += [asdict(e) for e in events]
+    data.lastItemId = max(e.id for e in events)
+    family.set_diagram_data(data)
+    db.session.commit()
+
+
+def moved(event_id: int, day: str) -> Event:
+    return Event(
+        id=event_id,
+        kind=EventKind.Noted,
+        person=1,
+        dateTime=day,
+        dateCertainty=DateCertainty.Approximate,
+        description="moved house",
+    )
+
+
+def test_an_event_added_inside_a_live_clusters_days_joins_it(family):
+    # R-0873
+    """Handed back as it was stored, the model leaves the new event out; the
+    cluster is the events within its period, whatever the date's certainty."""
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    added(family, moved(16, "1994-02-15"))
+    _, model = asked_with("c1")
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    assert clusters_of(family)["c1"]["eventIds"] == [10, 11, 12, 16]
+
+
+def test_an_event_added_the_day_after_a_clusters_end_stays_out(family):
+    # R-0873
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    added(family, moved(16, "1994-03-02"))
+    _, model = asked_with("c1")
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    stored = clusters_of(family)
+    assert [stored[i]["eventIds"] for i in ("c1", "c2")] == [[10, 11, 12], [13, 14, 15]]
+
+
+def test_an_event_added_inside_the_persons_period_joins_it(family):
+    # R-0873, R-0853
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    added(family, moved(16, "1994-05-15"))
+    _, model = asked_with("c1")
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    assert clusters_of(family)["c2"]["eventIds"] == [13, 14, 15, 16]
+
+
+def held_live(family, ids=(10, 11, 12)) -> None:
+    data = family.get_diagram_data()
+    data.clusters = [
+        asdict(
+            Cluster(
+                id="c1",
+                title="A cold spring",
+                summary="",
+                name="A cold spring",
+                eventIds=list(ids),
+                openingEventId=ids[0],
+                source=ClusterSource.Model,
+            )
+        )
+    ]
+    data.clusterCacheKey = f"v{DETECTION_VERSION}:0123456789abcdef"
+    family.set_diagram_data(data)
+    db.session.commit()
+
+
+def answering(*groups: tuple):
+    """The grouping model giving the same answer on every call: (id, name,
+    event ids, opening event) per period."""
+
+    def answer(prompt, response_format, large=False, schema=None, limit=None):
+        return parsed(
+            ClusterListResponse(
+                clusters=[
+                    ModelCluster(
+                        id=cluster_id,
+                        eventIds=list(ids),
+                        name=name,
+                        reason="r",
+                        openingId=opening,
+                    )
+                    for cluster_id, name, ids, opening in groups
+                ]
+            )
+        )
+
+    return patch("btcopilot.metered.gemini_structured_sync", side_effect=answer)
+
+
+KEPT = ("c1", "A cold spring", [10, 11, 12], 10)
+NEW = (None, "The summer after", [13, 14, 15], 13)
+
+
+def waiting(family) -> dict:
+    (row,) = [c for c in family.get_diagram_data().clusters if c["id"] != "c1"]
+    return row
+
+
+def test_a_new_cluster_sharing_no_event_with_a_live_one_waits_set_aside(family):
+    # R-0873
+    held_live(family)
+    with answering(KEPT, NEW):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    data = family.get_diagram_data()
+    row = waiting(family)
+    assert (row["eventIds"], row["setAside"]) == ([13, 14, 15], True)
+    assert row["proposedAt"] == data.clusterCacheKey
+    assert [c["id"] for c in data.drawn_clusters()] == ["c1"]
+
+
+def test_a_waiting_cluster_proposed_by_the_next_detection_is_shown(family):
+    # R-0873
+    """The second answer's days and name win, under the waiting row's id."""
+    held_live(family)
+    with answering(KEPT, NEW):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    first = waiting(family)["id"]
+    with answering(KEPT, (None, "The long summer", [13, 14, 15, 16], 13)):
+        added(family, moved(16, "1994-07-01"))
+        sync(family.id, turn_id="t2", user_id=family.user_id)
+    row = waiting(family)
+    assert row["id"] == first
+    assert (row["setAside"], row["proposedAt"]) == (False, None)
+    assert (row["name"], row["endDate"]) == ("The long summer, 1994", "1994-07-01")
+
+
+def test_a_waiting_cluster_not_proposed_again_stays_aside(family):
+    # R-0873
+    held_live(family)
+    with answering(KEPT, NEW):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    with answering(KEPT):
+        sync(family.id, turn_id="t2", user_id=family.user_id, force=True)
+    row = waiting(family)
+    assert (row["setAside"], row["proposedAt"]) == (True, None)
+
+
+def test_a_waiting_cluster_with_no_opening_event_is_shown_when_proposed_again(family):
+    # R-0873
+    """Matched on its events, one sharing at least half of the larger's, it
+    is shown under the waiting row's id, and no second row is left aside."""
+    held_live(family)
+    with answering(KEPT, (None, "The summer after", [13, 14, 15], None)):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    first = waiting(family)["id"]
+    with answering(KEPT, (None, "The long summer", [14, 15, 16], None)):
+        added(family, moved(16, "1994-07-01"))
+        sync(family.id, turn_id="t2", user_id=family.user_id)
+    row = waiting(family)
+    assert row["id"] == first
+    assert (row["setAside"], row["proposedAt"]) == (False, None)
+    assert row["eventIds"] == [14, 15, 16]
+
+
+def test_a_diagrams_first_detection_shows_its_clusters_at_once(family):
+    # R-0873
+    with answering(NEW):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    (row,) = family.get_diagram_data().drawn_clusters()
+    assert row["eventIds"] == [13, 14, 15]
+    assert "proposedAt" not in row
+
+
+def test_a_catch_up_from_scratch_shows_its_clusters_at_once(family):
+    # R-0873, R-0772
+    held_live(family)
+    with answering(NEW):
+        sync(family.id, turn_id="t1", user_id=family.user_id, force=True, fresh=True)
+    (row,) = family.get_diagram_data().drawn_clusters()
+    assert row["eventIds"] == [13, 14, 15]
+    assert "proposedAt" not in row
+
+
+def test_a_new_cluster_absorbing_a_live_ones_events_replaces_it_at_once(family):
+    # R-0873
+    """Seen on Patrick's diagram: the live cluster folded into one opening an
+    event earlier, so those years showed no cluster for a detection."""
+    held_live(family, ids=(11, 12, 13))
+    with answering((None, "Two hard seasons", [10, 11, 12, 13], 10)):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    rows = clusters_of(family)
+    (row,) = family.get_diagram_data().drawn_clusters()
+    assert row["eventIds"] == [10, 11, 12, 13]
+    assert "proposedAt" not in row
+    assert rows["c1"]["setAside"] is True
