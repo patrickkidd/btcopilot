@@ -2161,6 +2161,21 @@ def test_a_period_of_theirs_with_two_events_is_stored_as_theirs():
     assert seen == []
 
 
+def test_a_period_of_theirs_with_two_events_is_written_to_the_diagram(discussion):
+    # R-0853
+    """The person's period is theirs at any count from one, through the write
+    as through detection; the app's still need three."""
+    said = told_by(discussion, ROWAN_SAID)
+    data, _ = grouped_with(
+        discussion,
+        asked(record(*[e for e in ASH.events if e["id"] != 41]), said),
+        ClusterListResponse(periods=[period(said)]),
+    )
+    [theirs] = data.drawn_clusters()
+    assert (theirs["source"], theirs["eventIds"]) == (ClusterSource.User.value, [40, 42])
+    assert data.clusterCacheKey
+
+
 def test_ages_the_person_gives_are_read_as_years_from_their_birth_date():
     # R-0853
     born = datetime.date(1978, 4, 1)

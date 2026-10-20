@@ -47,6 +47,7 @@ from btcopilot import coverage, profile, prompts
 from btcopilot.models import Diagram, Discussion, Statement
 from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
+    least_events,
     DateCertainty,
     VariableShift,
     Cluster,
@@ -1915,15 +1916,17 @@ def _detected(stored: list[dict], detected: list[Cluster], dates: dict) -> dict:
     statement of which stored cluster it is, so what the coach said about it
     last turn still points at something the diagram holds. `dates` are the
     dated events, however sure; the span is theirs, and an event with no date
-    a stored period held stays on it [Oracle: R-0850]. A grouping under the
-    minimum is a bug in whatever produced it and raises."""
+    a stored period held stays on it [Oracle: R-0850]. A grouping under its
+    minimum, three for the app's and one for the person's own, is a bug in
+    whatever produced it and raises [Oracle: R-0853]."""
     taken = {str(c["id"]) for c in stored}
     kept: dict[str, Cluster] = {}
     for cluster in detected:
-        if len(cluster.eventIds) < MIN_CLUSTER_EVENTS:
+        least = least_events(cluster.source)
+        if len(cluster.eventIds) < least:
             raise ClusterError(
                 f"Grouping {cluster.eventIds} arrived holding fewer than "
-                f"{MIN_CLUSTER_EVENTS} events.",
+                f"{least} events.",
                 ClusterCheck.TooSmall,
             )
         cluster.name = cluster.name or cluster.title

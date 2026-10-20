@@ -1510,6 +1510,16 @@ class Toolbox:
             str(c.get("id")) for c in data.drawn_clusters()
         }:
             raise ToolError(f"No cluster {item_id} in the record", GONE)
+        # what the coach names keeps three events, though the person's own
+        # period may hold fewer [Oracle: R-0215, R-0853]
+        if "eventIds" not in fields and len(
+            self._cluster(data, item_id).get("eventIds") or []
+        ) < MIN_CLUSTER_EVENTS:
+            raise ToolError(
+                f"cluster {item_id} holds fewer than {MIN_CLUSTER_EVENTS} events: add "
+                "an event to the cluster, or remove the grouping",
+                SMALL_CLUSTER,
+            )
         return self._write(ItemKind.Cluster, item_id, fields)
 
     def _remove(self, args: dict) -> tuple[str, dict]:

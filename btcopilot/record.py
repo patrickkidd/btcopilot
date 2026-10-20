@@ -27,6 +27,7 @@ from btcopilot.schema import (
     FirstPerson,
     LIST_FIELDS,
     MIN_CLUSTER_EVENTS,
+    least_events,
     DateCertainty,
     EventKind,
     EvidenceKind,
@@ -555,7 +556,7 @@ def _remove(data: dict, kind: ItemKind, item_id) -> list[dict]:
             kept = [i for i in ids if str(i) != str(item_id)]
             if len(kept) == len(ids):
                 continue
-            if len(kept) < MIN_CLUSTER_EVENTS:
+            if len(kept) < least_events(cluster.get("source")):
                 deltas += _remove(data, ItemKind.Cluster, cluster["id"])
             else:
                 deltas.append(
@@ -611,7 +612,7 @@ def _validate(
     data: dict, deltas: list[dict], author: Author, undoing: bool, refile: bool = False
 ):
     """Every cluster this write leaves behind holds at least MIN_CLUSTER_EVENTS
-    events.
+    events, the person's own period at least one (`least_events`).
 
     Checked here because `_commit` is the one function every writer reaches --
     `apply`, `undo`, the coach's tools and the regrouping pass -- and checked on
@@ -628,7 +629,7 @@ def _validate(
     small = [
         cluster_id
         for cluster_id, cluster in touched
-        if len(cluster.get("eventIds") or []) < MIN_CLUSTER_EVENTS
+        if len(cluster.get("eventIds") or []) < least_events(cluster.get("source"))
     ]
     if small:
         raise Invalid(

@@ -453,6 +453,13 @@ class ClusterSource(enum.StrEnum):
 MIN_CLUSTER_EVENTS = 3
 
 
+def least_events(source: str | None) -> int:
+    """The fewest events a cluster holds: the person's own period is theirs at
+    any count from one, the app's and one of unknown provenance hold
+    MIN_CLUSTER_EVENTS [Oracle: R-0853]."""
+    return 1 if source == ClusterSource.User else MIN_CLUSTER_EVENTS
+
+
 @dataclass
 class Cluster:
     id: str

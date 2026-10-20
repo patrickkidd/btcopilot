@@ -331,8 +331,8 @@ def test_the_coach_groups_three_events_as_the_user_own_grouping(family):
     assert [c["source"] for c in stored.values()] == [ClusterSource.User.value]
 
 
-def _grandfathered(diagram):
-    """A grouping the owner made when two events were enough."""
+def _grandfathered(diagram, source=ClusterSource.User):
+    """A grouping made when two events were enough."""
     data = diagram.get_diagram_data()
     data.clusters = [
         asdict(
@@ -342,7 +342,7 @@ def _grandfathered(diagram):
                 summary="",
                 name="When he left",
                 eventIds=[10, 11],
-                source=ClusterSource.User,
+                source=source,
             )
         )
     ]
@@ -399,8 +399,9 @@ def test_a_grouping_stuck_under_the_floor_can_still_be_removed(family):
 def test_undoing_the_removal_of_such_a_grouping_reads_as_words_too(family):
     # R-0215
     """Undo commits without going through the apply path, so it needs the same
-    translation: the coach is told why, not handed an exception."""
-    _grandfathered(family)
+    translation: the coach is told why, not handed an exception. Only the
+    app's own cluster needs three: the person's period may hold fewer."""
+    _grandfathered(family, ClusterSource.Model)
     Toolbox(family.id, turn_id="t1").call(
         ToolName.Remove.value,
         {"item_kind": ItemKind.Cluster.value, "item_id": "c1", "version": version(family)},
