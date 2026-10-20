@@ -383,7 +383,7 @@ def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reas
     assert [(c.id, c.strong) for c in candidates(data)] == [("r1", True), ("r2", True)]
     first = answers(named(1, 2, 3))
     second = answers(named(1, 2, 3))
-    second.declined = [Declined(run="r2", reason="three reactions to one storm")]
+    second.declined = [Declined(hint="r2", reason="three reactions to one storm")]
     seen = []
     with replies(first, second) as ask:
         result = detect_clusters(data, ask, heard(seen))
@@ -393,7 +393,8 @@ def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reas
     assert 'Your last answer was: {"clusters": [{"id": null, "eventIds": [1, 2, 3]' in again
     assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 4]]
     declined = answer_schema({}, [], candidates(data))["properties"]["declined"]["items"]
-    assert declined["properties"]["run"]["enum"] == ["r1", "r2"]
+    assert declined["properties"]["hint"]["enum"] == ["r1", "r2"]
+    assert "run" not in declined["properties"]
     assert "never its count of shifts" in declined["properties"]["reason"]["description"]
 
 
@@ -691,7 +692,7 @@ RECORD = record(
 def answers(*clusters: ModelCluster, declined=()) -> ClusterListResponse:
     return ClusterListResponse(
         clusters=list(clusters),
-        declined=[Declined(run=run, reason="nothing piles up") for run in declined],
+        declined=[Declined(hint=run, reason="nothing piles up") for run in declined],
     )
 
 
@@ -1596,7 +1597,7 @@ def test_a_stored_period_with_too_few_shifts_is_handed_back_and_stays_drawn(
         named(50, 51, 52, cluster_id="c1", name="A breakup and the first symptoms"),
         named(60, 61, 62, cluster_id="c2", name="Back home and the family grows"),
     )
-    kept.declined = [Declined(run="r2", reason="three reactions with nothing around them")]
+    kept.declined = [Declined(hint="r2", reason="three reactions with nothing around them")]
     with patch(
         "btcopilot.metered.gemini_structured_sync", side_effect=[parsed(kept)]
     ) as asked:
@@ -2168,7 +2169,7 @@ def test_a_period_of_theirs_keeps_the_ages_they_gave_and_is_told_in_their_own_se
     assert clusters.their_sentence("the divorce", LATE, MOST) == LATE
 
 
-DECLINED = [Declined(run="r1", reason="the person's own reading is the one to hear")]
+DECLINED = [Declined(hint="r1", reason="the person's own reading is the one to hear")]
 
 
 def test_a_period_in_other_words_than_theirs_is_not_written():

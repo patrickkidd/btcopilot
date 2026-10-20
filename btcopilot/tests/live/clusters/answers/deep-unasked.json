@@ -81,7 +81,7 @@
    "periods": [],
    "declined": [
     {
-     "run": "r5",
+     "hint": "r5",
      "reason": "The shifts from 2017 on are spread over two and a half years with no date where they draw close together."
     }
    ]

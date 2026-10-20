@@ -102,6 +102,18 @@ def failure(error: Exception) -> dict:
     return {"failed": type(error).__name__, "error": str(error)}
 
 
+def hinted(said: dict) -> dict:
+    """A saved answer with each declined hint's id under `hint`: answers saved
+    before detection version 19 named it `run`."""
+    return {
+        **said,
+        "declined": [
+            {"hint": one.get("hint") or one.get("run"), "reason": one.get("reason", "")}
+            for one in said.get("declined") or []
+        ],
+    }
+
+
 def saved(case: Case, k: int) -> Path:
     """Try k's saved answers, or the case's when the folder has one try."""
     tried = Path(ANSWERS) / f"{case.name}-{k}.json"
@@ -135,7 +147,7 @@ class Asker:
                 if kind is None:
                     raise TimeoutError(said["error"])
                 raise kind(said["error"], Served(model=self.model), Spent())
-            answer = from_dict(ClusterListResponse, said)
+            answer = from_dict(ClusterListResponse, hinted(said))
         else:
             try:
                 parsed = gemini_structured_sync(

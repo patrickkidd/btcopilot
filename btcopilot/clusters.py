@@ -708,17 +708,11 @@ class TheirPeriod:
 
 @dataclass
 class Declined:
-    """A hint the call does not make a period, with its one sentence why. The
-    hint's id comes back under `hint`; `run` is the name answers gave it before
-    version 19 and is read the same way, so saved answers still replay."""
+    """A hint the call does not make a period, with its one sentence why,
+    under the hint's id."""
 
     reason: str = ""
     hint: str | None = None
-    run: str | None = None
-
-    @property
-    def hint_id(self) -> str:
-        return self.hint or self.run or ""
 
 
 @dataclass
@@ -1515,7 +1509,7 @@ def _answered_runs(
         for cluster_id, c in stored.items()
         if cluster_id not in replaced and not _regroupable(c)
     ]
-    why = {d.hint_id: d.reason.strip() for d in response.declined if d.reason.strip()}
+    why = {d.hint: d.reason.strip() for d in response.declined if d.reason.strip()}
     unanswered, declined = [], []
     for run in runs:
         if any(set(run.shiftIds) & ids for ids in held):
@@ -1631,9 +1625,7 @@ def answer_schema(
     if runs:
         declined = schema["properties"]["declined"]["items"]
         declined["required"] = ["hint", "reason"]
-        # `run` stays offered, with the same ids, for answers in the old shape.
-        for key in ("hint", "run"):
-            declined["properties"][key]["enum"] = [run.id for run in runs]
+        declined["properties"]["hint"]["enum"] = [run.id for run in runs]
         declined["properties"]["reason"]["description"] = DECLINED_REASON
     else:
         del schema["properties"]["declined"]
