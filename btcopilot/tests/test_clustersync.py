@@ -886,3 +886,55 @@ def test_clusters_from_the_same_version_are_handed_back(family):
     stored = clusters_of(family)
     assert sorted(stored) == ["c1", "c2"]
     assert not stored["c1"]["setAside"]
+
+
+def added(family, *events: Event) -> None:
+    data = family.get_diagram_data()
+    data.events += [asdict(e) for e in events]
+    data.lastItemId = max(e.id for e in events)
+    family.set_diagram_data(data)
+    db.session.commit()
+
+
+def moved(event_id: int, day: str) -> Event:
+    return Event(
+        id=event_id,
+        kind=EventKind.Noted,
+        person=1,
+        dateTime=day,
+        dateCertainty=DateCertainty.Approximate,
+        description="moved house",
+    )
+
+
+def test_an_event_added_inside_a_live_clusters_days_joins_it(family):
+    # R-0873
+    """Handed back as it was stored, the model leaves the new event out; the
+    cluster is the events within its period, whatever the date's certainty."""
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    added(family, moved(16, "1994-02-15"))
+    _, model = asked_with("c1")
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    assert clusters_of(family)["c1"]["eventIds"] == [10, 11, 12, 16]
+
+
+def test_an_event_added_the_day_after_a_clusters_end_stays_out(family):
+    # R-0873
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    added(family, moved(16, "1994-03-02"))
+    _, model = asked_with("c1")
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    stored = clusters_of(family)
+    assert [stored[i]["eventIds"] for i in ("c1", "c2")] == [[10, 11, 12], [13, 14, 15]]
+
+
+def test_an_event_added_inside_the_persons_period_joins_it(family):
+    # R-0873, R-0853
+    stored_beside_theirs(family, f"v{DETECTION_VERSION}:0123456789abcdef")
+    added(family, moved(16, "1994-05-15"))
+    _, model = asked_with("c1")
+    with model:
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    assert clusters_of(family)["c2"]["eventIds"] == [13, 14, 15, 16]

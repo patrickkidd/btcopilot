@@ -222,4 +222,3 @@ R-0863 | TEST OWED | not built: only the quoted words sit in the statement bubbl
 R-0864 | TEST OWED | not built: card and cluster sentences state events as memories side by side, never as causes or appearing shifts
 R-0865 | TEST OWED | not built: the label Your suggestion on the person's own periods
 R-0872 | TEST OWED | not built: cluster detection runs on Gemini Flash-Lite; the model pick is configuration, no test yet
-R-0873 | TEST OWED | being built on FD-383: membership by dates and the two-detection wait

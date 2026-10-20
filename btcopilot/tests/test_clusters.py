@@ -359,11 +359,12 @@ def test_a_shift_of_unknown_date_alone_seeds_no_run():
 
 
 def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reason():
-    # R-0856, R-0850
+    # R-0856, R-0850, R-0873
     """A hint with three or more supporting shifts and a change in who is in
     the family is the app's default: an answer that neither returns it nor
     declines it is asked again with the reason; a hint declined with a reason
-    is heard, the rest kept."""
+    is heard, the rest kept, holding the death inside its days the answer
+    left out."""
     data = record(
         moment(1, "1994-01-01", person=1),
         asdict(Event(id=4, kind=EventKind.Death, person=4, dateTime="1994-02-01")),
@@ -390,7 +391,7 @@ def test_a_run_of_three_shifts_comes_back_as_a_period_or_is_declined_with_a_reas
     again = ask.call_args_list[1].args[0]
     assert "Run r2 (2010-01-01 to 2010-04-01) has 3 shifts" in again
     assert 'Your last answer was: {"clusters": [{"id": null, "eventIds": [1, 2, 3]' in again
-    assert [c.eventIds for c in result.clusters] == [[1, 2, 3]]
+    assert [c.eventIds for c in result.clusters] == [[1, 2, 3, 4]]
     declined = answer_schema({}, [], candidates(data))["properties"]["declined"]["items"]
     assert declined["properties"]["run"]["enum"] == ["r1", "r2"]
     assert "never its count of shifts" in declined["properties"]["reason"]["description"]

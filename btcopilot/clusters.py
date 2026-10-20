@@ -13,7 +13,8 @@ app's [Oracle: R-0853]. The code only backstops: three events at least in
 the app's (one in the person's), no
 period covering more than half of the diagram's dated years, no name told in
 the person's trouble, two periods sharing days become one, and a period that
-fails is set aside, never deleted.
+fails is set aside, never deleted. A period holds every dated event inside its
+days, whichever the model named [Oracle: R-0873].
 Fewer than three supporting shifts counts against a period and never refuses
 it: the case report's refresh hears the count [Oracle: R-0850]. Spec and ruling
 ids: doc/CLUSTERS.md.
@@ -1778,6 +1779,7 @@ def detect_clusters(
 
     when = {e.id: e.dateTime for e in free}
     known = set(when)
+    days = {e.id: parse_date(e.dateTime) for e in _dated(data)}
     clusters, changes = [], []
     for cluster in screened.kept:
         spanned = sorted(when[event_id] for event_id in cluster.eventIds)
@@ -1795,7 +1797,12 @@ def detect_clusters(
                 name=name,
                 summary=cluster.reason,
                 reason=cluster.reason,
-                eventIds=[*cluster.eventIds, *held],
+                eventIds=_inside(
+                    [*cluster.eventIds, *held],
+                    parse_date(spanned[0]),
+                    parse_date(spanned[-1]),
+                    days,
+                ),
                 openingEventId=cluster.openingId,
                 startDate=spanned[0],
                 endDate=spanned[-1],
@@ -1831,24 +1838,35 @@ def detect_clusters(
     return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=changes)
 
 
+def _inside(
+    held: list[int],
+    start: datetime.date,
+    end: datetime.date,
+    days: dict[int, datetime.date],
+) -> list[int]:
+    """`held` and every other dated event, however sure its date, on or
+    between `start` and `end`: a cluster is the events within its period,
+    decided here and never by the model [Oracle: R-0873]."""
+    return [
+        *held,
+        *(i for i, day in days.items() if start <= day <= end and i not in held),
+    ]
+
+
 def _grown(data: DiagramData, replaced: set[str | None]) -> list[Cluster]:
     """The person's periods with every dated event added since inside their
     days: the data they are judged against grows, their name, sentence and
-    days stay as written [Oracle: R-0853, R-0850]."""
-    when = {e.id: parse_date(e.dateTime) for e in _dated(data)}
+    days stay as written [Oracle: R-0853, R-0850, R-0873]."""
+    days = {e.id: parse_date(e.dateTime) for e in _dated(data)}
     grown = []
     for cluster in data.drawn_clusters():
         if _source(cluster) is not ClusterSource.User or str(cluster["id"]) in replaced:
             continue
         held = cluster["eventIds"]
-        span = span_of([when[i] for i in held if i in when])
-        added = [
-            i
-            for i, day in when.items()
-            if span and span[0] <= day <= span[1] and i not in held
-        ]
-        if added:
-            grown.append(from_dict(Cluster, {**cluster, "eventIds": [*held, *added]}))
+        span = span_of([days[i] for i in held if i in days])
+        ids = _inside(held, *span, days) if span else held
+        if ids != held:
+            grown.append(from_dict(Cluster, {**cluster, "eventIds": ids}))
     return grown
 
 
