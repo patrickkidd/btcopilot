@@ -11,7 +11,8 @@ when asked when the most was going on, each written once as theirs; the
 person's own stay as they drew them and are judged against the data like the
 app's [Oracle: R-0853]. The code only backstops: three events at least in
 the app's (one in the person's), no
-period covering more than half of the diagram's dated years, no name told in
+period covering more than half of the years the events a period may hold
+cover, no name told in
 the person's trouble, two periods sharing days become one, and a period that
 fails is set aside, never deleted. A period holds every dated event inside its
 days, whichever the model named [Oracle: R-0873].
@@ -370,8 +371,8 @@ Span = tuple[datetime.date, datetime.date]
 
 def too_long(dates: list[datetime.date], history: Span | None) -> bool:
     """Whether a period's dated events cover more than `HISTORY_SHARE` of the
-    years the diagram's dated events cover, `history`, and more than
-    `FLOOR_YEARS`: a period covering the whole history [Oracle: R-0846]."""
+    years `history` covers, and more than `FLOOR_YEARS`: a period covering the
+    whole history [Oracle: R-0846]."""
     if not dates or history is None:
         return False
     first, last = min(dates), max(dates)
@@ -380,18 +381,21 @@ def too_long(dates: list[datetime.date], history: Span | None) -> bool:
     )
 
 
-def history_of(data: DiagramData) -> Span | None:
-    """The years the diagram's dated events cover, its first to its last."""
-    return span_of([parse_date(e.dateTime) for e in _dated(data)])
+def history_of(free: list[Event]) -> Span | None:
+    """The years the events a period may hold cover, `joinable`'s first to its
+    last: the early births no period can hold are no part of the history a
+    period is measured against, so detection and the check read one set of
+    events [Oracle: R-0846]."""
+    return span_of([parse_date(e.dateTime) for e in free])
 
 
 def backstop(
     ids: list[int], when: dict[int, datetime.date], history: Span | None
 ) -> ClusterCheck | None:
     """The first check an app period fails, returned by the model or stored:
-    three events, and not more than half of the diagram's dated years
-    [Oracle: R-0850, R-0846]. `when` dates the events it may hold, `history`
-    is `history_of` the diagram. Its supporting shifts are never checked here:
+    three events, and not more than half of the years the events a period may
+    hold cover [Oracle: R-0850, R-0846]. `when` dates the events it may hold,
+    `history` is `history_of` them. Its supporting shifts are never checked here:
     too few counts against it on the case report, never refuses it
     [Oracle: R-0850]."""
     if len(ids) < MIN_CLUSTER_EVENTS:
@@ -452,7 +456,10 @@ def _dated(data: DiagramData) -> list[Event]:
 def joinable(data: DiagramData) -> list[Event]:
     """Every dated event a cluster may hold: the scaffolding before the
     first supporting shift of a known date, never a lift, is held out."""
-    events = _dated(data)
+    return _joinable(_dated(data))
+
+
+def _joinable(events: list[Event]) -> list[Event]:
     marked = [e for e in events if seeds(e, events)]
     if not marked:
         return []
@@ -1458,7 +1465,7 @@ def _screen(
             claimed.add(cluster.id)
         usable.append(cluster)
     merged, absorbed = _merged(usable, when)
-    history = history_of(data)
+    history = history_of(free)
     kept = []
     for cluster in merged:
         said = _said_of(cluster, when)
@@ -1477,8 +1484,8 @@ def _screen(
                 ClusterError(
                     f"Period {cluster.name!r} reaches from {said['start'][:4]} to "
                     f"{said['end'][:4]}, more than half of the years this "
-                    f"diagram's events cover ({history[0].year} to "
-                    f"{history[1].year}): a period covering the whole history "
+                    f"diagram's events after its early births cover "
+                    f"({history[0].year} to {history[1].year}): a period covering the whole history "
                     "is the family's ordinary level, not a period. Return the "
                     "periods inside it.",
                     check,
@@ -1562,7 +1569,7 @@ def _judged(
     [Oracle: R-0850, R-0853, R-0844]."""
     dated = _dated(data)
     when = {e.id: parse_date(e.dateTime) for e in dated}
-    history = history_of(data)
+    history = history_of(_joinable(dated))
     kept, failing = {}, []
     for cluster in data.drawn_clusters():
         ids = [i for i in cluster.get("eventIds") or [] if i in when]
@@ -1579,7 +1586,8 @@ def _judged(
                 (
                     cluster,
                     check,
-                    f"{named} covers more than half of the diagram's dated years",
+                    f"{named} covers more than half of the years the events a "
+                    "period may hold cover",
                 )
             )
         elif years_name(_title(cluster)):

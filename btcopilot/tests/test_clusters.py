@@ -1120,8 +1120,35 @@ def test_a_climb_over_more_than_ten_years_in_a_long_history_is_kept_on_one_ask()
     again = " ".join(ask.call_args_list[1].args[0].split())
     assert (
         "reaches from 1950 to 2015, more than half of the years this diagram's "
-        "events cover (1950 to 2015)" in again
+        "events after its early births cover (1950 to 2015)" in again
     )
+
+
+def test_a_period_is_measured_against_the_years_a_period_may_hold_not_the_early_births():
+    # R-0846
+    """Grandparents born in 1921 and 1922 hold no period, so twenty years of a
+    history the periods may cover from 1990 to 2025 is most of it, though the
+    diagram's dated events reach back more than a century."""
+    births = [
+        asdict(Event(id=n, kind=EventKind.Birth, child=n, dateTime=f"192{n}-01-01"))
+        for n in (1, 2)
+    ]
+    shifts = [moment(10 + n, f"{1990 + 5 * n}-01-01", person=3) for n in range(8)]
+    strain = Cluster(
+        id="c1",
+        title="A long strain",
+        summary="",
+        name="A long strain",
+        eventIds=[12, 13, 14, 15, 16],
+        source=ClusterSource.Model,
+    )
+    data = record(*births, *shifts, clusters=[strain])
+    assert clusters.history_of(joinable(data)) == (
+        datetime.date(1990, 1, 1),
+        datetime.date(2025, 1, 1),
+    )
+    [(cluster, check, _)] = clusters.broken(data)
+    assert (cluster["id"], check) == ("c1", ClusterCheck.TooLong)
 
 
 def test_the_proposals_as_given_pass():
