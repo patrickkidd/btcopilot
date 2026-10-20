@@ -10,7 +10,6 @@ from btcopilot.extensions import db
 from btcopilot import chips, recordtext
 from btcopilot.chips import ChipKind
 from btcopilot.clusters import (
-    ClusterCheck,
     ClusterError,
     ClusterListResponse,
     DETECTION_VERSION,
@@ -18,7 +17,6 @@ from btcopilot.clusters import (
     PER_EVENT,
     THINKING_ROOM,
     ModelCluster,
-    Wait,
     sync,
 )
 from btcopilot.coachturn import CoachTurn
@@ -1049,29 +1047,6 @@ def test_a_waiting_cluster_with_no_opening_event_is_shown_when_proposed_again(fa
     assert row["id"] == first
     assert (row["setAside"], row["proposedAt"]) == (False, None)
     assert row["eventIds"] == [14, 15, 16]
-
-
-def test_each_cluster_held_back_shown_or_not_proposed_again_is_an_observation(family):
-    # R-0517, R-0873
-    held_live(family)
-    for turn, answer in enumerate(((KEPT, NEW), (KEPT,), (KEPT, NEW), (KEPT, NEW))):
-        with answering(*answer):
-            sync(family.id, turn_id=f"t{turn}", user_id=family.user_id, force=True)
-    key = family.get_diagram_data().clusterCacheKey
-    rows = [
-        o.detail
-        for o in Observation.query.filter_by(kind=ObservationKind.ClusterRefused)
-        if o.detail["check"] == ClusterCheck.Waiting.value
-    ]
-    first, second = (r["cluster"] for r in rows[::2])
-    assert first != second
-    assert [(r["reason"], r["cluster"], r["eventIds"]) for r in rows] == [
-        (Wait.Parked.value, first, [13, 14, 15]),
-        (Wait.Dropped.value, first, [13, 14, 15]),
-        (Wait.Parked.value, second, [13, 14, 15]),
-        (Wait.Promoted.value, second, [13, 14, 15]),
-    ]
-    assert {(r["proposedAt"], r["key"]) for r in rows} == {(key, key)}
 
 
 def test_a_diagrams_first_detection_shows_its_clusters_at_once(family):

@@ -30,9 +30,7 @@ class ObservationKind(enum.StrEnum):
     ProactiveReturned = "proactive_returned"
     # The words for a message the coach writes first broke its shape.
     ProactiveRefused = "proactive_refused"
-    # A grouping answer the checks refused, and a turn whose two answers both
-    # were; a new cluster held back for a second detection, and what became of
-    # it, is a refused row whose check is "waiting".
+    # A grouping answer the checks refused, and a turn whose two answers both were.
     ClusterRefused = "cluster_refused"
     ClusterFailed = "cluster_failed"
     # The coach's notes say the person corrected it: it assumed, misheard or
