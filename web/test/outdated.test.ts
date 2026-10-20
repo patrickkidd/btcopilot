@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
-import { ask, lineClass, phase, Phase, stamp } from "../src/outdated";
-import type { OutOfDate } from "../src/types";
+import { Failed } from "../src/api";
+import { ask, BUSY, lineClass, phase, Phase, rewritten, stamp, UNWRITTEN } from "../src/outdated";
+import { RewriteState, type OutOfDate, type Rewrite } from "../src/types";
 
 const out: OutOfDate = { change_id: 41, at: "2026-10-07T09:00:00", sentence: "Delphine's 1995 diagnosis was added after the coach wrote this report." };
 
@@ -42,6 +43,39 @@ it("asks with the change's own sentence, Refresh the report and Show the last re
   expect(sheet).toContain(">Refresh the report<");
   expect(sheet).toContain(">Show the last report<");
   expect(sheet).not.toContain("cardx");
+});
+
+function rewriter(start: () => Promise<Rewrite | null>, polled: Rewrite[]) {
+  const said: string[] = [];
+  return {
+    said,
+    start,
+    poll: async () => polled.shift()!,
+    pause: async () => {},
+    say: (text: string) => said.push(text),
+  };
+}
+
+// R-0825
+it("says a rewrite that failed or that the server no longer knows, and says nothing of one that finished", async () => {
+  const running = { id: "r1", state: RewriteState.Running };
+  const done = rewriter(async () => running, [running, { id: "r1", state: RewriteState.Done }]);
+  expect(await rewritten(done)).toBe(true);
+  expect(done.said).toEqual([]);
+  const failed = rewriter(async () => running, [{ id: "r1", state: RewriteState.Failed }]);
+  await expect(rewritten(failed)).rejects.toThrow("rewrite r1");
+  expect(failed.said).toEqual([UNWRITTEN]);
+  const lost = rewriter(async () => running, []);
+  lost.poll = async () => {
+    throw new Failed(404, "GET /case-report-rewrites/r1", "gone");
+  };
+  await expect(rewritten(lost)).rejects.toThrow("rewrite r1");
+  expect(lost.said).toEqual([UNWRITTEN]);
+  const busy = rewriter(async () => {
+    throw new Failed(409, "POST /case-report-rewrites", "running");
+  }, []);
+  expect(await rewritten(busy)).toBe(false);
+  expect(busy.said).toEqual([BUSY]);
 });
 
 // R-0825

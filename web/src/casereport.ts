@@ -9,11 +9,11 @@ import { BACK } from "./tokens";
 import { CLUSTER, esc, flash, slideOver } from "./dom";
 import { Drawer, frameOn } from "./drawer";
 import { Lens } from "./lens";
-import { ask, dismiss, dismissed, lineClass, phase, Phase, REWRITING, stamp } from "./outdated";
+import { ask, dismiss, dismissed, lineClass, phase, Phase, REWRITING, rewritten, stamp } from "./outdated";
 import { Sheet } from "./sheet";
 import { untold } from "./snapshots";
 import type { Opened, Part, View } from "./store";
-import { ChipKind, ChipTone, InteractionKind, ItemKind, RewriteState, type Chip, type Rewrite, type Timeline } from "./types";
+import { ChipKind, ChipTone, InteractionKind, ItemKind, type Chip, type Timeline } from "./types";
 import { Feature } from "./track";
 import { toast } from "./toast";
 import { AWAY_PX, fold, type Fold } from "./viewport";
@@ -242,36 +242,23 @@ export class CaseReport implements View {
     this.render();
   }
 
-  /** The coach rewrites its eight cards (R-0825); the report is read again
-   * when it is done. One the server will not start now (already running, or
-   * no session yet) says so; a failed one, or one the server no longer knows,
-   * says so and puts the cards back as they were. Kept per diagram, so
-   * another family opened meanwhile is neither dimmed nor reloaded. */
+  /** The coach rewrites its eight cards (`rewritten`, R-0825), and the
+   * report is read again when it is done, the cards dimmed until it is read
+   * back; a failed read is never told as a failed rewrite, and one that
+   * failed puts the cards back as they were. Kept per diagram, so another
+   * family opened meanwhile is neither dimmed nor reloaded. */
   private async rewrite(id: number): Promise<void> {
-    let job: Rewrite | null;
     this.rewriting.add(id);
     this.render();
     try {
-      try {
-        job = await this.hooks.fetch(api.rewriteReport);
-      } catch (error) {
-        if (!(error instanceof api.Failed) || error.status !== 409) throw error;
-        toast("The report is already being rewritten, or this family has no session yet");
-        return;
-      }
-      while (job?.state === RewriteState.Running) {
-        await new Promise((done) => window.setTimeout(done, POLL_MS));
-        job = await api.reportRewrite(job.id).catch((error: unknown) => {
-          if (error instanceof api.Failed && error.status === 404) return { id: job!.id, state: RewriteState.Failed };
-          throw error;
-        });
-      }
-      if (job?.state === RewriteState.Failed) throw new Error(`the coach could not rewrite the case report, rewrite ${job.id}`);
+      const done = await rewritten({
+        start: () => this.hooks.fetch(api.rewriteReport),
+        poll: api.reportRewrite,
+        pause: () => new Promise((go) => window.setTimeout(go, POLL_MS)),
+        say: toast,
+      });
       // a family opened since the tap is not the one rewritten
-      if (this.opened?.diagram?.id === id) await this.hooks.reload();
-    } catch (error) {
-      toast("The coach could not rewrite the report. Try again.");
-      throw error;
+      if (done && this.opened?.diagram?.id === id) await this.hooks.reload();
     } finally {
       this.rewriting.delete(id);
       this.render();

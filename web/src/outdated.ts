@@ -1,4 +1,5 @@
-import type { OutOfDate } from "./types";
+import { Failed } from "./api";
+import { RewriteState, type OutOfDate, type Rewrite } from "./types";
 
 /** Whether the coach's eight cards on the case report still stand: the sheet
  * that asks on opening, the grey line at the top of the cards, and the
@@ -42,6 +43,51 @@ export const ask = (sentence: string, esc: (s: string) => string): string =>
   `<button class="cf-go" type="button" data-act="refresh">Refresh the report</button>` +
   `<button class="cf-no" type="button" data-act="last">Show the last report</button>` +
   `</div>`;
+
+/** What a rewrite of the coach's cards asks of the screen. */
+export interface Rewriter {
+  /** Ask the coach to rewrite them; null when another family was opened meanwhile. */
+  start(): Promise<Rewrite | null>;
+  /** Ask whether the rewrite has finished. */
+  poll(id: string): Promise<Rewrite>;
+  /** Wait between two asks. */
+  pause(): Promise<void>;
+  say(text: string): void;
+}
+
+export const BUSY = "The report is already being rewritten, or this family has no session yet";
+export const UNWRITTEN = "The coach could not rewrite the report. Try again.";
+
+/** The coach rewrites its eight cards (R-0825): true once it has. One the
+ * server will not start now (already running, or no session yet) is said and
+ * is false; a failed one, or one the server no longer knows, is said and
+ * thrown. Reading the report back is the caller's, after this, so a read that
+ * fails is never told as a rewrite that failed. */
+export async function rewritten(r: Rewriter): Promise<boolean> {
+  let job: Rewrite | null;
+  try {
+    try {
+      job = await r.start();
+    } catch (error) {
+      if (!(error instanceof Failed) || error.status !== 409) throw error;
+      r.say(BUSY);
+      return false;
+    }
+    while (job?.state === RewriteState.Running) {
+      await r.pause();
+      const id = job.id;
+      job = await r.poll(id).catch((error: unknown) => {
+        if (error instanceof Failed && error.status === 404) return { id, state: RewriteState.Failed };
+        throw error;
+      });
+    }
+    if (job?.state === RewriteState.Failed) throw new Error(`the coach could not rewrite the case report, rewrite ${job.id}`);
+  } catch (error) {
+    r.say(UNWRITTEN);
+    throw error;
+  }
+  return true;
+}
 
 const key = (diagramId: number) => `fd-report-last-shown-${diagramId}`;
 
