@@ -1009,8 +1009,7 @@ def run(turn_id: str, diagram_id: int, user_id: int) -> dict:
         _end(diagram_id, turn_id, {"type": TurnEventKind.Failed.value, "message": BROKE})
         raise
     TokenMeter.charge(user_id, meter.spent)
-    if cards:
-        diagram.case_report_forced_out_of_date = False
+    cleared(diagram, cards)
     db.session.commit()
     db.session.refresh(diagram)
     return _end(
@@ -1018,6 +1017,13 @@ def run(turn_id: str, diagram_id: int, user_id: int) -> dict:
         turn_id,
         {"type": TurnEventKind.Done.value, "turn_id": turn_id, "cards": cards, "version": diagram.version},
     )
+
+
+def cleared(diagram: Diagram, cards: list[str]) -> None:
+    """Cards written anew take off the out-of-date mark the catch-up put on
+    the report (R-0772)."""
+    if cards:
+        diagram.case_report_forced_out_of_date = False
 
 
 def _taken_back(diagram_id: int, turn_id: str) -> None:

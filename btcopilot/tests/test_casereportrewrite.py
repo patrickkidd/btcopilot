@@ -985,6 +985,17 @@ def test_the_catch_up_writes_the_plan_and_names_the_changes_undo_takes_back(
     assert cards(family)["i1"] == "main_guess"
 
 
+def test_the_catch_up_takes_off_the_out_of_date_mark_as_a_refresh_does(
+    flask_app, tmp_path, past, written, family
+):
+    # R-0772
+    forced(family, True)
+    plan = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*GUESSED)))[0]["plan"]
+    catch_up(flask_app, "--apply", "--plan", plan)
+    assert not forced(family)
+    assert out_of_date(family) is None
+
+
 def test_the_catch_up_refuses_a_plan_the_record_moved_past(flask_app, tmp_path, past, written, family):
     # R-0825
     plan = catch_up(flask_app, "--plans", str(tmp_path), model=Model(calling(*GUESSED)))[0]["plan"]
