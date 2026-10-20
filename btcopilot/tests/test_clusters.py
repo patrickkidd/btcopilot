@@ -2360,7 +2360,7 @@ def test_the_persons_answer_alone_puts_the_grouping_behind():
     assert clusters.behind(1, asked(data, 7))
 
 
-def test_editing_what_detection_reads_of_an_event_puts_the_grouping_behind():
+def test_editing_what_detection_reads_of_an_event_puts_the_diagram_behind():
     # R-0853
     data = record(*ASH.events)
     data.clusterCacheKey = clusters.compute_cache_key(clusters._events(data))
