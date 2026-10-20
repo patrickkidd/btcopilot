@@ -494,3 +494,19 @@ def test_a_scribe_turn_keeps_its_calls_with_the_turn(coder, cut, turns):
     ]
     assert {e.discussion_id for e in kept} == {turns[0].discussion_id}
     assert len({e.turn_id for e in kept}) == 1
+
+
+def test_an_earlier_statement_keeps_its_line_after_a_later_one_changes_the_event(coder, cut, turns):
+    # R-0270
+    coding = coded(coder.user, cut, {"people": [person(1, "Tom")]}, done=False)
+    moved = {"date_certainty": "certain", "kind": "noted", "title": "Moved to Glasgow", "description": "moved", "date": "2006-09-01", "person": "1"}
+    scribe(coder, coding, turns[0], Scripted([("edit_event", moved)]), "Tom moved to Glasgow in 2006")
+    event_id = adapter.record_of(adapter.diagram_of(coding.diagram_id))["events"][0]["id"]
+    later = Versioned([("edit_event", {"id": event_id, "date": "2007-09-01", "date_certainty": "certain"})])
+    fixed = scribe(coder, coding, turns[1], later, "it was 2007, not 2006")
+    assert fixed.status_code == 200, fixed.get_data(as_text=True)
+
+    thread = coder.get(f"/review/codings/{coding.id}/thread").json
+    said = {turn["id"]: turn["said"] for turn in thread["turns"]}
+    assert said[turns[0].id][0]["lines"] == ["Tom · Moved to Glasgow · Sep 2007"]
+    assert said[turns[1].id][0]["lines"] == ["Tom · Moved to Glasgow · Sep 2007"]
