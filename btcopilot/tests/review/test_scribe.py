@@ -9,7 +9,7 @@ from mock import patch
 from btcopilot import prompts
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.llmutil import Served
-from btcopilot.models import Change, ModelCall, Purpose
+from btcopilot.models import Change, ModelCall, Purpose, TurnEvent
 from btcopilot.review import adapter
 from btcopilot.review.scribe import written
 from btcopilot.tests.review.conftest import coded, person, shift
@@ -480,3 +480,17 @@ def test_a_death_reads_as_its_kind_name():
         "Rose · Death · in Oklahoma · Feb 2011",
         "Rose · Death · Died in hospital · Feb 2011",
     ]
+
+
+def test_a_scribe_turn_keeps_its_calls_with_the_turn(coder, cut, turns):
+    # R-0871, R-0517
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted([("edit_event", SHIFT)], [("edit_person", {"name": "James Cooper"})])
+    scribe(coder, coding, turns[0], model, "James Cooper came and Marcus could not sleep")
+    kept = TurnEvent.query.order_by(TurnEvent.seq).all()
+    assert [(e.kind, e.payload["name"], bool(e.payload["refusal"])) for e in kept] == [
+        ("tool_call", "edit_event", True),
+        ("tool_call", "edit_person", False),
+    ]
+    assert {e.discussion_id for e in kept} == {turns[0].discussion_id}
+    assert len({e.turn_id for e in kept}) == 1

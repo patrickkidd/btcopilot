@@ -33,6 +33,7 @@ from btcopilot.models import (
     Statement,
 )
 from btcopilot.recordtext import date_text, render, version_line
+from btcopilot.toolnames import toolcall
 from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
 from btcopilot.models import (
     Diagram,
@@ -62,6 +63,8 @@ __all__ = [
     "render_record",
     "scribe_prompt",
     "scribe_toolbox",
+    "keep_calls",
+    "toolcall",
     "write_tools",
     "Diagram",
     "Discussion",
@@ -118,6 +121,13 @@ def scribe_toolbox(diagram_id: int, user_id: int, statement_id: int, turn_id: st
         author=Author.Review,
         statement_id=statement_id,
     )
+
+
+def keep_calls(turn_id: str, discussion_id: int, kept: list[dict]) -> None:
+    """A scribe turn's tool calls, kept as turn_events rows the way a coach
+    turn keeps its own, so the learning loop counts them the same (R-0871)."""
+    turnstore.save(turn_id, discussion_id, kept)
+    db.session.commit()
 
 
 def discussion_of(discussion_id: int) -> Discussion:
