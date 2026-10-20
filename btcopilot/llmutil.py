@@ -835,11 +835,22 @@ OUTPUT FORMAT: Respond with ONLY a single valid JSON object conforming to this J
 {schema}"""
 
 
+def unfenced(text: str) -> str:
+    """The local model's JSON out of the markdown fence it often wraps it in:
+    it ignores the output format, so nothing else holds it to bare JSON
+    [Oracle: R-0856]. Claude's own answers are never unwrapped."""
+    text = text.strip()
+    if not text.startswith("```"):
+        return text
+    return text.split("\n", 1)[1].rsplit("```", 1)[0]
+
+
 async def claude_structured(prompt, response_format, model, schema, limit):
     """The answer is forced to `schema` by Claude's structured output option
     (the schema is the request's output format), so the only parse is loading
     the returned JSON [Oracle: R-0856]. The local model ignores the output
-    format, so only its prompt carries the schema."""
+    format, so only its prompt carries the schema and only its answer is
+    taken out of a markdown fence."""
     start_time = time.time()
     reasoning = structured_reasoning_args(model)
     config = dict(reasoning.pop("output_config", {}), format=output_format(schema))
@@ -881,6 +892,8 @@ async def claude_structured(prompt, response_format, model, schema, limit):
         )
 
     text = next((b.text for b in response.content if b.type == "text"), "")
+    if local_model():
+        text = unfenced(text)
     try:
         result = from_dict(response_format, json.loads(text))
     except (ValueError, TypeError, KeyError) as error:

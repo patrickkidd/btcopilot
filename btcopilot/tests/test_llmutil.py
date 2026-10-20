@@ -331,6 +331,36 @@ def test_an_answer_that_is_not_the_json_asked_for_is_unreadable(anthropic_env):
         asyncio.run(llmutil.claude_structured("prompt", Named, "qwen3:8b", {}, 100))
 
 
+class Fenced(Client):
+    def __init__(self):
+        super().__init__()
+        said = self.beta.messages.message
+        text = said.content[0].model_copy(
+            update={"text": '```json\n{"name": "Harold"}\n```'}
+        )
+        self.beta.messages.message = said.model_copy(update={"content": [text]})
+
+
+def test_the_local_models_json_in_a_markdown_fence_is_read(anthropic_env):
+    # R-0856
+    anthropic_env.setenv(llmutil.LOCAL_URL, "http://127.0.0.1:11434")
+    anthropic_env.setenv(llmutil.LOCAL_MODEL, "qwen3:8b")
+    anthropic_env.setattr(llmutil, "_extraction_anthropic_client", Fenced)
+    parsed = asyncio.run(
+        llmutil.claude_structured("prompt", Named, "qwen3:8b", {}, 100)
+    )
+    assert parsed.value == Named(name="Harold")
+
+
+def test_claudes_json_in_a_markdown_fence_is_unreadable(anthropic_env):
+    # R-0856
+    anthropic_env.setenv(SETTING, Provider.Anthropic.value)
+    anthropic_env.setattr(llmutil, "_extraction_anthropic_client", Fenced)
+    haiku = "claude-haiku-4-5-20251001"
+    with pytest.raises(llmutil.Unreadable):
+        asyncio.run(llmutil.claude_structured("prompt", Named, haiku, {}, 100))
+
+
 def test_the_coachs_turn_and_the_text_calls_are_unchanged(anthropic_env):
     # R-0856, R-0857
     """A text call on Sonnet 5 keeps adaptive thinking at the text effort and
