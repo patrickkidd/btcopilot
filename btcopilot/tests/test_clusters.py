@@ -2279,6 +2279,21 @@ def test_the_persons_answer_alone_puts_the_grouping_behind():
     assert clusters.behind(1, asked(data, 7))
 
 
+def test_editing_what_detection_reads_of_an_event_puts_the_grouping_behind():
+    # R-0853
+    data = record(*ASH.events)
+    data.clusterCacheKey = clusters.compute_cache_key(clusters._events(data))
+    for field, value in (
+        ("description", "always anxious"),
+        ("person", 99),
+        ("kind", EventKind.Noted.value),
+    ):
+        edited = record(*ASH.events)
+        edited.events[0][field] = value
+        edited.clusterCacheKey = data.clusterCacheKey
+        assert clusters.behind(1, edited), field
+
+
 def test_a_stored_period_with_undated_events_regroups_and_keeps_them(test_user):
     # R-0850
     """An event with no date is never offered, so the answer that hands the

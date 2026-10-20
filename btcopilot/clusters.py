@@ -810,9 +810,16 @@ def most_going_on(diagram_id: int, data: DiagramData) -> list[Answer]:
 
 
 def compute_cache_key(events: list[Event], told_ids: tuple[int, ...] = ()) -> str:
+    """What detection reads of each event, so editing any of it regroups: an
+    event's kind sets what may open a period, its description whether a shift
+    is how things always were, and its person whether a lift counts beside
+    another's rise [Oracle: R-0853, R-0850]."""
     event_data = [
         {
             "id": e.id,
+            "kind": _enum_value(e.kind),
+            "person": e.person,
+            "description": e.description,
             "dateTime": e.dateTime,
             "symptom": _enum_value(e.symptom) if e.symptom else None,
             "anxiety": _enum_value(e.anxiety) if e.anxiety else None,
