@@ -1462,6 +1462,45 @@ INSIDE = record(
 )
 
 
+def test_an_event_on_the_day_two_periods_share_joins_only_the_one_opening_nearer():
+    # R-0873
+    """The funeral's period ends the day the move opens the next: a note that
+    day, which neither names, joins the move's period alone, and neither
+    takes the other's event of that day."""
+    data = record(
+        asdict(Event(id=1, kind=EventKind.Death, person=3, dateTime="1994-01-01")),
+        moment(2, "1994-03-01", person=1),
+        moment(3, "1994-06-01", person=1),
+        asdict(
+            Event(
+                id=4,
+                kind=EventKind.Noted,
+                person=2,
+                dateTime="1994-06-01",
+                description="the boxes packed",
+            )
+        ),
+        asdict(
+            Event(
+                id=5,
+                kind=EventKind.Noted,
+                person=1,
+                dateTime="1994-06-01",
+                description="moved to the coast",
+            )
+        ),
+        moment(6, "1994-08-01", person=2),
+        moment(7, "1994-10-01", person=1),
+    )
+    funeral = named(1, 2, 3, name="After the funeral")
+    funeral.openingId = 1
+    move = named(5, 6, 7, name="The new house")
+    move.openingId = 5
+    with replies(answers(funeral, move)) as ask:
+        result = detect_clusters(data, ask)
+    assert [c.eventIds for c in result.clusters] == [[1, 2, 3], [5, 6, 7, 4]]
+
+
 def test_a_period_inside_anothers_years_is_merged_not_refused():
     # R-0845
     with replies(

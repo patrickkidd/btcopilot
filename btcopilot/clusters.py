@@ -1802,7 +1802,9 @@ def detect_clusters(
     when = {e.id: e.dateTime for e in free}
     known = set(when)
     days = {e.id: parse_date(e.dateTime) for e in _dated(data)}
-    clusters, reshaped = [], []
+    clusters: list[Cluster] = []
+    spans: list[Span] = []
+    reshaped = []
     for cluster in screened.kept:
         spanned = sorted(when[event_id] for event_id in cluster.eventIds)
         cluster_id = cluster.id or next_id(taken)
@@ -1819,12 +1821,7 @@ def detect_clusters(
                 name=name,
                 summary=cluster.reason,
                 reason=cluster.reason,
-                eventIds=_inside(
-                    [*cluster.eventIds, *held],
-                    parse_date(spanned[0]),
-                    parse_date(spanned[-1]),
-                    days,
-                ),
+                eventIds=[*cluster.eventIds, *held],
                 openingEventId=cluster.openingId,
                 startDate=spanned[0],
                 endDate=spanned[-1],
@@ -1835,6 +1832,7 @@ def detect_clusters(
                 ),
             )
         )
+        spans.append((parse_date(spanned[0]), parse_date(spanned[-1])))
         if cluster.change:
             reshaped.append(cluster.change)
             _log.info(f"Regrouped {cluster.name!r}: {cluster.change}")
@@ -1855,41 +1853,56 @@ def detect_clusters(
                 source=ClusterSource.User,
             )
         )
+        spans.append((days[one.eventIds[0]], days[one.eventIds[-1]]))
         _log.info(f"Wrote the person's period {one.period.name!r}")
-    clusters += _grown(data, {one.replaces for one in screened.named})
+    theirs, their_spans = _theirs(data, {one.replaces for one in screened.named}, days)
+    was = [list(cluster.eventIds) for cluster in theirs]
+    _inside([*clusters, *theirs], [*spans, *their_spans], days)
+    clusters += [c for c, ids in zip(theirs, was) if c.eventIds != ids]
     return ClusterResult(clusters=clusters, cacheKey=cache_key, changes=reshaped)
 
 
 def _inside(
-    held: list[int],
-    start: datetime.date,
-    end: datetime.date,
-    days: dict[int, datetime.date],
-) -> list[int]:
-    """`held` and every other dated event, however sure its date, on or
-    between `start` and `end`: a cluster is the events within its period,
-    decided here and never by the model [Oracle: R-0873]."""
-    return [
-        *held,
-        *(i for i, day in days.items() if start <= day <= end and i not in held),
+    clusters: list[Cluster], spans: list[Span], days: dict[int, datetime.date]
+) -> None:
+    """Gives each cluster every dated event, however sure its date, on or
+    between the first and last day of its span, that no cluster holds: a
+    cluster is the events within its period, decided here and never by the
+    model. An event on a day two clusters share joins only the one whose
+    opening event is nearer in time, the earlier cluster on a tie, a cluster's
+    first day standing for an opening it does not name [Oracle: R-0873]."""
+    held = {i for cluster in clusters for i in cluster.eventIds}
+    opens = [
+        days.get(cluster.openingEventId) or span[0]
+        for cluster, span in zip(clusters, spans)
     ]
+    for event_id, day in days.items():
+        if event_id in held:
+            continue
+        near = [n for n, (start, end) in enumerate(spans) if start <= day <= end]
+        if near:
+            n = min(near, key=lambda n: (abs((day - opens[n]).days), spans[n][0]))
+            clusters[n].eventIds.append(event_id)
 
 
-def _grown(data: DiagramData, replaced: set[str | None]) -> list[Cluster]:
-    """The person's periods with every dated event added since inside their
-    days: the data they are judged against grows, their name, sentence and
-    days stay as written [Oracle: R-0853, R-0850, R-0873]."""
-    days = {e.id: parse_date(e.dateTime) for e in _dated(data)}
-    grown = []
+def _theirs(
+    data: DiagramData, replaced: set[str | None], days: dict[int, datetime.date]
+) -> tuple[list[Cluster], list[Span]]:
+    """The person's stored periods not read again, each with its span, to be
+    given every dated event added since inside their days: the data they are
+    judged against grows, their name, sentence and days stay as written
+    [Oracle: R-0853, R-0850, R-0873]. One with no dated event has no days to
+    grow in."""
+    theirs, spans = [], []
     for cluster in data.drawn_clusters():
         if _source(cluster) is not ClusterSource.User or str(cluster["id"]) in replaced:
             continue
-        held = cluster["eventIds"]
-        span = span_of([days[i] for i in held if i in days])
-        ids = _inside(held, *span, days) if span else held
-        if ids != held:
-            grown.append(from_dict(Cluster, {**cluster, "eventIds": ids}))
-    return grown
+        span = span_of([days[i] for i in cluster["eventIds"] if i in days])
+        if span:
+            held = list(cluster["eventIds"])
+            theirs.append(from_dict(Cluster, {**cluster, "eventIds": held}))
+            spans.append(span)
+    return theirs, spans
 
 
 STORED_FIELDS = (
