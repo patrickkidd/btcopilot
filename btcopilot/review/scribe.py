@@ -173,6 +173,7 @@ def write(coding, statement, said: str, model=None) -> dict:
     asked = ""
     unfinished = False
     refused: list[str] = []
+    kept: list[dict] = []
 
     for step in range(MAX_STEPS):
         turn = _say(coach, system, messages, tools)
@@ -183,7 +184,9 @@ def write(coding, statement, said: str, model=None) -> dict:
         results = []
         refused = []
         for call in turn.calls:
+            asked_for = adapter.toolcall(toolbox.data, call.name, call.args)
             text, plain = _call(toolbox, call)
+            kept.append(dict(asked_for, refusal=plain or None, result=text))
             if plain:
                 refused.append(plain)
             results.append(
@@ -202,6 +205,7 @@ def write(coding, statement, said: str, model=None) -> dict:
         if refused:
             _log.warning(f"Scribe step {step} was refused: {results}")
 
+    adapter.keep_calls(turn_id, statement.discussion_id, kept)
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
     # Every call is committed as it lands, so a loop that ran out of steps or
     # gave up on a refusal has written part of the sentence; the coder is told
