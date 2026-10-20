@@ -519,6 +519,17 @@ describe("the drawing on a cluster's page", () => {
   });
 
   // R-0862
+  it("names a death with one possessive whether the name ends in s, is already possessive or is a stand-in", () => {
+    const label = (name: string) => {
+      const died = [{ ...events[1], person: 9, person_name: name }];
+      return place(died, ClusterView.Row, 300, null, new Map(), 1).keys[0].label;
+    };
+    expect(label("Jess Hale")).toBe("Jess's death");
+    expect(label("User's")).toBe("User's death");
+    expect(label("User's partner")).toBe("User's partner's death");
+  });
+
+  // R-0862
   it("stands the lines' labels on rows so no two overlap and no line crosses a label, cutting one only when no row is clear", () => {
     const lines = [100, 104, 110, 118, 290].map((x, i) => ({ id: i, key: Key.Death, x, label: `Grandmother number ${i}'s death` }));
     const laid = stand(lines, 300);
