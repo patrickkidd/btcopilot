@@ -114,8 +114,11 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    date, however sure, on or between its first and last day, whichever events
    the model named: an event added inside a cluster's years joins it at the next
    detection, decided by the code [Oracle: R-0873].
-6a. A new app period that opens at no live app period's opening event, proposed
-   while the diagram has a live app period, is stored set aside with
+6a. A new app period that shares an event or the opening event with a live app
+   period reshapes it and is shown at once; the live one it does not return is
+   set aside. A new app period that shares no event with any live app period
+   and opens at none of their opening events, proposed while the diagram has a
+   live app period, is stored set aside with
    `proposedAt`, the cache key of that detection, and is never handed to the
    model. When the next detection proposes a period opening at the same event,
    that row is shown under its id with the new answer's days and name, and

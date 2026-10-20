@@ -1954,10 +1954,12 @@ def _deltas(
     """Every app cluster the answer did not return is set aside, never
     deleted; the person's own are kept as they drew them [Oracle: R-0850].
     A new app cluster opening at the event a waiting one opens at is that one,
-    shown now. With `waits`, the detection's key, a new app cluster opening at
-    no live app cluster's opening event is stored set aside under that key
-    until the next detection proposes it again; a waiting one not proposed
-    again stays aside, no longer waiting [Oracle: R-0873]."""
+    shown now. A new app cluster sharing an event or an opening event with a
+    live app cluster reshapes it and is shown now; the live one it does not
+    return is set aside. With `waits`, the detection's key, any other new app
+    cluster is stored set aside under that key until the next detection
+    proposes it again; a waiting one not proposed again stays aside, no longer
+    waiting [Oracle: R-0873]."""
     rows = {
         str(c["id"]): c
         for c in stored
@@ -1970,14 +1972,20 @@ def _deltas(
         for i in marked
         if rows[i].get("openingEventId") is not None
     }
-    opens = {c.get("openingEventId") for c in held.values() if _regroupable(c)} - {None}
+    live = [c for c in held.values() if _regroupable(c)]
+    opens = {c.get("openingEventId") for c in live} - {None}
+    shown = {i for c in live for i in c.get("eventIds") or []}
     kept = {}
     for cluster in _detected(list(held.values()), detected, dates).values():
         if cluster.id not in held and cluster.source is ClusterSource.Model:
             again = waiting.get(cluster.openingEventId)
             if again:
                 cluster.id = again
-            elif waits and cluster.openingEventId not in opens:
+            elif (
+                waits
+                and cluster.openingEventId not in opens
+                and not shown & set(cluster.eventIds)
+            ):
                 cluster.setAside, cluster.proposedAt = True, waits
         kept[cluster.id] = cluster
 

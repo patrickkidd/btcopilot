@@ -940,7 +940,7 @@ def test_an_event_added_inside_the_persons_period_joins_it(family):
     assert clusters_of(family)["c2"]["eventIds"] == [13, 14, 15, 16]
 
 
-def held_live(family) -> None:
+def held_live(family, ids=(10, 11, 12)) -> None:
     data = family.get_diagram_data()
     data.clusters = [
         asdict(
@@ -949,8 +949,8 @@ def held_live(family) -> None:
                 title="A cold spring",
                 summary="",
                 name="A cold spring",
-                eventIds=[10, 11, 12],
-                openingEventId=10,
+                eventIds=list(ids),
+                openingEventId=ids[0],
                 source=ClusterSource.Model,
             )
         )
@@ -992,7 +992,7 @@ def waiting(family) -> dict:
     return row
 
 
-def test_a_new_cluster_beside_live_ones_waits_set_aside(family):
+def test_a_new_cluster_sharing_no_event_with_a_live_one_waits_set_aside(family):
     # R-0873
     held_live(family)
     with answering(KEPT, NEW):
@@ -1048,3 +1048,17 @@ def test_a_catch_up_from_scratch_shows_its_clusters_at_once(family):
     (row,) = family.get_diagram_data().drawn_clusters()
     assert row["eventIds"] == [13, 14, 15]
     assert "proposedAt" not in row
+
+
+def test_a_new_cluster_absorbing_a_live_ones_events_replaces_it_at_once(family):
+    # R-0873
+    """Seen on Patrick's diagram: the live cluster folded into one opening an
+    event earlier, so those years showed no cluster for a detection."""
+    held_live(family, ids=(11, 12, 13))
+    with answering((None, "Two hard seasons", [10, 11, 12, 13], 10)):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    rows = clusters_of(family)
+    (row,) = family.get_diagram_data().drawn_clusters()
+    assert row["eventIds"] == [10, 11, 12, 13]
+    assert "proposedAt" not in row
+    assert rows["c1"]["setAside"] is True
