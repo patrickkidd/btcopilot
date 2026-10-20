@@ -597,7 +597,8 @@ def judge(cluster: dict, data: DiagramData) -> Judgement:
         (events[i] for i in cluster.get("eventIds") or [] if i in events),
         key=lambda e: (parse_date(e.dateTime), e.id),
     )
-    shifts = [e for e in held if supports(e, list(events.values()))]
+    listed = list(events.values())
+    shifts = [e for e in held if supports(e, listed)]
     people = {e.person for e in shifts}
     named = cluster.get("openingEventId")
     openers = [e for e in held if e.id == named and not unsure(e)] or [
