@@ -43,7 +43,12 @@ def rows(cut) -> list[dict]:
     coding = snapshot.coach_coding(cut)
     if coding is None:
         return []
-    people = {c.id for c in snapshot.voters(cut)}
+    voters = snapshot.voters(cut)
+    people = {c.id for c in voters}
+    records = {
+        c.id: adapter.record_of(adapter.diagram_of(c.diagram_id))
+        for c in voters + [coding]
+    }
     found = []
     for item in sorted(cut.items, key=lambda i: i.id):
         mine = next(
@@ -60,7 +65,7 @@ def rows(cut) -> list[dict]:
             {
                 "review_item_id": item.id,
                 "item_kind": item.item_kind.value,
-                "label": _label(item, mine["item"], room),
+                "label": _label(item, theirs[0] if room else mine, records),
                 "room": _words(room, apart) if room else "not an item at all",
                 "coach": _words(mine["item"], apart),
                 "reason": None,
@@ -100,12 +105,13 @@ def _words(value: dict, fields: list[str]) -> str:
     return " · ".join(said) or "as written"
 
 
-def _label(item: Item, mine: dict, room: dict | None) -> str:
-    """An event by the words the scribe's lines read it by (R-0681, R-0869)."""
-    source = room or mine
+def _label(item: Item, opinion: dict, records: dict[int, dict]) -> str:
+    """An event by the scribe's line for it, who, what and when, so two events
+    with one title read apart (R-0869)."""
+    said = opinion["item"]
     if item.item_kind is ItemKind.Event:
-        return scribe._what(source, scribe._plain(source.get("kind")))
-    return str(source.get("description") or source.get("kind") or "an item")
+        return scribe.written(records[opinion["coding_id"]], [said["id"]])[0]
+    return str(said.get("description") or said.get("kind") or "an item")
 
 
 def ratifying(cut, user_id: int, model=None) -> adapter.Metered:

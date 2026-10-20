@@ -61,7 +61,7 @@ function tends(one: Tendency): string[] {
   return said;
 }
 
-/** One event the AI read differently, named by its title, each side worded. */
+/** One event the AI read differently, named by who, what and when, each side worded. */
 export function arow(one: Differed): string {
   return (
     `<div class="arow"><span>${esc(wordedLine(one.label))}</span>` +

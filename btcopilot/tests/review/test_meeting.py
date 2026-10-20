@@ -312,7 +312,7 @@ def test_where_the_coach_differed_is_written_once_at_ratification(
         (row["label"], row["room"], row["coach"]) for row in result["differed"]
     ] == [
         (
-            "Father left",
+            "Ann · Father left · Jan 2022",
             "not an item at all",
             "2022-01-01 · shift · father left · symptom: down",
         )
