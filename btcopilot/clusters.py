@@ -1959,12 +1959,29 @@ def grouped(cache_key: str) -> dict:
     }
 
 
+def _again(cluster: Cluster, waiting: dict[str, dict]) -> str | None:
+    """The waiting cluster a new one is: the one opening at the event it opens
+    at, else one holding the same events or sharing at least half of the
+    larger's, so a cluster with no opening event can still be shown
+    [Oracle: R-0873]."""
+    ids = set(cluster.eventIds)
+    if cluster.openingEventId is not None:
+        for cluster_id, row in waiting.items():
+            if row.get("openingEventId") == cluster.openingEventId:
+                return cluster_id
+    for cluster_id, row in waiting.items():
+        theirs = set(row.get("eventIds") or [])
+        if 2 * len(ids & theirs) >= max(len(ids), len(theirs)):
+            return cluster_id
+    return None
+
+
 def _deltas(
     stored: list[dict], detected: list[Cluster], dates: dict, waits: str | None = None
 ) -> list[dict]:
     """Every app cluster the answer did not return is set aside, never
     deleted; the person's own are kept as they drew them [Oracle: R-0850].
-    A new app cluster opening at the event a waiting one opens at is that one,
+    A new app cluster that is a waiting one (`_again`) takes its id and is
     shown now. A new app cluster sharing an event or an opening event with a
     live app cluster reshapes it and is shown now; the live one it does not
     return is set aside. With `waits`, the detection's key, any other new app
@@ -1978,20 +1995,17 @@ def _deltas(
     }
     held = {i: c for i, c in rows.items() if not c.get("setAside")}
     marked = [i for i, c in rows.items() if c.get("proposedAt")]
-    waiting = {
-        rows[i]["openingEventId"]: i
-        for i in marked
-        if rows[i].get("openingEventId") is not None
-    }
+    waiting = {i: rows[i] for i in marked}
     live = [c for c in held.values() if _regroupable(c)]
     opens = {c.get("openingEventId") for c in live} - {None}
     shown = {i for c in live for i in c.get("eventIds") or []}
     kept = {}
     for cluster in _detected(list(held.values()), detected, dates).values():
         if cluster.id not in held and cluster.source is ClusterSource.Model:
-            again = waiting.get(cluster.openingEventId)
+            again = _again(cluster, waiting)
             if again:
                 cluster.id = again
+                del waiting[again]
             elif (
                 waits
                 and cluster.openingEventId not in opens

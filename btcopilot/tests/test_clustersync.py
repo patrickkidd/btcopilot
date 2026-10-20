@@ -1032,6 +1032,23 @@ def test_a_waiting_cluster_not_proposed_again_stays_aside(family):
     assert (row["setAside"], row["proposedAt"]) == (True, None)
 
 
+def test_a_waiting_cluster_with_no_opening_event_is_shown_when_proposed_again(family):
+    # R-0873
+    """Matched on its events, one sharing at least half of the larger's, it
+    is shown under the waiting row's id, and no second row is left aside."""
+    held_live(family)
+    with answering(KEPT, (None, "The summer after", [13, 14, 15], None)):
+        sync(family.id, turn_id="t1", user_id=family.user_id)
+    first = waiting(family)["id"]
+    with answering(KEPT, (None, "The long summer", [14, 15, 16], None)):
+        added(family, moved(16, "1994-07-01"))
+        sync(family.id, turn_id="t2", user_id=family.user_id)
+    row = waiting(family)
+    assert row["id"] == first
+    assert (row["setAside"], row["proposedAt"]) == (False, None)
+    assert row["eventIds"] == [14, 15, 16]
+
+
 def test_a_diagrams_first_detection_shows_its_clusters_at_once(family):
     # R-0873
     with answering(NEW):
