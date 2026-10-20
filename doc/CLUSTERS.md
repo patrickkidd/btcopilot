@@ -88,8 +88,10 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    first four letters, less those another event, an event kind, a name, a word
    for a relative or a common word also uses), no days shared with
    the person's own period. Then the app's periods sharing a day or an event are
-   merged into the one holding more. Then at least three events and no more than
-   ten years [Oracle: R-0846, R-0837]. Fewer than three supporting shifts never
+   merged into the one holding more. Then at least three events, and no more
+   than half of the years the events a period may hold cover (the early births
+   no period can hold are left out of that history) unless ten years or fewer
+   [Oracle: R-0846, R-0837]. Fewer than three supporting shifts never
    refuses a period: it counts against it (A1), on that cluster's Against line of
    the coach's guess (step 8) [Oracle: R-0850]. A first answer with any fault is
    asked once more with the reasons; on the second, a failing period is dropped,
@@ -113,7 +115,10 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    own are never changed by a regroup. A period holds every event with a stored
    date, however sure, on or between its first and last day, whichever events
    the model named: an event added inside a cluster's years joins it at the next
-   detection, decided by the code [Oracle: R-0873].
+   detection, decided by the code. An event no period holds, dated on the day
+   one period ends and the next begins, joins only the one whose opening event
+   (else its first day) is nearer in time, the earlier on a tie; an event one
+   period holds never joins another [Oracle: R-0873].
 6a. A new app period that shares an event or the opening event with a live app
    period reshapes it and is shown at once; the live one it does not return is
    set aside. A new app period that shares no event with any live app period
@@ -121,9 +126,12 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    live app period, is stored set aside with
    `proposedAt`, the cache key of that detection, and is never handed to the
    model. When the next detection proposes a period opening at the same event,
-   that row is shown under its id with the new answer's days and name, and
-   `proposedAt` is cleared; not proposed again, it stays set aside with
-   `proposedAt` cleared. A diagram's first detection and a from-scratch catch-up
+   or holding the same events or at least half of the larger's (so one with no
+   opening event can be shown), that row is shown under its id with the new
+   answer's days and name, and `proposedAt` is cleared; not proposed again, it
+   stays set aside with `proposedAt` cleared. Each period held back, shown on
+   the second detection, or not proposed again is a cluster_refused row with
+   check `waiting` [Oracle: R-0517]. A diagram's first detection and a from-scratch catch-up
    show their periods at once. A set aside the person made carries no
    `proposedAt` [Oracle: R-0873].
 7. The person's periods [Oracle: R-0853]. The call also gets the person's
@@ -138,7 +146,8 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
    instead, when the message is not one of the answers, the name or sentence is
    not the person's words in order, the years are missing, the years hold no
    event, or it shares days with another stored period of theirs
-   or one read before it in the same answer. None of these is asked again. A
+   or one read before it in the same answer. None of these is asked again. It
+   may hold one event or more; the app's periods and the coach's need three. A
    period read again under the name of one of theirs already stored is that
    period: the new reading replaces the stored copy's events, dates and
    sentence under its id. The app's periods never share their days. Once
@@ -161,7 +170,7 @@ story fragment; the live case is `btcopilot/tests/live/test_clustercuriosity.py`
 ## When it runs
 
 After any coach turn that adds or changes an event, when the cache key (the
-events' dates, date certainty and shifts, the message ids of the person's
+events' kinds, people, descriptions, dates, date certainty and shifts, the message ids of the person's
 answers to when the most was going on, plus `DETECTION_VERSION`, now 16)
 differs from the stored one; `flask admin diagrams regroup` reruns diagrams that
 are behind. Version 12 regroups every diagram on its next event change, so
