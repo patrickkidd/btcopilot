@@ -55,6 +55,7 @@ __all__ = [
     "ToolError",
     "Toolbox",
     "coded_in",
+    "touched_by_turn",
     "date_text",
     "diagram_of",
     "discussion_of",
@@ -103,6 +104,21 @@ def write_tools() -> list[dict]:
 def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict]:
     """Which turn each item of one kind on a record was written from."""
     return record.coded_in(diagram_id, kind)
+
+
+def touched_by_turn(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[str, list[int]]:
+    """Every item of one kind each turn added or changed, oldest first, from
+    the command log: an item changed later still belongs to each turn that
+    touched it, where coded_in gives it to the last one only."""
+    by_turn: dict[str, list[int]] = {}
+    for change in Change.query.filter_by(diagram_id=diagram_id).order_by(Change.id):
+        for delta in change.deltas or []:
+            if change.turn_id is None or delta.get("item_kind") != kind.value:
+                continue
+            ids = by_turn.setdefault(change.turn_id, [])
+            if int(delta["item_id"]) not in ids:
+                ids.append(int(delta["item_id"]))
+    return by_turn
 
 
 def scribe_prompt(record_text: str) -> str:
