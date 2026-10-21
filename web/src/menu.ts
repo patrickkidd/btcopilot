@@ -78,16 +78,15 @@ export class Menu {
      * record its own coding is of. */
     private diagramId: () => number | undefined,
     /** Where a tapped row opens the read-only detail card instead of the form:
-     * the chat app's own drawer. The coding screen passes none, and keeps the
-     * forms, since coders change the record they code by hand. */
+     * the chat app's own drawer. The coding screen passes none. */
     private detail?: Pick<DetailHooks, "talk" | "cluster" | "said">,
-    /** On the coding screen, whether the coding is submitted: its forms are
-     * then there to read, never to write (R-0869). */
-    private submitted: () => boolean = () => false,
+    /** On the coding screen the forms are there to read, never to write: the
+     * coder changes the diagram only by typing statements (R-0887). */
+    private locked = false,
   ) {}
 
   private held(form: HTMLElement): HTMLElement {
-    return this.submitted() ? lock(form) : form;
+    return this.locked ? lock(form) : form;
   }
 
   add(): void {

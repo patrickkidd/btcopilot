@@ -192,7 +192,7 @@ export class Coding {
       () => this.reread(),
       () => coded,
       undefined,
-      () => this.finished(),
+      true,
     );
     this.drawer.onTab = (tab) => this.markTab(tab);
     this.handlers.onTitle({

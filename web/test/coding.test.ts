@@ -438,7 +438,7 @@ describe("the lines across the thread", () => {
 
 describe("the drawer's forms on a coding", () => {
   type Held = { held(form: HTMLElement): HTMLElement };
-  const held = (submitted: boolean) => {
+  const held = (...locked: [] | [boolean]) => {
     vi.stubGlobal("document", {
       createElement: () => ({ innerHTML: "", className: "" }),
     });
@@ -448,7 +448,7 @@ describe("the drawer's forms on a coding", () => {
       async () => ({}) as never,
       () => 1,
       undefined,
-      () => submitted,
+      ...locked,
     );
     (menu as unknown as Held).held(form as unknown as HTMLElement);
     vi.unstubAllGlobals();
@@ -460,14 +460,19 @@ describe("the drawer's forms on a coding", () => {
     return form;
   };
 
-  // R-0869
-  it("are locked once the coding is submitted, and left as they are before", () => {
-    expect(held(true).acts.removed).toBe(true);
-    expect(held(false).acts.removed).toBe(false);
+  // R-0887
+  it("are locked whether or not the coding is submitted, and the personal app's are left editable", () => {
+    const coding = held(true);
+    expect(coding.acts.removed).toBe(true);
+    expect(coding.fields.every((one) => one.readOnly)).toBe(true);
+    expect(coding.picks.every((one) => one.disabled)).toBe(true);
+    const own = held();
+    expect(own.acts.removed).toBe(false);
+    expect(own.fields.some((one) => one.readOnly)).toBe(false);
   });
 
-  // R-0869
-  it("follow the coding's own submitted state", () => {
+  // R-0271
+  it("read the coding's own submitted state", () => {
     const finished = (done_at: string | null) =>
       Coding.prototype.finished.call({
         thread: { done_at },

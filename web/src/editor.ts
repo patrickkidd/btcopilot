@@ -430,10 +430,8 @@ export async function save(
   done();
 }
 
-export const SUBMITTED = "This coding is submitted, so it can no longer be changed.";
-
-/** A form on a submitted coding is there to read: no Save, no Delete, nothing
- * to type into or pick, and the reason at the top (R-0869). */
+/** A form on the coding screen is there to read: no Save, no Delete, nothing
+ * to type into or pick (R-0887). */
 export function lock(editor: HTMLElement): HTMLElement {
   editor.querySelector(".acts")?.remove();
   editor
@@ -442,7 +440,6 @@ export function lock(editor: HTMLElement): HTMLElement {
   editor
     .querySelectorAll<HTMLButtonElement>(".seg, .parents, .bondrow")
     .forEach((one) => (one.disabled = true));
-  editor.prepend(el("div", "refused", esc(SUBMITTED)));
   return editor;
 }
 
