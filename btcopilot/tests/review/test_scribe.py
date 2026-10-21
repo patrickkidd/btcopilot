@@ -865,3 +865,21 @@ def test_the_scribe_fails_plainly_on_bedrock():
     with patch.dict(os.environ, {"BTCOPILOT_MODEL_PROVIDER": "bedrock", "BTCOPILOT_LOCAL_URL": ""}):
         with pytest.raises(NotOnBedrockError):
             adapter.scribe_model(scribe_module.MODEL)
+
+
+def test_two_people_who_share_a_first_name_both_named_in_full_ask_nothing():
+    # R-0270
+    said = "Patrick's father was Robert Hale, not Robert Stinson."
+    assert scribe_module.unclear(said, ROBERTS + [person(3, "Patrick")]) is None
+
+
+def test_a_corrected_father_reads_as_whose_child_they_now_are(coder, cut, turns):
+    # R-0883, R-0886
+    coding = coded(coder.user, cut, FAMILY, done=False)
+    model = Versioned([("change_event", {"id": 5, "parents": [6]})])
+    sent = scribe(coder, coding, turns[0], model, "Liam's father was Declan, not Owen")
+    assert changed("Liam · son of Declan & Maeve") in sent.json["lines"]
+
+    thread = coder.get(f"/review/codings/{coding.id}/thread").json
+    said = {turn["id"]: turn["said"] for turn in thread["turns"]}
+    assert said[turns[0].id][0]["lines"] == sent.json["lines"]

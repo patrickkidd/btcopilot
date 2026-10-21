@@ -83,7 +83,10 @@ def unclear(said: str, people: list[dict]) -> list[dict] | None:
         # ("Robert Stinson") tells two Roberts apart.
         rivals = _rival(whole)
         full = [p for p in rivals if p.get("last_name") and _says(lowered, _full(p))]
-        if len(full) == 1:
+        wholes = Counter(_full(p).lower() for p in people)
+        # Each named in full by a whole name no one else holds: "Robert Belgard,
+        # not Robert Stinson" names both.
+        if full and all(wholes[_full(p).lower()] == 1 for p in full):
             return None
         return full or rivals or None
     matched = [
@@ -369,14 +372,20 @@ def lines_of(data: dict, deltas: list[dict]) -> list[dict]:
     }
     # A person the statement added has a row of its own, as an added person
     # does in the chat; one it only changed has one unless an event names them.
+    # One whose parents it changed has one too, saying whose child they now are.
     added = {kind: _added(deltas, kind) for kind in ("person", "pair_bond", "event")}
+    parented = {
+        str(delta["item_id"])
+        for delta in deltas
+        if delta.get("item_kind") == "person" and delta.get("field") == "parents"
+    }
     rows = _rows(
         data,
         _touched(deltas, "event"),
         [
             one
             for one in _touched(deltas, "person")
-            if one in added["person"] or one not in named
+            if one in added["person"] or one in parented or one not in named
         ],
         _touched(deltas, "pair_bond"),
         added["pair_bond"],
