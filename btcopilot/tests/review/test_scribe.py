@@ -638,3 +638,30 @@ def test_a_refused_scribe_call_is_written_down_as_the_coachs_are(coder, cut, tur
     assert [(r.kind, r.diagram_id, r.detail["tool"], r.detail["retried"]) for r in rows] == [
         (ObservationKind.ToolRefused, coding.diagram_id, "edit_event", False)
     ]
+
+
+def test_the_same_statement_sent_twice_saves_nothing_the_second_time(coder, cut, turns):
+    # R-0883
+    coding = coded(coder.user, cut, {"people": [person(1, "Elizabeth"), dict(person(2, "Jim"), gender="male")]}, done=False)
+    married = {"kind": "married", "date": "1999-06-01", "date_certainty": "certain", "person": "1", "spouse": "2"}
+    said = "Elizabeth and Jim married in June 1999."
+    first = scribe(coder, coding, turns[0], Scripted([("edit_event", married)]), said)
+    assert first.json["lines"] == ["Elizabeth & Jim · Married · Jun 1999"]
+    diagram = adapter.diagram_of(coding.diagram_id)
+    event_id, version = adapter.record_of(diagram)["events"][0]["id"], diagram.version
+
+    again = scribe(coder, coding, turns[0], Versioned([("edit_event", dict(married, id=event_id))]), said)
+    assert (again.json["lines"], again.json["refused"], again.json["made"]) == ([], [], [])
+    assert adapter.diagram_of(coding.diagram_id).version == version
+
+
+def test_a_birth_put_on_the_person_is_entered_once_the_scribe_follows_the_refusal(coder, cut, turns):
+    # R-0883, R-0456
+    coding = coded(coder.user, cut, {"people": [person(1, "Robert")]}, done=False)
+    born = {"kind": "birth", "date": "1948-01-01", "date_certainty": "approximate"}
+    model = Scripted(
+        [("edit_event", dict(born, person="1"))],
+        [("edit_event", dict(born, child="1"))],
+    )
+    response = scribe(coder, coding, turns[0], model, "Robert was born in 1948.", chosen=1)
+    assert (response.json["lines"], response.json["refused"]) == (["Robert · Birth · 1948"], [])

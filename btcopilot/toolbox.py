@@ -15,7 +15,7 @@ import re
 from sqlalchemy import or_
 
 import btcopilot
-from btcopilot import clock, clusters, coverage, place, proactive, prompts, record, views
+from btcopilot import clock, clusters, coverage, diagramjson, place, proactive, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
     bond_line,
@@ -120,6 +120,8 @@ SEARCH_SHOWN = 8
 SEARCH_CUT = 300
 
 # The kinds of thing a remove call can name. A question is closed instead.
+#: The items drawn on the diagram, where setting a value already held is no change.
+DRAWN = (ItemKind.Person, ItemKind.PairBond, ItemKind.Event)
 REMOVABLE = {kind.value: kind for kind in ITEM_COLLECTIONS if kind is not ItemKind.Question}
 
 # The tools that can change something already in the record.
@@ -1416,7 +1418,7 @@ class Toolbox:
             fields[key] = [] if key in dict(record.MOVE_LINKS) else None
         self._couple({**was, **fields})
         text, patch = self._write(ItemKind.Event, args.get("id"), fields)
-        event_id = patch["deltas"][0]["item_id"]
+        event_id = patch["deltas"][0]["item_id"] if new else args["id"]
         self._born_to(self._find_event(event_id))
         return text, {"deltas": self.deltas[start:], "turn_id": self.turn_id}
 
@@ -2199,6 +2201,22 @@ class Toolbox:
                 item_id = record.next_id(data)
         elif not self._exists(data, kind, item_id):
             raise ToolError(f"No {kind.value} {item_id} in the record", GONE)
+        elif kind in DRAWN:
+            # A value the item already holds is no change: it neither bumps the
+            # version nor reads as something entered (R-0883).
+            held = next(
+                i for i in getattr(data, ITEM_COLLECTIONS[kind]) if str(i.get("id")) == str(item_id)
+            )
+            fields = {
+                field: value
+                for field, value in fields.items()
+                if diagramjson.to_json(held.get(field)) != value
+            }
+            if not fields:
+                return (
+                    f"Nothing changed: {kind.value} {item_id} already holds those values.",
+                    {"deltas": [], "turn_id": self.turn_id},
+                )
 
         deltas = [
             {"item_kind": kind.value, "item_id": item_id, "field": field, "after": value}
