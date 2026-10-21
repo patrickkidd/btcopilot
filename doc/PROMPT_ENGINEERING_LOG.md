@@ -2,9 +2,16 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-21 (the review scribe enters the coder's statement as given)
+**Last Updated**: 2026-10-21 (the review scribe on Gemini Flash with its own tools)
 
 ---
+
+## FD-385 — the review scribe on Gemini Flash with its own tools (2026-10-21)
+
+R-0885, R-0886. The scribe now runs on gemini-3.8-flash, picked the way the coach picks its model (a plain failure on Bedrock), with twelve tools of its own in place of the coach's write tools: add_person (with an optional birth date), add_bond, add_birth, add_adoption, add_couple_event, add_death, add_shift, add_noted, change_person, change_bond, change_event, delete. Each runs as the coach's own calls through the toolbox, so the record's rules, the version check and the calls kept with the turn are unchanged.
+- Tools: an argument a tool does not declare is dropped, so a birth cannot name the person born as its parent and a couple's event cannot carry a title. Someone added earlier in the same answer is named by a negative ref the model picks. A corrected parent, on the birth or on the child, moves both in one write. "Not married" is refused while the couple has a marriage event.
+- Prompt: the private scribe prompt names the tool for each kind of thing, the ref for something added in the same answer, the parent correction, and delete only for something that should not be there; "add the person first and wait for its id" is gone.
+- Evals (`btcopilot/tests/live/test_scribe.py`, invented family), API, one try each, $0.14 for the run: the three faults of the morning (a birth said of a chosen person, a marriage whose title would name the spouse, a death under a line saying alive) and the walk's eight steps (a new person and partner with a dated marriage, a corrected date, the same statement again, a first name two people share, a full name that settles it, a move, a corrected father, a death): 11 of 11.
 
 ## FD-385 — the review scribe enters the coder's statement as given (2026-10-21)
 
