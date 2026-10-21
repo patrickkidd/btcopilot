@@ -12,7 +12,7 @@ vi.stubGlobal("window", {
 const { Coding, scribedRows, writtenConcepts } = await import("../src/coding");
 const api = await import("../src/api");
 const { Failed } = api;
-const { Menu } = await import("../src/menu");
+const { HAND_EDITS, Menu } = await import("../src/menu");
 const { standInForm } = await import("./standin");
 
 /** The sheet that asks a coder to finish, drawn by the screen's own code on
@@ -436,39 +436,35 @@ describe("the lines across the thread", () => {
   });
 });
 
-describe("the drawer's forms on a coding", () => {
+describe("the drawer's forms", () => {
   type Held = { held(form: HTMLElement): HTMLElement };
-  const held = (...locked: [] | [boolean]) => {
-    vi.stubGlobal("document", {
-      createElement: () => ({ innerHTML: "", className: "" }),
-    });
-    const form = standInForm();
-    const menu = new Menu(
-      {} as HTMLElement,
-      async () => ({}) as never,
-      () => 1,
-      undefined,
-      ...locked,
-    );
-    (menu as unknown as Held).held(form as unknown as HTMLElement);
+  const menu = (detail?: object) =>
+    new Menu({} as HTMLElement, async () => ({}) as never, () => 1, detail as never);
+
+  // R-0887
+  it("are read only on the coding screen and in the personal app alike", () => {
+    expect(HAND_EDITS).toBe(false);
+    for (const one of [menu(), menu({})]) {
+      const form = standInForm();
+      (one as unknown as Held).held(form as unknown as HTMLElement);
+      expect(form.acts.removed).toBe(true);
+      expect(form.fields.every((field) => field.readOnly)).toBe(true);
+      expect(form.picks.every((pick) => pick.disabled)).toBe(true);
+    }
+  });
+
+  // R-0887
+  it("never open a form for someone or something new", () => {
+    const getElementById = vi.fn();
+    vi.stubGlobal("document", { getElementById });
+    menu({}).add();
     vi.unstubAllGlobals();
     vi.stubGlobal("window", {
       BOOTSTRAP: {
         user: { username: "c", admin: false, pro: false, coder: true },
       },
     });
-    return form;
-  };
-
-  // R-0887
-  it("are locked whether or not the coding is submitted, and the personal app's are left editable", () => {
-    const coding = held(true);
-    expect(coding.acts.removed).toBe(true);
-    expect(coding.fields.every((one) => one.readOnly)).toBe(true);
-    expect(coding.picks.every((one) => one.disabled)).toBe(true);
-    const own = held();
-    expect(own.acts.removed).toBe(false);
-    expect(own.fields.some((one) => one.readOnly)).toBe(false);
+    expect(getElementById).not.toHaveBeenCalled();
   });
 
   // R-0271

@@ -430,8 +430,8 @@ export async function save(
   done();
 }
 
-/** A form on the coding screen is there to read: no Save, no Delete, nothing
- * to type into or pick (R-0887). */
+/** A form while hand edits are off is there to read: no Save, no Delete,
+ * nothing to type into or pick (R-0887). */
 export function lock(editor: HTMLElement): HTMLElement {
   editor.querySelector(".acts")?.remove();
   editor
