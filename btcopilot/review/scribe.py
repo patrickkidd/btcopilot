@@ -15,13 +15,14 @@ import uuid
 from collections import Counter
 
 from btcopilot.review import adapter
+from btcopilot.review.scribetools import ScribeTools
 from btcopilot.schema import DateCertainty, EventKind, event_title
 
 _log = logging.getLogger(__name__)
 
-MODEL = "haiku-4.5"
-#: One tool call per step is how the cheap model works: a sentence that names
-#: two new people and one event needs three, and a wasted guess a fourth.
+MODEL = "gemini-3.8-flash"
+#: Model answers, each with one or more tool calls; a refusal read back and
+#: corrected is one more.
 MAX_STEPS = 8
 
 TURN = """The turn the coder tapped, said by {who}:
@@ -182,7 +183,7 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
         coding.diagram_id,
         turn_id,
         adapter.Purpose.Scribe,
-        model=model or adapter.coach_model(MODEL, effort=None),
+        model=model or adapter.scribe_model(MODEL),
     )
     system = adapter.scribe_prompt(adapter.render_record(coding.diagram_id))
     messages = [
@@ -194,13 +195,13 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
             + about,
         }
     ]
-    tools = adapter.write_tools()
+    hands = ScribeTools(toolbox)
     refused: list[str] = []
     kept: list[dict] = []
     nudged = False
 
     for step in range(MAX_STEPS):
-        turn = _say(coach, system, messages, tools)
+        turn = _say(coach, system, messages, hands.tools)
         if not turn.calls:
             if turn.text.strip():
                 _log.info(f"Scribe said: {turn.text.strip()!r}")
@@ -219,9 +220,8 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
         results = []
         refused = []
         for call in turn.calls:
-            asked_for = adapter.toolcall(toolbox.data, call.name, call.args)
-            text, plain = _call(toolbox, call)
-            kept.append(dict(asked_for, refusal=plain or None, result=text))
+            text, plain, ran = hands.call(call.name, call.args)
+            kept += ran
             if plain:
                 refused.append(plain)
             results.append(
@@ -350,16 +350,6 @@ def _say(model, system: str, messages: list[dict], tools: list[dict]):
             next(words)
         except StopIteration as stop:
             return stop.value
-
-
-def _call(toolbox, call) -> tuple[str, str]:
-    """What the model reads back, and the refusal's plain words when the
-    record refused the call."""
-    try:
-        text, _ = toolbox.call(call.name, call.args)
-    except adapter.ToolError as e:
-        return str(e), e.plain
-    return text, ""
 
 
 def edit_lines(diagram_id: int, deltas: list[dict]) -> list[dict]:

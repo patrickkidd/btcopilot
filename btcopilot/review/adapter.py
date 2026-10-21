@@ -17,7 +17,7 @@ from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot import observer, proactive, prompts, push, record, turnstore
 from btcopilot.record import Invalid
-from btcopilot.coachmodel import COACH_EFFORT, CoachModel
+from btcopilot.coachmodel import COACH_EFFORT, CoachModel, model_for
 from btcopilot.coachturn import CoachTurn
 from btcopilot.discussions import utc_iso
 from btcopilot.metered import Metered, OverCap
@@ -34,7 +34,8 @@ from btcopilot.models import (
 )
 from btcopilot.recordtext import date_text, render, version_line
 from btcopilot.toolnames import toolcall
-from btcopilot.toolbox import EDITS, ToolError, Toolbox, ToolName, schemas
+from btcopilot.prompts import ToolText
+from btcopilot.toolbox import CERTAINTY, GONE, ToolError, Toolbox, ToolName, choice
 from btcopilot.models import (
     Diagram,
     Notification,
@@ -51,7 +52,10 @@ __all__ = [
     "Metered",
     "ModelCall",
     "Purpose",
-    "schemas",
+    "CERTAINTY",
+    "GONE",
+    "choice",
+    "ToolText",
     "ToolError",
     "Toolbox",
     "ToolName",
@@ -68,7 +72,7 @@ __all__ = [
     "scribe_toolbox",
     "keep_calls",
     "toolcall",
-    "write_tools",
+    "meanings",
     "Diagram",
     "Discussion",
     "DiscussionKind",
@@ -77,6 +81,7 @@ __all__ = [
     "ShadowTurn",
     "User",
     "coach_model",
+    "scribe_model",
     "coding_diagram",
     "commit",
     "Invalid",
@@ -96,11 +101,10 @@ __all__ = [
 ]
 
 
-def write_tools() -> list[dict]:
-    """Only the tools that write the record. The scribe has no reply to make
-    and nothing to show, so reading and showing are not on its table."""
-    names = {tool.value for tool in EDITS}
-    return [schema for schema in schemas() if schema["name"] in names]
+def meanings() -> dict:
+    """What each tool argument means to the model, in the wording the private
+    prompts give it (R-0305)."""
+    return prompts.tool_meanings()
 
 
 def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict]:
@@ -148,6 +152,7 @@ def scribe_toolbox(diagram_id: int, user_id: int, statement_id: int, turn_id: st
         user_id=user_id,
         author=Author.Review,
         statement_id=statement_id,
+        repoint=True,
     )
 
 
@@ -345,6 +350,12 @@ def coach_model(
     name: str | None = None, effort: str | None = COACH_EFFORT
 ) -> CoachModel:
     return CoachModel(model=name, effort=effort)
+
+
+def scribe_model(name: str):
+    """The scribe's model, picked the way the coach's is: Gemini where Gemini
+    is served, and a plain failure on Bedrock, which has none (R-0885)."""
+    return model_for(name)
 
 
 def replay_into(

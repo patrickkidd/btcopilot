@@ -1052,6 +1052,7 @@ class Toolbox:
         statement_id: int | None = None,
         said: Statement | None = None,
         zone: str | None = None,
+        repoint: bool = False,
     ):
         self.diagram_id = diagram_id
         self.turn_id = turn_id
@@ -1067,6 +1068,9 @@ class Toolbox:
         # row; None is UTC.
         kept = db.session.get(User, user_id).timezone if user_id is not None else None
         self.zone = zone or kept
+        # A changed parent moves the child and the birth in the one write, so
+        # neither is refused for disagreeing with the other (R-0886).
+        self.repoint = repoint
         self.deltas: list[dict] = []
         self.views: list[dict] = []
         # The record versions this turn's own writes made, undo included.
@@ -1285,7 +1289,28 @@ class Toolbox:
                 fields[key] = args[key]
         if args.get("gender"):
             fields["gender"] = choice(PersonKind, args["gender"], "genders").value
-        return self._write(ItemKind.Person, args.get("id"), fields)
+        extra = []
+        if self.repoint and args.get("id") is not None and "parents" in fields:
+            extra = self._births_to(args["id"], fields["parents"])
+        return self._write(ItemKind.Person, args.get("id"), fields, extra=extra)
+
+    def _births_to(self, person_id, bond_id) -> list[dict]:
+        """The person's birth, naming the two sides of the bond they are now
+        born to."""
+        bond = next(
+            (b for b in self.data.pair_bonds if str(b["id"]) == str(bond_id)), None
+        )
+        if bond is None:
+            return []
+        sides = {"person": bond["person_a"], "spouse": bond["person_b"]}
+        return [
+            {"item_kind": ItemKind.Event.value, "item_id": event["id"], "field": key, "after": value}
+            for event in self.data.events
+            if _enum_value(event.get("kind")) == EventKind.Birth.value
+            and str(event.get("child")) == str(person_id)
+            for key, value in sides.items()
+            if str(event.get(key)) != str(value)
+        ]
 
     def _edit_pair_bond(self, args: dict) -> tuple[str, dict]:
         data = self.data
@@ -1417,7 +1442,10 @@ class Toolbox:
                 )
             fields[key] = [] if key in dict(record.MOVE_LINKS) else None
         self._couple({**was, **fields})
-        text, patch = self._write(ItemKind.Event, args.get("id"), fields)
+        extra = []
+        if self.repoint and not new and fields.keys() & {"person", "spouse"}:
+            extra = self._born_now({**was, **fields})
+        text, patch = self._write(ItemKind.Event, args.get("id"), fields, extra=extra)
         event_id = patch["deltas"][0]["item_id"] if new else args["id"]
         self._born_to(self._find_event(event_id))
         return text, {"deltas": self.deltas[start:], "turn_id": self.turn_id}
@@ -1447,6 +1475,25 @@ class Toolbox:
         if str(parent_id) not in {str(side) for side in sides}:
             return None
         return next(side for side in sides if str(side) != str(parent_id))
+
+    def _born_now(self, birth: dict) -> list[dict]:
+        """The child of a birth whose parents changed, born to the new
+        parents' bond, added when they have none yet."""
+        a, b, child = birth.get("person"), birth.get("spouse"), birth.get("child")
+        if _enum_value(birth.get("kind")) != EventKind.Birth.value or None in (a, b, child):
+            return []
+        held = self._find_person(child).get("parents")
+        if held is None:
+            return []
+        bond = self._bond(a, b)
+        if bond is None:
+            _, made = self._write(ItemKind.PairBond, None, {"person_a": a, "person_b": b})
+            bond = {"id": made["deltas"][0]["item_id"]}
+        if str(held) == str(bond["id"]):
+            return []
+        return [
+            {"item_kind": ItemKind.Person.value, "item_id": int(child), "field": "parents", "after": bond["id"]}
+        ]
 
     def _bond(self, a: int, b: int) -> dict | None:
         pair = record.pair({"person_a": a, "person_b": b})
@@ -2182,8 +2229,15 @@ class Toolbox:
         return any(str(i.get("id")) == str(item_id) for i in collection)
 
     def _write(
-        self, kind: ItemKind, item_id, fields: dict, statement_id: int | None = None
+        self,
+        kind: ItemKind,
+        item_id,
+        fields: dict,
+        statement_id: int | None = None,
+        extra: list[dict] = (),
     ) -> tuple[str, dict]:
+        """`extra` is what another item must hold for this write to stand,
+        written in the same change."""
         if not fields:
             raise ToolError(
                 f"Nothing to change on that {kind.value}", "It gave nothing to change."
@@ -2212,7 +2266,7 @@ class Toolbox:
                 for field, value in fields.items()
                 if diagramjson.to_json(held.get(field)) != value
             }
-            if not fields:
+            if not fields and not extra:
                 return (
                     f"Nothing changed: {kind.value} {item_id} already holds those values.",
                     {"deltas": [], "turn_id": self.turn_id},
@@ -2221,7 +2275,7 @@ class Toolbox:
         deltas = [
             {"item_kind": kind.value, "item_id": item_id, "field": field, "after": value}
             for field, value in fields.items()
-        ]
+        ] + list(extra)
         if new and kind not in (ItemKind.Cluster, ItemKind.Question):
             deltas.append(
                 {
