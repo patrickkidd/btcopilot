@@ -674,3 +674,20 @@ def test_a_birth_put_on_the_person_is_entered_once_the_scribe_follows_the_refusa
     )
     response = scribe(coder, coding, turns[0], model, "Robert was born in 1948.", chosen=1)
     assert (response.json["lines"], response.json["refused"]) == ([added("Robert · Birth · 1948")], [])
+
+
+def test_a_scribe_that_answers_in_words_is_told_once_to_enter_the_statement(coder, cut, turns):
+    # R-0884
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        "Does the coder mean Marcus could not sleep, though the turn says he slept well?",
+        [("edit_event", dict(SHIFT, title="Could not sleep"))],
+    )
+    with patch.object(model, "turn", wraps=model.turn) as heard:
+        response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
+    assert (response.json["lines"], response.json["refused"]) == (
+        [added("Marcus · Could not sleep · Jan 2010")],
+        [],
+    )
+    assert {"role": "user", "content": scribe_module.ENTER} in heard.call_args_list[1].args[1]
+    assert "slept well" not in response.get_data(as_text=True)

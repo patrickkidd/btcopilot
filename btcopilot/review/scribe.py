@@ -34,6 +34,9 @@ CHOSEN = "\nThe person this is about: {line}\n"
 #: Said back to a scribe that stopped on words while a call was refused, so it
 #: corrects the call rather than giving up on it.
 AGAIN = "Not entered yet: {refused} Correct the call and make it again."
+#: Said back to a scribe that answered in words before making any call: the
+#: coder's statement goes in as given, never weighed against the turn (R-0884).
+ENTER = "Nothing is entered yet. Enter the coder's statement as they gave it."
 
 
 class Verb(enum.StrEnum):
@@ -197,15 +200,15 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
             if turn.text.strip():
                 _log.info(f"Scribe said: {turn.text.strip()!r}")
             # A scribe that stops on words after a refusal is told once what
-            # did not go in, so it fixes its own call instead of giving up.
-            if not refused or nudged:
+            # did not go in, so it fixes its own call instead of giving up; one
+            # that answers in words before any call is told once to enter it.
+            if nudged or (kept and not refused):
                 break
             nudged = True
             if turn.blocks:
                 messages.append({"role": "assistant", "content": turn.blocks})
-            messages.append(
-                {"role": "user", "content": AGAIN.format(refused=" ".join(refused))}
-            )
+            told = AGAIN.format(refused=" ".join(refused)) if refused else ENTER
+            messages.append({"role": "user", "content": told})
             continue
         nudged = False
         results = []

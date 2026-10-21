@@ -2,9 +2,16 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-19 (case report refresh prompt: examples from an invented family; three rules made clearer)
+**Last Updated**: 2026-10-21 (the review scribe enters the coder's statement as given)
 
 ---
+
+## FD-385 — the review scribe enters the coder's statement as given (2026-10-21)
+
+Patrick's "do it", R-0884. Three faults on the walk sandbox the same day: a birth said of a chosen person saved as a noted event; a marriage whose title named the spouse saved twice after two refusals; a death said under a chat line saying the person is alive left nothing entered and asked the coder whether they meant it.
+- Prompt: four lines. When the turn says otherwise (alive against died), write what the coder said; a birth names the person born as its child, never as a noted event; never add an event already in the record or added in this exchange, change it by its id; a refused call is fixed and sent again, never got around as another kind or a second event.
+- Code: a scribe that answers in words before making any call is told once to enter the coder's statement as they gave it, and tries again; its words never reach the coder.
+- Evals (`btcopilot/tests/live/test_scribe.py`, invented family of the faults' shape), subscription, $0, three tries each, old prompt and code against new: a birth names the child, 2 of 3 (one noted event) against 3 of 3; a marriage entered once, 3 of 3 against 3 of 3; a death under a line saying alive, 3 of 3 against 3 of 3. The marriage and death faults did not reproduce on the subscription; their evals stand as guards.
 
 ## FD-383 — the case report's examples from an invented family; three rules made clearer (2026-10-19)
 
