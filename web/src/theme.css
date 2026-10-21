@@ -952,6 +952,9 @@ button { font-family: inherit; }
   border-radius: 50%;
   background: var(--faint);
   box-shadow: 11px 0 var(--faint), 22px 0 var(--faint);
+  /* the two dots the shadows draw stand to the right of the box; the room
+     keeps them inside a bubble with nothing else in it to widen it */
+  margin-right: 22px;
   animation: think 1.2s ease-in-out infinite;
 }
 /* one shadow at a time carries the beat, so three dots rise in turn from one
@@ -971,8 +974,7 @@ button { font-family: inherit; }
     transform: translateY(0);
   }
 }
-/* The same three dots after a word on a button that is working; the two dots
-   the shadows draw stand to the right of the box, so they need the room. */
+/* The same three dots after a word on a button that is working. */
 .dots3::after { margin-left: 8px; margin-right: 24px; }
 /* who is speaking, on the coach's side (approved play-by-play) */
 .bub .who {
