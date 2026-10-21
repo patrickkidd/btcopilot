@@ -9,7 +9,7 @@ vi.stubGlobal("window", {
   BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
 });
 
-const { Coding, missed, scribedRows, writtenConcepts } = await import("../src/coding");
+const { Coding, scribedRows, writtenConcepts } = await import("../src/coding");
 const api = await import("../src/api");
 const { Failed } = api;
 const { Menu } = await import("../src/menu");
@@ -108,10 +108,33 @@ describe("the concept pages under what the scribe wrote", () => {
 
 describe("what a coder reads when a statement did not go in", () => {
   // R-0869, R-0883
-  it("is one muted row when the server broke or never answered", () => {
-    const again = "not saved, try again";
-    expect(missed(new Failed(500, "POST /scribe", "Traceback"))).toBe(again);
-    expect(missed(new Failed(0, "POST /scribe", "timed out"))).toBe(again);
+  it("is one muted row whatever the server answered, never its words", async () => {
+    vi.stubGlobal("document", {
+      createElement: () => ({ className: "", innerHTML: "", dataset: {} }),
+    });
+    const drawn: { innerHTML: string }[] = [];
+    const screen = Object.assign(Object.create(Coding.prototype), {
+      thread: { coding_id: 9, turns: [{ id: 3, client: true }] },
+      picture: { untouch() {} },
+      after: (_turn: number, node: { innerHTML: string }) => drawn.push(node),
+      refresh: async () => {},
+    });
+    const scribe = vi.mocked(api.scribe);
+    for (const failed of [
+      new Failed(400, "POST /scribe", "that turn is not part of this conversation"),
+      new Failed(500, "POST /scribe", "Traceback"),
+      new Failed(0, "POST /scribe", "timed out"),
+    ]) {
+      scribe.mockRejectedValueOnce(failed);
+      await screen.scribe(3, "Marcus could not sleep", null);
+    }
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    expect(drawn.map((node) => node.innerHTML)).toEqual(
+      Array(3).fill('<div class="did no">not saved, try again</div>'),
+    );
   });
 });
 
@@ -178,7 +201,7 @@ describe("the rows under what the coder said", () => {
     vi.stubGlobal("window", {
       BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
     });
-    expect(scribe.mock.calls[1]).toEqual([9, 3, "Marcus could not sleep", 2]);
+    expect(scribe.mock.lastCall).toEqual([9, 3, "Marcus could not sleep", 2]);
     expect(drawn[1].innerHTML).toBe('<div class="did">Marcus Jones · Could not sleep · Jan 2010</div>');
   });
 });

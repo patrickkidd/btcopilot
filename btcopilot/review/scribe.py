@@ -12,6 +12,7 @@ import enum
 import logging
 import re
 import uuid
+from collections import Counter
 
 from btcopilot.review import adapter
 from btcopilot.schema import DateCertainty, EventKind, event_title
@@ -133,8 +134,9 @@ def _new_name(words: list[str]) -> bool:
     )
 
 
-def _choices(people: list[dict]) -> list[dict]:
-    return [{"id": person["id"], "name": _name(person)} for person in people]
+def _choices(could: list[dict], data: dict) -> list[dict]:
+    names = called(data, full=True)
+    return [{"id": person["id"], "name": names[str(person["id"])]} for person in could]
 
 
 def write(coding, statement, said: str, chosen=None, model=None) -> dict:
@@ -148,13 +150,14 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     if chosen is None:
         could = unclear(said, people)
         if could is not None:
-            _log.info(f"Scribe asked which person: {_choices(could)}")
-            return _result([], [], [], turn_id, _choices(could))
+            choices = _choices(could, record)
+            _log.info(f"Scribe asked which person: {choices}")
+            return _result([], [], [], turn_id, choices)
     else:
         person = next((p for p in people if str(p["id"]) == str(chosen)), None)
         if person is None:
             raise ValueError("that person is not in this diagram")
-        about = CHOSEN.format(line=f"{person['id']} {_name(person)}")
+        about = CHOSEN.format(line=f"{person['id']} {_full(person)}")
     toolbox = adapter.scribe_toolbox(
         coding.diagram_id, coding.user_id, statement.id, turn_id
     )
@@ -287,14 +290,15 @@ def _tried_words(data: dict, call: dict) -> str:
     """A refused call's entry as the diagram would have read it: what was
     already there under its id, with the call's own values over it."""
     people = {str(p.get("id")): p for p in data.get("people") or []}
+    names = called(data)
     bonds = {str(b.get("id")): b for b in data.get("pair_bonds") or []}
     events = {str(e.get("id")): e for e in data.get("events") or []}
     args = {key: value for key, value in call["args"].items() if value is not None}
     one = str(args.get("id"))
     if call["name"] == adapter.ToolName.EditPerson:
-        return _name({**people.get(one, {}), **args})
+        return _full({**people.get(one, {}), **args})
     if call["name"] == adapter.ToolName.EditPairBond:
-        return _bond_words({**bonds.get(one, {}), **args}, people, events)
+        return _bond_words({**bonds.get(one, {}), **args}, names, events)
     event = {**events.get(one, {}), **args}
     if args.get("date"):
         event["dateTime"] = args["date"]
@@ -302,7 +306,7 @@ def _tried_words(data: dict, call: dict) -> str:
         event["dateCertainty"] = args["date_certainty"]
     # A missing title is often why it was refused; what happened stands in.
     event["title"] = event.get("title") or event.get("description") or _plain(event.get("kind"))
-    return _event_words(event, people)
+    return _event_words(event, names)
 
 
 def made(deltas: list[dict]) -> list[dict]:
@@ -350,11 +354,15 @@ def edit_lines(diagram_id: int, deltas: list[dict]) -> list[str]:
         for key in ("person", "child", "spouse")
         if event.get(key) is not None
     }
+    # A person the statement added has a row of its own, as an added person
+    # does in the chat; one it only changed has one unless an event names them.
+    added = _added(deltas, "person")
     return written(
         data,
         _touched(deltas, "event"),
-        [one for one in _touched(deltas, "person") if one not in named],
+        [one for one in _touched(deltas, "person") if one in added or one not in named],
         _touched(deltas, "pair_bond"),
+        _added(deltas, "pair_bond"),
     )
 
 
@@ -362,34 +370,78 @@ def edit_lines(diagram_id: int, deltas: list[dict]) -> list[str]:
 PAIR_KINDS = ("married", "bonded", "separated", "divorced")
 
 
-def written(data: dict, event_ids, person_ids=(), bond_ids=()) -> list[str]:
-    """The record's own words for what a coder wrote: who it is about, what
-    kind of thing it is, and when. A marriage reads as two names joined and the
-    year; a person born into a bond reads as whose child they are (R-0326)."""
+def written(
+    data: dict, event_ids, person_ids=(), bond_ids=(), bonds_added=()
+) -> list[str]:
+    """The record's own words for what a coder wrote, people and pair-bonds
+    first, then events: who it is about, what kind of thing it is, and when. A
+    marriage reads as two names joined and the year; a person born into a bond
+    reads as whose child they are (R-0326, R-0883)."""
     people = {str(p.get("id")): p for p in data.get("people") or []}
+    names = called(data)
     events = {str(e.get("id")): e for e in data.get("events") or []}
     bonds = {str(b.get("id")): b for b in data.get("pair_bonds") or []}
+    said = {
+        _pair_of(events[str(one)].get("person"), events[str(one)].get("spouse"))
+        for one in event_ids
+        if str(one) in events and _plain(events[str(one)].get("kind")) in PAIR_KINDS
+    }
     out: list[str] = []
-    said: set[tuple] = set()
-    for one in event_ids:
-        event = events.get(str(one))
-        if event is None:
-            continue
-        if _plain(event.get("kind")) in PAIR_KINDS:
-            said.add(_pair_of(event.get("person"), event.get("spouse")))
-        _add(out, _event_words(event, people))
+    for one in person_ids:
+        person = people.get(str(one))
+        if person is not None:
+            _add(out, _person_words(person, names, bonds))
     for one in bond_ids:
         bond = bonds.get(str(one))
         if bond is None:
             continue
         pair = _pair_of(bond.get("person_a"), bond.get("person_b"))
-        if pair not in said:
-            _add(out, _bond_words(bond, people, events))
-    for one in person_ids:
-        person = people.get(str(one))
-        if person is not None:
-            _add(out, _person_words(person, people, bonds))
+        if str(one) in bonds_added or pair not in said:
+            _add(out, _bond_words(bond, names, events))
+    for one in event_ids:
+        event = events.get(str(one))
+        if event is not None:
+            _add(out, _event_words(event, names))
     return out
+
+
+def called(data: dict, full: bool = False) -> dict[str, str]:
+    """What each person is called on a row: the first name, or the whole name
+    where two people share a first name, and then their birth year, or else a
+    parent or partner, where the whole names are the same too (R-0883)."""
+    people = data.get("people") or []
+    first = Counter(_name(p).lower() for p in people)
+    out = {
+        str(p.get("id")): _full(p) if full or first[_name(p).lower()] > 1 else _name(p)
+        for p in people
+    }
+    same = Counter(name.lower() for name in out.values())
+    for person in people:
+        one = str(person.get("id"))
+        apart = _apart(person, data) if same[out[one].lower()] > 1 else ""
+        out[one] = f"{out[one]} · {apart}" if apart else out[one]
+    return out
+
+
+def _apart(person: dict, data: dict) -> str:
+    """What tells one of two people with the same whole name from the other."""
+    people = {str(p.get("id")): p for p in data.get("people") or []}
+    one = str(person.get("id"))
+    for event in data.get("events") or []:
+        about = event.get("child") if event.get("child") is not None else event.get("person")
+        if _plain(event.get("kind")) == EventKind.Birth.value and str(about) == one:
+            year = (adapter.date_text(event.get("dateTime")) or "")[:4]
+            if year:
+                return f"b. {year}"
+    for bond in data.get("pair_bonds") or []:
+        pair = (str(bond.get("person_a")), str(bond.get("person_b")))
+        if str(bond.get("id")) == str(person.get("parents")):
+            both = " & ".join(_full(people.get(i, {})) for i in pair)
+            return f"{CHILD_WORDS.get(_plain(person.get('gender')), 'child')} of {both}"
+        if one in pair:
+            other = pair[1] if pair[0] == one else pair[0]
+            return f"partner of {_full(people.get(other, {}))}"
+    return ""
 
 
 def _pair_of(a, b) -> tuple:
@@ -400,25 +452,25 @@ def _pair_of(a, b) -> tuple:
 CHILD_WORDS = {"male": "son", "female": "daughter"}
 
 
-def _person_words(person: dict, people: dict, bonds: dict) -> str:
+def _person_words(person: dict, names: dict, bonds: dict) -> str:
     """A person, and whose child they are when the record says so."""
-    name = _name(person)
+    name = names[str(person.get("id"))]
     bond = bonds.get(str(person.get("parents"))) if person.get("parents") else None
     if bond is None:
         return name
     word = CHILD_WORDS.get(_plain(person.get("gender")), "child")
-    return f"{name} · {word} of {_both(bond, people)}"
+    return f"{name} · {word} of {_both(bond, names)}"
 
 
-def _joined(people: dict, *ids) -> str:
-    return " & ".join(_name(people.get(str(one), {})) for one in ids)
+def _joined(names: dict, *ids) -> str:
+    return " & ".join(names.get(str(one), "someone") for one in ids)
 
 
-def _both(bond: dict, people: dict) -> str:
-    return _joined(people, bond.get("person_a"), bond.get("person_b"))
+def _both(bond: dict, names: dict) -> str:
+    return _joined(names, bond.get("person_a"), bond.get("person_b"))
 
 
-def _bond_words(bond: dict, people: dict, events: dict) -> str:
+def _bond_words(bond: dict, names: dict, events: dict) -> str:
     """A bond nobody wrote an event for: who the two are, whether they married,
     and the year the record has for it."""
     pair = _pair_of(bond.get("person_a"), bond.get("person_b"))
@@ -430,7 +482,7 @@ def _bond_words(bond: dict, people: dict, events: dict) -> str:
     ]
     word = "Married" if bond.get("married") else "Together"
     when = _when(*_dated(started[0])) if started else "no date yet"
-    return f"{_both(bond, people)} · {word} · {when}"
+    return f"{_both(bond, names)} · {word} · {when}"
 
 
 def _add(out: list[str], line: str):
@@ -442,16 +494,16 @@ def _dated(event: dict) -> tuple:
     return event.get("dateTime"), event.get("dateCertainty")
 
 
-def _event_words(event: dict, people: dict) -> str:
+def _event_words(event: dict, names: dict) -> str:
     kind = _plain(event.get("kind"))
     said = _what(event, kind)
     if kind in PAIR_KINDS and event.get("spouse") is not None:
-        both = _joined(people, event.get("person"), event.get("spouse"))
+        both = _joined(names, event.get("person"), event.get("spouse"))
         return f"{both} · {said} · {_when(*_dated(event))}"
     about = event.get("child")
     if about is None:
         about = event.get("person")
-    who = _name(people.get(str(about), {})) if about is not None else "the family"
+    who = names.get(str(about), "someone") if about is not None else "the family"
     return f"{who} · {said} · {_when(*_dated(event))}"
 
 
@@ -497,6 +549,13 @@ def _name(person: dict) -> str:
     return (person.get("name") or "").strip() or "someone"
 
 
+def _full(person: dict) -> str:
+    whole = " ".join(
+        part.strip() for part in (person.get("name"), person.get("last_name")) if part
+    )
+    return whole.strip() or "someone"
+
+
 def _touched(deltas: list[dict], kind: str) -> list[str]:
     out: list[str] = []
     for delta in deltas:
@@ -504,3 +563,16 @@ def _touched(deltas: list[dict], kind: str) -> list[str]:
             continue
         _add(out, str(delta["item_id"]))
     return out
+
+
+def _added(deltas: list[dict], kind: str) -> set[str]:
+    """The items of one kind the deltas made, not just changed: an add is
+    logged as the whole item with no field."""
+    return {
+        str(delta["item_id"])
+        for delta in deltas
+        if delta.get("item_kind") == kind
+        and delta.get("field") is None
+        and delta.get("before") is None
+        and delta.get("after") is not None
+    }

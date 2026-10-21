@@ -11,6 +11,7 @@ from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.llmutil import Served
 from btcopilot.models import Change, ModelCall, Observation, ObservationKind, Purpose, TurnEvent
 from btcopilot.review import adapter
+from btcopilot.review import scribe as scribe_module
 from btcopilot.review.scribe import written
 from btcopilot.tests.review.conftest import coded, person, shift
 
@@ -82,6 +83,51 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
     changes = Change.query.filter_by(diagram_id=coding.diagram_id).all()
     assert [c.statement_id for c in changes] == [turns[0].id] * len(changes)
     assert len(changes) == 2
+
+
+def test_a_person_the_statement_added_has_a_row_before_the_event_naming_them(coder, cut, turns):
+    # R-0883
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        [("edit_person", {"name": "James Cooper"})],
+        [("edit_event", {"date_certainty": "certain", "kind": "noted", "title": "Moved to Ohio", "description": "moved to Ohio", "date": "1971-03-01", "person": "{person}"})],
+    )
+    response = scribe(coder, coding, turns[0], model, "James Cooper moved to Ohio in 1971")
+    assert response.json["lines"] == ["James Cooper", "James Cooper · Moved to Ohio · Mar 1971"]
+
+
+def test_people_who_share_a_first_name_are_told_apart_on_buttons_and_rows():
+    # R-0883
+    data = {
+        "people": [
+            {"id": 1, "name": "Monique", "last_name": "Larsen"},
+            {"id": 2, "name": "Monique", "last_name": "Larsen"},
+            {"id": 3, "name": "Monique", "last_name": "Dubois"},
+            {"id": 4, "name": "Ada"},
+            {"id": 5, "name": "Ada"},
+            {"id": 6, "name": "Tom", "last_name": "Hale"},
+            {"id": 7, "name": "Ruth", "last_name": "Hale"},
+        ],
+        "pair_bonds": [{"id": 8, "person_a": 6, "person_b": 5}],
+        "events": [
+            {"id": 9, "kind": "birth", "child": 1, "dateTime": "1985-04-02"},
+            {"id": 10, "kind": "death", "person": 3, "dateTime": "2011-02-01"},
+            {"id": 11, "kind": "death", "person": 6, "dateTime": "2012-02-01"},
+        ],
+    }
+    assert scribe_module.called(data, full=True) == {
+        "1": "Monique Larsen · b. 1985",
+        "2": "Monique Larsen",
+        "3": "Monique Dubois",
+        "4": "Ada",
+        "5": "Ada · partner of Tom Hale",
+        "6": "Tom Hale",
+        "7": "Ruth Hale",
+    }
+    assert written(data, ["10", "11"]) == [
+        "Monique Dubois · Death · Feb 2011",
+        "Tom · Death · Feb 2012",
+    ]
 
 
 def test_each_scribe_call_writes_a_ledger_row_for_the_coder_and_their_record(
@@ -218,7 +264,7 @@ def test_a_private_file_replaces_the_scribe_prompt(coder, cut, turns, tmp_path):
 
 
 def test_a_marriage_and_a_child_are_written_and_said_back(coder, cut, turns):
-    # R-0326
+    # R-0326, R-0883
     """The coder says who belongs to whom; the lines under their words are the
     marriage and the child, in the record's own words (R-0326, drawing 1a)."""
     coding = coded(
@@ -257,8 +303,8 @@ def test_a_marriage_and_a_child_are_written_and_said_back(coder, cut, turns):
     )
     assert response.status_code == 200
     assert response.json["lines"] == [
-        "Marcus & Delphine · Married · Jun 1970",
         "Corinne · daughter of Marcus & Delphine",
+        "Marcus & Delphine · Married · Jun 1970",
     ]
 
 
@@ -472,6 +518,17 @@ def test_two_people_the_words_fit_come_back_as_choices(coder, cut, turns):
     ]
     thread = coder.get(f"/review/codings/{coding.id}/thread").json
     assert [t["said"] for t in thread["turns"] if t["said"]] == []
+
+
+def test_the_buttons_carry_the_whole_name_the_diagram_holds(coder, cut, turns):
+    # R-0883
+    people = [
+        {"id": 1, "name": "Monique", "last_name": "Larsen"},
+        {"id": 2, "name": "Monique", "last_name": "Dubois"},
+    ]
+    coding = coded(coder.user, cut, {"people": people}, done=False)
+    response = scribe(coder, coding, turns[0], Never(), "Monique could not sleep")
+    assert [one["name"] for one in response.json["choices"]] == ["Monique Larsen", "Monique Dubois"]
 
 
 def test_the_person_tapped_settles_which_one_and_the_words_go_in(coder, cut, turns):

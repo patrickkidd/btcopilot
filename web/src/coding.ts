@@ -55,14 +55,9 @@ export function writtenConcepts(ids: number[], events: TimelineEvent[]): string 
   return conceptLinks(conceptsOf(events.filter((event) => ids.includes(event.id))));
 }
 
-/** Why a statement did not go in, in a coder's words: a server that broke or
- * never answered is one muted row, never how the server failed (R-0869,
- * R-0883). */
-export function missed(error: unknown): string {
-  if (error instanceof api.Failed && (error.silent || error.status >= 500))
-    return "not saved, try again";
-  return api.whatFailed(error);
-}
+/** What a coder reads when the scribe call did not succeed, whatever the
+ * server said: one muted row, never its words (R-0869, R-0883). */
+export const NOT_SAVED = "not saved, try again";
 
 /** A row for something that is not in the diagram, muted. */
 const unsaved = (words: string) => `<div class="did no">${esc(words)}</div>`;
@@ -408,8 +403,8 @@ export class Coding {
     let written;
     try {
       written = await api.scribe(thread.coding_id, turn, said, person);
-    } catch (error) {
-      this.after(turn, el("div", `bub coach sub${side}`, unsaved(missed(error))), turn);
+    } catch {
+      this.after(turn, el("div", `bub coach sub${side}`, unsaved(NOT_SAVED)), turn);
       // A scribe that stopped part way has still written that part.
       await this.refresh();
       return;
