@@ -2886,10 +2886,21 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .bub.said.left::before,
 .bub.coach.sub.left::before { right: auto; left: 14px; }
 
-/* the scribe asking instead of writing: the same edit line, in the asking
-   colour */
-.bub .did.q { color: var(--ask-text); }
-.bub .did.q::before { background: var(--ask); }
+/* what the scribe tried that the diagram did not take: the same row, muted
+   (R-0883) */
+.bub .did.no { opacity: 0.55; }
+.bub .did.no::before { background: none; }
+/* the people the scribe could mean: the same row, one tap each */
+.bub .did.pick {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ask-text);
+}
+.bub .did.pick::before { background: var(--ask); }
 
 /* a task already finished, on the one-task card */
 .plrow {

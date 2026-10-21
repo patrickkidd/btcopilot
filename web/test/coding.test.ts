@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("../src/api", async (real) => ({
+  ...(await real<typeof import("../src/api")>()),
+  scribe: vi.fn(),
+}));
+
 vi.stubGlobal("window", {
   BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
 });
 
-const { Coding, missed, writtenConcepts } = await import("../src/coding");
-const { Failed } = await import("../src/api");
+const { Coding, missed, scribedRows, writtenConcepts } = await import("../src/coding");
+const api = await import("../src/api");
+const { Failed } = api;
 const { Menu } = await import("../src/menu");
 const { standInForm } = await import("./standin");
 
@@ -101,11 +107,79 @@ describe("the concept pages under what the scribe wrote", () => {
 });
 
 describe("what a coder reads when a statement did not go in", () => {
-  // R-0869
-  it("says one plain sentence when the server broke or never answered", () => {
-    const again = "That did not go in. Try again in a minute.";
+  // R-0869, R-0883
+  it("is one muted row when the server broke or never answered", () => {
+    const again = "not saved, try again";
     expect(missed(new Failed(500, "POST /scribe", "Traceback"))).toBe(again);
     expect(missed(new Failed(0, "POST /scribe", "timed out"))).toBe(again);
+  });
+});
+
+describe("the rows under what the coder said", () => {
+  const scribed = (fields: object) =>
+    ({ lines: [], refused: [], choices: [], made: [], turn_id: "t", ...fields }) as never;
+
+  // R-0883
+  it("draws a row for each entry that went in and a muted one for each refused", () => {
+    const html = scribedRows(
+      scribed({ lines: ["James Cooper"], refused: ["Marcus · could not sleep · Jan 2010"] }),
+    );
+    expect(html).toBe(
+      '<div class="did">James Cooper</div>' +
+        '<div class="did no">Marcus · could not sleep · Jan 2010 · not saved</div>',
+    );
+  });
+
+  // R-0883
+  it("is one muted row when nothing was saved", () => {
+    expect(scribedRows(scribed({}))).toBe('<div class="did no">nothing saved</div>');
+  });
+
+  // R-0883
+  it("offers one button per person and a tap sends the same words with that person", async () => {
+    type Node = {
+      className: string;
+      innerHTML: string;
+      dataset: Record<string, string>;
+      click?: (e: object) => void;
+      addEventListener(type: string, fn: (e: object) => void): void;
+      remove(): void;
+    };
+    const drawn: Node[] = [];
+    vi.stubGlobal("document", {
+      createElement: (): Node => ({
+        className: "",
+        innerHTML: "",
+        dataset: {},
+        addEventListener(_, fn) {
+          this.click = fn;
+        },
+        remove() {},
+      }),
+    });
+    const scribe = vi.mocked(api.scribe);
+    scribe.mockResolvedValueOnce(
+      scribed({ choices: [{ id: 1, name: "Marcus Smith" }, { id: 2, name: "Marcus Jones" }] }),
+    );
+    scribe.mockResolvedValueOnce(scribed({ lines: ["Marcus Jones · Could not sleep · Jan 2010"] }));
+    const screen = Object.assign(Object.create(Coding.prototype), {
+      thread: { coding_id: 9, turns: [{ id: 3, client: true }] },
+      picture: { untouch() {} },
+      after: (_turn: number, node: Node) => drawn.push(node),
+    });
+    await screen.scribe(3, "Marcus could not sleep", null);
+    expect(drawn[0].innerHTML).toBe(
+      '<button class="did pick" type="button" data-person="1">Marcus Smith</button>' +
+        '<button class="did pick" type="button" data-person="2">Marcus Jones</button>',
+    );
+    drawn[0].click!({ target: { closest: () => ({ dataset: { person: "2" } }) } });
+    await vi.waitFor(() => expect(drawn).toHaveLength(2));
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    expect(scribe.mock.calls[1]).toEqual([9, 3, "Marcus could not sleep", 2]);
+    expect(drawn[1].innerHTML).toBe('<div class="did">Marcus Jones · Could not sleep · Jan 2010</div>');
   });
 });
 

@@ -34,7 +34,7 @@ from btcopilot.models import (
 )
 from btcopilot.recordtext import date_text, render, version_line
 from btcopilot.toolnames import toolcall
-from btcopilot.toolbox import EDITS, ToolError, Toolbox, schemas
+from btcopilot.toolbox import EDITS, ToolError, Toolbox, ToolName, schemas
 from btcopilot.models import (
     Diagram,
     Notification,
@@ -54,6 +54,7 @@ __all__ = [
     "schemas",
     "ToolError",
     "Toolbox",
+    "ToolName",
     "coded_in",
     "touched_by_turn",
     "date_text",

@@ -15,6 +15,7 @@ import {
   Touch,
   type CodingThread,
   type CodingTurn,
+  type Scribed,
   type Timeline,
   type TimelineEvent,
 } from "./types";
@@ -55,11 +56,33 @@ export function writtenConcepts(ids: number[], events: TimelineEvent[]): string 
 }
 
 /** Why a statement did not go in, in a coder's words: a server that broke or
- * never answered is one plain sentence, never how the server failed (R-0869). */
+ * never answered is one muted row, never how the server failed (R-0869,
+ * R-0883). */
 export function missed(error: unknown): string {
   if (error instanceof api.Failed && (error.silent || error.status >= 500))
-    return "That did not go in. Try again in a minute.";
+    return "not saved, try again";
   return api.whatFailed(error);
+}
+
+/** A row for something that is not in the diagram, muted. */
+const unsaved = (words: string) => `<div class="did no">${esc(words)}</div>`;
+
+/** What the scribe did, as rows the way the chat shows tool calls: one per
+ * entry that went in, one muted per entry the diagram refused, or one button
+ * per person when it cannot tell who is meant. Never a sentence (R-0883). */
+export function scribedRows(written: Scribed): string {
+  if (written.choices.length)
+    return written.choices
+      .map(
+        (one) =>
+          `<button class="did pick" type="button" data-person="${one.id}">${esc(one.name)}</button>`,
+      )
+      .join("");
+  const rows = [
+    ...written.lines.map((line) => `<div class="did">${esc(line)}</div>`),
+    ...written.refused.map((line) => unsaved(`${line} · not saved`)),
+  ];
+  return rows.join("") || unsaved("nothing saved");
 }
 
 /** Which record events a piece of the thread wrote, for the concept pages
@@ -369,32 +392,41 @@ export class Coding {
     // the hint under the first line tapped has been followed
     this.list.querySelector(".abv")?.remove();
     this.composer.innerHTML = "";
+    this.after(turn, el("div", `bub said${this.side(turn)}`, esc(said)), turn);
+    await this.scribe(turn, said, null);
+  }
+
+  /** The coder's words to the scribe, with the person they tapped when it
+   * asked which; a tap on one of its buttons sends the same words again with
+   * that person (R-0883). */
+  private async scribe(turn: number, said: string, person: number | null): Promise<void> {
+    const thread = this.thread;
+    if (!thread) return;
     const side = this.side(turn);
-    this.after(turn, el("div", `bub said${side}`, esc(said)), turn);
     this.picture.untouch();
     this.sending = true;
     let written;
     try {
-      written = await api.scribe(thread.coding_id, turn, said);
+      written = await api.scribe(thread.coding_id, turn, said, person);
     } catch (error) {
-      this.after(
-        turn,
-        el("div", `bub coach sub${side}`, `<div class="did q">${esc(missed(error))}</div>`),
-        turn,
-      );
+      this.after(turn, el("div", `bub coach sub${side}`, unsaved(missed(error))), turn);
       // A scribe that stopped part way has still written that part.
       await this.refresh();
       return;
     } finally {
       this.sending = false;
     }
-    const lines = written.asked
-      ? `<div class="did q">${esc(written.asked)}</div>`
-      : written.lines.map((line) => `<div class="did">${esc(line)}</div>`).join("");
     const events = written.made
       .filter((one) => one.kind === ItemKind.Event)
       .map((one) => Number(one.id));
-    this.after(turn, wrote(el("div", `bub coach sub${side}`, lines), events), turn);
+    const rows = wrote(el("div", `bub coach sub${side}`, scribedRows(written)), events);
+    rows.addEventListener("click", (e) => {
+      const pick = (e.target as Element).closest<HTMLElement>(".pick");
+      if (!pick || this.sending) return;
+      rows.remove();
+      void this.scribe(turn, said, Number(pick.dataset.person));
+    });
+    this.after(turn, rows, turn);
     if (written.made.length) {
       await this.refresh();
       // what the scribe writes, it adds

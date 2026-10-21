@@ -173,7 +173,11 @@ def coding_scribe(coding_id: int):
     if not _in_cut(coding.cut, statement):
         raise ValueError("coding happens between the last agreed line and the cut")
 
-    written = scribe.write(coding, statement, said)
+    written = scribe.write(coding, statement, said, body.get("person_id"))
+    if written["choices"]:
+        # Nothing is written until the coder taps who; the same words come
+        # back with that person, and are kept then (R-0883).
+        return jsonify(written)
     # Save what the coder typed too, attached to the line they coded (R-0270).
     db.session.add(
         Note(

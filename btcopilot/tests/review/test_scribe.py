@@ -30,6 +30,8 @@ class Scripted:
             yield
         if not self.steps:
             return ModelTurn(text=self.said, served=HAIKU)
+        if isinstance(self.steps[0], str):
+            return ModelTurn(text=self.steps.pop(0), served=HAIKU)
         calls = [
             ToolCall(id=f"call-{i}", name=name, args=self._filled(args, messages))
             for i, (name, args) in enumerate(self.steps.pop(0))
@@ -51,11 +53,11 @@ class Scripted:
         raise AssertionError("no person was added for the event to be about")
 
 
-def scribe(client, coding, statement, model, said="what happened"):
+def scribe(client, coding, statement, model, said="what happened", chosen=None):
     with patch.object(adapter, "coach_model", return_value=model):
         return client.post(
             f"/review/codings/{coding.id}/scribe",
-            json={"statement_id": statement.id, "text": said},
+            json={"statement_id": statement.id, "text": said, "person_id": chosen},
         )
 
 
@@ -70,7 +72,7 @@ def test_adds_the_person_the_coder_names(coder, cut, turns):
         coder, coding, turns[0], model, "James Cooper moved to Ohio in 1971"
     )
     assert response.status_code == 200
-    assert response.json["asked"] == ""
+    assert (response.json["refused"], response.json["choices"]) == ([], [])
 
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     assert [p["name"] for p in record["people"]] == ["Marcus", "James Cooper"]
@@ -168,15 +170,13 @@ class Endless:
         return ModelTurn(calls=[call], blocks=[], served=HAIKU)
 
 
-def test_says_so_when_it_runs_out_of_steps(coder, cut, turns):
-    # R-0411, R-0869
-    """What was written stays, and the coder is told, never shown it as done."""
+def test_running_out_of_steps_shows_a_row_for_each_entry_that_went_in(coder, cut, turns):
+    # R-0411, R-0883
+    """What was written stays, one row each, and no sentence comes with it."""
     coding = coded(coder.user, cut, {"people": []}, done=False)
     response = scribe(coder, coding, turns[0], Endless(), "a sentence that never ends")
-    assert response.status_code == 400
-    shown = response.get_data(as_text=True).split(": ", 1)[1]
-    assert shown.startswith("Person 1, Person 2")
-    assert shown.endswith(" went in. The rest did not. Say the rest again in one sentence.")
+    assert response.status_code == 200
+    assert response.json["lines"] == [f"Person {n}" for n in range(1, 9)]
 
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     assert len(record["people"]) == 8
@@ -400,53 +400,89 @@ def test_a_second_request_changes_an_existing_event(coder, cut, turns):
 
 
 SHIFT = {"date_certainty": "certain", "kind": "shift", "description": "could not sleep", "symptom": "up", "date": "2010-01-01", "person": "1"}
-NOTHING = "That did not go in. Say it again in one sentence."
 
 
-def test_a_refusal_the_scribe_falls_silent_on_says_it_did_not_go_in(coder, cut, turns):
-    # R-0270, R-0869
-    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
-    response = scribe(coder, coding, turns[0], Scripted([("edit_event", SHIFT)]), "Marcus could not sleep")
-    assert response.status_code == 400
-    assert response.get_data(as_text=True).split(": ", 1)[1] == NOTHING
-
-
-def test_a_refusal_the_scribe_talks_about_shows_only_what_went_in(coder, cut, turns):
-    # R-0270, R-0869
+def test_a_refused_entry_comes_back_as_a_row_beside_the_ones_that_went_in(coder, cut, turns):
+    # R-0883, R-0302
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
         [("edit_person", {"name": "James Cooper"}), ("edit_event", SHIFT)],
         said="I need to see the updated record to write this change with the current version number.",
     )
     response = scribe(coder, coding, turns[0], model, "James Cooper came and Marcus could not sleep")
-    assert response.status_code == 400
-    assert response.get_data(as_text=True).split(": ", 1)[1] == (
-        "James Cooper went in. The rest did not. Say the rest again in one sentence."
+    assert response.status_code == 200
+    assert (response.json["lines"], response.json["refused"]) == (
+        ["James Cooper"],
+        ["Marcus · could not sleep · Jan 2010"],
+    )
+    shown = response.get_data(as_text=True)
+    assert not [words for words in ("went in", "did not", "again", "version") if words in shown]
+
+
+def test_a_statement_nothing_of_goes_in_is_all_refused_rows(coder, cut, turns):
+    # R-0883
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    response = scribe(coder, coding, turns[0], Scripted([("edit_event", SHIFT)]), "Marcus could not sleep")
+    assert response.status_code == 200
+    assert (response.json["lines"], response.json["refused"]) == (
+        [],
+        ["Marcus · could not sleep · Jan 2010"],
     )
 
 
-def test_the_scribe_talking_instead_of_writing_says_it_did_not_go_in(coder, cut, turns):
-    # R-0270, R-0869
+def test_the_scribe_fixes_its_own_refused_call_after_stopping_on_words(coder, cut, turns):
+    # R-0883
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(
+        [("edit_event", SHIFT)],
+        "I could not write that.",
+        [("edit_event", dict(SHIFT, title="Could not sleep"))],
+    )
+    response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
+    assert (response.json["lines"], response.json["refused"]) == (
+        ["Marcus · Could not sleep · Jan 2010"],
+        [],
+    )
+
+
+def test_the_scribe_talking_instead_of_writing_saves_nothing(coder, cut, turns):
+    # R-0883, R-0869
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
         said=(
-            "I need to reread the current record. Let me check what events are there "
-            "now and get the correct version number for event 2. Could you provide the "
-            "current version number shown in the record for event 2?"
+            "I need to reread the current record. Could you provide the current "
+            "version number shown in the record for event 2?"
         )
     )
     response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
-    assert response.status_code == 400
-    assert response.get_data(as_text=True).split(": ", 1)[1] == NOTHING
+    assert response.status_code == 200
+    assert (response.json["lines"], response.json["refused"], response.json["choices"]) == ([], [], [])
+    assert "version" not in response.get_data(as_text=True)
 
 
-def test_the_question_asked_before_the_model_reaches_the_coder(coder, cut, turns):
-    # R-0270
+def test_two_people_the_words_fit_come_back_as_choices(coder, cut, turns):
+    # R-0270, R-0883
     people = [person(1, "Marcus Smith"), person(2, "Marcus Jones")]
     coding = coded(coder.user, cut, {"people": people}, done=False)
     response = scribe(coder, coding, turns[0], Never(), "Marcus could not sleep")
     assert response.status_code == 200
-    assert response.json["asked"] == "Which person is this about — Marcus Smith or Marcus Jones?"
+    assert response.json["choices"] == [
+        {"id": 1, "name": "Marcus Smith"},
+        {"id": 2, "name": "Marcus Jones"},
+    ]
+    thread = coder.get(f"/review/codings/{coding.id}/thread").json
+    assert [t["said"] for t in thread["turns"] if t["said"]] == []
+
+
+def test_the_person_tapped_settles_which_one_and_the_words_go_in(coder, cut, turns):
+    # R-0270, R-0883
+    people = [person(1, "Marcus Smith"), person(2, "Marcus Jones")]
+    coding = coded(coder.user, cut, {"people": people}, done=False)
+    model = Scripted([("edit_event", dict(SHIFT, title="Could not sleep", person=2))])
+    with patch.object(model, "turn", wraps=model.turn) as heard:
+        response = scribe(coder, coding, turns[0], model, "Marcus could not sleep", chosen=2)
+    assert response.json["lines"] == ["Marcus Jones · Could not sleep · Jan 2010"]
+    assert "2 Marcus Jones" in heard.call_args_list[0].args[1][0]["content"]
 
 
 def test_a_shift_reads_as_its_title():
@@ -458,11 +494,11 @@ def test_a_shift_reads_as_its_title():
     assert written(data, ["2"]) == ["Ann · Sleep problems began · Jan 1990"]
 
 
-def test_an_empty_diagram_is_asked_about_as_the_diagram(coder, cut, turns):
-    # R-0270, R-0869
+def test_a_pronoun_with_nobody_in_the_diagram_saves_nothing(coder, cut, turns):
+    # R-0270, R-0883
     coding = coded(coder.user, cut, {"people": []}, done=False)
     response = scribe(coder, coding, turns[0], Never(), "she could not sleep")
-    assert response.json["asked"] == "Which person is this about? The diagram has nobody in it yet."
+    assert (response.json["lines"], response.json["refused"], response.json["choices"]) == ([], [], [])
 
 
 def test_a_death_reads_as_its_kind_name():

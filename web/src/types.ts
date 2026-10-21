@@ -841,11 +841,13 @@ export interface CodingThread {
   turns: CodingTurn[];
 }
 
-/** What the scribe did with the coder's words: the lines it wrote, or the one
- * question it asks when it cannot tell which person is meant. */
+/** What the scribe did with the coder's words: the rows it wrote and the rows
+ * the diagram refused, or the people to tap one of when it cannot tell which
+ * person is meant (R-0883). */
 export interface Scribed {
   lines: string[];
-  asked: string;
+  refused: string[];
+  choices: { id: number; name: string }[];
   /** What the record now holds, so the picture lights it as the line lands. */
   made: { kind: ItemKind; id: string }[];
   turn_id: string;

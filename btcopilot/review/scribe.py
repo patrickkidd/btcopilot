@@ -3,7 +3,9 @@
 It is not the coach. There is no conversation, no coaching and no reply: a
 cheap model reads the turn and what the coder said about it, and calls the
 record-writing tools. When it cannot tell which person is meant it writes
-nothing and asks, in one line, which person (R-0270).
+nothing and offers the people it could be, one tap each (R-0270). What it
+wrote and what the diagram refused reach the coder as rows, never sentences
+(R-0883).
 """
 
 import enum
@@ -27,11 +29,10 @@ TURN = """The turn the coder tapped, said by {who}:
 What the coder says it tells them happened:
 {said}
 """
-
-
-class Refused(ValueError):
-    """The scribe could not finish. Its words go to the coder as they are,
-    since they already say what is wrong (a ValueError is a 400 here)."""
+CHOSEN = "\nThe person this is about: {line}\n"
+#: Said back to a scribe that stopped on words while a call was refused, so it
+#: corrects the call rather than giving up on it.
+AGAIN = "Not entered yet: {refused} Correct the call and make it again."
 
 
 class Pronoun(enum.StrEnum):
@@ -49,10 +50,11 @@ class Pronoun(enum.StrEnum):
 WORDS = re.compile(r"[A-Za-z][A-Za-z']*")
 
 
-def unclear(said: str, people: list[dict]) -> str:
-    """The question to ask instead of writing, or nothing. A coder who points
-    at a person without naming one, or names one that could be two people in
-    the record, is asked which before any word of it is written (R-0270)."""
+def unclear(said: str, people: list[dict]) -> list[dict] | None:
+    """The people the coder could mean, to tap one of, or None when the words
+    say who. A coder who points at a person without naming one, or names one
+    that could be two people in the record, picks which before any word of it
+    is written (R-0270)."""
     words = WORDS.findall(said)
     spoken = {word.lower() for word in words}
     # A whole name said outright settles it ("Marcus's father" against
@@ -69,23 +71,22 @@ def unclear(said: str, people: list[dict]) -> str:
         # people the sentence cannot tell apart are asked about, and a name
         # inside a longer one ("Marcus" in "Marcus's father") is the shorter
         # reading of the same words.
-        rival = _rival(whole)
-        return _which(rival) if rival else ""
+        return _rival(whole) or None
     matched = [
         person
         for person in people
         if spoken & {word.lower() for word in WORDS.findall(_name(person))}
     ]
     if len(matched) > 1:
-        return _which(matched)
+        return matched
     if matched:
-        return ""
+        return None
     pointed = spoken & {p.value for p in Pronoun}
     if pointed and not _new_name(words):
         could = [p for p in people if _fits(pointed, p)]
         if len(could) != 1:
-            return _which(could or people)
-    return ""
+            return could or people
+    return None
 
 
 def _rival(named: list[dict]) -> list[dict]:
@@ -132,24 +133,28 @@ def _new_name(words: list[str]) -> bool:
     )
 
 
-def _which(people: list[dict]) -> str:
-    named = [_name(person) for person in people]
-    if not named:
-        return "Which person is this about? The diagram has nobody in it yet."
-    if len(named) == 1:
-        return f"Is this about {named[0]}?"
-    return f"Which person is this about — {', '.join(named[:-1])} or {named[-1]}?"
+def _choices(people: list[dict]) -> list[dict]:
+    return [{"id": person["id"], "name": _name(person)} for person in people]
 
 
-def write(coding, statement, said: str, model=None) -> dict:
-    """One coding turn. Returns the edit lines it wrote, or the one question it
-    asked instead."""
+def write(coding, statement, said: str, chosen=None, model=None) -> dict:
+    """One coding turn. Returns the rows it wrote and the rows the diagram
+    refused, or the people to pick from instead. `chosen` is the person the
+    coder tapped when they were asked which."""
     turn_id = uuid.uuid4().hex
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
-    question = unclear(said, record.get("people") or [])
-    if question:
-        _log.info(f"Scribe asked before the model: {question}")
-        return {"lines": [], "asked": question, "made": [], "turn_id": turn_id}
+    people = record.get("people") or []
+    about = ""
+    if chosen is None:
+        could = unclear(said, people)
+        if could is not None:
+            _log.info(f"Scribe asked which person: {_choices(could)}")
+            return _result([], [], [], turn_id, _choices(could))
+    else:
+        person = next((p for p in people if str(p["id"]) == str(chosen)), None)
+        if person is None:
+            raise ValueError("that person is not in this diagram")
+        about = CHOSEN.format(line=f"{person['id']} {_name(person)}")
     toolbox = adapter.scribe_toolbox(
         coding.diagram_id, coding.user_id, statement.id, turn_id
     )
@@ -166,21 +171,32 @@ def write(coding, statement, said: str, model=None) -> dict:
             "role": "user",
             "content": TURN.format(
                 who=_who(statement), turn=statement.text or "", said=said
-            ),
+            )
+            + about,
         }
     ]
     tools = adapter.write_tools()
-    asked = ""
-    unfinished = False
     refused: list[str] = []
     kept: list[dict] = []
+    nudged = False
 
     for step in range(MAX_STEPS):
         turn = _say(coach, system, messages, tools)
-        asked = turn.text.strip()
-        unfinished = bool(turn.calls)
         if not turn.calls:
-            break
+            if turn.text.strip():
+                _log.info(f"Scribe said: {turn.text.strip()!r}")
+            # A scribe that stops on words after a refusal is told once what
+            # did not go in, so it fixes its own call instead of giving up.
+            if not refused or nudged:
+                break
+            nudged = True
+            if turn.blocks:
+                messages.append({"role": "assistant", "content": turn.blocks})
+            messages.append(
+                {"role": "user", "content": AGAIN.format(refused=" ".join(refused))}
+            )
+            continue
+        nudged = False
         results = []
         refused = []
         for call in turn.calls:
@@ -199,46 +215,94 @@ def write(coding, statement, said: str, model=None) -> dict:
             )
         messages.append({"role": "assistant", "content": turn.blocks})
         messages.append({"role": "user", "content": results})
-        # A turn ends on words, never on a tool call: adding the person the
-        # event is about is one step, writing the event is the next.
-        asked = ""
         if refused:
             _log.warning(f"Scribe step {step} was refused: {results}")
+    else:
+        _log.warning("Scribe ran out of steps")
 
     adapter.keep_calls(turn_id, statement.discussion_id, coding.diagram_id, kept)
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
-    # Every call is committed as it lands, so a loop that ran out of steps or
-    # gave up on a refusal has written part of the sentence; the coder is told
-    # which part, never shown it as done (R-0302: no silent loss). The model's
-    # own words never reach the coder: they speak of how the code works, and
-    # the only question a coder reads is the one asked before the model
-    # (R-0869, R-0270).
-    if asked:
-        _log.info(f"Scribe said: {asked!r}")
-    if unfinished:
-        _log.warning("Scribe ran out of steps")
-    if refused:
-        _log.warning(f"Scribe gave up after a refusal: {refused}")
-    if unfinished or refused or not lines:
-        raise Refused(_rest(lines))
+    # Every call is committed as it lands, so a scribe that ran out of steps or
+    # gave up on a refusal has written part of the sentence; the coder sees
+    # those rows and a "not saved" row for each entry the diagram still refused
+    # (R-0302: no silent loss). The refusals' own words and the model's speak
+    # of how the code works, so they stay in the log (R-0869, R-0883).
+    data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
+    missed = [one for one in tried(data, kept) if one not in lines]
+    if missed:
+        _log.warning(f"Scribe left refused: {[c['refusal'] for c in kept if c['refusal']]}")
+    return _result(lines, missed, made(toolbox.deltas), turn_id, [])
+
+
+def _result(lines, refused, made, turn_id, choices) -> dict:
     return {
         "lines": lines,
-        "asked": "",
-        "made": made(toolbox.deltas),
+        "refused": refused,
+        "choices": choices,
+        "made": made,
         "turn_id": turn_id,
     }
 
 
-def _rest(lines: list[str]) -> str:
-    """What the coder reads when not all of it went in: the page shows the
-    words after the first colon."""
-    if not lines:
-        return "Scribe stopped: That did not go in. Say it again in one sentence."
-    wrote = ", ".join(lines)
-    return (
-        f"Scribe stopped: {wrote} went in. The rest did not. "
-        "Say the rest again in one sentence."
-    )
+#: The tools whose refused calls are drawn as what they tried to enter.
+TRIED = (
+    adapter.ToolName.EditPerson,
+    adapter.ToolName.EditPairBond,
+    adapter.ToolName.EditEvent,
+)
+
+
+def tried(data: dict, kept: list[dict]) -> list[str]:
+    """What the scribe tried to enter and the diagram refused, in the words a
+    written row has, leaving out a call a later one of the same kind entered
+    after all."""
+    out: list[str] = []
+    for at, call in enumerate(kept):
+        if not call["refusal"] or call["name"] not in TRIED:
+            continue
+        key = _subject(call)
+        if any(
+            not later["refusal"] and _subject(later) == key for later in kept[at + 1 :]
+        ):
+            continue
+        _add(out, _tried_words(data, call))
+    return out
+
+
+def _subject(call: dict) -> tuple:
+    """What a call is about, so a refused call and the one that fixed it match:
+    the item it changes, or the person, pair or event it adds."""
+    args = call["args"]
+    if args.get("id") is not None:
+        return (call["name"], str(args["id"]))
+    if call["name"] == adapter.ToolName.EditPerson:
+        return (call["name"], (args.get("name") or "").strip().lower())
+    if call["name"] == adapter.ToolName.EditPairBond:
+        return (call["name"], _pair_of(args.get("person_a"), args.get("person_b")))
+    about = args.get("child") if args.get("child") is not None else args.get("person")
+    return (call["name"], _plain(args.get("kind")), str(about))
+
+
+def _tried_words(data: dict, call: dict) -> str:
+    """A refused call's entry as the diagram would have read it: what was
+    already there under its id, with the call's own values over it."""
+    people = {str(p.get("id")): p for p in data.get("people") or []}
+    bonds = {str(b.get("id")): b for b in data.get("pair_bonds") or []}
+    events = {str(e.get("id")): e for e in data.get("events") or []}
+    args = {key: value for key, value in call["args"].items() if value is not None}
+    one = str(args.get("id"))
+    if call["name"] == adapter.ToolName.EditPerson:
+        return _name({**people.get(one, {}), **args})
+    if call["name"] == adapter.ToolName.EditPairBond:
+        return _bond_words({**bonds.get(one, {}), **args}, people, events)
+    event = {**events.get(one, {}), **args}
+    if args.get("date"):
+        event["dateTime"] = args["date"]
+    if args.get("date_certainty"):
+        event["dateCertainty"] = args["date_certainty"]
+    # A missing title is often why it was refused; what happened stands in.
+    event["title"] = event.get("title") or event.get("description") or _plain(event.get("kind"))
+    return _event_words(event, people)
 
 
 def made(deltas: list[dict]) -> list[dict]:

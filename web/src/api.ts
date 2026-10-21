@@ -484,11 +484,18 @@ export const codingThread = (codingId: number) =>
   ask<CodingThread>("GET", `/codings/${codingId}/thread`);
 
 /** What the coder says one turn tells them happened. The scribe writes it into
- * their record, or asks which person they mean. */
-export const scribe = (codingId: number, statementId: number, text: string) =>
+ * their record, or offers the people it could be; `personId` is the one the
+ * coder tapped. */
+export const scribe = (
+  codingId: number,
+  statementId: number,
+  text: string,
+  personId: number | null = null,
+) =>
   ask<Scribed>("POST", `/codings/${codingId}/scribe`, {
     statement_id: statementId,
     text,
+    person_id: personId,
   });
 
 /** Done: the coding is submitted for the meeting and cannot change (R-0271). */
