@@ -563,6 +563,22 @@ def test_the_buttons_carry_the_whole_name_the_diagram_holds(coder, cut, turns):
     assert [one["name"] for one in response.json["choices"]] == ["Monique Larsen", "Monique Dubois"]
 
 
+ROBERTS = [
+    {"id": 1, "name": "Robert", "last_name": "Stinson"},
+    {"id": 2, "name": "Robert", "last_name": "Hale"},
+]
+
+
+def test_a_full_name_one_person_holds_asks_nothing():
+    # R-0270
+    assert scribe_module.unclear("Robert Stinson was born in 1948", ROBERTS) is None
+
+
+def test_a_first_name_two_people_share_still_asks():
+    # R-0270
+    assert scribe_module.unclear("Robert was born in 1948", ROBERTS) == ROBERTS
+
+
 def test_the_person_tapped_settles_which_one_and_the_words_go_in(coder, cut, turns):
     # R-0270, R-0883
     people = [person(1, "Marcus Smith"), person(2, "Marcus Jones")]

@@ -72,18 +72,19 @@ def unclear(said: str, people: list[dict]) -> list[dict] | None:
     # A whole name said outright settles it ("Marcus's father" against
     # "Marcus's grandmother"); only then do shared words count.
     lowered = " ".join(spoken_word.lower() for spoken_word in words)
-    whole = [
-        person
-        for person in people
-        if " ".join(WORDS.findall(_name(person))).lower() in lowered
-    ]
+    whole = [person for person in people if _says(lowered, _name(person))]
     if whole:
         # Naming two people outright is naming them, not pointing vaguely at
         # one: "Marcus married Delphine" is a sentence about a bond. Only two
         # people the sentence cannot tell apart are asked about, and a name
         # inside a longer one ("Marcus" in "Marcus's father") is the shorter
-        # reading of the same words.
-        return _rival(whole) or None
+        # reading of the same words. A first and last name said together
+        # ("Robert Stinson") tells two Roberts apart.
+        rivals = _rival(whole)
+        full = [p for p in rivals if p.get("last_name") and _says(lowered, _full(p))]
+        if len(full) == 1:
+            return None
+        return full or rivals or None
     matched = [
         person
         for person in people
@@ -99,6 +100,10 @@ def unclear(said: str, people: list[dict]) -> list[dict] | None:
         if len(could) != 1:
             return could or people
     return None
+
+
+def _says(lowered: str, name: str) -> bool:
+    return " ".join(WORDS.findall(name)).lower() in lowered
 
 
 def _rival(named: list[dict]) -> list[dict]:
