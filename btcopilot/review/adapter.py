@@ -57,6 +57,7 @@ __all__ = [
     "ToolName",
     "coded_in",
     "touched_by_turn",
+    "deltas_by_turn",
     "date_text",
     "diagram_of",
     "discussion_of",
@@ -119,6 +120,16 @@ def touched_by_turn(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[st
             ids = by_turn.setdefault(change.turn_id, [])
             if int(delta["item_id"]) not in ids:
                 ids.append(int(delta["item_id"]))
+    return by_turn
+
+
+def deltas_by_turn(diagram_id: int) -> dict[str, list[dict]]:
+    """Every delta each turn wrote on a record, oldest first, from the command
+    log."""
+    by_turn: dict[str, list[dict]] = {}
+    for change in Change.query.filter_by(diagram_id=diagram_id).order_by(Change.id):
+        if change.turn_id is not None:
+            by_turn.setdefault(change.turn_id, []).extend(change.deltas or [])
     return by_turn
 
 

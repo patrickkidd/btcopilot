@@ -224,10 +224,12 @@ def _said_by_turn(
 ) -> dict[int, list[dict]]:
     """What this coder typed about each turn, oldest first, each with the lines
     the scribe wrote from those words, in the record's own words so a later
-    correction to an event still reads as the record has it (R-0270), and the
+    correction to an event still reads as the record has it (R-0270), people
+    and pair-bonds first as when the words were sent (R-0883), and the
     events those lines are, whose codes' concept pages hang under them
     (R-0541)."""
     by_scribe_turn = adapter.touched_by_turn(diagram_id)
+    deltas = adapter.deltas_by_turn(diagram_id)
     by_turn: dict[int, list[dict]] = {}
     notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc())
     for note in notes:
@@ -235,7 +237,7 @@ def _said_by_turn(
         by_turn.setdefault(note.statement_id, []).append(
             {
                 "text": note.text,
-                "lines": scribe.written(data, event_ids),
+                "lines": scribe.lines_of(data, deltas.get(note.turn_id, [])),
                 "event_ids": event_ids,
             }
         )

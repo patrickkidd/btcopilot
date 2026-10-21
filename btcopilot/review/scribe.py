@@ -346,7 +346,12 @@ def _call(toolbox, call) -> tuple[str, str]:
 
 def edit_lines(diagram_id: int, deltas: list[dict]) -> list[str]:
     """What this scribe turn put in the record, one line each."""
-    data = adapter.record_of(adapter.diagram_of(diagram_id))
+    return lines_of(adapter.record_of(adapter.diagram_of(diagram_id)), deltas)
+
+
+def lines_of(data: dict, deltas: list[dict]) -> list[str]:
+    """The rows one scribe turn's deltas read as on the record as it stands,
+    the same when the statement is sent and when the thread is reopened."""
     events = {str(e.get("id")): e for e in data.get("events") or []}
     named = {
         str(event.get(key))

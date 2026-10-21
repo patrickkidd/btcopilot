@@ -96,6 +96,27 @@ def test_a_person_the_statement_added_has_a_row_before_the_event_naming_them(cod
     assert response.json["lines"] == ["James Cooper", "James Cooper · Moved to Ohio · Mar 1971"]
 
 
+def test_a_reopened_thread_shows_the_rows_the_send_showed(coder, cut, turns):
+    # R-0883, R-0270
+    coding = coded(
+        coder.user,
+        cut,
+        {"people": [{"id": 1, "name": "Marcus", "gender": "male"}], "lastItemId": 1},
+        done=False,
+    )
+    model = Scripted(
+        [("edit_person", {"name": "Delphine", "gender": "female"})],
+        [("edit_pair_bond", {"person_a": 1, "person_b": "{person}", "married": True})],
+        [("edit_person", {"name": "Corinne", "gender": "female", "parents": 3})],
+        [("edit_event", {"date_certainty": "certain", "kind": "noted", "title": "Moved to Ohio", "description": "moved", "date": "1971-03-01", "person": 1})],
+    )
+    sent = scribe(coder, coding, turns[0], model, "Marcus married Delphine, Corinne is theirs, he moved in 1971")
+    thread = coder.get(f"/review/codings/{coding.id}/thread").json
+    said = {turn["id"]: turn["said"] for turn in thread["turns"]}
+    assert said[turns[0].id][0]["lines"] == sent.json["lines"]
+    assert len(sent.json["lines"]) == 4
+
+
 def test_people_who_share_a_first_name_are_told_apart_on_buttons_and_rows():
     # R-0883
     data = {
