@@ -2891,7 +2891,8 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* what the scribe tried that the diagram did not take: the same row, muted
    (R-0883) */
 .bub .did.no { opacity: 0.55; }
-.bub .did.no::before { background: none; }
+.bub .did.no::before,
+.bub .did.ask::before { background: none; }
 /* the people the scribe could mean: the same row, one tap each */
 .bub .did.pick {
   display: block;
