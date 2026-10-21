@@ -36,6 +36,14 @@ CHOSEN = "\nThe person this is about: {line}\n"
 AGAIN = "Not entered yet: {refused} Correct the call and make it again."
 
 
+class Verb(enum.StrEnum):
+    """Whether a row's entry was made or changed, said as the chat's tool-call
+    lines say it: "Added ...", "Changed ..." (R-0883)."""
+
+    Add = "add"
+    Change = "change"
+
+
 class Pronoun(enum.StrEnum):
     """The words a coder points at a person with instead of naming them."""
 
@@ -231,7 +239,8 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     # (R-0302: no silent loss). The refusals' own words and the model's speak
     # of how the code works, so they stay in the log (R-0869, R-0883).
     data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
-    missed = [one for one in tried(data, kept) if one not in lines]
+    entered = {line["text"] for line in lines}
+    missed = [one for one in tried(data, kept) if one["text"] not in entered]
     if missed:
         _log.warning(f"Scribe left refused: {[c['refusal'] for c in kept if c['refusal']]}")
     return _result(lines, missed, made(toolbox.deltas), turn_id, [])
@@ -255,11 +264,11 @@ TRIED = (
 )
 
 
-def tried(data: dict, kept: list[dict]) -> list[str]:
+def tried(data: dict, kept: list[dict]) -> list[dict]:
     """What the scribe tried to enter and the diagram refused, in the words a
     written row has, leaving out a call a later one of the same kind entered
     after all."""
-    out: list[str] = []
+    out: list[dict] = []
     for at, call in enumerate(kept):
         if not call["refusal"] or call["name"] not in TRIED:
             continue
@@ -268,7 +277,8 @@ def tried(data: dict, kept: list[dict]) -> list[str]:
             not later["refusal"] and _subject(later) == key for later in kept[at + 1 :]
         ):
             continue
-        _add(out, _tried_words(data, call))
+        verb = Verb.Add if call["args"].get("id") is None else Verb.Change
+        _add(out, {"verb": verb, "text": _tried_words(data, call)})
     return out
 
 
@@ -344,12 +354,12 @@ def _call(toolbox, call) -> tuple[str, str]:
     return text, ""
 
 
-def edit_lines(diagram_id: int, deltas: list[dict]) -> list[str]:
+def edit_lines(diagram_id: int, deltas: list[dict]) -> list[dict]:
     """What this scribe turn put in the record, one line each."""
     return lines_of(adapter.record_of(adapter.diagram_of(diagram_id)), deltas)
 
 
-def lines_of(data: dict, deltas: list[dict]) -> list[str]:
+def lines_of(data: dict, deltas: list[dict]) -> list[dict]:
     """The rows one scribe turn's deltas read as on the record as it stands,
     the same when the statement is sent and when the thread is reopened."""
     events = {str(e.get("id")): e for e in data.get("events") or []}
@@ -361,14 +371,22 @@ def lines_of(data: dict, deltas: list[dict]) -> list[str]:
     }
     # A person the statement added has a row of its own, as an added person
     # does in the chat; one it only changed has one unless an event names them.
-    added = _added(deltas, "person")
-    return written(
+    added = {kind: _added(deltas, kind) for kind in ("person", "pair_bond", "event")}
+    rows = _rows(
         data,
         _touched(deltas, "event"),
-        [one for one in _touched(deltas, "person") if one in added or one not in named],
+        [
+            one
+            for one in _touched(deltas, "person")
+            if one in added["person"] or one not in named
+        ],
         _touched(deltas, "pair_bond"),
-        _added(deltas, "pair_bond"),
+        added["pair_bond"],
     )
+    return [
+        {"verb": Verb.Add if one in added[kind] else Verb.Change, "text": text}
+        for (kind, one), text in rows
+    ]
 
 
 #: The kinds that happen to two partners at once, which read as both names.
@@ -382,6 +400,14 @@ def written(
     first, then events: who it is about, what kind of thing it is, and when. A
     marriage reads as two names joined and the year; a person born into a bond
     reads as whose child they are (R-0326, R-0883)."""
+    return [text for _, text in _rows(data, event_ids, person_ids, bond_ids, bonds_added)]
+
+
+def _rows(
+    data: dict, event_ids, person_ids=(), bond_ids=(), bonds_added=()
+) -> list[tuple[tuple[str, str], str]]:
+    """Each row's words with the kind and id of the entry it is, so a row can
+    say whether its entry was made or changed."""
     people = {str(p.get("id")): p for p in data.get("people") or []}
     names = called(data)
     events = {str(e.get("id")): e for e in data.get("events") or []}
@@ -391,22 +417,27 @@ def written(
         for one in event_ids
         if str(one) in events and _plain(events[str(one)].get("kind")) in PAIR_KINDS
     }
-    out: list[str] = []
+    out: list[tuple[tuple[str, str], str]] = []
+
+    def row(kind: str, one, words: str):
+        if all(words != text for _, text in out):
+            out.append(((kind, str(one)), words))
+
     for one in person_ids:
         person = people.get(str(one))
         if person is not None:
-            _add(out, _person_words(person, names, bonds))
+            row("person", one, _person_words(person, names, bonds))
     for one in bond_ids:
         bond = bonds.get(str(one))
         if bond is None:
             continue
         pair = _pair_of(bond.get("person_a"), bond.get("person_b"))
         if str(one) in bonds_added or pair not in said:
-            _add(out, _bond_words(bond, names, events))
+            row("pair_bond", one, _bond_words(bond, names, events))
     for one in event_ids:
         event = events.get(str(one))
         if event is not None:
-            _add(out, _event_words(event, names))
+            row("event", one, _event_words(event, names))
     return out
 
 
@@ -513,7 +544,7 @@ def _bond_words(bond: dict, names: dict, events: dict) -> str:
     return f"{_both(bond, names)} · {word} · {when}"
 
 
-def _add(out: list[str], line: str):
+def _add(out: list, line):
     if line not in out:
         out.append(line)
 

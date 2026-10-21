@@ -8,6 +8,8 @@ import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { toast } from "./toast";
 import { listButton, PLAY_MARK, tok } from "./tokens";
+import { did, html } from "./tools";
+import { waiting } from "./chat";
 import { WIDE } from "./pro";
 import {
   emptyTimeline,
@@ -15,6 +17,7 @@ import {
   Touch,
   type CodingThread,
   type CodingTurn,
+  type ScribeLine,
   type Scribed,
   type Timeline,
   type TimelineEvent,
@@ -62,6 +65,13 @@ export const NOT_SAVED = "not saved, try again";
 /** A row for something that is not in the diagram, muted. */
 const unsaved = (words: string) => `<div class="did no">${esc(words)}</div>`;
 
+/** What a refused row says after what it tried to enter (R-0883). */
+const REFUSED = "Not saved";
+
+/** One row, verb first, read the way the chat reads a tool call (R-0883). */
+const row = (line: ScribeLine, refusal: string | null = null) =>
+  `<div class="did${refusal ? " no" : ""}">${html(did(line.verb, [{ name: line.text }], refusal))}</div>`;
+
 /** What the scribe did, as rows the way the chat shows tool calls: one per
  * entry that went in, one muted per entry the diagram refused, or one button
  * per person when it cannot tell who is meant. Never a sentence (R-0883). */
@@ -74,8 +84,8 @@ export function scribedRows(written: Scribed): string {
       )
       .join("");
   const rows = [
-    ...written.lines.map((line) => `<div class="did">${esc(line)}</div>`),
-    ...written.refused.map((line) => unsaved(`${line} · not saved`)),
+    ...written.lines.map((line) => row(line)),
+    ...written.refused.map((line) => row(line, REFUSED)),
   ];
   return rows.join("") || unsaved("nothing saved");
 }
@@ -400,6 +410,9 @@ export class Coding {
     const side = this.side(turn);
     this.picture.untouch();
     this.sending = true;
+    // the chat's own dots, where the rows will be, until the answer lands
+    const dots = waiting(` sub${side}`);
+    this.after(turn, dots, turn);
     let written;
     try {
       written = await api.scribe(thread.coding_id, turn, said, person);
@@ -410,6 +423,7 @@ export class Coding {
       return;
     } finally {
       this.sending = false;
+      dots.remove();
     }
     const events = written.made
       .filter((one) => one.kind === ItemKind.Event)

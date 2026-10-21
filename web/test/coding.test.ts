@@ -74,7 +74,7 @@ describe("the concept pages under what the scribe wrote", () => {
             client: true,
             text: "She stopped sleeping",
             above: false,
-            said: [{ text: "mom anxious", lines: ["+ Mom · shift · 1971"], event_ids: [7] }],
+            said: [{ text: "mom anxious", lines: [{ verb: "add", text: "Mom · shift · 1971" }], event_ids: [7] }],
           },
         ],
       },
@@ -106,7 +106,7 @@ describe("the concept pages under what the scribe wrote", () => {
   });
 
   // R-0883
-  it("rebuilds one statement's rows in one bubble, and a statement that saved nothing as its muted row", () => {
+  it("rebuilds one statement's rows in one bubble, verb first, and a statement that saved nothing as its muted row", () => {
     const nodes: { innerHTML: string; className: string; dataset: Record<string, string> }[] = [];
     vi.stubGlobal("document", {
       createElement: () => ({ dataset: {}, innerHTML: "", className: "" }),
@@ -121,7 +121,14 @@ describe("the concept pages under what the scribe wrote", () => {
             text: "She married Tom",
             above: false,
             said: [
-              { text: "Ann married Tom", lines: ["Tom", "Ann & Tom · Married · 1970"], event_ids: [7] },
+              {
+                text: "Ann married Tom",
+                lines: [
+                  { verb: "add", text: "Tom" },
+                  { verb: "change", text: "Ann & Tom · Married · 1970" },
+                ],
+                event_ids: [7],
+              },
               { text: "she left", lines: [], event_ids: [] },
             ],
           },
@@ -144,7 +151,8 @@ describe("the concept pages under what the scribe wrote", () => {
     });
     const rows = nodes.filter((node) => node.className.startsWith("bub coach sub"));
     expect(rows.map((node) => node.innerHTML)).toEqual([
-      '<div class="did">Tom</div><div class="did">Ann &amp; Tom · Married · 1970</div>',
+      '<div class="did">Added <em>Tom</em></div>' +
+        '<div class="did">Changed <em>Ann &amp; Tom · Married · 1970</em></div>',
       '<div class="did no">nothing saved</div>',
     ]);
     expect(rows[0].dataset.events).toBe("7");
@@ -155,13 +163,13 @@ describe("what a coder reads when a statement did not go in", () => {
   // R-0869, R-0883
   it("is one muted row whatever the server answered, never its words", async () => {
     vi.stubGlobal("document", {
-      createElement: () => ({ className: "", innerHTML: "", dataset: {} }),
+      createElement: () => ({ className: "", innerHTML: "", dataset: {}, remove() {} }),
     });
-    const drawn: { innerHTML: string }[] = [];
+    const drawn: { innerHTML: string; className: string }[] = [];
     const screen = Object.assign(Object.create(Coding.prototype), {
       thread: { coding_id: 9, turns: [{ id: 3, client: true }] },
       picture: { untouch() {} },
-      after: (_turn: number, node: { innerHTML: string }) => drawn.push(node),
+      after: (_turn: number, node: { innerHTML: string; className: string }) => drawn.push(node),
       refresh: async () => {},
     });
     const scribe = vi.mocked(api.scribe);
@@ -177,7 +185,7 @@ describe("what a coder reads when a statement did not go in", () => {
     vi.stubGlobal("window", {
       BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
     });
-    expect(drawn.map((node) => node.innerHTML)).toEqual(
+    expect(drawn.filter((node) => !node.className.includes("typing")).map((node) => node.innerHTML)).toEqual(
       Array(3).fill('<div class="did no">not saved, try again</div>'),
     );
   });
@@ -188,13 +196,17 @@ describe("the rows under what the coder said", () => {
     ({ lines: [], refused: [], choices: [], made: [], turn_id: "t", ...fields }) as never;
 
   // R-0883
-  it("draws a row for each entry that went in and a muted one for each refused", () => {
+  it("draws a row for each entry that went in and a muted one for each refused, verb first as the chat does", () => {
     const html = scribedRows(
-      scribed({ lines: ["James Cooper"], refused: ["Marcus · could not sleep · Jan 2010"] }),
+      scribed({
+        lines: [{ verb: "add", text: "James Cooper" }, { verb: "change", text: "Marcus" }],
+        refused: [{ verb: "add", text: "Marcus · could not sleep · Jan 2010" }],
+      }),
     );
     expect(html).toBe(
-      '<div class="did">James Cooper</div>' +
-        '<div class="did no">Marcus · could not sleep · Jan 2010 · not saved</div>',
+      '<div class="did">Added <em>James Cooper</em></div>' +
+        '<div class="did">Changed <em>Marcus</em></div>' +
+        '<div class="did no">Tried to add <em>Marcus · could not sleep · Jan 2010</em>. Not saved</div>',
     );
   });
 
@@ -229,25 +241,66 @@ describe("the rows under what the coder said", () => {
     scribe.mockResolvedValueOnce(
       scribed({ choices: [{ id: 1, name: "Marcus Smith" }, { id: 2, name: "Marcus Jones" }] }),
     );
-    scribe.mockResolvedValueOnce(scribed({ lines: ["Marcus Jones · Could not sleep · Jan 2010"] }));
+    scribe.mockResolvedValueOnce(
+      scribed({ lines: [{ verb: "add", text: "Marcus Jones · Could not sleep · Jan 2010" }] }),
+    );
     const screen = Object.assign(Object.create(Coding.prototype), {
       thread: { coding_id: 9, turns: [{ id: 3, client: true }] },
       picture: { untouch() {} },
       after: (_turn: number, node: Node) => drawn.push(node),
     });
     await screen.scribe(3, "Marcus could not sleep", null);
-    expect(drawn[0].innerHTML).toBe(
+    const answers = () => drawn.filter((node) => !node.className.includes("typing"));
+    expect(answers()[0].innerHTML).toBe(
       '<button class="did pick" type="button" data-person="1">Marcus Smith</button>' +
         '<button class="did pick" type="button" data-person="2">Marcus Jones</button>',
     );
-    drawn[0].click!({ target: { closest: () => ({ dataset: { person: "2" } }) } });
-    await vi.waitFor(() => expect(drawn).toHaveLength(2));
+    answers()[0].click!({ target: { closest: () => ({ dataset: { person: "2" } }) } });
+    await vi.waitFor(() => expect(answers()).toHaveLength(2));
     vi.unstubAllGlobals();
     vi.stubGlobal("window", {
       BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
     });
     expect(scribe.mock.lastCall).toEqual([9, 3, "Marcus could not sleep", 2]);
-    expect(drawn[1].innerHTML).toBe('<div class="did">Marcus Jones · Could not sleep · Jan 2010</div>');
+    expect(answers()[1].innerHTML).toBe(
+      '<div class="did">Added <em>Marcus Jones · Could not sleep · Jan 2010</em></div>',
+    );
+  });
+
+  // R-0883, R-0636
+  it("shows the chat's three dots where the rows will be from the send until the answer lands", async () => {
+    type Node = { className: string; innerHTML: string; dataset: Record<string, string>; gone?: boolean };
+    vi.stubGlobal("document", {
+      createElement: (): Node => ({
+        className: "",
+        innerHTML: "",
+        dataset: {},
+        addEventListener() {},
+        remove(this: Node) {
+          this.gone = true;
+        },
+      } as Node),
+    });
+    let answer!: (value: never) => void;
+    vi.mocked(api.scribe).mockReturnValueOnce(new Promise((done) => (answer = done)));
+    const drawn: Node[] = [];
+    const screen = Object.assign(Object.create(Coding.prototype), {
+      thread: { coding_id: 9, turns: [{ id: 3, client: false }] },
+      picture: { untouch() {} },
+      after: (_turn: number, node: Node) => drawn.push(node),
+    });
+    const sent = screen.scribe(3, "Marcus could not sleep", null);
+    expect(drawn.map((node) => node.className)).toEqual(["bub coach typing wait sub left"]);
+    expect(drawn[0].innerHTML).toBe('<span class="words"></span>');
+    expect(drawn[0].gone).toBeUndefined();
+    answer(scribed({ lines: [{ verb: "add", text: "Marcus" }] }));
+    await sent;
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    expect(drawn[0].gone).toBe(true);
+    expect(drawn[1].innerHTML).toBe('<div class="did">Added <em>Marcus</em></div>');
   });
 });
 

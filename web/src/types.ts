@@ -797,13 +797,37 @@ export interface Coding {
   done_at: string | null;
 }
 
+/** Each verb as a refused call tries it, and as a call that worked says it. */
+export enum Verb {
+  Look = "look at",
+  Show = "show",
+  Remove = "remove",
+  Put = "put",
+  Add = "add",
+  Change = "change",
+  Keep = "keep",
+  Close = "close",
+  LetGo = "let go of",
+  Note = "note",
+  TakeBack = "take back",
+  Open = "open",
+  Join = "join",
+}
+
+/** One row the scribe wrote: whether its entry was made or changed, and the
+ * diagram's own words for it (R-0883). */
+export interface ScribeLine {
+  verb: Verb;
+  text: string;
+}
+
 /** One turn of the transcript, with what this coder has already written from
  * it. Nobody else's coding is ever here (R-0242). */
 /** One thing the coder typed about a turn, and the edit lines the scribe wrote
  * from it, which sit beneath those words. */
 export interface Said {
   text: string;
-  lines: string[];
+  lines: ScribeLine[];
   /** The record events those lines are. */
   event_ids: number[];
 }
@@ -845,8 +869,8 @@ export interface CodingThread {
  * the diagram refused, or the people to tap one of when it cannot tell which
  * person is meant (R-0883). */
 export interface Scribed {
-  lines: string[];
-  refused: string[];
+  lines: ScribeLine[];
+  refused: ScribeLine[];
   choices: { id: number; name: string }[];
   /** What the record now holds, so the picture lights it as the line lands. */
   made: { kind: ItemKind; id: string }[];
