@@ -1,5 +1,5 @@
 import { expect, test } from "./fixtures";
-import { addForm, boxOf, inside, openList, pinned, stateFor, steady, type Key } from "./setup";
+import { addForm, boxOf, inside, openList, readOnly, stateFor, steady, type Key } from "./setup";
 
 /** What the resting picture looks like on each shape of record, and what a tap
  * on it does. Goldens, so a change to the drawing has to be looked at.
@@ -335,31 +335,43 @@ test.describe("the coach's words drive the picture", () => {
   });
 });
 
-test.describe("an event added by hand", () => {
+test.describe("an event added to the diagram", () => {
   test.use({ storageState: stateFor("editable") });
 
-  // R-0055
-  test("is on the picture as soon as it is saved", async ({ page }, info) => {
+  // R-0055, R-0887
+  test("is on the picture once it is written, and the form stays read only", async ({ page }, info) => {
     await settle(page);
     const before = await page.locator("#view circle.dot").count();
+    // the forms are read only (R-0887), so the event is written the way the
+    // coach's own writes reach the record: through the record's events API
     await openList(page);
     await addForm(page, "event");
-    const editor = page.locator("#add-sheet .editor");
-    // a move is a noted event; a new event opens as a shift, which is refused
-    // until something in it moves
-    await editor.locator('.segs[data-name="kind"] .seg[data-value="noted"]').click();
-    // a noted event is about someone: the record refuses one about nobody (R-0593)
-    await editor.locator('.segs[data-name="person"] .seg:not([data-value=""])').first().click();
+    await readOnly(page.locator("#add-sheet .editor"));
     // each project adds its own, a month apart: the record keeps what an
     // earlier project added, and refuses a second noted event on the same day
     const words = `Moved back (${info.project.name})`;
     const month = 1 + info.config.projects.findIndex((p) => p.name === info.project.name);
-    await editor.locator('.f[data-name="title"]').fill(words);
-    await editor.locator('.f[data-name="description"]').fill("Moved back in with her parents");
-    await editor.locator('.f[data-name="dateTime"]').fill(`2024-${String(month).padStart(2, "0")}-01`);
-    await editor.locator(".save").click();
-    await expect(page.locator("#menu-body")).toContainText(words);
-    if (!(await pinned(page))) await page.locator("#menu-close").click();
+    const status = await page.evaluate(
+      async ({ words, month }) => {
+        const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')!.content;
+        const timeline = await (await fetch("/app/timeline")).json();
+        const response = await fetch("/app/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrf },
+          body: JSON.stringify({
+            kind: "noted",
+            person: timeline.people[0].id,
+            title: words,
+            description: "Moved back in with her parents",
+            dateTime: `2024-${String(month).padStart(2, "0")}-01`,
+          }),
+        });
+        return response.status;
+      },
+      { words, month },
+    );
+    expect(status).toBeLessThan(300);
+    await settle(page);
     await expect(page.locator("#view circle.dot")).toHaveCount(before + 1);
   });
 });

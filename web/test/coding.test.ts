@@ -12,7 +12,8 @@ vi.stubGlobal("window", {
 const { Coding, scribedRows, writtenConcepts } = await import("../src/coding");
 const api = await import("../src/api");
 const { Failed } = api;
-const { HAND_EDITS, Menu } = await import("../src/menu");
+const { Menu } = await import("../src/menu");
+const { HAND_EDITS } = await import("../src/editor");
 const { standInForm } = await import("./standin");
 
 /** The sheet that asks a coder to finish, drawn by the screen's own code on
@@ -451,20 +452,6 @@ describe("the drawer's forms", () => {
       expect(form.fields.every((field) => field.readOnly)).toBe(true);
       expect(form.picks.every((pick) => pick.disabled)).toBe(true);
     }
-  });
-
-  // R-0887
-  it("never open a form for someone or something new", () => {
-    const getElementById = vi.fn();
-    vi.stubGlobal("document", { getElementById });
-    menu({}).add();
-    vi.unstubAllGlobals();
-    vi.stubGlobal("window", {
-      BOOTSTRAP: {
-        user: { username: "c", admin: false, pro: false, coder: true },
-      },
-    });
-    expect(getElementById).not.toHaveBeenCalled();
   });
 
   // R-0271

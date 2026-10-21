@@ -1,6 +1,6 @@
 import { expect, test } from "./fixtures";
 import { CASES, drawings, freeze } from "./drawings";
-import { PARKED, addForm, inside, lists, openList, stateFor } from "./setup";
+import { PARKED, READ_ONLY, addForm, inside, lists, openList, readOnly, stateFor } from "./setup";
 
 /** The move language, one drawing per move: each draws its people, named, inside
  * its cell. Pixels are not compared here (R-0416).
@@ -67,13 +67,14 @@ test.describe("the timeline behind the menu", () => {
     await inside(page.locator("#menu-body .row").first(), lists(page), true);
   });
 
-  // R-0174
+  // R-0174, R-0887
   test("the editor's fields, text centred in the box", async ({ page }) => {
     await page.goto("/app/");
     await openList(page);
     await addForm(page, "event");
     await expect(page.locator(".editor .segs").first()).toBeVisible();
     await inside(page.locator(".editor").first(), page.locator("#add-sheet"), true);
+    await readOnly(page.locator("#add-sheet .editor"));
   });
 });
 
@@ -81,6 +82,8 @@ test.describe("the timeline behind the menu", () => {
  * kinds `EventForm.qml` shows them for. These assert behaviour, not pixels. */
 test.describe("the editor's fields by kind", () => {
   test.use({ storageState: stateFor("editable") });
+  // each of these picks a kind or a relationship on the form, which is locked
+  test.skip(true, READ_ONLY);
 
   const openEditor = async (page: import("@playwright/test").Page) => {
     await page.goto("/app/");

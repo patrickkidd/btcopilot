@@ -343,4 +343,16 @@ export default async function setup() {
 /** Why a test of the event form opened from an event's row is skipped: the
  * form is parked, not deleted, while chat-only editing is tried (Patrick,
  * 2026-10-01). Take the skip out when the form comes back. */
+export const READ_ONLY =
+  "the forms are read only everywhere on Patrick's 2026-10-21 decision that every edit goes through the coach (R-0887)";
+
+/** A form while hand edits are off: nothing to save or delete, nothing to type. */
+export async function readOnly(form: Locator): Promise<void> {
+  await expect(form).toBeVisible();
+  await expect(form.locator(".save, .del")).toHaveCount(0);
+  for (const field of await form.locator("input.f, textarea.f").all())
+    await expect(field).not.toBeEditable();
+  await expect(form.locator(".seg:not([disabled])")).toHaveCount(0);
+}
+
 export const PARKED = "the event form is parked on Patrick's 2026-10-01 decision to try chat-only editing";

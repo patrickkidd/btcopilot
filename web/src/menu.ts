@@ -1,6 +1,6 @@
 import { eventDetail, personDetail, type DetailHooks } from "./detail";
 import { closeX, el, flash, slideOver } from "./dom";
-import { lock, openEditor, openPersonEditor } from "./editor";
+import { HAND_EDITS, lock, openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
 import { eventDivider, eventRow, fullName, personRow, sections } from "./rows";
 import type { Questions } from "./questions";
@@ -32,11 +32,6 @@ function byBirth(a: Person, b: Person): number {
 const byName = (a: Person, b: Person) => a.name.localeCompare(b.name);
 
 const ADD = "add-sheet";
-
-/** Off for now: every change to people, events and pair-bonds goes through the
- * coach, so the prompt is tuned on data no hand edit has mixed into; the forms
- * open read only everywhere (R-0887). On brings Save, Delete and adding back. */
-export const HAND_EDITS = false;
 
 /** The form for something new, one for the whole app: it comes up over the
  * lists the way they came up over the chat, full screen, with what it makes
@@ -91,10 +86,7 @@ export class Menu {
     return HAND_EDITS ? form : lock(form);
   }
 
-  /** Nothing new is made by hand while hand edits are off: the address that
-   * adds lands on the list. */
   add(): void {
-    if (!HAND_EDITS) return;
     this.editing = null;
     this.render();
     const people = this.tab === Tab.People;
