@@ -1,7 +1,4 @@
-"""The scribe enters the coder's statement as given: a birth names the person
-born as its child, an event already entered is changed rather than added again,
-and the coder's words are never weighed against the chat line they code
-(R-0884).
+"""Live checks of what the scribe writes for a coder's statement.
 
 Each case is one of the faults seen on the walk sandbox on 2026-10-21, with
 invented people.
