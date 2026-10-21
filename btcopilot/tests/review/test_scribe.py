@@ -128,22 +128,25 @@ def test_people_who_share_a_first_name_are_told_apart_on_buttons_and_rows():
             {"id": 5, "name": "Ada"},
             {"id": 6, "name": "Tom", "last_name": "Hale"},
             {"id": 7, "name": "Ruth", "last_name": "Hale"},
+            {"id": 12, "name": "Ada"},
         ],
-        "pair_bonds": [{"id": 8, "person_a": 6, "person_b": 5}],
+        "pair_bonds": [{"id": 8, "person_a": 6, "person_b": 5}, {"id": 13, "person_a": 4, "person_b": 12}],
         "events": [
             {"id": 9, "kind": "birth", "child": 1, "dateTime": "1985-04-02"},
             {"id": 10, "kind": "death", "person": 3, "dateTime": "2011-02-01"},
             {"id": 11, "kind": "death", "person": 6, "dateTime": "2012-02-01"},
+            {"id": 14, "kind": "birth", "child": 4, "dateTime": "1950-01-01"},
         ],
     }
     assert scribe_module.called(data, full=True) == {
         "1": "Monique Larsen · b. 1985",
         "2": "Monique Larsen",
         "3": "Monique Dubois",
-        "4": "Ada",
-        "5": "Ada · partner of Tom Hale",
+        "4": "Ada · b. 1950",
+        "5": "Ada · partner of Tom",
         "6": "Tom Hale",
         "7": "Ruth Hale",
+        "12": "Ada",
     }
     assert written(data, ["10", "11"]) == [
         "Monique Dubois · Death · Feb 2011",

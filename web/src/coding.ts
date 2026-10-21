@@ -467,20 +467,13 @@ export class Coding {
             turn.id,
           ),
         );
-        said.lines.forEach((line, at) =>
-          this.list.append(
-            this.tagged(
-              wrote(
-                el(
-                  "div",
-                  `bub coach sub${this.side(turn.id)}`,
-                  `<div class="did">${esc(line)}</div>`,
-                ),
-                // the pages hang under the last of the lines
-                at === said.lines.length - 1 ? said.event_ids : [],
-              ),
-              turn.id,
-            ),
+        // One statement's rows share one bubble, as they did when it was
+        // sent; refused rows are not kept, so only what went in comes back.
+        const rows = scribedRows({ lines: said.lines, refused: [], choices: [], made: [], turn_id: "" });
+        this.list.append(
+          this.tagged(
+            wrote(el("div", `bub coach sub${this.side(turn.id)}`, rows), said.event_ids),
+            turn.id,
           ),
         );
       }

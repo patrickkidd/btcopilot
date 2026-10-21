@@ -104,6 +104,51 @@ describe("the concept pages under what the scribe wrote", () => {
     const line = nodes.find((node) => node.innerHTML.includes("Mom"));
     expect(line?.innerHTML).toContain('href="/app/theory/anxiety"');
   });
+
+  // R-0883
+  it("rebuilds one statement's rows in one bubble, and a statement that saved nothing as its muted row", () => {
+    const nodes: { innerHTML: string; className: string; dataset: Record<string, string> }[] = [];
+    vi.stubGlobal("document", {
+      createElement: () => ({ dataset: {}, innerHTML: "", className: "" }),
+    });
+    const screen = Object.assign(Object.create(Coding.prototype), {
+      thread: {
+        agreed: null,
+        turns: [
+          {
+            id: 3,
+            client: true,
+            text: "She married Tom",
+            above: false,
+            said: [
+              { text: "Ann married Tom", lines: ["Tom", "Ann & Tom · Married · 1970"], event_ids: [7] },
+              { text: "she left", lines: [], event_ids: [] },
+            ],
+          },
+        ],
+      },
+      list: {
+        set innerHTML(_: string) {
+          nodes.length = 0;
+        },
+        append: (node: (typeof nodes)[number]) => nodes.push(node),
+      },
+      cutline: () => ({ dataset: {}, innerHTML: "", className: "" }),
+      paint: () => {},
+      toEnd: () => {},
+    });
+    screen.render();
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    const rows = nodes.filter((node) => node.className.startsWith("bub coach sub"));
+    expect(rows.map((node) => node.innerHTML)).toEqual([
+      '<div class="did">Tom</div><div class="did">Ann &amp; Tom · Married · 1970</div>',
+      '<div class="did no">nothing saved</div>',
+    ]);
+    expect(rows[0].dataset.events).toBe("7");
+  });
 });
 
 describe("what a coder reads when a statement did not go in", () => {

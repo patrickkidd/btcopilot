@@ -412,25 +412,56 @@ def written(
 
 def called(data: dict, full: bool = False) -> dict[str, str]:
     """What each person is called on a row: the first name, or the whole name
-    where two people share a first name, and then their birth year, or else a
-    parent or partner, where the whole names are the same too (R-0883)."""
+    where two people share a first name, and then a parent or partner, or else
+    their birth year, where the whole names are the same too (R-0883)."""
     people = data.get("people") or []
     first = Counter(_name(p).lower() for p in people)
     out = {
         str(p.get("id")): _full(p) if full or first[_name(p).lower()] > 1 else _name(p)
         for p in people
     }
+    whole = dict(out)
     same = Counter(name.lower() for name in out.values())
     for person in people:
         one = str(person.get("id"))
-        apart = _apart(person, data) if same[out[one].lower()] > 1 else ""
-        out[one] = f"{out[one]} · {apart}" if apart else out[one]
+        apart = _linked(person, data, first) if same[whole[one].lower()] > 1 else ""
+        out[one] = f"{whole[one]} · {apart}" if apart else whole[one]
+    # A link that reads the same for both is no help: the birth year is.
+    still = Counter(name.lower() for name in out.values())
+    for person in people:
+        one = str(person.get("id"))
+        born = _born(person, data) if still[out[one].lower()] > 1 else ""
+        out[one] = f"{whole[one]} · {born}" if born else out[one]
     return out
 
 
-def _apart(person: dict, data: dict) -> str:
-    """What tells one of two people with the same whole name from the other."""
+def _linked(person: dict, data: dict, first: Counter) -> str:
+    """A parent or partner that tells one of two people with the same whole
+    name from the other, named so it reads apart itself: by a first name no one
+    else has, or else in full; one whose whole name another person has too
+    tells nothing."""
     people = {str(p.get("id")): p for p in data.get("people") or []}
+    wholes = Counter(_full(p).lower() for p in people.values())
+    one = str(person.get("id"))
+    links = []
+    for bond in data.get("pair_bonds") or []:
+        pair = (str(bond.get("person_a")), str(bond.get("person_b")))
+        if str(bond.get("id")) == str(person.get("parents")):
+            word = CHILD_WORDS.get(_plain(person.get("gender")), "child")
+            links += [(word, people[i]) for i in pair if i in people]
+        elif one in pair:
+            other = pair[1] if pair[0] == one else pair[0]
+            links += [("partner", people[other])] if other in people else []
+    for word, them in links:
+        if first[_name(them).lower()] == 1:
+            return f"{word} of {_name(them)}"
+    for word, them in links:
+        if wholes[_full(them).lower()] == 1:
+            return f"{word} of {_full(them)}"
+    return ""
+
+
+def _born(person: dict, data: dict) -> str:
     one = str(person.get("id"))
     for event in data.get("events") or []:
         about = event.get("child") if event.get("child") is not None else event.get("person")
@@ -438,14 +469,6 @@ def _apart(person: dict, data: dict) -> str:
             year = (adapter.date_text(event.get("dateTime")) or "")[:4]
             if year:
                 return f"b. {year}"
-    for bond in data.get("pair_bonds") or []:
-        pair = (str(bond.get("person_a")), str(bond.get("person_b")))
-        if str(bond.get("id")) == str(person.get("parents")):
-            both = " & ".join(_full(people.get(i, {})) for i in pair)
-            return f"{CHILD_WORDS.get(_plain(person.get('gender')), 'child')} of {both}"
-        if one in pair:
-            other = pair[1] if pair[0] == one else pair[0]
-            return f"partner of {_full(people.get(other, {}))}"
     return ""
 
 
