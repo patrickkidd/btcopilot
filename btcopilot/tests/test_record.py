@@ -301,7 +301,7 @@ def test_the_write_refuses_a_birth_hung_on_the_person_instead_of_the_child(subsc
     # R-0456
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Marguerite"}]})
 
-    with pytest.raises(record.Invalid, match="set child, not person"):
+    with pytest.raises(record.Invalid, match="a birth names the person born as its child: set child to person 1 instead of person"):
         record.apply(
             diagram.id,
             [

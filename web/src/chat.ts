@@ -110,6 +110,10 @@ const VOTE_FIRST = "Vote first, then type";
 /** Under a message sent while the coach is still replying (R-0636). */
 const HELD = "Sends when the coach finishes";
 
+/** The three dots where an answer will appear, until it does (R-0636). */
+export const waiting = (cls = "", who = ""): HTMLElement =>
+  el("div", `bub ${Role.Coach} typing wait${cls}`, `${who}<span class="words"></span>`);
+
 /** One thing the coach did, as a plain line above its words. */
 const did = (line: Line) => el("div", "did", html(line));
 
@@ -658,11 +662,7 @@ export class Chat {
    * words arrive. */
   busy(on: boolean): void {
     if (on && !this.typing) {
-      this.typing = el(
-        "div",
-        `bub ${Role.Coach} typing wait`,
-        `<div class="who">Coach</div><span class="words"></span>`,
-      );
+      this.typing = waiting("", `<div class="who">Coach</div>`);
       this.list.append(this.typing);
       this.scroll();
     } else if (!on && this.typing?.classList.contains("wait")) {

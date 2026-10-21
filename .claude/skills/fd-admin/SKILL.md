@@ -380,11 +380,12 @@ What shows the coach or the app needing tuning.
 
 ### `flask admin observations list`
 
-Every row, oldest first.
+Every row of the app's own turns, oldest first; with --scribe, the review scribe's instead (R-0871).
 
 | Argument | What it is |
 |---|---|
 | `--diagram` | Only one record's rows. |
+| `--scribe` | The review scribe's rows instead of the app's own. |
 | `--kind` | Only one kind of row. |
 | `--json` | Print JSON, not a table. |
 

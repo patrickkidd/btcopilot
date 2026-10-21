@@ -3,6 +3,7 @@ import { Feature, tap } from "./track";
 import { conceptLinks, conceptsOf } from "./concepts";
 import { esc, el, stepBtn, type Title } from "./dom";
 import {
+  HAND_EDITS,
   openBondEditor,
   openEditor,
   openPersonEditor,
@@ -643,6 +644,12 @@ export class Ballot {
               undefined,
               (body) => void this.own(body),
             );
+    // The person form's parents and pair-bond pickers write to the diagram
+    // itself, not to the vote, so they stay shut while hand edits are off.
+    if (!HAND_EDITS)
+      editor
+        .querySelectorAll<HTMLButtonElement>(".parents, .bondrow")
+        .forEach((one) => (one.disabled = true));
     editor.querySelector(".save")!.textContent = "save as my opinion";
     editor
       .querySelector(".acts")

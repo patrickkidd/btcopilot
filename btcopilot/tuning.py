@@ -13,9 +13,11 @@ import re
 from btcopilot.extensions import db
 from btcopilot.models import (
     Diagram,
+    ModelCall,
     Observation,
     ObservationKind,
     ObservationReject,
+    Purpose,
     User,
 )
 
@@ -40,13 +42,22 @@ def key(kind: str, said: str) -> str:
     return hashlib.md5(f"{kind}:{said}".encode()).hexdigest()[:8]
 
 
+def coach() -> object:
+    """Observations of the app's own turns: a scribe's turn on a coder's
+    record is the review's, not a coach fault, and is counted apart (R-0871)."""
+    scribed = db.session.query(ModelCall.turn_id).filter(ModelCall.purpose == Purpose.Scribe)
+    return Observation.turn_id.notin_(scribed)
+
+
 def groups() -> dict[str, dict]:
     """Every group from accounts that are not test accounts, rejected or not."""
     found: dict[str, dict] = {}
     rows = (
         Observation.query.join(Diagram, Diagram.id == Observation.diagram_id)
         .join(User, User.id == Diagram.user_id)
-        .filter(User.username.notlike(TEST_ACCOUNTS), Observation.kind.notin_(MEASURES))
+        .filter(
+            User.username.notlike(TEST_ACCOUNTS), Observation.kind.notin_(MEASURES), coach()
+        )
         .order_by(Observation.created_at)
     )
     for row in rows:

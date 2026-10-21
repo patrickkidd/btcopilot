@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "./fixtures";
-import { NO_LIST, PARKED, addForm, lists, openList, pinned, stateFor } from "./setup";
+import { NO_LIST, PARKED, addForm, lists, openList, pinned, readOnly, stateFor } from "./setup";
 
 /** The list behind the picture, and the button that opens it.
  *
@@ -278,6 +278,12 @@ test.describe("the list views and their editors", () => {
     await page.locator("#tab-people").click();
     await expect(page.locator("#menu-body .row").first()).toContainText("Ada");
     await expect(lists(page)).not.toContainText(/chat/i);
+  });
+
+  // R-0887
+  test("the person form opens read only", async ({ page }) => {
+    await personEditor(page);
+    await readOnly(page.locator("#add-sheet .editor"));
   });
 
   // R-0200

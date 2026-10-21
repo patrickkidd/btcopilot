@@ -1,6 +1,6 @@
 import { eventDetail, personDetail, type DetailHooks } from "./detail";
 import { closeX, el, flash, slideOver } from "./dom";
-import { lock, openEditor, openPersonEditor } from "./editor";
+import { HAND_EDITS, lock, openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
 import { eventDivider, eventRow, fullName, personRow, sections } from "./rows";
 import type { Questions } from "./questions";
@@ -78,16 +78,12 @@ export class Menu {
      * record its own coding is of. */
     private diagramId: () => number | undefined,
     /** Where a tapped row opens the read-only detail card instead of the form:
-     * the chat app's own drawer. The coding screen passes none, and keeps the
-     * forms, since coders change the record they code by hand. */
+     * the chat app's own drawer. The coding screen passes none. */
     private detail?: Pick<DetailHooks, "talk" | "cluster" | "said">,
-    /** On the coding screen, whether the coding is submitted: its forms are
-     * then there to read, never to write (R-0869). */
-    private submitted: () => boolean = () => false,
   ) {}
 
   private held(form: HTMLElement): HTMLElement {
-    return this.submitted() ? lock(form) : form;
+    return HAND_EDITS ? form : lock(form);
   }
 
   add(): void {

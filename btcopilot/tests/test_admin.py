@@ -161,6 +161,40 @@ def test_a_rejected_group_leaves_the_queue_and_stays_off(run, test_user):
     ]
 
 
+def called(test_user, turn_id: str, purpose: Purpose):
+    db.session.add(
+        ModelCall(
+            user_id=test_user.id,
+            diagram_id=test_user.free_diagram_id,
+            turn_id=turn_id,
+            purpose=purpose,
+            model="gemini-3.8-flash",
+            input_tokens=1,
+            output_tokens=1,
+            cache_creation_tokens=0,
+            cache_read_tokens=0,
+            cost_usd=0,
+            duration_ms=1,
+            tool_calls=1,
+        )
+    )
+
+
+def test_a_scribe_refusal_is_not_counted_as_a_coach_fault(run, test_user):
+    # R-0871, R-0517
+    called(test_user, "coach-turn", Purpose.Coach)
+    called(test_user, "scribe-turn", Purpose.Scribe)
+    refusal(test_user, "coach-turn", "edit_event: No person 12 in the record")
+    refusal(test_user, "scribe-turn", "edit_event: A birth's parents must be the child's own parents.")
+    db.session.commit()
+    queued = rows(run("observations", "queue", "--json"))
+    assert [q["example_turn"] for q in queued] == ["coach-turn"]
+    listed = rows(run("observations", "list", "--json"))
+    assert [one["turn_id"] for one in listed] == ["coach-turn"]
+    scribed = rows(run("observations", "list", "--scribe", "--json"))
+    assert [one["turn_id"] for one in scribed] == ["scribe-turn"]
+
+
 def test_import_dry_run_counts_and_writes_nothing(run, tmp_path):
     # R-0327
     dump = olddump.build(tmp_path / "old.db")

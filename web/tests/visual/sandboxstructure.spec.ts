@@ -1,6 +1,6 @@
 import { test } from "./fixtures";
 import { need, sandboxOnly, walker } from "./sandbox";
-import { addForm } from "./setup";
+import { addForm, readOnly } from "./setup";
 
 // A walk of the three screens people and family structure reach: the person
 // editor, the ballot with a person on it, and the meeting with the same person.
@@ -9,7 +9,7 @@ test.describe(() => {
   sandboxOnly("editor", "coder", "table");
   test.describe.configure({ timeout: 600_000 });
 
-  // R-0326
+  // R-0326, R-0887
   test("people and family structure: the editor, the ballot and the meeting", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,
@@ -20,86 +20,25 @@ test.describe(() => {
     const adminInvite = need("table");
 
 
-    // ── 1. the person editor: born to, and add parents ────────────────────
+    // ── 1. the person editor: what it shows, read only ────────────────────
+    // The forms are read only (R-0887): people, their parents and their bonds
+    // are changed through the coach, so the walk only reads the form.
     await page.goto(editorInvite, { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
     await page.locator(".caption .listglyph").first().click();
     await page.waitForTimeout(900);
     await page.locator("#tab-people").click();
     await page.waitForTimeout(700);
-    // A person of this walk's own, so the run starts from somebody with nobody.
-    const who = `Corinne${Date.now() % 1000}`;
     await addForm(page, "person");
     await page.waitForTimeout(700);
-    await page.locator('.editor [data-name="name"]').fill(who);
-    await page.locator(".editor .save").click();
-    await page.waitForTimeout(1400);
-    await page.locator("#menu-body .row").filter({ hasText: who }).first().click();
-    await page.waitForTimeout(900);
     const labels = await page.locator(".editor .lab").allInnerTexts();
     say(`editor fields: ${JSON.stringify(labels)}`);
     const said = labels.map((one) => one.trim().toLowerCase());
     check(said.includes("born to"), "the person editor asks who they were born to");
     check(said.includes("bonds"), "the person editor lists the bonds they are in");
-    check(
-      await visible('.editor .segs[data-name="parents"] .seg'),
-      "the couples on the record are offered as choices",
-    );
+    await readOnly(page.locator("#add-sheet .editor"));
     await gates("the person editor");
     await shot("1-person-editor");
-
-    const before = await page.locator("#menu-body .row").count();
-    await page
-      .locator('.editor .segs[data-name="parents"] .seg')
-      .filter({ hasText: "add parents" })
-      .first()
-      .click();
-    await page.waitForTimeout(1600);
-    const after = await page.locator("#menu-body .row").count();
-    say(`people before=${before} after=${after}`);
-    check(after === before + 2, "add parents puts a father and a mother on the record");
-    const names = await page.locator("#menu-body .row .r1").allInnerTexts();
-    check(
-      names.some((one) => one.trim() === `${who}'s father`),
-      `a parent nobody named is named after the child (${names.join(", ")})`,
-    );
-    await shot("2-parents-added");
-
-    // ── 1b. a bond of their own, made in the bond's own editor ────────────
-    const partner = `Theo${Date.now() % 1000}`;
-    await addForm(page, "person");
-    await page.waitForTimeout(700);
-    await page.locator('.editor [data-name="name"]').fill(partner);
-    await page.locator(".editor .save").click();
-    await page.waitForTimeout(1400);
-    await page.locator("#menu-body .row").filter({ hasText: who }).first().click();
-    await page.waitForTimeout(900);
-    await page.locator(".editor .bondrow").last().click();
-    await page.waitForTimeout(600);
-    check(await visible(".editor.bond"), "a bond row opens the bond's own editor");
-    await page
-      .locator('.editor.bond .segs[data-name="partner"] .seg')
-      .filter({ hasText: partner })
-      .first()
-      .click();
-    await page.waitForTimeout(300);
-    await page
-      .locator('.editor.bond .segs[data-name="married"] .seg')
-      .first()
-      .click();
-    await gates("the bond editor");
-    await shot("2b-bond-editor");
-    await page.locator(".editor.bond .save").click();
-    await page.waitForTimeout(1500);
-    await page.locator("#menu-body .row").filter({ hasText: who }).first().click();
-    await page.waitForTimeout(900);
-    const bonds = await page.locator(".editor .bondrow").allInnerTexts();
-    say(`bond rows: ${JSON.stringify(bonds)}`);
-    check(
-      bonds.some((one) => one.includes(partner) && /married/.test(one)),
-      "the bond is a row saying who and whether they married",
-    );
-    await shot("2c-bond-row");
 
     // ── 2. the ballot with a person on it ─────────────────────────────────
     await page.goto(coderInvite, { waitUntil: "networkidle" });
@@ -131,6 +70,12 @@ test.describe(() => {
     check(
       await visible(".bl-sheet .editor"),
       "change opens the person's own editor as a sheet",
+    );
+    // the vote stays, but the form's parents and bond pickers write to the
+    // diagram itself, so they are shut (R-0887)
+    check(
+      (await page.locator(".bl-sheet .parents:not([disabled]), .bl-sheet .bondrow:not([disabled])").count()) === 0,
+      "the person editor over the ballot offers no parents or bond pickers to use",
     );
     await gates("the person editor over the ballot");
     await shot("4-ballot-editor");

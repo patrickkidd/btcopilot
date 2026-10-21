@@ -11,7 +11,7 @@ vi.mock("../src/api", async (original) => ({
   },
 }));
 
-const { Direction, MAX_FIELD_LINES, Relationship, SUBMITTED, grownHeight, lock, moved, save, unsaid } =
+const { Direction, MAX_FIELD_LINES, Relationship, grownHeight, lock, moved, save, unsaid } =
   await import("../src/editor");
 
 describe("grownHeight", () => {
@@ -84,17 +84,13 @@ describe("save", () => {
   });
 });
 
-describe("a form on a submitted coding", () => {
-  // R-0869
-  it("offers no Save or Delete, nothing to type or pick, and says why at the top", () => {
-    vi.stubGlobal("document", { createElement: () => ({ innerHTML: "", className: "" }) });
+describe("a form on the coding screen", () => {
+  // R-0887
+  it("offers no Save or Delete and nothing to type or pick", () => {
     const form = standInForm();
     lock(form as unknown as HTMLElement);
-    vi.unstubAllGlobals();
     expect(form.acts.removed).toBe(true);
     expect(form.fields.every((one) => one.readOnly)).toBe(true);
     expect(form.picks.every((one) => one.disabled)).toBe(true);
-    expect(form.top.map((one) => one.textContent)).toEqual([SUBMITTED]);
-    expect(SUBMITTED).toBe("This coding is submitted, so it can no longer be changed.");
   });
 });

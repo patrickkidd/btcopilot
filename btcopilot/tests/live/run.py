@@ -28,6 +28,8 @@ class Case:
     outcome: Outcome | None = None
     spent: Spent = field(default_factory=Spent)
     cost: Decimal = Decimal(0)
+    # The models the case's calls were answered by, in the order first seen.
+    models: list[str] = field(default_factory=list)
 
 
 def spent_of(usage) -> Spent:
@@ -112,7 +114,7 @@ class Run:
             self.stop(f"the next call could pass the cap of ${self.cap}")
         return self.reason is None
 
-    def charge(self, spent: Spent, dollars: Decimal) -> None:
+    def charge(self, spent: Spent, dollars: Decimal, model: str | None = None) -> None:
         self.spent.add(spent)
         self.cost += dollars
         self.largest = max(self.largest, dollars)
@@ -121,6 +123,8 @@ class Run:
         if self.case:
             self.case.spent.add(spent)
             self.case.cost += dollars
+            if model and model not in self.case.models:
+                self.case.models.append(model)
         days = self.days()
         days[self.day] = str(self.today() + dollars)
         self.ledger.write_text(json.dumps(days, indent=2))
@@ -139,6 +143,7 @@ class Run:
                 cache_read=call.cache_read_tokens,
             ),
             call.cost_usd,
+            call.model,
         )
 
     def begin(self, name: str, criterion: str) -> None:
@@ -200,13 +205,15 @@ class Run:
         )
 
     def line(self, name: str, case: Case) -> dict:
-        """One case as a line of the eval ledger, beside the replays."""
+        """One case as a line of the eval ledger, beside the replays, under the
+        model its calls went to: the scribe's case is Gemini's, not the coach's."""
+        model = ", ".join(case.models) or self.model
         return {
             "at": self.started.isoformat(timespec="seconds"),
             "kind": ledger.LedgerKind.Live,
             "git": self.git,
-            "model": self.model,
-            "requested": self.model,
+            "model": model,
+            "requested": model,
             "discussion_id": None,
             "reference_diagram_id": None,
             "scratch_diagram_id": None,

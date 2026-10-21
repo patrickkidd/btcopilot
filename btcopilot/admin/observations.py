@@ -19,14 +19,21 @@ def observations():
 @observations.command("list")
 @click.option("--diagram", "diagram_id", type=int, help="Only one record's rows.")
 @click.option(
+    "--scribe",
+    is_flag=True,
+    help="The review scribe's rows instead of the app's own.",
+)
+@click.option(
     "--kind",
     type=click.Choice([kind.value for kind in ObservationKind]),
     help="Only one kind of row.",
 )
 @rows_option
-def observation_list(diagram_id, kind):
-    """Every row, oldest first."""
-    query = Observation.query.order_by(Observation.id)
+def observation_list(diagram_id, scribe, kind):
+    """Every row of the app's own turns, oldest first; with --scribe, the
+    review scribe's instead (R-0871)."""
+    own = tuning.coach()
+    query = Observation.query.filter(~own if scribe else own).order_by(Observation.id)
     if diagram_id:
         query = query.filter_by(diagram_id=diagram_id)
     if kind:

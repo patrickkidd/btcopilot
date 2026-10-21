@@ -74,8 +74,8 @@ def test_a_private_prompt_file_replaces_the_tool_meanings(private):
 
 def test_the_scribe_reads_the_same_meanings(private):
     # R-0305
-    from btcopilot.review import adapter
+    from btcopilot.review.scribetools import ScribeTool, schemas
 
-    written = {schema["name"]: schema for schema in adapter.write_tools()}
-    properties = written[toolbox.ToolName.EditEvent.value]["input_schema"]["properties"]
+    written = {schema["name"]: schema for schema in schemas()}
+    properties = written[ScribeTool.AddShift.value]["input_schema"]["properties"]
     assert properties["relationship"]["description"] == "private relationship"

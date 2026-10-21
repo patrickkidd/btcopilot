@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "./fixtures";
-import { addForm, openList, stateFor } from "./setup";
+import { addForm, openList, readOnly, stateFor } from "./setup";
 
 /** Words with no place to break, longer than any phone is wide. */
 const LONG = "Fitzgerald-Winterbottom".repeat(10);
@@ -36,7 +36,7 @@ for (const width of [320, 390])
   test.describe(`the event editor at ${width} wide`, () => {
     test.use({ storageState: stateFor("hostile"), viewport: { width, height: 844 } });
 
-    // R-0174, R-0104, R-0069
+    // R-0174, R-0104, R-0069, R-0887
     test("lays out in one column and never scrolls sideways", async ({ page }) => {
       test.skip(test.info().project.name !== "phone");
       await page.goto("/app/");
@@ -45,9 +45,16 @@ for (const width of [320, 390])
       await addForm(page, "event");
       const editor = page.locator(".editor");
       await expect(editor.locator(".segs").first()).toBeVisible();
-      await editor.locator('[data-name="description"]').fill(LONG);
-      await editor.locator('[data-name="location"]').fill(LONG);
-      await editor.locator('[data-name="endDateTime"]').fill("2003-04-05");
+      // the form is read only, so the long words are put in as the
+      // record would show them, not typed
+      await readOnly(editor);
+      const show = (name: string, value: string) =>
+        editor
+          .locator(`[data-name="${name}"]`)
+          .evaluate((f, v) => ((f as HTMLInputElement).value = v), value);
+      await show("description", LONG);
+      await show("location", LONG);
+      await show("endDateTime", "2003-04-05");
       expect(await spill(page)).toEqual({ outside: [], page: 0, list: 0, caption: 0, reach: 0 });
       // Safari on iPhone sizes a date field with its native look content-box,
       // padding and border outside the width, whatever the page asks for.

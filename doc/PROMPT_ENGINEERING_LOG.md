@@ -2,9 +2,23 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-19 (case report refresh prompt: examples from an invented family; three rules made clearer)
+**Last Updated**: 2026-10-21 (the review scribe on Gemini Flash with its own tools)
 
 ---
+
+## FD-385 — the review scribe on Gemini Flash with its own tools (2026-10-21)
+
+R-0885, R-0886. The scribe now runs on gemini-3.8-flash, picked the way the coach picks its model (a plain failure on Bedrock), with twelve tools of its own in place of the coach's write tools: add_person (with an optional birth date), add_bond, add_birth, add_adoption, add_couple_event, add_death, add_shift, add_noted, change_person, change_bond, change_event, delete. Each runs as the coach's own calls through the toolbox, so the record's rules, the version check and the calls kept with the turn are unchanged.
+- Tools: an argument a tool does not declare is dropped, so a birth cannot name the person born as its parent and a couple's event cannot carry a title. Someone added earlier in the same answer is named by a negative ref the model picks. A corrected parent, on the birth or on the child, moves both in one write. "Not married" is refused while the couple has a marriage event.
+- Prompt: the private scribe prompt names the tool for each kind of thing, the ref for something added in the same answer, the parent correction, and delete only for something that should not be there; "add the person first and wait for its id" is gone.
+- Evals (`btcopilot/tests/live/test_scribe.py`, invented family), API, one try each, $0.14 for the run: the three faults of the morning (a birth said of a chosen person, a marriage whose title would name the spouse, a death under a line saying alive) and the walk's eight steps (a new person and partner with a dated marriage, a corrected date, the same statement again, a first name two people share, a full name that settles it, a move, a corrected father, a death): 11 of 11.
+
+## FD-385 — the review scribe enters the coder's statement as given (2026-10-21)
+
+Patrick's "do it", R-0884. Three faults on the walk sandbox the same day: a birth said of a chosen person saved as a noted event; a marriage whose title named the spouse saved twice after two refusals; a death said under a chat line saying the person is alive left nothing entered and asked the coder whether they meant it.
+- Prompt: four lines. When the turn says otherwise (alive against died), write what the coder said; a birth names the person born as its child, never as a noted event; never add an event already in the record or added in this exchange, change it by its id; a refused call is fixed and sent again, never got around as another kind or a second event.
+- Code: a scribe that answers in words before making any call is told once to enter the coder's statement as they gave it, and tries again; its words never reach the coder.
+- Evals (`btcopilot/tests/live/test_scribe.py`, invented family of the faults' shape), subscription, $0, three tries each, old prompt and code against new: a birth names the child, 2 of 3 (one noted event) against 3 of 3; a marriage entered once, 3 of 3 against 3 of 3; a death under a line saying alive, 3 of 3 against 3 of 3. The marriage and death faults did not reproduce on the subscription; their evals stand as guards.
 
 ## FD-383 — the case report's examples from an invented family; three rules made clearer (2026-10-19)
 

@@ -1,7 +1,7 @@
 import { esc } from "./dom";
 import { pill } from "./chips";
 import { when } from "./rows";
-import { ChipKind, ChipTone, QuestionOutcome, QuestionState, type ToolCall, ViewKind } from "./types";
+import { ChipKind, ChipTone, QuestionOutcome, QuestionState, type ToolCall, Verb, ViewKind } from "./types";
 
 /** What a tool call says in plain words, as the one line the chat shows for it,
  * live and after a reload (R-0478). The line names what the call touched, by
@@ -156,22 +156,6 @@ function events({ args, names }: ToolCall): Line {
   return [["events", ...span].join(" ")];
 }
 
-/** Each verb as a refused call tries it, and as a call that worked says it. */
-enum Verb {
-  Look = "look at",
-  Show = "show",
-  Remove = "remove",
-  Put = "put",
-  Add = "add",
-  Change = "change",
-  Keep = "keep",
-  Close = "close",
-  LetGo = "let go of",
-  Note = "note",
-  TakeBack = "take back",
-  Open = "open",
-  Join = "join",
-}
 const DID = new Map([
   [Verb.Look, "Looked at"],
   [Verb.Show, "Showed"],
@@ -298,7 +282,13 @@ export function toolLine(call: ToolCall): Line | null {
     : null;
   if (tool === null) return null;
   const [verb, what] = told(tool, call);
-  return call.refusal
-    ? [`Tried to ${verb} `, ...what, `. ${call.refusal}`]
+  return did(verb, what, call.refusal);
+}
+
+/** One line of what was done, verb first, the way the chat's tool-call lines
+ * read and the scribe's rows read too (R-0478, R-0883). */
+export function did(verb: Verb, what: Line, refusal: string | null = null): Line {
+  return refusal
+    ? [`Tried to ${verb} `, ...what, `. ${refusal}`]
     : [`${DID.get(verb)} `, ...what];
 }

@@ -286,11 +286,68 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(o.created_at,'1d'), o.kind::text as metric, count(*) as value from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and u.username not like 'claude-test%' and $__timeFilter(o.created_at) and o.kind::text in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, 2 order by 1",
+          "rawSql": "select $__timeGroupAlias(o.created_at,'1d'), o.kind::text as metric, count(*) as value from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and not exists (select 1 from model_calls mc where mc.turn_id = o.turn_id and mc.purpose = 'scribe') and u.username not like 'claude-test%' and $__timeFilter(o.created_at) and o.kind::text in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, 2 order by 1",
           "refId": "A"
         }
       ],
       "id": 11
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffz1wy7unkdfke"
+      },
+      "type": "timeseries",
+      "title": "Scribe refusals per day",
+      "description": "What the review scribe tried to write into a coder's record and the record refused, by kind. Kept apart from the coach's own refusals above.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": true,
+            "fillOpacity": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(o.created_at,'1d'), o.kind::text as metric, count(*) as value from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and exists (select 1 from model_calls mc where mc.turn_id = o.turn_id and mc.purpose = 'scribe') and u.username not like 'claude-test%' and $__timeFilter(o.created_at) and o.kind::text in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, 2 order by 1",
+          "refId": "A"
+        }
+      ],
+      "id": 13
     },
     {
       "datasource": {
@@ -304,7 +361,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 41
       },
       "fieldConfig": {
         "defaults": {},
@@ -323,7 +380,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "with g as (select o.kind::text as kind, coalesce(o.detail->>'reason','') as reason, o.turn_id, o.created_at from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and u.username not like 'claude-test%' and o.kind::text not in ('proactive_sent','proactive_opened','proactive_replied','proactive_returned')) select left(md5(kind || ':' || reason), 8) as key, kind, reason, count(*) as count, min(created_at) as first_seen, max(created_at) as last_seen, (array_agg(turn_id order by created_at desc))[1] as example_turn from g where left(md5(kind || ':' || reason), 8) not in (select key from observation_rejects) group by kind, reason order by count desc limit 10",
+          "rawSql": "with g as (select o.kind::text as kind, coalesce(o.detail->>'reason','') as reason, o.turn_id, o.created_at from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and not exists (select 1 from model_calls mc where mc.turn_id = o.turn_id and mc.purpose = 'scribe') and u.username not like 'claude-test%' and o.kind::text not in ('proactive_sent','proactive_opened','proactive_replied','proactive_returned')) select left(md5(kind || ':' || reason), 8) as key, kind, reason, count(*) as count, min(created_at) as first_seen, max(created_at) as last_seen, (array_agg(turn_id order by created_at desc))[1] as example_turn from g where left(md5(kind || ':' || reason), 8) not in (select key from observation_rejects) group by kind, reason order by count desc limit 10",
           "refId": "A"
         }
       ],
@@ -337,7 +394,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 49
       },
       "panels": [],
       "id": 5
@@ -354,7 +411,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 42
+        "y": 50
       },
       "fieldConfig": {
         "defaults": {
@@ -413,7 +470,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 58
       },
       "fieldConfig": {
         "defaults": {
@@ -479,7 +536,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 64
+        "y": 72
       },
       "fieldConfig": {
         "defaults": {},
@@ -529,7 +586,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 72
+        "y": 80
       },
       "fieldConfig": {
         "defaults": {
@@ -588,7 +645,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 82
+        "y": 90
       },
       "fieldConfig": {
         "defaults": {

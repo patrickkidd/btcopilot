@@ -8,6 +8,8 @@ import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { toast } from "./toast";
 import { listButton, PLAY_MARK, tok } from "./tokens";
+import { did, html } from "./tools";
+import { waiting } from "./chat";
 import { WIDE } from "./pro";
 import {
   emptyTimeline,
@@ -15,6 +17,8 @@ import {
   Touch,
   type CodingThread,
   type CodingTurn,
+  type ScribeLine,
+  type Scribed,
   type Timeline,
   type TimelineEvent,
 } from "./types";
@@ -50,16 +54,57 @@ const PLACEHOLDER = {
 
 /** The concept page of each code the scribe wrote, under what it wrote, so
  * the coder reads a code's page with one tap (R-0541). */
-export function writtenConcepts(ids: number[], events: TimelineEvent[]): string {
-  return conceptLinks(conceptsOf(events.filter((event) => ids.includes(event.id))));
+export function writtenConcepts(
+  ids: number[],
+  events: TimelineEvent[],
+): string {
+  return conceptLinks(
+    conceptsOf(events.filter((event) => ids.includes(event.id))),
+  );
 }
 
-/** Why a statement did not go in, in a coder's words: a server that broke or
- * never answered is one plain sentence, never how the server failed (R-0869). */
-export function missed(error: unknown): string {
-  if (error instanceof api.Failed && (error.silent || error.status >= 500))
-    return "That did not go in. Try again in a minute.";
-  return api.whatFailed(error);
+/** What a coder reads when the scribe call did not succeed, whatever the
+ * server said: one muted row, never its words (R-0869, R-0883). */
+export const NOT_SAVED = "not saved, try again";
+
+/** A row for something that is not in the diagram, muted. */
+const unsaved = (words: string) => `<div class="did no">${esc(words)}</div>`;
+
+/** What a refused row says after what it tried to enter (R-0883). */
+const REFUSED = "Not saved";
+
+/** One row, verb first, read the way the chat reads a tool call (R-0883). */
+const row = (line: ScribeLine, refusal: string | null = null) =>
+  `<div class="did${refusal ? " no" : ""}">${html(did(line.verb, [{ name: line.text }], refusal))}</div>`;
+
+/** The call to action over the people the scribe could mean: their shared
+ * first name when they have one (R-0883). */
+function asked(choices: Scribed["choices"]): string {
+  const first = choices.map((one) => one.name.split(" ")[0]);
+  return first.every((name) => name === first[0])
+    ? `Which ${first[0]} do you mean?`
+    : "Who is this about?";
+}
+
+/** What the scribe did, as rows the way the chat shows tool calls: one per
+ * entry that went in, one muted per entry the diagram refused, or one button
+ * per person when it cannot tell who is meant. Never a sentence (R-0883). */
+export function scribedRows(written: Scribed): string {
+  if (written.choices.length)
+    return (
+      `<div class="did ask">${esc(asked(written.choices))}</div>` +
+      written.choices
+        .map(
+          (one) =>
+            `<button class="did pick" type="button" data-person="${one.id}">${esc(one.name)}</button>`,
+        )
+        .join("")
+    );
+  const rows = [
+    ...written.lines.map((line) => row(line)),
+    ...written.refused.map((line) => row(line, REFUSED)),
+  ];
+  return rows.join("") || unsaved("nothing saved");
 }
 
 /** Which record events a piece of the thread wrote, for the concept pages
@@ -97,7 +142,9 @@ export class Coding {
     private overlay: HTMLElement,
     private handlers: CodingHandlers,
   ) {
-    this.picture = new Picture(view, { onTap: (tap: Tap) => this.onPicture(tap) });
+    this.picture = new Picture(view, {
+      onTap: (tap: Tap) => this.onPicture(tap),
+    });
     // The play-by-play drawer over this screen, told by nobody: a coding has no
     // coach turn (R-0570). Its path goes back to the picture the way the
     // chat's does.
@@ -119,7 +166,9 @@ export class Coding {
     this.scrim.hidden = true;
     this.sheet.hidden = true;
     this.wire();
-    this.wide.addEventListener("change", () => this.showRows(this.wide.matches));
+    this.wide.addEventListener("change", () =>
+      this.showRows(this.wide.matches),
+    );
     this.showRows(this.wide.matches);
     dragScroll(this.list);
     dragScroll(this.rows);
@@ -142,8 +191,6 @@ export class Coding {
       this.rows,
       () => this.reread(),
       () => coded,
-      undefined,
-      () => this.finished(),
     );
     this.drawer.onTab = (tab) => this.markTab(tab);
     this.handlers.onTitle({
@@ -175,10 +222,15 @@ export class Coding {
   /** The codes are read off the record as it stands, so a line written long
    * ago shows its pages as well as one just written. */
   private paintConcepts(): void {
-    for (const node of this.list.querySelectorAll<HTMLElement>("[data-events]")) {
+    for (const node of this.list.querySelectorAll<HTMLElement>(
+      "[data-events]",
+    )) {
       node.querySelector(".concepts")?.remove();
       const ids = node.dataset.events!.split(",").map(Number);
-      node.insertAdjacentHTML("beforeend", writtenConcepts(ids, this.timeline.events));
+      node.insertAdjacentHTML(
+        "beforeend",
+        writtenConcepts(ids, this.timeline.events),
+      );
     }
   }
 
@@ -197,11 +249,14 @@ export class Coding {
     const thread = this.thread;
     if (!thread) return;
     const meeting = thread.meeting_date
-      ? new Date(`${thread.meeting_date}T00:00:00`).toLocaleDateString(undefined, {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-        })
+      ? new Date(`${thread.meeting_date}T00:00:00`).toLocaleDateString(
+          undefined,
+          {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          },
+        )
       : "the next meeting";
     this.sheet.innerHTML =
       `<div class="fs-handle"><div class="fs-grab"></div></div>` +
@@ -311,7 +366,10 @@ export class Coding {
 
   private paint(): void {
     for (const bubble of this.list.querySelectorAll<HTMLElement>(".bub.line"))
-      bubble.classList.toggle("sel", Number(bubble.dataset.turn) === this.picked);
+      bubble.classList.toggle(
+        "sel",
+        Number(bubble.dataset.turn) === this.picked,
+      );
     this.composer.dataset.ph =
       this.picked === null ? PLACEHOLDER.none : PLACEHOLDER.picked;
     this.marks();
@@ -335,9 +393,15 @@ export class Coding {
       tok("coding-play", "g", PLAY_MARK, "play-by-play", dated > 0) +
       listButton(LIST_ID);
     if (dated)
-      this.caption.querySelector("#coding-play")?.addEventListener("click", () =>
-        this.pbp.open(this.timeline, untold(this.timeline, open.event_ids), null),
-      );
+      this.caption
+        .querySelector("#coding-play")
+        ?.addEventListener("click", () =>
+          this.pbp.open(
+            this.timeline,
+            untold(this.timeline, open.event_ids),
+            null,
+          ),
+        );
     this.wireList();
   }
 
@@ -369,17 +433,33 @@ export class Coding {
     // the hint under the first line tapped has been followed
     this.list.querySelector(".abv")?.remove();
     this.composer.innerHTML = "";
+    this.after(turn, el("div", `bub said${this.side(turn)}`, esc(said)), turn);
+    await this.scribe(turn, said, null);
+  }
+
+  /** The coder's words to the scribe, with the person they tapped when it
+   * asked which; a tap on one of its buttons sends the same words again with
+   * that person (R-0883). */
+  private async scribe(
+    turn: number,
+    said: string,
+    person: number | null,
+  ): Promise<void> {
+    const thread = this.thread;
+    if (!thread) return;
     const side = this.side(turn);
-    this.after(turn, el("div", `bub said${side}`, esc(said)), turn);
     this.picture.untouch();
     this.sending = true;
+    // the chat's own dots, where the rows will be, until the answer lands
+    const dots = waiting(` sub${side}`);
+    this.after(turn, dots, turn);
     let written;
     try {
-      written = await api.scribe(thread.coding_id, turn, said);
-    } catch (error) {
+      written = await api.scribe(thread.coding_id, turn, said, person);
+    } catch {
       this.after(
         turn,
-        el("div", `bub coach sub${side}`, `<div class="did q">${esc(missed(error))}</div>`),
+        el("div", `bub coach sub${side}`, unsaved(NOT_SAVED)),
         turn,
       );
       // A scribe that stopped part way has still written that part.
@@ -387,18 +467,28 @@ export class Coding {
       return;
     } finally {
       this.sending = false;
+      dots.remove();
     }
-    const lines = written.asked
-      ? `<div class="did q">${esc(written.asked)}</div>`
-      : written.lines.map((line) => `<div class="did">${esc(line)}</div>`).join("");
     const events = written.made
       .filter((one) => one.kind === ItemKind.Event)
       .map((one) => Number(one.id));
-    this.after(turn, wrote(el("div", `bub coach sub${side}`, lines), events), turn);
+    const rows = wrote(
+      el("div", `bub coach sub${side}`, scribedRows(written)),
+      events,
+    );
+    rows.addEventListener("click", (e) => {
+      const pick = (e.target as Element).closest<HTMLElement>(".pick");
+      if (!pick || this.sending) return;
+      rows.remove();
+      void this.scribe(turn, said, Number(pick.dataset.person));
+    });
+    this.after(turn, rows, turn);
     if (written.made.length) {
       await this.refresh();
       // what the scribe writes, it adds
-      this.picture.light(written.made.map((one) => ({ ...one, touch: Touch.Add })));
+      this.picture.light(
+        written.made.map((one) => ({ ...one, touch: Touch.Add })),
+      );
     }
   }
 
@@ -440,20 +530,22 @@ export class Coding {
             turn.id,
           ),
         );
-        said.lines.forEach((line, at) =>
-          this.list.append(
-            this.tagged(
-              wrote(
-                el(
-                  "div",
-                  `bub coach sub${this.side(turn.id)}`,
-                  `<div class="did">${esc(line)}</div>`,
-                ),
-                // the pages hang under the last of the lines
-                at === said.lines.length - 1 ? said.event_ids : [],
-              ),
-              turn.id,
+        // One statement's rows share one bubble, as they did when it was
+        // sent; refused rows are not kept, so only what went in comes back.
+        const rows = scribedRows({
+          lines: said.lines,
+          refused: [],
+          choices: [],
+          made: [],
+          turn_id: "",
+        });
+        this.list.append(
+          this.tagged(
+            wrote(
+              el("div", `bub coach sub${this.side(turn.id)}`, rows),
+              said.event_ids,
             ),
+            turn.id,
           ),
         );
       }
@@ -476,13 +568,19 @@ export class Coding {
   }
 
   private bubble(turn: CodingTurn): HTMLElement {
-    const node = el("div", `bub line ${turn.client ? "user" : "coach"}`, esc(turn.text));
+    const node = el(
+      "div",
+      `bub line ${turn.client ? "user" : "coach"}`,
+      esc(turn.text),
+    );
     return this.tagged(node, turn.id);
   }
 
   /** What hangs under a turn hangs on that turn's side of the thread. */
   private side(turnId: number): string {
-    return this.thread?.turns.find((t) => t.id === turnId)?.client ? "" : " left";
+    return this.thread?.turns.find((t) => t.id === turnId)?.client
+      ? ""
+      : " left";
   }
 
   private tagged(node: HTMLElement, turnId: number): HTMLElement {
@@ -517,5 +615,4 @@ export class Coding {
     // above the cut: bring it into view there, never jump to the end.
     node.scrollIntoView({ block: "nearest" });
   }
-
 }

@@ -430,10 +430,14 @@ export async function save(
   done();
 }
 
-export const SUBMITTED = "This coding is submitted, so it can no longer be changed.";
+/** Off for now: every change to people, events and pair-bonds goes through the
+ * coach or the scribe, so the prompt is tuned on data no hand edit has mixed
+ * into; the forms open read only everywhere (R-0887). On brings Save, Delete,
+ * adding and the ballot's pickers back. */
+export const HAND_EDITS = false;
 
-/** A form on a submitted coding is there to read: no Save, no Delete, nothing
- * to type into or pick, and the reason at the top (R-0869). */
+/** A form while hand edits are off is there to read: no Save, no Delete,
+ * nothing to type into or pick (R-0887). */
 export function lock(editor: HTMLElement): HTMLElement {
   editor.querySelector(".acts")?.remove();
   editor
@@ -442,7 +446,6 @@ export function lock(editor: HTMLElement): HTMLElement {
   editor
     .querySelectorAll<HTMLButtonElement>(".seg, .parents, .bondrow")
     .forEach((one) => (one.disabled = true));
-  editor.prepend(el("div", "refused", esc(SUBMITTED)));
   return editor;
 }
 

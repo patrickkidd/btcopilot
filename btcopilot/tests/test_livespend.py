@@ -230,3 +230,14 @@ def test_a_calibration_stops_before_the_call_that_could_pass_its_cap(tmp_path):
         for line in lines
     ] == [("live", "a case", 1, float(price), Source.Api.value)]
     assert run.cost == price
+
+
+def test_a_case_is_ledgered_under_the_model_its_calls_went_to(tmp_path):
+    # R-0885
+    run = Run(MODEL, GIT, tmp_path)
+    run.begin("scribe", "once")
+    run.recorded(None, None, SimpleNamespace(input_tokens=100, output_tokens=10, cache_creation_tokens=0, cache_read_tokens=0, cost_usd=Decimal("0.01"), model="gemini-3.8-flash"))
+    run.end("scribe", Outcome.Passed)
+    run.finish(pytest.ExitCode.OK)
+    lines = [json.loads(one) for one in (tmp_path / ledger.PATH.name).read_text().splitlines()]
+    assert [(one["case"], one["model"]) for one in lines] == [("scribe", "gemini-3.8-flash")]

@@ -1098,13 +1098,14 @@ def _structure(data: dict, deltas: list[dict]):
         kind = _val(event.get("kind"))
         label = EventKind(kind).menuLabel()
         if kind in OFFSPRING_KINDS and event.get("child") is None:
+            whom = "born" if kind == EventKind.Birth.value else "taken in"
             raise Invalid(
-                f"event {event_id} is a {kind} with no child: a {kind} is about "
-                "the child: "
+                f"event {event_id} is a {kind} with no child: a {kind} names the "
+                f"person {whom} as its child: "
                 + (
-                    "set child, not person"
+                    f"set child to person {event['person']} instead of person"
                     if event.get("person") is not None
-                    else "set child to who was born or taken in"
+                    else f"set child to who was {whom}"
                 ),
                 f"{label} is about the child: choose who under Child.",
             )
