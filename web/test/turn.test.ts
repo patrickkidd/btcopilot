@@ -93,6 +93,14 @@ describe("what a tool call says in plain words", () => {
     ).toBe("Changed a person no longer in the diagram: name Wren");
   });
 
+  // R-0893
+  it("says added when the coach names the unnamed first person, changed when they had a name", () => {
+    expect(line(ToolName.EditPerson, { id: 1, version: 2, name: "Ana" }, { it: "" })).toBe("Added Ana");
+    expect(line(ToolName.EditPerson, { id: 1, version: 2, name: "Ana" }, { it: "Anna" })).toBe(
+      "Changed Anna: name Ana",
+    );
+  });
+
   // R-0478
   it("says what the coach looked at", () => {
     expect(line(ToolName.ReadPeople, {})).toBe("Looked at people");
