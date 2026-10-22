@@ -9,6 +9,8 @@ import enum
 from btcopilot.schema import DiagramData, EventKind
 
 PLACEHOLDER_NAME = "User"
+# the person the chat app makes the user on a diagram that has none yet
+FIRST_PERSON_ID = 1
 
 
 class Required(enum.StrEnum):
@@ -23,6 +25,39 @@ def own(data: DiagramData) -> dict | None:
     return data.primary_person() or next(
         (p for p in data.people if p.get("id") == 1), None
     )
+
+
+def own_id(data: DiagramData) -> int:
+    """The person's own entry's id, or the one the chat app gives it."""
+    person = own(data)
+    return person["id"] if person else FIRST_PERSON_ID
+
+
+def person_of(user, diagram, data: DiagramData) -> int | None:
+    """Who the user is on the case: the person their row names, or None for
+    someone who is not in the family, such as a human coach. The owner whose
+    row names no one yet is the person the family belongs to: their own
+    diagram starts with no primary person, and the chat app makes one."""
+    row = diagram.access_right(user)
+    if row is not None and row.person_id is not None:
+        return row.person_id
+    if user.id == diagram.user_id:
+        return own_id(data)
+    return None
+
+
+def is_subject(person_id: int | None, data: DiagramData) -> bool:
+    """Whether that is the person the family belongs to."""
+    return person_id is not None and person_id == own_id(data)
+
+
+def addressed(diagram, data: DiagramData) -> bool:
+    """Whether anyone on the case is the person it belongs to, so its case
+    report is written to them as "you"."""
+    return any(
+        is_subject(person_of(row.user, diagram, data), data)
+        for row in diagram.access_rights
+    ) or is_subject(person_of(diagram.user, diagram, data), data)
 
 
 def birth(data: DiagramData, person_id: int) -> dict | None:

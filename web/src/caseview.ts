@@ -163,7 +163,8 @@ export interface CaseView {
   name: string;
   him: string;
   his: string;
-  /** Who presents: the owner's name, or null for an account with no name. */
+  /** Whose case it is, by first name: the person it belongs to, never the
+   * account that owns the diagram (FD-387); null while they have no name. */
   owner: string | null;
   /** Today, as a year with its fraction: the date the pictures stand at. */
   now: number;
@@ -511,6 +512,13 @@ const onCard = (card: CaseReportCard | null) => (q: AskedQuestion) => q.case_rep
 /** The card's newest guess or question: the coach's newest replaces the one
  * before (R-0709), so a stale second is never shown. */
 const newest = (all: AskedQuestion[]) => all[all.length - 1] ?? null;
+
+/** The person the case belongs to, by first name, for the header; null while
+ * the record holds only the chat app's placeholder. */
+export function subjectName(tl: Timeline): string | null {
+  const name = tl.people.find((p) => p.primary)?.name;
+  return name && name !== "User" ? name : null;
+}
 
 export function caseView(tl: Timeline, sessions: Session[], owner: string | null): CaseView {
   const r = new Reader(tl);

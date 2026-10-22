@@ -543,7 +543,7 @@ def test_an_admin_finds_a_person_by_name_and_opens_their_diagram_read_only(
     assert opened.get_json()["access"] == Access.AdminView
     assert opened.get_json()["owner"] == "Unit Tester 2"
     assert test_user.current_diagram_id == theirs.id
-    assert AccessRight.query.filter_by(user_id=test_user.id).count() == 0
+    assert AccessRight.query.filter_by(user_id=test_user.id, diagram_id=theirs.id).count() == 0
 
     said = admin.get("/app/statements").get_json()
     assert [s["text"] for s in said] == ["My mother moved in."]

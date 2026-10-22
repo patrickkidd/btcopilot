@@ -40,6 +40,7 @@ from btcopilot.prompts import case_report_rewrite, get_agent_prompt
 from btcopilot.questions import order, sessions
 from btcopilot.recordtext import note_line, on_map, outline, question_order
 from btcopilot.schema import (
+    DEFAULT_SUBJECT_NAME,
     MIN_CLUSTER_EVENTS,
     CardLine,
     CaseReportCard,
@@ -111,6 +112,13 @@ SUMMARY_SENTENCES = 3
 # app's guess: ..."), unless the card is the one line saying the diagram holds
 # too little for it (R-0850).
 WHOSE = re.compile(r"\byou (?:said|told)\b|\bthe app['’]s guess\b", re.I)
+# on a case nobody on is the person it belongs to, what they said is given by name
+SAID = re.compile(r"\b(?:said|told)\b|\bthe app['’]s guess\b", re.I)
+ABOUT = (
+    "Nobody on this case is the person it belongs to: the coach on it reads "
+    "this report. Write every card about {name} by name, never to them as "
+    "\"you\": what {name} said is theirs (\"{name} said ...\")."
+)
 THIN = "Not enough in the diagram yet"
 class State(enum.StrEnum):
     Running = "running"
@@ -361,23 +369,27 @@ def overlong(call) -> int | None:
     return count if count > SUMMARY_SENTENCES else None
 
 
-def unmarked(call) -> str | None:
+def unmarked(call, addressed: bool = True) -> str | None:
     """Why a card's words, outside the person's quoted ones, do not say whose
     reading they are, or None; what brought the person is their own quoted
-    words, and the family card gives the diagram's facts bare (R-0850, R-0863)."""
+    words, and the family card gives the diagram's facts bare (R-0850, R-0863).
+    On a case written about the person (`addressed` false) what they said is
+    given by name."""
     text = call.args.get("text") or ""
     if call.args.get(CARD) in (CaseReportCard.WhatBrought, CaseReportCard.Family) or text.startswith(THIN):
         return None
-    return None if WHOSE.search(record.QUOTED.sub("", text)) else (
-        "the card does not say whose reading it is: give what the person said as "
-        "\"You said ...\" and the rest as \"The app's guess: ...\""
+    marks, said = (WHOSE, "\"You said ...\"") if addressed else (SAID, "\"<their name> said ...\"")
+    return None if marks.search(record.QUOTED.sub("", text)) else (
+        f"the card does not say whose reading it is: give what the person said as "
+        f"{said} and the rest as \"The app's guess: ...\""
     )
 
 
-def misspoken(call) -> str | None:
+def misspoken(call, addressed: bool = True) -> str | None:
     """Why a card's text cannot stand as the coach's words, or None: a word
-    that gives a cause or a why (R-0850, R-0864), or one that speaks as the
-    person outside their quoted words (R-0860)."""
+    that gives a cause or a why (R-0850, R-0864), or, on a case written to the
+    person (`addressed`), one that speaks as them outside their quoted words
+    (R-0860)."""
     text = call.args.get("text") or ""
     word = record.caused(text)
     if word:
@@ -385,11 +397,24 @@ def misspoken(call) -> str | None:
             f"{word!r} gives a cause or a why; say what happened and when, side by "
             "side, and how close in time"
         )
+    if not addressed:
+        return None
     word = record.voiced(text)
     return word and (
         f"{word!r} speaks as the person; write as the coach, calling them you, "
         "and put their own words only inside quotation marks"
     )
+
+
+def uncaused(text: str) -> str:
+    """The text with every sentence taken out that gives a cause or a why,
+    the person's own voice kept: a case written about them (R-0850)."""
+    kept = []
+    for line in text.splitlines():
+        sentences = [s for s in record.SENTENCE.split(line) if not record.caused(s)]
+        if sentences:
+            kept.append(" ".join(sentences))
+    return "\n".join(kept)
 
 
 def box(diagram: Diagram, user: User, turn_id: str) -> Toolbox:
@@ -770,13 +795,17 @@ def asked(diagram: Diagram, user: User, toolbox: Toolbox, meter: Metered) -> tup
     (R-0850)."""
     data = diagram.get_diagram_data()
     own = profile.own(data)
+    to = profile.addressed(diagram, data)
     system = get_agent_prompt(
-        record=outline(data, diagram.version, own and own["id"]) + closed(data),
+        record=outline(data, diagram.version, own["id"] if to and own else None) + closed(data),
         today=clock.today(user.timezone).isoformat(),
         coverage=coverage.block(data),
     )
     events, _ = toolbox.call(ToolName.ReadEvents, {"fields": [ReadField.Words, ReadField.Notes]})
-    content = f"{case_report_rewrite()}\n\nEVENTS\n{events}"
+    content = case_report_rewrite()
+    if not to:
+        content += "\n\n" + ABOUT.format(name=(own or {}).get("name") or DEFAULT_SUBJECT_NAME)
+    content += f"\n\nEVENTS\n{events}"
     support = held(data)
     if support:
         content += f"\n\n{HELD}\n{support}"
@@ -806,12 +835,13 @@ def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool,
     (`retried`), else kept and written down. Why each refused call was
     refused, as the model reads it."""
     refused = {}
+    to = profile.addressed(diagram, toolbox.data)
     for call in calls:
-        told = refusal = misspoken(call) or checked(call) or (unmarked(call) if retried else None)
+        told = refusal = misspoken(call, to) or checked(call) or (unmarked(call, to) if retried else None)
         if refusal is None:
             told, _, refusal = run_call(toolbox, call)
             if not refusal:
-                _kept(diagram.id, toolbox.turn_id, call, retried, first)
+                _kept(diagram.id, toolbox.turn_id, call, retried, first, to)
         if refusal:
             refused[call.id] = told
             card = call.args.get(CARD)
@@ -822,7 +852,8 @@ def _put(diagram: Diagram, toolbox: Toolbox, calls: list, retried: bool,
     return refused
 
 
-def _kept(diagram_id: int, turn_id: str, call, retried: bool, first: dict[str, str] | None) -> None:
+def _kept(diagram_id: int, turn_id: str, call, retried: bool, first: dict[str, str] | None,
+          addressed: bool = True) -> None:
     """A card written though off its shape, written down: an Executive
     Summary past its sentences, or, with no try left, a card not saying whose
     reading it is (R-0850)."""
@@ -832,7 +863,7 @@ def _kept(diagram_id: int, turn_id: str, call, retried: bool, first: dict[str, s
                  {"tool": call.name, "refusal": f"the Executive Summary has {count} sentences, "
                   f"more than {SUMMARY_SENTENCES}; kept", "retried": retried, "sentences": count,
                   "reason": _reason(CaseReportCard.MainGuess.value, f"kept: {count} sentences")})
-    whose = not retried and unmarked(call)
+    whose = not retried and unmarked(call, addressed)
     if whose:
         card = call.args.get(CARD)
         _observe(diagram_id, turn_id, ObservationKind.ToolRefused,
@@ -953,9 +984,11 @@ def rewrite(diagram: Diagram, meter: Metered, user: User, turn_id: str) -> list[
         retry = _called(diagram, meter, system, messages + _again(turn, refused, missing), turn_id)
         _unmoved(diagram, version)
         calls = [c for c in retry.calls if c.args.get(CARD) in again]
+        to = profile.addressed(diagram, toolbox.data)
         for call in calls:
-            if misspoken(call):
-                call.args = {**call.args, "text": record.plain(call.args.get("text") or "")}
+            if misspoken(call, to):
+                text = call.args.get("text") or ""
+                call.args = {**call.args, "text": record.plain(text) if to else uncaused(text)}
         given = [c for c in calls if c.args.get("text")]
         twice = _put(diagram, toolbox, given, retried=False, first=first)
         written = {c.args.get(CARD) for c in given if c.id in twice}

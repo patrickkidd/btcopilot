@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey, false
+from sqlalchemy import event
 from sqlalchemy import update as sql_update
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Session, relationship
 from dataclasses import fields as dc_fields
 
 
@@ -8,7 +9,11 @@ import btcopilot
 from btcopilot import diagramjson
 from btcopilot.schema import DiagramData, PDP, asdict, from_dict
 from btcopilot.extensions import db
+from btcopilot.models.etc import AccessRight
 from btcopilot.modelmixin import ModelMixin
+
+# grant_access keeps the person a user already is on the case unless told
+KEEP = object()
 
 
 def diagram_data(data: dict) -> DiagramData:
@@ -48,6 +53,8 @@ class Diagram(db.Model, ModelMixin):
         "AccessRight",
         primaryjoin="Diagram.id == AccessRight.diagram_id",
         back_populates="diagram",
+        # every diagram has its owner's row, so a diagram deleted takes its rows
+        cascade="all, delete-orphan",
     )
 
     discussions = relationship("Discussion", back_populates="diagram")
@@ -69,14 +76,28 @@ class Diagram(db.Model, ModelMixin):
 
         self.data = diagramjson.encode(data, self.data)
 
-    def grant_access(self, user, right, _commit=False):
-        from btcopilot.models import AccessRight
-
-        AccessRight.query.filter_by(diagram_id=self.id, user_id=user.id).delete()
-        access_right = AccessRight(diagram_id=self.id, user_id=user.id, right=right)
-        db.session.add(access_right)
+    def grant_access(self, user, right, _commit=False, person_id=KEEP):
+        """The user's one row on the case with this right. `person_id` is who
+        they are on the case; left out, the person their row already names."""
+        if person_id is KEEP:
+            had = self.access_right(user)
+            person_id = had.person_id if had is not None else None
+        self.revoke_access(user)
+        self.access_rights.append(
+            AccessRight(user_id=user.id, right=right, person_id=person_id)
+        )
         if _commit:
             db.session.commit()
+
+    def revoke_access(self, user):
+        """Take the user's rows off the case, through the case's own list of
+        them so that list never names a row that is gone."""
+        for row in [r for r in self.access_rights if r.user_id == user.id]:
+            self.access_rights.remove(row)
+
+    def access_right(self, user) -> AccessRight | None:
+        """The user's row on the case, or None."""
+        return AccessRight.query.filter_by(diagram_id=self.id, user_id=user.id).first()
 
     def check_write_access(self, user):
         from btcopilot.models import AccessRight
@@ -134,3 +155,20 @@ class Diagram(db.Model, ModelMixin):
         db.session.flush()
         db.session.refresh(self)
         return (True, self.version)
+
+
+@event.listens_for(Session, "before_flush")
+def _owner_rows(session, flush_context, instances):
+    """Every user on a case has a row, the owner included: read-write, on the
+    primary person, or on no one while the diagram has none."""
+    for diagram in [d for d in session.new if isinstance(d, Diagram)]:
+        primary = diagram_data(diagramjson.loads(diagram.data)).primary_person()
+        row = AccessRight(
+            user_id=diagram.user_id,
+            right=btcopilot.ACCESS_READ_WRITE,
+            person_id=primary["id"] if primary else None,
+        )
+        # a diagram made with its owner as an object has no user_id until now
+        if diagram.user is not None:
+            row.user = diagram.user
+        diagram.access_rights.append(row)

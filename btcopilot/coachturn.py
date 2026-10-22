@@ -350,12 +350,16 @@ class CoachTurn:
         # The coaching text is the same every turn and the rest is not, so the
         # rest goes after the chat, heading the new message, and the chat before
         # it is read back from the wire instead of written to it again.
-        # In a note the clinician is writing, not the person whose entry it is.
+        # In a note the clinician is writing, not the person whose entry it is;
+        # a user whose row on the case names no one, a human coach, is a
+        # consultant in every session (FD-387).
         note = DiscussionKind(self.discussion.kind) is DiscussionKind.Note
-        own = profile.own(data)
+        person = profile.person_of(self.discussion.user, self.diagram, data)
+        subject = profile.is_subject(person, data)
+        consultant = note or person is None
         system, tail = agent_prompt(
             record=recordtext.outline(
-                data, self.diagram.version, None if note or not own else own["id"]
+                data, self.diagram.version, None if consultant else person
             ),
             interactions=recordtext.interactions(
                 recent(self.diagram.id, RECENT_INTERACTIONS)
@@ -367,7 +371,7 @@ class CoachTurn:
         if last:
             notes = recordtext.notes(last.payload["args"], last.created_at)
             tail = f"{tail}\n\n{notes}"
-        if note:
+        if consultant:
             tail = f"{tail}\n\n{note_register()}"
         pairs = recordtext.pairs(
             data,
@@ -376,12 +380,12 @@ class CoachTurn:
         )
         if pairs:
             tail = f"{tail}\n\n{pairs}"
-        if not note:
+        if not note and subject:
             tail = f"{tail}{self._crisis(answered, data)}"
         gaps = profile.missing(data)
         if gaps:
-            tail = f"{tail}\n\n{onboarding(gaps, own['id'] if own else 1)}"
-        gone = None if note else away(answered)
+            tail = f"{tail}\n\n{onboarding(gaps, profile.own_id(data), coach=person is None)}"
+        gone = None if note or not subject else away(answered)
         if gone is not None and gone > SITTING_GAP:
             tail = f"{tail}\n\n{back(max(1, gone.days), todos(data))}"
         messages = self._history(tail, answered)
@@ -495,7 +499,7 @@ class CoachTurn:
         if self.discussion.title is None:
             self._title()
         self._halt()
-        if not self.scratch:
+        if not self.scratch and subject:
             profile.mirror(self.discussion.user, self.data)
             TokenMeter.charge(self.discussion.user_id, self.model.spent)
         db.session.commit()

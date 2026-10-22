@@ -118,10 +118,13 @@ def __getattr__(name: str) -> str:
     return value
 
 
-def onboarding(missing: list[str], person_id: int) -> str:
+def onboarding(missing: list[str], person_id: int, coach: bool = False) -> str:
     """What the coach must get first while the person's own name or birth date
-    is not in the record."""
-    return files().text("onboarding", missing=", ".join(missing), person_id=person_id)
+    is not in the record. Asked of a human coach on the case (`coach`), it is
+    the client's entry, asked for in the client's name (FD-387)."""
+    return files().text(
+        "onboarding", missing=", ".join(missing), person_id=person_id, coach=coach
+    )
 
 
 def back(days: int, todos: str) -> str:
