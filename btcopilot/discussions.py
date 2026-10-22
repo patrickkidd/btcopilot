@@ -260,7 +260,10 @@ def sync_chat_speakers(discussion: Discussion):
         return
     diagram = discussion.diagram
     diagram_data = diagram.get_diagram_data()
-    user_person_id, changed = diagram_data.ensure_chat_defaults()
+    own = profile.person_of(diagram.user, diagram) is not None
+    user_person_id, changed = diagram_data.ensure_chat_defaults(
+        profile.PLACEHOLDER_NAME if own else None
+    )
     if changed:
         diagram.set_diagram_data(diagram_data)
     person_id, name = voice(discussion.user, diagram, diagram_data)

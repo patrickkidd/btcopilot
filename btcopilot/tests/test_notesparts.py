@@ -11,7 +11,8 @@ from btcopilot.notesparts import PART_WORDS, REMINDER_LINES
 def paragraph(i: int, lines: int = 4, words: int = 100) -> str:
     """Invented notes: one paragraph of short dated lines about Nell's family."""
     return "\n".join(
-        f"Line {i}.{j}: Nell's cousin Ada moved in 19{50 + j}, " + " ".join(["then"] * words)
+        f"Line {i}.{j}: Nell's cousin Ada moved in 19{50 + j}, "
+        + " ".join(["then"] * words)
         for j in range(lines)
     )
 
@@ -38,6 +39,28 @@ def test_a_paragraph_longer_than_a_part_is_cut_at_line_breaks_never_inside_a_lin
     parts = notesparts.split("\n".join(lines))
     assert len(parts) > 1
     assert [line for part in parts for line in part.splitlines()] == lines
+
+
+def test_one_paragraph_on_one_line_is_cut_at_sentence_ends_into_as_many_parts_as_the_page_says():
+    # R-0897
+    sentences = [
+        f"Ada moved in 19{i % 90 + 10} with " + " ".join(["then"] * 11) + "."
+        for i in range(250)
+    ]
+    text = " ".join(sentences)
+    assert len(text.split()) == 4000
+    parts = notesparts.split(text)
+    assert len(parts) == -(-4000 // PART_WORDS) == 3
+    assert " ".join(parts) == text
+    assert all(part.endswith(".") for part in parts)
+
+
+def test_a_part_before_the_last_is_told_to_add_no_stand_ins():
+    # R-0897
+    parts = notesparts.split("\n\n".join(paragraph(i) for i in range(10)))
+    for k in (1, 2):
+        assert "never add a stand-in" in notesparts.framed(parts, k)
+    assert "stand-in" not in notesparts.framed(parts, len(parts))
 
 
 def test_each_part_after_the_first_carries_the_last_lines_of_the_one_before():

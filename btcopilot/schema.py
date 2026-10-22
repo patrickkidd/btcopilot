@@ -1629,11 +1629,14 @@ class DiagramData:
         name = primary.get("name") if primary else None
         return name if name else DEFAULT_SUBJECT_NAME
 
-    def ensure_chat_defaults(self) -> tuple[int, bool]:
+    def ensure_chat_defaults(self, name: str | None = "User") -> tuple[int, bool]:
         """Idempotently ensure the person the user speaks as exists.
 
         If a person with primary=True exists (pro app diagram), use them as the
-        user speaker. Otherwise, ensure User (ID=1) exists.
+        user speaker. Otherwise, ensure person 1 exists, named `name`: "User"
+        for the maker's own family, no name for one a human coach made, so the
+        coach's first line names the client rather than renaming "User"
+        (R-0893).
 
         The other side of the chat is not a member of the family and is never a
         person in the record; ID 2 stays reserved so records written before this
@@ -1652,7 +1655,7 @@ class DiagramData:
         if primary_person:
             user_person_id = primary_person.get("id")
         elif user_person_id is None:
-            user_dict = asdict(Person(id=1, name="User"))
+            user_dict = asdict(Person(id=1, name=name))
             user_dict["primary"] = True
             self.people.append(user_dict)
             user_person_id = 1

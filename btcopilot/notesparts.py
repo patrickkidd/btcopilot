@@ -1,8 +1,8 @@
 """Notes too long for one coach loop, cut into parts the coach enters one after
 another within the same turn [Oracle: R-0897].
 
-A part ends at a paragraph break, else at a line break, never inside a line,
-so a line longer than a part is a part of its own. Each part after the first
+A part ends at a paragraph break, else at a line break; only a line longer
+than a part is cut, at its sentence ends. Each part after the first
 carries the last lines of the one before it, so the coach can join a story that
 runs across the cut.
 """
@@ -21,12 +21,15 @@ USD_PER_1000_WORDS = 0.29
 SECONDS_PER_PART = 96
 
 BREAK = re.compile(r"\n\s*\n")
+SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
 PART = (
     "These are part {k} of {n} of the same notes. Enter every person and event "
     "in this part that you can, even if the person this diagram is about is not "
     "named yet, and ask nothing: hold every question for your one reply after "
-    "the last part. Do not reply to the person yet."
+    "the last part. Enter only people and events this text names; never add a "
+    "stand-in for someone or something not yet named, and leave anything only "
+    "half known for a later part. Do not reply to the person yet."
 )
 LAST = (
     "This is the last part, {n} of {n}, of the same notes; the parts before it "
@@ -67,10 +70,21 @@ def split(text: str) -> list[str]:
     pieces = []
     for paragraph in BREAK.split(text.strip()):
         if _words(paragraph) > PART_WORDS:
-            pieces.extend(_packed(paragraph.splitlines(), "\n"))
+            pieces.extend(_packed(_lines(paragraph), "\n"))
         else:
             pieces.append(paragraph)
     return _packed(pieces, "\n\n")
+
+
+def _lines(paragraph: str) -> list[str]:
+    """A paragraph's lines, a line longer than a part cut at its sentence ends."""
+    lines = []
+    for line in paragraph.splitlines():
+        if _words(line) > PART_WORDS:
+            lines.extend(_packed(SENTENCE.split(line), " "))
+        else:
+            lines.append(line)
+    return lines
 
 
 def framed(parts: list[str], k: int) -> str:
