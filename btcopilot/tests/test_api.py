@@ -106,7 +106,7 @@ def test_session_list(web, token):
 
 
 def test_session_create(web, token, test_user):
-    # R-0285
+    # R-0894
     response = post(web, token, "/app/sessions", {})
     assert response.status_code == 201
     assert response.get_json()["message_count"] == 0

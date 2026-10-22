@@ -16,7 +16,7 @@ function sent(): { method: string; url: string; body: unknown }[] {
   return calls;
 }
 
-// R-PENDING-387-7
+// R-0893
 it("a new diagram is made with its name and the answer to whether it is the maker's own family", async () => {
   const calls = sent();
   await newDiagram("The Hales", true);
@@ -28,7 +28,7 @@ it("a new diagram is made with its name and the answer to whether it is the make
   expect(calls.every((c) => c.url.endsWith("/diagrams"))).toBe(true);
 });
 
-// R-PENDING-387-7
+// R-0893
 it("a diagram is renamed through the diagram's own address", async () => {
   const calls = sent();
   await renameDiagram(42, "The Hale family");
@@ -38,7 +38,7 @@ it("a diagram is renamed through the diagram's own address", async () => {
   expect(calls[0].body).toEqual({ name: "The Hale family" });
 });
 
-// R-PENDING-387-7
+// R-0893
 it("the list of diagrams and the question are the same words for everyone, licence or none", async () => {
   for (const pro of [true, false]) {
     vi.resetModules();

@@ -177,8 +177,8 @@ test.describe("the sessions sheet", () => {
   });
 
   /** A reader without the professional licence never meets the word case, and
-   * the plus beside a family starts a session on that family [R-0285]. */
-  // R-0285
+   * the plus beside a family starts a session on that family [R-0894]. */
+  // R-0894
   test("the sheet never says case, and each family carries its own plus", async ({
     page,
   }) => {

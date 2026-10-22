@@ -110,7 +110,7 @@ def coached(test_user, test_user_2):
 
 
 def test_a_new_diagram_has_its_owners_row_on_the_primary_person(test_user):
-    # R-PENDING-387-1
+    # R-0888
     named = case(test_user)
     empty = case(test_user, people=(), events=())
     assert rows(named) == [(test_user.id, btcopilot.ACCESS_READ_WRITE, 1)]
@@ -118,7 +118,7 @@ def test_a_new_diagram_has_its_owners_row_on_the_primary_person(test_user):
 
 
 def test_a_diagram_made_with_its_owners_row_keeps_just_that_one_as_written(test_user):
-    # R-PENDING-387-1
+    # R-0888
     diagram = Diagram(
         user_id=test_user.id,
         name="The Hales",
@@ -133,7 +133,7 @@ def test_a_diagram_made_with_its_owners_row_keeps_just_that_one_as_written(test_
 
 
 def test_granting_again_keeps_the_person_unless_told(test_user, test_user_2):
-    # R-PENDING-387-1
+    # R-0888
     diagram = case(test_user)
     diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_WRITE, person_id=1)
     diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_ONLY)
@@ -146,7 +146,7 @@ def test_granting_again_keeps_the_person_unless_told(test_user, test_user_2):
 
 
 def test_a_deleted_diagram_takes_its_rows(test_user, test_user_2):
-    # R-PENDING-387-1
+    # R-0888
     diagram = case(test_user)
     diagram.grant_access(test_user_2, btcopilot.ACCESS_READ_WRITE, person_id=None)
     db.session.commit()
@@ -274,7 +274,7 @@ def seeded(flask_app, tmp_path) -> sa.Engine:
 def test_the_migration_gives_each_diagram_one_owner_row_by_whose_diagram_it_is(
     flask_app, tmp_path
 ):
-    # R-PENDING-387-1
+    # R-0888
     engine = seeded(flask_app, tmp_path)
     with flask_app.app_context():
         command.upgrade(config(), "head")
@@ -297,7 +297,7 @@ def test_the_migration_gives_each_diagram_one_owner_row_by_whose_diagram_it_is(
 
 
 def test_the_migration_reads_the_blob_without_the_app():
-    # R-PENDING-387-1
+    # R-0888
     source = MIGRATION.read_text()
     assert not re.search(r"^\s*(from|import) (btcopilot|PyQt5)", source, re.M)
 
@@ -308,7 +308,7 @@ def test_the_migration_reads_the_blob_without_the_app():
 def test_the_owner_alone_on_their_diagram_is_spoken_to_as_before(
     web, monkeypatch, test_user
 ):
-    # R-PENDING-387-2
+    # R-0889
     diagram = case(test_user)
     told = turn(web, monkeypatch, diagram, "Honestly I just want to die.")
     (marked,) = [line for line in told.splitlines() if recordtext.SPEAKER in line]
@@ -320,7 +320,7 @@ def test_the_owner_alone_on_their_diagram_is_spoken_to_as_before(
 def test_a_human_coach_gets_the_consultant_voice_in_a_chat_and_no_one_is_marked(
     web, monkeypatch, coached
 ):
-    # R-PENDING-387-2
+    # R-0889
     told = turn(web, monkeypatch, coached)
     assert NOTE in told
     assert recordtext.SPEAKER not in told
@@ -329,7 +329,7 @@ def test_a_human_coach_gets_the_consultant_voice_in_a_chat_and_no_one_is_marked(
 def test_a_human_coach_is_asked_for_the_clients_entry_in_the_clients_name(
     web, monkeypatch, test_user, test_user_2
 ):
-    # R-PENDING-387-2
+    # R-0889
     diagram = case(test_user_2, people=(PLACEHOLDER,), events=())
     diagram.grant_access(test_user, btcopilot.ACCESS_READ_WRITE, person_id=None)
     db.session.commit()
@@ -339,7 +339,7 @@ def test_a_human_coach_is_asked_for_the_clients_entry_in_the_clients_name(
 
 
 def test_the_owner_is_asked_for_their_own_entry_as_before(web, monkeypatch, test_user):
-    # R-PENDING-387-2
+    # R-0889
     told = turn(web, monkeypatch, case(test_user, people=(PLACEHOLDER,), events=()))
     assert "This person's own entry in the record (person 1) is still missing" in told
     assert "The client's own entry" not in told
@@ -348,7 +348,7 @@ def test_the_owner_is_asked_for_their_own_entry_as_before(web, monkeypatch, test
 def test_the_crisis_check_runs_only_for_the_person_the_family_belongs_to(
     web, monkeypatch, coached
 ):
-    # R-PENDING-387-2
+    # R-0889
     told = turn(web, monkeypatch, coached, "Honestly I just want to die.")
     assert CRISIS not in told
 
@@ -356,7 +356,7 @@ def test_the_crisis_check_runs_only_for_the_person_the_family_belongs_to(
 def test_a_human_coachs_account_never_takes_the_clients_name(
     web, monkeypatch, coached, test_user
 ):
-    # R-PENDING-387-2
+    # R-0889
     before = (test_user.first_name, test_user.last_name, test_user.birthdate)
     turn(web, monkeypatch, coached)
     db.session.refresh(test_user)
@@ -366,7 +366,7 @@ def test_a_human_coachs_account_never_takes_the_clients_name(
 def test_the_owner_on_their_diagram_still_gets_their_name_from_it(
     web, monkeypatch, test_user
 ):
-    # R-PENDING-387-2
+    # R-0889
     turn(web, monkeypatch, case(test_user))
     db.session.refresh(test_user)
     assert (test_user.first_name, test_user.last_name) == ("Wren", "Hale")
@@ -389,7 +389,7 @@ def aged(user, diagram):
 def test_the_welcome_back_is_only_for_the_person_the_family_belongs_to(
     web, monkeypatch, test_user, coached
 ):
-    # R-PENDING-387-2
+    # R-0889
     aged(test_user, coached)
     assert BACK not in turn(web, monkeypatch, coached)
     own = case(test_user)
@@ -400,7 +400,7 @@ def test_the_welcome_back_is_only_for_the_person_the_family_belongs_to(
 def test_a_session_made_for_a_human_coach_speaks_as_no_one_in_the_family(
     test_user, coached
 ):
-    # R-PENDING-387-2
+    # R-0889
     session = open_session(test_user, coached)
     sync_chat_speakers(session)
     db.session.commit()
@@ -412,7 +412,7 @@ def test_a_session_made_for_a_human_coach_speaks_as_no_one_in_the_family(
 
 
 def test_a_session_made_for_the_owner_speaks_as_the_primary_person(test_user):
-    # R-PENDING-387-2
+    # R-0889
     diagram = case(test_user, people=({"id": 6, "name": "Wren", "primary": True},))
     session = open_session(test_user, diagram)
     speaker = Speaker.query.filter_by(
@@ -422,7 +422,7 @@ def test_a_session_made_for_the_owner_speaks_as_the_primary_person(test_user):
 
 
 def test_a_session_never_fills_an_owners_empty_row(test_user):
-    # R-PENDING-387-1
+    # R-0888
     diagram = case(test_user, people=(), events=())
     sync_chat_speakers(open_session(test_user, diagram))
     db.session.commit()
@@ -432,7 +432,7 @@ def test_a_session_never_fills_an_owners_empty_row(test_user):
 def test_a_free_diagram_is_written_with_its_owner_as_the_first_person(
     test_user, test_user_2
 ):
-    # R-PENDING-387-1
+    # R-0888
     assert rows(test_user.free_diagram) == [
         (test_user.id, btcopilot.ACCESS_READ_WRITE, 1)
     ]
@@ -444,7 +444,7 @@ def test_a_free_diagram_is_written_with_its_owner_as_the_first_person(
 def test_a_free_diagrams_first_turn_speaks_to_its_owner_as_before(
     web, monkeypatch, test_user
 ):
-    # R-PENDING-387-1
+    # R-0888
     told = turn(web, monkeypatch, test_user.free_diagram)
     assert NOTE not in told
     (marked,) = [line for line in told.splitlines() if recordtext.SPEAKER in line]
@@ -454,7 +454,7 @@ def test_a_free_diagrams_first_turn_speaks_to_its_owner_as_before(
 def test_a_fixture_family_is_its_owners_and_a_new_case_fixture_has_a_human_coach(
     flask_app,
 ):
-    # R-PENDING-387-1
+    # R-0888
     own = fixtures.install("one")
     assert rows(own.free_diagram) == [(own.id, btcopilot.ACCESS_READ_WRITE, 1)]
     coach = fixtures.install("new-case")
@@ -467,7 +467,7 @@ def test_a_fixture_family_is_its_owners_and_a_new_case_fixture_has_a_human_coach
 
 
 def test_the_owners_own_row_never_lists_their_diagram_twice(test_user):
-    # R-PENDING-387-6
+    # R-0888
     case(test_user)
     ids = [d.id for d in readable(test_user)]
     assert len(ids) == len(set(ids))
@@ -481,7 +481,7 @@ def test_the_owners_own_row_never_lists_their_diagram_twice(test_user):
 def test_a_second_user_on_a_case_sees_and_searches_none_of_the_first_users_words(
     test_user, test_user_2, coached
 ):
-    # R-PENDING-387-3
+    # R-0890
     owners = open_session(test_user_2, coached)
     db.session.add(
         Statement(
@@ -527,7 +527,7 @@ def test_a_second_user_on_a_case_sees_and_searches_none_of_the_first_users_words
 def test_the_case_report_is_written_to_the_person_only_when_one_on_the_case_is_them(
     test_user, test_user_2, coached
 ):
-    # R-PENDING-387-4
+    # R-0891
     data = coached.get_diagram_data()
     assert profile.addressed(coached, data)
     coached.grant_access(test_user_2, btcopilot.ACCESS_READ_WRITE, person_id=2)
@@ -537,7 +537,7 @@ def test_the_case_report_is_written_to_the_person_only_when_one_on_the_case_is_t
 
 
 def test_a_case_written_about_the_person_is_not_refused_for_their_voice():
-    # R-PENDING-387-4
+    # R-0891
     call = SimpleNamespace(
         args={
             "text": "The app's guess: I left home in 1998.",
@@ -556,7 +556,7 @@ def test_a_case_written_about_the_person_is_not_refused_for_their_voice():
 def test_a_rewrite_about_the_person_asks_for_cards_by_their_name(
     web, past, written, family, test_user
 ):
-    # R-PENDING-387-4
+    # R-0891
     family.grant_access(test_user, btcopilot.ACCESS_READ_WRITE, person_id=2)
     db.session.commit()
     model = Model(
@@ -575,7 +575,7 @@ def test_a_rewrite_about_the_person_asks_for_cards_by_their_name(
 
 
 def test_a_rewrite_for_the_person_still_refuses_their_voice(web, past, written, family):
-    # R-PENDING-387-4
+    # R-0891
     model = Model(
         calling(guessed("I remember my mother was ill that winter.")),
         calling(guessed('You said "I remember my mother was ill" that winter.')),
@@ -592,7 +592,7 @@ def test_a_rewrite_for_the_person_still_refuses_their_voice(web, past, written, 
 def test_admin_puts_a_human_coach_on_a_case_and_takes_them_off(
     flask_app, test_user, test_user_2
 ):
-    # R-PENDING-387-5
+    # R-0892
     diagram = case(test_user_2)
     runner = flask_app.test_cli_runner()
     email = test_user.username
@@ -619,7 +619,7 @@ def test_admin_puts_a_human_coach_on_a_case_and_takes_them_off(
 def test_admin_refuses_a_person_not_in_the_diagram_and_never_removes_the_owner(
     flask_app, test_user, test_user_2
 ):
-    # R-PENDING-387-5
+    # R-0892
     diagram = case(test_user_2)
     runner = flask_app.test_cli_runner()
     stray = runner.invoke(
@@ -636,7 +636,7 @@ def test_admin_refuses_a_person_not_in_the_diagram_and_never_removes_the_owner(
 
 
 def test_the_admin_skill_file_names_the_new_commands():
-    # R-PENDING-387-5
+    # R-0892
     assert skill.PATH.read_text() == skill.render(admin)
     assert "flask admin diagrams add-user" in skill.PATH.read_text()
 
@@ -652,7 +652,7 @@ def make(web, name="The Hales", own=None):
 
 
 def test_a_user_without_a_professional_licence_makes_a_diagram(web, test_user):
-    # R-PENDING-387-7
+    # R-0893
     assert not test_user.licenses
     made = make(web, own=True)
     assert made.status_code == 201
@@ -661,7 +661,7 @@ def test_a_user_without_a_professional_licence_makes_a_diagram(web, test_user):
 
 
 def test_making_ones_own_family_gives_the_usual_first_turn(web, monkeypatch, test_user):
-    # R-PENDING-387-7
+    # R-0893
     made = db.session.get(Diagram, make(web, own=True).get_json()["id"])
     assert rows(made) == [(test_user.id, btcopilot.ACCESS_READ_WRITE, 1)]
     told = turn(web, monkeypatch, made)
@@ -672,7 +672,7 @@ def test_making_ones_own_family_gives_the_usual_first_turn(web, monkeypatch, tes
 def test_making_someone_elses_family_gives_the_colleague_voice(
     web, monkeypatch, test_user
 ):
-    # R-PENDING-387-7
+    # R-0893
     made = db.session.get(Diagram, make(web, own=False).get_json()["id"])
     assert rows(made) == [(test_user.id, btcopilot.ACCESS_READ_WRITE, None)]
     told = turn(web, monkeypatch, made)
@@ -681,7 +681,7 @@ def test_making_someone_elses_family_gives_the_colleague_voice(
 
 
 def test_a_diagram_is_not_made_without_its_name_or_the_own_family_answer(web):
-    # R-PENDING-387-7
+    # R-0893
     assert make(web).status_code == 400
     assert make(web, name=" ", own=True).status_code == 400
     assert make(web, own="yes").status_code == 400
@@ -696,7 +696,7 @@ def rename(web, diagram_id, name):
 
 
 def test_the_owner_renames_a_diagram(web, test_user):
-    # R-PENDING-387-7
+    # R-0893
     diagram = test_user.free_diagram
     renamed = rename(web, diagram.id, "  The Hale family ")
     assert renamed.status_code == 200
@@ -706,7 +706,7 @@ def test_the_owner_renames_a_diagram(web, test_user):
 
 
 def test_only_the_owner_renames_a_diagram(web, test_user, coached):
-    # R-PENDING-387-7
+    # R-0893
     assert rename(web, coached.id, "Mine now").status_code == 404
     assert rename(web, test_user.free_diagram.id, "").status_code == 400
     db.session.refresh(coached)

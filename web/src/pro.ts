@@ -1,6 +1,6 @@
 /** What a professional licence turns on. One app on the phone and the desktop,
  * with features turned on by licence, role and view — never a second app
- * (R-0237). A reader without the licence never sees the word case (R-0285). */
+ * (R-0237). A reader without the licence never sees the word case (R-0894). */
 
 export const PRO = window.BOOTSTRAP.user?.pro === true;
 
