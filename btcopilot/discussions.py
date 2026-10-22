@@ -8,6 +8,7 @@ from sqlalchemy import func
 from btcopilot import auth, diagramjson, profile
 from btcopilot.extensions import db
 from btcopilot.models import Diagram
+from btcopilot.models.diagram import owner_row
 from btcopilot.models import (
     Discussion,
     DiscussionKind,
@@ -178,10 +179,12 @@ def family(user, diagram: Diagram | None) -> Diagram:
     personal app's own routes do not, and get the free one, made on first use."""
     diagram = diagram or user.free_diagram
     if diagram is None:
+        # written as set_free_diagram writes it: their own family
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
             data=diagramjson.dumps({}),
+            access_rights=[owner_row(user.id, profile.FIRST_PERSON_ID)],
         )
         db.session.add(diagram)
         db.session.flush()
@@ -215,7 +218,7 @@ def voice(user, diagram: Diagram, data) -> tuple[int | None, str]:
     """The person the user speaks as on the case and the label they speak
     under: the family's subject by the subject's label, a member of the family
     by their name, and a human coach, who is no one in it, by their own."""
-    person_id = profile.person_of(user, diagram, data)
+    person_id = profile.person_of(user, diagram)
     if person_id is None:
         return None, user.full_name().strip() or user.username
     if profile.is_subject(person_id, data):
@@ -260,10 +263,6 @@ def sync_chat_speakers(discussion: Discussion):
     user_person_id, changed = diagram_data.ensure_chat_defaults()
     if changed:
         diagram.set_diagram_data(diagram_data)
-    # the owner's row names the person the chat app just made them
-    row = diagram.access_right(discussion.user)
-    if row is not None and row.person_id is None and diagram.user_id == discussion.user_id:
-        row.person_id = user_person_id
     person_id, name = voice(discussion.user, diagram, diagram_data)
 
     user_speaker = Speaker.query.filter_by(

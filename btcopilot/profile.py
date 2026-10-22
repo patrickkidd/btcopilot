@@ -33,17 +33,12 @@ def own_id(data: DiagramData) -> int:
     return person["id"] if person else FIRST_PERSON_ID
 
 
-def person_of(user, diagram, data: DiagramData) -> int | None:
+def person_of(user, diagram) -> int | None:
     """Who the user is on the case: the person their row names, or None for
-    someone who is not in the family, such as a human coach. The owner whose
-    row names no one yet is the person the family belongs to: their own
-    diagram starts with no primary person, and the chat app makes one."""
+    someone who is not in the family, such as a human coach, the owner
+    included (FD-387)."""
     row = diagram.access_right(user)
-    if row is not None and row.person_id is not None:
-        return row.person_id
-    if user.id == diagram.user_id:
-        return own_id(data)
-    return None
+    return row.person_id if row is not None else None
 
 
 def is_subject(person_id: int | None, data: DiagramData) -> bool:
@@ -54,10 +49,7 @@ def is_subject(person_id: int | None, data: DiagramData) -> bool:
 def addressed(diagram, data: DiagramData) -> bool:
     """Whether anyone on the case is the person it belongs to, so its case
     report is written to them as "you"."""
-    return any(
-        is_subject(person_of(row.user, diagram, data), data)
-        for row in diagram.access_rights
-    ) or is_subject(person_of(diagram.user, diagram, data), data)
+    return any(is_subject(row.person_id, data) for row in diagram.access_rights)
 
 
 def birth(data: DiagramData, person_id: int) -> dict | None:

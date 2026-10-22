@@ -17,6 +17,7 @@ from btcopilot import diagramjson, playturn
 from btcopilot.discussions import open_session
 from btcopilot.extensions import db
 from btcopilot.case import Case, Snapshot
+from btcopilot.models.diagram import owner_row
 from btcopilot.models import (
     AccessRight,
     Audience,
@@ -988,10 +989,13 @@ FIXTURES = {
     "case-report": (case_report, CASE_REPORT_CHAT),
     "case-report-thin": (case_report_thin, None),
     "case-report-dense": (case_report_dense, CASE_REPORT_CHAT),
+    "new-case": (DiagramData, None),
 }
+# fixtures made as "new case" makes a diagram: the owner is a human coach on it
+NEW_CASES = {"new-case"}
 
 # the diagram name each fixture's record carries, when it is not the default
-DIAGRAM_NAMES = {"longname": LONG_DIAGRAM_NAME}
+DIAGRAM_NAMES = {"longname": LONG_DIAGRAM_NAME, "new-case": "A client's family"}
 # the account's own name, for the fixtures whose screen shows it
 OWNER_NAMES = {
     "case-report": ("Nora", "Halloran"),
@@ -1056,17 +1060,27 @@ def install(key: str):
     db.session.flush()
 
     data = builder()
+    # a fixture stands for the user's own family, so they are its primary
+    # person; one made with "new case" has them on it as a human coach
+    primary = data.primary_person()
+    coach = key in NEW_CASES
     # the coach's questions and guesses are kept in the record but not by
     # set_diagram_data, which writes only what the Pro app edits
     diagram = Diagram(
         user_id=user.id,
         name=DIAGRAM_NAMES.get(key, DIAGRAM_NAME),
         data=diagramjson.dumps({"questions": data.questions}),
+        access_rights=[
+            owner_row(user.id, None if coach or not primary else primary["id"])
+        ],
     )
     diagram.set_diagram_data(data)
     db.session.add(diagram)
     db.session.flush()
-    user.free_diagram_id = diagram.id
+    if coach:
+        user.current_diagram_id = diagram.id
+    else:
+        user.free_diagram_id = diagram.id
     db.session.commit()
 
     if chat:

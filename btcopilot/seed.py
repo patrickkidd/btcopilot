@@ -11,6 +11,10 @@ Usage: FLASK_CONFIG=development python -m btcopilot.seed [username]
 import sys
 
 from btcopilot import diagramjson
+from btcopilot.extensions import db
+from btcopilot.models import Diagram, User
+from btcopilot.models.diagram import owner_row
+from btcopilot.profile import FIRST_PERSON_ID
 from btcopilot.schema import (
     Cluster,
     DateCertainty,
@@ -183,9 +187,6 @@ def seed_diagram_data() -> DiagramData:
 
 
 def seed(username: str, diagram_data: DiagramData | None = None):
-    from btcopilot.extensions import db
-    from btcopilot.models import Diagram, User
-
     user = User.query.filter_by(username=username).first()
     if user is None:
         raise SystemExit(f"No user {username}")
@@ -201,7 +202,13 @@ def seed(username: str, diagram_data: DiagramData | None = None):
         db.session.delete(old)
     db.session.flush()
 
-    diagram = Diagram(user_id=user.id, name=SEED_DIAGRAM_NAME, data=diagramjson.dumps({}))
+    # the user's free diagram, written as set_free_diagram writes it
+    diagram = Diagram(
+        user_id=user.id,
+        name=SEED_DIAGRAM_NAME,
+        data=diagramjson.dumps({}),
+        access_rights=[owner_row(user.id, FIRST_PERSON_ID)],
+    )
     diagram.set_diagram_data(diagram_data or seed_diagram_data())
     db.session.add(diagram)
     db.session.flush()

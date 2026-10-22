@@ -18,7 +18,8 @@ from alembic import command
 from PyQt5.QtCore import QDateTime
 
 import btcopilot
-from btcopilot import casereport, diagramjson, profile, recordtext
+from btcopilot import casereport, diagramjson, discussions, profile, recordtext
+from btcopilot.routes import fixtures
 from btcopilot.admin import admin, skill
 from btcopilot.admin.database import config
 from btcopilot.discussions import SITTING_GAP, chats, open_session, sync_chat_speakers
@@ -116,7 +117,7 @@ def test_a_new_diagram_has_its_owners_row_on_the_primary_person(test_user):
     assert rows(empty) == [(test_user.id, btcopilot.ACCESS_READ_WRITE, None)]
 
 
-def test_a_diagram_made_with_its_owners_row_keeps_just_that_one(test_user):
+def test_a_diagram_made_with_its_owners_row_keeps_just_that_one_as_written(test_user):
     # R-PENDING-387-1
     diagram = Diagram(
         user_id=test_user.id,
@@ -128,7 +129,7 @@ def test_a_diagram_made_with_its_owners_row_keeps_just_that_one(test_user):
     )
     db.session.add(diagram)
     db.session.commit()
-    assert rows(diagram) == [(test_user.id, btcopilot.ACCESS_READ_ONLY, 1)]
+    assert rows(diagram) == [(test_user.id, btcopilot.ACCESS_READ_ONLY, None)]
 
 
 def test_granting_again_keeps_the_person_unless_told(test_user, test_user_2):
@@ -420,12 +421,46 @@ def test_a_session_made_for_the_owner_speaks_as_the_primary_person(test_user):
     assert (speaker.person_id, speaker.name) == (6, "Wren")
 
 
-def test_the_owners_empty_row_names_the_person_the_chat_app_makes(test_user):
-    # R-PENDING-387-2
+def test_a_session_never_fills_an_owners_empty_row(test_user):
+    # R-PENDING-387-1
     diagram = case(test_user, people=(), events=())
     sync_chat_speakers(open_session(test_user, diagram))
     db.session.commit()
-    assert rows(diagram) == [(test_user.id, btcopilot.ACCESS_READ_WRITE, 1)]
+    assert rows(diagram) == [(test_user.id, btcopilot.ACCESS_READ_WRITE, None)]
+
+
+def test_a_free_diagram_is_written_with_its_owner_as_the_first_person(
+    test_user, test_user_2
+):
+    # R-PENDING-387-1
+    assert rows(test_user.free_diagram) == [
+        (test_user.id, btcopilot.ACCESS_READ_WRITE, 1)
+    ]
+    made = discussions.family(test_user_2, None)
+    db.session.commit()
+    assert rows(made) == [(test_user_2.id, btcopilot.ACCESS_READ_WRITE, 1)]
+
+
+def test_a_free_diagrams_first_turn_speaks_to_its_owner_as_before(
+    web, monkeypatch, test_user
+):
+    # R-PENDING-387-1
+    told = turn(web, monkeypatch, test_user.free_diagram)
+    assert NOTE not in told
+    (marked,) = [line for line in told.splitlines() if recordtext.SPEAKER in line]
+    assert marked.startswith("1 User")
+
+
+def test_a_fixture_family_is_its_owners_and_a_new_case_fixture_has_a_human_coach(
+    flask_app,
+):
+    # R-PENDING-387-1
+    own = fixtures.install("one")
+    assert rows(own.free_diagram) == [(own.id, btcopilot.ACCESS_READ_WRITE, 1)]
+    coach = fixtures.install("new-case")
+    (made,) = Diagram.query.filter_by(user_id=coach.id).all()
+    assert coach.free_diagram_id is None and coach.current_diagram_id == made.id
+    assert rows(made) == [(coach.id, btcopilot.ACCESS_READ_WRITE, None)]
 
 
 # 6. a single-user diagram behaves as before
@@ -604,3 +639,75 @@ def test_the_admin_skill_file_names_the_new_commands():
     # R-PENDING-387-5
     assert skill.PATH.read_text() == skill.render(admin)
     assert "flask admin diagrams add-user" in skill.PATH.read_text()
+
+
+# 7. anyone makes a diagram, says whether it is their own family, renames it
+
+
+def make(web, name="The Hales", own=None):
+    body = {"name": name} if own is None else {"name": name, "own_family": own}
+    return web.post(
+        "/app/diagrams", json=body, headers={"X-CSRFToken": csrf_token(web)}
+    )
+
+
+def test_a_user_without_a_professional_licence_makes_a_diagram(web, test_user):
+    # R-PENDING-387-7
+    assert not test_user.licenses
+    made = make(web, own=True)
+    assert made.status_code == 201
+    assert made.get_json()["name"] == "The Hales"
+    assert made.get_json()["current"] is True
+
+
+def test_making_ones_own_family_gives_the_usual_first_turn(web, monkeypatch, test_user):
+    # R-PENDING-387-7
+    made = db.session.get(Diagram, make(web, own=True).get_json()["id"])
+    assert rows(made) == [(test_user.id, btcopilot.ACCESS_READ_WRITE, 1)]
+    told = turn(web, monkeypatch, made)
+    assert NOTE not in told
+    assert any(recordtext.SPEAKER in line for line in told.splitlines())
+
+
+def test_making_someone_elses_family_gives_the_colleague_voice(
+    web, monkeypatch, test_user
+):
+    # R-PENDING-387-7
+    made = db.session.get(Diagram, make(web, own=False).get_json()["id"])
+    assert rows(made) == [(test_user.id, btcopilot.ACCESS_READ_WRITE, None)]
+    told = turn(web, monkeypatch, made)
+    assert NOTE in told
+    assert recordtext.SPEAKER not in told
+
+
+def test_a_diagram_is_not_made_without_its_name_or_the_own_family_answer(web):
+    # R-PENDING-387-7
+    assert make(web).status_code == 400
+    assert make(web, name=" ", own=True).status_code == 400
+    assert make(web, own="yes").status_code == 400
+
+
+def rename(web, diagram_id, name):
+    return web.patch(
+        f"/app/diagrams/{diagram_id}",
+        json={"name": name},
+        headers={"X-CSRFToken": csrf_token(web)},
+    )
+
+
+def test_the_owner_renames_a_diagram(web, test_user):
+    # R-PENDING-387-7
+    diagram = test_user.free_diagram
+    renamed = rename(web, diagram.id, "  The Hale family ")
+    assert renamed.status_code == 200
+    assert renamed.get_json()["name"] == "The Hale family"
+    db.session.refresh(diagram)
+    assert diagram.name == "The Hale family"
+
+
+def test_only_the_owner_renames_a_diagram(web, test_user, coached):
+    # R-PENDING-387-7
+    assert rename(web, coached.id, "Mine now").status_code == 404
+    assert rename(web, test_user.free_diagram.id, "").status_code == 400
+    db.session.refresh(coached)
+    assert coached.name == "The Hales"

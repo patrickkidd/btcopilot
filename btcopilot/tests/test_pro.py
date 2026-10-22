@@ -67,22 +67,12 @@ def test_a_case_is_made_and_the_app_is_put_on_it(pro):
     # R-0285
     made = pro.post(
         "/app/diagrams",
-        json={"name": "Whitlock"},
+        json={"name": "Whitlock", "own_family": False},
         headers={"X-CSRFToken": csrf_token(pro)},
     )
     assert made.status_code == 201
     assert made.get_json()["name"] == "Whitlock"
     assert made.get_json()["current"] is True
-
-
-def test_only_a_professional_makes_a_case(web):
-    # R-0285
-    refused = web.post(
-        "/app/diagrams",
-        json={"name": "Whitlock"},
-        headers={"X-CSRFToken": csrf_token(web)},
-    )
-    assert refused.status_code == 404
 
 
 def test_a_note_is_a_session_of_its_own(pro):

@@ -9,6 +9,8 @@ import flask_bcrypt
 import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
+from btcopilot.models.diagram import owner_row
+from btcopilot.profile import FIRST_PERSON_ID
 from btcopilot.modelmixin import ModelMixin
 from btcopilot.models.preferences import PREF_DEFAULTS, PrefKey, coerce_pref
 
@@ -179,7 +181,12 @@ class User(db.Model, ModelMixin):
             bdata = diagramjson.dumps({})
 
         if not self.free_diagram:
-            diagram = Diagram(user_id=self.id, name="Free Diagram")
+            # their own family: they are the person the chat app makes first
+            diagram = Diagram(
+                user_id=self.id,
+                name="Free Diagram",
+                access_rights=[owner_row(self.id, FIRST_PERSON_ID)],
+            )
             db_session = inspect(self).session
             db_session.add(diagram)
             db_session.merge(diagram)

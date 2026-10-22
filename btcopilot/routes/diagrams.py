@@ -7,12 +7,13 @@ from flask import abort, jsonify, request
 
 import btcopilot
 from btcopilot import auth, diagramjson
-from btcopilot.licence import require_professional
 from btcopilot.routes import Access, access, bp, last_activity, utc_iso
 from btcopilot.extensions import db
 from btcopilot.models import Discussion
 from btcopilot.models import Diagram, User
+from btcopilot.models.diagram import owner_row
 from btcopilot.models.etc import AccessRight
+from btcopilot.profile import FIRST_PERSON_ID
 from btcopilot.routes.users import require_admin
 
 GRANTED = (btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE)
@@ -25,6 +26,8 @@ def readable(user) -> list[Diagram]:
     granted = (
         Diagram.query.join(AccessRight, AccessRight.diagram_id == Diagram.id)
         .filter(AccessRight.user_id == user.id, AccessRight.right.in_(GRANTED))
+        # a scratch copy carries its owner's row and is never listed to anyone
+        .filter(Diagram.scratch.is_(False))
         .all()
     )
     found += [d for d in granted if d.id not in seen]
@@ -92,22 +95,49 @@ def diagram_index():
     )
 
 
+def _name(body: dict) -> str:
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise ValueError("A diagram needs a name")
+    return name
+
+
 @bp.route("/diagrams", methods=["POST"])
 def diagram_create():
-    """A new case: an empty record the app is put on straight away, so the
-    title row names it before anything is said into it. Only a professional
-    keeps several records, so only a professional can make one (R-0285)."""
-    require_professional()
+    """A new diagram, which anyone may make (FD-387): an empty one the app is
+    put on straight away, so the title row names it before anything is said
+    into it. `own_family` answers "Is this your own family?": yes, and the
+    maker is the person the chat app makes first; no, and they are a human
+    coach on it, the person it belongs to no one on it yet."""
     user = auth.current_user()
-    name = (request.get_json().get("name") or "").strip()
-    if not name:
-        raise ValueError("A case needs a name")
-    made = Diagram(user_id=user.id, name=name, data=diagramjson.dumps({}))
+    body = request.get_json()
+    name = _name(body)
+    own = body.get("own_family")
+    if not isinstance(own, bool):
+        raise ValueError("Say whether this is your own family")
+    made = Diagram(
+        user_id=user.id,
+        name=name,
+        data=diagramjson.dumps({}),
+        access_rights=[owner_row(user.id, FIRST_PERSON_ID if own else None)],
+    )
     db.session.add(made)
     db.session.flush()
     user.current_diagram_id = made.id
     db.session.commit()
     return jsonify(diagram_payload(made, user)), 201
+
+
+@bp.route("/diagrams/<int:diagram_id>", methods=["PATCH"])
+def diagram_update(diagram_id: int):
+    """The owner renames their diagram."""
+    user = auth.current_user()
+    found = db.get_or_404(Diagram, diagram_id)
+    if found.user_id != user.id:
+        abort(404)
+    found.name = _name(request.get_json())
+    db.session.commit()
+    return jsonify(diagram_payload(found, user))
 
 
 @bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])

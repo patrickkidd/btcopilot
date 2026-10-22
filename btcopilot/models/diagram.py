@@ -16,6 +16,14 @@ from btcopilot.modelmixin import ModelMixin
 KEEP = object()
 
 
+def owner_row(user_id: int, person_id: int | None) -> AccessRight:
+    """The owner's row on a diagram being made, written by whoever makes it:
+    the person they are in it, or no one for a human coach (FD-387)."""
+    return AccessRight(
+        user_id=user_id, right=btcopilot.ACCESS_READ_WRITE, person_id=person_id
+    )
+
+
 def diagram_data(data: dict) -> DiagramData:
     pdp_dict = data.get("pdp", {})
     known = {f.name for f in dc_fields(DiagramData)} - {"pdp"}
@@ -164,7 +172,8 @@ def _owner_rows(session, flush_context, instances):
     for diagram in [d for d in session.new if isinstance(d, Diagram)]:
         primary = diagram_data(diagramjson.loads(diagram.data)).primary_person()
         person_id = primary["id"] if primary else None
-        # an owner row the caller already added is kept, given the person if empty
+        # an owner row the caller wrote is kept as written: an empty person
+        # there is a human coach, never a person still to fill in
         had = [
             r
             for r in diagram.access_rights
@@ -172,9 +181,6 @@ def _owner_rows(session, flush_context, instances):
             or (r.user is not None and r.user is diagram.user)
         ]
         if had:
-            for r in had:
-                if r.person_id is None:
-                    r.person_id = person_id
             continue
         row = AccessRight(
             user_id=diagram.user_id,

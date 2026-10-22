@@ -354,7 +354,7 @@ class CoachTurn:
         # a user whose row on the case names no one, a human coach, is a
         # consultant in every session (FD-387).
         note = DiscussionKind(self.discussion.kind) is DiscussionKind.Note
-        person = profile.person_of(self.discussion.user, self.diagram, data)
+        person = profile.person_of(self.discussion.user, self.diagram)
         subject = profile.is_subject(person, data)
         consultant = note or person is None
         system, tail = agent_prompt(
