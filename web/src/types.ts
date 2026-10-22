@@ -600,12 +600,10 @@ export interface Diagram {
   person_id: number | null;
 }
 
-/** A diagram's name, and on one someone else owns their first name after it,
- * so two diagrams with one name are told apart: "Free Diagram · Patrick". */
-export function diagramLabel(diagram: Diagram): string {
-  return diagram.owned || !diagram.owner_name
-    ? diagram.name
-    : `${diagram.name} · ${diagram.owner_name}`;
+/** Whose diagram it is, as the diagram list shows it beside the name: the
+ * owner's first name, the user's own included, or nothing, never an email. */
+export function diagramOwner(diagram: Diagram): string {
+  return diagram.owner_name ?? "";
 }
 
 /** Someone with an account, as an admin's search finds them. */

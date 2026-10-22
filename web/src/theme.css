@@ -2310,6 +2310,10 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* a diagram's row: its name, cut short first, and its owner right-justified on the same line */
+.sn-tl { display: flex; align-items: baseline; gap: 8px; }
+.sn-tn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sn-o { flex: none; color: var(--faint); font-size: 15px; }
 .sn-s {
   font: 500 13px/1.3 var(--mono);
   color: var(--faint);

@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { Access, diagramLabel, type Diagram } from "../src/types";
+import { Access, diagramOwner, type Diagram } from "../src/types";
 
 const diagram = (over: Partial<Diagram>): Diagram => ({
   id: 1,
@@ -16,8 +16,8 @@ const diagram = (over: Partial<Diagram>): Diagram => ({
 });
 
 // R-0888
-it("a diagram someone else owns carries their first name after its name, one of the user's own does not", () => {
-  expect(diagramLabel(diagram({ owned: false, person_id: null }))).toBe("Free Diagram · Patrick");
-  expect(diagramLabel(diagram({}))).toBe("Free Diagram");
-  expect(diagramLabel(diagram({ owned: false, owner_name: null }))).toBe("Free Diagram");
+it("every diagram in the list names its owner's first name, the user's own included, and never an email", () => {
+  expect(diagramOwner(diagram({ owned: false, person_id: null }))).toBe("Patrick");
+  expect(diagramOwner(diagram({}))).toBe("Patrick");
+  expect(diagramOwner(diagram({ owner_name: null, owner: "pat@example.com" }))).toBe("");
 });

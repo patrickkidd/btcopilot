@@ -16,7 +16,7 @@ import { onPress } from "./sessions";
 import { address, beyond, NAMES, Place } from "./place";
 import {
   BugReports,
-  diagramLabel,
+  diagramOwner,
   Mode,
   Proactive,
   Theme,
@@ -929,7 +929,11 @@ export class Settings {
     row.dataset.diagram = String(diagram.id);
     const main = el("div", "sn-m");
     main.append(
-      el("div", "sn-t", esc(diagramLabel(diagram))),
+      el(
+        "div",
+        "sn-t sn-tl",
+        `<span class="sn-tn">${esc(diagram.name)}</span><span class="sn-o">${esc(diagramOwner(diagram))}</span>`,
+      ),
       el("div", "sn-s", `${esc(diagramSub(diagram, now))}<span class="sn-use"> · in use</span>`),
     );
     row.append(main, el("span", "sn-tick"));
@@ -1009,7 +1013,7 @@ export class Settings {
   }
 
   private renameRow(row: HTMLElement, diagram: Diagram): void {
-    const holder = row.querySelector<HTMLElement>(".sn-t");
+    const holder = row.querySelector<HTMLElement>(".sn-tn");
     if (!holder || holder.querySelector("input")) return;
     const field = document.createElement("input");
     field.className = "rename";
