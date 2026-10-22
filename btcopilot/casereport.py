@@ -784,6 +784,16 @@ def opening(data: DiagramData, first: Discussion) -> str:
     return "\n".join(said)
 
 
+def audience(diagram: Diagram, data: DiagramData) -> tuple[int | None, str]:
+    """The person the case report speaks to as "you", when the person it
+    belongs to is on the case, else none and the line naming the client it is
+    about (FD-387)."""
+    own = profile.own(data)
+    if profile.addressed(diagram, data):
+        return (own["id"] if own else None), ""
+    return None, "\n\n" + ABOUT.format(name=(own or {}).get("name") or DEFAULT_SUBJECT_NAME)
+
+
 def asked(diagram: Diagram, user: User, toolbox: Toolbox, meter: Metered) -> tuple[str, list[dict]]:
     """The one call's system prompt, the coach's own, and its opening message
     with every event's words and notes, the shifts that support each drawn
@@ -794,17 +804,14 @@ def asked(diagram: Diagram, user: User, toolbox: Toolbox, meter: Metered) -> tup
     the person, the first conversation's opening read raw, so it reads nothing
     (R-0850)."""
     data = diagram.get_diagram_data()
-    own = profile.own(data)
-    to = profile.addressed(diagram, data)
+    to, about = audience(diagram, data)
     system = get_agent_prompt(
-        record=outline(data, diagram.version, own["id"] if to and own else None) + closed(data),
+        record=outline(data, diagram.version, to) + closed(data),
         today=clock.today(user.timezone).isoformat(),
         coverage=coverage.block(data),
     )
     events, _ = toolbox.call(ToolName.ReadEvents, {"fields": [ReadField.Words, ReadField.Notes]})
-    content = case_report_rewrite()
-    if not to:
-        content += "\n\n" + ABOUT.format(name=(own or {}).get("name") or DEFAULT_SUBJECT_NAME)
+    content = case_report_rewrite() + about
     content += f"\n\nEVENTS\n{events}"
     support = held(data)
     if support:

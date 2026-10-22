@@ -15,7 +15,7 @@ import click
 
 # btcopilot.casereport imports btcopilot.admin for its settings, and that
 # package imports this module: casereport's names are read at call time.
-from btcopilot import casereport, coverage, profile, questions, record
+from btcopilot import casereport, coverage, questions, record
 from btcopilot.admin import setting
 from btcopilot.admin.diagrams import find
 from btcopilot.admin.guard import writes
@@ -200,13 +200,13 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> list[dict]:
         Purpose.Backfill,
         model=model_for(setting.read(SettingKey.CoachModel, diagram.user_id)),
     )
-    own = profile.own(data)
+    to, about = casereport.audience(diagram, data)
     system = get_agent_prompt(
-        record=outline(data, diagram.version, own and own["id"]) + casereport.closed(data),
+        record=outline(data, diagram.version, to) + casereport.closed(data),
         today=datetime.date.today().isoformat(),
         coverage=coverage.block(data),
     )
-    start = START.format(ids=", ".join(sorted(fresh(diagram, data))))
+    start = START.format(ids=", ".join(sorted(fresh(diagram, data)))) + about
     turn = drain(meter.turn(system, [{"role": "user", "content": start}], offered(), turn_id))
     rows = checked(diagram, data, [(c.name, c.args) for c in turn.calls])
     path = plans / f"case-report-{diagram.id}.json"

@@ -458,9 +458,8 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> pathlib.Path | None:
             Purpose.Backfill,
             model=model_for(setting.read(SettingKey.CoachModel, diagram.user_id)),
         )
-        own = profile.own(data)
         system = get_agent_prompt(
-            record=outline(data, diagram.version, own and own["id"]),
+            record=outline(data, diagram.version, profile.person_of(diagram.user, diagram)),
             today=datetime.date.today().isoformat(),
             coverage=coverage.block(data),
         )

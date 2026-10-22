@@ -499,9 +499,10 @@ class CoachTurn:
         if self.discussion.title is None:
             self._title()
         self._halt()
-        if not self.scratch and subject:
-            profile.mirror(self.discussion.user, self.data)
+        if not self.scratch:
             TokenMeter.charge(self.discussion.user_id, self.model.spent)
+            if subject:
+                profile.mirror(self.discussion.user, self.data)
         db.session.commit()
 
         return {

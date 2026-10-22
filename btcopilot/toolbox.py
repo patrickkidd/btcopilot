@@ -1240,7 +1240,8 @@ class Toolbox:
         return ("\n".join(lines) or "No events.", {"read": [e["id"] for e in events]})
 
     def _words(self, event_ids: set[int]) -> dict[int, str]:
-        """What the user said in the turn that first wrote each event."""
+        """What this user said in the turn that first wrote each event; another
+        user's sessions on the family are theirs alone, as in said_on."""
         turns = {}
         rows = Change.query.filter_by(diagram_id=self.diagram_id).order_by(Change.id)
         for row in rows:
@@ -1253,6 +1254,7 @@ class Toolbox:
             for s in Statement.query.join(Discussion).filter(
                 Statement.turn_id.in_(set(turns.values())),
                 Statement.speaker_id == Discussion.chat_user_speaker_id,
+                Discussion.user_id == self.user_id,
             )
         }
         return {event: said[turn] for event, turn in turns.items() if turn in said}

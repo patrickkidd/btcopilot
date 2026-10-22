@@ -69,9 +69,11 @@ class Reader(pickle.Unpickler):
         return StandIn
 
 
-def people(blob: bytes | None) -> list:
+def people(blob: bytes | memoryview | None) -> list:
     if not blob:
         return []
+    # Postgres hands a bytea back as a memoryview, whose first byte is an int
+    blob = bytes(blob)
     if blob[:1] == b"{":
         scene = json.loads(blob.decode("utf-8"))
     else:
@@ -90,7 +92,7 @@ def primary(found: list) -> int | None:
     return None
 
 
-def owner_person(blob: bytes | None, free: bool) -> int | None:
+def owner_person(blob: bytes | memoryview | None, free: bool) -> int | None:
     found = people(blob)
     chosen = primary(found)
     if chosen is None and free and not found:

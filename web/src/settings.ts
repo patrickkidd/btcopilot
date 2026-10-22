@@ -12,7 +12,7 @@ import { addPasskey, available, deviceWords } from "./passkey";
 import { IDLE_MS } from "./vote";
 import { device, reach, Reach, subscribe } from "./push";
 import { DIAGRAMS, OWN_FAMILY, PRO } from "./pro";
-import { PRESS_MS } from "./sessions";
+import { onPress } from "./sessions";
 import { address, beyond, NAMES, Place } from "./place";
 import {
   BugReports,
@@ -1004,13 +1004,7 @@ export class Settings {
   /** A long press on a diagram the user owns opens its name for editing in
    * place, as a long press on a session does. */
   private pressToRename(row: HTMLElement, diagram: Diagram): void {
-    let timer = 0;
-    const cancel = () => window.clearTimeout(timer);
-    row.addEventListener("pointerdown", () => {
-      timer = window.setTimeout(() => this.renameRow(row, diagram), PRESS_MS);
-    });
-    for (const kind of ["pointerup", "pointercancel", "pointermove"])
-      row.addEventListener(kind, cancel);
+    onPress(row, () => () => this.renameRow(row, diagram));
   }
 
   private renameRow(row: HTMLElement, diagram: Diagram): void {
