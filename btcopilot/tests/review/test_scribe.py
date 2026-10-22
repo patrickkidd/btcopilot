@@ -10,7 +10,8 @@ from mock import patch
 from btcopilot import prompts
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.llmutil import NotOnBedrockError, Served
-from btcopilot.models import Change, ModelCall, Observation, ObservationKind, Purpose, TurnEvent
+from btcopilot.extensions import db
+from btcopilot.models import Change, Diagram, ModelCall, Observation, ObservationKind, Purpose, TurnEvent
 from btcopilot.review import adapter
 from btcopilot.review import scribe as scribe_module
 from btcopilot.review.scribe import written
@@ -883,3 +884,16 @@ def test_a_corrected_father_reads_as_whose_child_they_now_are(coder, cut, turns)
     thread = coder.get(f"/review/codings/{coding.id}/thread").json
     said = {turn["id"]: turn["said"] for turn in thread["turns"]}
     assert said[turns[0].id][0]["lines"] == sent.json["lines"]
+
+
+def test_a_year_the_coder_says_alone_is_kept_and_read_back_as_the_year(coder, cut, turns):
+    # R-0896
+    coding = coded(coder.user, cut, dict(STRUCTURE, events=[]), done=False)
+    model = Scripted(
+        [("add_couple_event", {"kind": "married", "couple": [1, 2], "date": "1970", "date_certainty": "certain"})],
+    )
+    response = scribe(coder, coding, turns[0], model, "Marcus married Delphine in 1970")
+    assert response.status_code == 200
+    assert response.json["lines"] == [added("Marcus & Delphine · Married · 1970")]
+    (married,) = db.session.get(Diagram, coding.diagram_id).get_diagram_data().events
+    assert (married["dateTime"], married["datePrecision"]) == ("1970-01-01", "year")

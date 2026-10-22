@@ -49,6 +49,7 @@ from btcopilot.schema import (
     QuestionState,
     RelationshipKind,
     VariableShift,
+    DATE_FORMS,
     stated_date,
 )
 
@@ -337,8 +338,7 @@ def schemas(coder: bool = False) -> list[dict]:
                     "kind": _enum_param(EventKind, means[prompts.ToolText.EventKind]),
                     "date": {
                         "type": "string",
-                        "description": "Only as far as the person said it: YYYY for a "
-                        "year alone, YYYY-MM for a month and year, YYYY-MM-DD for the day.",
+                        "description": f"Only as far as the person said it: {DATE_FORMS}.",
                     },
                     "end_date": {
                         "type": "string",

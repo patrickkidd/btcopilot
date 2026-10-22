@@ -12,6 +12,7 @@ import enum
 
 from btcopilot.review import adapter
 from btcopilot.schema import (
+    DATE_FORMS,
     DateCertainty,
     EventKind,
     ItemKind,
@@ -135,7 +136,7 @@ def schemas() -> list[dict]:
     }
     date = {
         "type": "string",
-        "description": "YYYY-MM-DD; a year alone is YYYY-01-01, a month YYYY-MM-01.",
+        "description": f"Only as far as the coder said it: {DATE_FORMS}.",
     }
     certainty = _enum(
         _values(DateCertainty), f"How sure the date is: {adapter.CERTAINTY}."

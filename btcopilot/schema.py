@@ -321,6 +321,9 @@ class DatePrecision(enum.StrEnum):
     Day = "day"
 
 
+DATE_FORMS = "YYYY for a year alone, YYYY-MM for a month and year, YYYY-MM-DD for the day"
+
+
 def stated_date(text: str) -> tuple[str, DatePrecision]:
     """A date as said, YYYY, YYYY-MM or YYYY-MM-DD, as the whole day the
     record stores, the first of the span, and how much of it was said."""
