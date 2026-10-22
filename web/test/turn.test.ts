@@ -95,6 +95,15 @@ describe("what a tool call says in plain words", () => {
 
   // R-0893
   it("says added when the coach names the unnamed first person, changed when they had a name", () => {
+    // the call as the server names it for person 1 of a diagram made with "No",
+    // whose name, last name and gender are all empty
+    expect(
+      line(
+        ToolName.EditPerson,
+        { id: 1, version: 1, name: "Mira", last_name: "Voss", gender: "female" },
+        { it: "Someone" },
+      ),
+    ).toBe("Added Mira");
     expect(line(ToolName.EditPerson, { id: 1, version: 2, name: "Ana" }, { it: "" })).toBe("Added Ana");
     expect(line(ToolName.EditPerson, { id: 1, version: 2, name: "Ana" }, { it: "Anna" })).toBe(
       "Changed Anna: name Ana",
