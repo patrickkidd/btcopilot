@@ -24,7 +24,7 @@ const DAY_HEADINGS = new Set(["Today", "Yesterday"]);
  * to close. */
 const OPEN_DRAG = 40;
 const CLOSE_DRAG = 90;
-const PRESS_MS = 500;
+export const PRESS_MS = 500;
 
 /** When a session happened: a recording's own day, else when it was last
  * spoken in. */

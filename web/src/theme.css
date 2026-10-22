@@ -2372,6 +2372,7 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .sn-manage:active { background: var(--tint); }
+.sn-own { display: flex; gap: 8px; }
 .sn-chip {
   flex: none;
   padding: 2px 9px;
