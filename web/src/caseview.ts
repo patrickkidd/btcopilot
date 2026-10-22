@@ -514,7 +514,7 @@ const onCard = (card: CaseReportCard | null) => (q: AskedQuestion) => q.case_rep
 const newest = (all: AskedQuestion[]) => all[all.length - 1] ?? null;
 
 /** The person the case belongs to, by first name, for the header; null while
- * the record holds only the chat app's placeholder. */
+ * the diagram holds only the chat app's placeholder. */
 export function subjectName(tl: Timeline): string | null {
   const name = tl.people.find((p) => p.primary)?.name;
   return name && name !== "User" ? name : null;

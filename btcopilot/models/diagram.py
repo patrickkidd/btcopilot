@@ -163,10 +163,23 @@ def _owner_rows(session, flush_context, instances):
     primary person, or on no one while the diagram has none."""
     for diagram in [d for d in session.new if isinstance(d, Diagram)]:
         primary = diagram_data(diagramjson.loads(diagram.data)).primary_person()
+        person_id = primary["id"] if primary else None
+        # an owner row the caller already added is kept, given the person if empty
+        had = [
+            r
+            for r in diagram.access_rights
+            if (r.user_id is not None and r.user_id == diagram.user_id)
+            or (r.user is not None and r.user is diagram.user)
+        ]
+        if had:
+            for r in had:
+                if r.person_id is None:
+                    r.person_id = person_id
+            continue
         row = AccessRight(
             user_id=diagram.user_id,
             right=btcopilot.ACCESS_READ_WRITE,
-            person_id=primary["id"] if primary else None,
+            person_id=person_id,
         )
         # a diagram made with its owner as an object has no user_id until now
         if diagram.user is not None:

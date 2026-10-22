@@ -148,7 +148,7 @@ Changes something: needs `--yes`.
 |---|---|
 | `diagram_id` | required |
 | `email` | required |
-| `--person` | The id of the person in the record this user is; left out, they are no one in the family, such as a human coach consulting on the case. |
+| `--person` | The id of the person in the diagram this user is; left out, they are no one in the family, such as a human coach consulting on the case. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin diagrams dates`

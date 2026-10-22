@@ -116,6 +116,21 @@ def test_a_new_diagram_has_its_owners_row_on_the_primary_person(test_user):
     assert rows(empty) == [(test_user.id, btcopilot.ACCESS_READ_WRITE, None)]
 
 
+def test_a_diagram_made_with_its_owners_row_keeps_just_that_one(test_user):
+    # R-PENDING-387-1
+    diagram = Diagram(
+        user_id=test_user.id,
+        name="The Hales",
+        data=diagramjson.dumps({"people": [WREN]}),
+        access_rights=[
+            AccessRight(user_id=test_user.id, right=btcopilot.ACCESS_READ_ONLY)
+        ],
+    )
+    db.session.add(diagram)
+    db.session.commit()
+    assert rows(diagram) == [(test_user.id, btcopilot.ACCESS_READ_ONLY, 1)]
+
+
 def test_granting_again_keeps_the_person_unless_told(test_user, test_user_2):
     # R-PENDING-387-1
     diagram = case(test_user)
@@ -295,7 +310,7 @@ def test_a_human_coach_is_asked_for_the_clients_entry_in_the_clients_name(
     diagram.grant_access(test_user, btcopilot.ACCESS_READ_WRITE, person_id=None)
     db.session.commit()
     told = turn(web, monkeypatch, diagram)
-    assert "The client's own entry in the record (person 1) is still missing" in told
+    assert "The client's own entry in the diagram (person 1) is still missing" in told
     assert "This person's own entry" not in told
 
 

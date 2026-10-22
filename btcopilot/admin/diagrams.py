@@ -1,5 +1,5 @@
 """The family records themselves: who owns them, how much is in them, the
-whole record written out as JSON, change rows taken back, and who else is on
+whole diagram written out as JSON, change rows taken back, and who else is on
 a case."""
 
 import json
@@ -145,7 +145,7 @@ def on_case(diagram: Diagram, user) -> dict:
 @click.option(
     "--person",
     type=int,
-    help="The id of the person in the record this user is; left out, they are "
+    help="The id of the person in the diagram this user is; left out, they are "
     "no one in the family, such as a human coach consulting on the case.",
 )
 @rows_option

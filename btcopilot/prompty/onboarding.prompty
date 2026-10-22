@@ -11,7 +11,7 @@ inputs:
 ---
 
 FIRST, BEFORE ANYTHING ELSE
-{% if coach %}The client's own entry in the record (person {{ person_id }}) is still missing: {{ missing }}.
+{% if coach %}The client's own entry in the diagram (person {{ person_id }}) is still missing: {{ missing }}.
 You are talking with a coach on the client's case, not with the client. Ask the coach
 for the client's first name, last name and birth date, in the client's name ("What is
 your client's first name?"), never for the coach's own.
