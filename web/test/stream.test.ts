@@ -54,6 +54,7 @@ function watch(): { shown: Shown; take: (event: TurnEvent) => void } {
       shown.words = message;
     },
     speak: () => {},
+    part: () => {},
   };
   return { shown, take: feed(sink) };
 }
@@ -278,6 +279,7 @@ function page() {
     failed: () => {},
     refused: () => {},
     speak: (statement) => void (shown.spoken = statement),
+    part: () => {},
   });
   /** Frames go by until nothing is left to draw. */
   const settle = async () => {

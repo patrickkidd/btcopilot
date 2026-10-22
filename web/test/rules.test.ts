@@ -29,6 +29,7 @@ const signIn = (admin: boolean) => {
     statements: [],
     version: "3.0.0",
     beta: true,
+    notes: { part_words: 1500, usd_per_1000_words: 1.95, seconds_per_part: 97 },
   };
 };
 

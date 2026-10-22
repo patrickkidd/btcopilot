@@ -39,6 +39,7 @@ import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { Attachment } from "./attachment";
+import { LongNotes, type Projection } from "./longnotes";
 import { BACK } from "./tokens";
 import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
 import { offerPasskey } from "./passkey";
@@ -96,6 +97,8 @@ declare global {
       session: { id: number; turn: string | null } | null;
       statements: api.Said[];
       version: string;
+      /** What a paste too long for one part costs and takes (R-0897). */
+      notes: Projection;
       /** The beta's forced sending of bugs (R-0615). */
       beta: boolean;
     };
@@ -276,6 +279,7 @@ const chat = new Chat($("chat"), $("composer"), {
 });
 
 const attachment = new Attachment($("attach"), $("composer").parentElement!, $("chat-screen"), $("chat"));
+const longNotes = new LongNotes($("chat-screen"), window.BOOTSTRAP.notes);
 
 /** An event or a person carried from its detail card into the message box:
  * the chat comes up with it as a lit chip at the caret and nothing sent
@@ -1069,6 +1073,8 @@ async function send(): Promise<void> {
   // sent while the coach replies, it waits in the box for the reply to end,
   // and never changes the reply under way (R-0636)
   if (inFlight) return chat.keep();
+  // notes too long for one part are priced first; a cancel leaves them in the box
+  if (!(await longNotes.ask(statement, attachment.picked.file))) return;
   await questions.sending(statement);
   chat.resetDraft();
   post(statement, attachment.take());
@@ -1302,6 +1308,7 @@ function follow(turnId: string): void {
     report: (kind, words) => step(() => void (offered = { kind, words })),
     text: (text) => step(() => void opened().append(text, (chip) => lens.aim(chip))),
     reset: () => step(() => void opened().reset()),
+    part: (k, n) => step(() => opened().part(k, n)),
     // read aloud as the reply ends, never held behind a frame the page is
     // still waiting to draw (R-0898)
     speak: (statement) => {

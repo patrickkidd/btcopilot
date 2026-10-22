@@ -413,6 +413,8 @@ export interface ToolCall {
 export enum TurnEventKind {
   ToolCall = "tool_call",
   RecordPatch = "record_patch",
+  /** The coach starting part k of n of notes too long for one part (R-0897). */
+  Part = "part",
   View = "view",
   /** The coach moved the app to an address in it (R-0055). */
   Navigate = "navigate",
@@ -447,6 +449,7 @@ export type View =
 export type TurnEvent =
   | ({ type: TurnEventKind.ToolCall } & ToolCall)
   | { type: TurnEventKind.RecordPatch; deltas: Delta[]; turn_id: string }
+  | { type: TurnEventKind.Part; part: number; parts: number }
   | { type: TurnEventKind.View; view: View }
   | { type: TurnEventKind.Navigate; address: string }
   | { type: TurnEventKind.Report; report: { kind: ReportKind; words: string } }

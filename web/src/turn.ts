@@ -48,6 +48,8 @@ export interface TurnSink {
   text(text: string): void;
   /** Those words again: what has been drawn is dropped. */
   reset(): void;
+  /** The coach is entering part k of n of long notes (R-0897). */
+  part(k: number, n: number): void;
   /** The reply has ended: read it aloud now, whether or not the page has
    * drawn it yet or the tab is in view. */
   speak(statement: string): void;
@@ -110,6 +112,9 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
         break;
       case TurnEventKind.TextReset:
         sink.reset();
+        break;
+      case TurnEventKind.Part:
+        sink.part(event.part, event.parts);
         break;
       case TurnEventKind.Done:
         if (!event.stopped) sink.speak(event.statement);

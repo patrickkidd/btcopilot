@@ -553,6 +553,11 @@ export class Chat {
         bubble.insertBefore(did(line), words);
         this.scroll();
       },
+      part: (k, n) => {
+        bubble.querySelector(".did.part")?.remove();
+        bubble.insertBefore(el("div", "did part", `Part ${k} of ${n}`), words);
+        this.scroll();
+      },
       notes: (notes) => this.annotate(bubble, notes),
       append: (text, onChip) => {
         sofar += text;
@@ -583,6 +588,7 @@ export class Chat {
         }
         for (const chip of [...said, ...offers.map((c) => ({ chip: c })), ...tail])
           if ("chip" in chip) onChip(chip.chip);
+        bubble.querySelector(".did.part")?.remove();
         playable(bubble, text);
         bubble.classList.remove("typing", "blind");
         this.typing = null;
@@ -820,6 +826,9 @@ export interface LiveBubble {
    * coded in this very session can point back at it (review item 18). */
   stamp(statementId: number): void;
   note(line: Line): void;
+  /** Which part of long notes the coach is entering, one line that moves to
+   * where that part's lines begin and goes when the reply is settled. */
+  part(k: number, n: number): void;
   notes(notes: Notes): void;
   /** The next words off the wire, drawn as they land. */
   append(text: string, onChip: (chip: Chip) => void): void;
