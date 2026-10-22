@@ -16,6 +16,7 @@ import { onPress } from "./sessions";
 import { address, beyond, NAMES, Place } from "./place";
 import {
   BugReports,
+  diagramLabel,
   Mode,
   Proactive,
   Theme,
@@ -928,7 +929,7 @@ export class Settings {
     row.dataset.diagram = String(diagram.id);
     const main = el("div", "sn-m");
     main.append(
-      el("div", "sn-t", esc(diagram.name)),
+      el("div", "sn-t", esc(diagramLabel(diagram))),
       el("div", "sn-s", `${esc(diagramSub(diagram, now))}<span class="sn-use"> · in use</span>`),
     );
     row.append(main, el("span", "sn-tick"));

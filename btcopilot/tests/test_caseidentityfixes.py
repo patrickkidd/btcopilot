@@ -17,6 +17,7 @@ from btcopilot.coachmodel import Spent
 from btcopilot.discussions import open_session
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Statement, TokenMeter
+from btcopilot.routes.diagrams import diagrams_payload
 from btcopilot.schema import ItemKind
 from btcopilot.tests.conftest import Model, calling, csrf_token, said
 from btcopilot.tests.test_caseidentities import (  # noqa: F401
@@ -183,3 +184,11 @@ def test_the_question_catch_up_reads_only_the_owners_sessions(test_user, test_us
     assert "Mum moved to the coast." in transcript
     assert "Ask about the coast." not in transcript
     assert [s.text for s in mine.values()] == ["Mum moved to the coast."]
+
+
+def test_the_diagram_list_says_who_the_user_is_on_each_case(test_user, test_user_2, coached):
+    # R-0888
+    (theirs,) = [d for d in diagrams_payload(test_user) if d["id"] == coached.id]
+    assert (theirs["person_id"], theirs["owner_name"]) == (None, test_user_2.first_name)
+    (own,) = [d for d in diagrams_payload(test_user_2) if d["id"] == coached.id]
+    assert own["person_id"] == 1

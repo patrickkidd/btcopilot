@@ -6,7 +6,7 @@ its own."""
 from flask import abort, jsonify, request
 
 import btcopilot
-from btcopilot import auth, diagramjson
+from btcopilot import auth, diagramjson, profile
 from btcopilot.routes import Access, access, bp, last_activity, utc_iso
 from btcopilot.extensions import db
 from btcopilot.models import Discussion
@@ -62,6 +62,7 @@ def diagram_payload(diagram: Diagram, user) -> dict:
         "owner": diagram.user.full_name().strip() or diagram.user.username,
         # the owner's first name, for the case report's header, never an email
         "owner_name": diagram.user.first_name or None,
+        "person_id": profile.person_of(user, diagram),
     }
 
 

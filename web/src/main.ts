@@ -838,8 +838,9 @@ function sat(sittingId: number, words: Element | null): void {
 
 /** The empty session's call to action, worded for what the session is: a
  * note is the clinician writing up a session after the fact, a professional's
- * session is about a case, and a personal session is about your own family
- * (R-0350). */
+ * session is about a case, a personal session is about your own family
+ * (R-0350), and one by someone who is nobody in the family, a human coach,
+ * is about the family they are helping (R-0889). */
 function showPrompt(kind?: SessionKind): void {
   kind ??= sittings().find((s) => s.id === session)?.kind ?? SessionKind.Chat;
   if (kind === SessionKind.Note)
@@ -852,9 +853,14 @@ function showPrompt(kind?: SessionKind): void {
       `Talk to the coach about the ${familyTitle()} case. Who is in the family, and what brought them in?`,
       "You can also tap the mic on your keyboard and say it.",
     ]);
+  else if (store.current().diagram?.person_id == null)
+    chat.prompt("Tell the coach about this family", [
+      "Or paste your notes. The diagram above grows as you go.",
+      "You can also tap the mic on your keyboard and say it.",
+    ]);
   else
     chat.prompt("Tell your coach who is on your mind", [
-      "Start with a name and what has been going on with them. The coach asks what a coach asks, and the picture above grows as you talk.",
+      "Start with a name and what has been going on with them. The coach asks what a coach asks, and the diagram above grows as you talk.",
       "You can also tap the mic on your keyboard and say it.",
     ]);
 }

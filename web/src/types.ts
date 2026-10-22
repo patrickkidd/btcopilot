@@ -595,6 +595,17 @@ export interface Diagram {
   owner: string;
   /** The owner's full name, or null when the account has none; never an email. */
   owner_name: string | null;
+  /** Who the user is in the diagram, or null for someone who is not in the
+   * family, such as a human coach (FD-387). */
+  person_id: number | null;
+}
+
+/** A diagram's name, and on one someone else owns their first name after it,
+ * so two diagrams with one name are told apart: "Free Diagram · Patrick". */
+export function diagramLabel(diagram: Diagram): string {
+  return diagram.owned || !diagram.owner_name
+    ? diagram.name
+    : `${diagram.name} · ${diagram.owner_name}`;
 }
 
 /** Someone with an account, as an admin's search finds them. */
