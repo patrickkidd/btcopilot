@@ -48,6 +48,9 @@ export interface TurnSink {
   text(text: string): void;
   /** Those words again: what has been drawn is dropped. */
   reset(): void;
+  /** The reply has ended: read it aloud now, whether or not the page has
+   * drawn it yet or the tab is in view. */
+  speak(statement: string): void;
   done(reply: Reply): void;
   failed(message: string): void;
   refused(message: string): void;
@@ -109,6 +112,7 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
         sink.reset();
         break;
       case TurnEventKind.Done:
+        if (!event.stopped) sink.speak(event.statement);
         sink.done(event);
         break;
       case TurnEventKind.Failed:

@@ -1302,6 +1302,14 @@ function follow(turnId: string): void {
     report: (kind, words) => step(() => void (offered = { kind, words })),
     text: (text) => step(() => void opened().append(text, (chip) => lens.aim(chip))),
     reset: () => step(() => void opened().reset()),
+    // read aloud as the reply ends, never held behind a frame the page is
+    // still waiting to draw (R-0898)
+    speak: (statement) => {
+      if (broken || !live()) return;
+      chat.extend();
+      // a reply held for a vote is not read aloud: it would say which is the coach's
+      if (speak.checked && !chat.feedback()) speech.say(statement);
+    },
     done: (reply) =>
       last(async () => {
         // a stopped turn says nothing and its edits are taken back, so the
@@ -1316,10 +1324,7 @@ function follow(turnId: string): void {
         const said = opened();
         said.stamp(reply.statement_id);
         newest = reply.statement_id;
-        chat.extend();
         feedback();
-        // a reply held for a vote is not read aloud: it would say which is the coach's
-        if (speak.checked && !chat.feedback()) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => lens.aim(chip));
         said.vote(turnId);
         stopFollowing();

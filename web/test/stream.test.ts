@@ -53,6 +53,7 @@ function watch(): { shown: Shown; take: (event: TurnEvent) => void } {
     refused: (message) => {
       shown.words = message;
     },
+    speak: () => {},
   };
   return { shown, take: feed(sink) };
 }
@@ -229,6 +230,7 @@ function page() {
     lit: [] as Made[],
     reads: 0,
     words: "",
+    spoken: "",
     /** The record on screen as each line was drawn. */
     with: [] as { line: string; record: string[] }[],
     /** The frame each read was drawn in. */
@@ -275,6 +277,7 @@ function page() {
     done: (reply) => step(() => void (shown.words = reply.statement)),
     failed: () => {},
     refused: () => {},
+    speak: (statement) => void (shown.spoken = statement),
   });
   /** Frames go by until nothing is left to draw. */
   const settle = async () => {
@@ -289,7 +292,7 @@ function page() {
     if (event.type === TurnEventKind.RecordPatch) server.push(String(event.deltas[0].item_id));
     take(event);
   };
-  return { shown, land, settle };
+  return { shown, land, settle, frames };
 }
 
 const added = (k: number): TurnEvent[] => [
@@ -361,5 +364,16 @@ describe("drawing each edit with its line", () => {
     expect(shown.lines.length).toBe(4);
     expect(shown.reads).toBe(1);
     expect(shown.record).toEqual(["1", "2", "3", "4"]);
+  });
+
+  // R-0898
+  it("reads the reply aloud as it ends, even in a hidden tab whose frames never come", async () => {
+    const { shown, land, frames } = page();
+    for (const event of LONG) land(event);
+    await new Promise((r) => setTimeout(r, 0));
+    // nothing has been drawn: the first frame is still awaited
+    expect(frames.length).toBe(1);
+    expect(shown.lines).toEqual([]);
+    expect(shown.spoken).toBe("Added them.");
   });
 });
