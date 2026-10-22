@@ -389,7 +389,7 @@ class CoachTurn:
                                 "parts": len(parts),
                             },
                         )
-                system, messages = self._prompt(answered, words)
+                system, messages = self._prompt(answered, words, final=last)
                 if k == start:
                     messages += picked
                 spoken = self._loop(system, messages, events, last)
@@ -454,9 +454,10 @@ class CoachTurn:
             "turn_id": self.turn_id,
         }
 
-    def _prompt(self, answered: Statement, words: str) -> tuple:
+    def _prompt(self, answered: Statement, words: str, final: bool = True) -> tuple:
         """The system prompt and the chat for one model loop over these words,
-        with the diagram as it stands now."""
+        with the diagram as it stands now. A part before the last asks
+        nothing, so it is given none of the blocks that ask (R-0897)."""
         data = self.data
         # The coaching text is the same every turn and the rest is not, so the
         # rest goes after the chat, heading the new message, and the chat before
@@ -493,10 +494,10 @@ class CoachTurn:
             tail = f"{tail}\n\n{pairs}"
         if not note and subject:
             tail = f"{tail}{self._crisis(answered, data, words)}"
-        gaps = profile.missing(data)
+        gaps = profile.missing(data) if final else []
         if gaps:
             tail = f"{tail}\n\n{onboarding(gaps, profile.own_id(data), coach=person is None)}"
-        gone = None if note or not subject else away(answered)
+        gone = None if note or not subject or not final else away(answered)
         if gone is not None and gone > SITTING_GAP:
             tail = f"{tail}\n\n{back(max(1, gone.days), todos(data))}"
         return system, self._history(tail, answered, words)

@@ -21,14 +21,15 @@ SECONDS_PER_PART = 97
 BREAK = re.compile(r"\n\s*\n")
 
 PART = (
-    "These are part {k} of {n} of the same notes. Enter everything in this part "
-    "into the diagram now. Do not reply to the person yet: the next part follows, "
-    "and you reply once, after the last."
+    "These are part {k} of {n} of the same notes. Enter every person and event "
+    "in this part that you can, even if the person this diagram is about is not "
+    "named yet, and ask nothing: hold every question for your one reply after "
+    "the last part. Do not reply to the person yet."
 )
 LAST = (
     "This is the last part, {n} of {n}, of the same notes; the parts before it "
     "are already in the diagram. Enter everything in this part, then reply to "
-    "the person about the whole of the notes."
+    "the person about the whole of the notes, with any questions you held."
 )
 REMINDER = (
     "Reminder only, already entered: the last lines of the part before.\n"

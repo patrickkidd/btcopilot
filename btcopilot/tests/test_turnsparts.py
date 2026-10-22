@@ -168,3 +168,28 @@ def test_a_month_already_over_its_cap_makes_no_model_call(web, family, monkeypat
 
     assert model.histories == []
     assert logged(body["turn_id"])[-1]["statement"] == LIMIT
+
+
+def test_a_part_with_no_client_named_enters_what_it_holds_and_asks_nothing(
+    web, family, monkeypatch
+):
+    # R-0897
+    data = family.get_diagram_data()
+    data.people = [asdict(Person(id=1))]
+    family.set_diagram_data(data)
+    db.session.commit()
+    monkeypatch.setattr("btcopilot.coachturn.onboarding", lambda *a, **k: "ASK FIRST")
+    model = Model(
+        *three_parts("Nell", "Finn", "Ada", reply="All in. Who is the client?")
+    )
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
+    body = post(web)
+
+    first, second, last = (asked(model.histories[i]) for i in (0, 2, 4))
+    assert "ASK FIRST" not in first + second
+    assert "ask nothing" in first and "ask nothing" in second
+    assert "ASK FIRST" in last
+    db.session.refresh(family)
+    names = {p["name"] for p in family.get_diagram_data().people}
+    assert {"Nell", "Finn", "Ada"} <= names
+    assert logged(body["turn_id"])[-1]["statement"] == "All in. Who is the client?"
