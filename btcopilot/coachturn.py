@@ -25,6 +25,7 @@ from btcopilot import (
     clusters,
     coverage,
     flow,
+    notesparts,
     profile,
     record,
     recordtext,
@@ -33,7 +34,7 @@ from btcopilot import (
 )
 from btcopilot.coachmodel import CoachModel, marked_ends
 from btcopilot.discussions import SITTING_GAP, previous
-from btcopilot.llmutil import UNANSWERED
+from btcopilot.llmutil import UNANSWERED, Spent
 from btcopilot.metered import Metered
 from btcopilot.models import (
     Change,
@@ -134,6 +135,15 @@ class Stopped(Exception):
     """The person stopped the turn; it ends at its next model or tool call."""
 
 
+# The reply when the person's monthly cap ends a turn between model rounds; the
+# cap is there to stop a loop that runs away, so what went in stays (R-0897).
+LIMIT = "Your monthly limit is reached; what went in stays."
+
+
+class MonthOver(Exception):
+    """The person's month is at or over their cap before a model round."""
+
+
 class BareList(Exception):
     """The coach answered with a run of chips and would not narrate it when
     asked. A list of chips is not the coach speaking, and there is nothing here
@@ -187,7 +197,13 @@ def cut(label: str) -> str:
 
 
 def shorten_labels(
-    model, system, messages: list[dict], spoken: str, data, diagram_id: int | None, turn_id=""
+    model,
+    system,
+    messages: list[dict],
+    spoken: str,
+    data,
+    diagram_id: int | None,
+    turn_id="",
 ) -> str:
     """Ask once for shorter labels for the chips that will not fit, and only
     for those labels: the words and the events around them stay as they are.
@@ -274,9 +290,12 @@ class CoachTurn:
         resume: bool = False,
         scratch: bool = False,
         zone: str | None = None,
+        capped: Callable[[Spent], bool] | None = None,
     ):
         """A scratch turn runs on a copy: it charges no one's monthly cap and
-        leaves the user's profile alone."""
+        leaves the user's profile alone. `capped` is asked, with what the turn
+        has spent so far, before each model round; when it says the month is
+        over, the turn ends there with LIMIT as its reply."""
         self.discussion = discussion
         self.statement = statement
         # The person's IANA zone, sent by the page with the message: "today"
@@ -289,6 +308,7 @@ class CoachTurn:
         self.resume = resume
         self.scratch = scratch
         self.sink = sink
+        self.capped = capped
         # Everything the database keeps of this turn once it ends: what the page
         # was told, less the words, plus each round of tool calls as sent.
         self.kept: list[dict] = []
@@ -347,6 +367,97 @@ class CoachTurn:
             zone=self.zone,
         )
 
+        self.person = profile.person_of(self.discussion.user, self.diagram)
+        subject = profile.is_subject(self.person, data)
+        parts = notesparts.split(self.statement)
+        start, picked = self._picked_up(len(parts)) if self.resume else (1, [])
+        events = []
+        over = False
+        try:
+            for k in range(start, len(parts) + 1):
+                last = k == len(parts)
+                if len(parts) == 1:
+                    words = self.statement
+                else:
+                    words = notesparts.framed(parts, k)
+                    if not (self.resume and k == start):
+                        self._note(
+                            events,
+                            {
+                                "type": TurnEventKind.Part.value,
+                                "part": k,
+                                "parts": len(parts),
+                            },
+                        )
+                system, messages = self._prompt(answered, words)
+                if k == start:
+                    messages += picked
+                spoken = self._loop(system, messages, events, last)
+        except MonthOver:
+            _log.warning(f"Turn {self.turn_id} ended at the monthly cap")
+            over = True
+            spoken = LIMIT
+
+        self._halt()
+        if not spoken.strip():
+            raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
+        if not over:
+            spoken = shorten_labels(
+                self.model,
+                system,
+                messages,
+                spoken,
+                self.data,
+                self.discussion.diagram_id,
+                self.turn_id,
+            )
+            spoken = narrate(self.model, system, messages, spoken, self.turn_id)
+        self._halt()
+
+        reply = chips.validate(spoken.strip(), self.data, self.discussion.diagram_id)
+        # What was typed out live is the words as the model first said them. A
+        # retry for shorter labels or for sentences replaces them, so the page
+        # is told to drop what it has and take these instead.
+        if reply != self.streamed:
+            self._send({"type": TurnEventKind.TextReset.value})
+            self._send({"type": TurnEventKind.Text.value, "text": reply})
+        ai_log.info(f"AI response: {reply}")
+        coach_statement = Statement(
+            discussion_id=self.discussion.id,
+            text=reply,
+            speaker=self.discussion.chat_ai_speaker,
+            order=self.discussion.next_order(),
+            views=self.toolbox.views or None,
+            kind=StatementKind.Turn,
+            turn_id=self.turn_id,
+            prompt_version=prompt_version(),
+        )
+        db.session.add(coach_statement)
+        db.session.flush()
+        Change.query.filter_by(diagram_id=self.diagram.id, turn_id=self.turn_id).update(
+            {"statement_id": coach_statement.id}
+        )
+        if self.discussion.title is None and not over:
+            self._title()
+        self._halt()
+        if not self.scratch:
+            TokenMeter.charge(self.discussion.user_id, self.model.spent)
+            if subject:
+                profile.mirror(self.discussion.user, self.data)
+        db.session.commit()
+
+        return {
+            "statement": reply,
+            "statement_id": coach_statement.id,
+            "views": self.toolbox.views,
+            "events": events,
+            "turn_id": self.turn_id,
+        }
+
+    def _prompt(self, answered: Statement, words: str) -> tuple:
+        """The system prompt and the chat for one model loop over these words,
+        with the diagram as it stands now."""
+        data = self.data
         # The coaching text is the same every turn and the rest is not, so the
         # rest goes after the chat, heading the new message, and the chat before
         # it is read back from the wire instead of written to it again.
@@ -354,7 +465,7 @@ class CoachTurn:
         # a user whose row on the case names no one, a human coach, is a
         # consultant in every session (FD-387).
         note = DiscussionKind(self.discussion.kind) is DiscussionKind.Note
-        person = profile.person_of(self.discussion.user, self.diagram)
+        person = self.person
         subject = profile.is_subject(person, data)
         consultant = note or person is None
         system, tail = agent_prompt(
@@ -375,35 +486,41 @@ class CoachTurn:
             tail = f"{tail}\n\n{note_register()}"
         pairs = recordtext.pairs(
             data,
-            chips.plain(self.statement),
-            chips.people(self.statement, data, self.discussion.diagram_id),
+            chips.plain(words),
+            chips.people(words, data, self.discussion.diagram_id),
         )
         if pairs:
             tail = f"{tail}\n\n{pairs}"
         if not note and subject:
-            tail = f"{tail}{self._crisis(answered, data)}"
+            tail = f"{tail}{self._crisis(answered, data, words)}"
         gaps = profile.missing(data)
         if gaps:
             tail = f"{tail}\n\n{onboarding(gaps, profile.own_id(data), coach=person is None)}"
         gone = None if note or not subject else away(answered)
         if gone is not None and gone > SITTING_GAP:
             tail = f"{tail}\n\n{back(max(1, gone.days), todos(data))}"
-        messages = self._history(tail, answered)
-        if self.resume:
-            messages += self._picked_up()
+        return system, self._history(tail, answered, words)
+
+    def _loop(
+        self, system, messages: list[dict], events: list[dict], last: bool
+    ) -> str:
+        """The coach's rounds of tool calls over one part, and what it said at
+        the end. Only the last part's words are the reply and go out as they
+        arrive; a part before it is entered, not answered (R-0897)."""
         spoken = ""
-        events = []
         silent = False
 
         for step in range(MAX_STEPS):
-            turn = self._say(
-                system, messages, schemas(self.toolbox.coder), stream=True
-            )
+            self._month()
+            turn = self._say(system, messages, schemas(self.toolbox.coder), stream=last)
             # A turn ends on words, never on a tool call. Text written before a
             # call is the model working out what to do and the user never sees
             # it, so only a step that calls nothing is the coach speaking.
             spoken = turn.text
             if not turn.calls:
+                if not last:
+                    _log.info(f"Turn {self.turn_id} ended a part saying: {spoken}")
+                    return spoken
                 if spoken.strip() or step == 0 or silent:
                     break
                 _log.warning(f"Turn {self.turn_id} step {step} stopped with no words")
@@ -461,64 +578,23 @@ class CoachTurn:
                 f"Turn {self.turn_id} hit the step cap: {MAX_STEPS} steps used, "
                 f"last tool {turn.calls[-1].name}"
             )
+            if not last:
+                return ""
+            self._month()
             messages.append({"role": "user", "content": FINISH})
             spoken = self._say(system, messages, [], stream=True).text
+        return spoken
 
-        self._halt()
-        if not spoken.strip():
-            raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
-        spoken = shorten_labels(
-            self.model, system, messages, spoken, self.data, self.discussion.diagram_id, self.turn_id
-        )
-        spoken = narrate(self.model, system, messages, spoken, self.turn_id)
-        self._halt()
+    def _month(self) -> None:
+        if self.capped and self.capped(self.model.spent):
+            raise MonthOver(f"turn {self.turn_id} is at the monthly cap")
 
-        reply = chips.validate(spoken.strip(), self.data, self.discussion.diagram_id)
-        # What was typed out live is the words as the model first said them. A
-        # retry for shorter labels or for sentences replaces them, so the page
-        # is told to drop what it has and take these instead.
-        if reply != self.streamed:
-            self._send({"type": TurnEventKind.TextReset.value})
-            self._send({"type": TurnEventKind.Text.value, "text": reply})
-        ai_log.info(f"AI response: {reply}")
-        coach_statement = Statement(
-            discussion_id=self.discussion.id,
-            text=reply,
-            speaker=self.discussion.chat_ai_speaker,
-            order=self.discussion.next_order(),
-            views=self.toolbox.views or None,
-            kind=StatementKind.Turn,
-            turn_id=self.turn_id,
-            prompt_version=prompt_version(),
-        )
-        db.session.add(coach_statement)
-        db.session.flush()
-        Change.query.filter_by(diagram_id=self.diagram.id, turn_id=self.turn_id).update(
-            {"statement_id": coach_statement.id}
-        )
-        if self.discussion.title is None:
-            self._title()
-        self._halt()
-        if not self.scratch:
-            TokenMeter.charge(self.discussion.user_id, self.model.spent)
-            if subject:
-                profile.mirror(self.discussion.user, self.data)
-        db.session.commit()
-
-        return {
-            "statement": reply,
-            "statement_id": coach_statement.id,
-            "views": self.toolbox.views,
-            "events": events,
-            "turn_id": self.turn_id,
-        }
-
-    def _crisis(self, answered: Statement, data: DiagramData) -> str:
+    def _crisis(self, answered: Statement, data: DiagramData, words: str) -> str:
         """The crisis block when the person's message fires a phrase, the
         stay-with-it block when only their message before did, else nothing
         (R-0810, R-0811). It goes before every other first-place block."""
         names = [p["name"] for p in data.people if p.get("name")]
-        found = flow.risk(chips.plain(self.statement), names)
+        found = flow.risk(chips.plain(words), names)
         if found:
             line = flow.line(self.toolbox.zone)
             block = crisis(
@@ -554,7 +630,9 @@ class CoachTurn:
             if before:
                 before.update_title(summary)
         except UNANSWERED as failed:
-            _log.warning(f"Turn {self.turn_id} left a sitting's title as it was: {failed}")
+            _log.warning(
+                f"Turn {self.turn_id} left a sitting's title as it was: {failed}"
+            )
 
     def _regroup(self, events: list[dict]) -> list[str]:
         """Re-group the line when the turn has moved an event or changed a
@@ -626,18 +704,25 @@ class CoachTurn:
             self.kept.append(event)
         self._send(event)
 
-    def _picked_up(self) -> list[dict]:
+    def _picked_up(self, parts: int) -> tuple[int, list[dict]]:
         """A failed turn going on from where it stopped: the page is told again
         what was already done, and the model gets its own rounds of tool calls
-        back, so it finishes the turn rather than starting it over."""
-        messages = []
+        back, so it finishes the turn rather than starting it over. Long notes
+        go on from the part that failed, with that part's rounds; the parts
+        before it are in the diagram."""
+        start, messages = 1, []
         for event in turnstore.kept({self.turn_id}).get(self.turn_id, []):
-            if event["type"] == TurnEventKind.ToolCall.value:
+            if event["type"] in (
+                TurnEventKind.ToolCall.value,
+                TurnEventKind.Part.value,
+            ):
                 self._send(event)
+            if event["type"] == TurnEventKind.Part.value and event["parts"] == parts:
+                start, messages = event["part"], []
             elif event["type"] == TurnEventKind.Step.value:
                 messages.append({"role": "assistant", "content": event["blocks"]})
                 messages.append({"role": "user", "content": event["results"]})
-        return messages
+        return start, messages
 
     def _say(self, system, messages: list[dict], tools: list[dict], stream=False):
         """One model call. The words go out as they arrive; a step that ends in
@@ -656,7 +741,7 @@ class CoachTurn:
                     self._send({"type": TurnEventKind.TextReset.value})
                 return stop.value
 
-    def _history(self, tail: str, answered: Statement) -> list[dict]:
+    def _history(self, tail: str, answered: Statement, words: str) -> list[dict]:
         """The words said before the ones this turn answers, then the record,
         the coach's last notes and the day, then the new message and what its
         chips point at. No past tool call is given back: what the
@@ -677,8 +762,8 @@ class CoachTurn:
         messages = marked_ends(messages, ends[-2:])
 
         # Its number, so a note can rest on the message being answered (R-0852).
-        spoken = f"[message {answered.id}] {self.statement}"
-        pointed = chips.context(self.statement, self.data, self.discussion.diagram_id)
+        spoken = f"[message {answered.id}] {words}"
+        pointed = chips.context(words, self.data, self.discussion.diagram_id)
         if pointed:
             spoken = f"{spoken}\n\n{pointed}"
         _say(messages, ("user", _blocks(tail) + _blocks(spoken)))

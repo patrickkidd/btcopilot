@@ -209,11 +209,18 @@ def _refused(kept: list[dict]) -> list:
 
 
 def _capped(kept: list[dict]) -> list:
-    """The coach used every tool step it had since the turn last failed, so it
-    was made to stop and answer."""
+    """The coach used every tool step it had in one part of the turn since it
+    last failed, so it was made to stop; each part of long notes has its own
+    steps (R-0897)."""
     since = [TurnEventKind.Failed.value] + [e["type"] for e in kept]
     last = len(since) - since[::-1].index(TurnEventKind.Failed.value)
-    steps = since[last:].count(TurnEventKind.Step.value)
+    counts = [0]
+    for kind in since[last:]:
+        if kind == TurnEventKind.Part.value:
+            counts.append(0)
+        elif kind == TurnEventKind.Step.value:
+            counts[-1] += 1
+    steps = max(counts)
     return [(ObservationKind.StepCap, {"steps": steps})] if steps >= MAX_STEPS else []
 
 
