@@ -23,7 +23,7 @@ import { Page, Settings, type Sub } from "./settings";
 import { Notices } from "./notices";
 import { Strip } from "./strip";
 import { aimedEvents, chips, Does, DOES, itemKind, Lead } from "./chips";
-import { feed } from "./turn";
+import { feed, Lockstep, type Made } from "./turn";
 import { Release } from "./release";
 import { Reports } from "./report";
 import { toolLine } from "./tools";
@@ -72,6 +72,7 @@ import {
   type Started,
   type Statement,
   type Timeline,
+  type TimelineEvent,
   SessionKind,
   Spotlight,
   BugReports,
@@ -1182,6 +1183,23 @@ const STOPPED_KEPT = "Stopped; its changes stayed";
 
 let onTurn: string | null = null;
 
+const nextFrame = (): Promise<number> => new Promise((done) => requestAnimationFrame(done));
+
+/** The record and the sittings read again as a turn ends, drawn on a frame of
+ * their own so the turn never redraws twice in one frame (R-0898). */
+async function settleRecord(): Promise<boolean> {
+  const live = store.live();
+  const [timeline, sittings] = await Promise.all([
+    store.fetch(api.timeline),
+    store.fetch(api.sessionIndex),
+  ]);
+  if (timeline === null || sittings === null) return false;
+  await nextFrame();
+  if (!live()) return false;
+  store.update({ record: timeline, sittings });
+  return true;
+}
+
 function follow(turnId: string): void {
   if (onTurn === turnId) return;
   stopFollowing();
@@ -1220,7 +1238,7 @@ function follow(turnId: string): void {
   let broken = false;
   /** What the person said about the app, which the coach offered to send. */
   let offered: { kind: ReportKind; words: string } | null = null;
-  const step = (work: () => Promise<void> | void) => {
+  const enqueue = (work: () => Promise<void> | void) => {
     queue = queue
       .then(() => (broken || !live() ? undefined : work()))
       .catch((error) => {
@@ -1230,6 +1248,39 @@ function follow(turnId: string): void {
         chat.warn(UNDRAWN, () => void reload());
         reportError(error);
       });
+  };
+  // Each line lands with the change it made on the picture, the timeline and
+  // the lists, in one frame (R-0898). What it lit stays lit until the next
+  // message; edits drawn without a read of their own are lit with the next one.
+  let unlit: Made[] = [];
+  let gone: TimelineEvent[] = [];
+  const lock = new Lockstep<Timeline>(enqueue, {
+    frame: nextFrame,
+    read: () => store.fetch(api.timeline),
+    draw: (read, batch) => {
+      if (!live()) return;
+      // a removed event is gone from the record read back, so it is taken
+      // from the one on screen, to stay where it was in its colour
+      const removed = new Set(
+        batch.made
+          .filter((one) => one.kind === ItemKind.Event && one.touch === Touch.Remove)
+          .map((one) => Number(one.id)),
+      );
+      gone.push(...record().events.filter((e) => removed.has(e.id)));
+      unlit.push(...batch.made);
+      if (read) {
+        store.update({ record: read });
+        picture.light(unlit, gone);
+        unlit = [];
+        gone = [];
+      }
+      for (const line of batch.lines) opened().note(line);
+      for (const ids of batch.reads) picture.read(ids);
+    },
+  });
+  const step = (work: () => Promise<void> | void) => {
+    lock.close();
+    enqueue(work);
   };
 
   // a message held while the coach replied goes once the reply is drawn; a file
@@ -1241,21 +1292,10 @@ function follow(turnId: string): void {
   };
 
   const take = feed({
-    note: (line) => step(() => void opened().note(line)),
+    note: (line) => lock.line(line),
     notes: (notes) => step(() => opened().notes(notes)),
-    made: (items) =>
-      step(async () => {
-        // a removed event is gone from the record read back, so it is taken
-        // from the one on screen, to stay where it was in its colour
-        const removed = new Set(
-          items
-            .filter((one) => one.kind === ItemKind.Event && one.touch === Touch.Remove)
-            .map((one) => Number(one.id)),
-        );
-        const gone = record().events.filter((e) => removed.has(e.id));
-        if ((await load()) && items.length) picture.light(items, gone);
-      }),
-    read: (ids) => step(() => picture.read(ids)),
+    made: (items) => lock.made(items),
+    read: (ids) => lock.read(ids),
     show: (view) => step(() => shown(view)),
     go: (address) => step(() => navigate(address)),
     // offered once the reply is done, never over words still coming
@@ -1270,7 +1310,7 @@ function follow(turnId: string): void {
           stopFollowing();
           chat.stopped(bubble?.bubble ?? null, reply.conflict ? STOPPED_KEPT : STOPPED);
           picture.untouch();
-          await store.refresh(Part.Record, Part.Sittings);
+          await settleRecord();
           return;
         }
         const said = opened();
@@ -1283,7 +1323,7 @@ function follow(turnId: string): void {
         said.settle(reply.statement, (chip) => lens.aim(chip));
         said.vote(turnId);
         stopFollowing();
-        if (!(await store.refresh(Part.Record, Part.Sittings))) return;
+        if (!(await settleRecord())) return;
         void notices.refresh();
         // What the message named stays lit after it is written: the spotlight
         // is the resting state of the picture, not a flourish while it types.
