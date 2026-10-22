@@ -12,7 +12,7 @@ from mock import patch
 
 import btcopilot
 from btcopilot import casereport, recordtext, shadow
-from btcopilot.admin import admin
+from btcopilot.admin import admin, catchup
 from btcopilot.coachmodel import Spent
 from btcopilot.discussions import open_session
 from btcopilot.extensions import db
@@ -164,3 +164,22 @@ def test_the_case_report_backfill_writes_about_the_person_when_no_one_on_the_cas
     assert recordtext.SPEAKER not in model.systems[0]
     assert casereport.ABOUT.format(name="Wren") in model.histories[0][0]["content"]
     assert json.loads(result.stdout)
+
+
+def test_the_question_catch_up_reads_only_the_owners_sessions(test_user, test_user_2, coached):
+    # R-0890
+    for user, text in ((test_user_2, "Mum moved to the coast."), (test_user, "Ask about the coast.")):
+        session = open_session(user, coached)
+        db.session.add(
+            Statement(
+                discussion_id=session.id,
+                speaker_id=session.chat_user_speaker_id,
+                text=text,
+                created_at=datetime.datetime(2026, 1, 5, 10),
+            )
+        )
+    db.session.commit()
+    transcript, mine, _ = catchup.said(coached)
+    assert "Mum moved to the coast." in transcript
+    assert "Ask about the coast." not in transcript
+    assert [s.text for s in mine.values()] == ["Mum moved to the coast."]
