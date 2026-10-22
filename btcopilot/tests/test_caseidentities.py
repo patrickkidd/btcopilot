@@ -155,9 +155,10 @@ def test_a_deleted_diagram_takes_its_rows(test_user, test_user_2):
 
 
 def seeded(flask_app, tmp_path) -> sa.Engine:
-    """A database at the head before this migration, holding a JSON diagram
-    with a primary person, a pickled Pro diagram with one, an empty one and
-    one whose owner already has a row."""
+    """A database at the head before this migration: free diagrams with a
+    primary person (1), with no one (3), and with people but no primary
+    person (5); other diagrams pickled with a primary person (2), with one
+    and its owner's row already there (4), and with no one (6)."""
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path / 'old.db'}"
     engine = sa.create_engine(flask_app.config["SQLALCHEMY_DATABASE_URI"])
     at = datetime.datetime(2026, 1, 1)
@@ -187,7 +188,7 @@ def seeded(flask_app, tmp_path) -> sa.Engine:
                         "status": "confirmed",
                         "created_at": at,
                     }
-                    for i in (1, 2)
+                    for i in (1, 2, 3)
                 ],
             )
             conn.execute(
@@ -225,8 +226,28 @@ def seeded(flask_app, tmp_path) -> sa.Engine:
                             {"people": [{"id": 7, "primary": True}]}
                         ),
                     },
+                    {
+                        "id": 5,
+                        "user_id": 3,
+                        "created_at": at,
+                        "version": 1,
+                        "data": diagramjson.dumps({"people": [{"id": 8}]}),
+                    },
+                    {
+                        "id": 6,
+                        "user_id": 3,
+                        "created_at": at,
+                        "version": 1,
+                        "data": diagramjson.dumps({}),
+                    },
                 ],
             )
+            for user_id, diagram_id in ((1, 1), (2, 3), (3, 5)):
+                conn.execute(
+                    users.update()
+                    .where(users.c.id == user_id)
+                    .values(free_diagram_id=diagram_id)
+                )
             conn.execute(
                 rights.insert(),
                 [
@@ -249,7 +270,7 @@ def seeded(flask_app, tmp_path) -> sa.Engine:
     return engine
 
 
-def test_the_migration_gives_each_diagram_one_owner_row_on_its_primary_person(
+def test_the_migration_gives_each_diagram_one_owner_row_by_whose_diagram_it_is(
     flask_app, tmp_path
 ):
     # R-PENDING-387-1
@@ -266,9 +287,11 @@ def test_the_migration_gives_each_diagram_one_owner_row_on_its_primary_person(
     assert [tuple(r) for r in found] == [
         (1, 1, "rw", 3),
         (2, 1, "rw", 5),
-        (3, 2, "rw", None),
+        (3, 2, "rw", 1),
         (4, 1, "ro", None),
         (4, 2, "rw", 7),
+        (5, 3, "rw", None),
+        (6, 3, "rw", None),
     ]
 
 

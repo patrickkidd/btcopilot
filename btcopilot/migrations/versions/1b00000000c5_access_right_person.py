@@ -1,8 +1,11 @@
 """Who each user is on a case: access_rights.person_id, the person in the
 diagram the user is, or empty for someone who is not in the family, such as a
 human coach consulting on it (FD-387). Every user on a case has a row, the
-owner included, so each diagram gets its owner's row, read-write, on the
-primary person, or on no one where the diagram has none.
+owner included, so each diagram gets its owner's row, read-write. A user's
+free diagram is theirs: its primary person, or person 1, the one the chat app
+makes, when it holds no one yet; one holding people but no primary person is an
+imported Pro case, on no one. Any other diagram is on its primary person, or
+on no one.
 
 The blob is read here without the app: a row the chat app made is JSON, an
 older one a pickle from the Pro app whose Qt values and enums are read as
@@ -77,11 +80,22 @@ def people(blob: bytes | None) -> list:
     return found if isinstance(found, list) else []
 
 
-def primary(blob: bytes | None) -> int | None:
-    for person in people(blob):
+FIRST_PERSON_ID = 1
+
+
+def primary(found: list) -> int | None:
+    for person in found:
         if isinstance(person, dict) and person.get("primary") is True:
             return person.get("id") if isinstance(person.get("id"), int) else None
     return None
+
+
+def owner_person(blob: bytes | None, free: bool) -> int | None:
+    found = people(blob)
+    chosen = primary(found)
+    if chosen is None and free and not found:
+        return FIRST_PERSON_ID
+    return chosen
 
 
 def upgrade():
@@ -103,6 +117,14 @@ def upgrade():
             sa.select(rights.c.diagram_id, rights.c.user_id)
         )
     }
+    free = {
+        row[0]
+        for row in bind.execute(
+            sa.text(
+                "SELECT free_diagram_id FROM users WHERE free_diagram_id IS NOT NULL"
+            )
+        )
+    }
     last = 0
     while True:
         diagrams = bind.execute(
@@ -115,7 +137,7 @@ def upgrade():
             break
         now = datetime.datetime.utcnow()
         for diagram_id, user_id, data in diagrams:
-            person_id = primary(data)
+            person_id = owner_person(data, diagram_id in free)
             if (diagram_id, user_id) in owned:
                 bind.execute(
                     rights.update()
