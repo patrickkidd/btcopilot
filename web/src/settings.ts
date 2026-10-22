@@ -897,18 +897,13 @@ export class Settings {
       wrap.append(field);
       mine.append(wrap, box);
     } else {
-      mine.append(
-        box,
-        el(
-          "div",
-          "sn-hint",
-          PRO
-            ? "Each diagram has its own sessions and its own picture."
-            : account.diagrams.length
-              ? "One family, one diagram — it grows as you talk."
-              : "No diagrams yet.",
-        ),
-      );
+      const hint = PRO
+        ? "Each diagram has its own sessions and its own picture."
+        : account.diagrams.length
+          ? ""
+          : "No diagrams yet.";
+      mine.append(box);
+      if (hint) mine.append(el("div", "sn-hint", hint));
     }
     return { title: DIAGRAMS, pane };
   }
@@ -1056,9 +1051,12 @@ export class Settings {
   private newDiagramRow(): HTMLElement {
     const row = el("div", "sn-row push");
     const label = el("div", "sn-lbl", "+ new diagram");
-    row.append(label, el("div", "sn-chev", "\u203a"));
+    const chev = el("div", "sn-chev", "\u203a");
+    row.append(label, chev);
     row.addEventListener("click", () => {
       if (row.querySelector("input")) return;
+      // the open form is the row itself: nothing further to go to
+      chev.remove();
       const field = document.createElement("input");
       field.className = "rename";
       field.placeholder = "What is this diagram called?";
@@ -1079,7 +1077,9 @@ export class Settings {
       label.replaceChildren(field, ask, answers);
       field.focus({ preventScroll: true });
       field.addEventListener("keydown", (e) => {
-        if ((e as KeyboardEvent).key === "Escape") label.textContent = "+ new diagram";
+        if ((e as KeyboardEvent).key !== "Escape") return;
+        label.textContent = "+ new diagram";
+        row.append(chev);
       });
     });
     return row;
