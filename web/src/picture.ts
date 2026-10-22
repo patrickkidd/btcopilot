@@ -474,11 +474,54 @@ const CONTROLS = "button, input, select, textarea, a[href]";
  * style, the box the live control is laid out as (a button is a block in the
  * line, a span is not, so its margins would be lost and the copy come out
  * shorter than the level it stands for) and what it says, nothing it does. */
-function plain(control: Element, display: string): HTMLElement {
+/** What a control's box and words are laid out by that a plain element does
+ * not take from the same classes: the browser's own button padding, border and
+ * font, and its centring of what it holds. */
+const LAID = [
+  "boxSizing",
+  "fontSize",
+  "fontWeight",
+  "fontStyle",
+  "lineHeight",
+  "letterSpacing",
+  "textAlign",
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
+  "borderTopWidth",
+  "borderRightWidth",
+  "borderBottomWidth",
+  "borderLeftWidth",
+  "borderTopStyle",
+  "borderRightStyle",
+  "borderBottomStyle",
+  "borderLeftStyle",
+] as const;
+type Laid = Partial<Record<(typeof LAID)[number] | "display" | "alignItems" | "justifyContent", string>>;
+
+const ALONG: Record<string, string> = { left: "flex-start", start: "flex-start", right: "flex-end", end: "flex-end" };
+
+/** How a live control is laid out, for its stand-in in a snapshot. A button
+ * centres what it holds up and down, and across by its text-align, which a
+ * plain element does only as a flex box. */
+function laidOf(control: Element): Laid {
+  const css = getComputedStyle(control);
+  const out: Laid = { display: css.display };
+  for (const name of LAID) out[name] = css[name];
+  if (control instanceof HTMLButtonElement && !/flex|grid/.test(css.display)) {
+    out.display = css.display.startsWith("inline") ? "inline-flex" : "flex";
+    out.alignItems = "center";
+    out.justifyContent = ALONG[css.textAlign] ?? "center";
+  }
+  return out;
+}
+
+function plain(control: Element, laid: Laid): HTMLElement {
   const span = document.createElement("span");
   span.className = control.className;
   span.setAttribute("style", control.getAttribute("style") ?? "");
-  span.style.display = display;
+  Object.assign(span.style, laid);
   span.innerHTML = control.innerHTML;
   return span;
 }
@@ -504,8 +547,8 @@ function snapshot(region: HTMLElement): HTMLElement {
     }
     // every control becomes a plain element drawn the same way, so the copy
     // holds nothing a reader, a screen reader or a test could take for one
-    const shown = [...child.querySelectorAll(CONTROLS)].map((el) => getComputedStyle(el).display);
-    copy.querySelectorAll(CONTROLS).forEach((el, i) => el.replaceWith(plain(el, shown[i])));
+    const laid = [...child.querySelectorAll(CONTROLS)].map(laidOf);
+    copy.querySelectorAll(CONTROLS).forEach((el, i) => el.replaceWith(plain(el, laid[i])));
     const live = [...child.querySelectorAll<HTMLElement>(SCROLLER)];
     copy.querySelectorAll<HTMLElement>(SCROLLER).forEach((el, i) => {
       el.dataset.left = String(live[i]?.scrollLeft ?? 0);
@@ -1068,9 +1111,10 @@ export class Picture {
       }
       const hit = (e.target as Element).closest<HTMLElement>("[data-target]");
       // Empty ground. Nothing on the picture is under the thumb, so the tap is
-      // the reader putting the picture down.
+      // the reader putting the picture down; on a cluster's page it is a tap
+      // on the page, which only its close button puts away (Patrick, 2026-10-22).
       if (!hit) {
-        this.handlers.onTap(this.tapAt(Target.Ground, e));
+        if (this.level !== Level.About) this.handlers.onTap(this.tapAt(Target.Ground, e));
         return;
       }
       e.preventDefault();
