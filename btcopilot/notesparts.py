@@ -13,10 +13,10 @@ import re
 PART_WORDS = 1500
 REMINDER_LINES = 5
 
-# What one part of a paste costs and takes on the coach's model, read from the
-# model-calls ledger of a sandbox import of two long notes files (2026-10-22).
-USD_PER_1000_WORDS = 0.0
-SECONDS_PER_PART = 0
+# What a paste costs and one part takes on the coach's model, priced at its
+# rates on the app's own cache split, from one 223-word run (2026-10-22).
+USD_PER_1000_WORDS = 1.95
+SECONDS_PER_PART = 97
 
 BREAK = re.compile(r"\n\s*\n")
 
