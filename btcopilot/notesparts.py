@@ -14,9 +14,11 @@ PART_WORDS = 1500
 REMINDER_LINES = 5
 
 # What a paste costs and one part takes on the coach's model, priced at its
-# rates on the app's own cache split, from one 223-word run (2026-10-22).
-USD_PER_1000_WORDS = 1.95
-SECONDS_PER_PART = 97
+# rates on the app's own cache split, from one 9,000-word, seven-part run on
+# the subscription (2026-10-22); the Gemini calls for clusters and titles are
+# not in the price.
+USD_PER_1000_WORDS = 0.29
+SECONDS_PER_PART = 96
 
 BREAK = re.compile(r"\n\s*\n")
 
