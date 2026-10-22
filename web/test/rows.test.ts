@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Loose, codes, eventDivider, eventRow, groupOf, personRow, sections } from "../src/rows";
-import { DateCertainty, type Cluster, type Person, type TimelineEvent } from "../src/types";
+import { Loose, codes, eventDivider, eventRow, groupOf, personRow, sections, when } from "../src/rows";
+import { dateText } from "../src/spotlight";
+import { DateCertainty, DatePrecision, type Cluster, type Person, type TimelineEvent } from "../src/types";
 
 const person = (over: Partial<Person> = {}): Person => ({
   id: 1,
@@ -42,6 +43,7 @@ const coded: TimelineEvent = {
   dateTime: "1992-04-01",
   endDateTime: null,
   dateCertainty: null,
+  datePrecision: null,
   kind: "shift",
   title: "Stopped calling home",
   description: null,
@@ -145,4 +147,13 @@ describe("the events list's stretches", () => {
       [Loose.Dated, [2]],
     ]);
   });
+});
+
+// R-0896
+it("a date shows only as far as it was said, and one with no precision kept reads as before", () => {
+  expect(when("1986-01-01", DatePrecision.Year)).toBe("1986");
+  expect(when("1986-03-01", DatePrecision.Month)).toBe("Mar 1986");
+  expect(when("1986-03-02", DatePrecision.Day)).toBe("2 Mar 1986");
+  expect(when("1986-03-02", null)).toBe("Mar 1986");
+  expect(dateText("1986-01-01", DateCertainty.Certain, DatePrecision.Year)).toBe("1986");
 });

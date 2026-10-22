@@ -40,6 +40,7 @@ const event = (id: number, kind: EventKind, date: string | null, fields: Partial
   dateTime: date,
   endDateTime: null,
   dateCertainty: date ? "certain" : "unknown",
+  datePrecision: null,
   kind,
   title: null,
   description: null,

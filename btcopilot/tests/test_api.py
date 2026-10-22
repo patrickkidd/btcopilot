@@ -886,7 +886,7 @@ def test_event_the_record_refuses_is_told_in_plain_words(web, token, family):
     # R-0453
     response = post(web, token, "/app/events", dict(SHIFT, endDateTime="2019-01-01"))
     assert response.status_code == 400
-    assert response.get_data(as_text=True) == "The end date is before the start date."
+    assert response.get_data(as_text=True) == "The end date was before the start date."
 
 
 def test_a_hand_edited_move_with_no_target_is_told_in_plain_words(web, token, family):
@@ -895,7 +895,7 @@ def test_a_hand_edited_move_with_no_target_is_told_in_plain_words(web, token, fa
         web, token, "/app/events", dict(SHIFT, relationship="toward", relationshipTargets=[])
     )
     assert response.status_code == 400
-    assert response.get_data(as_text=True) == "Toward needs the person it was aimed at."
+    assert response.get_data(as_text=True) == "Toward named no one it was aimed at."
 
 
 def test_event_rejects_bad_kind(web, token, family):

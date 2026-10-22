@@ -60,7 +60,7 @@ export enum InteractionKind {
   DoesntFit = "doesnt_fit",
 }
 
-export { DateCertainty } from "./certainty";
+export { DateCertainty, DatePrecision } from "./certainty";
 
 export enum Role {
   Coach = "coach",
@@ -133,6 +133,7 @@ export interface TimelineEvent {
   dateTime: string | null;
   endDateTime: string | null;
   dateCertainty: string | null;
+  datePrecision: string | null;
   kind: string | null;
   /** The few words a noted event or a shift is shown by (R-0681). */
   title: string | null;
@@ -595,15 +596,19 @@ export interface Diagram {
   owner: string;
   /** The owner's full name, or null when the account has none; never an email. */
   owner_name: string | null;
+  /** The owner's account name, often an email; shown only before its @. */
+  owner_username: string;
   /** Who the user is in the diagram, or null for someone who is not in the
    * family, such as a human coach (FD-387). */
   person_id: number | null;
 }
 
-/** Whose diagram it is, as the diagram list shows it beside the name: the
- * owner's first name, the user's own included, or nothing, never an email. */
+/** Whose diagram it is, as the diagram list shows it beside the name: "you"
+ * on the user's own, else the owner's first name, else their account name up
+ * to its @, never a whole email. */
 export function diagramOwner(diagram: Diagram): string {
-  return diagram.owner_name ?? "";
+  if (diagram.owned) return "you";
+  return diagram.owner_name || diagram.owner_username.split("@")[0];
 }
 
 /** Someone with an account, as an admin's search finds them. */

@@ -1,4 +1,5 @@
 import enum
+import re
 import hashlib
 import json
 import logging
@@ -311,6 +312,25 @@ class VariableShift(enum.StrEnum):
     Same = "same"
 
 
+class DatePrecision(enum.StrEnum):
+    """How much of an event's date the person said: a year alone, a month and
+    year, or the day. The date itself is always stored as a whole day."""
+
+    Year = "year"
+    Month = "month"
+    Day = "day"
+
+
+def stated_date(text: str) -> tuple[str, DatePrecision]:
+    """A date as said, YYYY, YYYY-MM or YYYY-MM-DD, as the whole day the
+    record stores, the first of the span, and how much of it was said."""
+    if re.fullmatch(r"\d{4}", text):
+        return f"{text}-01-01", DatePrecision.Year
+    if re.fullmatch(r"\d{4}-\d{2}", text):
+        return f"{text}-01", DatePrecision.Month
+    return text, DatePrecision.Day
+
+
 class DateCertainty(enum.StrEnum):
     Unknown = "unknown"  # any date matches
     Approximate = "approximate"  # ±365 days
@@ -375,6 +395,8 @@ class Event:
     dateTime: str | None = None
     endDateTime: str | None = None
     dateCertainty: DateCertainty = DateCertainty.Certain
+    # None on an event written before precision was kept: read as the day
+    datePrecision: DatePrecision | None = None
     symptom: VariableShift | None = None
     anxiety: VariableShift | None = None
     relationship: RelationshipKind | None = None

@@ -67,6 +67,7 @@ export const event = (
   dateTime,
   endDateTime: null,
   dateCertainty: "certain",
+  datePrecision: null,
   kind,
   title: null,
   description: null,

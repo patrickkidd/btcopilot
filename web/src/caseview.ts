@@ -84,7 +84,7 @@ export interface Fact {
 /** One dated event's chip, the date as sure as the record is. */
 const dated = (e: TimelineEvent, words: string): Fact => ({
   id: e.id,
-  face: `${dateText(e.dateTime!, e.dateCertainty)} · ${words}`,
+  face: `${dateText(e.dateTime!, e.dateCertainty, e.datePrecision)} · ${words}`,
   sure: e.dateCertainty === DateCertainty.Certain,
 });
 

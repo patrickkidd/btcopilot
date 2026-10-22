@@ -11,13 +11,15 @@ const diagram = (over: Partial<Diagram>): Diagram => ({
   access: Access.Own,
   owner: "Patrick Stinson",
   owner_name: "Patrick",
+  owner_username: "patrick@example.com",
   person_id: 1,
   ...over,
 });
 
 // R-0888
-it("every diagram in the list names its owner's first name, the user's own included, and never an email", () => {
+it("every diagram in the list names its owner: you on your own, else their first name, else their account name before its @", () => {
+  expect(diagramOwner(diagram({}))).toBe("you");
   expect(diagramOwner(diagram({ owned: false, person_id: null }))).toBe("Patrick");
-  expect(diagramOwner(diagram({}))).toBe("Patrick");
-  expect(diagramOwner(diagram({ owner_name: null, owner: "pat@example.com" }))).toBe("");
+  expect(diagramOwner(diagram({ owned: false, owner_name: null }))).toBe("patrick");
+  expect(diagramOwner(diagram({ owned: false, owner_name: null, owner_username: "ana" }))).toBe("ana");
 });

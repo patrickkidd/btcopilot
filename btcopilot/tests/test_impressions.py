@@ -96,7 +96,7 @@ def test_a_raised_impression_is_one_whole_add_never_removed_and_left_by_undo(fam
         box(family, "t3").call(
             ToolName.Remove, {"item_kind": "question", "item_id": "i1", "version": version(family)}
         )
-    assert refused.value.plain == "A question is never removed."
+    assert refused.value.plain == "It removed a question, and a question is never removed."
     box(family, "t4").call(ToolName.Undo, {})
     assert [p["name"] for p in family.get_diagram_data().people] == ["Wren"]
     assert stored(family)["i1"]["state"] == "raised"
@@ -108,9 +108,9 @@ def test_a_raised_impression_is_one_whole_add_never_removed_and_left_by_undo(fam
     "evidence,plain",
     [
         ([], "It gave the impression nothing to rest on."),
-        ([{"kind": "event", "id": "99"}], "That is not in the diagram."),
-        ([{"kind": "statement", "id": "9999"}], "That is not in the diagram."),
-        ([{"kind": "statement", "id": "latest"}], "That is not in the diagram."),
+        ([{"kind": "event", "id": "99"}], "That was not in the diagram."),
+        ([{"kind": "statement", "id": "9999"}], "That was not in the diagram."),
+        ([{"kind": "statement", "id": "latest"}], "That was not in the diagram."),
     ],
 )
 def test_an_impression_must_rest_on_something_the_record_or_the_sessions_hold(
@@ -150,8 +150,8 @@ def test_only_the_user_turns_an_impression_down_and_only_the_coach_revises_or_le
     impress(toolbox, LATCH)
 
     for args, plain in (
-        ({"state": "resolved", "outcome": "doesnt_fit"}, "Only you can push back on an impression."),
-        ({"state": "resolved", "outcome": "answered"}, "That is not how an impression ends."),
+        ({"state": "resolved", "outcome": "doesnt_fit"}, "The coach pushed back on an impression, which only you do."),
+        ({"state": "resolved", "outcome": "answered"}, "That was not a way an impression ends."),
     ):
         with pytest.raises(ToolError) as refused:
             settle(toolbox, family, "i1", **args)
@@ -159,7 +159,7 @@ def test_only_the_user_turns_an_impression_down_and_only_the_coach_revises_or_le
     for fields in ({"pushback": "partly", "text": "Something else."}, {"state": "resolved", "outcome": "revised"}):
         with pytest.raises(record.Invalid) as invalid:
             by_user(family, "i1", **fields)
-        assert invalid.value.plain == "Only you can push back on an impression."
+        assert invalid.value.plain == "The coach pushed back on an impression, which only you do."
     with pytest.raises(record.Invalid):
         record.apply(
             family.id,
@@ -183,7 +183,7 @@ def test_the_words_of_an_impression_that_did_not_fit_are_never_raised_again(fami
     impress(toolbox)
     with pytest.raises(ToolError) as refused:
         impress(toolbox, TENSE.upper())
-    assert refused.value.plain == "That impression is already there."
+    assert refused.value.plain == "That impression was already there."
     toolbox.call(ToolName.AddQuestion, {"text": TENSE, "kind": "thought", "state": "asked"})
     by_user(family, "i1", state="resolved", outcome="doesnt_fit")
 

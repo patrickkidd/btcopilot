@@ -4,7 +4,7 @@
  * concept-sentence-spotlight, ruled 2026-09-02): one mono line per row, cut at a
  * space, three rows at most. */
 
-import { DateCertainty } from "./certainty";
+import { DateCertainty, DatePrecision } from "./certainty";
 
 /** IBM Plex Mono advance at the 13px floor. */
 export const CH = 7.8;
@@ -42,9 +42,10 @@ const MONTHS = [
 /** A date the record is only approximately sure of, or not sure of at all,
  * says its year and no more; a date it is sure of says the month too
  * (R-0855). */
-export function dateText(iso: string, certainty: string | null): string {
+export function dateText(iso: string, certainty: string | null, precision: string | null = null): string {
   const year = iso.slice(0, 4);
   if (certainty === DateCertainty.Approximate || certainty === DateCertainty.Unknown) return year;
+  if (precision === DatePrecision.Year) return year;
   const month = Number(iso.slice(5, 7));
   return `${MONTHS[Math.min(11, Math.max(0, month - 1))]} ${year}`;
 }

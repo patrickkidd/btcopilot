@@ -49,6 +49,7 @@ from btcopilot.schema import (
     QuestionState,
     RelationshipKind,
     VariableShift,
+    stated_date,
 )
 
 _log = logging.getLogger(__name__)
@@ -334,7 +335,11 @@ def schemas(coder: bool = False) -> list[dict]:
                     "id": {"type": "integer"},
                     "version": VERSION,
                     "kind": _enum_param(EventKind, means[prompts.ToolText.EventKind]),
-                    "date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "date": {
+                        "type": "string",
+                        "description": "Only as far as the person said it: YYYY for a "
+                        "year alone, YYYY-MM for a month and year, YYYY-MM-DD for the day.",
+                    },
                     "end_date": {
                         "type": "string",
                         "description": means[prompts.ToolText.EndDate],
@@ -1377,9 +1382,10 @@ class Toolbox:
         if args.get("kind"):
             fields["kind"] = choice(EventKind, args["kind"], "event kinds").value
         if args.get("date"):
-            fields["dateTime"] = args["date"]
+            fields["dateTime"], precision = stated_date(args["date"])
+            fields["datePrecision"] = precision.value
         if args.get("end_date"):
-            fields["endDateTime"] = args["end_date"]
+            fields["endDateTime"], _ = stated_date(args["end_date"])
         if args.get("date_certainty"):
             fields["dateCertainty"] = choice(
                 DateCertainty, args["date_certainty"], "date certainties"

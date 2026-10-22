@@ -271,7 +271,7 @@ export function pairSvg(
     const wide = Math.floor((mid - X_PAD - 22) / CH);
     const [one, two] = wrap2(event.label, wide);
     const when = event.dateTime
-      ? dateText(event.dateTime, event.dateCertainty)
+      ? dateText(event.dateTime, event.dateCertainty, event.datePrecision)
       : "no date yet";
     return (
       `<text class="ss-w meta" x="${left}" y="${ROWS[0]}">${esc(when)}</text>` +
@@ -1850,7 +1850,7 @@ export class Picture {
       // the path already says who and what happened: the line says only what
       // it leaves out, the date first (no word twice)
       const said = [
-        dateText(event.dateTime as string, event.dateCertainty),
+        dateText(event.dateTime as string, event.dateCertainty, event.datePrecision),
         told(event.person_name, event.label, this.firstNames())[1],
       ]
         .filter(Boolean)

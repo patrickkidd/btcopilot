@@ -153,7 +153,7 @@ def test_a_move_with_no_target_is_refused_to_the_coach_naming_the_rule(subscribe
             relationship="toward",
             title="Shared the new plan", description="Told her about the new plan",
         )
-    assert refused.value.plain == "Toward needs the person it was aimed at."
+    assert refused.value.plain == "Toward named no one it was aimed at."
     assert diagram.get_diagram_data().events == []
 
 
@@ -442,7 +442,7 @@ MOVE = {"kind": "shift", "date": "2001-02-03", "person": 1, "title": "Stopped ca
         ),
         ("edit_event", dict(MOVE, kind="noted", anxiety="up"), "is a noted event, and only a shift carries"),
         ("edit_event", dict(MOVE, description=None, anxiety="up"), "is a shift event with no words"),
-        ("edit_event", dict(MOVE, date="1998", anxiety="up"), "'1998' is not a date"),
+        ("edit_event", dict(MOVE, date="spring 1998", anxiety="up"), "'spring 1998' is not a date"),
         ("edit_event", dict(MOVE, date=None, anxiety="up"), "Every event needs a date"),
         ("edit_event", {"kind": "birth", "date": "1980-01-01", "person": 4, "child": 6}, "names person 4 as a parent of person 6, who is born to pair bond 9"),
         ("edit_event", {"kind": "birth", "date": "1976-01-01", "child": 3}, "person 3 already has a birth, event 20"),
@@ -482,3 +482,18 @@ def test_a_birth_with_one_parent_takes_the_other_from_the_childs_parents(subscri
     birth = _event(diagram, kind="birth", date="1978-01-01", person=1, child=6)
     assert (birth["person"], birth["spouse"]) == (1, 2)
     assert len(diagram.get_diagram_data().people) == len(RULES["people"])
+
+
+def test_a_date_is_kept_only_as_far_as_it_was_said(subscriber):
+    # R-0896
+    diagram = _diagram(subscriber.user)
+    born = dict(kind="birth", child=1)
+    year = _event(diagram, date="1986", date_certainty="approximate", **born)
+    assert (year["dateTime"], year["datePrecision"]) == ("1986-01-01", "year")
+    month = _event(diagram, date="1998-06", date_certainty="approximate", **dict(born, child=2))
+    assert (month["dateTime"], month["datePrecision"]) == ("1998-06-01", "month")
+    _event(diagram, id=year["id"], date="1986-03-02", date_certainty="certain")
+    (day,) = [e for e in diagram.get_diagram_data().events if e["id"] == year["id"]]
+    assert (day["dateTime"], day["datePrecision"]) == ("1986-03-02", "day")
+    events = build_timeline(diagram.get_diagram_data())["events"]
+    assert [e["dateTime"] for e in sorted(events, key=lambda e: e["dateTime"])] == ["1986-03-02", "1998-06-01"]

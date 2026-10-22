@@ -10,3 +10,13 @@ export const DateCertainty = {
   Certain: "certain",
 } as const;
 export type DateCertainty = (typeof DateCertainty)[keyof typeof DateCertainty];
+
+/** How much of an event's date the person said; the date is always a whole
+ * day, the first of what was said. Null on an event from before it was kept,
+ * which reads as the day. */
+export const DatePrecision = {
+  Year: "year",
+  Month: "month",
+  Day: "day",
+} as const;
+export type DatePrecision = (typeof DatePrecision)[keyof typeof DatePrecision];

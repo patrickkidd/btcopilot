@@ -139,7 +139,7 @@ def test_a_question_is_never_removed_by_anyone(family):
             ToolName.Remove,
             {"item_kind": "question", "item_id": "q1", "version": version(family)},
         )
-    assert refused.value.plain == "A question is never removed."
+    assert refused.value.plain == "It removed a question, and a question is never removed."
     for author in Author:
         with pytest.raises(record.Invalid) as invalid:
             record.apply(
@@ -148,7 +148,7 @@ def test_a_question_is_never_removed_by_anyone(family):
                 author=author,
                 turn_id="gone",
             )
-        assert invalid.value.plain == "A question is never removed."
+        assert invalid.value.plain == "It removed a question, and a question is never removed."
     assert list(stored(family)) == ["q1"]
 
 
@@ -180,13 +180,13 @@ REFUSED = [
     (ToolName.AddQuestion, {"text": ASK, "kind": "fact", "state": "asked", "item_kind": "person"},
      "It named what the question is about only halfway."),
     (ToolName.AddQuestion, {"text": ASK, "kind": "fact", "state": "asked", "item_kind": "person", "item_id": "99"},
-     "That is not in the diagram."),
+     "That was not in the diagram."),
     (ToolName.SetQuestion, {"id": "q1", "state": "resolved"}, "It did not say how the question ended."),
     (ToolName.SetQuestion, {"id": "q1", "state": "asked", "outcome": "fact"}, "It did not say how the question ended."),
     (ToolName.SetQuestion, {"id": "q1", "state": "resolved", "outcome": "declined_by_user"},
-     "Only you can dismiss a question."),
-    (ToolName.SetQuestion, {"id": "q2", "state": "resolved", "outcome": "answered"}, "That question is already closed."),
-    (ToolName.SetQuestion, {"id": "q9", "state": "asked"}, "That is not in the diagram."),
+     "The coach dismissed a question, which only you do."),
+    (ToolName.SetQuestion, {"id": "q2", "state": "resolved", "outcome": "answered"}, "That question was already closed."),
+    (ToolName.SetQuestion, {"id": "q9", "state": "asked"}, "That was not in the diagram."),
 ]
 
 
@@ -210,7 +210,7 @@ def test_the_same_words_are_one_open_question_and_may_be_asked_again_once_closed
 
     with pytest.raises(ToolError) as refused:
         add(toolbox, "  when did your GRANDMOTHER   die?")
-    assert refused.value.plain == "That question is already there."
+    assert refused.value.plain == "That question was already there."
     assert "q1" in str(refused.value)
     settle(toolbox, family, "q1", state="resolved", outcome="unknown")
     add(toolbox, "  when did your GRANDMOTHER   die?")
@@ -273,7 +273,7 @@ def test_only_the_user_dismisses_and_the_user_does_nothing_else(family):
                 author=Author.User,
                 turn_id="by-hand",
             )
-        assert refused.value.plain == "Only you can dismiss a question."
+        assert refused.value.plain == "The coach dismissed a question, which only you do."
     dismiss(family, "q2")
     assert stored(family)["q2"]["outcome"] == "declined_by_user"
 
@@ -388,12 +388,12 @@ def test_asking_again_is_one_day_at_a_time_on_an_open_asked_question(family):
     ]
     with pytest.raises(record.Invalid) as refused:
         record.apply(family.id, jumped, author=Author.Coach, turn_id="t2")
-    assert refused.value.plain == "Only an open question can be asked again."
+    assert refused.value.plain == "The question was not open, so it could not be asked again."
     settle(toolbox, family, "q1", state="asked")
     jumped[0]["after"] = [TODAY, TODAY]
     with pytest.raises(record.Invalid) as refused:
         record.apply(family.id, jumped, author=Author.Coach, turn_id="t2")
-    assert refused.value.plain == "A question is asked again one day at a time."
+    assert refused.value.plain == "It counted more than one new day a question was asked."
 
 def test_reading_questions_gives_open_and_declined_and_closed_on_asking(family):
     # R-0479

@@ -220,9 +220,9 @@ def test_a_refused_tool_call_is_written_down_with_whether_its_retry_worked(
         },
         {
             "tool": "edit_event",
-            "refusal": "A noted event needs a few words saying what happened.",
+            "refusal": "The noted event had no words saying what happened.",
             "retried": True,
-            "reason": "edit_event: A noted event needs a few words saying what happened.",
+            "reason": "edit_event: The noted event had no words saying what happened.",
         },
     ]
 
@@ -253,9 +253,9 @@ def test_a_move_refused_for_no_target_is_retried_with_one(
     assert [d for k, d in seen() if k == ObservationKind.ToolRefused] == [
         {
             "tool": "edit_event",
-            "refusal": "Toward needs the person it was aimed at.",
+            "refusal": "Toward named no one it was aimed at.",
             "retried": True,
-            "reason": "edit_event: Toward needs the person it was aimed at.",
+            "reason": "edit_event: Toward named no one it was aimed at.",
         }
     ]
     events = test_user.free_diagram.get_diagram_data().events

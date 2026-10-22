@@ -148,14 +148,14 @@ def test_the_coach_keeps_a_todo_held_in_their_words_citing_their_message(
 @pytest.mark.parametrize(
     "args,plain",
     [
-        ({"state": "asked"}, "A todo is kept for later when it is said."),
+        ({"state": "asked"}, "The todo was not kept for later when it was said."),
         (
             {"fact": "alive"},
             "It named what the question asks on something that cannot hold it.",
         ),
         (
             {"case_report_card": "own_part", "state": "asked"},
-            "A todo cannot go on the case report.",
+            "It put a todo on the case report.",
         ),
     ],
 )
@@ -211,7 +211,7 @@ def test_a_todo_moves_held_asked_resolved_and_each_step_is_undone(family, test_u
                 "outcome": "fact",
             },
         )
-    assert refused.value.plain == "That todo is already closed."
+    assert refused.value.plain == "That todo was already closed."
 
     rows = [c.id for c in Change.query.filter(Change.id > start)]
     record.undo_changes(family.id, rows, author=Author.Coach)
