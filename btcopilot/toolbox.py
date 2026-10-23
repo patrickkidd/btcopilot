@@ -2328,15 +2328,4 @@ class Toolbox:
         return change
 
     def _patch(self, change) -> dict:
-        """What the page is told a write touched. The page re-reads the record,
-        so a question's delta goes out as what it touched only, which keeps the
-        words of a question held for later on the server."""
-        return {
-            "deltas": [
-                {key: d[key] for key in ("item_kind", "item_id", "field")}
-                if d["item_kind"] == ItemKind.Question.value
-                else d
-                for d in change.deltas
-            ],
-            "turn_id": change.turn_id,
-        }
+        return record.patch(change.deltas, change.turn_id)

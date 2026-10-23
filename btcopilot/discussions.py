@@ -5,11 +5,12 @@ import datetime
 
 from sqlalchemy import func
 
-from btcopilot import auth, diagramjson, profile
+from btcopilot import auth, diagramjson, profile, record
 from btcopilot.extensions import db
 from btcopilot.models import Diagram
 from btcopilot.models.diagram import owner_row
 from btcopilot.models import (
+    Author,
     Discussion,
     DiscussionKind,
     Speaker,
@@ -269,7 +270,15 @@ def sync_chat_speakers(discussion: Discussion):
         profile.PLACEHOLDER_NAME if own else None
     )
     if changed:
+        before = diagramjson.loads(diagram.data)
         diagram.set_diagram_data(diagram_data)
+        record.told(
+            diagram.id,
+            record.diff(before, diagramjson.loads(diagram.data)),
+            None,
+            Author.User,
+            diagram.version,
+        )
     person_id, name = voice(discussion.user, diagram, diagram_data)
 
     user_speaker = Speaker.query.filter_by(

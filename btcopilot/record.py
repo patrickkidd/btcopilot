@@ -15,10 +15,11 @@ from dataclasses import dataclass
 
 from sqlalchemy import update as sql_update
 
-from btcopilot import diagramjson
+from btcopilot import diagramjson, turnlog
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Statement
 from btcopilot.prompts import Role
+from btcopilot.turnlog import TurnEventKind
 from btcopilot.models import Diagram
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
@@ -1845,11 +1846,41 @@ def _commit(
     db.session.add(change)
     db.session.commit()
     db.session.expire(diagram)
+    told(diagram.id, deltas, turn_id, author, version)
     _log.info(
         f"Diagram {diagram.id} turn {turn_id} by {Author(author).value}: "
         f"{len(deltas)} deltas"
     )
     return change
+
+
+def told(diagram_id: int, deltas: list[dict], turn_id, author: Author, version: int) -> None:
+    """Every page following the diagram is told of a write, whoever wrote and
+    wherever the write ran [Oracle: R-0933]."""
+    turnlog.publish(
+        diagram_id,
+        {
+            "type": TurnEventKind.RecordPatch.value,
+            **patch(deltas, turn_id),
+            "author": Author(author).value,
+            "version": version,
+        },
+    )
+
+
+def patch(deltas: list[dict], turn_id: str | None) -> dict:
+    """What a page is told a write touched. The page re-reads the record, so a
+    question's delta goes out as what it touched only, which keeps the words
+    of a question held for later on the server."""
+    return {
+        "deltas": [
+            {key: d[key] for key in ("item_kind", "item_id", "field")}
+            if d["item_kind"] == ItemKind.Question.value
+            else d
+            for d in deltas
+        ],
+        "turn_id": turn_id,
+    }
 
 
 def diff(old: dict, new: dict) -> list[dict]:

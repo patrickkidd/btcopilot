@@ -236,3 +236,4 @@ R-0922 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-3
 R-0930 | TEST OWED | cited by 1 test, one more owed for the coach tag: the coach asking which person is you went out with the coach's message after an import on 2026-10-23 (FD-377)
 R-0876 | TEST OWED | cited by 1 test, one more owed for the model tag (FD-377)
 R-0903 | TEST OWED | not built: the coach coding dialog shown once after an import (FD-377)
+R-0934 | TEST OWED | the page's sheet that asks which person you are is its test, with the page (FD-377)

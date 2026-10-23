@@ -4,13 +4,25 @@ family switcher all read the same list rather than each growing an endpoint of
 its own."""
 
 import datetime
+import json
 import uuid
 
-from flask import abort, jsonify, request
+from flask import Response, abort, jsonify, request, stream_with_context
 
 import btcopilot
-from btcopilot import attachments, auth, diagramjson, fdafter, fdimport, profile, record
-from btcopilot.routes import Access, access, bp, last_activity, utc_iso
+from btcopilot import (
+    attachments,
+    auth,
+    diagramjson,
+    fdafter,
+    fdimport,
+    profile,
+    record,
+    turnlog,
+)
+from btcopilot.routes import Access, access, bp, last_activity, opens, utc_iso
+from btcopilot.routes.turns import HEARTBEAT_TICKS
+from btcopilot.turnlog import TurnEventKind
 from btcopilot.extensions import db
 from btcopilot.models import Discussion
 from btcopilot.models import Author, Diagram, User
@@ -195,6 +207,60 @@ def diagram_delete(diagram_id: int):
     )
     db.session.commit()
     return "", 204
+
+
+@bp.route("/diagrams/<int:diagram_id>/events")
+def diagram_events(diagram_id: int):
+    """Every write to the diagram as it lands, from any writer in any process,
+    so the page never has to refresh [Oracle: R-0933]. The page says where it
+    got to with Last-Event-ID and is given everything since, or told to read
+    the diagram again when the log no longer holds that place."""
+    found = db.session.get(Diagram, diagram_id)
+    if found is None or not opens(found, auth.current_user()):
+        abort(404)
+    log = turnlog.diagram_log(diagram_id)
+    last = request.headers.get("Last-Event-ID") or ""
+
+    def stream():
+        # Listening starts before the replay so a write landing between the
+        # two is not lost; anything already replayed is skipped by sequence.
+        following = turnlog.subscribe(log)
+        epoch, count = turnlog.epoch(log), turnlog.length(log)
+        sent = count
+        was, _, seq = last.partition("-")
+        if last and was == epoch and seq.isdigit() and int(seq) <= count:
+            sent = int(seq)
+            for at, event in turnlog.read_from(log, sent):
+                sent = at
+                yield _frame(f"{epoch}-{at}", event)
+        elif last:
+            yield _frame(f"{epoch}-{count}", {"type": TurnEventKind.Reload.value})
+        quiet = 0
+        for carried in following:
+            if carried is None:
+                quiet += 1
+                if quiet >= HEARTBEAT_TICKS:
+                    quiet = 0
+                    yield ": still here\n\n"
+                continue
+            quiet = 0
+            at, event = carried
+            if at <= sent:
+                # the log lapsed and began again; its first writes are new
+                if turnlog.epoch(log) == epoch:
+                    continue
+                epoch = turnlog.epoch(log)
+            sent = at
+            yield _frame(f"{epoch}-{at}", event)
+
+    response = Response(stream_with_context(stream()), mimetype="text/event-stream")
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["X-Accel-Buffering"] = "no"
+    return response
+
+
+def _frame(event_id: str, event: dict) -> str:
+    return f"id: {event_id}\ndata: {json.dumps(event)}\n\n"
 
 
 @bp.route("/diagrams/<int:diagram_id>/access", methods=["PATCH"])
