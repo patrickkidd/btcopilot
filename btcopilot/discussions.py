@@ -272,7 +272,7 @@ def sync_chat_speakers(discussion: Discussion):
     if changed:
         before = diagramjson.loads(diagram.data)
         diagram.set_diagram_data(diagram_data)
-        record.told(
+        record.told_on_commit(
             diagram.id,
             record.diff(before, diagramjson.loads(diagram.data)),
             None,

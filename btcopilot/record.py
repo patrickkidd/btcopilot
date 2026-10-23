@@ -13,7 +13,9 @@ import logging
 import re
 from dataclasses import dataclass
 
+from sqlalchemy import event as sql_event
 from sqlalchemy import update as sql_update
+from sqlalchemy.orm import Session
 
 from btcopilot import diagramjson, turnlog
 from btcopilot.extensions import db
@@ -1866,6 +1868,31 @@ def told(diagram_id: int, deltas: list[dict], turn_id, author: Author, version: 
             "version": version,
         },
     )
+
+
+# Writes waiting on their session's commit to be told to the diagram stream.
+TOLD = "told"
+
+
+def told_on_commit(
+    diagram_id: int, deltas: list[dict], turn_id, author: Author, version: int
+) -> None:
+    """A write made outside the record's own commit is told once the session
+    that holds it commits, and never if it rolls back."""
+    db.session.info.setdefault(TOLD, []).append(
+        (diagram_id, deltas, turn_id, author, version)
+    )
+
+
+@sql_event.listens_for(Session, "after_commit")
+def _committed(session) -> None:
+    for one in session.info.pop(TOLD, []):
+        told(*one)
+
+
+@sql_event.listens_for(Session, "after_rollback")
+def _rolled_back(session) -> None:
+    session.info.pop(TOLD, None)
 
 
 def patch(deltas: list[dict], turn_id: str | None) -> dict:

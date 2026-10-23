@@ -105,3 +105,15 @@ def test_someone_who_cannot_open_the_diagram_is_not_told_its_writes(web):
     db.session.add(theirs)
     db.session.commit()
     assert web.get(f"/app/diagrams/{theirs.id}/events").status_code == 404
+
+
+def test_a_write_outside_the_records_commit_is_told_only_once_committed(test_user):
+    # R-0933
+    diagram = test_user.free_diagram
+    record.told_on_commit(diagram.id, [], None, Author.User, diagram.version)
+    db.session.rollback()
+    assert written(diagram.id) == []
+    record.told_on_commit(diagram.id, [], None, Author.User, diagram.version)
+    assert written(diagram.id) == []
+    db.session.commit()
+    assert [e["author"] for e in written(diagram.id)] == ["user"]
