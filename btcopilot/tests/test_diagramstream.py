@@ -117,3 +117,14 @@ def test_a_write_outside_the_records_commit_is_told_only_once_committed(test_use
     assert written(diagram.id) == []
     db.session.commit()
     assert [e["author"] for e in written(diagram.id)] == ["user"]
+
+
+def test_a_page_that_saw_no_write_is_given_the_writes_made_while_it_was_away(web, test_user):
+    # R-0933
+    diagram = test_user.free_diagram
+    url = f"/app/diagrams/{diagram.id}/events"
+    [(place, ready)] = frames(web.get(url, buffered=False), 1)
+    assert ready == {"type": "ready"}
+    person(diagram, 10, "Ada")
+    replayed = frames(web.get(url, headers={"Last-Event-ID": place}, buffered=False), 1)
+    assert [e["turn_id"] for _, e in replayed] == ["t10"]

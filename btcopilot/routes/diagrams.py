@@ -225,6 +225,10 @@ def diagram_events(diagram_id: int):
         # Listening starts before the replay so a write landing between the
         # two is not lost; anything already replayed is skipped by sequence.
         following = turnlog.subscribe(log)
+        if not last and not turnlog.length(log):
+            # an empty log is started, so the place given below is one a
+            # reconnect can replay from even if it lapses meanwhile
+            turnlog.publish(diagram_id, {"type": TurnEventKind.Ready.value})
         epoch, count = turnlog.epoch(log), turnlog.length(log)
         sent = count
         was, _, seq = last.partition("-")
@@ -235,6 +239,8 @@ def diagram_events(diagram_id: int):
                 yield _frame(f"{epoch}-{at}", event)
         elif last:
             yield _frame(f"{epoch}-{count}", {"type": TurnEventKind.Reload.value})
+        else:
+            yield _frame(f"{epoch}-{count}", {"type": TurnEventKind.Ready.value})
         quiet = 0
         for carried in following:
             if carried is None:

@@ -60,6 +60,9 @@ class TurnEventKind(enum.StrEnum):
     Done = "done"
     # A page following a diagram reads it again: the log lost its place.
     Reload = "reload"
+    # The place a page following a diagram starts from, so a reconnect always
+    # has one to replay from.
+    Ready = "ready"
     Failed = "failed"
     # Every model declined the message on safety grounds. The page says so in
     # the coach's voice and offers no retry, since the same words would be
