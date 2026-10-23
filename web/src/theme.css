@@ -2380,6 +2380,10 @@ button { font-family: inherit; }
 /* a finger's height to tap: the space under the link, never the title above it */
 .sn-alt { display: inline-block; min-height: 44px; margin-top: -4px; padding: 4px 8px 0 0; border: none; background: none; color: var(--data); font: inherit; text-align: left; vertical-align: top; cursor: pointer; }
 .sn-row:has(.sn-alt) { padding-bottom: 0; }
+/* the people to say which one you are, in the import's sheet */
+.fdc-who { max-height: 40dvh; overflow-y: auto; margin: 0 -16px 8px; }
+.fdc-who .sn-row { width: 100%; border-left: none; border-right: none; border-bottom: none; background: none; color: inherit; font: inherit; text-align: left; }
+.fdc-find { padding: 0 0 10px; }
 .sn-stack .dropping { outline: 2px dashed var(--data); outline-offset: -6px; }
 .sn-srch input {
   width: 100%;

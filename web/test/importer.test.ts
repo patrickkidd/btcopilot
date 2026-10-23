@@ -1,12 +1,17 @@
 import { afterEach, expect, it, vi } from "vitest";
+import type { Person } from "../src/types";
 
 vi.stubGlobal("window", { BOOTSTRAP: { user: { username: "ann", pro: false } } });
 
+const { store } = await import("../src/store");
 const { ADD_CODES, Answer, bring, fromDrop, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
   "../src/importer"
 );
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 /** A folder as a drop hands it over: read in batches until one comes back
  * empty. */
@@ -57,13 +62,20 @@ const answering = (status: number, body: string) => {
   return sent;
 };
 
-const lund = { id: 9, name: "Lund family", imported: { people: 41, events: 212, left_out: 3 } };
+const lund = { id: 9, name: "Lund family", imported: { people: 4, events: 212, left_out: 3, primary: [12, 11] } };
 
-/** The importer with its sheet and what it hands on recorded. */
-const importer = () => {
-  const done = { opened: [] as unknown[], said: [] as string[], shown: [] as string[], lowered: 0 };
+const person = (id: number, name: string, last_name: string | null = "Lund") => ({ id, name, last_name }) as Person;
+const people = [person(10, "Walter"), person(11, "Ann"), person(12, "Karen"), person(13, "Tomas", null)];
+
+/** The importer with its sheet and what it hands on recorded, on a diagram
+ * whose people are already in the page. */
+const importer = (made: object | null = lund) => {
+  const done = { opened: [] as unknown[], said: [] as string[], shown: [] as string[], lowered: 0, stored: [] as unknown[] };
+  vi.spyOn(store, "current").mockReturnValue({ record: { people } } as never);
+  vi.spyOn(store, "update").mockImplementation((fresh) => void done.stored.push(fresh));
   const one = Object.assign(Object.create(Importer.prototype), {
     sending: false,
+    made,
     opened: async (made: unknown) => void done.opened.push(made),
     say: (words: string) => void done.said.push(words),
     sheet: { show: (html: string) => void done.shown.push(html), lower: () => void done.lowered++ },
@@ -71,16 +83,54 @@ const importer = () => {
   return { one, done };
 };
 
+const asked = "Should the coach go through the events and add codes where the file has none?";
+
 // R-0899, R-0902, R-0905
-it("opens the new diagram and then says how much of the file came in", async () => {
+it("opens the new diagram and then says how much of the file came in and asks whose family it is", async () => {
   const sent = answering(201, JSON.stringify(lund));
-  const { one, done } = importer();
+  const { one, done } = importer(null);
   await one.send(new File(["\x80\x03}q"], "Lund family.fd.zip"));
   expect([sent[0].get("name"), sent[0].has("coding")]).toEqual(["Lund family", false]);
   expect(done.opened).toEqual([lund]);
-  expect(done.shown[0]).toContain("Your file is in: 41 people and 212 events.");
+  expect(done.shown[0]).toContain("Your file is in: 4 people and 212 events.");
   expect(done.shown[0]).toContain("3 could not be brought in; the coach will ask about them.");
-  expect(done.shown[0]).toContain("Should the coach go through the events and add codes where the file has none?");
+  expect(done.shown[0]).toContain("Is this your own family?");
+  expect(done.shown[0]).not.toContain(asked);
+});
+
+// R-0899, R-0902, R-0905
+it("goes straight to the codes question when it is not the person's own family", () => {
+  const { one, done } = importer();
+  one.answer(Answer.NotOwn);
+  expect(done.shown[0]).toContain(asked);
+  expect(done.shown[0]).not.toContain("Which person are you?");
+  expect(done.shown[0]).toContain("Your file is in: 4 people and 212 events.");
+});
+
+// R-0899, R-0902, R-0905
+it("lists the file's primary people first when it is the person's own family", () => {
+  const { one, done } = importer();
+  one.answer(Answer.Own);
+  const listed = [...done.shown[0].matchAll(/data-person="(\d+)"/g)].map((match) => Number(match[1]));
+  expect(listed).toEqual([12, 11, 10, 13]);
+  expect(done.shown[0]).toContain("Which person are you?");
+  expect(done.shown[0]).toContain(">Karen Lund<");
+  expect(done.shown[0]).toContain(">Tomas<");
+});
+
+// R-0899, R-0902, R-0905
+it("says who the person is in the diagram when they pick a name, then asks about codes", async () => {
+  const sent: string[] = [];
+  vi.stubGlobal("document", { querySelector: () => ({ content: "served" }) });
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    sent.push(`${init.method} ${url} ${init.body}`);
+    return new Response(JSON.stringify({ ...lund, person_id: 12 }), { status: 200 });
+  });
+  const { one, done } = importer();
+  await one.iAm(12);
+  expect(sent).toEqual(['PATCH /app/diagrams/9/access {"person_id":12}']);
+  expect(done.stored).toEqual([{ diagram: { ...lund, person_id: 12 } }]);
+  expect(done.shown[0]).toContain(asked);
 });
 
 // R-0899, R-0902, R-0905

@@ -617,7 +617,8 @@ export function diagramOwner(diagram: Diagram): string {
 /** A diagram just made from a desktop file, with how much of the file came
  * in; what the app's checks refuse is left out. */
 export interface Imported extends Diagram {
-  imported: { people: number; events: number; left_out: number };
+  /** `primary`: the people the file marks primary, in its order. */
+  imported: { people: number; events: number; left_out: number; primary: number[] };
 }
 
 /** Someone with an account, as an admin's search finds them. */

@@ -1,8 +1,10 @@
 import * as api from "./api";
-import { closeX, el } from "./dom";
+import { closeX, el, esc } from "./dom";
+import { OWN_FAMILY } from "./pro";
 import { Sheet } from "./sheet";
+import { store } from "./store";
 import { toast } from "./toast";
-import type { Imported } from "./types";
+import type { Imported, Person } from "./types";
 
 /** A desktop Family Diagram file is a folder, and the diagram.pickle in it is
  * all the app needs: that one file is sent, under the folder's name (R-0899). */
@@ -70,20 +72,61 @@ export const refusal = (file: File | null): string | null =>
 export const ADD_CODES = "Go through the events in this diagram and add codes where the file left them blank.";
 
 export enum Answer {
+  Own = "own",
+  NotOwn = "not-own",
   Yes = "yes",
   NotNow = "not-now",
 }
 
-/** Asked once, as the new diagram opens: what came in, and whether the coach
- * should add the codes the file has none of. */
-export const arrived = ({ people, events, left_out }: Imported["imported"]): string =>
+/** From how many people on the list a name can be typed to find one. */
+const FIND_FROM = 8;
+
+/** What came in, on top of every step of the sheet. */
+const head = ({ people, events, left_out }: Imported["imported"]): string =>
   `${closeX()}<div class="cf-t">Your file is in: ${people} people and ${events} events.</div>` +
-  (left_out > 0 ? `<p class="cf-p">${left_out} could not be brought in; the coach will ask about them.</p>` : "") +
-  `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
+  (left_out > 0 ? `<p class="cf-p">${left_out} could not be brought in; the coach will ask about them.</p>` : "");
+
+const buttons = (yes: [Answer, string], no: [Answer, string]): string =>
   `<div class="cf-btns">` +
-  `<button class="cf-go" type="button" data-act="${Answer.Yes}">Yes</button>` +
-  `<button class="cf-no" type="button" data-act="${Answer.NotNow}">Not now</button>` +
+  `<button class="cf-go" type="button" data-act="${yes[0]}">${yes[1]}</button>` +
+  `<button class="cf-no" type="button" data-act="${no[0]}">${no[1]}</button>` +
   `</div>`;
+
+/** First, as on a new diagram: whose family this is (R-0899). */
+export const ownStep = (imported: Imported["imported"]): string =>
+  head(imported) + `<p class="cf-p">${esc(OWN_FAMILY)}</p>` + buttons([Answer.Own, "Yes"], [Answer.NotOwn, "No"]);
+
+const fullName = (person: Person) => [person.name, person.last_name].filter(Boolean).join(" ");
+
+/** The people to pick from: the ones the file marks primary first, in its
+ * order, then everyone else as the diagram lists them. */
+export const chooseFrom = (people: Person[], primary: number[]): Person[] => [
+  ...primary.map((id) => people.find((one) => one.id === id)!),
+  ...people.filter((one) => !primary.includes(one.id)),
+];
+
+/** Then, for someone whose own family it is: which person they are. */
+export const whoStep = (imported: Imported["imported"], people: Person[]): string =>
+  head(imported) +
+  `<p class="cf-p">Which person are you?</p>` +
+  (people.length >= FIND_FROM
+    ? `<div class="sn-srch fdc-find"><input type="search" placeholder="Find a name" aria-label="Find a name"></div>`
+    : "") +
+  `<div class="sn-grp fdc-who">` +
+  people
+    .map(
+      (one) =>
+        `<button class="sn-row push" type="button" data-person="${one.id}" data-name="${esc(fullName(one).toLowerCase())}">` +
+        `<span class="sn-t">${esc(fullName(one))}</span></button>`,
+    )
+    .join("") +
+  `</div>`;
+
+/** Last: whether the coach should add the codes the file has none of. */
+export const codesStep = (imported: Imported["imported"]): string =>
+  head(imported) +
+  `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
+  buttons([Answer.Yes, "Yes"], [Answer.NotNow, "Not now"]);
 
 /** The new diagram, or the server's own sentence for a file it refuses. */
 export async function bring(file: File): Promise<Imported | string> {
@@ -103,6 +146,8 @@ export class Importer {
   private sheet: Sheet;
   /** One file at a time: a pick while one is out is not taken. */
   private sending = false;
+  /** The diagram the sheet is about, while it is up. */
+  private made: Imported | null = null;
 
   constructor(
     host: HTMLElement,
@@ -112,14 +157,40 @@ export class Importer {
     this.sheet = new Sheet(host, "fdc");
     host.addEventListener("click", (e) => {
       const target = e.target as Element;
+      const person = target.closest<HTMLElement>(".fs-sheet.fdc [data-person]")?.dataset.person;
+      if (person) return void this.iAm(Number(person));
       const act = target.closest<HTMLElement>(".fs-sheet.fdc [data-act]")?.dataset.act as Answer | undefined;
       if (act || target.closest(".fs-sheet.fdc .cardx, .fs-scrim.fdc")) this.answer(act);
+    });
+    host.addEventListener("input", (e) => {
+      const field = (e.target as Element).closest<HTMLInputElement>(".fs-sheet.fdc .fdc-find input");
+      if (!field) return;
+      const query = field.value.trim().toLowerCase();
+      for (const row of host.querySelectorAll<HTMLElement>(".fs-sheet.fdc [data-person]"))
+        row.hidden = !!query && !row.dataset.name!.includes(query);
     });
   }
 
   answer(act?: Answer): void {
+    const imported = this.made!.imported;
+    if (act === Answer.Own)
+      return this.sheet.show(whoStep(imported, chooseFrom(store.current().record.people, imported.primary)));
+    if (act === Answer.NotOwn) return this.sheet.show(codesStep(imported));
     this.sheet.lower();
+    this.made = null;
     if (act === Answer.Yes) this.say(ADD_CODES);
+  }
+
+  /** The person picked is who the user is in the diagram, so the coach speaks
+   * to them as that person from here on. */
+  async iAm(personId: number): Promise<void> {
+    const made = this.made!;
+    try {
+      store.update({ diagram: await api.setPerson(made.id, personId) });
+    } catch (error) {
+      return toast(api.refusedWith(error, "Could not say who you are in this diagram."), true);
+    }
+    this.sheet.show(codesStep(made.imported));
   }
 
   private pick(file: File | null): void {
@@ -135,7 +206,8 @@ export class Importer {
     const made = await bring(file).finally(() => (this.sending = false));
     if (typeof made === "string") return toast(made, true);
     await this.opened(made);
-    this.sheet.show(arrived(made.imported));
+    this.made = made;
+    this.sheet.show(ownStep(made.imported));
   }
 
   row(page: HTMLElement): HTMLElement {

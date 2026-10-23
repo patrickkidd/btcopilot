@@ -447,6 +447,10 @@ export function importDiagram(file: File, name: string): Promise<Imported> {
   return call("POST", "/diagrams", form, READ_MS);
 }
 
+/** Who the signed-in user is in a diagram, or nobody (FD-387). */
+export const setPerson = (diagramId: number, personId: number | null) =>
+  call<Diagram>("PATCH", `/diagrams/${diagramId}/access`, { person_id: personId });
+
 /** A diagram gone for good; the free one is never deleted. */
 export const deleteDiagram = (id: number) => call<void>("DELETE", `/diagrams/${id}`);
 
