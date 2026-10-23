@@ -2,7 +2,7 @@ import * as api from "./api";
 import { closeX, el, esc } from "./dom";
 import { OWN_FAMILY } from "./pro";
 import { Sheet } from "./sheet";
-import { store } from "./store";
+import { Part, store } from "./store";
 import { toast } from "./toast";
 import type { Imported, Person } from "./types";
 
@@ -105,10 +105,27 @@ export const chooseFrom = (people: Person[], primary: number[]): Person[] => [
   ...people.filter((one) => !primary.includes(one.id)),
 ];
 
-/** Then, for someone whose own family it is: which person they are. */
-export const whoStep = (imported: Imported["imported"], people: Person[]): string =>
+/** Who picks a person: the user saying which one they are, or saying who the
+ * case is about. */
+export enum Pick {
+  Me = "me",
+  About = "about",
+}
+
+const PICK_ASKS: Record<Pick, string> = {
+  [Pick.Me]: "Which person are you?",
+  [Pick.About]: "Who is this case about?",
+};
+
+/** Then the person: which one the user is, in their own family, or who the
+ * case is about, in someone else's; the one person the file marks primary
+ * comes picked, ready to go on with. Either way the diagram ends with one
+ * primary person, which the Family view is drawn around (R-0930). */
+export const pickStep = (imported: Imported["imported"], people: Person[], pick: Pick): string => {
+  const ready = imported.primary.length === 1 ? people.find((one) => one.id === imported.primary[0]) : undefined;
+  return (
   head(imported) +
-  `<p class="cf-p">Which person are you?</p>` +
+  `<p class="cf-p">${PICK_ASKS[pick]}</p>` +
   (people.length >= FIND_FROM
     ? `<div class="sn-srch fdc-find"><input type="search" placeholder="Find a name" aria-label="Find a name"></div>`
     : "") +
@@ -116,17 +133,42 @@ export const whoStep = (imported: Imported["imported"], people: Person[]): strin
   people
     .map(
       (one) =>
-        `<button class="sn-row push" type="button" data-person="${one.id}" data-name="${esc(fullName(one).toLowerCase())}">` +
-        `<span class="sn-t">${esc(fullName(one))}</span></button>`,
+        `<button class="sn-row push${one === ready ? " cur" : ""}" type="button" data-${pick}="${one.id}" ` +
+        `data-name="${esc(fullName(one).toLowerCase())}"><span class="sn-t">${esc(fullName(one))}</span></button>`,
     )
     .join("") +
-  `</div>`;
+  `</div>` +
+  (ready
+    ? `<div class="cf-btns"><button class="cf-go" type="button" data-${pick}="${ready.id}">Go on with ${esc(fullName(ready))}</button></div>`
+    : "")
+  );
+};
 
 /** Last: whether the coach should add the codes the file has none of. */
 export const codesStep = (imported: Imported["imported"]): string =>
   head(imported) +
   `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
   buttons([Answer.Yes, "Yes"], [Answer.NotNow, "Not now"]);
+
+/** Clusters are found on the worker a few seconds after a file comes in, so
+ * the new diagram's record is read again until it has some, for at most this
+ * long, and drawn again only when it changed. */
+const CLUSTERS_EVERY_MS = 5_000;
+const CLUSTERS_UNTIL_MS = 180_000;
+
+export async function awaitClusters(
+  wait = (ms: number) => new Promise<void>((done) => window.setTimeout(done, ms)),
+  now = () => Date.now(),
+): Promise<void> {
+  const until = now() + CLUSTERS_UNTIL_MS;
+  while (!store.current().record.clusters.length && now() < until) {
+    await wait(CLUSTERS_EVERY_MS);
+    // null once the person has opened another diagram
+    const record = await store.fetch(api.timeline);
+    if (record === null) return;
+    if (JSON.stringify(record) !== JSON.stringify(store.current().record)) store.update({ record });
+  }
+}
 
 /** The new diagram, or the server's own sentence for a file it refuses. */
 export async function bring(file: File): Promise<Imported | string> {
@@ -157,8 +199,8 @@ export class Importer {
     this.sheet = new Sheet(host, "fdc");
     host.addEventListener("click", (e) => {
       const target = e.target as Element;
-      const person = target.closest<HTMLElement>(".fs-sheet.fdc [data-person]")?.dataset.person;
-      if (person) return void this.iAm(Number(person));
+      const picked = target.closest<HTMLElement>(`.fs-sheet.fdc :is([data-${Pick.Me}], [data-${Pick.About}])`);
+      if (picked) return void this.choose(picked.dataset.me ? Pick.Me : Pick.About, Number(picked.dataset.me ?? picked.dataset.about));
       const act = target.closest<HTMLElement>(".fs-sheet.fdc [data-act]")?.dataset.act as Answer | undefined;
       if (act || target.closest(".fs-sheet.fdc .cardx, .fs-scrim.fdc")) this.answer(act);
     });
@@ -166,30 +208,34 @@ export class Importer {
       const field = (e.target as Element).closest<HTMLInputElement>(".fs-sheet.fdc .fdc-find input");
       if (!field) return;
       const query = field.value.trim().toLowerCase();
-      for (const row of host.querySelectorAll<HTMLElement>(".fs-sheet.fdc [data-person]"))
+      for (const row of host.querySelectorAll<HTMLElement>(".fs-sheet.fdc .fdc-who [data-name]"))
         row.hidden = !!query && !row.dataset.name!.includes(query);
     });
   }
 
   answer(act?: Answer): void {
     const imported = this.made!.imported;
-    if (act === Answer.Own)
-      return this.sheet.show(whoStep(imported, chooseFrom(store.current().record.people, imported.primary)));
-    if (act === Answer.NotOwn) return this.sheet.show(codesStep(imported));
+    const people = () => chooseFrom(store.current().record.people, imported.primary);
+    if (act === Answer.Own) return this.sheet.show(pickStep(imported, people(), Pick.Me));
+    if (act === Answer.NotOwn) return this.sheet.show(pickStep(imported, people(), Pick.About));
     this.sheet.lower();
     this.made = null;
     if (act === Answer.Yes) this.say(ADD_CODES);
   }
 
-  /** The person picked is who the user is in the diagram, so the coach speaks
-   * to them as that person from here on. */
-  async iAm(personId: number): Promise<void> {
+  /** The person picked: who the user is, so the coach speaks to them as that
+   * person from here on, which also makes them the primary person; or who the
+   * case is about, made the primary person. The record is read again so the
+   * Family view is drawn around them. */
+  async choose(pick: Pick, personId: number): Promise<void> {
     const made = this.made!;
     try {
-      store.update({ diagram: await api.setPerson(made.id, personId) });
+      if (pick === Pick.Me) store.update({ diagram: await api.setPerson(made.id, personId) });
+      else await api.savePerson(personId, { primary: true }, made.id);
     } catch (error) {
-      return toast(api.refusedWith(error, "Could not say who you are in this diagram."), true);
+      return toast(api.refusedWith(error, "Could not save who this diagram is about."), true);
     }
+    await store.refresh(Part.Record);
     this.sheet.show(codesStep(made.imported));
   }
 
@@ -206,6 +252,7 @@ export class Importer {
     const made = await bring(file).finally(() => (this.sending = false));
     if (typeof made === "string") return toast(made, true);
     await this.opened(made);
+    void awaitClusters();
     this.made = made;
     this.sheet.show(ownStep(made.imported));
   }

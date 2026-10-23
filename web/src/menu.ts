@@ -79,7 +79,7 @@ export class Menu {
     private diagramId: () => number | undefined,
     /** Where a tapped row opens the read-only detail card instead of the form:
      * the chat app's own drawer. The coding screen passes none. */
-    private detail?: Pick<DetailHooks, "talk" | "cluster" | "said">,
+    private detail?: Pick<DetailHooks, "talk" | "cluster" | "said" | "notes">,
   ) {}
 
   private held(form: HTMLElement): HTMLElement {

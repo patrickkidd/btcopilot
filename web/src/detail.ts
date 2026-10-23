@@ -1,4 +1,4 @@
-import { el, esc } from "./dom";
+import { closeX, el, esc } from "./dom";
 import { BACK } from "./tokens";
 import { periodName } from "./caseview";
 import { fullName, when } from "./rows";
@@ -44,10 +44,24 @@ export interface DetailHooks {
   /** The chat message an event was said in, as a line that jumps to its
    * bubble; null when the record does not know it. */
   said: (eventId: number) => { label: string; go: () => void } | null;
+  /** The whole of a long notes field, read on a page of its own. */
+  notes: (title: string, text: string) => void;
 }
 
 const row = (key: string, value: string) =>
   `<div class="r"><div class="k">${key}</div><div class="v">${value}</div></div>`;
+
+/** Notes run long in a file brought in from the desktop app: the field takes
+ * the card's whole width and the height left under the rest, scrolls inside
+ * itself, and opens whole on a page of its own. */
+const notesRow = (notes: string) =>
+  `<div class="r notes"><div class="k">Notes</div>` +
+  `<button type="button" class="notes-open">Full screen</button>` +
+  `<div class="v">${esc(notes)}</div></div>`;
+
+/** The notes on a page of their own, under the name of what they are about. */
+export const notesSheet = (title: string, text: string): string =>
+  `${closeX()}<div class="cf-t">${esc(title)}</div><p class="cf-p">Notes</p><div class="fl-text">${esc(text)}</div>`;
 
 const link = (attr: string, id: number | string, words: string) =>
   `<button type="button" class="who" ${attr}="${esc(String(id))}">${esc(words)}</button>`;
@@ -89,6 +103,8 @@ function card(list: string, kind: string, title: string, rows: string, talk: str
       `<div class="foot"><button type="button" class="talk">${talk}</button></div>`,
   );
   view.querySelector<HTMLElement>(".talk")!.onclick = () => hooks.talk(chip);
+  const notes = view.querySelector<HTMLElement>(".notes-open");
+  if (notes) notes.onclick = () => hooks.notes(title, notes.nextElementSibling!.textContent!);
   view.querySelector<HTMLElement>(".detbar .backbtn")!.onclick = hooks.back;
   for (const button of view.querySelectorAll<HTMLElement>("[data-cluster]"))
     button.onclick = () => hooks.cluster(button.dataset.cluster!);
@@ -129,8 +145,8 @@ export function eventDetail(
       (changed ? row("Shift", changed) : "") +
       (event.location ? row("Where", esc(event.location)) : "") +
       (cluster ? row("Cluster", clusterChip(cluster)) : "") +
-      (event.notes ? row("Notes", esc(event.notes)) : "") +
-      (from ? row("From", `<button type="button" class="chip said">${esc(from.label)}</button>`) : ""),
+      (from ? row("From", `<button type="button" class="chip said">${esc(from.label)}</button>`) : "") +
+      (event.notes ? notesRow(event.notes) : ""),
     TALK_EVENT,
     chipFor(ChipKind.Event, event.id, event.label),
     hooks,
@@ -178,7 +194,7 @@ export function personDetail(person: Person, record: Timeline, hooks: DetailHook
       (events.length
         ? row("Events", events.map((e) => link("data-event", e.id, e.label)).join("<br>"))
         : "") +
-      (person.notes ? row("Notes", esc(person.notes)) : ""),
+      (person.notes ? notesRow(person.notes) : ""),
     TALK_PERSON,
     chipFor(ChipKind.Person, id, fullName(person)),
     hooks,

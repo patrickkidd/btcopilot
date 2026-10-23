@@ -31,6 +31,8 @@ import { card } from "./merge";
 import { Part, store } from "./store";
 import { REST, SelKind } from "./caption";
 import { $, CLUSTER, el, flash, setTitle, slideOver, type Title } from "./dom";
+import { notesSheet } from "./detail";
+import { Sheet } from "./sheet";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer, SIDEWAYS } from "./drawer";
@@ -309,10 +311,21 @@ function said(eventId: number): { label: string; go: () => void } | null {
   };
 }
 
+/** A card's notes, whole, on a page of their own over everything; the cross
+ * or a tap beside it goes back to the card. */
+const notes = new Sheet($("overlay"), "fn");
+$("overlay").addEventListener("click", (e) => {
+  if ((e.target as Element).closest(".fs-sheet.fn .cardx, .fs-scrim.fn")) notes.lower();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && notes.up) notes.lower();
+});
+
 const menu = new Menu($("menu-body"), () => load().then(record), () => store.id() ?? undefined, {
   talk: talkAbout,
   cluster: (id) => void navigate(address(Place.Cluster, id)),
   said,
+  notes: (title, text) => notes.show(notesSheet(title, text)),
 });
 
 /** On a phone the drawer gets out of the way of the thread; pinned beside it,
