@@ -122,7 +122,6 @@ R-0604 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests 
 R-0605 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0606 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0607 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
-R-0608 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0609 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0611 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
 R-0613 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
@@ -222,3 +221,18 @@ R-0863 | TEST OWED | not built: only the quoted words sit in the statement bubbl
 R-0864 | TEST OWED | not built: card and cluster sentences state events as memories side by side, never as causes or appearing shifts
 R-0865 | TEST OWED | not built: the label Your suggestion on the person's own periods
 R-0872 | TEST OWED | not built: cluster detection runs on Gemini Flash-Lite; the model pick is configuration, no test yet
+R-0917 | TEST OWED | not built since the rebase onto FD-387: master's cluster prompt is frozen and does not read the desktop file's tags (FD-377)
+R-0921 | WAIVED | Patrick's eyeball of an imported diagram is the test; no ground truth to assert against (FD-377)
+R-0924 | WAIVED | a starting point, not a behaviour: the import was written from scratch (FD-377)
+R-0931 | TEST OWED | not built: the way to eyeball compare an imported result in the new app (FD-377)
+R-0915 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-377)
+R-0916 | TEST OWED | cited by 2 tests, one more owed for the data-model tag (FD-377)
+R-0920 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-377)
+R-0923 | TEST OWED | cited by 1 test, two more owed for the events and data-model tags (FD-377)
+R-0875 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-377)
+R-0608 | TEST OWED | appended from the queue on 2026-10-01; 0 of 1 citing tests exist
+R-0911 | WAIVED | the import asks the person no questions since merging into a diagram was abandoned on 2026-10-23 (R-0899) (FD-377)
+R-0922 | TEST OWED | cited by 1 test, one more owed for the data-model tag (FD-377)
+R-0930 | TEST OWED | cited by 1 test, one more owed for the coach tag: the coach asking which person is you went out with the coach's message after an import on 2026-10-23 (FD-377)
+R-0876 | TEST OWED | cited by 1 test, one more owed for the model tag (FD-377)
+R-0903 | TEST OWED | not built: the coach coding dialog shown once after an import (FD-377)

@@ -15,6 +15,7 @@ import type {
   Scribed,
   Tasks,
   Diagram,
+  Imported,
   InteractionKind,
   ItemKind,
   PlayReply,
@@ -106,6 +107,16 @@ export function whatFailed(error: unknown, words = instruction): string {
   if (failed.silent) return "No answer from the server";
   if (failed.status >= 500) return "The server broke on that one";
   return words(failed.said) || "That did not go in";
+}
+
+/** The server's own words for a refusal when they are one plain sentence,
+ * these words otherwise: an error page is never shown as it came. */
+export function refusedWith(error: unknown, words: string): string {
+  const failed = error instanceof Failed ? error : null;
+  if (!failed) throw error;
+  console.warn(failed.message);
+  const said = failed.said.trim();
+  return failed.status >= 400 && failed.status < 500 && /^[^<>\n]{1,300}$/.test(said) ? said : words;
 }
 
 /** A request for a diagram that is no longer the one open: the page opened
@@ -426,6 +437,18 @@ export const newDiagram = (name: string, ownFamily: boolean) =>
 /** The owner renames their diagram. */
 export const renameDiagram = (id: number, name: string) =>
   call<Diagram>("PATCH", `/diagrams/${id}`, { name });
+
+/** A new diagram from a desktop Family Diagram file, made in the request and
+ * put the app on (R-0899). */
+export function importDiagram(file: File, name: string): Promise<Imported> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  form.append("name", name);
+  return call("POST", "/diagrams", form, READ_MS);
+}
+
+/** A diagram gone for good; the free one is never deleted. */
+export const deleteDiagram = (id: number) => call<void>("DELETE", `/diagrams/${id}`);
 
 /** The audio goes to this server, which sends it on to be transcribed and
  * answers with the id to ask after (R-0348). */

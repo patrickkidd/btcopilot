@@ -1,5 +1,14 @@
-from sqlalchemy import Column, Boolean, String, Integer, LargeBinary, ForeignKey, false
-from sqlalchemy import event
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    String,
+    event,
+    false,
+)
 from sqlalchemy import update as sql_update
 from sqlalchemy.orm import Session, relationship
 from dataclasses import fields as dc_fields
@@ -56,6 +65,9 @@ class Diagram(db.Model, ModelMixin):
     case_report_forced_out_of_date = Column(
         Boolean, nullable=False, default=False, server_default=false()
     )
+    # when its owner deleted it: hidden from every read the app does, nothing
+    # removed [Oracle: R-0904, R-0908]
+    deleted_at = Column(DateTime, nullable=True)
 
     access_rights = relationship(
         "AccessRight",

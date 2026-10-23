@@ -321,6 +321,12 @@ const toThread = () => {
   if (!pinned()) screen(Screen.Chat);
 };
 
+/** Words the page sends in the person's name, as if typed and sent. */
+const sayNow = (statement: string) => {
+  toThread();
+  post(statement);
+};
+
 /** A question or impression tapped in the drawer goes into the message as a
  * reference with the cursor after it, and nothing is sent (R-0072); what an
  * impression rests on goes where the same chip in the thread goes. */
@@ -339,10 +345,7 @@ const questions = new Questions($("menu-body"), {
   },
   onDismissed: () => void load(),
   busy: () => inFlight,
-  say: (statement) => {
-    toThread();
-    post(statement);
-  },
+  say: sayNow,
   record: tapped,
 });
 menu.questions = questions;
@@ -730,6 +733,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
     feedback();
   },
   onOpen: openDiagram,
+  onSay: sayNow,
   onTask: () => void readTask().then(() => settings.push(TASK)),
   onAgenda: () => void agenda.load().then(() => settings.push(AGENDA)),
   notices: () => notices.list,
@@ -812,7 +816,7 @@ function addStatements(statements: api.Said[], newest = false): void {
       coach && notes ? (notes.args as unknown as Notes) : null,
     );
     if (statement.attachment_name !== null)
-      attachment.show(bubble, statement.attachment_name, statement.attachment_text);
+      attachment.show(bubble, statement.attachment_name, statement.attachment_text, statement.unfinished);
     if (statement.feedback)
       chat.kept(bubble, statement.turn_id!, statement.feedback, newest && statement === statements.at(-1));
     if (statement.stopped) chat.halted(statement.conflict ? STOPPED_KEPT : STOPPED);
@@ -1352,6 +1356,7 @@ function follow(turnId: string): void {
           bubble.settle("", () => {});
           stopped = { turn: turnId, bubble: bubble.bubble };
         }
+        attachment.untaken($("chat"));
         chat.warn(message, () => void resume(turnId));
       }),
     refused: (message) =>
@@ -1385,7 +1390,7 @@ function stopFollowing(): void {
  * chip whose read failed stays dimmed, under the thread's warning saying why
  * (R-0830). */
 async function readBack(): Promise<void> {
-  const reading = [...$("chat").querySelectorAll<HTMLElement>(".bub[data-statement] > .file > .chip.reading")];
+  const reading = [...$("chat").querySelectorAll<HTMLElement>(".bub[data-statement] > .file > .chip:is(.reading, .untaken)")];
   if (!reading.length) return;
   const live = store.live();
   let page: api.Said[];

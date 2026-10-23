@@ -1660,9 +1660,8 @@ class Toolbox:
             )
         except record.Conflict as e:
             raise ToolError(
-                "That has already been changed since, so it cannot be put back "
-                f"as it was: {e}",
-                "That has been changed since, so it cannot be put back as it was.",
+                f"A later change touched this; take that back first: {e}",
+                "A later change touched this; take that back first.",
             )
         except record.Invalid as e:
             raise ToolError(f"Putting that back would leave {e}", e.plain)
@@ -1671,14 +1670,24 @@ class Toolbox:
         return ("Put back what the last turn changed.", self._patch(change))
 
     def _previous_turn(self) -> str | None:
-        """The turn before this one on this diagram — what 'put that back' means.
-        Questions are never put back, so a turn that touched only questions, a
-        dismissal say, is not it."""
+        """The turn before this one on this diagram not already put back — what
+        'put that back' means, so a second undo reaches the turn before that
+        [Oracle: R-0909]. Questions are never put back, so a turn that touched only
+        questions, a dismissal say, is not it."""
+        undone = {
+            turn_id.removeprefix("undo:")
+            for (turn_id,) in db.session.query(Change.turn_id).filter(
+                Change.diagram_id == self.diagram_id,
+                Change.turn_id.like("undo:%"),
+                Change.turn_id.notlike("undo:%#%"),
+            )
+        }
         rows = Change.query.filter(
             Change.diagram_id == self.diagram_id,
             Change.turn_id != self.turn_id,
             Change.turn_id.notlike("undo:%"),
             Change.turn_id.notlike("%backfill:%"),
+            Change.turn_id.notin_(undone),
         ).order_by(Change.id.desc())
         return next(
             (

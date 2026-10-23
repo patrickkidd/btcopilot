@@ -1285,7 +1285,7 @@ button { font-family: inherit; }
    still while the server reads it, a tap once read shows what the coach read. */
 .bub > .file { margin-bottom: 4px; }
 .bub > .file:only-child { margin-bottom: 0; }
-.chip.file.reading { opacity: 0.6; cursor: default; }
+.chip.file:is(.reading, .untaken) { opacity: 0.6; cursor: default; }
 .chip.file.reading::after { content: " · reading"; }
 /* the file picked for the next message, in the box with its cross */
 .field > .attached { grid-area: slot; display: flex; align-items: center; padding-top: 4px; }
@@ -2178,6 +2178,11 @@ button { font-family: inherit; }
 .sn-row:first-child { border-top: none; }
 .sn-row.push { cursor: pointer; }
 .sn-row.push:active { background: var(--tint); }
+/* a diagram row swiped left shows Delete behind it, as a session row does */
+.sn-grp:has(> .sn-row[data-diagram]) { overflow: hidden; }
+.sn-row[data-diagram] { position: relative; background: var(--panel); transition: transform 0.18s ease; }
+.sn-row[data-diagram].swiped { transform: translateX(-96px); }
+.sn-row[data-diagram] .fs-acts { width: 96px; }
 .sn-lbl {
   max-width: 52%;
   font: 400 17px/1.3 var(--sans);
@@ -2371,6 +2376,11 @@ button { font-family: inherit; }
   color: var(--faint);
 }
 .sn-srch { padding: 10px 16px; }
+/* the smaller second way in on a row, and a file dragged over the page */
+/* a finger's height to tap: the space under the link, never the title above it */
+.sn-alt { display: inline-block; min-height: 44px; margin-top: -4px; padding: 4px 8px 0 0; border: none; background: none; color: var(--data); font: inherit; text-align: left; vertical-align: top; cursor: pointer; }
+.sn-row:has(.sn-alt) { padding-bottom: 0; }
+.sn-stack .dropping { outline: 2px dashed var(--data); outline-offset: -6px; }
 .sn-srch input {
   width: 100%;
   height: 44px;

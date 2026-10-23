@@ -3,10 +3,12 @@ granted. One resource per table, so the account page, the settings stack and the
 family switcher all read the same list rather than each growing an endpoint of
 its own."""
 
+import datetime
+
 from flask import abort, jsonify, request
 
 import btcopilot
-from btcopilot import auth, diagramjson, profile
+from btcopilot import attachments, auth, diagramjson, fdafter, fdimport, profile
 from btcopilot.routes import Access, access, bp, last_activity, utc_iso
 from btcopilot.extensions import db
 from btcopilot.models import Discussion
@@ -17,15 +19,23 @@ from btcopilot.profile import FIRST_PERSON_ID
 from btcopilot.routes.users import require_admin
 
 GRANTED = (btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE)
+PERSONAL = "Your personal diagram cannot be deleted."
+# A form carrying a desktop file at its size limit, with room for its name.
+FORM_BYTES = attachments.MAX_BYTES + 1024 * 1024
 
 
 def readable(user) -> list[Diagram]:
-    """Owned first, then granted, each once."""
-    found = [d for d in user.diagrams if not d.scratch]
+    """Owned first, then granted, each once; never a scratch copy or one its
+    owner deleted."""
+    found = [d for d in user.diagrams if not d.scratch and d.deleted_at is None]
     seen = {d.id for d in found}
     granted = (
         Diagram.query.join(AccessRight, AccessRight.diagram_id == Diagram.id)
-        .filter(AccessRight.user_id == user.id, AccessRight.right.in_(GRANTED))
+        .filter(
+            AccessRight.user_id == user.id,
+            AccessRight.right.in_(GRANTED),
+            Diagram.deleted_at.is_(None),
+        )
         # a scratch copy carries its owner's row and is never listed to anyone
         .filter(Diagram.scratch.is_(False))
         .all()
@@ -112,6 +122,8 @@ def diagram_create():
     maker is the person the chat app makes first; no, and they are a human
     coach on it, the person it belongs to no one on it yet."""
     user = auth.current_user()
+    if request.mimetype == "multipart/form-data":
+        return _imported(user)
     body = request.get_json()
     name = _name(body)
     own = body.get("own_family")
@@ -140,6 +152,46 @@ def diagram_update(diagram_id: int):
     found.name = _name(request.get_json())
     db.session.commit()
     return jsonify(diagram_payload(found, user))
+
+
+def _imported(user):
+    """A new case from a Family Diagram desktop file, made here as the file
+    stands and opened; the worker then mails its record and groups its
+    clusters [Oracle: R-0899, R-0902]."""
+    if request.content_length and request.content_length > FORM_BYTES:
+        abort(413, description=attachments.TOO_BIG)
+    name = _name(request.form)
+    data = request.files["file"].read()
+    if len(data) > attachments.MAX_BYTES:
+        abort(413, description=attachments.TOO_BIG)
+    pickled, fd = fdafter.scene(data)
+    made, turn, out = fdafter.made(user, name, fd)
+    fdafter.enqueue(made, user.id, turn, pickled)
+    imported = {
+        "people": out.brought["people"],
+        "events": out.brought["events"],
+        "left_out": out.brought[fdimport.LEFT_OUT],
+    }
+    return jsonify(diagram_payload(made, user) | {"imported": imported}), 201
+
+
+@bp.route("/diagrams/<int:diagram_id>", methods=["DELETE"])
+def diagram_delete(diagram_id: int):
+    """The owner deletes a diagram: it is hidden and nothing is removed, and
+    anyone the app was on it goes back to their personal diagram. The personal
+    diagram stays [Oracle: R-0904, R-0908]."""
+    user = auth.current_user()
+    found = db.session.get(Diagram, diagram_id)
+    if found is None or found.user_id != user.id or found.deleted_at is not None:
+        abort(404)
+    if found.id == user.free_diagram_id:
+        raise ValueError(PERSONAL)
+    found.deleted_at = datetime.datetime.utcnow()
+    User.query.filter_by(current_diagram_id=found.id).update(
+        {"current_diagram_id": None}
+    )
+    db.session.commit()
+    return "", 204
 
 
 @bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])

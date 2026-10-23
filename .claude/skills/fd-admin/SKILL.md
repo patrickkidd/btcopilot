@@ -172,6 +172,20 @@ Write one record out as JSON.
 | `diagram_id` | required |
 | `--out` | Write to this file instead of the screen. |
 
+### `flask admin diagrams import <path>`
+
+Make a new record for one person from a Family Diagram desktop file (.fd) as it stands, with no model call, written as one change so one undo takes it all back, and mail them the import record: every field of the file and every choice made. Without --yes the import record is written to a file and the counts printed; nothing is kept or mailed.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `path` | required |
+| `--email` | Whose record it is. |
+| `--name` | The record's name; the file's name when left out. |
+| `--ledger` | Where a dry run writes the import record; the record's name in this folder when left out. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin diagrams list`
 
 Every record, with how much is in it.
@@ -212,6 +226,21 @@ One record's counts.
 | Argument | What it is |
 |---|---|
 | `diagram_id` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin diagrams to-json`
+
+Rewrite every record still stored as a pickle as the JSON the app writes [Oracle: R-0913]. The dry run decodes each pickle and the JSON it becomes, compares them field by field, prints each record's id, blob kind and whether the two are equal, and saves a plan and the pickle for each equal one; it writes nothing. --apply --plan writes exactly that plan; --undo --plan puts the saved pickle back. Each refuses a record changed since the dry run. Back up the database before --apply.
+
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--apply` | Write saved plans; the default, --dry-run, compares and saves the plans, writing nothing to the records. |
+| `--undo` | With --plan: put the saved pickle back. |
+| `--plan` | With --apply or --undo: a plan file the dry run printed. |
+| `--plans` | Where the dry run saves its plans and the pickles. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin diagrams undo <diagram_id> <change_ids>`

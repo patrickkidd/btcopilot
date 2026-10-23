@@ -6,15 +6,14 @@ returns with the one-way Pro app import, which is not designed yet."""
 
 import pickle
 
-from PyQt5.QtCore import QDate, QDateTime, QPointF
-
 from btcopilot import diagramjson
 from btcopilot.extensions import db
+from btcopilot.qtvalue import QtValue
 
 PEOPLE = [
     {"id": 1, "name": "Ada", "last_name": "Lund", "gender": "female", "parents": 30,
      "nickname": "A", "deceased": False, "size": 4, "color": "#ff102030", "layers": [40],
-     "itemPos": QPointF(12.5, -7.25)},
+     "itemPos": QtValue("QPointF", (12.5, -7.25))},
     {"id": 2, "name": "Ben", "last_name": "Lund", "gender": "male", "parents": None},
     {"id": 3, "name": "Cass", "last_name": "Lund", "gender": "female", "parents": None},
     {"id": 4, "name": "Dov", "last_name": "Lund", "gender": "male", "parents": None},
@@ -24,17 +23,17 @@ PAIR_BONDS = [
      "divorced": None, "custody": None, "notes": "met in 1979", "confidence": 0.9},
 ]
 EVENTS = [
-    {"id": 10, "kind": "married", "person": 2, "spouse": 3, "dateTime": QDateTime(1980, 6, 1, 0, 0),
+    {"id": 10, "kind": "married", "person": 2, "spouse": 3, "dateTime": QtValue("QDateTime", "1980-06-01T00:00:00.000"),
      "dateCertainty": "certain"},
-    {"id": 11, "kind": "birth", "child": 1, "dateTime": QDateTime(1983, 4, 9, 10, 30),
+    {"id": 11, "kind": "birth", "child": 1, "dateTime": QtValue("QDateTime", "1983-04-09T10:30:00.000"),
      "dateCertainty": "approximate", "location": "Duluth"},
-    {"id": 12, "kind": "shift", "person": 1, "dateTime": QDateTime(2011, 5, 1, 0, 0),
-     "endDateTime": QDateTime(2011, 8, 1, 0, 0), "dateCertainty": "certain",
+    {"id": 12, "kind": "shift", "person": 1, "dateTime": QtValue("QDateTime", "2011-05-01T00:00:00.000"),
+     "endDateTime": QtValue("QDateTime", "2011-08-01T00:00:00.000"), "dateCertainty": "certain",
      "description": "moved away and went quiet", "notes": "her words",
      "anxiety": "up", "symptom": None, "functioning": "down",
      "relationship": "distance", "relationshipTargets": [2, 3], "relationshipTriangles": [],
      "relationshipIntensity": 2, "color": "#ff336699"},
-    {"id": 13, "kind": "shift", "person": 1, "dateTime": QDateTime(2012, 1, 15, 0, 0),
+    {"id": 13, "kind": "shift", "person": 1, "dateTime": QtValue("QDateTime", "2012-01-15T00:00:00.000"),
      "dateCertainty": "certain", "description": "took her father's side",
      "relationship": "inside", "relationshipTargets": [2], "relationshipTriangles": [3, 4]},
 ]
@@ -44,12 +43,12 @@ EMOTIONS = [
 ]
 LAYERS = [
     {"id": 40, "name": "Now", "description": "", "order": 0, "active": True, "internal": False,
-     "storeGeometry": True, "itemProperties": {"1": {"itemPos": QPointF(1, 2)}}},
+     "storeGeometry": True, "itemProperties": {"1": {"itemPos": QtValue("QPointF", (1.0, 2.0))}}},
 ]
 RECORD = {
     "people": PEOPLE, "events": EVENTS, "pair_bonds": PAIR_BONDS, "emotions": EMOTIONS,
     "layers": LAYERS, "multipleBirths": [], "layerItems": [], "items": [], "pruned": [],
-    "lastItemId": 50, "currentDate": QDate(2026, 9, 16), "alias": "ada-family",
+    "lastItemId": 50, "currentDate": QtValue("QDate", "2026-09-16"), "alias": "ada-family",
     "clusters": [{"id": "c1", "title": "The move", "summary": "", "eventIds": [12, 13],
                   "startDate": "2011-05-01", "endDate": "2012-01-15",
                   "pattern": None, "dominantVariable": None}],
