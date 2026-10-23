@@ -81,9 +81,10 @@ export enum Answer {
 /** From how many people on the list a name can be typed to find one. */
 const FIND_FROM = 8;
 
-/** What came in, on top of every step of the sheet. */
-const head = ({ people, events, left_out }: Imported["imported"]): string =>
-  `${closeX()}<div class="cf-t">Your file is in: ${people} people and ${events} events.</div>` +
+/** What came in, on top of every step of the sheet; only the last step has
+ * a cross, since the diagram must end with one primary person (R-0930). */
+const head = ({ people, events, left_out }: Imported["imported"], closable = false): string =>
+  `${closable ? closeX() : ""}<div class="cf-t">Your file is in: ${people} people and ${events} events.</div>` +
   (left_out > 0 ? `<p class="cf-p">${left_out} could not be brought in; the coach will ask about them.</p>` : "");
 
 const buttons = (yes: [Answer, string], no: [Answer, string]): string =>
@@ -146,7 +147,7 @@ export const pickStep = (imported: Imported["imported"], people: Person[], pick:
 
 /** Last: whether the coach should add the codes the file has none of. */
 export const codesStep = (imported: Imported["imported"]): string =>
-  head(imported) +
+  head(imported, true) +
   `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
   buttons([Answer.Yes, "Yes"], [Answer.NotNow, "Not now"]);
 
@@ -190,6 +191,8 @@ export class Importer {
   private sending = false;
   /** The diagram the sheet is about, while it is up. */
   private made: Imported | null = null;
+  /** Whether the step showing may be put away unanswered. */
+  private closable = false;
 
   constructor(
     host: HTMLElement,
@@ -213,13 +216,17 @@ export class Importer {
     });
   }
 
+  /** An answer, or a cross or a tap beside the sheet, which only the codes
+   * question takes, as Not now. */
   answer(act?: Answer): void {
+    if (!act && !this.closable) return;
     const imported = this.made!.imported;
     const people = () => chooseFrom(store.current().record.people, imported.primary);
     if (act === Answer.Own) return this.sheet.show(pickStep(imported, people(), Pick.Me));
     if (act === Answer.NotOwn) return this.sheet.show(pickStep(imported, people(), Pick.About));
     this.sheet.lower();
     this.made = null;
+    this.closable = false;
     if (act === Answer.Yes) this.say(ADD_CODES);
   }
 
@@ -236,6 +243,7 @@ export class Importer {
       return toast(api.refusedWith(error, "Could not save who this diagram is about."), true);
     }
     await store.refresh(Part.Record);
+    this.closable = true;
     this.sheet.show(codesStep(made.imported));
   }
 

@@ -4,7 +4,7 @@ import type { Person } from "../src/types";
 vi.stubGlobal("window", { BOOTSTRAP: { user: { username: "ann", pro: false } } });
 
 const { Part, store } = await import("../src/store");
-const { ADD_CODES, Answer, awaitClusters, Pick, bring, fromDrop, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
+const { ADD_CODES, Answer, awaitClusters, ownStep, Pick, bring, fromDrop, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
   "../src/importer"
 );
 
@@ -164,6 +164,22 @@ it("makes the person picked the one the case is about, then asks about codes", a
   expect(sent).toEqual(['PATCH /app/people/11?diagram_id=9 {"primary":true}']);
   expect(read).toHaveBeenCalledWith(Part.Record);
   expect(done.shown[0]).toContain(asked);
+});
+
+// R-0930
+it("cannot be put away until a primary person is set, and then its cross counts as Not now", async () => {
+  const sent = picks();
+  const { one, done } = importer();
+  one.answer(Answer.NotOwn);
+  expect(done.shown[0]).not.toContain("cardx");
+  one.answer();
+  expect(done.lowered).toBe(0);
+  vi.spyOn(store, "refresh").mockResolvedValue(true);
+  await one.choose(Pick.About, 11);
+  expect(done.shown[1]).toContain("cardx");
+  one.answer();
+  expect([done.lowered, done.said, sent]).toEqual([1, [], ['PATCH /app/people/11?diagram_id=9 {"primary":true}']]);
+  expect(ownStep(lund.imported)).not.toContain("cardx");
 });
 
 // R-0899, R-0902, R-0905
