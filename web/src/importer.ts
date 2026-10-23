@@ -151,26 +151,6 @@ export const codesStep = (imported: Imported["imported"]): string =>
   `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
   buttons([Answer.Yes, "Yes"], [Answer.NotNow, "Not now"]);
 
-/** Clusters are found on the worker a few seconds after a file comes in, so
- * the new diagram's record is read again until it has some, for at most this
- * long, and drawn again only when it changed. */
-const CLUSTERS_EVERY_MS = 5_000;
-const CLUSTERS_UNTIL_MS = 180_000;
-
-export async function awaitClusters(
-  wait = (ms: number) => new Promise<void>((done) => window.setTimeout(done, ms)),
-  now = () => Date.now(),
-): Promise<void> {
-  const until = now() + CLUSTERS_UNTIL_MS;
-  while (!store.current().record.clusters.length && now() < until) {
-    await wait(CLUSTERS_EVERY_MS);
-    // null once the person has opened another diagram
-    const record = await store.fetch(api.timeline);
-    if (record === null) return;
-    if (JSON.stringify(record) !== JSON.stringify(store.current().record)) store.update({ record });
-  }
-}
-
 /** The new diagram, or the server's own sentence for a file it refuses. */
 export async function bring(file: File): Promise<Imported | string> {
   try {
@@ -260,7 +240,6 @@ export class Importer {
     const made = await bring(file).finally(() => (this.sending = false));
     if (typeof made === "string") return toast(made, true);
     await this.opened(made);
-    void awaitClusters();
     this.made = made;
     this.sheet.show(ownStep(made.imported));
   }

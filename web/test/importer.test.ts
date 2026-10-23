@@ -4,7 +4,7 @@ import type { Person } from "../src/types";
 vi.stubGlobal("window", { BOOTSTRAP: { user: { username: "ann", pro: false } } });
 
 const { Part, store } = await import("../src/store");
-const { ADD_CODES, Answer, awaitClusters, ownStep, Pick, bring, fromDrop, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
+const { ADD_CODES, Answer, ownStep, Pick, bring, fromDrop, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
   "../src/importer"
 );
 
@@ -71,8 +71,7 @@ const people = [person(10, "Walter"), person(11, "Ann"), person(12, "Karen"), pe
  * whose people are already in the page. */
 const importer = (made: object | null = lund) => {
   const done = { opened: [] as unknown[], said: [] as string[], shown: [] as string[], lowered: 0, stored: [] as unknown[] };
-  // clusters already in, so an import's wait for them ends at once
-  vi.spyOn(store, "current").mockReturnValue({ record: { people, clusters: [{ id: "c1" }] } } as never);
+  vi.spyOn(store, "current").mockReturnValue({ record: { people } } as never);
   vi.spyOn(store, "update").mockImplementation((fresh) => void done.stored.push(fresh));
   const one = Object.assign(Object.create(Importer.prototype), {
     sending: false,
@@ -221,48 +220,3 @@ it("offers the import row to a reader without a professional licence", () => {
 });
 
 
-/** The record as the server answers it on each read, one answer per read. */
-function reads(...answers: object[]) {
-  const asked: string[] = [];
-  vi.stubGlobal("document", { querySelector: () => ({ content: "served" }) });
-  vi.stubGlobal("fetch", async (url: string) => {
-    asked.push(url);
-    return new Response(JSON.stringify(answers.shift()), { status: 200 });
-  });
-  return asked;
-}
-
-const bare = { people, clusters: [] as object[] };
-const grouped = { people, clusters: [{ id: "c1", event_ids: [4, 5, 6] }] };
-
-// R-0899
-it("reads the new diagram's record again every 5 seconds until its clusters come in, drawing it only when it changed", async () => {
-  let opened = { record: bare };
-  const drawn: object[] = [];
-  vi.spyOn(store, "current").mockImplementation(() => opened as never);
-  vi.spyOn(store, "update").mockImplementation((fresh) => {
-    drawn.push(fresh);
-    opened = { ...opened, ...(fresh as { record: typeof bare }) };
-  });
-  const asked = reads(bare, grouped);
-  const waited: number[] = [];
-  await awaitClusters(async (ms) => void waited.push(ms), () => 0);
-  expect(waited).toEqual([5000, 5000]);
-  expect(asked).toHaveLength(2);
-  expect(drawn).toEqual([{ record: grouped }]);
-});
-
-// R-0899
-it("stops reading after 3 minutes, and as soon as another diagram is opened", async () => {
-  vi.spyOn(store, "current").mockReturnValue({ record: bare } as never);
-  vi.spyOn(store, "update").mockImplementation(() => {});
-  let clock = 0;
-  const asked = reads(...Array(40).fill(bare));
-  await awaitClusters(async (ms) => void (clock += ms), () => clock);
-  expect(asked).toHaveLength(36);
-
-  vi.spyOn(store, "fetch").mockResolvedValue(null);
-  const waited: number[] = [];
-  await awaitClusters(async (ms) => void waited.push(ms), () => 0);
-  expect(waited).toEqual([5000]);
-});

@@ -413,6 +413,8 @@ export interface ToolCall {
 export enum TurnEventKind {
   ToolCall = "tool_call",
   RecordPatch = "record_patch",
+  /** The diagram's stream could not replay what was missed: read it again. */
+  Reload = "reload",
   /** The coach starting part k of n of notes too long for one part (R-0897). */
   Part = "part",
   View = "view",

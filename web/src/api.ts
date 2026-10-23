@@ -277,6 +277,12 @@ export const stop = (turnId: string) =>
 export const turnEvents = (turnId: string) =>
   new EventSource(`${ROOT}/turns/${turnId}/events`);
 
+/** Every write to one diagram, whoever made it, for as long as the diagram
+ * is open; the browser's own reconnect says where it got to with
+ * Last-Event-ID. */
+export const diagramEvents = (diagramId: number) =>
+  new EventSource(`${ROOT}/diagrams/${diagramId}/events`);
+
 /** The release the server is running now. */
 export const version = () =>
   call<{ version: string }>("GET", "/version").then((answer) => answer.version);
