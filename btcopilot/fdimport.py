@@ -132,6 +132,9 @@ class Imported:
     # items the record's rules left out.
     brought: dict[str, int] = field(default_factory=dict)
     left: int = 0
+    # Everyone the file marks primary, in file order, so the person can say
+    # which of them they are.
+    primaries: list[int] = field(default_factory=list)
 
     def summary(self) -> dict:
         return {
@@ -406,6 +409,7 @@ def _primary(out: Imported, chunks: list[dict]) -> None:
     """Only one person is the one the diagram is about; when the file marks
     none or several, none is set [Oracle: R-0930]."""
     marked = [chunk["id"] for chunk in chunks if chunk.get("primary")]
+    out.primaries = marked
     people = {person["id"]: person for person in out.data["people"]}
     if len(marked) == 1:
         people[marked[0]]["primary"] = True
@@ -729,7 +733,8 @@ def _labeled(out: Imported) -> None:
 
 
 def _moved(out: Imported, new: dict[int, int]) -> None:
-    """The file's names follow each item to its new id."""
+    """The file's names and its primary people follow each item to its new id."""
+    out.primaries = [new[old] for old in out.primaries]
     out.joined = {label: new[old] for label, old in out.joined.items() if old in new}
     out.labels = {new[old]: label for old, label in out.labels.items() if old in new}
 

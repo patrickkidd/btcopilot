@@ -20,6 +20,7 @@ from btcopilot.routes.users import require_admin
 
 GRANTED = (btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE)
 PERSONAL = "Your personal diagram cannot be deleted."
+NOT_IN = "That person is not in this diagram."
 # A form carrying a desktop file at its size limit, with room for its name.
 FORM_BYTES = attachments.MAX_BYTES + 1024 * 1024
 
@@ -171,6 +172,7 @@ def _imported(user):
         "people": out.brought["people"],
         "events": out.brought["events"],
         "left_out": out.brought[fdimport.LEFT_OUT],
+        "primary": out.primaries,
     }
     return jsonify(diagram_payload(made, user) | {"imported": imported}), 201
 
@@ -192,6 +194,31 @@ def diagram_delete(diagram_id: int):
     )
     db.session.commit()
     return "", 204
+
+
+@bp.route("/diagrams/<int:diagram_id>/access", methods=["PATCH"])
+def diagram_access_update(diagram_id: int):
+    """Who the signed-in user is on a diagram, on their own access row: a
+    person in it, or no one. The owner's row is made when it has none; anyone
+    else needs a row already."""
+    user = auth.current_user()
+    found = db.session.get(Diagram, diagram_id)
+    if found is None or found.deleted_at is not None:
+        abort(404)
+    row = found.access_right(user)
+    if row is None and found.user_id != user.id:
+        abort(404)
+    person_id = request.get_json()["person_id"]
+    if person_id is not None and not any(
+        p.get("id") == person_id for p in found.get_diagram_data().people
+    ):
+        raise ValueError(NOT_IN)
+    if row is None:
+        found.access_rights.append(owner_row(user.id, person_id))
+    else:
+        row.person_id = person_id
+    db.session.commit()
+    return jsonify(diagram_payload(found, user))
 
 
 @bp.route("/diagrams/<int:diagram_id>/select", methods=["POST"])

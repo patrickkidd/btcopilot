@@ -9,6 +9,7 @@ import pytest
 from mock import patch
 
 from btcopilot import (
+    diagramjson,
     attachments,
     extensions,
     fdafter,
@@ -18,7 +19,7 @@ from btcopilot import (
 )
 from btcopilot.clusters import sync
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change, Diagram, ModelCall
+from btcopilot.models import User, Author, Change, Diagram, ModelCall
 from btcopilot.schema import DateCertainty, Event, EventKind, ItemKind, Person, asdict
 from btcopilot.tests.conftest import csrf_token
 from btcopilot.tests.fdfixtures import dumps, scene, shift
@@ -190,7 +191,7 @@ def test_a_file_is_made_in_the_request_as_it_stands_and_opened(
         diagram.id,
         "Lund family",
         True,
-        {"people": 3, "events": 3, "left_out": 0},
+        {"people": 3, "events": 3, "left_out": 0, "primary": [3]},
     )
     assert "turn_id" not in body
     assert test_user.current_diagram_id == diagram.id
@@ -215,3 +216,59 @@ def test_the_worker_mails_the_record_and_groups_the_clusters(pro, landed, test_u
     assert attachments.held(turn) is None
 
 
+
+
+def both_primary() -> dict:
+    """A file that marks two people primary, as Patrick's couple timeline does."""
+    fd = scene()
+    for one in fd["people"][:2]:
+        one["primary"] = True
+    return fd
+
+
+def access(client, diagram_id: int, person_id):
+    return client.patch(
+        f"/app/diagrams/{diagram_id}/access",
+        json={"person_id": person_id},
+        headers={"X-CSRFToken": csrf_token(client)},
+    )
+
+
+def test_the_import_answers_every_person_the_file_marks_primary(web, landed):
+    # R-0888, R-0899, R-0930
+    body = upload(web, dumps(both_primary())).get_json()
+    assert body["imported"]["primary"] == [3, 4]
+    people = made().get_diagram_data().people
+    assert not any(p.get("primary") for p in people)
+
+
+def test_the_importer_says_which_person_they_are_and_can_take_it_back(web, landed, test_user):
+    # R-0888, R-0889
+    upload(web, dumps(both_primary()))
+    diagram = made()
+    said = access(web, diagram.id, 3)
+    assert (said.status_code, said.get_json()["person_id"]) == (200, 3)
+    assert diagram.access_right(test_user).person_id == 3
+    cleared = access(web, diagram.id, None)
+    assert (cleared.status_code, cleared.get_json()["person_id"]) == (200, None)
+
+
+def test_a_person_not_in_the_diagram_is_refused(web, landed):
+    # R-0888
+    upload(web, dumps(scene()))
+    refused = access(web, made().id, 99)
+    assert (refused.status_code, refused.get_data(as_text=True)) == (
+        400,
+        "That person is not in this diagram.",
+    )
+
+
+def test_someone_with_no_row_on_a_diagram_cannot_say_who_they_are_in_it(web):
+    # R-0888
+    other = User(username="bo@example.com")
+    db.session.add(other)
+    db.session.flush()
+    theirs = Diagram(user_id=other.id, name="Theirs", data=diagramjson.dumps({}))
+    db.session.add(theirs)
+    db.session.commit()
+    assert access(web, theirs.id, None).status_code == 404
