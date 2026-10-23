@@ -4,15 +4,16 @@ family switcher all read the same list rather than each growing an endpoint of
 its own."""
 
 import datetime
+import uuid
 
 from flask import abort, jsonify, request
 
 import btcopilot
-from btcopilot import attachments, auth, diagramjson, fdafter, fdimport, profile
+from btcopilot import attachments, auth, diagramjson, fdafter, fdimport, profile, record
 from btcopilot.routes import Access, access, bp, last_activity, utc_iso
 from btcopilot.extensions import db
 from btcopilot.models import Discussion
-from btcopilot.models import Diagram, User
+from btcopilot.models import Author, Diagram, User
 from btcopilot.models.diagram import owner_row
 from btcopilot.models.etc import AccessRight
 from btcopilot.profile import FIRST_PERSON_ID
@@ -199,8 +200,9 @@ def diagram_delete(diagram_id: int):
 @bp.route("/diagrams/<int:diagram_id>/access", methods=["PATCH"])
 def diagram_access_update(diagram_id: int):
     """Who the signed-in user is on a diagram, on their own access row: a
-    person in it, or no one. The owner's row is made when it has none; anyone
-    else needs a row already."""
+    person in it, or no one. A person named is also marked the one the
+    diagram is about. The owner's row is made when it has none; anyone else
+    needs a row already."""
     user = auth.current_user()
     found = db.session.get(Diagram, diagram_id)
     if found is None or found.deleted_at is not None:
@@ -213,6 +215,15 @@ def diagram_access_update(diagram_id: int):
         p.get("id") == person_id for p in found.get_diagram_data().people
     ):
         raise ValueError(NOT_IN)
+    if person_id is not None:
+        # the person they are is the one the diagram is about
+        record.apply(
+            found.id,
+            record.made_primary(found.get_diagram_data(), person_id),
+            author=Author.User,
+            turn_id=uuid.uuid4().hex,
+            user_id=user.id,
+        )
     if row is None:
         found.access_rights.append(owner_row(user.id, person_id))
     else:

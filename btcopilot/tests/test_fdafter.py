@@ -272,3 +272,14 @@ def test_someone_with_no_row_on_a_diagram_cannot_say_who_they_are_in_it(web):
     db.session.add(theirs)
     db.session.commit()
     assert access(web, theirs.id, None).status_code == 404
+
+
+def test_saying_who_you_are_marks_that_person_the_one_the_diagram_is_about(web, landed):
+    # R-0888, R-0889
+    upload(web, dumps(both_primary()))
+    diagram = made()
+    access(web, diagram.id, 3)
+    access(web, diagram.id, 4)
+    db.session.expire_all()
+    marked = [p["id"] for p in made().get_diagram_data().people if p.get("primary")]
+    assert marked == [4]

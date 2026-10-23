@@ -684,6 +684,7 @@ def validate(
                     "One of the events in that cluster was no longer in the diagram.",
                 )
     _values(data, deltas)
+    _one_primary(data, deltas)
     _words(data, deltas)
     _moves(data, deltas, long_titles)
     _dates(data, deltas)
@@ -806,6 +807,31 @@ def _values(data: dict, deltas: list[dict]):
                 "false, or left out when nobody said",
                 "Whether they married could not be read.",
             )
+
+
+def _one_primary(data: dict, deltas: list[dict]):
+    """A diagram is about one person: a write that marks someone primary
+    leaves no one else marked."""
+    if not any(
+        d["item_kind"] == ItemKind.Person.value and d["field"] == "primary" for d in deltas
+    ):
+        return
+    marked = [p["id"] for p in _collection(data, ItemKind.Person) if p.get("primary")]
+    if len(marked) > 1:
+        raise Invalid(
+            f"persons {marked} are all marked primary: a diagram is about one person",
+            "Only one person can be the one this diagram is about.",
+        )
+
+
+def made_primary(data, person_id: int) -> list[dict]:
+    """The deltas that make `person_id` the person the diagram is about and
+    take the mark off everyone else."""
+    return [
+        {"item_kind": ItemKind.Person.value, "item_id": p["id"], "field": "primary", "after": False}
+        for p in data.people
+        if p.get("primary") and p["id"] != person_id
+    ] + [{"item_kind": ItemKind.Person.value, "item_id": person_id, "field": "primary", "after": True}]
 
 
 def _words(data: dict, deltas: list[dict]):

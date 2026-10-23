@@ -1219,3 +1219,10 @@ def test_a_coach_edit_of_an_imported_event_with_a_long_title_checks_the_title_on
     assert [e for e in diagram.get_diagram_data().events if e["id"] == 40][0]["functioning"] == "down"
     with pytest.raises(record.Invalid, match="needs a title"):
         _write(diagram, ItemKind.Event, 40, {"title": f"{long} again"})
+
+
+def test_a_write_never_leaves_two_people_marked_primary(subscriber):
+    # R-0888
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada", "primary": True}, {"id": 2, "name": "Bea"}]})
+    with pytest.raises(record.Invalid, match="all marked primary"):
+        _write(diagram, ItemKind.Person, 2, {"primary": True})

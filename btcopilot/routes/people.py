@@ -12,7 +12,7 @@ from btcopilot import record
 from btcopilot.routes import asked_diagram, bp, delta, edit
 from btcopilot.schema import ItemKind, PersonKind
 
-WRITABLE = ("name", "last_name", "gender", "notes", "parents")
+WRITABLE = ("name", "last_name", "gender", "notes", "parents", "primary")
 
 
 def _payload(person: dict) -> dict:
@@ -24,6 +24,8 @@ def _fields(body: dict) -> dict:
     if unknown:
         raise ValueError(f"Unknown person field(s): {', '.join(sorted(unknown))}")
     values = {key: body[key] for key in WRITABLE if key in body}
+    if values.get("primary") not in (None, True):
+        raise ValueError("Mark the person the diagram is about; the mark moves, it is never only taken off")
     if values.get("gender") is not None:
         values["gender"] = PersonKind(values["gender"]).value
     for key in ("name", "last_name", "notes"):
@@ -61,14 +63,18 @@ def create_person():
 @bp.route("/people/<int:person_id>", methods=["PATCH"])
 def update_person(person_id: int):
     values = _fields(request.get_json())
-    _find(asked_diagram().get_diagram_data(), person_id)
+    data = asked_diagram().get_diagram_data()
+    _find(data, person_id)
     if not values:
         raise ValueError("Nothing to change on that person")
+    # marking one person primary takes the mark off everyone else, in one change
+    primary = record.made_primary(data, person_id) if values.pop("primary", None) else []
     edit(
         [
             delta(ItemKind.Person, person_id, field, value)
             for field, value in values.items()
         ]
+        + primary
     )
     return jsonify(_payload(_find(asked_diagram().get_diagram_data(), person_id)))
 
