@@ -18,6 +18,8 @@ export enum Part {
 }
 
 const EVERY = [Part.Record, Part.Thread, Part.Sittings];
+/** How soon a read of the record that got no answer is tried again. */
+const REREAD_MS = 5_000;
 
 export interface Opened {
   /** Null only for an account that has no diagram yet; its first words make
@@ -113,11 +115,14 @@ export class Store {
 
   /** The diagram's own stream: a write to its record, from a turn here or
    * anywhere else, has the record read again and drawn where it changed; one
-   * already drawn changes nothing. When the stream cannot replay what was
-   * missed, the whole diagram is read again (R-0933). */
+   * already drawn changes nothing. Each time the stream opens or opens again
+   * the record is read too, for whatever was written before it was listening.
+   * When the stream cannot replay what was missed, the whole diagram is read
+   * again (R-0933). */
   private follow(id: number): void {
     const writes = this.stream(id);
     this.writes = writes;
+    writes.addEventListener("open", () => void this.reread());
     writes.addEventListener("message", (event) => {
       const type = (JSON.parse(event.data) as { type: string }).type;
       if (type === TurnEventKind.RecordPatch) void this.reread();
@@ -125,9 +130,12 @@ export class Store {
     });
   }
 
+  /** A read that got no answer is tried again a little later, and again when
+   * the stream opens again, never dropped. */
   private async reread(): Promise<void> {
     if (this.reading) return void (this.stale = true);
     this.reading = true;
+    const live = this.live();
     try {
       do {
         this.stale = false;
@@ -135,6 +143,9 @@ export class Store {
         if (record === null) return;
         if (JSON.stringify(record) !== JSON.stringify(this.opened.record)) this.update({ record });
       } while (this.stale);
+    } catch (error) {
+      if (!(error instanceof api.Failed)) throw error;
+      window.setTimeout(() => live() && void this.reread(), REREAD_MS);
     } finally {
       this.reading = false;
     }

@@ -7,6 +7,8 @@ import { Access } from "../src/types";
 interface Asked {
   url: string;
   answer: (body: unknown) => void;
+  /** No answer at all, as when the device is offline. */
+  fail: () => void;
   aborted: boolean;
 }
 
@@ -25,6 +27,7 @@ beforeEach(() => {
           url,
           answer: (body) =>
             resolve(new Response(JSON.stringify(body), { status: 200 })),
+          fail: () => reject(new TypeError("Failed to fetch")),
           aborted: false,
         };
         init.signal?.addEventListener("abort", () => {
@@ -42,16 +45,20 @@ afterEach(() => vi.unstubAllGlobals());
  * it, a message sent down it, and whether it was closed. */
 class Writes {
   static opened: Writes[] = [];
-  heard: ((event: { data: string }) => void)[] = [];
+  heard: { type: string; hear: (event: { data: string }) => void }[] = [];
   closed = false;
   constructor(readonly id: number) {
     Writes.opened.push(this);
   }
-  addEventListener(_type: string, hear: (event: { data: string }) => void) {
-    this.heard.push(hear);
+  addEventListener(type: string, hear: (event: { data: string }) => void) {
+    this.heard.push({ type, hear });
   }
   send(message: object) {
-    for (const hear of this.heard) hear({ data: JSON.stringify(message) });
+    for (const one of this.heard) if (one.type === "message") one.hear({ data: JSON.stringify(message) });
+  }
+  /** The browser has the stream open, the first time or again. */
+  opens() {
+    for (const one of this.heard) if (one.type === "open") one.hear({ data: "" });
   }
   close() {
     this.closed = true;
@@ -217,4 +224,39 @@ it("reads the whole diagram again when its stream cannot replay what was missed"
   answer(5);
   await flush();
   expect(told).toEqual(["reset", "draw 5 record,thread,sittings"]);
+});
+
+// R-0933
+it("reads the record again each time the diagram's stream opens, for what was written before it listened", async () => {
+  const store = streamed();
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  const told = screens(store);
+  Writes.opened[0].opens();
+  await reread(clustered);
+  expect(told).toEqual(["draw 5 record"]);
+  Writes.opened[0].opens();
+  await reread(clustered);
+  expect(told).toEqual(["draw 5 record"]);
+});
+
+// R-0933
+it("tries a read that got no answer again 5 seconds later, never dropping it", async () => {
+  const later: [() => void, number][] = [];
+  vi.stubGlobal("window", { setTimeout: (run: () => void, ms: number) => void later.push([run, ms]) });
+  const store = streamed();
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  const told = screens(store);
+  Writes.opened[0].opens();
+  const read = asked.find((one) => one.url.startsWith("/app/timeline"))!;
+  asked = asked.filter((one) => one !== read);
+  read.fail();
+  await flush();
+  expect(later.map(([, ms]) => ms)).toEqual([5000]);
+  later[0][0]();
+  await reread(clustered);
+  expect(told).toEqual(["draw 5 record"]);
 });
