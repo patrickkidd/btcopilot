@@ -2323,6 +2323,37 @@ button { font-family: inherit; }
 }
 .sn-s.sn-wrap { white-space: normal; }
 .sn-tick { flex: none; color: var(--data); font: 500 17px/1 var(--mono); }
+/* an empty tick takes no room, so the owner keeps the line's right edge in every row */
+.sn-tl .sn-tick:empty { display: none; }
+/* the new diagram's form reads as a row: its name on the first line at the
+   row's size, the question and its two answers on the second (R-0893) */
+.sn-name {
+  display: block;
+  width: 100%;
+  height: 1.3em;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  caret-color: var(--data);
+  font: 400 17px/1.3 var(--sans);
+  outline: none;
+}
+.sn-name::placeholder { color: var(--faint); }
+.sn-ask { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sn-ask .sn-s { flex: 0 1 auto; min-width: 0; }
+.sn-pill {
+  flex: none;
+  height: calc(13px * 1.3);
+  padding: 0 10px;
+  border: 1px solid var(--data);
+  border-radius: 9px;
+  background: none;
+  color: var(--data);
+  font: 500 13px/1 var(--mono);
+  cursor: pointer;
+}
+.sn-pill:active { background: var(--tint); }
 /* the diagram in use, marked the same way the current session is */
 .sn-row.cur { position: relative; }
 .sn-row.cur::before {
@@ -2376,7 +2407,6 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 .sn-manage:active { background: var(--tint); }
-.sn-own { display: flex; gap: 8px; }
 .sn-chip {
   flex: none;
   padding: 2px 9px;

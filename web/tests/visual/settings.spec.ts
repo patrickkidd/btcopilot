@@ -428,7 +428,7 @@ test.describe("your diagrams", () => {
         .evaluateAll((rows) =>
           rows
             .filter((r) => r.querySelector(".sn-tick")?.textContent?.trim())
-            .map((r) => r.querySelector(".sn-t")?.textContent),
+            .map((r) => r.querySelector(".sn-tn")?.textContent),
         );
     expect(await ticks()).toEqual(["FD-362 visual fixture"]);
     await page.locator('.sn-pane[data-page="diagrams"] .sn-row', { hasText: OTHER.name }).click();
@@ -436,6 +436,75 @@ test.describe("your diagrams", () => {
     await openDiagrams(page);
     expect(await ticks()).toEqual([OTHER.name]);
   });
+
+  for (const scheme of ["light", "dark"] as const) {
+    test.describe(scheme, () => {
+      test.use({ colorScheme: scheme });
+      test.beforeEach(async ({ page }, info) => {
+        if (info.project.name === "phone") await page.setViewportSize({ width: 393, height: 852 });
+      });
+
+      // R-0893
+      test("every owner keeps one right edge, the open diagram's tick just left of it", async ({ page }) => {
+        await twoDiagrams(page);
+        await settle(page);
+        await openDiagrams(page);
+        const rows = page.locator('.sn-pane[data-page="diagrams"] .sn-row[data-diagram]');
+        await expect(rows).toHaveCount(2);
+        const edges = await rows.evaluateAll((all) =>
+          all.map((r) => {
+            const owner = r.querySelector(".sn-o")!.getBoundingClientRect();
+            const tick = r.querySelector(".sn-tick")!;
+            const at = tick.textContent ? tick.getBoundingClientRect() : null;
+            return { right: Math.round(owner.right), gap: at ? owner.left - at.right : null };
+          }),
+        );
+        expect(new Set(edges.map((e) => e.right)).size).toBe(1);
+        const ticked = edges.filter((e) => e.gap !== null);
+        expect(ticked).toHaveLength(1);
+        expect(ticked[0].gap!).toBeGreaterThan(2);
+        expect(ticked[0].gap!).toBeLessThan(14);
+      });
+
+      // R-0893
+      test("the new diagram's form reads as a row: the name on one line, the question and Yes and No on the next", async ({
+        page,
+      }) => {
+        const errors: string[] = [];
+        page.on("console", (m) => void (m.type() === "error" && errors.push(m.text())));
+        await settle(page);
+        await openDiagrams(page);
+        const pane = page.locator('.sn-pane[data-page="diagrams"]');
+        const made = pane.locator(".sn-row.push", { hasText: "+ new diagram" });
+        await made.click();
+        const row = pane.locator(".sn-row:has(.sn-name)");
+        const field = row.locator(".sn-name");
+        await expect(field).toBeFocused();
+        await expect(field).toHaveAttribute("placeholder", "What is this diagram called");
+        const look = await field.evaluate((f) => {
+          const s = getComputedStyle(f);
+          return { size: s.fontSize, border: s.borderTopWidth };
+        });
+        expect(look).toEqual({ size: "17px", border: "0px" });
+        const before = (await row.boundingBox())!;
+        await field.fill("The Voss family");
+        const after = (await row.boundingBox())!;
+        expect(after.height).toBe(before.height);
+
+        const question = (await row.locator(".sn-ask .sn-s").boundingBox())!;
+        for (const words of ["Yes", "No"]) {
+          const pill = (await row.getByRole("button", { name: words }).boundingBox())!;
+          expect(Math.abs(pill.y + pill.height / 2 - (question.y + question.height / 2))).toBeLessThan(2);
+          expect(Math.abs(pill.height - question.height)).toBeLessThan(2);
+          expect(pill.x + pill.width).toBeLessThanOrEqual(after.x + after.width);
+        }
+        // the same rhythm as a diagram's row above it
+        const above = (await pane.locator(".sn-row[data-diagram]").first().boundingBox())!;
+        expect(Math.abs(after.height - above.height)).toBeLessThan(3);
+        expect(errors).toEqual([]);
+      });
+    });
+  }
 });
 
 test.describe("an admin finds a person on the diagrams view", () => {
@@ -473,7 +542,7 @@ test.describe("an admin finds a person on the diagrams view", () => {
     await person.click();
     await expect(page.locator("#title")).toHaveText(/whitlock|Whitlock/i);
     const theirs = page.locator(".sn-theirs .sn-row").first();
-    const name = (await theirs.locator(".sn-t").textContent())!;
+    const name = (await theirs.locator(".sn-tn").textContent())!;
     await theirs.click();
     await expect(page.locator(".sn-stack")).toBeHidden();
     await expect(page.locator("#title")).toHaveText(name);

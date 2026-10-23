@@ -932,11 +932,12 @@ export class Settings {
       el(
         "div",
         "sn-t sn-tl",
-        `<span class="sn-tn">${esc(diagram.name)}</span><span class="sn-o">${esc(diagramOwner(diagram))}</span>`,
+        `<span class="sn-tn">${esc(diagram.name)}</span><span class="sn-tick"></span>` +
+          `<span class="sn-o">${esc(diagramOwner(diagram))}</span>`,
       ),
       el("div", "sn-s", `${esc(diagramSub(diagram, now))}<span class="sn-use"> · in use</span>`),
     );
-    row.append(main, el("span", "sn-tick"));
+    row.append(main);
     if (diagram.owned) this.pressToRename(row, diagram);
     row.addEventListener("click", () => {
       if (row.querySelector("input")) return;
@@ -1055,30 +1056,29 @@ export class Settings {
     row.addEventListener("click", () => {
       if (row.querySelector("input")) return;
       // the open form is the row itself: nothing further to go to
-      chev.remove();
       const field = document.createElement("input");
-      field.className = "rename";
-      field.placeholder = "What is this diagram called?";
+      field.className = "sn-name";
+      field.placeholder = "What is this diagram called";
       field.setAttribute("aria-label", "Diagram name");
-      const ask = el("div", "sn-s sn-wrap", OWN_FAMILY);
-      const answers = el("div", "sn-own");
+      const ask = el("div", "sn-ask", `<span class="sn-s">${esc(OWN_FAMILY)}</span>`);
       for (const [words, own] of [["Yes", true], ["No", false]] as const) {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "sn-manage";
+        button.className = "sn-pill";
         button.textContent = words;
         button.addEventListener("click", (e) => {
           e.stopPropagation();
           void this.addDiagram(field.value.trim(), own, field);
         });
-        answers.append(button);
+        ask.append(button);
       }
-      label.replaceChildren(field, ask, answers);
+      const form = el("div", "sn-m");
+      form.append(field, ask);
+      row.replaceChildren(form);
       field.focus({ preventScroll: true });
       field.addEventListener("keydown", (e) => {
         if ((e as KeyboardEvent).key !== "Escape") return;
-        label.textContent = "+ new diagram";
-        row.append(chev);
+        row.replaceChildren(label, chev);
       });
     });
     return row;
