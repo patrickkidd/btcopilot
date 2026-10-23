@@ -34,7 +34,7 @@ from btcopilot import (
 )
 from btcopilot.coachmodel import CoachModel, marked_ends
 from btcopilot.discussions import SITTING_GAP, previous
-from btcopilot.llmutil import UNANSWERED, Spent
+from btcopilot.llmutil import UNANSWERED
 from btcopilot.metered import Metered
 from btcopilot.models import (
     Change,
@@ -133,15 +133,6 @@ class EmptyReply(Exception):
 
 class Stopped(Exception):
     """The person stopped the turn; it ends at its next model or tool call."""
-
-
-# The reply when the person's monthly cap ends a turn between model rounds; the
-# cap is there to stop a loop that runs away, so what went in stays (R-0897).
-LIMIT = "Your monthly limit is reached; what went in stays."
-
-
-class MonthOver(Exception):
-    """The person's month is at or over their cap before a model round."""
 
 
 class BareList(Exception):
@@ -290,12 +281,9 @@ class CoachTurn:
         resume: bool = False,
         scratch: bool = False,
         zone: str | None = None,
-        capped: Callable[[Spent], bool] | None = None,
     ):
         """A scratch turn runs on a copy: it charges no one's monthly cap and
-        leaves the user's profile alone. `capped` is asked, with what the turn
-        has spent so far, before each model round; when it says the month is
-        over, the turn ends there with LIMIT as its reply."""
+        leaves the user's profile alone."""
         self.discussion = discussion
         self.statement = statement
         # The person's IANA zone, sent by the page with the message: "today"
@@ -308,7 +296,6 @@ class CoachTurn:
         self.resume = resume
         self.scratch = scratch
         self.sink = sink
-        self.capped = capped
         # Everything the database keeps of this turn once it ends: what the page
         # was told, less the words, plus each round of tool calls as sent.
         self.kept: list[dict] = []
@@ -372,46 +359,39 @@ class CoachTurn:
         parts = notesparts.split(self.statement)
         start, picked = self._picked_up(len(parts)) if self.resume else (1, [])
         events = []
-        over = False
-        try:
-            for k in range(start, len(parts) + 1):
-                last = k == len(parts)
-                if len(parts) == 1:
-                    words = self.statement
-                else:
-                    words = notesparts.framed(parts, k)
-                    if not (self.resume and k == start):
-                        self._note(
-                            events,
-                            {
-                                "type": TurnEventKind.Part.value,
-                                "part": k,
-                                "parts": len(parts),
-                            },
-                        )
-                system, messages = self._prompt(answered, words, final=last)
-                if k == start:
-                    messages += picked
-                spoken = self._loop(system, messages, events, last)
-        except MonthOver:
-            _log.warning(f"Turn {self.turn_id} ended at the monthly cap")
-            over = True
-            spoken = LIMIT
+        for k in range(start, len(parts) + 1):
+            last = k == len(parts)
+            if len(parts) == 1:
+                words = self.statement
+            else:
+                words = notesparts.framed(parts, k)
+                if not (self.resume and k == start):
+                    self._note(
+                        events,
+                        {
+                            "type": TurnEventKind.Part.value,
+                            "part": k,
+                            "parts": len(parts),
+                        },
+                    )
+            system, messages = self._prompt(answered, words, final=last)
+            if k == start:
+                messages += picked
+            spoken = self._loop(system, messages, events, last)
 
         self._halt()
         if not spoken.strip():
             raise EmptyReply(f"Turn {self.turn_id} produced no words for the user")
-        if not over:
-            spoken = shorten_labels(
-                self.model,
-                system,
-                messages,
-                spoken,
-                self.data,
-                self.discussion.diagram_id,
-                self.turn_id,
-            )
-            spoken = narrate(self.model, system, messages, spoken, self.turn_id)
+        spoken = shorten_labels(
+            self.model,
+            system,
+            messages,
+            spoken,
+            self.data,
+            self.discussion.diagram_id,
+            self.turn_id,
+        )
+        spoken = narrate(self.model, system, messages, spoken, self.turn_id)
         self._halt()
 
         reply = chips.validate(spoken.strip(), self.data, self.discussion.diagram_id)
@@ -437,7 +417,7 @@ class CoachTurn:
         Change.query.filter_by(diagram_id=self.diagram.id, turn_id=self.turn_id).update(
             {"statement_id": coach_statement.id}
         )
-        if self.discussion.title is None and not over:
+        if self.discussion.title is None:
             self._title()
         self._halt()
         if not self.scratch:
@@ -512,7 +492,6 @@ class CoachTurn:
         silent = False
 
         for step in range(MAX_STEPS):
-            self._month()
             turn = self._say(system, messages, schemas(self.toolbox.coder), stream=last)
             # A turn ends on words, never on a tool call. Text written before a
             # call is the model working out what to do and the user never sees
@@ -581,14 +560,9 @@ class CoachTurn:
             )
             if not last:
                 return ""
-            self._month()
             messages.append({"role": "user", "content": FINISH})
             spoken = self._say(system, messages, [], stream=True).text
         return spoken
-
-    def _month(self) -> None:
-        if self.capped and self.capped(self.model.spent):
-            raise MonthOver(f"turn {self.turn_id} is at the monthly cap")
 
     def _crisis(self, answered: Statement, data: DiagramData, words: str) -> str:
         """The crisis block when the person's message fires a phrase, the

@@ -46,14 +46,5 @@ class TokenMeter(db.Model, ModelMixin):
         meter.cache_read_tokens += spent.cache_read
         return meter
 
-    @property
-    def spent(self) -> Spent:
-        return Spent(
-            self.input_tokens,
-            self.output_tokens,
-            self.cache_creation_tokens,
-            self.cache_read_tokens,
-        )
-
     def __repr__(self):
         return f"<TokenMeter {self.user_id} {self.period} {self.input_tokens}/{self.output_tokens}>"

@@ -1,18 +1,11 @@
 """Notes too long for one coach loop go in part by part within one turn: one
-turn id, one reply after the last part, one undo when the person stops it, and
-the monthly cap ends it only between model rounds."""
-
-import datetime
+turn id, one reply after the last part, one undo when the person stops it."""
 
 import pytest
 
 from btcopilot import turnlog
-from btcopilot.admin import setting
-from btcopilot.admin.setting import SettingKey
-from btcopilot.coachturn import LIMIT
 from btcopilot.extensions import db
-from btcopilot.llmutil import Spent
-from btcopilot.models import Change, Discussion, TokenMeter
+from btcopilot.models import Change, Discussion
 from btcopilot.schema import Person, asdict
 from btcopilot.tests.conftest import Model, called, csrf_token, said, wrote
 from btcopilot.tests.test_notesparts import paragraph
@@ -135,39 +128,6 @@ def test_a_stop_between_parts_takes_every_parts_edits_back_as_one(
     assert sorted(turns) == [body["turn_id"], f"undo:{body['turn_id']}"]
     done = logged(body["turn_id"])[-1]
     assert (done["type"], done["stopped"]) == (TurnEventKind.Done.value, True)
-
-
-def test_the_monthly_cap_ends_the_turn_between_rounds_and_keeps_what_went_in(
-    web, family, monkeypatch
-):
-    # R-0897, R-0895
-    first = called(ToolName.EditPerson, name="Nell")
-    first.spent = Spent(input=900, output=200)
-    model = Model(first, *three_parts("Finn", "Ada"))
-    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
-    setting.write(SettingKey.TokenCap, 1000, web.user.id)
-    body = post(web)
-
-    assert len(model.histories) == 1
-    done = logged(body["turn_id"])[-1]
-    assert (done["type"], done["statement"]) == (TurnEventKind.Done.value, LIMIT)
-    db.session.refresh(family)
-    assert [p["name"] for p in family.get_diagram_data().people] == ["Wren", "Nell"]
-    meter = TokenMeter.query.filter_by(user_id=web.user.id).one()
-    assert (meter.input_tokens, meter.output_tokens) == (900, 200)
-
-
-def test_a_month_already_over_its_cap_makes_no_model_call(web, family, monkeypatch):
-    # R-0897
-    model = Model(said("Go on."))
-    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: model)
-    period = datetime.date.today().strftime("%Y-%m")
-    TokenMeter.charge(web.user.id, Spent(input=500), period).cap = 400
-    db.session.commit()
-    body = post(web, "Nell was born in 1950.")
-
-    assert model.histories == []
-    assert logged(body["turn_id"])[-1]["statement"] == LIMIT
 
 
 def test_a_part_with_no_client_named_enters_what_it_holds_and_asks_nothing(

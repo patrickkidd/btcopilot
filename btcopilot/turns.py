@@ -6,7 +6,6 @@ once. Everything the turn does goes into the turn's log as it happens, and the
 page follows that log. A page that reloads reads the log from the start.
 """
 
-import datetime
 import logging
 import uuid
 
@@ -18,7 +17,6 @@ from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachmodel import Refusal, model_for
 from btcopilot.coachturn import CoachTurn, Stopped, record_of
-from btcopilot.llmutil import Spent
 from btcopilot.discussions import session_payload
 from btcopilot.models import (
     Author,
@@ -29,7 +27,6 @@ from btcopilot.models import (
     Purpose,
     Statement,
     StatementKind,
-    TokenMeter,
 )
 from btcopilot.models.preferences import PrefKey
 from btcopilot.turnlog import TurnEventKind
@@ -189,7 +186,6 @@ def run(
         sink=lambda event: written(turn_id, discussion_id, event),
         resume=resume,
         zone=zone,
-        capped=lambda spent: over_month(discussion.user_id, spent),
     )
     try:
         if turnlog.halted(turn_id):
@@ -247,28 +243,6 @@ def run(
     for model in shadows:
         shadow.start(turn, statement_id, model, before)
     return reply
-
-
-def over_month(user_id: int, spent: Spent) -> bool:
-    """Whether the month's tokens, with those the running turn has spent and
-    not yet charged, are at or over the cap of whoever typed: this month's
-    meter row's own cap, else theirs, else the default; with none, never
-    (R-0897, R-0895)."""
-    meter = TokenMeter.query.filter_by(
-        user_id=user_id, period=datetime.date.today().strftime("%Y-%m")
-    ).one_or_none()
-    cap = meter.cap if meter else None
-    if cap is None:
-        cap = setting.read(SettingKey.TokenCap, user_id)
-    if cap is None:
-        cap = setting.read(SettingKey.TokenCap)
-    if cap is None:
-        return False
-    used = Spent()
-    used.add(spent)
-    if meter:
-        used.add(meter.spent)
-    return used.input + used.output + used.cache_creation + used.cache_read >= cap
 
 
 def _held(turn_id: str, discussion_id: int) -> None:
