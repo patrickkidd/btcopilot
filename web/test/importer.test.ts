@@ -106,7 +106,18 @@ it("shows the server's own sentence for a file it refuses, and refuses one over 
 });
 
 // R-0899
-it("offers no import row to a reader without a professional licence", () => {
-  expect(Importer.prototype.row.call({}, {} as HTMLElement)).toBeNull();
+it("offers the import row to a reader without a professional licence", () => {
+  const made: { className: string; innerHTML?: string }[] = [];
+  vi.stubGlobal("document", {
+    createElement: () => {
+      const node = { className: "", dataset: {}, append() {}, addEventListener() {}, setAttribute() {} };
+      made.push(node);
+      return node;
+    },
+  });
+  const page = { addEventListener() {} } as unknown as HTMLElement;
+  expect(Importer.prototype.row.call({}, page).className).toBe("sn-row push");
+  expect(made.map((one) => one.innerHTML)).toContain("Import a Family Diagram file");
+  expect(made.map((one) => one.innerHTML)).toContain("or a .zip of it");
 });
 

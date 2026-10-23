@@ -1,6 +1,5 @@
 import * as api from "./api";
 import { closeX, el } from "./dom";
-import { PRO } from "./pro";
 import { Sheet } from "./sheet";
 import { toast } from "./toast";
 import type { Imported } from "./types";
@@ -96,7 +95,7 @@ export async function bring(file: File): Promise<Imported | string> {
 }
 
 /** The Diagrams page's way to make a new diagram from a desktop Family
- * Diagram file, under the same licence as a new case: its row picks the .fd
+ * Diagram file, for everyone, beside the new diagram row: its row picks the .fd
  * folder, the link under it a .zip of it for a phone, and a folder dropped on
  * the page on a computer is taken too. The new diagram opens, and the person
  * is asked once whether the coach should add codes (R-0899). */
@@ -139,8 +138,7 @@ export class Importer {
     this.sheet.show(arrived(made.imported));
   }
 
-  row(page: HTMLElement): HTMLElement | null {
-    if (!PRO) return null;
+  row(page: HTMLElement): HTMLElement {
     const row = el("div", "sn-row push");
     const sub = el("div", "sn-s");
     const zip = el("button", "sn-alt", "or a .zip of it");

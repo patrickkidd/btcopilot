@@ -908,8 +908,7 @@ export class Settings {
     this.swipeAway(box);
 
     box.append(this.newDiagramRow());
-    const bring = this.importer.row(pane);
-    if (bring) box.append(bring);
+    box.append(this.importer.row(pane));
 
     if (account.diagrams.length >= SEARCH_AT) {
       const wrap = el("div", "sn-srch");
