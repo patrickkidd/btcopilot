@@ -1,10 +1,12 @@
 """The family records themselves: who owns them, how much is in them, the
-whole record written out as JSON, and change rows taken back."""
+whole diagram written out as JSON, change rows taken back, and who else is on
+a case."""
 
 import json
 
 import click
 
+import btcopilot
 from btcopilot import diagramjson, record
 from btcopilot.admin.guard import writes
 from btcopilot.admin.users import find as find_user
@@ -124,3 +126,54 @@ def said(delta: dict) -> str:
 
 
 diagrams.add_command(writes(click.command("undo")(diagram_undo)))
+
+
+def on_case(diagram: Diagram, user) -> dict:
+    row = diagram.access_right(user)
+    return {
+        "diagram": diagram.id,
+        "email": user.username,
+        "right": row.right if row else "",
+        "person": row.person_id if row and row.person_id is not None else "",
+    }
+
+
+@writes
+@diagrams.command("add-user")
+@click.argument("diagram_id", type=int)
+@click.argument("email")
+@click.option(
+    "--person",
+    type=int,
+    help="The id of the person in the diagram this user is; left out, they are "
+    "no one in the family, such as a human coach consulting on the case.",
+)
+@rows_option
+def diagram_add_user(diagram_id, email, person):
+    """Put somebody on a case, read-write, as the person given or as no one in
+    the family. Somebody already on it gets this person instead."""
+    diagram = find(diagram_id)
+    user = find_user(email)
+    if person is not None and not any(
+        p.get("id") == person for p in diagram.get_diagram_data().people
+    ):
+        raise click.ClickException(f"no person {person} in diagram {diagram.id}")
+    diagram.grant_access(user, btcopilot.ACCESS_READ_WRITE, person_id=person)
+    db.session.commit()
+    return [on_case(diagram, user)]
+
+
+@writes
+@diagrams.command("remove-user")
+@click.argument("diagram_id", type=int)
+@click.argument("email")
+@rows_option
+def diagram_remove_user(diagram_id, email):
+    """Take somebody off a case. The owner stays on their own."""
+    diagram = find(diagram_id)
+    user = find_user(email)
+    if user.id == diagram.user_id:
+        raise click.ClickException(f"{email} owns diagram {diagram.id}")
+    diagram.revoke_access(user)
+    db.session.commit()
+    return [on_case(diagram, user)]

@@ -134,10 +134,13 @@ def offered() -> list[dict]:
 
 
 def said(diagram: Diagram) -> tuple[str, dict[int, Statement], dict[int, Statement]]:
-    """Every session's words, oldest first, each message numbered, and the
-    person's messages and the coach's by id."""
+    """Every one of the owner's sessions' words, oldest first, each message
+    numbered, and the person's messages and the coach's by id; another user's
+    sessions on the family are theirs alone, as in said_on."""
     lines, mine, coach = [], {}, {}
-    sessions = Discussion.query.filter_by(diagram_id=diagram.id).order_by(
+    sessions = Discussion.query.filter_by(
+        diagram_id=diagram.id, user_id=diagram.user_id
+    ).order_by(
         Discussion.created_at, Discussion.id
     )
     for discussion in sessions:
@@ -458,9 +461,8 @@ def planned(diagram: Diagram, plans: pathlib.Path) -> pathlib.Path | None:
             Purpose.Backfill,
             model=model_for(setting.read(SettingKey.CoachModel, diagram.user_id)),
         )
-        own = profile.own(data)
         system = get_agent_prompt(
-            record=outline(data, diagram.version, own and own["id"]),
+            record=outline(data, diagram.version, profile.person_of(diagram.user, diagram)),
             today=datetime.date.today().isoformat(),
             coverage=coverage.block(data),
         )

@@ -11,10 +11,12 @@ import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
 import { IDLE_MS } from "./vote";
 import { device, reach, Reach, subscribe } from "./push";
-import { PRO, RECORD, RECORDS, Records } from "./pro";
+import { DIAGRAMS, OWN_FAMILY, PRO } from "./pro";
+import { onPress } from "./sessions";
 import { address, beyond, NAMES, Place } from "./place";
 import {
   BugReports,
+  diagramOwner,
   Mode,
   Proactive,
   Theme,
@@ -563,7 +565,7 @@ export class Settings {
       this.group([this.notificationsRow()]),
       this.group([
         this.pushRow(
-          PRO ? Records : "Diagrams",
+          DIAGRAMS,
           String(account.diagrams.length),
           Page.Diagrams,
         ),
@@ -870,7 +872,7 @@ export class Settings {
     if (isAdmin()) {
       this.finding ??= this.finder();
       pane.append(this.finding.box);
-      mine.append(el("div", "sn-hd", PRO ? Records : "Diagrams"));
+      mine.append(el("div", "sn-hd", DIAGRAMS));
       this.finding.mine = mine;
       mine.hidden = this.finding.field.value.trim().length >= FIND_AT;
     }
@@ -880,14 +882,14 @@ export class Settings {
     for (const diagram of account.diagrams) box.append(this.diagramRow(diagram, now));
     tick(box);
 
-    if (PRO) box.append(this.newCaseRow());
+    box.append(this.newDiagramRow());
 
     if (account.diagrams.length >= SEARCH_AT) {
       const wrap = el("div", "sn-srch");
       const field = document.createElement("input");
       field.type = "search";
-      field.placeholder = `Search ${RECORDS}`;
-      field.setAttribute("aria-label", `Search ${RECORDS}`);
+      field.placeholder = "Search diagrams";
+      field.setAttribute("aria-label", "Search diagrams");
       field.addEventListener("input", () => {
         const query = field.value.trim().toLowerCase();
         for (const row of [...box.children] as HTMLElement[])
@@ -896,20 +898,15 @@ export class Settings {
       wrap.append(field);
       mine.append(wrap, box);
     } else {
-      mine.append(
-        box,
-        el(
-          "div",
-          "sn-hint",
-          PRO
-            ? "Each case has its own sessions and its own picture."
-            : account.diagrams.length
-              ? "One family, one diagram — it grows as you talk."
-              : "No diagrams yet.",
-        ),
-      );
+      const hint = PRO
+        ? "Each diagram has its own sessions and its own picture."
+        : account.diagrams.length
+          ? ""
+          : "No diagrams yet.";
+      mine.append(box);
+      if (hint) mine.append(el("div", "sn-hint", hint));
     }
-    return { title: PRO ? Records : "Diagrams", pane };
+    return { title: DIAGRAMS, pane };
   }
 
   /** Kept across a re-draw of the page and under a person's diagrams, so the
@@ -932,11 +929,18 @@ export class Settings {
     row.dataset.diagram = String(diagram.id);
     const main = el("div", "sn-m");
     main.append(
-      el("div", "sn-t", esc(diagram.name)),
+      el(
+        "div",
+        "sn-t sn-tl",
+        `<span class="sn-tn">${esc(diagram.name)}</span><span class="sn-tick"></span>` +
+          `<span class="sn-o">${esc(diagramOwner(diagram))}</span>`,
+      ),
       el("div", "sn-s", `${esc(diagramSub(diagram, now))}<span class="sn-use"> · in use</span>`),
     );
-    row.append(main, el("span", "sn-tick"));
+    row.append(main);
+    if (diagram.owned) this.pressToRename(row, diagram);
     row.addEventListener("click", () => {
+      if (row.querySelector("input")) return;
       if (diagram.id !== store.current().diagram?.id) {
         tap(Feature.FamilySwitch);
         return void this.switchTo(diagram);
@@ -1003,31 +1007,86 @@ export class Settings {
     });
   }
 
-  /** A new case: an empty record the app is put on straight away, so the title
-   * row names it before anything is said into it (R-0243). */
-  private newCaseRow(): HTMLElement {
+  /** A long press on a diagram the user owns opens its name for editing in
+   * place, as a long press on a session does. */
+  private pressToRename(row: HTMLElement, diagram: Diagram): void {
+    onPress(row, () => () => this.renameRow(row, diagram));
+  }
+
+  private renameRow(row: HTMLElement, diagram: Diagram): void {
+    const holder = row.querySelector<HTMLElement>(".sn-tn");
+    if (!holder || holder.querySelector("input")) return;
+    const field = document.createElement("input");
+    field.className = "rename";
+    field.value = diagram.name;
+    field.setAttribute("aria-label", "Diagram name");
+    holder.replaceChildren(field);
+    field.focus({ preventScroll: true });
+    field.select();
+    let done = false;
+    // the row takes the saved name where it stands, so the page stays put
+    const save = async () => {
+      if (done) return;
+      done = true;
+      const name = field.value.trim();
+      if (name && name !== diagram.name) diagram.name = (await api.renameDiagram(diagram.id, name)).name;
+      holder.textContent = diagram.name;
+      row.dataset.name = diagram.name.toLowerCase();
+    };
+    field.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        void save();
+      } else if (e.key === "Escape") {
+        done = true;
+        holder.textContent = diagram.name;
+      }
+    });
+    field.addEventListener("blur", () => void save());
+  }
+
+  /** A new diagram, anyone's to make: its name, and whether it is the user's
+   * own family; then an empty diagram the app is put on straight away, so the
+   * title row names it before anything is said into it (R-0243, FD-387). */
+  private newDiagramRow(): HTMLElement {
     const row = el("div", "sn-row push");
-    const label = el("div", "sn-lbl", `+ new ${RECORD}`);
-    row.append(label, el("div", "sn-chev", "\u203a"));
+    const label = el("div", "sn-lbl", "+ new diagram");
+    const chev = el("div", "sn-chev", "\u203a");
+    row.append(label, chev);
     row.addEventListener("click", () => {
       if (row.querySelector("input")) return;
+      // the open form is the row itself: nothing further to go to
       const field = document.createElement("input");
-      field.className = "rename";
-      field.placeholder = `What is this ${RECORD} called?`;
-      label.replaceChildren(field);
+      field.className = "sn-name";
+      field.placeholder = "What is this diagram called";
+      field.setAttribute("aria-label", "Diagram name");
+      const ask = el("div", "sn-ask", `<span class="sn-s">${esc(OWN_FAMILY)}</span>`);
+      for (const [words, own] of [["Yes", true], ["No", false]] as const) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "sn-pill";
+        button.textContent = words;
+        button.addEventListener("click", (e) => {
+          e.stopPropagation();
+          void this.addDiagram(field.value.trim(), own, field);
+        });
+        ask.append(button);
+      }
+      const form = el("div", "sn-m");
+      form.append(field, ask);
+      row.replaceChildren(form);
       field.focus({ preventScroll: true });
       field.addEventListener("keydown", (e) => {
-        const key = (e as KeyboardEvent).key;
-        if (key === "Enter") void this.addCase(field.value.trim());
-        else if (key === "Escape") label.textContent = `+ new ${RECORD}`;
+        if ((e as KeyboardEvent).key !== "Escape") return;
+        row.replaceChildren(label, chev);
       });
     });
     return row;
   }
 
-  private async addCase(name: string): Promise<void> {
-    if (!name) return;
-    const made = await api.newDiagram(name);
+  private async addDiagram(name: string, own: boolean, field: HTMLInputElement): Promise<void> {
+    if (!name) return field.focus({ preventScroll: true });
+    const made = await api.newDiagram(name, own);
     this.close();
     await this.handlers.onOpen(made.id);
     void this.load();

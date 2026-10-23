@@ -106,7 +106,7 @@ def test_session_list(web, token):
 
 
 def test_session_create(web, token, test_user):
-    # R-0285
+    # R-0894
     response = post(web, token, "/app/sessions", {})
     assert response.status_code == 201
     assert response.get_json()["message_count"] == 0
@@ -543,7 +543,7 @@ def test_an_admin_finds_a_person_by_name_and_opens_their_diagram_read_only(
     assert opened.get_json()["access"] == Access.AdminView
     assert opened.get_json()["owner"] == "Unit Tester 2"
     assert test_user.current_diagram_id == theirs.id
-    assert AccessRight.query.filter_by(user_id=test_user.id).count() == 0
+    assert AccessRight.query.filter_by(user_id=test_user.id, diagram_id=theirs.id).count() == 0
 
     said = admin.get("/app/statements").get_json()
     assert [s["text"] for s in said] == ["My mother moved in."]
@@ -886,7 +886,7 @@ def test_event_the_record_refuses_is_told_in_plain_words(web, token, family):
     # R-0453
     response = post(web, token, "/app/events", dict(SHIFT, endDateTime="2019-01-01"))
     assert response.status_code == 400
-    assert response.get_data(as_text=True) == "The end date is before the start date."
+    assert response.get_data(as_text=True) == "The end date was before the start date."
 
 
 def test_a_hand_edited_move_with_no_target_is_told_in_plain_words(web, token, family):
@@ -895,7 +895,7 @@ def test_a_hand_edited_move_with_no_target_is_told_in_plain_words(web, token, fa
         web, token, "/app/events", dict(SHIFT, relationship="toward", relationshipTargets=[])
     )
     assert response.status_code == 400
-    assert response.get_data(as_text=True) == "Toward needs the person it was aimed at."
+    assert response.get_data(as_text=True) == "Toward named no one it was aimed at."
 
 
 def test_event_rejects_bad_kind(web, token, family):

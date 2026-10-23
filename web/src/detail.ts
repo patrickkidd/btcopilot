@@ -57,7 +57,8 @@ const clusterChip = (cluster: Cluster) =>
 
 function dates(event: TimelineEvent): string {
   if (!event.dateTime) return esc(when(null));
-  const span = event.endDateTime ? `${when(event.dateTime)} – ${when(event.endDateTime)}` : when(event.dateTime);
+  const start = when(event.dateTime, event.datePrecision);
+  const span = event.endDateTime ? `${start} – ${when(event.endDateTime)}` : start;
   const sure = SURE[event.dateCertainty ?? ""];
   return esc(span) + (sure ? ` <span class="sub">· ${sure}</span>` : "");
 }
@@ -146,7 +147,7 @@ export function personDetail(person: Person, record: Timeline, hooks: DetailHook
   const id = person.id;
   const dated = (eventId: number | null) => {
     const event = record.events.find((e) => e.id === eventId);
-    return event ? link("data-event", event.id, when(event.dateTime)) : "";
+    return event ? link("data-event", event.id, when(event.dateTime, event.datePrecision)) : "";
   };
   const people = (ids: number[]) => ids.map((other) => link("data-person", other, name(other))).join(", ");
   const bond = record.pair_bonds.find((b) => b.id === person.parents);

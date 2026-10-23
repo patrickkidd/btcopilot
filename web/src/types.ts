@@ -60,7 +60,7 @@ export enum InteractionKind {
   DoesntFit = "doesnt_fit",
 }
 
-export { DateCertainty } from "./certainty";
+export { DateCertainty, DatePrecision } from "./certainty";
 
 export enum Role {
   Coach = "coach",
@@ -133,6 +133,7 @@ export interface TimelineEvent {
   dateTime: string | null;
   endDateTime: string | null;
   dateCertainty: string | null;
+  datePrecision: string | null;
   kind: string | null;
   /** The few words a noted event or a shift is shown by (R-0681). */
   title: string | null;
@@ -412,6 +413,8 @@ export interface ToolCall {
 export enum TurnEventKind {
   ToolCall = "tool_call",
   RecordPatch = "record_patch",
+  /** The coach starting part k of n of notes too long for one part (R-0897). */
+  Part = "part",
   View = "view",
   /** The coach moved the app to an address in it (R-0055). */
   Navigate = "navigate",
@@ -446,6 +449,7 @@ export type View =
 export type TurnEvent =
   | ({ type: TurnEventKind.ToolCall } & ToolCall)
   | { type: TurnEventKind.RecordPatch; deltas: Delta[]; turn_id: string }
+  | { type: TurnEventKind.Part; part: number; parts: number }
   | { type: TurnEventKind.View; view: View }
   | { type: TurnEventKind.Navigate; address: string }
   | { type: TurnEventKind.Report; report: { kind: ReportKind; words: string } }
@@ -595,6 +599,19 @@ export interface Diagram {
   owner: string;
   /** The owner's full name, or null when the account has none; never an email. */
   owner_name: string | null;
+  /** The owner's account name, often an email; shown only before its @. */
+  owner_username: string;
+  /** Who the user is in the diagram, or null for someone who is not in the
+   * family, such as a human coach (FD-387). */
+  person_id: number | null;
+}
+
+/** Whose diagram it is, as the diagram list shows it beside the name: "you"
+ * on the user's own, else the owner's first name, else their account name up
+ * to its @, never a whole email. */
+export function diagramOwner(diagram: Diagram): string {
+  if (diagram.owned) return "you";
+  return diagram.owner_name || diagram.owner_username.split("@")[0];
 }
 
 /** Someone with an account, as an admin's search finds them. */

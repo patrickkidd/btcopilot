@@ -25,6 +25,33 @@ const DAY_HEADINGS = new Set(["Today", "Yesterday"]);
 const OPEN_DRAG = 40;
 const CLOSE_DRAG = 90;
 const PRESS_MS = 500;
+/** A finger drifts this far on a press before it counts as a scroll. */
+const PRESS_SLOP_PX = 10;
+
+/** A long press on `host`: `armed` says on pointerdown what the press does,
+ * or null for none; lifting the finger or moving it past the slop cancels. */
+export function onPress(
+  host: HTMLElement,
+  armed: (e: PointerEvent) => (() => void) | null,
+): void {
+  let timer = 0;
+  let x = 0;
+  let y = 0;
+  const cancel = () => window.clearTimeout(timer);
+  host.addEventListener("pointerdown", (e) => {
+    cancel();
+    const fire = armed(e);
+    if (!fire) return;
+    x = e.clientX;
+    y = e.clientY;
+    timer = window.setTimeout(fire, PRESS_MS);
+  });
+  host.addEventListener("pointermove", (e) => {
+    if (Math.hypot(e.clientX - x, e.clientY - y) > PRESS_SLOP_PX) cancel();
+  });
+  for (const kind of ["pointerup", "pointercancel"])
+    host.addEventListener(kind, cancel);
+}
 
 /** When a session happened: a recording's own day, else when it was last
  * spoken in. */
@@ -223,15 +250,10 @@ export class Sessions {
 
   /** A long press on a row opens its title for editing in place. */
   private pressToRename(): void {
-    let timer = 0;
-    const cancel = () => window.clearTimeout(timer);
-    this.body.addEventListener("pointerdown", (e) => {
+    onPress(this.body, (e) => {
       const row = (e.target as Element).closest<HTMLElement>(".row");
-      if (!row || store.readOnly()) return;
-      timer = window.setTimeout(() => this.rename(row), PRESS_MS);
+      return row && !store.readOnly() ? () => this.rename(row) : null;
     });
-    for (const kind of ["pointerup", "pointercancel", "pointermove"])
-      this.body.addEventListener(kind, cancel);
   }
 
   private drags(): void {

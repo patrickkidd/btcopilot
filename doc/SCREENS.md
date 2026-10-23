@@ -373,7 +373,7 @@ What it is for: your past conversations.
 - Newest activity is first, and the order never changes while you are looking at it. [built]
 - A button at the foot starts a new session, and refuses while the current one is still empty. [built]
 - With no sessions at all it says past conversations collect here. [built]
-- The sheet holds only the sessions of the family the app is on; the family is chosen on the account page, never in the sheet, and a personal user never sees the word case at all. [built] {R-0285, R-0347}
+- The sheet holds only the sessions of the family the app is on; the family is chosen on the account page, never in the sheet, and a personal user never sees the word case at all. [built] {R-0894, R-0347}
 - The buttons at the foot, a professional's upload and new note, are spaced apart. [built] {R-0347}
 - The sheet holds no way to coding or the meeting, and a session row neither opens nor goes on the agenda; those live on the account page, since none of them hangs on the family the app is on. [built] {R-0259, R-0267}
 - Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]

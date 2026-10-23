@@ -3,7 +3,7 @@ import "./casereport.css";
 import { PicEvent, REST, SelKind, reduce } from "./caption";
 import { Books } from "./books";
 import { cards, dashboard, familyIcon, rail } from "./case";
-import { Card, caseView } from "./caseview";
+import { Card, caseView, subjectName } from "./caseview";
 import { aimedEvents, chipOf } from "./chips";
 import { BACK } from "./tokens";
 import { CLUSTER, esc, flash, slideOver } from "./dom";
@@ -183,7 +183,7 @@ export class CaseReport implements View {
     this.column.hidden = !wide;
     let v;
     try {
-      v = caseView(opened.record, opened.sittings, opened.diagram?.owner_name ?? null);
+      v = caseView(opened.record, opened.sittings, subjectName(opened.record));
     } catch (error) {
       console.error(error);
       this.body.innerHTML = `<p class="fault">The case report cannot be drawn from this diagram: ${esc((error as Error).message)}</p>`;

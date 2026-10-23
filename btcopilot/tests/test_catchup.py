@@ -313,11 +313,11 @@ def test_only_the_catch_up_moves_a_closed_question(kin):
     ]
     with pytest.raises(record.Invalid) as refused:
         record.apply(kin.id, moved, author=Author.Coach, turn_id="coach")
-    assert refused.value.plain == "That question is already closed."
+    assert refused.value.plain == "That question was already closed."
     reworded = [{"item_kind": "question", "item_id": "q1", "field": "text", "after": "New?"}]
     with pytest.raises(record.Invalid) as refused:
         record.apply(kin.id, reworded, author=Author.Coach, turn_id="t", refile=True)
-    assert refused.value.plain == "A question can only be moved here."
+    assert refused.value.plain == "It changed more than where the question is filed."
     record.apply(kin.id, moved, author=Author.Coach, turn_id="catch-up", refile=True)
     assert (stored(kin)["q1"]["item_kind"], stored(kin)["q1"]["item_id"]) == ("person", "1")
 

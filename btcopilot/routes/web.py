@@ -11,7 +11,7 @@ from btcopilot.routes import asked_diagram, bp, current_session, diagram
 from btcopilot.routes.diagrams import diagram_payload
 from btcopilot.discussions import session_payload
 from btcopilot.routes.sessions import thread
-from btcopilot import casereport, place, playturn, questions, record
+from btcopilot import casereport, notesparts, place, playturn, questions, record
 from btcopilot.licence import professional
 from btcopilot.timeline import build_timeline
 from btcopilot.schema import DiagramData
@@ -49,6 +49,8 @@ def _page() -> str:
         "diagram": diagram_payload(in_use, user) if in_use else None,
         "version": btcopilot.__version__,
         "beta": btcopilot.BETA,
+        # what the page needs to price a paste too long for one part (R-0897)
+        "notes": notesparts.projection(),
     }
     head = (
         f'<meta name="csrf-token" content="{escape(generate_csrf())}">'

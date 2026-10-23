@@ -418,9 +418,14 @@ export const users = (q: string) =>
 export const selectDiagram = (id: number, signal?: AbortSignal) =>
   call<Diagram>("POST", `/diagrams/${id}/select`, undefined, undefined, signal);
 
-/** A new case: an empty record the app is put on straight away (R-0243). */
-export const newDiagram = (name: string) =>
-  call<Diagram>("POST", "/diagrams", { name });
+/** A new diagram, anyone's to make: an empty one the app is put on straight
+ * away (R-0243). `ownFamily` answers "Is this your own family?" (FD-387). */
+export const newDiagram = (name: string, ownFamily: boolean) =>
+  call<Diagram>("POST", "/diagrams", { name, own_family: ownFamily });
+
+/** The owner renames their diagram. */
+export const renameDiagram = (id: number, name: string) =>
+  call<Diagram>("PATCH", `/diagrams/${id}`, { name });
 
 /** The audio goes to this server, which sends it on to be transcribed and
  * answers with the id to ask after (R-0348). */

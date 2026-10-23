@@ -31,6 +31,9 @@ const diagram = (one: Stand) => ({
   owned: one.access === undefined,
   access: one.access ?? "own",
   owner: "Someone Else",
+  owner_name: "Someone",
+  owner_username: "new@fd362-fixture.invalid",
+  person_id: null,
 });
 
 /** A line of a stand-in thread, in the server's shape. */
@@ -111,7 +114,8 @@ const ticked = (page: Page, within = ".sn-pane[data-page=\"diagrams\"]") =>
     .evaluateAll((rows) =>
       rows
         .filter((r) => r.querySelector(".sn-tick")?.textContent?.trim())
-        .map((r) => r.querySelector(".sn-t")?.textContent),
+        // a diagram row holds its name and its owner apart
+        .map((r) => (r.querySelector(".sn-tn") ?? r.querySelector(".sn-t"))?.textContent),
     );
 
 const later = () => {
@@ -325,6 +329,14 @@ test.describe("an admin's search results", () => {
     await settle(page);
     await openDiagrams(page);
     expect(await ticked(page)).toEqual([OWN]);
+    // the user's own diagram says "you" at the right end of the name's line
+    const own = diagramsPage(page).locator(".sn-row", { hasText: OWN });
+    await expect(own.locator(".sn-o")).toHaveText("you");
+    const name = (await own.locator(".sn-tn").boundingBox())!;
+    const owner = (await own.locator(".sn-o").boundingBox())!;
+    const whole = (await own.locator(".sn-t").boundingBox())!;
+    expect(owner.x).toBeGreaterThan(name.x + name.width);
+    expect(owner.x + owner.width).toBeCloseTo(whole.x + whole.width, 0);
     await find(page);
     expect(await ticked(page, ".sn-theirs")).toEqual([]);
     await page.locator(".sn-theirs .sn-row", { hasText: "Their family" }).click();

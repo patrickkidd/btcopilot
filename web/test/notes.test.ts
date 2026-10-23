@@ -34,6 +34,8 @@ function watch() {
     done: () => {},
     failed: () => {},
     refused: () => {},
+    speak: () => {},
+    part: () => {},
   } satisfies TurnSink;
   return { seen, take: feed(sink) };
 }

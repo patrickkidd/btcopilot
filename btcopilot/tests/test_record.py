@@ -1,5 +1,8 @@
+import ast
 import datetime
 import pickle
+import re
+from pathlib import Path
 
 import pytest
 from PyQt5.QtCore import QDateTime
@@ -776,7 +779,7 @@ def test_the_write_refuses_a_move_with_no_target(subscriber, move):
             author=Author.User,
             turn_id="t1",
         )
-    assert refused.value.plain == f"{RelationshipKind(move).menuLabel()} needs the person it was aimed at."
+    assert refused.value.plain == f"{RelationshipKind(move).menuLabel()} named no one it was aimed at."
     assert diagram.get_diagram_data().events == []
 
 
@@ -1057,3 +1060,36 @@ def test_taking_back_an_event_made_before_its_title_was_backfilled_removes_it():
     data = {"events": [{"id": 66, "kind": "noted", "person": 1, "description": "told Lou", "title": "Told Lou"}]}
     record.rewind(data, made)
     assert data["events"] == []
+
+
+IMPERATIVES = {"Say", "Use", "Give", "Add", "Change", "Choose", "Record", "Name", "Put", "Set", "Ask", "Remove", "Mark"}
+
+
+def plain_texts() -> list[str]:
+    """The words of every refusal's plain text in the record's rules, as
+    written, with each filled-in value left out."""
+    tree = ast.parse(Path(record.__file__).read_text())
+    found = [record.GONE, record.NEVER_REMOVED[1]]
+    for call in ast.walk(tree):
+        if isinstance(call, ast.Call) and getattr(call.func, "id", None) == "Invalid" and len(call.args) > 1:
+            found.append(
+                " ".join(
+                    n.value
+                    for n in ast.walk(call.args[1])
+                    if isinstance(n, ast.Constant) and isinstance(n.value, str)
+                )
+            )
+    return found
+
+
+def test_a_refusal_a_person_reads_says_what_was_wrong_and_never_what_to_do():
+    # R-0869
+    texts = plain_texts()
+    assert len(texts) > 50
+    told = [
+        text
+        for text in texts
+        for sentence in re.split(r"[.:;]\s+", text)
+        if sentence.split(" ", 1)[0] in IMPERATIVES
+    ]
+    assert told == []

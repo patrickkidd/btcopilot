@@ -5,9 +5,10 @@ import datetime
 
 from sqlalchemy import func
 
-from btcopilot import auth, diagramjson
+from btcopilot import auth, diagramjson, profile
 from btcopilot.extensions import db
 from btcopilot.models import Diagram
+from btcopilot.models.diagram import owner_row
 from btcopilot.models import (
     Discussion,
     DiscussionKind,
@@ -16,6 +17,7 @@ from btcopilot.models import (
     Statement,
 )
 from btcopilot import turnlog
+from btcopilot.schema import DEFAULT_SUBJECT_NAME
 
 PREVIEW_CHARS = 120
 # Nobody opens or closes a sitting by hand. Words
@@ -177,10 +179,12 @@ def family(user, diagram: Diagram | None) -> Diagram:
     personal app's own routes do not, and get the free one, made on first use."""
     diagram = diagram or user.free_diagram
     if diagram is None:
+        # written as set_free_diagram writes it: their own family
         diagram = Diagram(
             user_id=user.id,
             name=f"{user.username} Personal Case File",
             data=diagramjson.dumps({}),
+            access_rights=[owner_row(user.id, profile.FIRST_PERSON_ID)],
         )
         db.session.add(diagram)
         db.session.flush()
@@ -210,18 +214,31 @@ def sitting(user, diagram: Diagram) -> Discussion:
     return open_session(user, diagram)
 
 
+def voice(user, diagram: Diagram, data) -> tuple[int | None, str]:
+    """The person the user speaks as on the case and the label they speak
+    under: the family's subject by the subject's label, a member of the family
+    by their name, and a human coach, who is no one in it, by their own."""
+    person_id = profile.person_of(user, diagram)
+    if person_id is None:
+        return None, user.full_name().strip() or user.username
+    if profile.is_subject(person_id, data):
+        return person_id, data.subject_display_name()
+    named = next((p for p in data.people if p.get("id") == person_id), {})
+    return person_id, named.get("name") or DEFAULT_SUBJECT_NAME
+
+
 def open_session(user, diagram: Diagram) -> Discussion:
-    """A session on the diagram with its two chat speakers: the user as the
-    family's subject, and the coach."""
+    """A session on the diagram with its two chat speakers: the user as who
+    they are on the case, and the coach."""
     # Read the speaker label off the diagram directly (not the lazily-populated
     # relationship) so a named primary is honored even at create time.
-    subject_name = diagram.get_diagram_data().subject_display_name()
+    person_id, name = voice(user, diagram, diagram.get_diagram_data())
 
     discussion = Discussion(
         user_id=user.id,
         diagram_id=diagram.id,
         speakers=[
-            Speaker(name=subject_name, type=SpeakerType.Subject, person_id=1),
+            Speaker(name=name, type=SpeakerType.Subject, person_id=person_id),
             # The coach is not in the family, so it points at no person.
             Speaker(name="Coach", type=SpeakerType.Expert),
         ],
@@ -234,26 +251,31 @@ def open_session(user, diagram: Diagram) -> Discussion:
 
 
 def sync_chat_speakers(discussion: Discussion):
-    """Ensure the person the user speaks as exists in the diagram, and sync the
-    Subject speaker to the primary person: keep person_id and the display label
-    (real name, else neutral default) in step so the chat transcript and
-    extraction prompt name the user, not "Client"."""
+    """Ensure the person the family belongs to exists in the diagram, and sync
+    the Subject speaker to who the user is on the case: keep person_id and the
+    display label (real name, else neutral default) in step so the chat
+    transcript and extraction prompt name the user, not "Client". A human
+    coach on the case speaks as no one in it."""
     if not discussion.diagram:
         return
-    diagram_data = discussion.diagram.get_diagram_data()
-    user_person_id, changed = diagram_data.ensure_chat_defaults()
+    diagram = discussion.diagram
+    diagram_data = diagram.get_diagram_data()
+    own = profile.person_of(diagram.user, diagram) is not None
+    user_person_id, changed = diagram_data.ensure_chat_defaults(
+        profile.PLACEHOLDER_NAME if own else None
+    )
     if changed:
-        discussion.diagram.set_diagram_data(diagram_data)
+        diagram.set_diagram_data(diagram_data)
+    person_id, name = voice(discussion.user, diagram, diagram_data)
 
     user_speaker = Speaker.query.filter_by(
         discussion_id=discussion.id, type=SpeakerType.Subject
     ).first()
     if user_speaker:
-        if user_speaker.person_id != user_person_id:
-            user_speaker.person_id = user_person_id
-        subject_name = diagram_data.subject_display_name()
-        if user_speaker.name != subject_name:
-            user_speaker.name = subject_name
+        if user_speaker.person_id != person_id:
+            user_speaker.person_id = person_id
+        if user_speaker.name != name:
+            user_speaker.name = name
 
 
 def transcript_voices(utterances: list[dict]) -> list[dict]:

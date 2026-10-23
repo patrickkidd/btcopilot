@@ -138,6 +138,19 @@ Changes something: needs `--yes`.
 
 The family records.
 
+### `flask admin diagrams add-user <diagram_id> <email>`
+
+Put somebody on a case, read-write, as the person given or as no one in the family. Somebody already on it gets this person instead.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `diagram_id` | required |
+| `email` | required |
+| `--person` | The id of the person in the diagram this user is; left out, they are no one in the family, such as a human coach consulting on the case. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin diagrams dates`
 
 List each event date stored as a Qt date object rather than text, with the text it becomes, and why the date rule would refuse the write when it would; nothing else in the event is checked or changed. --apply writes each record's dates the rule takes as one change row that `diagrams undo` takes back.
@@ -178,6 +191,18 @@ Changes something with `--apply`. Through `flask admin run`, the words also need
 |---|---|
 | `--diagram` | Only this record. |
 | `--apply` | Regroup the records listed; the default, --dry-run, lists them and makes no model call. |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin diagrams remove-user <diagram_id> <email>`
+
+Take somebody off a case. The owner stays on their own.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `diagram_id` | required |
+| `email` | required |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin diagrams show <diagram_id>`

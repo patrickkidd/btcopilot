@@ -48,6 +48,11 @@ export interface TurnSink {
   text(text: string): void;
   /** Those words again: what has been drawn is dropped. */
   reset(): void;
+  /** The coach is entering part k of n of long notes (R-0897). */
+  part(k: number, n: number): void;
+  /** The reply has ended: read it aloud now, whether or not the page has
+   * drawn it yet or the tab is in view. */
+  speak(statement: string): void;
   done(reply: Reply): void;
   failed(message: string): void;
   refused(message: string): void;
@@ -58,30 +63,27 @@ export interface TurnSink {
 const touchOf = (delta: Delta): Touch =>
   delta.field !== null ? Touch.Change : delta.before === null ? Touch.Add : Touch.Remove;
 
-function add(out: Made[], deltas: Delta[]): void {
-  for (const delta of deltas) {
-    const one = { kind: delta.item_kind, id: String(delta.item_id), touch: touchOf(delta) };
+/** What these edits made, one entry per item, the strongest touch kept. */
+export function made(deltas: Delta[]): Made[] {
+  const out: Made[] = [];
+  merge(out, deltas.map((delta) => ({ kind: delta.item_kind, id: String(delta.item_id), touch: touchOf(delta) })));
+  return out;
+}
+
+function merge(out: Made[], items: Made[]): void {
+  for (const one of items) {
     const had = out.find((m) => m.kind === one.kind && m.id === one.id);
     if (had) had.touch = stronger(had.touch, one.touch);
-    else out.push(one);
+    else out.push({ ...one });
   }
 }
 
 /** Hand one turn to the page, event by event. The same events in the same
  * order always leave the page in the same state, which is what lets a page
- * rebuild the bubble by reading the turn back from its first event. */
+ * rebuild the bubble by reading the turn back from its first event. Each edit
+ * is handed on as it lands, so the page can draw it with its line. */
 export function feed(sink: TurnSink): (event: TurnEvent) => void {
-  // A run of edits is one re-read of the record, not one each: the page reads
-  // it back when the run ends rather than between two edits of the same step.
-  let edits: Made[] | null = null;
-  const settle = () => {
-    if (!edits) return;
-    const items = edits;
-    edits = null;
-    sink.made(items);
-  };
   return (event) => {
-    if (event.type !== TurnEventKind.RecordPatch) settle();
     switch (event.type) {
       case TurnEventKind.ToolCall: {
         if (event.name === NOTES_TOOL) {
@@ -94,8 +96,7 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
         break;
       }
       case TurnEventKind.RecordPatch:
-        edits ??= [];
-        add(edits, event.deltas);
+        sink.made(made(event.deltas));
         break;
       case TurnEventKind.View:
         sink.show(event.view);
@@ -112,7 +113,11 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
       case TurnEventKind.TextReset:
         sink.reset();
         break;
+      case TurnEventKind.Part:
+        sink.part(event.part, event.parts);
+        break;
       case TurnEventKind.Done:
+        if (!event.stopped) sink.speak(event.statement);
         sink.done(event);
         break;
       case TurnEventKind.Failed:
@@ -123,4 +128,79 @@ export function feed(sink: TurnSink): (event: TurnEvent) => void {
         break;
     }
   };
+}
+
+/** What one frame draws of a turn: the lines that landed since the frame
+ * before, the events the reads among them looked at, and what the edits behind
+ * them made. */
+export interface Batch {
+  lines: Line[];
+  reads: number[][];
+  made: Made[];
+}
+
+/** How the page waits for a frame, reads the record again, and draws. */
+export interface Redraw<T> {
+  frame(): Promise<unknown>;
+  /** The record as it now stands; null when the read was dropped. */
+  read(): Promise<T | null>;
+  /** One frame of the turn: the record read again, or null when no read goes
+   * with this batch, and the batch's lines drawn with it. */
+  draw(record: T | null, batch: Batch): void;
+}
+
+/** A turn's lines and the record they changed, drawn in the same frame
+ * (R-0898). What lands within one frame is one batch and one redraw; what
+ * lands while a batch is being read is the next batch, so edits never queue a
+ * read each. A page that is behind (reading a turn back, or a hidden tab
+ * coming back) draws the lines of every batch it is behind on as they come
+ * and reads the record once, at the last batch of edits: a batch skips its read
+ * whenever a later batch of edits has already landed. */
+export class Lockstep<T> {
+  private open: Batch | null = null;
+  /** Batches with edits that have landed and are not yet drawn. */
+  private waiting = 0;
+
+  constructor(
+    private enqueue: (work: () => Promise<void>) => void,
+    private page: Redraw<T>,
+  ) {}
+
+  /** Something else is drawn next, so what lands after it is a new batch. */
+  close(): void {
+    this.open = null;
+  }
+
+  line(line: Line): void {
+    this.batch().lines.push(line);
+  }
+
+  read(ids: number[]): void {
+    this.batch().reads.push(ids);
+  }
+
+  made(items: Made[]): void {
+    const batch = this.batch();
+    if (!batch.made.length && items.length) this.waiting += 1;
+    merge(batch.made, items);
+  }
+
+  private batch(): Batch {
+    if (this.open) return this.open;
+    const batch: Batch = { lines: [], reads: [], made: [] };
+    this.open = batch;
+    this.enqueue(async () => {
+      await this.page.frame();
+      if (this.open === batch) this.open = null;
+      if (batch.made.length) this.waiting -= 1;
+      let record: T | null = null;
+      if (batch.made.length && !this.waiting) {
+        record = await this.page.read();
+        // a frame of its own, so no two reads are drawn in one frame
+        if (record !== null) await this.page.frame();
+      }
+      this.page.draw(record, batch);
+    });
+    return batch;
+  }
 }

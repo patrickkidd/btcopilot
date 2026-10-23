@@ -16,7 +16,7 @@ from collections import Counter
 
 from btcopilot.review import adapter
 from btcopilot.review.scribetools import ScribeTools
-from btcopilot.schema import DateCertainty, EventKind, event_title
+from btcopilot.schema import DateCertainty, DatePrecision, EventKind, event_title
 
 _log = logging.getLogger(__name__)
 
@@ -557,7 +557,7 @@ def _add(out: list, line):
 
 
 def _dated(event: dict) -> tuple:
-    return event.get("dateTime"), event.get("dateCertainty")
+    return event.get("dateTime"), event.get("dateCertainty"), event.get("datePrecision")
 
 
 def _event_words(event: dict, names: dict) -> str:
@@ -588,18 +588,19 @@ def _what(event: dict, kind: str) -> str:
 MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
 
 
-def _when(value, certainty=None) -> str:
-    """A day in the words the rest of the app uses: the month and the year.
+def _when(value, certainty=None, precision=None) -> str:
+    """A day in the words the rest of the app uses: the month and the year,
+    or the year alone when that is all the coder said (R-0896).
 
-    A coder who says only a year leaves the scribe writing the first of
-    January and marking it approximate, which is within a year either way; the
-    month there was never said, so it is not read back (R-0326)."""
+    An event from before precision was kept, dated the first of January and
+    marked approximate, was a year alone too; the month there was never said,
+    so it is not read back (R-0326)."""
     written = adapter.date_text(value)
     if not written:
         return "no date yet"
     year, _, rest = written.partition("-")
     month, _, day = rest.partition("-")
-    if not month.isdigit():
+    if not month.isdigit() or _plain(precision) == DatePrecision.Year.value:
         return year
     approximate = _plain(certainty) == DateCertainty.Approximate.value
     if approximate and month == "01" and day == "01":

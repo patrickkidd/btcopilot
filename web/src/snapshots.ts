@@ -78,7 +78,7 @@ const key = (id: number) => String(id);
 /** A snapshot's date as sure as its events are: the month when certain, the
  * year when approximate, and no date when it is unknown. */
 const caption = (e: TimelineEvent) =>
-  e.dateCertainty === DateCertainty.Unknown ? "date unknown" : dateText(e.dateTime!, e.dateCertainty);
+  e.dateCertainty === DateCertainty.Unknown ? "date unknown" : dateText(e.dateTime!, e.dateCertainty, e.datePrecision);
 
 /** The whole family's date, the month in full when the record is sure of it. */
 const spoken = (e: TimelineEvent) =>

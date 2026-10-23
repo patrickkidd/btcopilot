@@ -13,6 +13,9 @@ class AccessRight(db.Model, ModelMixin):
     diagram_id = Column(Integer, ForeignKey("diagrams.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     right = Column(String, nullable=False)
+    # who this user is on the case: the id of a person in the diagram, or None
+    # for someone who is not in the family, such as a human coach consulting
+    person_id = Column(Integer, nullable=True)
 
     diagram = relationship(
         "Diagram",

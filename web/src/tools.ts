@@ -232,6 +232,12 @@ function joined({ names }: ToolCall): Line {
   ];
 }
 
+/** What the server calls a person with no name when it names a call's
+ * subject (btcopilot/timeline.py, _person_label). */
+const NO_NAME = "Someone";
+
+const unnamed = (name: string) => !name || name === NO_NAME;
+
 function told(tool: ToolName, call: ToolCall): [Verb, Line] {
   const it = { name: call.names.it as string };
   switch (tool) {
@@ -270,9 +276,12 @@ function told(tool: ToolName, call: ToolCall): [Verb, Line] {
         [call.refusal ? it : { name: it.name, place: call.args.address as string }],
       ];
     default:
-      return call.args.id === undefined
-        ? [Verb.Add, join([[it], ...added(call)], ", ")]
-        : [Verb.Change, [it, ": ", ...changes(call)]];
+      if (call.args.id === undefined) return [Verb.Add, join([[it], ...added(call)], ", ")];
+      // naming the first person a new diagram starts with, unnamed, adds them
+      // as far as anyone reading the line can tell (R-0893)
+      if (tool === ToolName.EditPerson && unnamed(it.name) && call.args.name && !call.refusal)
+        return [Verb.Add, join([[{ name: call.args.name as string }], ...added(call)], ", ")];
+      return [Verb.Change, [it, ": ", ...changes(call)]];
   }
 }
 

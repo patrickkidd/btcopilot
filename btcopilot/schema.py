@@ -1,4 +1,5 @@
 import enum
+import re
 import hashlib
 import json
 import logging
@@ -311,6 +312,28 @@ class VariableShift(enum.StrEnum):
     Same = "same"
 
 
+class DatePrecision(enum.StrEnum):
+    """How much of an event's date the person said: a year alone, a month and
+    year, or the day. The date itself is always stored as a whole day."""
+
+    Year = "year"
+    Month = "month"
+    Day = "day"
+
+
+DATE_FORMS = "YYYY for a year alone, YYYY-MM for a month and year, YYYY-MM-DD for the day"
+
+
+def stated_date(text: str) -> tuple[str, DatePrecision]:
+    """A date as said, YYYY, YYYY-MM or YYYY-MM-DD, as the whole day the
+    record stores, the first of the span, and how much of it was said."""
+    if re.fullmatch(r"\d{4}", text):
+        return f"{text}-01-01", DatePrecision.Year
+    if re.fullmatch(r"\d{4}-\d{2}", text):
+        return f"{text}-01", DatePrecision.Month
+    return text, DatePrecision.Day
+
+
 class DateCertainty(enum.StrEnum):
     Unknown = "unknown"  # any date matches
     Approximate = "approximate"  # ±365 days
@@ -375,6 +398,8 @@ class Event:
     dateTime: str | None = None
     endDateTime: str | None = None
     dateCertainty: DateCertainty = DateCertainty.Certain
+    # None on an event written before precision was kept: read as the day
+    datePrecision: DatePrecision | None = None
     symptom: VariableShift | None = None
     anxiety: VariableShift | None = None
     relationship: RelationshipKind | None = None
@@ -1604,11 +1629,14 @@ class DiagramData:
         name = primary.get("name") if primary else None
         return name if name else DEFAULT_SUBJECT_NAME
 
-    def ensure_chat_defaults(self) -> tuple[int, bool]:
+    def ensure_chat_defaults(self, name: str | None = "User") -> tuple[int, bool]:
         """Idempotently ensure the person the user speaks as exists.
 
         If a person with primary=True exists (pro app diagram), use them as the
-        user speaker. Otherwise, ensure User (ID=1) exists.
+        user speaker. Otherwise, ensure person 1 exists, named `name`: "User"
+        for the maker's own family, no name for one a human coach made, so the
+        coach's first line names the client rather than renaming "User"
+        (R-0893).
 
         The other side of the chat is not a member of the family and is never a
         person in the record; ID 2 stays reserved so records written before this
@@ -1627,7 +1655,7 @@ class DiagramData:
         if primary_person:
             user_person_id = primary_person.get("id")
         elif user_person_id is None:
-            user_dict = asdict(Person(id=1, name="User"))
+            user_dict = asdict(Person(id=1, name=name))
             user_dict["primary"] = True
             self.people.append(user_dict)
             user_person_id = 1

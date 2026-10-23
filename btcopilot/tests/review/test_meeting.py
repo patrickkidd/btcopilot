@@ -415,8 +415,7 @@ def test_a_decision_the_record_refuses_is_the_rooms_fault(
     )
     assert refused.status_code == 400
     assert refused.get_data(as_text=True) == (
-        "A shift needs to say what moved and which way: symptom, anxiety, "
-        "functioning or a relationship."
+        "The shift did not say what moved or which way."
     )
 
 

@@ -133,7 +133,7 @@ def test_the_coach_reads_chosen_events_with_the_words_they_came_from(
         ),
     ).run()
 
-    tools = Toolbox(family.id, "t3")
+    tools = Toolbox(family.id, "t3", user_id=discussion.user_id)
     text, _ = tools.call(
         ToolName.ReadEvents.value, {"ids": [4], "fields": ["words", "notes", "location"]}
     )

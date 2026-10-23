@@ -14,7 +14,7 @@ from decimal import Decimal
 from sqlalchemy import exists, func, or_, select
 from sqlalchemy.orm import aliased
 
-from btcopilot import diagramjson, extensions, record
+from btcopilot import ACCESS_READ_WRITE, diagramjson, extensions, profile, record
 from btcopilot.admin.setting import shadow_candidates
 from btcopilot.coachmodel import model_for
 from btcopilot.llmutil import MODEL_ALIASES, Spent, off_bedrock, resolve_model
@@ -297,11 +297,21 @@ def enqueue(row_id: int) -> None:
 def run(row_id: int) -> None:
     row = ShadowTurn.query.filter_by(id=row_id).one()
     said = db.session.get(Statement, row.statement_id)
+    real = said.discussion
     diagram = Diagram(
         user_id=row.user_id,
         name=f"shadow {row_id}",
         data=row.snapshot.encode("utf-8"),
         scratch=True,
+    )
+    # the scratch copy's user is who they are on the real case, never its
+    # primary person by default, so a human coach is not spoken to as the client
+    diagram.access_rights.append(
+        AccessRight(
+            user_id=row.user_id,
+            right=ACCESS_READ_WRITE,
+            person_id=profile.person_of(real.user, real.diagram),
+        )
     )
     db.session.add(diagram)
     db.session.flush()

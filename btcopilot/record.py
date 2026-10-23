@@ -82,8 +82,8 @@ class Invalid(Exception):
 
 # A question is closed, never removed (R-0006): what the user declined has to
 # stay where the coach can see it.
-NEVER_REMOVED = ("a question is never removed; close it", "A question is never removed.")
-GONE = "That is not in the diagram."
+NEVER_REMOVED = ("a question is never removed; close it", "It removed a question, and a question is never removed.")
+GONE = "That was not in the diagram."
 
 
 class Conflict(Exception):
@@ -635,7 +635,7 @@ def _validate(
         raise Invalid(
             f"that would leave clusters {small} with fewer than {MIN_CLUSTER_EVENTS} "
             "events: add an event to the cluster, or remove the grouping",
-            f"A cluster needs at least {MIN_CLUSTER_EVENTS} events.",
+            f"The cluster had fewer than {MIN_CLUSTER_EVENTS} events.",
         )
     for cluster_id, cluster in touched:
         for event_id in cluster.get("eventIds") or []:
@@ -643,7 +643,7 @@ def _validate(
                 raise Invalid(
                     f"cluster {cluster_id} names event {event_id}, which is not in "
                     "the record: a cluster groups events the record holds",
-                    "One of the events in that cluster is no longer in the diagram.",
+                    "One of the events in that cluster was no longer in the diagram.",
                 )
     _values(data, deltas)
     _words(data, deltas)
@@ -738,7 +738,7 @@ def _values(data: dict, deltas: list[dict]):
                 raise Invalid(
                     f"event {event_id}'s {field} is {value!r}, which is not one of "
                     f"the {noun}: {', '.join(sorted(allowed))}",
-                    f"That event needs one of the {noun}.",
+                    f"That event's value was not one of the {noun}.",
                 )
     for person_id in _touched_kind(deltas, ItemKind.Person):
         person = _find(data, ItemKind.Person, person_id)
@@ -748,14 +748,14 @@ def _values(data: dict, deltas: list[dict]):
             raise Invalid(
                 f"person {person_id} has no name: use the name as it was said, or "
                 "whose relation they are where nobody named them",
-                "A person needs a name.",
+                "The person had no name.",
             )
         gender = _val(person.get("gender"))
         if gender is not None and gender not in GENDERS:
             raise Invalid(
                 f"person {person_id}'s gender is {gender!r}, which is not one of the "
                 f"genders: {', '.join(sorted(GENDERS))}",
-                "That person needs one of the genders.",
+                "The person's gender was not one of the genders.",
             )
     for bond_id in _touched_kind(deltas, ItemKind.PairBond):
         bond = _find(data, ItemKind.PairBond, bond_id)
@@ -783,8 +783,7 @@ def _words(data: dict, deltas: list[dict]):
                 raise Invalid(
                     f"event {event_id}'s {field} names {name}, who is already "
                     f"its {role}; say what happened without the name",
-                    f"The {plain} names {name}, who is already on this event. "
-                    "Say what happened without the name.",
+                    f"The {plain} named {name}, who is already on this event.",
                 )
 
 
@@ -816,8 +815,7 @@ def _moves(data: dict, deltas: list[dict]):
             raise Invalid(
                 f"event {event_id} is a {kind} event with no words: say what "
                 "happened",
-                f"A {EventKind(kind).menuLabel().lower()} event needs a few words "
-                "saying what happened.",
+                f"The {EventKind(kind).menuLabel().lower()} event had no words saying what happened.",
             )
         if kind in WORDED_KINDS and not TITLE_WORDS[0] <= len(
             (event.get("title") or "").split()
@@ -826,32 +824,27 @@ def _moves(data: dict, deltas: list[dict]):
                 f"event {event_id} is a {kind} event and needs a title: a "
                 f"complete phrase of {TITLE_WORDS[0]} to {TITLE_WORDS[1]} words "
                 "saying what changed, such as 'Lost his job'",
-                f"A {EventKind(kind).menuLabel().lower()} event needs a title of "
-                f"{TITLE_WORDS[0]} to {TITLE_WORDS[1]} words, such as "
-                "\"Lost his job\".",
+                f"The {EventKind(kind).menuLabel().lower()} event's title was not {TITLE_WORDS[0]} to {TITLE_WORDS[1]} words.",
             )
         if kind == EventKind.Shift.value and not _moved(event):
             raise Invalid(
                 f"event {event_id} is a shift with no variable and no "
                 "relationship move: say which of symptom, anxiety, functioning "
                 "or relationship moved, and which way",
-                "A shift needs to say what moved and which way: symptom, anxiety, "
-                "functioning or a relationship.",
+                "The shift did not say what moved or which way.",
             )
         if kind != EventKind.Shift.value and _moved(event):
             raise Invalid(
                 f"event {event_id} is a {kind} event, and only a shift carries "
                 "symptom, anxiety, functioning or a relationship move: record "
                 "what moved as a shift of its own, dated to it",
-                "Only a shift carries symptom, anxiety, functioning or a "
-                "relationship: record that as a shift of its own.",
+                "Symptom, anxiety, functioning or a relationship was put on an event that is not a shift.",
             )
         if event.get("item") is not None and kind != EventKind.Noted.value:
             raise Invalid(
                 f"event {event_id} is a {kind} event: only a noted event says "
                 "which item of the basic data it records",
-                "Only a noted event says it records schooling, work, health or "
-                "where someone lived.",
+                "Schooling, work, health or where someone lived was put on an event that is not a noted event.",
             )
 
 
@@ -876,7 +869,7 @@ def _dates(data: dict, deltas: list[dict]):
             raise Invalid(
                 f"event {event_id} ends before it begins: date is when it began, "
                 "end_date when it ended",
-                "The end date is before the start date.",
+                "The end date was before the start date.",
             )
 
 
@@ -932,8 +925,7 @@ def _twins(data: dict, deltas: list[dict]):
                 raise Invalid(
                     f"that event is already event {other.get('id')}: change it "
                     f"with edit_event(id={other.get('id')}) rather than adding it",
-                    "That event is already in the diagram. Change the one that is "
-                    "there rather than adding it again.",
+                    "That event was already in the diagram.",
                 )
 
 
@@ -993,8 +985,7 @@ def _people(data: dict, deltas: list[dict]):
                 raise Invalid(
                     f"{person['name']} is already person {other['id']} "
                     f"({other['name']}): use that person rather than adding another",
-                    f"{person['name']} is already in the diagram as {other['name']}. "
-                    "Use that person rather than adding another.",
+                    f"{person['name']} was already in the diagram as {other['name']}.",
                 )
 
 
@@ -1019,18 +1010,18 @@ def _structure(data: dict, deltas: list[dict]):
             raise Invalid(
                 f"pair bond {bond_id} needs two people: add the missing one as a "
                 "person first, generically named where nobody named them",
-                "A pair-bond needs two people.",
+                "The pair-bond had only one person.",
             )
         if str(sides[0]) == str(sides[1]):
             raise Invalid(
                 f"pair bond {bond_id} is one person with themselves",
-                "A pair-bond needs two different people.",
+                "The pair-bond named one person twice.",
             )
         for side in sides:
             if _find(data, ItemKind.Person, side) is None:
                 raise Invalid(
                     f"pair bond {bond_id} names person {side}, who is not in the record",
-                    "One of those two is no longer in the diagram.",
+                    "One of those two was no longer in the diagram.",
                 )
         for other in bonds:
             if str(other.get("id")) != str(bond_id) and pair(other) == pair(bond):
@@ -1038,8 +1029,7 @@ def _structure(data: dict, deltas: list[dict]):
                     f"those two already have pair bond {other.get('id')}: change "
                     f"it with edit_pair_bond(id={other.get('id')}) rather than "
                     "adding a second one",
-                    "Those two already have a pair-bond. Change that one rather "
-                    "than adding a second.",
+                    "Those two already had a pair-bond.",
                 )
 
     for couple in _lost(data, deltas):
@@ -1055,8 +1045,7 @@ def _structure(data: dict, deltas: list[dict]):
                 f"that leaves event {', '.join(events)} naming persons "
                 f"{' and '.join(couple)} as a couple with no pair bond: change or "
                 "remove those events first",
-                "Those two still have events as a couple: change or remove those "
-                "first.",
+                "Those two still had events as a couple.",
             )
 
     for person_id in _touched_kind(deltas, ItemKind.Person):
@@ -1075,12 +1064,12 @@ def _structure(data: dict, deltas: list[dict]):
             raise Invalid(
                 f"person {person_id} is born to pair bond {person['parents']}, "
                 "which is not in the record",
-                "Those parents are no longer in the diagram.",
+                "Those parents were no longer in the diagram.",
             )
         if str(person_id) in pair(bond):
             raise Invalid(
                 f"person {person_id} cannot be their own parent",
-                "Nobody can be their own parent.",
+                "It made someone their own parent.",
             )
 
     people = {str(person.get("id")) for person in _collection(data, ItemKind.Person)}
@@ -1107,13 +1096,13 @@ def _structure(data: dict, deltas: list[dict]):
                     if event.get("person") is not None
                     else f"set child to who was {whom}"
                 ),
-                f"{label} is about the child: choose who under Child.",
+                f"{label} named no child.",
             )
         if kind not in OFFSPRING_KINDS and event.get("person") is None:
             raise Invalid(
                 f"event {event_id} is a {kind} event about nobody: set person to "
                 "who it happened to, adding them as a person first",
-                f"{label} needs the person it happened to.",
+                f"{label} named no one it happened to.",
             )
         for field in ("person", "spouse", "child", *(f for f, _ in MOVE_LINKS)):
             value = event.get(field)
@@ -1122,7 +1111,7 @@ def _structure(data: dict, deltas: list[dict]):
                     raise Invalid(
                         f"event {event_id} names person {person_id}, who is not in "
                         "the record: add them as a person first",
-                        "Someone on that event is not in the diagram.",
+                        "Someone on that event was not in the diagram.",
                     )
         if event.get("spouse") is not None and str(event["spouse"]) == str(
             event.get("person")
@@ -1130,7 +1119,7 @@ def _structure(data: dict, deltas: list[dict]):
             raise Invalid(
                 f"event {event_id} names person {event['spouse']} as both person "
                 "and spouse: they are two different people",
-                "Those must be two different people.",
+                "It named the same person as both partners.",
             )
         if event.get("child") is not None and str(event["child"]) in {
             str(event.get("person")),
@@ -1139,7 +1128,7 @@ def _structure(data: dict, deltas: list[dict]):
             raise Invalid(
                 f"event {event_id} has person {event['child']} as both the child "
                 "and a parent: nobody is born to themselves",
-                "Nobody can be their own parent.",
+                "It made someone their own parent.",
             )
         mover = str(event.get("person"))
         for field, role in MOVE_LINKS:
@@ -1148,7 +1137,7 @@ def _structure(data: dict, deltas: list[dict]):
                     f"event {event_id} has person {mover} as both the mover and "
                     f"the {role}: a move is toward, away from or about someone "
                     f"else, so name the other person as the {role}",
-                    f"Someone cannot be their own {role} in a move.",
+                    f"It made someone their own {role} in a move.",
                 )
         move = _val(event.get("relationship"))
         targets = {str(x) for x in event.get("relationshipTargets") or []}
@@ -1159,14 +1148,13 @@ def _structure(data: dict, deltas: list[dict]):
                 "relationship move names who it was aimed at, so put them in "
                 "relationship_targets, adding them as a person first, "
                 "generically named where nobody named them",
-                f"{RelationshipKind(move).menuLabel()} needs the person it was "
-                "aimed at.",
+                f"{RelationshipKind(move).menuLabel()} named no one it was aimed at.",
             )
         if targets and not move:
             raise Invalid(
                 f"event {event_id} has relationship_targets but no relationship "
                 "move: set the move they were the target of, or leave them out",
-                "Only a relationship move names who it was aimed at.",
+                "It named who a move was aimed at on an event with no relationship move.",
             )
         if move in TRIANGLES and not thirds:
             raise Invalid(
@@ -1174,27 +1162,27 @@ def _structure(data: dict, deltas: list[dict]):
                 "triangle is three people, so put the one left outside of an "
                 "inside move, or the second of the two left together by an "
                 "outside move, in relationship_triangles",
-                f"{RelationshipKind(move).menuLabel()} needs the third person.",
+                f"{RelationshipKind(move).menuLabel()} named no third person.",
             )
         if thirds and move not in TRIANGLES:
             raise Invalid(
                 f"event {event_id} has relationship_triangles but is not an inside "
                 "or outside move: only a triangle move has a third person",
-                "Only a triangle move has a third person.",
+                "It named a third person on an event that is not a triangle move.",
             )
         if targets & thirds:
             raise Invalid(
                 f"event {event_id} has person {min(targets & thirds)} as both a "
                 "target and the third person: a triangle is three different "
                 "people",
-                "A triangle is three different people.",
+                "It named the same person twice in a triangle.",
             )
         if kind in COUPLE_KINDS and event.get("spouse") is None:
             raise Invalid(
                 f"event {event_id} is a {kind} event, which is about a couple: "
                 "name the other one as spouse, adding them as a person first, "
                 "generically named where nobody named them",
-                f"{label} needs both partners.",
+                f"{label} named only one partner.",
             )
         if kind in COUPLE_KINDS and not any(
             pair(bond) == pair({"person_a": event["person"], "person_b": event["spouse"]})
@@ -1204,7 +1192,7 @@ def _structure(data: dict, deltas: list[dict]):
                 f"event {event_id} is a {kind} event between persons "
                 f"{event['person']} and {event['spouse']}, who have no pair bond: "
                 "add their pair bond first",
-                f"{label} needs those two to be partners first.",
+                f"{label} named two people who are not partners.",
             )
         if kind == EventKind.Birth.value:
             _born(data, event_id, event)
@@ -1221,7 +1209,7 @@ def _structure(data: dict, deltas: list[dict]):
                         f"{other.get('id')}: change it with "
                         f"edit_event(id={other.get('id')}) rather than adding a "
                         "second",
-                        f"That person already has a {kind}.",
+                        f"That person already had a {kind}.",
                     )
 
 
@@ -1258,7 +1246,7 @@ def _born(data: dict, event_id: str, birth: dict):
                 f"{child['id']}, who is born to pair bond {bond['id']} (persons "
                 f"{' and '.join(pair(bond))}): a birth's parents are the child's "
                 "parents, so name those two",
-                "A birth's parents must be the child's own parents.",
+                "A birth named parents who are not the child's own parents.",
             )
 
 
@@ -1398,10 +1386,10 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
             raise Invalid(
                 f"{noun} {question_id} cannot be {state.value}: it is held, "
                 f"{rules.shown.value} or resolved",
-                f"A {noun} cannot be {state.value}.",
+                f"The {noun} was set to {state.value}, which it cannot be.",
             )
         if was is QuestionState.Resolved:
-            raise Invalid(f"{noun} {question_id} is already closed", f"That {noun} is already closed.")
+            raise Invalid(f"{noun} {question_id} is already closed", f"That {noun} was already closed.")
         if moved and not added and rules.order.index(state) <= rules.order.index(was):
             if was is rules.shown:
                 raise Invalid(
@@ -1410,7 +1398,7 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
                 )
             raise Invalid(
                 f"{noun} {question_id} is already held",
-                f"That {noun} is already kept for later.",
+                f"That {noun} was already kept for later.",
             )
         if not (question.get("text") or "").strip():
             raise Invalid(f"{noun} {question_id} has no words", f"It gave the {noun} no words.")
@@ -1424,16 +1412,13 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
             raise Invalid(
                 f"only the user turns {noun} {question_id} down or pushes back on it, "
                 "and does nothing else to it",
-                f"Only you can push back on an {noun}."
-                if rules is IMPRESSION
-                else "Only you can dismiss a question.",
+                (f"The coach pushed back on an {noun}, which only you do." if rules is IMPRESSION else "The coach dismissed a question, which only you do."),
             )
         if outcome and outcome not in (*rules.theirs, *rules.ours):
             raise Invalid(
                 f"{noun} {question_id} ends only as one of "
                 f"{', '.join(o.value for o in rules.ours)}",
-                f"That is not how an {noun} ends." if rules is IMPRESSION
-                else f"That is not how a {noun} ends.",
+                (f"That was not a way an {noun} ends." if rules is IMPRESSION else f"That was not a way a {noun} ends."),
             )
         if question.get("pushback") is not None:
             Pushback(question["pushback"])
@@ -1473,7 +1458,7 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
             if other["state"] != QuestionState.Resolved:
                 raise Invalid(
                     f"that {noun} is already {other['id']}, {other['state']}: {_again(rules)}",
-                    f"That {noun} is already there.",
+                    f"That {noun} was already there.",
                 )
 
 
@@ -1484,12 +1469,12 @@ def _theirs(todo: dict, todo_id: str, state: QuestionState):
         raise Invalid(
             f"todo {todo_id} is kept held when the person says it; mark it asked "
             "with set_question when you pick it up",
-            "A todo is kept for later when it is said.",
+            "The todo was not kept for later when it was said.",
         )
     if [one.get("kind") for one in todo.get("evidence") or []] != [EvidenceKind.Statement]:
         raise Invalid(
             f"todo {todo_id} rests on the one message where the person said it",
-            "A todo is only ever something the person said.",
+            "The todo did not rest on the one message where the person said it.",
         )
 
 
@@ -1500,7 +1485,7 @@ def _refiled(data: dict, question: dict, question_id: str, added: bool, written:
     if not (added or written <= set(REFILED)):
         raise Invalid(
             f"a re-filing only moves question {question_id} to another item",
-            "A question can only be moved here.",
+            "It changed more than where the question is filed.",
         )
     _linked(data, question, question_id)
     _names(question, question_id)
@@ -1514,12 +1499,12 @@ def _asked_again(mine: list[dict], question_id: str, rules, was, state) -> None:
     if rules is not QUESTION or was is not QuestionState.Asked or state is not QuestionState.Asked:
         raise Invalid(
             f"only a question already asked and still open is asked again, not {question_id}",
-            "Only an open question can be asked again.",
+            "The question was not open, so it could not be asked again.",
         )
     if not isinstance(after, list) or after[:-1] != before or len(after) != len(before) + 1:
         raise Invalid(
             f"{ASKED_AGAIN} of {question_id} only gains the one day it is asked again",
-            "A question is asked again one day at a time.",
+            "It counted more than one new day a question was asked.",
         )
     datetime.date.fromisoformat(after[-1])
 
@@ -1546,7 +1531,7 @@ def _card(question: dict, question_id: str, rules, state, written: set, author: 
     if CARD in written and Author(author) is not Author.Coach:
         raise Invalid(
             f"only the coach puts {noun} {question_id} on a case report card",
-            "Only the coach chooses what goes on the case report.",
+            "It put something on the case report, which only the coach does.",
         )
     if question.get(CARD) is None:
         return
@@ -1554,18 +1539,18 @@ def _card(question: dict, question_id: str, rules, state, written: set, author: 
     if rules is TODO:
         raise Invalid(
             f"todo {question_id} goes on no case report card",
-            "A todo cannot go on the case report.",
+            "It put a todo on the case report.",
         )
     if rules is QUESTION and card not in QUESTION_CARDS:
         raise Invalid(
             f"question {question_id} cannot be on the {card.value} card: a question "
             f"goes only on {' or '.join(c.value for c in QUESTION_CARDS)}",
-            "A question cannot go on that card of the case report.",
+            "It put a question on a card of the case report that takes none.",
         )
     if state is QuestionState.Held:
         raise Invalid(
             f"{noun} {question_id} is held: put it on a card when it is {rules.shown.value}",
-            f"A {noun} kept for later cannot go on the case report.",
+            f"It put a {noun} kept for later on the case report.",
         )
 
 
@@ -1709,8 +1694,7 @@ def _uncaused(impression: dict, impression_id: str):
             f"impression {impression_id} says one thing brought about another "
             f"({found!r}): say what came first and how close in time, "
             "and claim no more than what it rests on holds",
-            "The impression says one thing caused another. Say what came first "
-            "and how close in time instead.",
+            "The impression said one thing caused another.",
         )
 
 
@@ -1733,7 +1717,7 @@ def _unsourced(data: dict, impression: dict, impression_id: str):
             f"impression {impression_id} mentions the literature ({found!r}): "
             "speak from what this person has told you, never books, the theory, "
             "research or an author",
-            "The impression mentions books or theory. Say it from what was told.",
+            "The impression mentioned books or theory.",
         )
 
 
@@ -1987,7 +1971,7 @@ def _merge_refusal(data: dict, keep, drop, take: dict[str, str]):
     if str(keep) == str(drop):
         raise Invalid(
             f"keep and drop are both person {keep}: name two people",
-            "That is one person already.",
+            "That was one person already.",
         )
     for person_id in (keep, drop):
         if _find(data, ItemKind.Person, person_id) is None:
@@ -1996,7 +1980,7 @@ def _merge_refusal(data: dict, keep, drop, take: dict[str, str]):
         raise Invalid(
             f"persons {keep} and {drop} are partners, or parent and child: two "
             "people, never one",
-            "Those two are partners, or parent and child, so they are two people.",
+            "Those two were partners, or parent and child, so they are two people.",
         )
     unnamed = [fact for fact in differing(data, keep, drop) if fact.value not in take]
     if unnamed:
@@ -2008,9 +1992,7 @@ def _merge_refusal(data: dict, keep, drop, take: dict[str, str]):
         raise Invalid(
             f"the two differ on {said}. Ask the person which is right, name it in "
             "take as keep or drop, and merge again",
-            "Those two differ on "
-            + " and ".join(KEPT_WORDS[fact] for fact in unnamed)
-            + ", so it asks which is right first.",
+            "Those two differed on " + " and ".join(KEPT_WORDS[fact] for fact in unnamed) + ".",
         )
 
 

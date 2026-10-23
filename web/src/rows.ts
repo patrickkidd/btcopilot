@@ -1,7 +1,7 @@
 import { crossOut, DROP, Mark, outline, Sex, sexOf, SLASH, slashes, tie, W } from "./diagram";
 import { esc } from "./dom";
 import { BIRTHS, bondOf, COUPLE_KINDS, ENDS } from "./snapshots";
-import { DateCertainty, EventKind, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
+import { DateCertainty, DatePrecision, EventKind, type Cluster, type Person, type Timeline, type TimelineEvent } from "./types";
 
 /** The rows the record is read as, in the drawer and on the coding screen:
  * one line for what it is, one for when and who. One renderer, so the two
@@ -24,10 +24,14 @@ const SHIFTS: [keyof TimelineEvent, string][] = [
   ["functioning", "F"],
 ];
 
-export function when(dateTime: string | null): string {
+/** A date only as far as it was said: "1986", "Mar 1986", or "3 Mar 1986"
+ * for a day said; a date with no precision kept reads as it always has. */
+export function when(dateTime: string | null, precision: string | null = null): string {
   if (!dateTime) return "no date yet";
-  const [year, month] = dateTime.split("-");
-  return month ? `${MONTHS[Number(month) - 1]} ${year}` : year;
+  const [year, month, day] = dateTime.split("-");
+  if (!month || precision === DatePrecision.Year) return year;
+  const monthYear = `${MONTHS[Number(month) - 1]} ${year}`;
+  return precision === DatePrecision.Day && day ? `${Number(day)} ${monthYear}` : monthYear;
 }
 
 /** The row's second line must not overflow the phone, so the shifts and the
@@ -175,7 +179,7 @@ export function eventRow(
   tree: Tree,
   on = false,
 ): string {
-  const meta = [when(event.dateTime), event.person_name, codes(event, names)]
+  const meta = [when(event.dateTime, event.datePrecision), event.person_name, codes(event, names)]
     .filter(Boolean)
     .join(" \u00b7 ");
   return (

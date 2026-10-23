@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { feed, type Made, type TurnSink } from "../src/turn";
-import { type Line, ToolName } from "../src/tools";
+import { feed, Lockstep, type Made, type TurnSink } from "../src/turn";
+import { type Line, text, ToolName } from "../src/tools";
 import { ItemKind, Touch, TurnEventKind, type Reply, type TurnEvent } from "../src/types";
 
 /** What the page would be showing, written down instead of drawn. */
@@ -53,6 +53,8 @@ function watch(): { shown: Shown; take: (event: TurnEvent) => void } {
     refused: (message) => {
       shown.words = message;
     },
+    speak: () => {},
+    part: () => {},
   };
   return { shown, take: feed(sink) };
 }
@@ -213,5 +215,167 @@ describe("following a turn", () => {
     expect(shown.read).toEqual([10, 11]);
     expect(shown.reloads).toBe(0);
     expect(shown.notes.length).toBe(1);
+  });
+});
+
+/** A page following a turn the way the chat page does: lines and edits go to
+ * the lock step, everything else to the same queue after them. The record on
+ * the server is the people the patches so far have added. */
+function page() {
+  const server: string[] = [];
+  const frames: (() => void)[] = [];
+  let frame = 0;
+  const shown = {
+    lines: [] as string[],
+    record: [] as string[],
+    lit: [] as Made[],
+    reads: 0,
+    words: "",
+    spoken: "",
+    /** The record on screen as each line was drawn. */
+    with: [] as { line: string; record: string[] }[],
+    /** The frame each read was drawn in. */
+    drawnIn: [] as number[],
+  };
+  let queue: Promise<void> = Promise.resolve();
+  let busy = 0;
+  const enqueue = (work: () => Promise<void> | void) => {
+    busy += 1;
+    queue = queue.then(work).finally(() => void (busy -= 1));
+  };
+  const lock = new Lockstep<string[]>(enqueue, {
+    frame: () => new Promise<void>((done) => frames.push(done)),
+    read: async () => {
+      shown.reads += 1;
+      return [...server];
+    },
+    draw: (read, batch) => {
+      shown.lit.push(...batch.made);
+      if (read) {
+        shown.record = read;
+        shown.drawnIn.push(frame);
+      }
+      for (const line of batch.lines) {
+        shown.lines.push(text(line));
+        shown.with.push({ line: text(line), record: [...shown.record] });
+      }
+    },
+  });
+  const step = (work: () => void) => {
+    lock.close();
+    enqueue(work);
+  };
+  const take = feed({
+    note: (line) => lock.line(line),
+    notes: () => {},
+    made: (items) => lock.made(items),
+    read: (ids) => lock.read(ids),
+    show: () => {},
+    go: () => {},
+    report: () => {},
+    text: (words) => step(() => void (shown.words += words)),
+    reset: () => step(() => void (shown.words = "")),
+    done: (reply) => step(() => void (shown.words = reply.statement)),
+    failed: () => {},
+    refused: () => {},
+    speak: (statement) => void (shown.spoken = statement),
+    part: () => {},
+  });
+  /** Frames go by until nothing is left to draw. */
+  const settle = async () => {
+    while (busy || frames.length) {
+      const due = frames.splice(0);
+      if (due.length) frame += 1;
+      for (const done of due) done();
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  };
+  const land = (event: TurnEvent) => {
+    if (event.type === TurnEventKind.RecordPatch) server.push(String(event.deltas[0].item_id));
+    take(event);
+  };
+  return { shown, land, settle, frames };
+}
+
+const added = (k: number): TurnEvent[] => [
+  call(ToolName.EditPerson, { name: `Kin ${k}` }, { it: `Kin ${k}` }),
+  {
+    type: TurnEventKind.RecordPatch,
+    deltas: [{ item_kind: ItemKind.Person, item_id: String(k), field: null, before: null, after: { id: k } }],
+    turn_id: "t1",
+  },
+];
+
+/** Thirty edits in three steps, the coach thinking aloud between them. */
+const LONG: TurnEvent[] = [
+  ...Array.from({ length: 30 }, (_, i) => [
+    ...(i % 10 === 0 && i ? [{ type: TurnEventKind.Text, text: "Next." } as TurnEvent, { type: TurnEventKind.TextReset } as TurnEvent] : []),
+    ...added(i + 1),
+  ]).flat(),
+  { type: TurnEventKind.Text, text: "Added them." },
+  {
+    type: TurnEventKind.Done,
+    statement: "Added them.",
+    statement_id: 7,
+    views: null,
+    events: [],
+    turn_id: "t1",
+    discussion_id: 2,
+  },
+];
+
+describe("drawing each edit with its line", () => {
+  // R-0898
+  it("draws each line with the record already holding what it added", async () => {
+    const live = page();
+    // a call and its patch come from the server back to back, within a frame
+    for (let at = 0; at < LONG.length; at++) {
+      live.land(LONG[at]);
+      if (LONG[at].type !== TurnEventKind.ToolCall) await live.settle();
+    }
+    for (const k of [1, 2, 15, 29, 30])
+      expect(live.shown.with.find((one) => one.line === `Added Kin ${k}`)!.record).toContain(String(k));
+    expect(live.shown.reads).toBe(30);
+    expect(new Set(live.shown.drawnIn).size).toBe(live.shown.drawnIn.length);
+  });
+
+  // R-0898, R-0369
+  it("reads a turn back into the same state it was followed in live, reading the record once", async () => {
+    const live = page();
+    for (const event of LONG) {
+      live.land(event);
+      if (event.type !== TurnEventKind.ToolCall) await live.settle();
+    }
+    const back = page();
+    for (const event of LONG) back.land(event);
+    await back.settle();
+    expect(back.shown.lines).toEqual(live.shown.lines);
+    expect(back.shown.record).toEqual(live.shown.record);
+    expect(back.shown.lit).toEqual(live.shown.lit);
+    expect(back.shown.words).toBe("Added them.");
+    expect(back.shown.reads).toBe(1);
+  });
+
+  // R-0898
+  it("gathers what lands while the record is being read into the next redraw", async () => {
+    const { shown, land, settle } = page();
+    for (const event of added(1)) land(event);
+    // the first batch is waiting for its frame; three more edits land in it
+    for (const k of [2, 3, 4]) for (const event of added(k)) land(event);
+    await settle();
+    expect(shown.lines.length).toBe(4);
+    expect(shown.reads).toBe(1);
+    expect(shown.record).toEqual(["1", "2", "3", "4"]);
+  });
+
+  // R-0898
+  it("reads the reply aloud as it ends, even in a hidden tab whose frames never come", async () => {
+    const { shown, land, frames } = page();
+    for (const event of LONG) land(event);
+    await new Promise((r) => setTimeout(r, 0));
+    // nothing has been drawn: the first frame is still awaited
+    expect(frames.length).toBe(1);
+    expect(shown.lines).toEqual([]);
+    expect(shown.spoken).toBe("Added them.");
   });
 });

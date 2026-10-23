@@ -65,6 +65,9 @@ class TurnEventKind(enum.StrEnum):
     # One round of the model's tool calls with what they answered, kept in the
     # database so a failed turn can pick up from it. Never sent to the page.
     Step = "step"
+    # The coach starting part k of n of notes too long for one loop, all in one
+    # turn with one reply after the last part [Oracle: R-0897].
+    Part = "part"
 
 
 ENDS = (

@@ -23,7 +23,7 @@ import { Page, Settings, type Sub } from "./settings";
 import { Notices } from "./notices";
 import { Strip } from "./strip";
 import { aimedEvents, chips, Does, DOES, itemKind, Lead } from "./chips";
-import { feed } from "./turn";
+import { feed, Lockstep, type Made } from "./turn";
 import { Release } from "./release";
 import { Reports } from "./report";
 import { toolLine } from "./tools";
@@ -39,6 +39,7 @@ import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { Attachment } from "./attachment";
+import { LongNotes, type Projection } from "./longnotes";
 import { BACK } from "./tokens";
 import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
 import { offerPasskey } from "./passkey";
@@ -72,6 +73,7 @@ import {
   type Started,
   type Statement,
   type Timeline,
+  type TimelineEvent,
   SessionKind,
   Spotlight,
   BugReports,
@@ -95,6 +97,8 @@ declare global {
       session: { id: number; turn: string | null } | null;
       statements: api.Said[];
       version: string;
+      /** What a paste too long for one part costs and takes (R-0897). */
+      notes: Projection;
       /** The beta's forced sending of bugs (R-0615). */
       beta: boolean;
     };
@@ -275,6 +279,7 @@ const chat = new Chat($("chat"), $("composer"), {
 });
 
 const attachment = new Attachment($("attach"), $("composer").parentElement!, $("chat-screen"), $("chat"));
+const longNotes = new LongNotes($("chat-screen"), window.BOOTSTRAP.notes);
 
 /** An event or a person carried from its detail card into the message box:
  * the chat comes up with it as a lit chip at the caret and nothing sent
@@ -838,8 +843,9 @@ function sat(sittingId: number, words: Element | null): void {
 
 /** The empty session's call to action, worded for what the session is: a
  * note is the clinician writing up a session after the fact, a professional's
- * session is about a case, and a personal session is about your own family
- * (R-0350). */
+ * session is about a case, a personal session is about your own family
+ * (R-0350), and one by someone who is nobody in the family, a human coach,
+ * is about the family they are helping (R-0889). */
 function showPrompt(kind?: SessionKind): void {
   kind ??= sittings().find((s) => s.id === session)?.kind ?? SessionKind.Chat;
   if (kind === SessionKind.Note)
@@ -852,9 +858,14 @@ function showPrompt(kind?: SessionKind): void {
       `Talk to the coach about the ${familyTitle()} case. Who is in the family, and what brought them in?`,
       "You can also tap the mic on your keyboard and say it.",
     ]);
+  else if (store.current().diagram?.person_id == null)
+    chat.prompt("Tell the coach about this family", [
+      "Or paste your notes. The diagram above grows as you go.",
+      "You can also tap the mic on your keyboard and say it.",
+    ]);
   else
     chat.prompt("Tell your coach who is on your mind", [
-      "Start with a name and what has been going on with them. The coach asks what a coach asks, and the picture above grows as you talk.",
+      "Start with a name and what has been going on with them. The coach asks what a coach asks, and the diagram above grows as you talk.",
       "You can also tap the mic on your keyboard and say it.",
     ]);
 }
@@ -1062,6 +1073,8 @@ async function send(): Promise<void> {
   // sent while the coach replies, it waits in the box for the reply to end,
   // and never changes the reply under way (R-0636)
   if (inFlight) return chat.keep();
+  // notes too long for one part are priced first; a cancel leaves them in the box
+  if (!(await longNotes.ask(statement, attachment.picked.file))) return;
   await questions.sending(statement);
   chat.resetDraft();
   post(statement, attachment.take());
@@ -1176,6 +1189,23 @@ const STOPPED_KEPT = "Stopped; its changes stayed";
 
 let onTurn: string | null = null;
 
+const nextFrame = (): Promise<number> => new Promise((done) => requestAnimationFrame(done));
+
+/** The record and the sittings read again as a turn ends, drawn on a frame of
+ * their own so the turn never redraws twice in one frame (R-0898). */
+async function settleRecord(): Promise<boolean> {
+  const live = store.live();
+  const [timeline, sittings] = await Promise.all([
+    store.fetch(api.timeline),
+    store.fetch(api.sessionIndex),
+  ]);
+  if (timeline === null || sittings === null) return false;
+  await nextFrame();
+  if (!live()) return false;
+  store.update({ record: timeline, sittings });
+  return true;
+}
+
 function follow(turnId: string): void {
   if (onTurn === turnId) return;
   stopFollowing();
@@ -1214,7 +1244,7 @@ function follow(turnId: string): void {
   let broken = false;
   /** What the person said about the app, which the coach offered to send. */
   let offered: { kind: ReportKind; words: string } | null = null;
-  const step = (work: () => Promise<void> | void) => {
+  const enqueue = (work: () => Promise<void> | void) => {
     queue = queue
       .then(() => (broken || !live() ? undefined : work()))
       .catch((error) => {
@@ -1224,6 +1254,39 @@ function follow(turnId: string): void {
         chat.warn(UNDRAWN, () => void reload());
         reportError(error);
       });
+  };
+  // Each line lands with the change it made on the picture, the timeline and
+  // the lists, in one frame (R-0898). What it lit stays lit until the next
+  // message; edits drawn without a read of their own are lit with the next one.
+  let unlit: Made[] = [];
+  let gone: TimelineEvent[] = [];
+  const lock = new Lockstep<Timeline>(enqueue, {
+    frame: nextFrame,
+    read: () => store.fetch(api.timeline),
+    draw: (read, batch) => {
+      if (!live()) return;
+      // a removed event is gone from the record read back, so it is taken
+      // from the one on screen, to stay where it was in its colour
+      const removed = new Set(
+        batch.made
+          .filter((one) => one.kind === ItemKind.Event && one.touch === Touch.Remove)
+          .map((one) => Number(one.id)),
+      );
+      gone.push(...record().events.filter((e) => removed.has(e.id)));
+      unlit.push(...batch.made);
+      if (read) {
+        store.update({ record: read });
+        picture.light(unlit, gone);
+        unlit = [];
+        gone = [];
+      }
+      for (const line of batch.lines) opened().note(line);
+      for (const ids of batch.reads) picture.read(ids);
+    },
+  });
+  const step = (work: () => Promise<void> | void) => {
+    lock.close();
+    enqueue(work);
   };
 
   // a message held while the coach replied goes once the reply is drawn; a file
@@ -1235,27 +1298,25 @@ function follow(turnId: string): void {
   };
 
   const take = feed({
-    note: (line) => step(() => void opened().note(line)),
+    note: (line) => lock.line(line),
     notes: (notes) => step(() => opened().notes(notes)),
-    made: (items) =>
-      step(async () => {
-        // a removed event is gone from the record read back, so it is taken
-        // from the one on screen, to stay where it was in its colour
-        const removed = new Set(
-          items
-            .filter((one) => one.kind === ItemKind.Event && one.touch === Touch.Remove)
-            .map((one) => Number(one.id)),
-        );
-        const gone = record().events.filter((e) => removed.has(e.id));
-        if ((await load()) && items.length) picture.light(items, gone);
-      }),
-    read: (ids) => step(() => picture.read(ids)),
+    made: (items) => lock.made(items),
+    read: (ids) => lock.read(ids),
     show: (view) => step(() => shown(view)),
     go: (address) => step(() => navigate(address)),
     // offered once the reply is done, never over words still coming
     report: (kind, words) => step(() => void (offered = { kind, words })),
     text: (text) => step(() => void opened().append(text, (chip) => lens.aim(chip))),
     reset: () => step(() => void opened().reset()),
+    part: (k, n) => step(() => opened().part(k, n)),
+    // read aloud as the reply ends, never held behind a frame the page is
+    // still waiting to draw (R-0898)
+    speak: (statement) => {
+      if (broken || !live()) return;
+      chat.extend();
+      // a reply held for a vote is not read aloud: it would say which is the coach's
+      if (speak.checked && !chat.feedback()) speech.say(statement);
+    },
     done: (reply) =>
       last(async () => {
         // a stopped turn says nothing and its edits are taken back, so the
@@ -1264,20 +1325,17 @@ function follow(turnId: string): void {
           stopFollowing();
           chat.stopped(bubble?.bubble ?? null, reply.conflict ? STOPPED_KEPT : STOPPED);
           picture.untouch();
-          await store.refresh(Part.Record, Part.Sittings);
+          await settleRecord();
           return;
         }
         const said = opened();
         said.stamp(reply.statement_id);
         newest = reply.statement_id;
-        chat.extend();
         feedback();
-        // a reply held for a vote is not read aloud: it would say which is the coach's
-        if (speak.checked && !chat.feedback()) speech.say(reply.statement);
         said.settle(reply.statement, (chip) => lens.aim(chip));
         said.vote(turnId);
         stopFollowing();
-        if (!(await store.refresh(Part.Record, Part.Sittings))) return;
+        if (!(await settleRecord())) return;
         void notices.refresh();
         // What the message named stays lit after it is written: the spotlight
         // is the resting state of the picture, not a flourish while it types.

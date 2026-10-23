@@ -49,6 +49,8 @@ from btcopilot.schema import (
     QuestionState,
     RelationshipKind,
     VariableShift,
+    DATE_FORMS,
+    stated_date,
 )
 
 _log = logging.getLogger(__name__)
@@ -334,7 +336,10 @@ def schemas(coder: bool = False) -> list[dict]:
                     "id": {"type": "integer"},
                     "version": VERSION,
                     "kind": _enum_param(EventKind, means[prompts.ToolText.EventKind]),
-                    "date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "date": {
+                        "type": "string",
+                        "description": f"Only as far as the person said it: {DATE_FORMS}.",
+                    },
                     "end_date": {
                         "type": "string",
                         "description": means[prompts.ToolText.EndDate],
@@ -1240,7 +1245,8 @@ class Toolbox:
         return ("\n".join(lines) or "No events.", {"read": [e["id"] for e in events]})
 
     def _words(self, event_ids: set[int]) -> dict[int, str]:
-        """What the user said in the turn that first wrote each event."""
+        """What this user said in the turn that first wrote each event; another
+        user's sessions on the family are theirs alone, as in said_on."""
         turns = {}
         rows = Change.query.filter_by(diagram_id=self.diagram_id).order_by(Change.id)
         for row in rows:
@@ -1253,6 +1259,7 @@ class Toolbox:
             for s in Statement.query.join(Discussion).filter(
                 Statement.turn_id.in_(set(turns.values())),
                 Statement.speaker_id == Discussion.chat_user_speaker_id,
+                Discussion.user_id == self.user_id,
             )
         }
         return {event: said[turn] for event, turn in turns.items() if turn in said}
@@ -1375,9 +1382,10 @@ class Toolbox:
         if args.get("kind"):
             fields["kind"] = choice(EventKind, args["kind"], "event kinds").value
         if args.get("date"):
-            fields["dateTime"] = args["date"]
+            fields["dateTime"], precision = stated_date(args["date"])
+            fields["datePrecision"] = precision.value
         if args.get("end_date"):
-            fields["endDateTime"] = args["end_date"]
+            fields["endDateTime"], _ = stated_date(args["end_date"])
         if args.get("date_certainty"):
             fields["dateCertainty"] = choice(
                 DateCertainty, args["date_certainty"], "date certainties"
