@@ -1813,6 +1813,9 @@ button { font-family: inherit; }
 
 .overlay { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
 .overlay > * { pointer-events: auto; }
+/* a page of its own over the drawers and slide-overs (30), such as a card's
+   notes read whole */
+.overlay.above { z-index: 40; }
 
 /* Signing out is a state of the app, not leaving it: the shell stays and this
    covers it until someone signs in again. */

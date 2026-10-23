@@ -311,10 +311,13 @@ function said(eventId: number): { label: string; go: () => void } | null {
   };
 }
 
-/** A card's notes, whole, on a page of their own over everything; the cross
- * or a tap beside it goes back to the card. */
-const notes = new Sheet($("overlay"), "fn");
-$("overlay").addEventListener("click", (e) => {
+/** A card's notes, whole, on a page of their own over everything, the drawer
+ * the card sits in included; the cross or a tap beside it goes back to the
+ * card. */
+const above = el("div", "overlay above");
+document.querySelector(".app")!.append(above);
+const notes = new Sheet(above, "fn");
+above.addEventListener("click", (e) => {
   if ((e.target as Element).closest(".fs-sheet.fn .cardx, .fs-scrim.fn")) notes.lower();
 });
 document.addEventListener("keydown", (e) => {
