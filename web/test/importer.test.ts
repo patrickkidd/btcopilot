@@ -4,9 +4,24 @@ import type { Person } from "../src/types";
 vi.stubGlobal("window", { BOOTSTRAP: { user: { username: "ann", pro: false } } });
 
 const { Part, store } = await import("../src/store");
-const { ADD_CODES, Answer, ownStep, Pick, bring, fromDrop, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
+const { ADD_CODES, Answer, CANNOT_BRING, NO_DIAGRAM, ownStep, Pick, bring, fromDrop, UNREAD, ZIP_FIRST, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
   "../src/importer"
 );
+
+/** The toasts the page shows, by their words. */
+function toasts(): () => string[] {
+  const made: { className: string; textContent: string }[] = [];
+  vi.stubGlobal("document", {
+    querySelector: () => ({ append() {} }),
+    createElement: () => {
+      const node = { className: "", textContent: "", classList: { add() {}, remove() {} }, append() {}, remove() {} };
+      made.push(node);
+      return node;
+    },
+  });
+  vi.stubGlobal("window", { setTimeout: () => 0 });
+  return () => made.filter((one) => one.className === "toast").map((one) => one.textContent);
+}
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -30,10 +45,45 @@ const dropped = (item: unknown, files: File[] = []) =>
 // R-0899
 it("finds the diagram.pickle in a dropped .fd folder and sends it under the folder's name", async () => {
   const pickle = new File(["\x80\x03}q"], PICKLE);
-  const sent = await fromDrop(dropped(folder("Lund family.fd", [new File(["x"], "image.png"), pickle])));
-  expect(sent!.name).toBe("Lund family.fd");
-  expect(await sent!.text()).toBe(await pickle.text());
-  expect(await fromDrop(dropped(folder("Photos", [new File(["x"], "image.png")])))).toBeNull();
+  // the folder is also in the drop's files, as a file of no bytes
+  const sent = (await fromDrop(
+    dropped(folder("Lund family.fd", [new File(["x"], "image.png"), pickle]), [new File([], "Lund family.fd")]),
+  )) as File;
+  expect(sent.name).toBe("Lund family.fd");
+  expect(await sent.text()).toBe(await pickle.text());
+  expect(await fromDrop(dropped(folder("Photos", [new File(["x"], "image.png")])))).toBe(NO_DIAGRAM);
+});
+
+// R-0899
+it("asks for a zip when a browser hands the .fd package over as a file it cannot open", async () => {
+  expect(await fromDrop(dropped({ name: "Lund family.fd", isFile: true }, [new File([], "Lund family.fd")]))).toBe(ZIP_FIRST);
+  expect(await fromDrop(dropped(null, [new File([], "Lund family.fd")]))).toBe(ZIP_FIRST);
+});
+
+// R-0899
+it("takes a dropped zip as it is, and says so when a folder cannot be read", async () => {
+  const zip = new File(["PK"], "Lund family.fd.zip");
+  expect(await fromDrop(dropped({ name: zip.name, isFile: true }, [zip]))).toBe(zip);
+  const unreadable = {
+    name: "Lund family.fd",
+    isDirectory: true,
+    createReader: () => ({
+      readEntries: (_done: unknown, fail: (error: DOMException) => void) => fail(new DOMException("denied", "NotReadableError")),
+    }),
+  };
+  expect(await fromDrop(dropped(unreadable))).toBe(UNREAD);
+});
+
+// R-0899
+it("says why nothing is sent for a drop it refuses, and that a bring-in broke when one does", async () => {
+  const said = toasts();
+  const { one } = importer(null);
+  one.pick(ZIP_FIRST);
+  vi.spyOn(one, "send").mockRejectedValue(new TypeError("store.open broke"));
+  const broke = new Promise((done) => process.once("unhandledRejection", done));
+  one.pick(new File(["PK"], "Lund family.zip"));
+  expect(String(await broke)).toContain("store.open broke");
+  expect(said()).toEqual([ZIP_FIRST, CANNOT_BRING]);
 });
 
 /** A file as a browser's picker gives it: with its path inside the folder

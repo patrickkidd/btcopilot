@@ -54,13 +54,28 @@ async function inside(folder: FileSystemDirectoryEntry): Promise<File[]> {
   );
 }
 
-/** What was dropped: a folder's diagram.pickle, or a file as it is. The drop's
- * items are read at once, since they are gone once the event is over. */
-export function fromDrop(data: DataTransfer): Promise<File | null> {
-  const entry = data.items[0]?.webkitGetAsEntry();
-  if (entry?.isDirectory)
-    return inside(entry as FileSystemDirectoryEntry).then((files) => fromFolder(entry.name, files));
-  return Promise.resolve(data.files[0] ?? null);
+export const ZIP_FIRST = "Zip the .fd folder first, or pick it with the button.";
+export const UNREAD = "Could not read that folder.";
+
+/** What was dropped: a folder's diagram.pickle, a file as it is, or why
+ * neither can be sent. The drop's items are read before anything waits, since
+ * they are gone once the event is over. A desktop file is a macOS package: a
+ * browser may hand it over as a folder, or as a file of no bytes the page
+ * cannot open. */
+export async function fromDrop(data: DataTransfer): Promise<File | string> {
+  const entry = data.items[0]?.webkitGetAsEntry() ?? null;
+  const file = data.files[0] ?? null;
+  if (entry?.isDirectory) {
+    try {
+      return fromFolder(entry.name, await inside(entry as FileSystemDirectoryEntry)) ?? NO_DIAGRAM;
+    } catch (error) {
+      if (!(error instanceof DOMException)) throw error;
+      console.warn(error);
+      return UNREAD;
+    }
+  }
+  if (/\.fd$/i.test(entry?.name ?? file?.name ?? "")) return ZIP_FIRST;
+  return file ?? NO_DIAGRAM;
 }
 
 /** Why a file is not sent at all, or null when it may be. */
@@ -227,11 +242,16 @@ export class Importer {
     this.sheet.show(codesStep(made.imported));
   }
 
-  private pick(file: File | null): void {
+  /** A file to send, or the sentence saying why there is none. An error
+   * anywhere after is said, and still thrown for the console. */
+  pick(file: File | string | null): void {
     if (this.sending) return;
-    const refused = refusal(file);
+    const refused = typeof file === "string" ? file : refusal(file);
     if (refused) return toast(refused, true);
-    void this.send(file!);
+    void this.send(file as File).catch((error) => {
+      toast(CANNOT_BRING, true);
+      throw error;
+    });
   }
 
   async send(file: File): Promise<void> {
@@ -271,11 +291,14 @@ export class Importer {
       });
 
     const files = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
-    page.addEventListener("dragover", (e) => {
-      if (!files(e)) return;
-      e.preventDefault();
-      page.classList.add("dropping");
-    });
+    // the drop is only the page's when both the entering and every move over
+    // it were taken from the browser
+    for (const kind of ["dragenter", "dragover"])
+      page.addEventListener(kind, (e) => {
+        if (!files(e as DragEvent)) return;
+        e.preventDefault();
+        page.classList.add("dropping");
+      });
     page.addEventListener("dragleave", (e) => {
       if (!page.contains(e.relatedTarget as Node | null)) page.classList.remove("dropping");
     });
@@ -283,7 +306,13 @@ export class Importer {
       if (!files(e)) return;
       e.preventDefault();
       page.classList.remove("dropping");
-      void fromDrop(e.dataTransfer!).then((file) => this.pick(file));
+      void fromDrop(e.dataTransfer!).then(
+        (file) => this.pick(file),
+        (error) => {
+          toast(UNREAD, true);
+          throw error;
+        },
+      );
     });
     return row;
   }
