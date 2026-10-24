@@ -198,3 +198,45 @@ def test_by_name_lists_only_the_cases_nobody_on_is_the_person_and_regroups_them(
     owner.person_id = 1
     db.session.commit()
     assert regroup(flask_app, "--by-name") == []
+
+
+def drawn_names(diagram) -> list[str]:
+    db.session.expire_all()
+    return [c["title"] for c in diagram.get_diagram_data().drawn_clusters()]
+
+
+YOURS = ClusterListResponse(
+    clusters=[ModelCluster(eventIds=[10, 11, 12, 13, 14, 15], name="Your hard year", reason="r")]
+)
+HERS = ClusterListResponse(
+    clusters=[ModelCluster(eventIds=[10, 11, 12, 13, 14, 15], name="Her hard year", reason="r")]
+)
+
+
+def test_a_regroup_by_name_leaves_only_the_new_periods_and_one_undo_brings_back_the_old(
+    flask_app, family
+):
+    # R-0935, R-0850, R-0845
+    with patch("btcopilot.metered.gemini_structured_sync", return_value=parsed(YOURS)):
+        regroup(flask_app, "--apply")
+    assert drawn_names(family) == ["Your hard year, 1994"]
+    family.access_right(family.user).person_id = None
+    db.session.commit()
+    with patch("btcopilot.metered.gemini_structured_sync", return_value=parsed(HERS)):
+        [done] = regroup(flask_app, "--by-name", "--apply")
+    assert (drawn_names(family), done["regrouped"]) == (["Her hard year, 1994"], 1)
+    undone = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(family.id), str(done["change"]), "--yes"]
+    )
+    assert undone.exit_code == 0, undone.output
+    assert drawn_names(family) == ["Your hard year, 1994"]
+
+
+def test_a_regroup_with_no_gemini_key_says_so_in_one_sentence(flask_app, family, monkeypatch):
+    # R-0772
+    monkeypatch.setenv("BTCOPILOT_GEMINI_ENDPOINT", "developer")
+    monkeypatch.delenv("GOOGLE_GEMINI_API_KEY", raising=False)
+    result = flask_app.test_cli_runner().invoke(admin, ["diagrams", "regroup", "--apply"])
+    assert result.exit_code != 0
+    assert "The Gemini key, GOOGLE_GEMINI_API_KEY, is not set where this runs" in result.output
+    assert "Traceback" not in result.output and "KeyError" not in result.output

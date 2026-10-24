@@ -13,6 +13,7 @@ from btcopilot.admin.diagrams import find
 from btcopilot.admin.guard import writes
 from btcopilot.admin.output import rows_option
 from btcopilot.extensions import db
+from btcopilot.llmutil import MissingKey
 from btcopilot.models import Diagram, Observation, ObservationKind
 
 TURN = "regroup:{}:{}"
@@ -84,22 +85,27 @@ def regroup(diagram_id, apply, by_name):
         row = {
             "diagram": diagram.id,
             "why": reason.value,
-            "groups": len(diagram.get_diagram_data().clusters),
+            # the clusters the page draws; one set aside stays stored, hidden
+            "groups": len(diagram.get_diagram_data().drawn_clusters()),
             "regrouped": None,
             "change": None,
             "failed": None,
         }
         if apply:
             turn_id = TURN.format(diagram.id, stamp)
-            done = clusters.sync(
-                diagram.id,
-                turn_id=turn_id,
-                user_id=diagram.user_id,
-                force=True,
-                fresh=True,
-            )
+            try:
+                done = clusters.sync(
+                    diagram.id,
+                    turn_id=turn_id,
+                    user_id=diagram.user_id,
+                    force=True,
+                    fresh=True,
+                )
+            except MissingKey as missing:
+                db.session.rollback()
+                raise click.ClickException(str(missing))
             db.session.commit()
-            row["regrouped"] = len(diagram.get_diagram_data().clusters)
+            row["regrouped"] = len(diagram.get_diagram_data().drawn_clusters())
             row["change"] = done.change.id if done else None
             row["failed"] = any(
                 "setAside" not in o.detail
