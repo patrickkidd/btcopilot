@@ -1,5 +1,5 @@
 import { esc, el, flash, shift } from "./dom";
-import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./chips";
+import { askedChip, chipOf, drawn, face, LEAD, Lead, pill, token, tokenize } from "./chips";
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
@@ -96,10 +96,6 @@ function layout(pieces: Piece[]): Written {
  * is stored, the amber words before then. */
 const asked = (ask: string, statementId: number | null) =>
   statementId === null ? esc(ask) : askedChip(statementId, ask);
-
-/** Words and chips, each chip drawn by `chip`; never a bracket of the markup. */
-export const drawn = (pieces: Piece[], chip: (chip: Chip) => string): string =>
-  pieces.map((p) => ("chip" in p ? chip(p.chip) : esc(p.text))).join("");
 
 /** A whole coach reply as it stands when nothing is typing: the words, the
  * closing question in amber, and the offers in their own row. A reopened

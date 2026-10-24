@@ -6,6 +6,7 @@ import {
   eventsOf,
   group,
   names,
+  quote,
   telling,
   versionLine,
   when,
@@ -390,8 +391,7 @@ export class Meeting {
     const line =
       structure || !item.line
         ? ""
-        : `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
-          `&ldquo;${esc(item.line.text)}&rdquo;</div>`;
+        : quote(item.line);
     return (
       `<div class="drow${closable ? " hasx" : ""}" data-item="${item.id}">` +
       (closable ? closeX() : "") +

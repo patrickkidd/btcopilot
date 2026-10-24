@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { Feature, tap } from "./track";
+import { asWritten, drawn, tokenize } from "./chips";
 import { conceptLinks, conceptsOf } from "./concepts";
 import { esc, el, stepBtn, type Title } from "./dom";
 import {
@@ -28,6 +29,7 @@ import {
   type Person,
   type Opinion,
   type TimelineEvent,
+  type TranscriptLine,
   type Vote,
 } from "./types";
 
@@ -285,6 +287,13 @@ export function group(
   return [...found.values()];
 }
 
+/** A line of the conversation quoted on the vote or in the meeting, who said
+ * it and their words, the coach's markup drawn as the chat draws it rather
+ * than as brackets (R-0072). */
+export const quote = (line: TranscriptLine): string =>
+  `<div class="quote"><b>${esc(line.who)}:</b> ` +
+  `&ldquo;${drawn(tokenize(line.text), asWritten)}&rdquo;</div>`;
+
 /** The transcript line one version was written from, under that version. A
  * version with no line was not written from anything said: the coach replayed
  * it, or somebody typed it into the editor (R-0278). */
@@ -295,10 +304,7 @@ export function versionLine(opinion: Opinion, openable: boolean): string {
     ? `<div><button class="chip" type="button" ` +
       `data-said="${opinion.line.statement_id}">open in transcript</button></div>`
     : "";
-  return (
-    `<div class="quote"><b>${esc(opinion.line.who)}:</b> ` +
-    `&ldquo;${esc(opinion.line.text)}&rdquo;</div>${open}`
-  );
+  return quote(opinion.line) + open;
 }
 
 export class Ballot {
@@ -462,8 +468,7 @@ export class Ballot {
     const line =
       structure || !item.line
         ? ""
-        : `<div class="quote"><b>${esc(item.line.who)}:</b> ` +
-          `&ldquo;${esc(item.line.text)}&rdquo;</div>` +
+        : quote(item.line) +
           `<div><button class="chip" id="bl-line" type="button">open in transcript</button></div>`;
     const dropped = vote?.choice === VoteChoice.Drop ? " on" : "";
     return (
