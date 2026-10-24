@@ -102,6 +102,23 @@ def test_a_qt_date_reads_as_qt_did():
     ]
 
 
+@pytest.mark.parametrize(
+    "spec, more, zone",
+    [(0, (), ""), (1, (), "Z"), (2, (-12600,), "-03:30"), (2, (), ""), (3, (), "")],
+    ids=["local", "utc", "offset", "offset not pickled", "time zone"],
+)
+def test_every_qt_time_spec_reads(spec, more, zone):
+    # R-0913
+    [read] = diagramjson.loads(dumps([Qt("QDateTime", 2001, 2, 3, 4, 5, 6, 7, spec, *more)]))
+    assert read.v == f"2001-02-03T04:05:06.007{zone}"
+
+
+def test_a_time_spec_qt_does_not_have_is_refused():
+    # R-0913
+    with pytest.raises(ValueError, match="Qt time spec 9"):
+        diagramjson.loads(dumps([Qt("QDateTime", 2001, 2, 3, 4, 5, 6, 7, 9)]))
+
+
 def test_a_pickled_row_written_again_reads_back():
     # R-0913, R-0422
     data = diagramjson.loads(dumps(PICKLED))

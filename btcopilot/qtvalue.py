@@ -18,7 +18,9 @@ TRUTH = {
 }
 # The Qt formats the app reads a date with, as the length of the ISO text.
 FORMATS = {"yyyy-MM-dd": 10, "yyyy-MM-ddTHH:mm:ss": 19}
-ZONES = {0: "", 1: "Z"}
+# Qt.TimeSpec: local time, UTC, an offset from UTC, a named time zone (read
+# as local time, since the file does not carry the zone's rules).
+LOCAL, UTC, OFFSET, ZONE = 0, 1, 2, 3
 
 
 @dataclass(frozen=True)
@@ -49,8 +51,21 @@ def _time(h, mi, s, ms) -> str:
     return f"{h:02d}:{mi:02d}:{s:02d}.{ms:03d}" if h >= 0 else ""
 
 
-def _datetime(y, m, d, h, mi, s, ms, spec) -> str:
-    return f"{_date(y, m, d)}T{_time(h, mi, s, ms)}{ZONES[spec]}" if y else ""
+def _zone(spec: int, offset: int | None) -> str:
+    """The ISO suffix for a Qt time spec. PyQt pickles no offset, so an offset
+    spec without one keeps its wall-clock time, as local time does."""
+    if spec in (LOCAL, ZONE) or (spec == OFFSET and offset is None):
+        return ""
+    if spec == UTC:
+        return "Z"
+    if spec == OFFSET:
+        sign, minutes = "-" if offset < 0 else "+", abs(offset) // 60
+        return f"{sign}{minutes // 60:02d}:{minutes % 60:02d}"
+    raise ValueError(f"Qt time spec {spec} is not one Qt has")
+
+
+def _datetime(y, m, d, h, mi, s, ms, spec, offset=None) -> str:
+    return f"{_date(y, m, d)}T{_time(h, mi, s, ms)}{_zone(spec, offset)}" if y else ""
 
 
 SIP = {
