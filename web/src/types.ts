@@ -606,6 +606,10 @@ export interface Diagram {
   /** Who the user is in the diagram, or null for someone who is not in the
    * family, such as a human coach (FD-387). */
   person_id: number | null;
+  /** Whether someone on the diagram is the person it is about, so what that
+   * person said is "you said" rather than said by name; only false says it by
+   * name. */
+  addressed?: boolean;
 }
 
 /** Whose diagram it is, as the diagram list shows it beside the name: "you"

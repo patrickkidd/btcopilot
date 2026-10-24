@@ -183,7 +183,7 @@ export class CaseReport implements View {
     this.column.hidden = !wide;
     let v;
     try {
-      v = caseView(opened.record, opened.sittings, subjectName(opened.record));
+      v = caseView(opened.record, opened.sittings, subjectName(opened.record), opened.diagram!.addressed !== false);
     } catch (error) {
       console.error(error);
       this.body.innerHTML = `<p class="fault">The case report cannot be drawn from this diagram: ${esc((error as Error).message)}</p>`;
