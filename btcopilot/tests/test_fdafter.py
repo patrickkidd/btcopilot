@@ -2,6 +2,7 @@
 checked and built in the request, its record mailed by the worker, and its
 clusters grouped once the person says who the case is about."""
 
+import datetime
 import io
 import json
 import pickle
@@ -505,3 +506,14 @@ def test_the_price_read_cost_counts_what_a_coach_call_writes(test_user):
     written = fdafter.coding_cost(test_user.id, diagram)
     assert written["low"] == round(float(cost(model, Spent(input=reading, output=4000))), 2)
     assert written["low"] > unwritten["low"]
+
+
+def test_the_cost_reads_only_the_last_thirty_days_of_coach_calls(test_user):
+    # R-0902, R-0903
+    diagram = with_events(test_user, uncoded=100)
+    unwritten = fdafter.coding_cost(test_user.id, diagram)
+    calls(test_user.id, turns=1, per_turn=3, model="another-model")
+    old = datetime.datetime.utcnow() - datetime.timedelta(days=fdafter.COST_DAYS + 1)
+    ModelCall.query.update({"output_tokens": 4000, "created_at": old})
+    db.session.commit()
+    assert fdafter.coding_cost(test_user.id, diagram) == unwritten

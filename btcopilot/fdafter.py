@@ -9,15 +9,14 @@ change log the import's write already satisfies (R-0825), and coverage is
 worked out from the diagram each time it is read.
 """
 
-import collections
 import datetime
 import io
-import statistics
 import pickle
 import uuid
 import zipfile
 from pathlib import Path
 
+from sqlalchemy import func
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from btcopilot import (
@@ -180,36 +179,51 @@ def coding_cost(user_id: int, diagram: Diagram) -> dict:
     [Oracle: R-0902]. With RECENT_CALLS or more of its calls in the last
     COST_DAYS days the low end is the median call times the median calls a
     turn made; with fewer, the model's prices on this diagram's coach prompt
-    and the median a coach call of any model writes (OUTPUT_TOKENS with none),
-    once per such turn. The high end is what coding each of the diagram's
+    and the median a coach call of any model wrote in those days
+    (OUTPUT_TOKENS with none), once per such turn. The high end is what coding each of the diagram's
     events that can take codes and have none costs, at PER_EVENT_COST, since
     the coach codes in turns that end on their own (R-0936)."""
     model = resolve_model(setting.read(SettingKey.CoachModel, user_id))
     since = datetime.datetime.utcnow() - datetime.timedelta(days=COST_DAYS)
-    rows = ModelCall.query.filter(
-        ModelCall.purpose == Purpose.Coach,
-        ModelCall.model == model,
-        ModelCall.created_at >= since,
-    ).all()
-    per_turn = collections.Counter(row.turn_id for row in rows)
-    steps = statistics.median(per_turn.values()) if per_turn else 1
-    if len(rows) >= RECENT_CALLS:
-        low = statistics.median(float(row.cost_usd) for row in rows) * steps
+    recent = (ModelCall.purpose == Purpose.Coach, ModelCall.created_at >= since)
+    calls = ModelCall.query.filter(*recent, ModelCall.model == model)
+    per_turn = (
+        db.session.query(func.count().label("calls"))
+        .filter(*recent, ModelCall.model == model)
+        .group_by(ModelCall.turn_id)
+        .subquery()
+    )
+    steps = _median(db.session.query(per_turn.c.calls), per_turn.c.calls) or 1
+    if calls.count() >= RECENT_CALLS:
+        low = float(_median(calls, ModelCall.cost_usd)) * steps
     else:
         words = prompts.get_agent_prompt(
             record=recordtext.outline(diagram.get_diagram_data(), diagram.version, None)
         )
-        said = [
-            row.output_tokens
-            for row in ModelCall.query.filter(ModelCall.purpose == Purpose.Coach)
-        ]
-        output = int(statistics.median(said)) if said else OUTPUT_TOKENS
+        said = _median(ModelCall.query.filter(*recent), ModelCall.output_tokens)
+        output = OUTPUT_TOKENS if said is None else int(said)
         call = float(
             cost(model, Spent(input=len(words) // CHARS_PER_TOKEN, output=output))
         )
         low = call * steps
     high = uncoded(diagram.get_diagram_data()) * PER_EVENT_COST
     return {"low": round(min(low, high), 2), "high": round(high, 2)}
+
+
+def _median(query, column):
+    """The median of one column over a query, read as its one or two middle
+    rows rather than every row; None when there are none."""
+    count = query.count()
+    if not count:
+        return None
+    middle = [
+        value
+        for (value,) in query.with_entities(column)
+        .order_by(column)
+        .offset((count - 1) // 2)
+        .limit(2 - count % 2)
+    ]
+    return sum(middle) / len(middle)
 
 
 def uncoded(data) -> int:
