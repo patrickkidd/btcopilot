@@ -915,13 +915,17 @@ test.describe("the Auditor's Coding Guide row", () => {
     await expect(page.locator("#title")).toHaveText("Auditor's Coding Guide");
     expect(await frame.getAttribute("src")).toBe("/app/theory");
 
-    // back steps through what was read inside the guide before it leaves it
+    // back steps through what was read inside the guide before it leaves it,
+    // and the title row names the page showing at every step
     const at = async () => new URL((await (await frame.elementHandle())!.contentFrame())!.url()).pathname;
-    await page.frameLocator('.sn-pane.in iframe[title="Auditor\'s Coding Guide"]')
-      .locator('a[href^="/app/theory/"]').first().click();
+    const inside = page.frameLocator('.sn-pane.in iframe[title="Auditor\'s Coding Guide"]');
+    await inside.locator('a[href^="/app/theory/"]').first().click();
     await expect.poll(at).not.toBe("/app/theory");
+    const followed = await inside.locator("h1").first().textContent();
+    await expect(page.locator("#title")).toHaveText(followed!);
     await page.locator("#settings-back").click();
     await expect.poll(at).toBe("/app/theory");
+    await expect(page.locator("#title")).toHaveText("Auditor's Coding Guide");
     await expect(frame).toBeVisible();
 
     await page.locator("#settings-back").click();

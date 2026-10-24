@@ -153,8 +153,8 @@ test.describe("the concept pages, read inside the app", () => {
       route.fulfill({
         contentType: "text/html",
         body: route.request().url().endsWith("/anxiety")
-          ? "<h1>Anxiety</h1>"
-          : '<h1>Symptom</h1><a href="/app/theory/anxiety">anxiety</a>',
+          ? "<title>Anxiety (A)</title><h1>Anxiety (A)</h1>"
+          : '<title>Symptom (S)</title><h1>Symptom (S)</h1><a href="/app/theory/anxiety">anxiety</a>',
       }),
     );
     const info = page.locator(".titlerow #coding-info");
@@ -175,12 +175,17 @@ test.describe("the concept pages, read inside the app", () => {
     await expect(body).toBeHidden();
     expect(page.context().pages()).toHaveLength(1);
 
-    // back steps through what was read inside the page before it leaves it
+    // back steps through what was read inside the page before it leaves it,
+    // and the title row names the page showing at every step
     const inside = page.frameLocator('#rules-screen > iframe[title="Symptom"]');
+    await expect(inside.locator("h1")).toHaveText("Symptom (S)");
+    await expect(page.locator("#rules-title")).toHaveText("Symptom");
     await inside.locator("a").click();
-    await expect(inside.locator("h1")).toHaveText("Anxiety");
+    await expect(inside.locator("h1")).toHaveText("Anxiety (A)");
+    await expect(page.locator("#rules-title")).toHaveText("Anxiety (A)");
     await page.locator("#rules-close").click();
-    await expect(inside.locator("h1")).toHaveText("Symptom");
+    await expect(inside.locator("h1")).toHaveText("Symptom (S)");
+    await expect(page.locator("#rules-title")).toHaveText("Symptom");
     await expect(frame).toBeVisible();
 
     await page.locator("#rules-close").click();

@@ -234,7 +234,7 @@ export class Settings {
       const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act as Asked | undefined;
       if (act) this.answer(act);
     });
-    const frame = guideFrame(INDEX_URL, GUIDE);
+    const frame = guideFrame(INDEX_URL, GUIDE, (title) => this.rename(this.literature, title));
     frame.id = "literature";
     this.literature = { title: GUIDE, screen: frame, at: address(Place.Literature) };
     this.back.hidden = true;
@@ -299,6 +299,16 @@ export class Settings {
       this.replaceTop();
     } else await this.raise();
     for (const page of path) this.push(page);
+  }
+
+  /** A screen of the app's own names itself again, as the guide does when a
+   * link in it is followed. */
+  private rename(sub: Sub, title: string): void {
+    sub.title = title;
+    const entry = this.stack.find((one) => one.page === sub);
+    if (!entry) return;
+    entry.title = title;
+    if (entry === this.stack.at(-1)) this.retitle();
   }
 
   /** Down the stack to a screen on it, the way its back chevron goes. */

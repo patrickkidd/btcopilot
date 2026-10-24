@@ -75,7 +75,7 @@ export class Rules {
   }
 
   private open(href: string, name: string): void {
-    this.page = guideFrame(href, name);
+    this.page = guideFrame(href, name, (title) => (this.title.textContent = title));
     this.body.after(this.page);
     this.body.hidden = true;
     this.title.textContent = name;
