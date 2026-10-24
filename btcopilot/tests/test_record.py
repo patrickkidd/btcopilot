@@ -1250,3 +1250,29 @@ def test_a_question_with_an_id_of_the_wrong_shape_is_refused_from_any_author(sub
                 author=author,
                 turn_id="t9",
             )
+
+
+def test_coding_an_imported_noted_event_into_a_shift_keeps_its_long_title(subscriber):
+    # R-0907, R-0681
+    diagram = _diagram(subscriber.user, RULES)
+    long = "Moved to the coast after the mill shut down"
+    noted = {**SHIFT, "id": 40, "kind": "noted", "title": long, "description": long}
+    noted.pop("anxiety")
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Event, "item_id": 40, "field": None, "after": noted}],
+        author=Author.Pro,
+        turn_id="fd-import:k1",
+    )
+    _write(diagram, ItemKind.Event, 40, {"kind": "shift", "anxiety": "up"})
+    [kept] = [e for e in diagram.get_diagram_data().events if e["id"] == 40]
+    assert (kept["kind"], kept["title"]) == ("shift", long)
+
+
+def test_a_change_of_kind_still_refuses_a_title_naming_its_own_person(subscriber):
+    # R-0457, R-0907
+    noted = {**SHIFT, "id": 40, "kind": "noted", "title": "Ada moved to the coast", "description": "Moved away"}
+    noted.pop("anxiety")
+    diagram = _diagram(subscriber.user, {**RULES, "events": [*RULES["events"], noted]})
+    with pytest.raises(record.Invalid, match="names Ada"):
+        _write(diagram, ItemKind.Event, 40, {"kind": "shift", "anxiety": "up"})

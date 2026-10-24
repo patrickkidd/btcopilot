@@ -902,12 +902,18 @@ def _moves(data: dict, deltas: list[dict], long_titles: bool = False):
     title (R-0681), a shift says which way something moved, and only a shift
     carries a move: a birth, marriage or death is not itself a shift (R-0037,
     R-0364, R-0375). Checked on the events this write touches, the way the cluster floor is."""
-    # a title is checked on the write that sets it, so an event kept with a
-    # long title from an import takes edits to its other fields
+    # a title's length is checked on the write that sets it, so an event kept
+    # with a long title from an import takes edits to its other fields and a
+    # change of kind [Oracle: R-0907]; a kind change still needs some title
     titled = {
         str(d["item_id"])
         for d in deltas
-        if d["item_kind"] == ItemKind.Event.value and d["field"] in (None, "title", "kind")
+        if d["item_kind"] == ItemKind.Event.value and d["field"] in (None, "title")
+    }
+    rekinded = {
+        str(d["item_id"])
+        for d in deltas
+        if d["item_kind"] == ItemKind.Event.value and d["field"] == "kind"
     }
     for event_id in _touched(deltas):
         event = _find(data, ItemKind.Event, event_id)
@@ -921,8 +927,11 @@ def _moves(data: dict, deltas: list[dict], long_titles: bool = False):
                 f"The {EventKind(kind).menuLabel().lower()} event had no words saying what happened.",
             )
         words = len((event.get("title") or "").split())
-        if event_id in titled and kind in WORDED_KINDS and not (
-            TITLE_WORDS[0] <= words <= TITLE_WORDS[1] or (long_titles and words)
+        if kind in WORDED_KINDS and (
+            event_id in titled
+            and not (TITLE_WORDS[0] <= words <= TITLE_WORDS[1] or (long_titles and words))
+            or event_id in rekinded
+            and not words
         ):
             raise Invalid(
                 f"event {event_id} is a {kind} event and needs a title: a "
