@@ -416,7 +416,7 @@ def test_the_most_a_yes_costs_is_ten_cents_for_each_event_left_to_code(test_user
     # R-0902, R-0903, R-0936
     diagram = with_events(test_user, uncoded=22, coded=3)
     assert fdafter.uncoded(diagram.get_diagram_data()) == 22
-    assert fdafter.coding_cost(test_user.id, diagram)["high"] == 2.2
+    assert fdafter.coding_cost(test_user.id, diagram)["high"] == 0.35
 
 
 def test_the_least_a_yes_costs_is_read_from_the_models_own_turns(test_user):
@@ -425,13 +425,13 @@ def test_the_least_a_yes_costs_is_read_from_the_models_own_turns(test_user):
     model = resolve_model(setting.read(SettingKey.CoachModel, test_user.id))
     costs = calls(test_user.id, turns=5, per_turn=5, model=model)
     said = fdafter.coding_cost(test_user.id, diagram)
-    assert said == {"low": round(statistics.median(costs) * 5, 2), "high": 3.0}
+    assert said == {"low": min(round(statistics.median(costs) * 5, 2), 0.48), "high": 0.48}
 
 
 def test_the_least_a_yes_costs_is_never_above_the_most(test_user):
     # R-0902, R-0903
     said = fdafter.coding_cost(test_user.id, with_events(test_user, uncoded=1))
-    assert said["low"] <= said["high"] == 0.1
+    assert said["low"] <= said["high"] == 0.02
 
 
 def test_the_price_read_cost_counts_what_a_coach_call_writes(test_user):

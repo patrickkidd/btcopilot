@@ -49,11 +49,10 @@ RECENT_CALLS = 20
 CHARS_PER_TOKEN = 4
 # What a coach call writes, when the ledger holds no coach call to read it from.
 OUTPUT_TOKENS = 800
-# Measured 2026-10-24 on a free subscription run of the coach's coding turn
-# over an imported diagram: $2.22 for 22 coded events without prompt caching
-# ($1.26 with it), about ten cents an event, the uncached figure kept so the
-# high end is not understated.
-PER_EVENT_COST = 0.10
+# Measured 2026-10-24 on the third free subscription run: the coach's first
+# coding pass over the clinic case cost $1.23 without prompt caching for its 78
+# events that can take codes and had none.
+PER_EVENT_COST = 0.016
 CODABLE = (EventKind.Noted.value, EventKind.Shift.value)
 CODES = ("symptom", "anxiety", "functioning", "relationship")
 # The first bytes of a zip, and of a pickle the desktop writes (protocol 2 on).
