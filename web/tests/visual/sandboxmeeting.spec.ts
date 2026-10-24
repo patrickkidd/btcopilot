@@ -1,9 +1,8 @@
-import { expect, test } from "./fixtures";
+import { test } from "./fixtures";
 import { execSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { walker } from "./sandbox";
-import { flask, stateFor, username } from "./setup";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -38,7 +37,7 @@ test.describe(() => {
   );
   test.describe.configure({ timeout: 600_000 });
 
-  // R-0257, R-0342
+  // R-0257, R-0342, R-0541, R-0567
   test("the meeting and the result: every item decided, then ratified", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,
@@ -53,6 +52,37 @@ test.describe(() => {
         history.pushState(null, "", at);
         dispatchEvent(new PopStateEvent("popstate"));
       }, to);
+    // A concept link under a code opens its page inside the app, never a new
+    // page or tab, and back returns to the same screen as it was.
+    const concept = async (screen: string) => {
+      const link = page.locator(`${screen} .concepts a`).first();
+      check(await link.isVisible(), `${screen}: a code carries a concept link`);
+      const title = await text("#title");
+      const word = (await link.innerText()).trim();
+      await link.click();
+      const frame = page.locator("#rules-screen > iframe");
+      await frame.waitFor();
+      // Read once the page has its fonts, so going back cuts nothing off.
+      const inner = (await frame.elementHandle())!.contentFrame();
+      const loaded = (await inner)!;
+      await loaded.waitForLoadState("networkidle");
+      const heading = await loaded
+        .locator("h1")
+        .first()
+        .innerText()
+        .catch(() => "");
+      say(`${screen}: "${word}" opened "${heading}"`);
+      check(
+        heading.toLowerCase().includes(word.toLowerCase()),
+        `${screen}: the concept's page opens with its heading`,
+      );
+      check(!(await visible(screen)), `${screen}: the page stands in for the screen`);
+      check(page.context().pages().length === 1, `${screen}: no new page or tab`);
+      await page.locator("#rules-close").click();
+      await page.locator("#rules-screen > iframe").waitFor({ state: "detached" });
+      await page.locator(screen).waitFor();
+      check((await text("#title")) === title, `${screen}: back returns to the same title`);
+    };
 
 
     // ── 1. the table, with the vote open ──────────────────────────────────
@@ -61,6 +91,13 @@ test.describe(() => {
     // keeps a stream open, so the network never goes idle.
     await page.goto(path, { waitUntil: "load" });
     await page.locator("#task-screen").waitFor();
+
+    // ── the vote: a concept link opens inside the app ─────────────────────
+    await go(`/app/vote/${cut}`);
+    await page.locator("#ballot-screen").waitFor();
+    await page.waitForTimeout(1200);
+    await concept("#ballot-screen");
+
     await go("/app/account/meeting");
     await page.locator("#agenda-screen").waitFor();
     await page.waitForTimeout(1200);
@@ -79,6 +116,7 @@ test.describe(() => {
     await page.waitForTimeout(1800);
     check(await visible("#meeting-screen"), "the meeting opens as its own screen");
     check(/ratify$/.test(await text("#title")), "the title says ratify");
+    await concept("#meeting-screen");
     const rows = await page.locator(".drow").count();
     const collapsed = await page.locator(".collapsed").count();
     const dots = await page.locator("#meeting-view circle").count();
@@ -290,80 +328,5 @@ test.describe(() => {
     // ── the deterministic gates ───────────────────────────────────────────
 
     await quiet();
-  });
-});
-
-/** The concept links the vote and the meeting draw under a code, on a cut
- * whose answers are the review API's own shapes, so no coding has to be made
- * first: the two screens are the app's own, drawn from those answers. */
-test.describe("a concept link on the vote and in the meeting", () => {
-  // WebKit's page routes never see a fetch the service worker makes
-  test.use({ storageState: stateFor("empty"), serviceWorkers: "block" });
-  const roles = (...names: string[]) =>
-    flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
-  test.afterAll(() => roles("subscriber"));
-
-  const CUT = 9001;
-  const event = { kind: "shift", description: "Sleeping badly", dateTime: "2019-01-01", anxiety: "up", person: 1 };
-  const items = [1, 2].map((id) => ({
-    id, cut_id: CUT, item_kind: "event", item_id: null, status: "disputed",
-    coders: 2, not_coded: 0, people: [], line: null,
-    opinions: [
-      { coding_id: 1, item_id: id, person_name: "Client", item: event },
-      { coding_id: 2, item_id: id, person_name: "Client", item: { ...event, anxiety: "down" } },
-    ],
-  }));
-  const cut = {
-    id: CUT, session: "Onboarding case", diagram_id: 1, sitting_id: 1, user_id: 1,
-    start_statement_id: 1, end_statement_id: 3, end_order: 3, cut_day: "Oct 24",
-    meeting_date: "2026-10-31", started: true, ratified_at: null, nudged_at: null,
-    vote_opened_at: "Sat, 24 Oct 2026 16:00:00 GMT", created_at: "Sat, 24 Oct 2026 16:00:00 GMT",
-    updated_at: null, owner: "agenda@fd362-fixture.invalid", audit: null,
-    agreement: { first_pass: { by_status: { agreed: 0, decided: 0, disputed: 2, unresolved: 0 }, codings: 2, items: 2, percent: 0 } },
-  };
-
-  // R-0541, R-0567
-  test("opens the page inside the app, and back returns to the same screen", async ({ page }) => {
-    roles("auditor", "admin", "subscriber");
-    const errors: string[] = [];
-    page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-    page.on("pageerror", (e) => errors.push(String(e)));
-    page.on("response", (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`));
-    await page.route(new RegExp(`/review/cuts/${CUT}$`), (route) => route.fulfill({ json: cut }));
-    await page.route(new RegExp(`/review/items\\?cut_id=${CUT}`), (route) => route.fulfill({ json: items }));
-    await page.route(new RegExp(`/review/(votes|records|tallies)\\?cut_id=${CUT}`), (route) =>
-      route.fulfill({ json: [] }),
-    );
-    await page.route(/\/review\/codings$/, (route) =>
-      route.fulfill({ json: { id: CUT, cut_id: CUT, done_at: null } }),
-    );
-    await page.route(/\/app\/theory/, (route) =>
-      route.fulfill({ contentType: "text/html", body: "<h1>Anxiety</h1>" }),
-    );
-
-    for (const [path, id] of [
-      [`/app/vote/${CUT}`, "#ballot-screen"],
-      [`/app/meeting/${CUT}`, "#meeting-screen"],
-    ]) {
-      await page.goto(path);
-      const screen = page.locator(id);
-      await expect(screen).toBeVisible();
-      const link = screen.locator(".concepts a").first();
-      await expect(link).toBeVisible();
-      const title = await page.locator("#title").textContent();
-
-      await link.click();
-      const frame = page.locator("#rules-screen > iframe");
-      await expect(frame).toBeVisible();
-      expect(await frame.getAttribute("src")).toBe("/app/theory/anxiety");
-      await expect(screen).toBeHidden();
-      expect(page.context().pages()).toHaveLength(1);
-
-      await page.locator("#rules-close").click();
-      await expect(frame).toHaveCount(0);
-      await expect(screen).toBeVisible();
-      await expect(page.locator("#title")).toHaveText(title!);
-    }
-    expect(errors).toEqual([]);
   });
 });
