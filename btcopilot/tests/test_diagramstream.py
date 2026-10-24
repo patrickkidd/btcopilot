@@ -149,3 +149,16 @@ def test_a_broken_redis_link_ends_the_stream_so_the_page_reconnects(web, test_us
     log.warning.assert_called_once_with(
         "diagram %s stream lost Redis", diagram.id, exc_info=True
     )
+
+
+def test_a_write_still_lands_when_the_stream_cannot_be_told(test_user):
+    # R-0933
+    diagram = test_user.free_diagram
+    with patch("btcopilot.turnlog.publish", side_effect=redis.ConnectionError("down")), patch(
+        "btcopilot.record._log"
+    ) as log:
+        person(diagram, 10, "Ada")
+    db.session.expire_all()
+    names = [p["name"] for p in db.session.get(Diagram, diagram.id).get_diagram_data().people]
+    assert "Ada" in names
+    log.warning.assert_called_once()

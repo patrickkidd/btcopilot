@@ -13,6 +13,7 @@ import logging
 import re
 from dataclasses import dataclass
 
+import redis
 from sqlalchemy import event as sql_event
 from sqlalchemy import update as sql_update
 from sqlalchemy.orm import Session
@@ -1900,16 +1901,23 @@ def _commit(
 
 def told(diagram_id: int, deltas: list[dict], turn_id, author: Author, version: int) -> None:
     """Every page following the diagram is told of a write, whoever wrote and
-    wherever the write ran [Oracle: R-0933]."""
-    turnlog.publish(
-        diagram_id,
-        {
-            "type": TurnEventKind.RecordPatch.value,
-            **patch(deltas, turn_id),
-            "author": Author(author).value,
-            "version": version,
-        },
-    )
+    wherever the write ran [Oracle: R-0933]. The write is already stored, so a
+    lost Redis link only costs the pages a re-read when they reconnect."""
+    try:
+        turnlog.publish(
+            diagram_id,
+            {
+                "type": TurnEventKind.RecordPatch.value,
+                **patch(deltas, turn_id),
+                "author": Author(author).value,
+                "version": version,
+            },
+        )
+    except (redis.ConnectionError, redis.TimeoutError):
+        _log.warning(
+            f"Diagram {diagram_id} turn {turn_id}: write stored, stream not told",
+            exc_info=True,
+        )
 
 
 # Writes waiting on their session's commit to be told to the diagram stream.
