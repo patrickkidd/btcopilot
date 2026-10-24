@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { morph } from "./morph";
 import { store } from "./store";
 import { Lead, token } from "./chips";
 import { esc } from "./dom";
@@ -170,9 +171,7 @@ export class Questions {
   show(asked: AskedQuestion[]): void {
     this.asked = asked;
     this.swipe.forget();
-    const top = this.body.scrollTop;
-    this.body.innerHTML = questionsHtml(asked, new Date());
-    this.body.scrollTop = top;
+    morph(this.body, questionsHtml(asked, new Date()));
   }
 
   /** The reader is sending what they wrote: a "partly" is only a push-back

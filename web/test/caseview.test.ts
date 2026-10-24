@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { BRINGS, cards, dashboard, NOT_ASKED, NOT_ENOUGH, NOT_SAID, quoted, rail, UNSURE } from "../src/case";
+import { BRINGS, cards, dashboard, NOT_ASKED, NOT_ENOUGH, notSaid, quoted, rail, UNSURE } from "../src/case";
 import { Card, caseView, ORDER, TOO_LITTLE } from "../src/caseview";
 import { esc } from "../src/dom";
 import {
@@ -145,9 +145,25 @@ it("says on every guess card that there is not enough yet, and never picks a mai
 it("says on what to work on that the person has not said yet what they are working on", () => {
   const tl = halloran();
   tl.asked_questions = [guess("i9", "A guess on no card.", null, [202])];
-  const work = cards(caseView(tl, ONE, ""), false).split(`data-card="${Card.WorkOn}"`)[1].split("</section>")[0];
-  expect(work).toContain(esc(NOT_SAID));
+  const v = caseView(tl, ONE, "");
+  const work = cards(v, false).split(`data-card="${Card.WorkOn}"`)[1].split("</section>")[0];
+  expect(work).toContain(esc(notSaid(v)));
+  expect(work).toContain(esc("You haven't said yet what you're working on."));
   expect(work).not.toContain(NOT_ENOUGH);
+});
+
+// R-0740
+it("speaks of the person by name, not to them, on a case nobody on the diagram is", () => {
+  const tl = halloran();
+  tl.asked_questions = [guess("i9", "A guess on no card.", null, [202])];
+  const v = caseView(tl, ONE, "", false);
+  const work = body(cards(v, false), Card.WorkOn);
+  expect(work).toContain(esc(`${v.name} hasn't said yet what they're working on.`));
+  expect(work).not.toContain("You haven't");
+  tl.asked_questions = [guess("w1", "More contact with your father.\nAim: call him weekly", CaseReportCard.WorkOn, [210])];
+  const said = body(cards(caseView(tl, ONE, "", false), false), Card.WorkOn);
+  expect(said).toContain(`${v.name} said: call him weekly`);
+  expect(said).not.toContain("You said");
 });
 
 // R-0709

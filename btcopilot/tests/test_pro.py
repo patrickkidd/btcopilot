@@ -7,10 +7,14 @@ from decimal import Decimal
 
 import pytest
 
+from btcopilot import diagramjson
+from btcopilot.discussions import real_sessions
 from btcopilot.extensions import db
 from btcopilot.coachturn import CoachTurn
 from btcopilot.models import (
+    Diagram,
     Discussion,
+    User,
     DiscussionKind,
     ModelCall,
     Purpose,
@@ -295,3 +299,70 @@ def test_a_finished_transcript_is_charged_once_by_its_length(
         (r.user_id, r.diagram_id, r.turn_id, r.model, r.input_tokens, r.cost_usd)
         for r in rows
     ] == [(test_user.id, None, "t1", "universal-3-5-pro", 0, Decimal("0.115"))]
+
+
+def made_case(pro, name: str = "Whitlock") -> Diagram:
+    pro.post(
+        "/app/diagrams",
+        json={"name": name, "own_family": False},
+        headers={"X-CSRFToken": csrf_token(pro)},
+    )
+    return Diagram.query.filter_by(name=name).one()
+
+
+def deleted(pro, diagram_id: int):
+    return pro.delete(f"/app/diagrams/{diagram_id}", headers={"X-CSRFToken": csrf_token(pro)})
+
+
+def test_a_deleted_diagram_is_hidden_and_no_one_is_left_on_it(pro, test_user):
+    # R-0904, R-0908
+    case = made_case(pro)
+    other = User(username="bo@example.com", current_diagram_id=case.id)
+    db.session.add(other)
+    db.session.commit()
+    assert test_user.current_diagram_id == case.id
+    assert deleted(pro, case.id).status_code == 204
+    db.session.expire_all()
+    assert (case.deleted_at is not None, case.data is not None) == (True, True)
+    assert (test_user.current_diagram_id, other.current_diagram_id) == (None, None)
+    assert test_user.diagram_in_use() == test_user.free_diagram_id
+    assert case.id not in [d["id"] for d in pro.get("/app/diagrams").get_json()]
+    assert case.id not in [d["id"] for d in pro.get("/app/account").get_json()["diagrams"]]
+    selected = pro.post(
+        f"/app/diagrams/{case.id}/select", headers={"X-CSRFToken": csrf_token(pro)}
+    )
+    assert selected.status_code == 404
+    assert pro.get(f"/app/statements?diagram_id={case.id}").status_code == 404
+
+
+def test_the_personal_diagram_cannot_be_deleted(pro, test_user):
+    # R-0904, R-0908
+    refused = deleted(pro, test_user.free_diagram_id)
+    assert (refused.status_code, refused.get_data(as_text=True)) == (
+        400,
+        "Your personal diagram cannot be deleted.",
+    )
+    assert test_user.free_diagram.deleted_at is None
+
+
+def test_only_the_owner_deletes_a_diagram(pro):
+    # R-0904, R-0908
+    other = User(username="bo@example.com")
+    db.session.add(other)
+    db.session.flush()
+    theirs = Diagram(user_id=other.id, name="Theirs", data=diagramjson.dumps({}))
+    db.session.add(theirs)
+    db.session.commit()
+    assert deleted(pro, theirs.id).status_code == 404
+    assert deleted(pro, 999999).status_code == 404
+    assert theirs.deleted_at is None
+
+
+def test_the_sessions_counted_across_families_skip_a_deleted_diagram(pro, test_user):
+    # R-0908, R-0904
+    case = made_case(pro)
+    db.session.add(Discussion(user_id=test_user.id, diagram_id=case.id, chat_user_speaker_id=1, chat_ai_speaker_id=2))
+    db.session.commit()
+    assert case.id in {d.diagram_id for d in real_sessions()}
+    deleted(pro, case.id)
+    assert case.id not in {d.diagram_id for d in real_sessions()}

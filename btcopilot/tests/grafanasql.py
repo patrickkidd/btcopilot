@@ -108,7 +108,7 @@ def expand(sql: str, start, end, variables: dict) -> str:
 
 FRAGMENTS = r"""
 real_dg as (select dg.id as diagram_id, dg.user_id from diagrams dg join users u on u.id = dg.user_id
-            where not dg.scratch and u.username not like 'claude-test%'),
+            where not dg.scratch and dg.deleted_at is null and u.username not like 'claude-test%'),
 sit as (select d.id as sitting_id, d.user_id, d.diagram_id, min(s.created_at) as started, max(s.created_at) as ended,
                row_number() over w as nth, lead(min(s.created_at)) over w as next_started
         from discussions d join real_dg r on r.diagram_id = d.diagram_id

@@ -5,10 +5,12 @@ import { INDEX_URL } from "./concepts";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { Sheet } from "./sheet";
+import { Swipe } from "./swipe";
 import { store } from "./store";
 import { shortDate } from "./when";
 import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
+import { Importer } from "./importer";
 import { IDLE_MS } from "./vote";
 import { device, reach, Reach, subscribe } from "./push";
 import { DIAGRAMS, OWN_FAMILY, PRO } from "./pro";
@@ -23,6 +25,7 @@ import {
   type Account,
   type Delivery,
   type Diagram,
+  type Imported,
   type Passkey,
   type Preferences,
   type User,
@@ -34,6 +37,26 @@ import {
  * chat view is the one named shortcut, and it writes this same value. */
 
 const PANE_MS = 240;
+/** The diagram rows a swipe deletes: every one of the person's own but the
+ * free one. */
+export const SWIPED = ".sn-row[data-diagram]:not([data-free])";
+export const CANNOT_DELETE = "Could not delete the diagram.";
+
+/** What the account view's question sheet asks for. */
+export enum Asked {
+  ShadowsOn = "on",
+  Cancel = "cancel",
+  Delete = "delete",
+}
+
+/** Asked before a swiped diagram is deleted, under its name. */
+export const deleteAsk = (name: string): string =>
+  `<div class="cf-t">Delete ${esc(name)}?</div>` +
+  `<p class="cf-p">It is hidden from you; nothing is erased.</p>` +
+  `<div class="cf-btns">` +
+  `<button class="cf-go" type="button" data-act="${Asked.Delete}">Delete</button>` +
+  `<button class="cf-no" type="button" data-act="${Asked.Cancel}">Cancel</button>` +
+  `</div>`;
 /** How often the coach may message first is a most, never a schedule: the
  * choices say so, and the hint says what makes it write. */
 const PROACTIVE_CHOICE: Record<Proactive, string> = {
@@ -42,7 +65,7 @@ const PROACTIVE_CHOICE: Record<Proactive, string> = {
   [Proactive.Weekly]: "at most weekly",
 };
 const writesFirst = (often: string) =>
-  `Never more than once a ${often}, and only when the coach notices a pattern in your family's events or follows up on something you agreed to.`;
+  `Never more than once a ${often}, and only when the coach notices a pattern in the family's events or follows up on something you agreed to.`;
 const BUG_REPORTS_CHOICE: Record<BugReports, string> = {
   [BugReports.Ask]: "ask me",
   [BugReports.Always]: "always send",
@@ -112,6 +135,8 @@ export interface SettingsHandlers {
   onPrefs(prefs: Preferences): void;
   /** Open a diagram: the page's one step for that (FD-366). */
   onOpen(id: number): Promise<void>;
+  /** Words sent to the coach in the person's name. */
+  onSay(statement: string): void;
   /** The coder's one task (R-0265). */
   onTask(): void;
   /** The agenda, which is Patrick's whole administration (R-0259). */
@@ -186,6 +211,8 @@ export class Settings {
   private host = el("div", "sn-stack");
   /** The question before the shadows are switched on. */
   private ask: Sheet;
+  /** The way in for a desktop Family Diagram file, made once with its sheet. */
+  private importer: Importer;
   /** The auditor's coding guide, read on this stack like any page of it. */
   readonly literature: Sub;
   /** The account read again once the view has slid in, which draws its top
@@ -201,11 +228,10 @@ export class Settings {
     this.host.hidden = true;
     overlay.append(this.host);
     this.ask = new Sheet(overlay, "sh");
+    this.importer = new Importer(overlay, (made) => this.imported(made), (words) => this.handlers.onSay(words));
     this.ask.panel.addEventListener("click", (e) => {
-      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act;
-      if (!act) return;
-      this.ask.lower();
-      if (act === "on") void this.write({ shadow_models: this.prefs!.shadow_candidates });
+      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act as Asked | undefined;
+      if (act) this.answer(act);
     });
     const frame = el("iframe");
     frame.id = "literature";
@@ -326,6 +352,17 @@ export class Settings {
     this.stack.push({ page, title, pane });
     this.retitle();
     this.back.hidden = false;
+    if (page === Page.Diagrams) window.setTimeout(() => void this.relist(), PANE_MS);
+  }
+
+  /** The diagrams read again each time their page is shown, so one brought in
+   * from a desktop file since appears (R-0899); drawn again once the page has
+   * landed, and only when the list changed. */
+  async relist(): Promise<void> {
+    const account = await api.account();
+    const changed = JSON.stringify(account.diagrams) !== JSON.stringify(this.account?.diagrams);
+    this.account = account;
+    if (changed && this.top() === Page.Diagrams) this.replaceTop();
   }
 
   private retitle(): void {
@@ -345,6 +382,7 @@ export class Settings {
     window.setTimeout(() => top.pane.remove(), PANE_MS);
     this.stack[this.stack.length - 1].pane.classList.remove("under");
     this.retitle();
+    if (this.top() === Page.Diagrams) window.setTimeout(() => void this.relist(), PANE_MS);
   }
 
   close(): void {
@@ -845,8 +883,8 @@ export class Settings {
       `<div class="cf-t">Turn on Conversation Feedback?</div>` +
         `<p class="cf-p">${esc(SHADOW_WARNING)}</p>` +
         `<div class="cf-btns">` +
-        `<button class="cf-go" type="button" data-act="on">Turn on</button>` +
-        `<button class="cf-no" type="button" data-act="cancel">Cancel</button>` +
+        `<button class="cf-go" type="button" data-act="${Asked.ShadowsOn}">Turn on</button>` +
+        `<button class="cf-no" type="button" data-act="${Asked.Cancel}">Cancel</button>` +
         `</div>`,
     );
   }
@@ -881,8 +919,10 @@ export class Settings {
     const now = new Date();
     for (const diagram of account.diagrams) box.append(this.diagramRow(diagram, now));
     tick(box);
+    this.swipeAway(box);
 
     box.append(this.newDiagramRow());
+    box.append(this.importer.row(pane));
 
     if (account.diagrams.length >= SEARCH_AT) {
       const wrap = el("div", "sn-srch");
@@ -909,6 +949,15 @@ export class Settings {
     return { title: DIAGRAMS, pane };
   }
 
+  /** A diagram made from a desktop file is already the one the app is on, and
+   * opens the way a tap on it in the list does (R-0899). */
+  async imported(made: Imported): Promise<void> {
+    this.close();
+    await this.handlers.onOpen(made.id);
+    // the sheet that follows says the file is in, and a toast would cover it
+    void this.load();
+  }
+
   /** Kept across a re-draw of the page and under a person's diagrams, so the
    * search and its matches are there again on the way back (R-0630). */
   private finding?: { box: HTMLElement; field: HTMLInputElement; mine?: HTMLElement };
@@ -927,6 +976,7 @@ export class Settings {
     const row = el("div", "sn-row push");
     row.dataset.name = diagram.name.toLowerCase();
     row.dataset.diagram = String(diagram.id);
+    if (diagram.free) row.dataset.free = "";
     const main = el("div", "sn-m");
     main.append(
       el(
@@ -1091,6 +1141,64 @@ export class Settings {
     await this.handlers.onOpen(made.id);
     void this.load();
     toast(`Now on ${made.name}`);
+  }
+
+  /** A diagram of the person's own swiped left shows Delete, never on the
+   * free one; the swipe's own taps never open the diagram under it. */
+  private swipeAway(box: HTMLElement): void {
+    const swipe = new Swipe(box, SWIPED, () => ({
+      html: `<button class="fs-act del" type="button">Delete</button>`,
+      wide: false,
+    }));
+    box.addEventListener(
+      "click",
+      (e) => {
+        const del = (e.target as Element).closest<HTMLElement>(".fs-act.del");
+        if (!del && !swipe.claims()) return;
+        e.stopPropagation();
+        if (del) this.askDrop(del.closest<HTMLElement>(".sn-row")!);
+      },
+      true,
+    );
+  }
+
+  /** The row whose Delete was tapped, while the question is up. */
+  private dropping: HTMLElement | null = null;
+
+  /** Delete asks first, under the diagram's name; only its own Delete sends. */
+  askDrop(row: HTMLElement): void {
+    this.dropping = row;
+    const id = Number(row.dataset.diagram);
+    this.ask.show(deleteAsk(this.account!.diagrams.find((one) => one.id === id)!.name));
+  }
+
+  answer(act: Asked): void {
+    this.ask.lower();
+    const row = this.dropping;
+    this.dropping = null;
+    if (act === Asked.ShadowsOn) void this.write({ shadow_models: this.prefs!.shadow_candidates });
+    else if (act === Asked.Delete) void this.drop(row!);
+  }
+
+  /** A deleted diagram's row goes; when it was the one open, the app goes to
+   * the person's free diagram. The server's reason for keeping one is shown
+   * as it is. */
+  async drop(row: HTMLElement): Promise<void> {
+    // a second tap while the first is out is not a second delete
+    if (row.classList.contains("deleting")) return;
+    row.classList.add("deleting");
+    const id = Number(row.dataset.diagram);
+    try {
+      await api.deleteDiagram(id);
+    } catch (error) {
+      return toast(api.refusedWith(error, CANNOT_DELETE), true);
+    } finally {
+      row.classList.remove("deleting");
+    }
+    row.remove();
+    this.account!.diagrams = this.account!.diagrams.filter((one) => one.id !== id);
+    if (id !== store.current().diagram?.id) return;
+    await this.switchTo((await api.diagrams()).find((one) => one.free)!);
   }
 
   /** Put the app on another family. Everything the app shows is about one

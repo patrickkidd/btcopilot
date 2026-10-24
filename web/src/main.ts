@@ -31,6 +31,8 @@ import { card } from "./merge";
 import { Part, store } from "./store";
 import { REST, SelKind } from "./caption";
 import { $, CLUSTER, el, flash, setTitle, slideOver, type Title } from "./dom";
+import { notesSheet } from "./detail";
+import { Sheet } from "./sheet";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
 import { Return, returnKey, touch } from "./keyboard";
 import { Drawer, SIDEWAYS } from "./drawer";
@@ -309,16 +311,36 @@ function said(eventId: number): { label: string; go: () => void } | null {
   };
 }
 
+/** A card's notes, whole, on a page of their own over everything, the drawer
+ * the card sits in included; the cross or a tap beside it goes back to the
+ * card. */
+const above = el("div", "overlay above");
+document.querySelector(".app")!.append(above);
+const notes = new Sheet(above, "fn");
+above.addEventListener("click", (e) => {
+  if ((e.target as Element).closest(".fs-sheet.fn .cardx, .fs-scrim.fn")) notes.lower();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && notes.up) notes.lower();
+});
+
 const menu = new Menu($("menu-body"), () => load().then(record), () => store.id() ?? undefined, {
   talk: talkAbout,
   cluster: (id) => void navigate(address(Place.Cluster, id)),
   said,
+  notes: (title, text) => notes.show(notesSheet(title, text)),
 });
 
 /** On a phone the drawer gets out of the way of the thread; pinned beside it,
  * it stays. */
 const toThread = () => {
   if (!pinned()) screen(Screen.Chat);
+};
+
+/** Words the page sends in the person's name, as if typed and sent. */
+const sayNow = (statement: string) => {
+  toThread();
+  post(statement);
 };
 
 /** A question or impression tapped in the drawer goes into the message as a
@@ -339,10 +361,7 @@ const questions = new Questions($("menu-body"), {
   },
   onDismissed: () => void load(),
   busy: () => inFlight,
-  say: (statement) => {
-    toThread();
-    post(statement);
-  },
+  say: sayNow,
   record: tapped,
 });
 menu.questions = questions;
@@ -647,7 +666,7 @@ async function openDiagram(id: number): Promise<void> {
 }
 
 /** What the title row says with no family open yet. */
-const UNNAMED = $("title").textContent ?? "Your family";
+const UNNAMED = $("title").textContent ?? "This family";
 
 /** The title row shows the current view's title, and the family's name again
  * when the settings stack closes. */
@@ -730,6 +749,7 @@ const settings = new Settings($("account"), $("settings-back"), $("overlay"), {
     feedback();
   },
   onOpen: openDiagram,
+  onSay: sayNow,
   onTask: () => void readTask().then(() => settings.push(TASK)),
   onAgenda: () => void agenda.load().then(() => settings.push(AGENDA)),
   notices: () => notices.list,
@@ -812,7 +832,7 @@ function addStatements(statements: api.Said[], newest = false): void {
       coach && notes ? (notes.args as unknown as Notes) : null,
     );
     if (statement.attachment_name !== null)
-      attachment.show(bubble, statement.attachment_name, statement.attachment_text);
+      attachment.show(bubble, statement.attachment_name, statement.attachment_text, statement.unfinished);
     if (statement.feedback)
       chat.kept(bubble, statement.turn_id!, statement.feedback, newest && statement === statements.at(-1));
     if (statement.stopped) chat.halted(statement.conflict ? STOPPED_KEPT : STOPPED);
@@ -1191,18 +1211,21 @@ let onTurn: string | null = null;
 
 const nextFrame = (): Promise<number> => new Promise((done) => requestAnimationFrame(done));
 
-/** The record and the sittings read again as a turn ends, drawn on a frame of
- * their own so the turn never redraws twice in one frame (R-0898). */
-async function settleRecord(): Promise<boolean> {
+/** The sittings read again as a turn ends, and the record too when a write
+ * landed since it was last read, drawn on a frame of their own so the turn
+ * never redraws twice in one frame (R-0898); a record that came back the same
+ * is not drawn again. */
+async function settleRecord(record = true): Promise<boolean> {
   const live = store.live();
   const [timeline, sittings] = await Promise.all([
-    store.fetch(api.timeline),
+    record ? store.fetch(api.timeline) : Promise.resolve(store.current().record),
     store.fetch(api.sessionIndex),
   ]);
   if (timeline === null || sittings === null) return false;
   await nextFrame();
   if (!live()) return false;
-  store.update({ record: timeline, sittings });
+  const same = JSON.stringify(timeline) === JSON.stringify(store.current().record);
+  store.update(same ? { sittings } : { record: timeline, sittings });
   return true;
 }
 
@@ -1335,7 +1358,7 @@ function follow(turnId: string): void {
         said.settle(reply.statement, (chip) => lens.aim(chip));
         said.vote(turnId);
         stopFollowing();
-        if (!(await settleRecord())) return;
+        if (!(await settleRecord(lock.unread()))) return;
         void notices.refresh();
         // What the message named stays lit after it is written: the spotlight
         // is the resting state of the picture, not a flourish while it types.
@@ -1352,6 +1375,7 @@ function follow(turnId: string): void {
           bubble.settle("", () => {});
           stopped = { turn: turnId, bubble: bubble.bubble };
         }
+        attachment.untaken($("chat"));
         chat.warn(message, () => void resume(turnId));
       }),
     refused: (message) =>
@@ -1364,7 +1388,7 @@ function follow(turnId: string): void {
   });
 
   const source = api.turnEvents(turnId);
-  store.hold(source);
+  store.hold(source, turnId);
   source.addEventListener("message", (event) => take(JSON.parse(event.data)));
   source.addEventListener("error", () => {
     // The browser reconnects on its own and says where it got to; only a turn
@@ -1385,7 +1409,7 @@ function stopFollowing(): void {
  * chip whose read failed stays dimmed, under the thread's warning saying why
  * (R-0830). */
 async function readBack(): Promise<void> {
-  const reading = [...$("chat").querySelectorAll<HTMLElement>(".bub[data-statement] > .file > .chip.reading")];
+  const reading = [...$("chat").querySelectorAll<HTMLElement>(".bub[data-statement] > .file > .chip:is(.reading, .untaken)")];
   if (!reading.length) return;
   const live = store.live();
   let page: api.Said[];

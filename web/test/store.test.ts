@@ -7,6 +7,8 @@ import { Access } from "../src/types";
 interface Asked {
   url: string;
   answer: (body: unknown) => void;
+  /** No answer at all, as when the device is offline. */
+  fail: () => void;
   aborted: boolean;
 }
 
@@ -14,6 +16,10 @@ let asked: Asked[] = [];
 
 beforeEach(() => {
   asked = [];
+  Writes.opened = [];
+  vi.stubGlobal("EventSource", class { addEventListener() {} close() {} });
+  // a frame passes at once
+  vi.stubGlobal("window", { requestAnimationFrame: (run: () => void) => void run(), setTimeout });
   vi.stubGlobal("document", { querySelector: () => null });
   vi.stubGlobal(
     "fetch",
@@ -23,6 +29,7 @@ beforeEach(() => {
           url,
           answer: (body) =>
             resolve(new Response(JSON.stringify(body), { status: 200 })),
+          fail: () => reject(new TypeError("Failed to fetch")),
           aborted: false,
         };
         init.signal?.addEventListener("abort", () => {
@@ -35,6 +42,31 @@ beforeEach(() => {
 });
 
 afterEach(() => vi.unstubAllGlobals());
+
+/** A diagram's stream as the browser hands it over: the page's listeners on
+ * it, a message sent down it, and whether it was closed. */
+class Writes {
+  static opened: Writes[] = [];
+  heard: { type: string; hear: (event: { data: string }) => void }[] = [];
+  closed = false;
+  constructor(readonly id: number) {
+    Writes.opened.push(this);
+  }
+  addEventListener(type: string, hear: (event: { data: string }) => void) {
+    this.heard.push({ type, hear });
+  }
+  send(message: object) {
+    for (const one of this.heard) if (one.type === "message") one.hear({ data: JSON.stringify(message) });
+  }
+  /** The browser has the stream open, the first time or again. */
+  opens() {
+    for (const one of this.heard) if (one.type === "open") one.hear({ data: "" });
+  }
+  close() {
+    this.closed = true;
+  }
+}
+const streamed = () => new Store((id) => new Writes(id) as unknown as EventSource);
 
 const diagram = (id: number, access = Access.Own) => ({
   id,
@@ -121,7 +153,7 @@ it("drops a part read again for a diagram that is no longer open", async () => {
 it("closes the running turn's stream when another diagram opens", () => {
   const store = new Store();
   const stream = { close: vi.fn() };
-  store.hold(stream as unknown as EventSource);
+  store.hold(stream as unknown as EventSource, "t-9");
   const still = store.live();
   void store.open(2);
   expect(stream.close).toHaveBeenCalledOnce();
@@ -137,4 +169,119 @@ it("says a diagram an admin only looks at is read-only, from the diagram it open
   expect(store.readOnly()).toBe(true);
   void store.open(3);
   expect(store.readOnly()).toBe(false);
+});
+
+const clustered = { people: [], events: [], clusters: [{ id: "c1", event_ids: [4, 5, 6] }] };
+const patch = { type: "record_patch", turn_id: "t-9", deltas: [{ item_kind: "cluster", item_id: "c1", field: null, before: null, after: {} }] };
+
+/** The record read again after a write, answered with this. */
+async function reread(record: object): Promise<void> {
+  const read = asked.find((one) => one.url.startsWith("/app/timeline"))!;
+  asked = asked.filter((one) => one !== read);
+  read.answer(record);
+  await flush();
+}
+
+// R-0933
+it("draws the timeline again when a write to the open diagram comes down its stream, and not again for the same write", async () => {
+  const store = streamed();
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  const told = screens(store);
+  const [writes] = Writes.opened;
+  expect(writes.id).toBe(5);
+  writes.send(patch);
+  await reread(clustered);
+  expect(told).toEqual(["draw 5 record"]);
+  expect(store.current().record).toEqual(clustered);
+  writes.send(patch);
+  await reread(clustered);
+  expect(told).toEqual(["draw 5 record"]);
+});
+
+// R-0933
+it("closes the diagram's stream when another diagram opens, and opens that one's", async () => {
+  const store = streamed();
+  const first = store.open(5);
+  answer(5);
+  await first;
+  const second = store.open(6);
+  expect(Writes.opened[0].closed).toBe(true);
+  answer(6);
+  await second;
+  expect(Writes.opened.map((one) => [one.id, one.closed])).toEqual([[5, true], [6, false]]);
+});
+
+// R-0933
+it("reads the whole diagram again when its stream cannot replay what was missed", async () => {
+  const store = streamed();
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  const told = screens(store);
+  Writes.opened[0].send({ type: "reload" });
+  expect(told).toEqual(["reset"]);
+  expect(asked.map((one) => one.url)).toContain("/app/diagrams/5/select");
+  answer(5);
+  await flush();
+  expect(told).toEqual(["reset", "draw 5 record,thread,sittings"]);
+});
+
+// R-0933
+it("reads the record again each time the diagram's stream opens, for what was written before it listened", async () => {
+  const store = streamed();
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  const told = screens(store);
+  Writes.opened[0].opens();
+  await reread(clustered);
+  expect(told).toEqual(["draw 5 record"]);
+  Writes.opened[0].opens();
+  await reread(clustered);
+  expect(told).toEqual(["draw 5 record"]);
+});
+
+// R-0933
+it("tries a read that got no answer again 5 seconds later, never dropping it", async () => {
+  const later: [() => void, number][] = [];
+  vi.stubGlobal("window", {
+    requestAnimationFrame: (run: () => void) => void run(),
+    setTimeout: (run: () => void, ms: number) => void later.push([run, ms]),
+  });
+  const store = streamed();
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  const told = screens(store);
+  Writes.opened[0].opens();
+  const read = asked.find((one) => one.url.startsWith("/app/timeline"))!;
+  asked = asked.filter((one) => one !== read);
+  read.fail();
+  await flush();
+  expect(later.map(([, ms]) => ms)).toEqual([5000]);
+  later[0][0]();
+  await reread(clustered);
+  expect(told).toEqual(["draw 5 record"]);
+});
+
+// R-0933
+it("reads the record once for writes that land in one frame, and not for the followed turn's own", async () => {
+  const frames: (() => void)[] = [];
+  vi.stubGlobal("window", { requestAnimationFrame: (run: () => void) => void frames.push(run), setTimeout });
+  const store = streamed();
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  store.hold({ close() {} } as unknown as EventSource, "t-own");
+  const [writes] = Writes.opened;
+  writes.send({ ...patch, turn_id: "t-own" });
+  expect(frames).toHaveLength(0);
+  writes.send(patch);
+  writes.send(patch);
+  writes.send(patch);
+  expect(frames).toHaveLength(1);
+  frames[0]();
+  expect(asked.filter((one) => one.url.startsWith("/app/timeline"))).toHaveLength(1);
 });

@@ -229,7 +229,7 @@ def test_the_words_of_a_question_the_user_turned_down_are_never_added_again(fami
 
 
 def test_removing_what_a_question_is_about_lets_it_go_and_undo_puts_both_back(family):
-    # R-0006, R-0084
+    # R-0006, R-0084, R-0909
     turn = box(family, "t1")
     turn.call(ToolName.EditPerson, {"name": "Nell"})
     add(turn, item_kind="person", item_id="2")
@@ -250,7 +250,8 @@ def test_removing_what_a_question_is_about_lets_it_go_and_undo_puts_both_back(fa
     ]
     box(family, "t3").call(ToolName.Undo, {})
 
-    assert [(q["state"], q["outcome"], q["item_kind"], q["item_id"]) for q in stored(family).values()] == [
+    # undo leaves a field it empties off the item (R-0909)
+    assert [(q["state"], q.get("outcome"), q["item_kind"], q["item_id"]) for q in stored(family).values()] == [
         ("asked", None, "person", "2"),
         ("resolved", "answered", "person", "2"),
     ]

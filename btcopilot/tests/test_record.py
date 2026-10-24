@@ -1,11 +1,11 @@
 import ast
 import datetime
 import pickle
+import random
 import re
 from pathlib import Path
 
 import pytest
-from PyQt5.QtCore import QDateTime
 
 from btcopilot import diagramjson
 from btcopilot.admin import admin
@@ -940,7 +940,7 @@ def _write(diagram, kind: ItemKind, item_id, fields: dict):
         ({"description": "New Event"}, "event 40 is a shift event with no words"),
         ({"description": " unknown "}, "event 40 is a shift event with no words"),
         ({"dateTime": "1998"}, "event 40's dateTime '1998' is not a date"),
-        ({"dateTime": diagramjson.to_json(QDateTime(1998, 3, 1, 0, 0))}, "event 40's dateTime PyQt5.QtCore.QDateTime"),
+        ({"dateTime": {diagramjson.TAG: "QDateTime", "v": "1998-03-01T00:00:00.000"}}, "event 40's dateTime QtValue"),
         ({"kind": "divorced", "spouse": 3, "anxiety": None}, "event 40 is a divorced event between persons 1 and 3, who have no pair bond"),
         ({"kind": "birth", "child": 5, "spouse": 4, "anxiety": None}, "event 40 names person 4 as a parent of person 5, who is born to pair bond 9"),
         ({"kind": "birth", "child": 3, "person": None, "anxiety": None, "dateTime": "1991-01-01"}, "person 3 already has a birth, event 20"),
@@ -1093,3 +1093,186 @@ def test_a_refusal_a_person_reads_says_what_was_wrong_and_never_what_to_do():
         if sentence.split(" ", 1)[0] in IMPERATIVES
     ]
     assert told == []
+
+
+def test_undo_leaves_no_empty_field_so_the_turn_before_comes_off_too(subscriber):
+    # R-0084, R-0909
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada"}]})
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person, "item_id": 2, "field": "name", "after": "Bea"}],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Person, "item_id": 2, "field": "primary", "after": True},
+            {"item_kind": ItemKind.Person, "item_id": 2, "field": "notes", "after": "Eldest"},
+        ],
+        author=Author.Coach,
+        turn_id="t2",
+    )
+
+    record.undo(diagram.id, "t2", author=Author.User)
+    assert diagram.get_diagram_data().people == [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]
+
+    record.undo(diagram.id, "t1", author=Author.User)
+    assert diagram.get_diagram_data().people == [{"id": 1, "name": "Ada"}]
+
+
+def _old_linked_name(data, event, words):
+    for person in data["people"]:
+        role = record._role(event, person.get("id"))
+        if role is None:
+            continue
+        first = (person.get("name") or "").strip()
+        full = f"{first} {(person.get('last_name') or '').strip()}".strip()
+        for name in (full, first):
+            if name and record.re.search(rf"\b{record.re.escape(name)}\b", words, record.re.IGNORECASE):
+                return name, role
+    return None
+
+
+def _old_twin(data, event_id):
+    event = next(e for e in data["events"] if str(e["id"]) == event_id)
+    for other in data["events"]:
+        if str(other["id"]) != event_id and record.twin_key(other) == record.twin_key(event):
+            return other["id"]
+    return None
+
+
+def _family_of(size: int, seed: int) -> dict:
+    """A generated family about the size of a full desktop file, with twins,
+    shared names and words naming linked people."""
+    rng = random.Random(seed)
+    names = ["Ada", "Bo", "Cy", "Di", "Ed", "Flo", "Gus", "Hal"]
+    people = [
+        {"id": n, "name": rng.choice(names), "last_name": rng.choice(["Lund", "", "Berg"])}
+        for n in range(1, size + 1)
+    ]
+    events = []
+    for n in range(size + 1, size * 2 + 200):
+        who = rng.randint(1, size)
+        events.append(
+            {
+                "id": n,
+                "kind": rng.choice(["shift", "noted", "death"]),
+                "person": who,
+                "relationshipTargets": [rng.randint(1, size)] if rng.random() < 0.3 else [],
+                "dateTime": f"19{rng.randint(50, 59)}-01-0{rng.randint(1, 3)}",
+                "anxiety": rng.choice([None, "up"]),
+                "description": f"{rng.choice(names)} left town",
+            }
+        )
+    return {"people": people, "events": events, "pair_bonds": []}
+
+
+@pytest.mark.parametrize("seed", [1, 2])
+def test_the_indexed_checks_find_what_the_one_by_one_checks_found(seed):
+    # R-0432, R-0457, R-0899
+    data = _family_of(475, seed)
+    for event in data["events"]:
+        words = event["description"]
+        assert record.linked_name(data, event, words) == _old_linked_name(data, event, words)
+    for event in data["events"]:
+        event_id = str(event["id"])
+        delta = {"item_kind": "event", "item_id": event["id"], "field": None, "before": None}
+        found = _old_twin(data, event_id)
+        if found is None:
+            record._twins(data, [delta])
+        else:
+            with pytest.raises(record.Invalid, match=f"already event {found}:"):
+                record._twins(data, [delta])
+
+
+@pytest.mark.parametrize("turn, kept", [("fd-import:k1", True), ("t1", False)])
+def test_only_an_import_keeps_a_title_longer_than_four_words(subscriber, turn, kept):
+    # R-0907, R-0681
+    diagram = _diagram(subscriber.user, RULES)
+    long = "Stopped calling after the move to the coast"
+    deltas = [
+        {"item_kind": ItemKind.Event, "item_id": 40, "field": field, "after": value}
+        for field, value in {**SHIFT, "title": long}.items()
+    ]
+    if kept:
+        record.apply(diagram.id, deltas, author=Author.Pro, turn_id=turn)
+        assert long in [e.get("title") for e in diagram.get_diagram_data().events]
+    else:
+        with pytest.raises(record.Invalid, match="needs a title"):
+            record.apply(diagram.id, deltas, author=Author.Coach, turn_id=turn)
+
+
+def test_a_coach_edit_of_an_imported_event_with_a_long_title_checks_the_title_only_when_it_sets_one(subscriber):
+    # R-0907, R-0681
+    diagram = _diagram(subscriber.user, RULES)
+    long = "Stopped calling after the move to the coast"
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Event, "item_id": 40, "field": None, "after": {**SHIFT, "id": 40, "title": long}}
+        ],
+        author=Author.Pro,
+        turn_id="fd-import:k1",
+    )
+    _write(diagram, ItemKind.Event, 40, {"functioning": "down"})
+    assert [e for e in diagram.get_diagram_data().events if e["id"] == 40][0]["functioning"] == "down"
+    with pytest.raises(record.Invalid, match="needs a title"):
+        _write(diagram, ItemKind.Event, 40, {"title": f"{long} again"})
+
+
+def test_a_write_never_leaves_two_people_marked_primary(subscriber):
+    # R-0888
+    diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada", "primary": True}, {"id": 2, "name": "Bea"}]})
+    with pytest.raises(record.Invalid, match="all marked primary"):
+        _write(diagram, ItemKind.Person, 2, {"primary": True})
+
+
+def test_a_question_with_an_id_of_the_wrong_shape_is_refused_from_any_author(subscriber):
+    # R-0006
+    diagram = _diagram(subscriber.user, RULES)
+    question = {
+        "text": "What happened then?",
+        "kind": "fact",
+        "state": "held",
+        "outcome": None,
+        "item_kind": None,
+        "item_id": None,
+        "fact": None,
+        "session_id": None,
+        "asked_at": None,
+    }
+    for author in (Author.Pro, Author.Coach):
+        with pytest.raises(record.Invalid, match="id of the wrong shape"):
+            record.apply(
+                diagram.id,
+                [{"item_kind": ItemKind.Question, "item_id": 256, "field": None, "after": {**question, "id": 256}}],
+                author=author,
+                turn_id="t9",
+            )
+
+
+def test_coding_an_imported_noted_event_into_a_shift_keeps_its_long_title(subscriber):
+    # R-0907, R-0681
+    diagram = _diagram(subscriber.user, RULES)
+    long = "Moved to the coast after the mill shut down"
+    noted = {**SHIFT, "id": 40, "kind": "noted", "title": long, "description": long}
+    noted.pop("anxiety")
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Event, "item_id": 40, "field": None, "after": noted}],
+        author=Author.Pro,
+        turn_id="fd-import:k1",
+    )
+    _write(diagram, ItemKind.Event, 40, {"kind": "shift", "anxiety": "up"})
+    [kept] = [e for e in diagram.get_diagram_data().events if e["id"] == 40]
+    assert (kept["kind"], kept["title"]) == ("shift", long)
+
+
+def test_a_change_of_kind_still_refuses_a_title_naming_its_own_person(subscriber):
+    # R-0457, R-0907
+    noted = {**SHIFT, "id": 40, "kind": "noted", "title": "Ada moved to the coast", "description": "Moved away"}
+    noted.pop("anxiety")
+    diagram = _diagram(subscriber.user, {**RULES, "events": [*RULES["events"], noted]})
+    with pytest.raises(record.Invalid, match="names Ada"):
+        _write(diagram, ItemKind.Event, 40, {"kind": "shift", "anxiety": "up"})

@@ -5,7 +5,7 @@ import uuid
 
 from flask import Blueprint, abort, request
 from flask_wtf.csrf import CSRFError, generate_csrf
-from werkzeug.exceptions import Conflict, Forbidden
+from werkzeug.exceptions import Conflict, Forbidden, HTTPException
 
 import btcopilot
 from btcopilot import auth
@@ -58,7 +58,10 @@ class Access(enum.StrEnum):
 
 
 def access(dia: Diagram, user) -> Access | None:
-    """None when the user may not put the app on the diagram at all."""
+    """None when the user may not put the app on the diagram at all, as for
+    one its owner deleted."""
+    if dia.deleted_at is not None:
+        return None
     if dia.user_id == user.id:
         return Access.Own
     if dia.check_write_access(user):
@@ -71,6 +74,8 @@ def access(dia: Diagram, user) -> Access | None:
 def opens(dia: Diagram, user) -> bool:
     """Whether the user may open the diagram at all: their own, granted, or
     another person's that an admin looks at."""
+    if dia.deleted_at is not None:
+        return False
     return dia.check_read_access(user) or access(dia, user) is Access.AdminView
 
 
@@ -149,6 +154,15 @@ def _read_only(e):
 def _submitted(e):
     """Said in plain words, not as the server's own error page (R-0869)."""
     return e.description, 409
+
+
+@bp.errorhandler(HTTPException)
+def _refused(e):
+    """A refusal is answered with its own words, never the HTML error page:
+    the page shows the person those words as they are."""
+    if not 400 <= (e.code or 0) < 500:
+        return e
+    return e.description, e.code
 
 
 @bp.errorhandler(ValueError)

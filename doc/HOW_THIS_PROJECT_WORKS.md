@@ -271,9 +271,13 @@ A run that stopped partway is reported as stopped, never counted as a pass.
 not a paid key. The testing key is spent only when the lead says so, and the sandbox never
 spends on Gemini by default either.
 
-**A prompt change ships with an eval built from a human ruling (2026-09-25, Patrick).** A
-candidate ruling is confirmed first; the eval then cites the confirmed ruling, fails on the
-old prompt, and passes on the new one. Its inputs are fictionalised, drawn from the shape of
+**A prompt change ships with an eval built from a human ruling (2026-09-25, Patrick; amended
+2026-10-11).** Test and eval generation runs end to end without asking Patrick: the eval cites
+the rulings already captured from his own words, and a choice no statement of his covers is
+tested under the ruling whose direction it carries out, never put to him as a candidate
+(Patrick, 2026-10-11: "I don't want ruling candidates for tests. you can't just keep dumping
+rulings on me at every turn. the instructions are supposed to say that the test generation
+pipeline is e2e automated."). The eval fails on the old prompt and passes on the new one. Its inputs are fictionalised, drawn from the shape of
 logged real cases but not the cases themselves.
 
 **Clinical-coding evals wait on the review group, not on Patrick case by case (2026-09-25,

@@ -11,7 +11,7 @@ from btcopilot.routes import asked_diagram, bp, current_session, diagram
 from btcopilot.routes.diagrams import diagram_payload
 from btcopilot.discussions import session_payload
 from btcopilot.routes.sessions import thread
-from btcopilot import casereport, notesparts, place, playturn, questions, record
+from btcopilot import casereport, notesparts, place, playturn, profile, questions, record
 from btcopilot.licence import professional
 from btcopilot.timeline import build_timeline
 from btcopilot.schema import DiagramData
@@ -143,6 +143,8 @@ def timeline():
     payload["asked_questions"] = questions.asked(in_use.id, data) if in_use else []
     # what changed since the coach wrote the case report (R-0827)
     payload["report_out_of_date"] = casereport.stale(in_use.id, data) if in_use else None
+    # whether the page writes to the person as "you" or about them by name
+    payload["addressed"] = profile.addressed(in_use, data) if in_use else True
     return jsonify(payload)
 
 

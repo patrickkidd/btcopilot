@@ -382,10 +382,14 @@ def state_of(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> FactSta
     return answers.get(item, FactState.NotAsked)
 
 
-def evidence(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> str | None:
+def evidence(
+    data: DiagramData, fact: Fact, kind: ItemKind, iid: int, viewer: int | None
+) -> str | None:
     """What makes an item known, as the map writes it: the record entry that
     records it, or the closed question naming it; None while it is not known
-    [R-0760]."""
+    [R-0760]. `viewer` is who the reader is on the case, so the person the
+    diagram is about is "the person you are talking with" only to them
+    (FD-387)."""
     item = (fact, kind, iid)
     answers = _answers(data)
     if _recorded(data, item, answers):
@@ -393,7 +397,9 @@ def evidence(data: DiagramData, fact: Fact, kind: ItemKind, iid: int) -> str | N
         if events:
             return event_line(events[0])
         if fact is Fact.Alive:
-            return "they are the person you are talking with"
+            if profile.is_subject(viewer, data):
+                return "they are the person you are talking with"
+            return "they are the person the diagram is about"
         if fact is Fact.Stress:
             return f"the record's {len(data.drawn_clusters())} clusters"
         if fact is Fact.WhatBrought:

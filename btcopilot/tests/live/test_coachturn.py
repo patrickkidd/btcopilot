@@ -6,6 +6,8 @@ names only.
 
 import re
 
+from btcopilot.extensions import db
+from btcopilot.models.diagram import owner_row
 from btcopilot.schema import EventKind
 from btcopilot.tests.live.criterion import once, passes, waiting
 from btcopilot.toolbox import ToolName, schemas
@@ -327,3 +329,63 @@ def test_a_question_is_stored_before_the_reply_that_asks_it(coach):
     ]
     assert stored and words
     assert stored[0] < words[0]
+
+
+# The person the diagram is about spoken of as "you" by a coach on the case.
+YOURS = re.compile(r"\byour (?:father|mother|parents|family|dad|mom|childhood)\b", re.I)
+
+
+@passes(2, of=3)
+def test_a_coach_on_the_case_hears_the_person_spoken_of_by_name_never_as_you(coach):
+    # R-0889, R-0888
+    """Pass: with the user's row naming no one, the reply speaks of Wren's
+    family as hers, never as the coach's own."""
+    coach.record()
+    diagram = coach.user.free_diagram
+    diagram.access_rights.append(owner_row(coach.user.id, None))
+    db.session.commit()
+    reply = coach.say(
+        "Her father Hugh died in March 2001, the spring she turned sixteen, "
+        "and she stopped eating for months after."
+    )
+    assert not YOURS.search(reply), reply
+
+
+# The page's message when the person says yes to codes after an import
+# (web/src/importer.ts ADD_CODES).
+ADD_CODES = (
+    "Go through every event in this diagram that has no codes and add codes where the file gives you enough to go on. "
+    "Don't ask me anything first; leave anything missing blank. Keep the events' titles as they are unless the app refuses one. "
+    "Keep going until you have considered every one, then tell me how many you coded and how many you left uncoded."
+)
+SURNAME = re.compile(r"\b(last name|surname|family name)\b", re.I)
+
+
+@passes(2, of=3)
+def test_asked_to_code_an_imported_case_the_coach_codes_before_asking_a_missing_name(coach):
+    # R-0936, R-0889
+    """Measured 2026-10-24 on the subscription: 0 of 3 on the onboarding block
+    that asked first, 2 of 3 on the one that waits for an opening.
+    Pass: on a clinic case whose client has no last name yet, the request to
+    code comes first: the reply does not ask for the surname and at least one
+    event gets a code."""
+    jose = {"id": 1, "name": "Jose", "gender": "male", "primary": True, "parents": 10}
+    noted = [
+        {"id": 40 + n, "kind": "noted", "person": 1, "dateTime": day, "dateCertainty": "certain", "title": words, "description": words}
+        for n, (day, words) in enumerate(
+            (
+                ("2015-03-01", "Panic attacks started at work"),
+                ("2016-07-01", "Drinking more after the divorce"),
+                ("2018-01-01", "Lost his job at the plant"),
+                ("2019-05-01", "Stopped speaking to his brother"),
+            )
+        )
+    ]
+    coach.record(people=[jose], events=noted)
+    diagram = coach.user.free_diagram
+    diagram.access_rights.append(owner_row(coach.user.id, None))
+    db.session.commit()
+    reply = coach.say(ADD_CODES)
+    coded = [e for e in coach.events if e["id"] >= 40 and any(e.get(k) for k in ("symptom", "anxiety", "functioning", "relationship"))]
+    assert not SURNAME.search(reply), reply
+    assert coded, reply

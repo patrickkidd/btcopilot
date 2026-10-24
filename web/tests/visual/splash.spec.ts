@@ -16,7 +16,7 @@ test.describe("the splash", () => {
     await expect(page.locator("#splash")).toBeVisible();
     await expect(page.locator("#splash img")).toBeVisible();
     await expect(page.locator(".app")).toBeHidden();
-    await expect(page.getByText("Your family")).toBeHidden();
+    await expect(page.getByText("This family")).toBeHidden();
     await expect(page.getByLabel("Message your coach")).toBeHidden();
   });
 

@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { Access, emptyTimeline, type Diagram, type Session, type Timeline } from "./types";
+import { Access, emptyTimeline, TurnEventKind, type Diagram, type Session, type Timeline } from "./types";
 
 /** The diagram the page has open, held in one place (FD-366). One step opens a
  * diagram, the first load and every switch alike: it cancels whatever is still
@@ -18,6 +18,8 @@ export enum Part {
 }
 
 const EVERY = [Part.Record, Part.Thread, Part.Sittings];
+/** How soon a read of the record that got no answer is tried again. */
+const REREAD_MS = 5_000;
 
 export interface Opened {
   /** Null only for an account that has no diagram yet; its first words make
@@ -51,6 +53,17 @@ export class Store {
   private control = new AbortController();
   /** The running turn's stream, which belongs to the diagram it was said on. */
   private turn: EventSource | null = null;
+  /** Every write to the diagram open, whoever makes it, for as long as it is
+   * open. */
+  private writes: EventSource | null = null;
+  /** A write came in while the record was being read for the one before. */
+  private stale = false;
+  private reading = false;
+  private queued = false;
+  /** The turn whose own stream this page follows, while it runs. */
+  private turnId: string | null = null;
+
+  constructor(private stream: (diagramId: number) => EventSource = api.diagramEvents) {}
   /** Counts opens, so whatever was asked for an earlier one is dropped. */
   private count = 0;
 
@@ -99,7 +112,58 @@ export class Store {
     const [diagram, record, thread, sittings] = read;
     this.opened = { diagram, record, thread, sittings };
     this.draw(EVERY);
+    if (diagram) this.follow(diagram.id);
     return true;
+  }
+
+  /** The diagram's own stream: a write to its record, from a turn here or
+   * anywhere else, has the record read again and drawn where it changed; one
+   * already drawn changes nothing. Each time the stream opens or opens again
+   * the record is read too, for whatever was written before it was listening.
+   * When the stream cannot replay what was missed, the whole diagram is read
+   * again (R-0933). */
+  private follow(id: number): void {
+    const writes = this.stream(id);
+    this.writes = writes;
+    writes.addEventListener("open", () => this.soon());
+    writes.addEventListener("message", (event) => {
+      const said = JSON.parse(event.data) as { type: string; turn_id?: string };
+      // the turn this page follows reads the record for its own writes
+      if (said.type === TurnEventKind.RecordPatch && said.turn_id !== this.turnId) this.soon();
+      else if (said.type === TurnEventKind.Reload) void this.open(id);
+    });
+  }
+
+  /** Writes that land within one frame, or while a read is out, are read
+   * once. */
+  private soon(): void {
+    if (this.queued) return;
+    this.queued = true;
+    window.requestAnimationFrame(() => {
+      this.queued = false;
+      void this.reread();
+    });
+  }
+
+  /** A read that got no answer is tried again a little later, and again when
+   * the stream opens again, never dropped. */
+  private async reread(): Promise<void> {
+    if (this.reading) return void (this.stale = true);
+    this.reading = true;
+    const live = this.live();
+    try {
+      do {
+        this.stale = false;
+        const record = await this.fetch(api.timeline);
+        if (record === null) return;
+        if (JSON.stringify(record) !== JSON.stringify(this.opened.record)) this.update({ record });
+      } while (this.stale);
+    } catch (error) {
+      if (!(error instanceof api.Failed)) throw error;
+      window.setTimeout(() => live() && void this.reread(), REREAD_MS);
+    } finally {
+      this.reading = false;
+    }
   }
 
   /** Read parts of the open diagram again and draw them; false when another
@@ -131,8 +195,9 @@ export class Store {
   }
 
   /** The running turn's stream, closed when another diagram opens. */
-  hold(turn: EventSource): void {
+  hold(turn: EventSource, turnId: string): void {
     this.turn = turn;
+    this.turnId = turnId;
   }
 
   release(): void {
@@ -146,6 +211,9 @@ export class Store {
     this.control.abort();
     this.control = new AbortController();
     this.release();
+    this.writes?.close();
+    this.writes = null;
+    this.stale = false;
     this.opened = { ...EMPTY };
     for (const view of this.views) view.reset();
     return this.live();

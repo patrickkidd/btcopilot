@@ -89,8 +89,10 @@ export const ORDER_TITLE = "Why these cards, in this order";
 
 /** What a guess card says when the coach has put nothing on it (R-0699, Patrick, 2026-10-04). */
 export const NOT_ENOUGH = "Not enough in the diagram to make a guess yet. Chat more with me so I have more to go on.";
-/** What the work card says when the person has not said what they are working on (R-0740). */
-export const NOT_SAID = "You haven't said yet what you're working on. Chat more with me about it.";
+/** What the work card says when the person has not said what they are working
+ * on (R-0740): to them, or of them by name when nobody on the diagram is them. */
+export const notSaid = (v: { name: string; addressed: boolean }) =>
+  `${v.addressed ? "You haven't" : `${v.name} hasn't`} said yet what ${v.addressed ? "you're" : "they're"} working on. Chat more with me about it.`;
 /** What the card on what brought the person says before the coach has found it out (R-0850). */
 export const NOT_ASKED = "Not asked yet.";
 export const BRINGS = "What brings you here?";
@@ -232,8 +234,8 @@ function body(card: Card, v: CaseView): string {
     case Card.WorkOn: {
       // the focus, then the prognosis as its own sentence, then the aim in the person's words (R-0850)
       const w = v.work;
-      if (!w.guesses.length) return notEnough(NOT_SAID);
-      const aim = w.said ? `<span class="chip his">${esc(`You said: ${w.said}`)}</span>` : w.aim ? factChip(w.aim) : "";
+      if (!w.guesses.length) return notEnough(notSaid(v));
+      const aim = w.said ? `<span class="chip his">${esc(`${v.addressed ? "You" : v.name} said: ${w.said}`)}</span>` : w.aim ? factChip(w.aim) : "";
       const work = w.guesses.map((g) => guessBlock(g) + (g.prognosis ? `<p class="prognosis">${esc(g.prognosis)}</p>` : "")).join("");
       return `<div class="glist">${work}</div>${aim ? chips([aim]) : ""}`;
     }

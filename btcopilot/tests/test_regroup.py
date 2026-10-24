@@ -4,12 +4,15 @@ events, without waiting for the person's next turn."""
 import json
 
 from mock import patch
+from sqlalchemy import select
+from sqlalchemy import update as sql_update
 
-from btcopilot import diagramjson
+from btcopilot import clusters, diagramjson, record
 from btcopilot.admin import admin
 from btcopilot.clusters import ClusterListResponse, ModelCluster, compute_cache_key
 from btcopilot.extensions import db
-from btcopilot.models import ModelCall, Observation, ObservationKind
+from btcopilot.models import Author, Diagram, ModelCall, Observation, ObservationKind
+from btcopilot.toolbox import ToolName, Toolbox
 from btcopilot.schema import (
     Cluster,
     ClusterSource,
@@ -173,3 +176,131 @@ def test_a_stored_period_set_aside_before_an_answer_that_passes_is_not_failed(
         rows = regroup(flask_app, "--apply")
     assert [r["failed"] for r in rows] == [False]
     assert clusters_of(family)["c1"]["setAside"]
+
+
+BY_NAME = "nobody on the case is the person it belongs to: its periods are written about them by name"
+
+
+def test_by_name_lists_only_the_cases_nobody_on_is_the_person_and_regroups_them(flask_app, family):
+    # R-0935, R-0772
+    with patch("btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)):
+        regroup(flask_app, "--apply")
+    owner = family.access_right(family.user)
+    owner.person_id = None
+    db.session.commit()
+    with patch("btcopilot.metered.gemini_structured_sync") as asked:
+        rows = regroup(flask_app, "--by-name")
+    assert ([(r["diagram"], r["why"]) for r in rows], asked.called) == ([(family.id, BY_NAME)], False)
+    with patch("btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)) as asked:
+        [done] = regroup(flask_app, "--by-name", "--apply")
+    assert 'calling them by their first name' in asked.call_args.args[0]
+    undone = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(family.id), str(done["change"]), "--yes"]
+    )
+    assert undone.exit_code == 0, undone.output
+    owner.person_id = 1
+    db.session.commit()
+    assert regroup(flask_app, "--by-name") == []
+
+
+def drawn_names(diagram) -> list[str]:
+    db.session.expire_all()
+    return [c["title"] for c in diagram.get_diagram_data().drawn_clusters()]
+
+
+YOURS = ClusterListResponse(
+    clusters=[ModelCluster(eventIds=[10, 11, 12, 13, 14, 15], name="Your hard year", reason="r")]
+)
+HERS = ClusterListResponse(
+    clusters=[ModelCluster(eventIds=[10, 11, 12, 13, 14, 15], name="Her hard year", reason="r")]
+)
+
+
+def test_a_regroup_by_name_leaves_only_the_new_periods_and_one_undo_brings_back_the_old(
+    flask_app, family
+):
+    # R-0935, R-0850, R-0845
+    with patch("btcopilot.metered.gemini_structured_sync", return_value=parsed(YOURS)):
+        regroup(flask_app, "--apply")
+    assert drawn_names(family) == ["Your hard year, 1994"]
+    family.access_right(family.user).person_id = None
+    db.session.commit()
+    with patch("btcopilot.metered.gemini_structured_sync", return_value=parsed(HERS)):
+        [done] = regroup(flask_app, "--by-name", "--apply")
+    assert (drawn_names(family), done["regrouped"]) == (["Her hard year, 1994"], 1)
+    undone = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(family.id), str(done["change"]), "--yes"]
+    )
+    assert undone.exit_code == 0, undone.output
+    assert drawn_names(family) == ["Your hard year, 1994"]
+
+
+def test_a_regroup_with_no_gemini_key_says_so_in_one_sentence(flask_app, family, monkeypatch):
+    # R-0772
+    monkeypatch.setenv("BTCOPILOT_GEMINI_ENDPOINT", "developer")
+    monkeypatch.delenv("GOOGLE_GEMINI_API_KEY", raising=False)
+    result = flask_app.test_cli_runner().invoke(admin, ["diagrams", "regroup", "--apply"])
+    assert result.exit_code != 0
+    assert "The Gemini key, GOOGLE_GEMINI_API_KEY, is not set where this runs" in result.output
+    assert "Traceback" not in result.output and "KeyError" not in result.output
+
+
+def landed_elsewhere(diagram_id: int, change) -> None:
+    """Another process's write to the diagram, straight to its row, so this
+    session's loaded copy of it is now stale."""
+    stored = diagramjson.loads(
+        db.session.execute(select(Diagram.data).where(Diagram.id == diagram_id)).scalar_one()
+    )
+    change(stored)
+    db.session.execute(
+        sql_update(Diagram)
+        .where(Diagram.id == diagram_id)
+        .values(data=diagramjson.dumps(stored), version=Diagram.version + 1)
+        # as from another process: this session's loaded copy stays as it was
+        .execution_options(synchronize_session=False)
+    )
+
+
+def test_a_pick_made_while_a_regroup_waits_on_its_model_survives_the_regroup(flask_app, family):
+    # R-0933, R-0935
+    def mark(stored):
+        stored["people"][0]["primary"] = True
+
+    def answer(*args, **kwargs):
+        landed_elsewhere(family.id, mark)
+        return parsed(GROUPED)
+
+    family.get_diagram_data()
+    with patch("btcopilot.metered.gemini_structured_sync", side_effect=answer):
+        clusters.sync(family.id, turn_id="r1", user_id=family.user_id, force=True)
+    db.session.expire_all()
+    data = family.get_diagram_data()
+    assert data.people[0].get("primary") is True
+    assert [c["title"] for c in data.drawn_clusters()] == ["A hard year, 1994"]
+
+
+def test_a_coach_write_after_a_persons_edit_landed_keeps_the_edit(flask_app, family):
+    # R-0933, R-0084
+    tools = Toolbox(family.id, "c1")
+    tools.data
+    landed_elsewhere(family.id, lambda stored: stored["people"][0].update(name="Renamed"))
+    tools.call(ToolName.EditPerson.value, {"name": "Bo", "gender": "male"})
+    db.session.expire_all()
+    names = [p.get("name") for p in family.get_diagram_data().people]
+    assert "Renamed" in names and "Bo" in names
+
+
+def test_a_write_from_a_stale_loaded_copy_applies_onto_what_landed_meanwhile(flask_app, family):
+    # R-0933
+    family.get_diagram_data()
+    landed_elsewhere(family.id, lambda stored: stored["people"][0].update(primary=True))
+    record.apply(
+        family.id,
+        [{"item_kind": "person", "item_id": 99, "field": "name", "after": "Bo"}],
+        author=Author.Coach,
+        turn_id="c2",
+    )
+    db.session.expire_all()
+    people = family.get_diagram_data().people
+    assert people[0].get("primary") is True
+    assert "Bo" in [p.get("name") for p in people]

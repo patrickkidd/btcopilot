@@ -325,6 +325,22 @@ const LONG: TurnEvent[] = [
 ];
 
 describe("drawing each edit with its line", () => {
+  // R-0933
+  it("reads the record once for a burst of edits that lands across the first frame", async () => {
+    const live = page();
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    for (const event of added(1)) live.land(event);
+    // the batch asks for its frame, the frame goes by, and the burst's next
+    // edits land while the first batch is still to read
+    await tick();
+    for (const done of live.frames.splice(0)) done();
+    await tick();
+    for (const event of [...added(2), ...added(3)]) live.land(event);
+    await live.settle();
+    expect(live.shown.reads).toBe(1);
+    expect(live.shown.record).toEqual(["1", "2", "3"]);
+  });
+
   // R-0898
   it("draws each line with the record already holding what it added", async () => {
     const live = page();
