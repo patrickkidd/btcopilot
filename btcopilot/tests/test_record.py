@@ -1226,3 +1226,27 @@ def test_a_write_never_leaves_two_people_marked_primary(subscriber):
     diagram = _diagram(subscriber.user, {"people": [{"id": 1, "name": "Ada", "primary": True}, {"id": 2, "name": "Bea"}]})
     with pytest.raises(record.Invalid, match="all marked primary"):
         _write(diagram, ItemKind.Person, 2, {"primary": True})
+
+
+def test_a_question_with_an_id_of_the_wrong_shape_is_refused_from_any_author(subscriber):
+    # R-0006
+    diagram = _diagram(subscriber.user, RULES)
+    question = {
+        "text": "What happened then?",
+        "kind": "fact",
+        "state": "held",
+        "outcome": None,
+        "item_kind": None,
+        "item_id": None,
+        "fact": None,
+        "session_id": None,
+        "asked_at": None,
+    }
+    for author in (Author.Pro, Author.Coach):
+        with pytest.raises(record.Invalid, match="id of the wrong shape"):
+            record.apply(
+                diagram.id,
+                [{"item_kind": ItemKind.Question, "item_id": 256, "field": None, "after": {**question, "id": 256}}],
+                author=author,
+                turn_id="t9",
+            )

@@ -12,6 +12,7 @@ from btcopilot import (
     fdimport,
     fdledger,
     record,
+    recordtext,
 )
 from btcopilot.admin import admin
 from btcopilot.extensions import db
@@ -665,3 +666,13 @@ def test_a_shift_the_file_codes_stays_a_shift():
     out = built(events=[*scene()["events"], shift(23, anxiety="up")])
     [kept] = [e for e in out.data["events"] if e.get("description") == "Lost the job"]
     assert (kept["kind"], kept["anxiety"]) == ("shift", "up")
+
+
+def test_an_imports_questions_take_the_coachs_id_shape_and_its_record_text_builds(test_user):
+    # R-0905, R-0006
+    named = event(23, "noted", person=1, description="Ada left", dateTime=when(2000, 3, 4))
+    out = built(events=[*scene()["events"], named])
+    assert [q["id"] for q in out.data["questions"]] == ["q1"]
+    diagram = fdimport.save(test_user.id, "Lund family", out, yes=True, turn="t1")
+    data = diagram.get_diagram_data()
+    assert "Ada left" in recordtext.outline(data, diagram.version, None)

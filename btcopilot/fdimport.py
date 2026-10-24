@@ -908,9 +908,11 @@ def _question(out: Imported, kind: ItemKind, item: dict, invalid: record.Invalid
         about_id = item["person_a"]
         said = f"The file had {_who(out, item['person_a'])} and {_who(out, item['person_b'])} as a couple."
         asked = f"The app could not keep it as it was: {invalid.plain} Are they a couple?"
-    ids = [one["id"] for name in (*COLLECTIONS, "questions") for one in out.data.get(name) or []]
+    taken = {str(q["id"]) for q in out.data.get("questions") or []}
     return {
-        "id": max(ids) + 1,
+        "id": record.next_key(
+            record.QUESTION_PREFIX, {t for t in taken if t.startswith(record.QUESTION_PREFIX)}
+        ),
         "text": f"{said} {asked}",
         "kind": QuestionKind.Fact.value,
         "item_kind": None if about_id is None else ItemKind.Person.value,

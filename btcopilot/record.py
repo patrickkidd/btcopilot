@@ -1408,6 +1408,11 @@ class Note:
         return [QuestionState.Held, self.shown, QuestionState.Resolved]
 
 
+# The id shape of each kind of note: q1 for a question or todo, i1 for an
+# impression, the order every reader sorts them in.
+QUESTION_PREFIX = "q"
+IMPRESSION_PREFIX = "i"
+
 QUESTION = Note(
     "question",
     QuestionState.Asked,
@@ -1469,6 +1474,16 @@ def _questions(data: dict, deltas: list[dict], author: Author, refile: bool = Fa
         question = _find(data, ItemKind.Question, question_id)
         rules = note(question)
         noun = rules.noun
+        prefix = IMPRESSION_PREFIX if rules is IMPRESSION else QUESTION_PREFIX
+        if not (
+            isinstance(question.get("id"), str)
+            and re.fullmatch(rf"{prefix}\d+", question["id"])
+        ):
+            raise Invalid(
+                f"{noun} {question_id} has an id of the wrong shape: a {noun}'s id is "
+                f"{prefix} and a number, such as {prefix}1",
+                f"That {noun} could not be kept.",
+            )
         mine = [
             d
             for d in deltas

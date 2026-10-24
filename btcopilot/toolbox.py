@@ -2273,7 +2273,11 @@ class Toolbox:
             if kind is ItemKind.Cluster:
                 item_id = clusters.next_id(taken)
             elif kind is ItemKind.Question:
-                prefix = "i" if fields["kind"] == QuestionKind.Impression else "q"
+                prefix = (
+                    record.IMPRESSION_PREFIX
+                    if fields["kind"] == QuestionKind.Impression
+                    else record.QUESTION_PREFIX
+                )
                 item_id = record.next_key(prefix, {t for t in taken if t.startswith(prefix)})
             else:
                 item_id = record.next_id(data)
