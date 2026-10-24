@@ -48,9 +48,12 @@ run never waits on them. `tests/visual/sandbox.ts` says which variables.
 
 Start the sandbox with `bin/sandbox/sandbox up <name> <port>` and source what
 `bin/sandbox/sandbox env <name>` names; that sets `SANDBOX_URL`, `FIXTURE_CMD` and
-the Flask settings. The review-screen fixtures the table, ballot and meeting
-walks need (the `INVITE_*` links) were SQLite scripts in the FD-362 folder and
-do not run against the current code; those walks skip until they are rebuilt.
+the Flask settings. The meeting walk (`sandboxmeeting`) needs `SANDBOX_URL` and
+`SANDBOX_ENV` (a shell file with the sandbox's Flask settings) and seeds its own
+data on each run with `btcopilot/tests/frontend/seedmeeting.py`: an admin, two
+coders' submitted codings and the open vote. The other table and ballot walks
+need `INVITE_*` links whose fixtures were SQLite scripts in the FD-362 folder;
+they skip until they are rebuilt.
 
 ## The thread walks
 

@@ -16,6 +16,7 @@ import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
 import { CODER, OneTask, beforeMeeting, coder } from "./task";
 import { Rules } from "./rules";
+import { heading } from "./concepts";
 import { Sessions } from "./sessions";
 import { sessionTitle } from "./search";
 import { Thread, divider } from "./thread";
@@ -424,7 +425,7 @@ const oneTask = new OneTask($("task-body"), {
   onResult: (cutId) => void openResult(cutId, openTask),
 });
 
-const rules = new Rules($("rules-body"));
+const rules = new Rules($("rules-body"), $("rules-title"));
 
 const coding = new Coding(
   $("coding-chat"),
@@ -620,19 +621,39 @@ async function toMeeting(day: string | null): Promise<void> {
  * the one task card between meetings. */
 let rulesBack: () => void;
 
+/** Back to the screen on top now, at its address then. */
+function returnHere(): () => void {
+  const [from, at] = [here, screenAt];
+  return () => {
+    screenAt = at;
+    screen(from);
+  };
+}
+
 async function openRules(): Promise<void> {
-  const coded = screenAt;
-  rulesBack =
-    here === Screen.Coding
-      ? () => {
-          screenAt = coded;
-          screen(Screen.Coding);
-        }
-      : () => void openTask();
+  rulesBack = here === Screen.Coding ? returnHere() : () => void openTask();
   await rules.load();
   screenAt = address(Place.Guidelines);
   screen(Screen.Rules);
 }
+
+// A concept page under a vote, a meeting's item or the coding opens inside the
+// app, never in a tab a home-screen app cannot come back from, and its back
+// returns to that screen as it was (R-0541). Caught before the card under it
+// takes the tap as its own.
+document.addEventListener(
+  "click",
+  (e) => {
+    const link = (e.target as Element).closest<HTMLAnchorElement>(".concepts a");
+    if (!link) return;
+    e.preventDefault();
+    e.stopPropagation();
+    rulesBack = returnHere();
+    rules.read(link.getAttribute("href")!, heading(link.textContent!));
+    screen(Screen.Rules);
+  },
+  true,
+);
 
 $("coding-done").addEventListener("click", () => {
   track.tap(Feature.CodingDone);
@@ -642,7 +663,9 @@ $("coding-info").addEventListener("click", () => {
   track.tap(Feature.RulesOpen);
   void openRules();
 });
-$("rules-close").addEventListener("click", () => rulesBack());
+$("rules-close").addEventListener("click", () => {
+  if (!rules.back()) rulesBack();
+});
 $("coding-back").addEventListener("click", () => {
   track.tap(Feature.Back);
   // Reading the transcript is a step out of the ballot, so it steps back into

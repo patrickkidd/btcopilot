@@ -1,42 +1,122 @@
 import { test } from "./fixtures";
-import { need, sandboxOnly, walker } from "./sandbox";
+import { execSync } from "node:child_process";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { walker } from "./sandbox";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+/** A cut of its own, with two coders' submitted codings and the vote open on
+ * it, from seedmeeting.py: its id, its meeting day, and the sign-in link of
+ * the admin who runs the table, as a path on whichever address the run
+ * reaches the sandbox by. SANDBOX_ENV names a shell file with the sandbox's
+ * Flask settings. */
+function newTable(): { cut: string; day: string; path: string } {
+  const [cut, day, link] = execSync(
+    `. "${process.env.SANDBOX_ENV}" && uv run python ${ROOT}/btcopilot/tests/frontend/seedmeeting.py`,
+    { shell: "/bin/bash", cwd: process.env.FIXTURE_CWD ?? ROOT },
+  )
+    .toString()
+    .trim()
+    .split("\n")
+    .slice(-3);
+  return {
+    cut: cut.split(" ")[1],
+    day: day.split(" ")[1],
+    path: new URL(link).pathname,
+  };
+}
 
 // An independent walk of the meeting and the result screen on the FD-362
 // review sandbox: the table, the meeting with the open items most split first,
 
 test.describe(() => {
-  sandboxOnly("table");
+  test.skip(
+    !process.env.SANDBOX_URL || !process.env.SANDBOX_ENV,
+    "needs SANDBOX_URL and SANDBOX_ENV, the sandbox's Flask settings",
+  );
   test.describe.configure({ timeout: 600_000 });
 
-  // R-0257, R-0342
+  // R-0257, R-0342, R-0541, R-0567
   test("the meeting and the result: every item decided, then ratified", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,
       info,
     );
-    const invite = need("table");
+    const { cut, day, path } = newTable();
+    // An address opened the way a link inside the app opens it: a reload
+    // would cut off the stream the app keeps open and count as a failed
+    // request.
+    const go = (to: string) =>
+      page.evaluate((at) => {
+        history.pushState(null, "", at);
+        dispatchEvent(new PopStateEvent("popstate"));
+      }, to);
+    // A concept link under a code opens its page inside the app, never a new
+    // page or tab, and back returns to the same screen as it was.
+    const concept = async (screen: string) => {
+      const link = page.locator(`${screen} .concepts a`).first();
+      check(await link.isVisible(), `${screen}: a code carries a concept link`);
+      const title = await text("#title");
+      const word = (await link.innerText()).trim();
+      await link.click();
+      const frame = page.locator("#rules-screen > iframe");
+      await frame.waitFor();
+      // Read once the page has its fonts, so going back cuts nothing off.
+      const inner = (await frame.elementHandle())!.contentFrame();
+      const loaded = (await inner)!;
+      await loaded.waitForLoadState("networkidle");
+      const heading = await loaded
+        .locator("h1")
+        .first()
+        .innerText()
+        .catch(() => "");
+      say(`${screen}: "${word}" opened "${heading}"`);
+      check(
+        heading.toLowerCase().includes(word.toLowerCase()),
+        `${screen}: the concept's page opens with its heading`,
+      );
+      check(!(await visible(screen)), `${screen}: the page stands in for the screen`);
+      check(page.context().pages().length === 1, `${screen}: no new page or tab`);
+      await page.locator("#rules-close").click();
+      await page.locator("#rules-screen > iframe").waitFor({ state: "detached" });
+      await page.locator(screen).waitFor();
+      check((await text("#title")) === title, `${screen}: back returns to the same title`);
+    };
 
 
     // ── 1. the table, with the vote open ──────────────────────────────────
-    await page.goto(invite, { waitUntil: "networkidle" });
-    await page.waitForTimeout(1400);
-    await page.locator("#account").click();
-    await page.waitForTimeout(900);
-    await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
-    await page.waitForTimeout(1600);
+    // A new admin is a coder too and signs in onto the task card, which hides
+    // the account button, so the table is reached by its own address. The app
+    // keeps a stream open, so the network never goes idle.
+    await page.goto(path, { waitUntil: "load" });
+    await page.locator("#task-screen").waitFor();
+
+    // ── the vote: a concept link opens inside the app ─────────────────────
+    await go(`/app/vote/${cut}`);
+    await page.locator("#ballot-screen").waitFor();
+    await page.waitForTimeout(1200);
+    await concept("#ballot-screen");
+
+    await go("/app/account/meeting");
+    await page.locator("#agenda-screen").waitFor();
+    await page.waitForTimeout(1200);
     check(await visible("#agenda-screen"), "the table opens");
-    check(await visible(".tb-meet"), "the meeting can be run on the open cut");
+    const meet = `.tb-meet[data-day="${day}"]`;
+    const run = `#meet-screen .tb-run[data-cut="${cut}"]`;
+    check(await visible(meet), "the meeting can be run on the open cut");
     await gates("the table");
     await shot("1-table");
 
     // ── 2. the meeting: the open items, most split first ──────────────────
-    await page.locator(".tb-meet").first().click();
+    await page.locator(meet).click();
     await page.waitForTimeout(1200);
-    check(await visible("#meet-screen .tb-run"), "the meeting's page lists the cut someone submitted");
-    await page.locator(".tb-run").first().click();
+    check(await visible(run), "the meeting's page lists the cut someone submitted");
+    await page.locator(run).click();
     await page.waitForTimeout(1800);
     check(await visible("#meeting-screen"), "the meeting opens as its own screen");
     check(/ratify$/.test(await text("#title")), "the title says ratify");
+    await concept("#meeting-screen");
     const rows = await page.locator(".drow").count();
     const collapsed = await page.locator(".collapsed").count();
     const dots = await page.locator("#meeting-view circle").count();
@@ -205,14 +285,11 @@ test.describe(() => {
         "the rule reads as flagged afterwards",
       );
       await shot("9-flagged");
-      await page.locator("#coding-back").click();
-      await page.waitForTimeout(1600);
-      await page.locator("#coding-back").click();
-      await page.waitForTimeout(1600);
-      await page.locator("#account").click();
-      await page.waitForTimeout(900);
-      await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
-      await page.waitForTimeout(1800);
+      // The walk came in by the table's address, so it goes back to the
+      // table the same way.
+      await go("/app/account/meeting");
+      await page.locator("#agenda-screen").waitFor();
+      await page.waitForTimeout(1200);
       const agenda = await text(".agbox");
       say(`agenda: "${agenda.replace(/\s+/g, " ").slice(0, 200)}"`);
       check(/flagged/.test(agenda), "the flagged rule is on the next agenda");
@@ -224,13 +301,8 @@ test.describe(() => {
 
     // ── the way back to the result once the cut is ratified (R-0275) ──────
 
-    // The sessions button lives beside the message box, so the walk steps back
-    // out of whatever full-screen it ended on before it can open the sheet.
-    for (let i = 0; i < 4 && !(await visible("#sessions-open")); i += 1) {
-      if (await visible("#coding-back")) await page.locator("#coding-back").click();
-      await page.waitForTimeout(1000);
-    }
-    await page.locator("#account").click();
+    await go("/app/account");
+    await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).last().waitFor();
     await page.waitForTimeout(900);
     check(
       await visible('.sn-pane.in .sn-row:has-text("Your coding task")'),
@@ -238,17 +310,18 @@ test.describe(() => {
     );
     await page.locator(".sn-pane.in .sn-row", { hasText: "Next meeting" }).click();
     await page.waitForTimeout(1600);
+    const result = `.tb-result[data-cut="${cut}"]`;
     check(
-      await visible(".tb-result"),
+      await visible(result),
       "the ratified conversation offers the result on the agenda",
     );
-    const ratified = await page.locator(".sn-row .sn-s").last().innerText();
+    const ratified = await page.locator(`.sn-row:has(+ ${result}) .sn-s`).innerText();
     say(`the ratified row: "${ratified.replace(/\s+/g, " ")}"`);
     check(
       /up to .+ · ratified /.test(ratified),
       "a ratified row says where the cut stops and when it was ratified",
     );
-    await page.locator(".tb-result").first().click();
+    await page.locator(result).click();
     await page.waitForTimeout(1800);
     check(await visible("#result-screen"), "that opens the result screen");
 
