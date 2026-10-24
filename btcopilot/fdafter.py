@@ -36,6 +36,7 @@ from btcopilot.extensions import db
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.models import Diagram, ModelCall, Purpose, User
 from btcopilot.pricing import cost
+from btcopilot.schema import EventKind
 
 TASK = "fd_import_landed"
 REGROUP = "clusters_regroup"
@@ -48,8 +49,13 @@ RECENT_CALLS = 20
 CHARS_PER_TOKEN = 4
 # What a coach call writes, when the ledger holds no coach call to read it from.
 OUTPUT_TOKENS = 800
-# The most steps a coding turn is costed at, until a measured coding run sets it.
-COST_STEPS = 20
+# Measured 2026-10-24 on a free subscription run of the coach's coding turn
+# over an imported diagram: $2.22 for 22 coded events without prompt caching
+# ($1.26 with it), about ten cents an event, the uncached figure kept so the
+# high end is not understated.
+PER_EVENT_COST = 0.10
+CODABLE = (EventKind.Noted.value, EventKind.Shift.value)
+CODES = ("symptom", "anxiety", "functioning", "relationship")
 # The first bytes of a zip, and of a pickle the desktop writes (protocol 2 on).
 ZIP = b"PK\x03\x04"
 PICKLED = b"\x80"
@@ -173,10 +179,12 @@ def coding_cost(user_id: int, diagram: Diagram) -> dict:
     """What the one coach turn the coding question's Yes starts would cost,
     in dollars, low to high, read from what the user's coach model has cost
     [Oracle: R-0902]. With RECENT_CALLS or more of its calls in the last
-    COST_DAYS days: the median call times the median calls a turn made, and
-    the 90th percentile call times the turn's step cap. With fewer: the
-    model's prices on this diagram's coach prompt and the median a coach call
-    of any model writes (OUTPUT_TOKENS with none), once per step."""
+    COST_DAYS days the low end is the median call times the median calls a
+    turn made; with fewer, the model's prices on this diagram's coach prompt
+    and the median a coach call of any model writes (OUTPUT_TOKENS with none),
+    once per such turn. The high end is what coding each of the diagram's
+    events that can take codes and have none costs, at PER_EVENT_COST, since
+    the coach codes in turns that end on their own (R-0936)."""
     model = resolve_model(setting.read(SettingKey.CoachModel, user_id))
     since = datetime.datetime.utcnow() - datetime.timedelta(days=COST_DAYS)
     rows = ModelCall.query.filter(
@@ -187,9 +195,7 @@ def coding_cost(user_id: int, diagram: Diagram) -> dict:
     per_turn = collections.Counter(row.turn_id for row in rows)
     steps = statistics.median(per_turn.values()) if per_turn else 1
     if len(rows) >= RECENT_CALLS:
-        costs = sorted(float(row.cost_usd) for row in rows)
-        low = statistics.median(costs) * steps
-        high = statistics.quantiles(costs, n=10)[-1] * COST_STEPS
+        low = statistics.median(float(row.cost_usd) for row in rows) * steps
     else:
         words = prompts.get_agent_prompt(
             record=recordtext.outline(diagram.get_diagram_data(), diagram.version, None)
@@ -202,5 +208,16 @@ def coding_cost(user_id: int, diagram: Diagram) -> dict:
         call = float(
             cost(model, Spent(input=len(words) // CHARS_PER_TOKEN, output=output))
         )
-        low, high = call * steps, call * COST_STEPS
-    return {"low": round(low, 2), "high": round(high, 2)}
+        low = call * steps
+    high = uncoded(diagram.get_diagram_data()) * PER_EVENT_COST
+    return {"low": round(min(low, high), 2), "high": round(high, 2)}
+
+
+def uncoded(data) -> int:
+    """The events the coach could code: noted events and shifts with no code
+    for what moved."""
+    return sum(
+        1
+        for event in data.events
+        if event.get("kind") in CODABLE and not any(event.get(name) for name in CODES)
+    )

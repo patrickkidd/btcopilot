@@ -237,3 +237,4 @@ R-0930 | TEST OWED | cited by 1 test, one more owed for the coach tag: the coach
 R-0876 | TEST OWED | cited by 1 test, one more owed for the model tag (FD-377)
 R-0903 | TEST OWED | not built: the coach coding dialog shown once after an import (FD-377)
 R-0934 | TEST OWED | the page's sheet that asks which person you are is its test, with the page (FD-377)
+R-0937 | TEST OWED | the page's events, people and questions lists updating in place; their tests come with the page builder's in-place work (FD-377)

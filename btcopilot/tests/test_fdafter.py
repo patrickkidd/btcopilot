@@ -390,38 +390,63 @@ def calls(user_id: int, turns: int, per_turn: int, model: str) -> list[float]:
     return costs
 
 
-def test_the_coding_question_says_what_the_turn_costs_from_the_models_own_calls(test_user):
+def with_events(user, uncoded: int, coded: int = 0) -> Diagram:
+    """The user's diagram holding `uncoded` noted events and shifts with no
+    code, `coded` coded shifts, and a birth, which takes no code."""
+    diagram = user.free_diagram
+    data = diagram.get_diagram_data()
+    data.people = [{"id": 1, "name": "Wren"}]
+    data.events = [
+        *(
+            {"id": 10 + n, "kind": "noted" if n % 2 else "shift", "person": 1, "title": f"Event {n}"}
+            for n in range(uncoded)
+        ),
+        *(
+            {"id": 500 + n, "kind": "shift", "person": 1, "anxiety": "up", "title": f"Coded {n}"}
+            for n in range(coded)
+        ),
+        {"id": 999, "kind": "birth", "child": 1},
+    ]
+    diagram.set_diagram_data(data)
+    db.session.commit()
+    return diagram
+
+
+def test_the_most_a_yes_costs_is_ten_cents_for_each_event_left_to_code(test_user):
+    # R-0902, R-0903, R-0936
+    diagram = with_events(test_user, uncoded=22, coded=3)
+    assert fdafter.uncoded(diagram.get_diagram_data()) == 22
+    assert fdafter.coding_cost(test_user.id, diagram)["high"] == 2.2
+
+
+def test_the_least_a_yes_costs_is_read_from_the_models_own_turns(test_user):
     # R-0902, R-0903
+    diagram = with_events(test_user, uncoded=30)
     model = resolve_model(setting.read(SettingKey.CoachModel, test_user.id))
-    costs = sorted(calls(test_user.id, turns=5, per_turn=5, model=model))
-    said = fdafter.coding_cost(test_user.id, test_user.free_diagram)
-    assert said == {
-        "low": round(statistics.median(costs) * 5, 2),
-        "high": round(statistics.quantiles(costs, n=10)[-1] * fdafter.COST_STEPS, 2),
-    }
+    costs = calls(test_user.id, turns=5, per_turn=5, model=model)
+    said = fdafter.coding_cost(test_user.id, diagram)
+    assert said == {"low": round(statistics.median(costs) * 5, 2), "high": 3.0}
 
 
-def test_with_too_few_calls_the_cost_is_read_from_the_models_prices(test_user):
+def test_the_least_a_yes_costs_is_never_above_the_most(test_user):
     # R-0902, R-0903
-    said = fdafter.coding_cost(test_user.id, test_user.free_diagram)
-    assert 0 < said["low"] <= said["high"]
-    # each end is rounded to cents apart, so low may be up to half a cent over
-    assert said["high"] >= (said["low"] - 0.005) * fdafter.COST_STEPS
-
+    said = fdafter.coding_cost(test_user.id, with_events(test_user, uncoded=1))
+    assert said["low"] <= said["high"] == 0.1
 
 
 def test_the_price_read_cost_counts_what_a_coach_call_writes(test_user):
     # R-0902, R-0903
+    diagram = with_events(test_user, uncoded=100)
     model = resolve_model(setting.read(SettingKey.CoachModel, test_user.id))
     words = prompts.get_agent_prompt(
-        record=recordtext.outline(test_user.free_diagram.get_diagram_data(), test_user.free_diagram.version, None)
+        record=recordtext.outline(diagram.get_diagram_data(), diagram.version, None)
     )
     reading = len(words) // fdafter.CHARS_PER_TOKEN
-    unwritten = fdafter.coding_cost(test_user.id, test_user.free_diagram)
+    unwritten = fdafter.coding_cost(test_user.id, diagram)
     assert unwritten["low"] == round(float(cost(model, Spent(input=reading, output=fdafter.OUTPUT_TOKENS))), 2)
     calls(test_user.id, turns=1, per_turn=3, model="another-model")
     ModelCall.query.update({"output_tokens": 4000})
     db.session.commit()
-    written = fdafter.coding_cost(test_user.id, test_user.free_diagram)
+    written = fdafter.coding_cost(test_user.id, diagram)
     assert written["low"] == round(float(cost(model, Spent(input=reading, output=4000))), 2)
     assert written["low"] > unwritten["low"]
