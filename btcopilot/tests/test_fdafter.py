@@ -4,6 +4,7 @@ clusters grouped once the person says who the case is about."""
 
 import io
 import json
+import pickle
 import statistics
 import zipfile
 
@@ -34,7 +35,7 @@ from btcopilot.models.etc import AccessRight
 from btcopilot.models.modelcall import Purpose
 from btcopilot.schema import DateCertainty, Event, EventKind, ItemKind, Person, asdict
 from btcopilot.tests.conftest import csrf_token
-from btcopilot.tests.fdfixtures import dumps, scene, shift
+from btcopilot.tests.fdfixtures import Qt, dumps, scene, shift
 from btcopilot.tests.test_pro import pro  # noqa: F401
 from btcopilot.tests.test_casereportrewrite import out_of_date, written  # noqa: F401
 from btcopilot.tests.test_clustersync import clusters_of, detects
@@ -173,8 +174,13 @@ def test_a_desktop_file_over_20_mb_is_refused_before_it_is_read(pro, landed, mon
 
 @pytest.mark.parametrize(
     "data",
-    [b"not a diagram", zipped({"Lund.fd/notes.txt": b"hello"})],
-    ids=["plain bytes", "zip with no pickle"],
+    [
+        b"not a diagram",
+        zipped({"Lund.fd/notes.txt": b"hello"}),
+        pickle.dumps([1, 2]),
+        dumps(scene(lastItemId=Qt("QDateTime", 2000))),
+    ],
+    ids=["plain bytes", "zip with no pickle", "pickle of a list", "date with too few parts"],
 )
 def test_a_file_that_is_not_a_family_diagram_is_refused_in_one_sentence(pro, landed, data):
     # R-0899, R-0882

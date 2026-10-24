@@ -93,7 +93,7 @@ def scene(data: bytes) -> tuple[bytes, dict]:
         return data, fdfile.read(data)
     except fdfile.TooOld:
         raise
-    except (pickle.UnpicklingError, EOFError, ValueError):
+    except (pickle.UnpicklingError, EOFError, ValueError, TypeError, AttributeError, IndexError, KeyError):
         raise ValueError(NOT_FD)
 
 
