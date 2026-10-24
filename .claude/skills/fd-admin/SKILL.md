@@ -605,6 +605,18 @@ How far each coder has got on what is on the agenda.
 | `--cut` | Only this cut's codings. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin review codings reset <email> <cut_id>`
+
+Clear one coder's draft coding of one cut so they can start over: their coding copy of the diagram is hidden, their notes to the scribe and the coding row are deleted, and the reset is logged. A submitted coding, or a coding copy the coder also uses on another cut, is refused before anything is written. Without --yes it prints what would change and writes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `email` | required |
+| `cut_id` | required |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin review cuts`
 
 The windows of a conversation the room codes.
