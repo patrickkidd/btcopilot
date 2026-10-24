@@ -272,7 +272,7 @@ it("sends the coach the prepared words on Yes, and nothing on Not now", () => {
   expect(yes.done.said).toEqual([ADD_CODES]);
   expect(ADD_CODES).toBe(
     "Go through every event in this diagram that has no codes and add codes where the file gives you enough to go on. " +
-      "Don't ask me anything first; leave anything missing blank. Keep the events' titles as they are. " +
+      "Don't ask me anything first; leave anything missing blank. Keep the events' titles as they are unless the app refuses one. " +
       "Keep going until you have considered every one, then tell me how many you coded and how many you left uncoded.",
   );
   const no = importer();
