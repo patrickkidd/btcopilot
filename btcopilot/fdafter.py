@@ -32,7 +32,6 @@ from btcopilot import (
 )
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
-from btcopilot.coachturn import MAX_STEPS
 from btcopilot.extensions import db
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.models import Diagram, ModelCall, Purpose, User
@@ -49,6 +48,8 @@ RECENT_CALLS = 20
 CHARS_PER_TOKEN = 4
 # What a coach call writes, when the ledger holds no coach call to read it from.
 OUTPUT_TOKENS = 800
+# The most steps a coding turn is costed at, until a measured coding run sets it.
+COST_STEPS = 20
 # The first bytes of a zip, and of a pickle the desktop writes (protocol 2 on).
 ZIP = b"PK\x03\x04"
 PICKLED = b"\x80"
@@ -188,7 +189,7 @@ def coding_cost(user_id: int, diagram: Diagram) -> dict:
     if len(rows) >= RECENT_CALLS:
         costs = sorted(float(row.cost_usd) for row in rows)
         low = statistics.median(costs) * steps
-        high = statistics.quantiles(costs, n=10)[-1] * MAX_STEPS
+        high = statistics.quantiles(costs, n=10)[-1] * COST_STEPS
     else:
         words = prompts.get_agent_prompt(
             record=recordtext.outline(diagram.get_diagram_data(), diagram.version, None)
@@ -201,5 +202,5 @@ def coding_cost(user_id: int, diagram: Diagram) -> dict:
         call = float(
             cost(model, Spent(input=len(words) // CHARS_PER_TOKEN, output=output))
         )
-        low, high = call * steps, call * MAX_STEPS
+        low, high = call * steps, call * COST_STEPS
     return {"low": round(low, 2), "high": round(high, 2)}

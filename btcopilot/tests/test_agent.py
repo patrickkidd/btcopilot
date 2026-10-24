@@ -16,6 +16,7 @@ from btcopilot.metered import Metered
 from btcopilot.coachturn import (
     FINISH,
     MAX_STEPS,
+    STALLED_STEPS,
     BareList,
     CoachTurn,
     EmptyReply,
@@ -546,65 +547,48 @@ def test_offered_chips_never_reach_the_transcript():
     assert kept == "[[person:1|Wren]] is where it starts. What came next?"
 
 
-def test_a_turn_that_never_stops_calling_tools_still_says_something(
-    discussion, family
-):
-    # R-0411
-    """The page shows what the coach said, so a turn may not end on a tool
-    call. When the steps run out the coach is asked for its reply with no tools
-    at all, and that is what the person reads."""
-    working = [
-        called(
-            ToolName.EditPerson,
-            text=f"Working out step {n}.",
-            name=f"Person {n}",
-        )
-        for n in range(MAX_STEPS)
-    ]
-    before = len(discussion.statements)
-    model = Model(*working, said("I added them all. Who else was around then?"))
-    reply = run(discussion, "There were six of them.", model)
+def test_a_long_turn_that_keeps_writing_runs_to_its_own_end(discussion, family, caplog):
+    # R-0936, R-0411
+    """Thirty steps that each write something are no runaway: the turn ends
+    when the coach stops calling tools, with every edit kept."""
+    working = [called(ToolName.EditPerson, name=f"Person {n}") for n in range(30)]
+    model = Model(*working, said("All thirty are down. Who came next?"))
+    reply = run(discussion, "There were thirty of them.", model)
+    assert reply["statement"] == "All thirty are down. Who came next?"
+    assert FINISH not in str(model.histories[-1][-1]["content"])
+    assert not [r for r in caplog.records if "runaway" in r.message]
+    names = [p.get("name") for p in family.get_diagram_data().people]
+    assert [f"Person {n}" for n in range(30)] == names[-30:]
 
+
+def test_three_steps_that_write_nothing_and_repeat_a_refused_call_stop_the_turn(
+    discussion, family, caplog
+):
+    # R-0936, R-0411, R-0517
+    """A coach going round in circles is stopped after three such steps and
+    asked for its words with no tools; why it was stopped is logged."""
+    stuck = [called(ToolName.EditPerson, id=999, name="Nobody") for _ in range(STALLED_STEPS)]
+    model = Model(*stuck, said("I could not add them. Who were they?"))
+    reply = run(discussion, "Add them.", model)
     assert model.offered[-1] == []
     assert FINISH in model.histories[-1][-1]["content"]
-
-    spoken = [s.text for s in discussion.statements]
-    assert len(spoken) - before == 2
-    assert spoken[-2:] == [
-        "There were six of them.",
-        "I added them all. Who else was around then?",
-    ]
-    assert "Working out" not in " ".join(spoken)
-    assert discussion.statements[-1].id == reply["statement_id"]
+    assert reply["statement"] == "I could not add them. Who were they?"
+    stopped = [r for r in caplog.records if "stopped as a runaway" in r.message]
+    assert [r.levelname for r in stopped] == ["WARNING"]
+    assert "no progress: 3 steps used" in stopped[0].message
 
 
-def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family, caplog):
-    # R-0411
-    """Running out of steps ends the talking, not the record: everything the
-    coach put in before the cap stays in."""
-    working = [
-        called(ToolName.EditPerson, name=f"Person {n}") for n in range(MAX_STEPS)
-    ]
-    reply = run(
-        discussion,
-        "There were six of them.",
-        Model(*working, said("All six are down.")),
-    )
-    capped = [r for r in caplog.records if "hit the step cap" in r.message]
-    assert [r.levelname for r in capped] == ["WARNING"]
-    assert reply["turn_id"] in capped[0].message
-    assert f"{MAX_STEPS} steps used" in capped[0].message
-    assert ToolName.EditPerson.value in capped[0].message
-    assert kinds(reply).count(EventKind.ToolCall.value) == MAX_STEPS
-
-    names = [p.get("name") for p in family.get_diagram_data().people]
-    assert [f"Person {n}" for n in range(MAX_STEPS)] == names[-MAX_STEPS:]
-
-    # The forced last call must not roll anything back or run anything twice:
-    # the rows are still there and still point at the statement.
-    written = Change.query.filter_by(turn_id=reply["turn_id"]).all()
-    assert len(written) == MAX_STEPS
-    assert {c.statement_id for c in written} == {reply["statement_id"]}
+def test_a_turn_still_calling_new_tools_at_two_hundred_steps_meets_the_backstop(
+    discussion, family, caplog
+):
+    # R-0936, R-0411
+    """Reads of new things are not circles, so only the backstop stops them."""
+    reading = [called(ToolName.ReadEvents, person_id=n) for n in range(MAX_STEPS)]
+    model = Model(*reading, said("Here is what the record holds."))
+    run(discussion, "What is in there?", model)
+    stopped = [r for r in caplog.records if "stopped as a runaway" in r.message]
+    assert f"backstop: {MAX_STEPS} steps used" in stopped[0].message
+    assert MAX_STEPS == 200
 
 
 def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(

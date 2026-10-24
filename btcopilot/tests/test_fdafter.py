@@ -25,7 +25,6 @@ from btcopilot.clusters import sync
 from btcopilot.extensions import db
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
-from btcopilot.coachturn import MAX_STEPS
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.pricing import cost
 from btcopilot.models import User, Author, Change, Diagram, ModelCall
@@ -398,7 +397,7 @@ def test_the_coding_question_says_what_the_turn_costs_from_the_models_own_calls(
     said = fdafter.coding_cost(test_user.id, test_user.free_diagram)
     assert said == {
         "low": round(statistics.median(costs) * 5, 2),
-        "high": round(statistics.quantiles(costs, n=10)[-1] * MAX_STEPS, 2),
+        "high": round(statistics.quantiles(costs, n=10)[-1] * fdafter.COST_STEPS, 2),
     }
 
 
@@ -407,7 +406,7 @@ def test_with_too_few_calls_the_cost_is_read_from_the_models_prices(test_user):
     said = fdafter.coding_cost(test_user.id, test_user.free_diagram)
     assert 0 < said["low"] <= said["high"]
     # each end is rounded to cents apart, so low may be up to half a cent over
-    assert said["high"] >= (said["low"] - 0.005) * MAX_STEPS
+    assert said["high"] >= (said["low"] - 0.005) * fdafter.COST_STEPS
 
 
 

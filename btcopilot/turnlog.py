@@ -60,6 +60,9 @@ class TurnEventKind(enum.StrEnum):
     Done = "done"
     # A page following a diagram reads it again: the log lost its place.
     Reload = "reload"
+    # The coach's turn stopped as a runaway, and why (R-0936); kept with the
+    # turn's events, never sent to the page.
+    Runaway = "runaway"
     # The place a page following a diagram starts from, so a reconnect always
     # has one to replay from.
     Ready = "ready"

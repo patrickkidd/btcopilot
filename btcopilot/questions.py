@@ -8,7 +8,7 @@ from typing import Callable
 
 from btcopilot import prompts, record
 from btcopilot.coachmodel import CoachModel
-from btcopilot.coachturn import MAX_STEPS, drain, run_call
+from btcopilot.coachturn import drain, run_call
 from btcopilot.metered import Metered
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Diagram, Discussion, Purpose, Statement
@@ -48,6 +48,8 @@ IMPRESSIONS = Kind(
 START = "Go through the session."
 # About one call to read, one round of adds, and sometimes one more.
 CALLS_PER_SESSION = 3
+# The tool rounds a backfill of one session may take.
+BACKFILL_STEPS = 20
 
 
 def asked(diagram_id: int, data: DiagramData) -> list[dict]:
@@ -215,7 +217,7 @@ def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int
     tools = [schema for schema in schemas() if schema["name"] in kind.tools]
     messages = [{"role": "user", "content": START}]
     calls = 0
-    for _ in range(MAX_STEPS):
+    for _ in range(BACKFILL_STEPS):
         turn = drain(metered.turn(system, messages, tools, turn_id))
         calls += 1
         if not turn.calls:
@@ -238,7 +240,7 @@ def backfill(diagram: Diagram, discussion: Discussion, model, kind: Kind) -> int
         messages.append({"role": "assistant", "content": turn.blocks})
         messages.append({"role": "user", "content": results})
     else:
-        _log.warning(f"Backfill of session {discussion.id} used all {MAX_STEPS} steps")
+        _log.warning(f"Backfill of session {discussion.id} used all {BACKFILL_STEPS} steps")
     record.apply(
         diagram.id,
         [
