@@ -32,6 +32,11 @@ from btcopilot.models import Diagram, User
 TASK = "fd_import_landed"
 REGROUP = "clusters_regroup"
 NOT_FD = "That is not a Family Diagram file."
+# The first bytes of a zip, and of a pickle the desktop writes (protocol 2 on).
+ZIP = b"PK\x03\x04"
+PICKLED = b"\x80"
+# The folder a Mac zip keeps its file forks in, never part of the package.
+MAC_FORKS = "__MACOSX"
 #: The ending of a desktop file's name.
 SUFFIX = ".fd"
 
@@ -41,18 +46,26 @@ def scene(data: bytes) -> tuple[bytes, dict]:
     folder, and the scene read from it; a file that is neither is refused in
     one sentence, and one saved before events had a list of their own in the
     reader's words [Oracle: R-0914, R-0882]."""
-    if zipfile.is_zipfile(io.BytesIO(data)):
+    # read by what the bytes are, never by the file's name: a browser sends
+    # an .fd package as a zip under any name, or its diagram.pickle itself
+    if data.startswith(ZIP):
         with zipfile.ZipFile(io.BytesIO(data)) as folder:
-            found = [
-                one
-                for one in folder.infolist()
-                if Path(one.filename).name == fdfile.PICKLE
-            ]
-            if len(found) != 1:
+            found = next(
+                (
+                    one
+                    for one in folder.infolist()
+                    if Path(one.filename).name == fdfile.PICKLE
+                    and MAC_FORKS not in Path(one.filename).parts
+                ),
+                None,
+            )
+            if found is None:
                 raise ValueError(NOT_FD)
-            if found[0].file_size > attachments.MAX_BYTES:
+            if found.file_size > attachments.MAX_BYTES:
                 raise RequestEntityTooLarge(attachments.TOO_BIG)
-            data = folder.read(found[0])
+            data = folder.read(found)
+    if not data.startswith(PICKLED):
+        raise ValueError(NOT_FD)
     try:
         return data, fdfile.read(data)
     except fdfile.TooOld:

@@ -315,3 +315,35 @@ def test_the_regroup_task_hands_the_queue_nothing_it_cannot_keep(test_user, monk
     monkeypatch.setattr(fdafter, "catch_up", lambda *args, **kwargs: object())
     answer = fdafter.regrouped(test_user.free_diagram_id, turn_id="t1", user_id=test_user.id)
     assert json.dumps(answer) == "null"
+
+
+def upload_named(client, data: bytes, filename: str):
+    return client.post(
+        "/app/diagrams",
+        data={"name": "Lund family", "file": (io.BytesIO(data), filename)},
+        content_type="multipart/form-data",
+        headers={"X-CSRFToken": csrf_token(client)},
+    )
+
+
+def test_a_mac_zip_of_the_package_is_read_by_its_bytes_whatever_its_name(web, landed):
+    # R-0882, R-0899
+    pickled = dumps(scene())
+    data = zipped(
+        {
+            "Lund family.fd/": b"",
+            "__MACOSX/Lund family.fd/._diagram.pickle": b"\x00\x05fork",
+            "__MACOSX/Lund family.fd/diagram.pickle": b"\x00\x05fork",
+            "Lund family.fd/People/": b"",
+            "Lund family.fd/diagram.pickle": pickled,
+        }
+    )
+    for name in ("Lund family.fd", "Lund family.fd.zip"):
+        assert upload_named(web, data, name).status_code == 201, name
+
+
+def test_a_diagram_pickle_is_read_by_its_bytes_whatever_its_name(web, landed):
+    # R-0882, R-0899
+    assert upload_named(web, dumps(scene()), "anything.fd").status_code == 201
+    refused = upload_named(web, b"PK not really", "diagram.pickle")
+    assert (refused.status_code, refused.get_data(as_text=True)) == (400, fdafter.NOT_FD)
