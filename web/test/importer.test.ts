@@ -4,7 +4,7 @@ import type { Person } from "../src/types";
 vi.stubGlobal("window", { BOOTSTRAP: { user: { username: "ann", pro: false } } });
 
 const { Part, store } = await import("../src/store");
-const { ADD_CODES, Answer, CANNOT_BRING, NO_DIAGRAM, ownStep, Pick, bring, fromDrop, UNREAD, ZIP_FIRST, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
+const { ADD_CODES, Answer, CANNOT_BRING, STILL_SENDING, NO_DIAGRAM, ownStep, Pick, bring, fromDrop, UNREAD, ZIP_FIRST, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
   "../src/importer"
 );
 
@@ -76,6 +76,15 @@ it("asks for a zip when a browser hands the .fd package over as a file it cannot
   await one.pick(zipped);
   expect(said()).toEqual([ZIP_FIRST]);
   expect(sent.mock.calls).toEqual([[zipped]]);
+});
+
+// R-0899
+it("says a file is still going up when another is picked meanwhile, never nothing", async () => {
+  const said = toasts();
+  const { one } = importer(null);
+  one.sending = true;
+  await one.pick(new File(["PK"], "Lund family.zip"));
+  expect(said()).toEqual([STILL_SENDING]);
 });
 
 // R-0899
@@ -286,7 +295,7 @@ it("offers the import row to a reader without a professional licence: the row pi
   expect(made.map((one) => one.innerHTML)).toContain("Import a Family Diagram file");
   expect(made.map((one) => one.innerHTML)).toContain("or pick the folder");
   const [file, folder] = made.filter((one) => one.type === "file");
-  expect([file.accept, file.webkitdirectory]).toEqual([".fd,.zip,.pickle", undefined]);
+  expect([file.accept, file.webkitdirectory]).toEqual([".fd,.zip", undefined]);
   expect([folder.accept, folder.webkitdirectory]).toEqual([undefined, true]);
 });
 

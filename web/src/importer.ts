@@ -13,7 +13,7 @@ export const PICKLE = "diagram.pickle";
 export const MAX_BYTES = 20 * 1024 * 1024;
 export const NO_DIAGRAM = "That folder is not a Family Diagram file.";
 /** What the row's own picker offers; the server tells a file by its bytes. */
-export const FILE_KINDS = ".fd,.zip,.pickle";
+export const FILE_KINDS = ".fd,.zip";
 export const TOO_BIG = "That file is over 20 MB, more than the app takes.";
 export const CANNOT_BRING = "Could not bring in the file.";
 
@@ -58,6 +58,7 @@ async function inside(folder: FileSystemDirectoryEntry): Promise<File[]> {
 
 export const ZIP_FIRST = "Zip the .fd folder first, or pick the folder.";
 export const UNREAD = "Could not read that folder.";
+export const STILL_SENDING = "Still bringing in the last file.";
 
 /** What was dropped: a folder's diagram.pickle, a file as it is, or why
  * neither can be sent. The drop's items are read before anything waits, since
@@ -264,7 +265,7 @@ export class Importer {
   /** A file to send, or the sentence saying why there is none. An error
    * anywhere after is said, and still thrown for the console. */
   async pick(file: File | string | null): Promise<void> {
-    if (this.sending) return;
+    if (this.sending) return toast(STILL_SENDING, true);
     const refused = typeof file === "string" ? file : refusal(file);
     if (refused) return toast(refused, true);
     if (await unopened(file as File)) return toast(ZIP_FIRST, true);
