@@ -251,7 +251,6 @@ test.describe("a thread reopened", () => {
     // R-0636
     test("a drag of 300px up the thread folds the picture at most once and no bubble jumps under the thumb", async ({
       page,
-      context,
     }) => {
       await page.addInitScript(() => localStorage.setItem("fd-home-screen-asked", String(Date.now())));
       await page.goto("/app/");
@@ -269,15 +268,23 @@ test.describe("a thread reopened", () => {
         };
         tick();
       });
-      const cdp = await context.newCDPSession(page);
-      const touch = (type: string, y: number) =>
-        cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x: 200, y }] });
-      await touch("touchStart", 250);
+      // A finger on the thread, the thread following it 6px a frame, then the
+      // finger lifting, the same in every engine: the touches the page listens
+      // for are dispatched on a bubble, and the thread scrolls as a drag
+      // scrolls it.
+      const finger = (kind: string) =>
+        page.evaluate((kind) => {
+          const bubbles = document.querySelectorAll("#chat .bub");
+          const touch = new Event(kind, { bubbles: true });
+          Object.defineProperty(touch, "touches", { value: [] });
+          bubbles[bubbles.length - 1].dispatchEvent(touch);
+        }, kind);
+      await finger("touchstart");
       for (let i = 1; i <= 50; i++) {
-        await touch("touchMove", 250 + i * 6);
+        await page.locator("#chat").evaluate((thread) => (thread.scrollTop -= 6));
         await page.waitForTimeout(16);
       }
-      await touch("touchEnd", 550);
+      await finger("touchend");
       await page.waitForTimeout(600);
       const seen = await page.evaluate(
         () => (window as unknown as { seen: { folds: number; ys: number[] } }).seen,
@@ -421,8 +428,11 @@ test.describe("the message box while the coach replies", () => {
 
     await page.locator("#composer").fill("He took the dog.");
     await expect(page.locator("#send")).toHaveAttribute("aria-label", "Send");
-    await page.locator("#composer").press("Enter");
+    // the button, not Return: on a touch screen Return starts a new line
+    await page.locator("#send").click();
     await expect(page.locator("#composer")).toHaveText("He took the dog.");
+    await expect(page.locator("#inbar")).toHaveClass(/\bhold\b/);
+    await expect(page.locator(".field > .held")).toBeVisible();
     await expect(page.locator(".field > .held")).toHaveText("Sends when the coach finishes");
     await expect(page.locator("#send")).toHaveAttribute("aria-label", "Stop");
     expect(sent).toEqual(["My dad moved out."]);
@@ -431,6 +441,7 @@ test.describe("the message box while the coach replies", () => {
     await expect(page.locator(".bub.user").last()).toHaveText("He took the dog.");
     expect(sent).toEqual(["My dad moved out.", "He took the dog."]);
     await expect(page.locator(".field > .held")).toBeHidden();
+    await expect(page.locator("#inbar")).not.toHaveClass(/\bhold\b/);
   });
 
   // R-0636
