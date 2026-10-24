@@ -1,4 +1,5 @@
 import { book } from "./case";
+import { morph } from "./morph";
 import { nameOnly } from "./caseview";
 import { DateCertainty } from "./certainty";
 import { called } from "./diagram";
@@ -1518,7 +1519,10 @@ export class Picture {
   private card(markup: string): void {
     this.laid = { zones: [], rows: [] };
     this.pin(PIC_H);
-    this.host.innerHTML = `<div class="card">${markup}</div>`;
+    // a card already up is drawn in place, keeping where it was scrolled
+    const up = this.host.querySelector<HTMLElement>(":scope > .card");
+    if (up && this.host.childElementCount === 1) morph(up, markup);
+    else this.host.innerHTML = `<div class="card">${markup}</div>`;
     const card = this.host.firstElementChild as HTMLElement;
     card.style.maxHeight = `${window.innerHeight - this.host.getBoundingClientRect().top}px`;
   }
@@ -1738,7 +1742,7 @@ export class Picture {
       return;
     }
     if (width !== this.drawn.width) strip.style.width = width;
-    if (line !== this.drawn.line) strip.innerHTML = line;
+    if (line !== this.drawn.line) morph(strip, line);
     if (after !== this.drawn.after) {
       while (scroll.nextSibling) scroll.nextSibling.remove();
       scroll.insertAdjacentHTML("afterend", after);

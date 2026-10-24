@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { morph } from "./morph";
 import "./casereport.css";
 import { PicEvent, REST, SelKind, reduce } from "./caption";
 import { Books } from "./books";
@@ -192,11 +193,12 @@ export class CaseReport implements View {
     }
     q(this.root, "case-title").textContent = `${v.name} · Case report`;
     q(this.root, "case-by").textContent = v.owner ? `presented by ${v.owner}` : "";
-    this.body.innerHTML = cards(v, wide);
-    this.rail.innerHTML = rail(v);
+    // drawn in place, so a card open or scrolled to stays as it was
+    morph(this.body, cards(v, wide));
+    morph(this.rail, rail(v));
     const dash = dashboard(v);
-    q(this.root, "case-dash").innerHTML = wide ? dash : "";
-    q(this.root, "case-famout-body").innerHTML = wide ? "" : dash;
+    morph(q(this.root, "case-dash"), wide ? dash : "");
+    morph(q(this.root, "case-famout-body"), wide ? "" : dash);
     this.onYou(this.root);
     this.lens.picture.setData(opened.record);
     this.lens.rest();

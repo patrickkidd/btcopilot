@@ -440,7 +440,7 @@ describe("the lines across the thread", () => {
 describe("the drawer's forms", () => {
   type Held = { held(form: HTMLElement): HTMLElement };
   const menu = (detail?: object) =>
-    new Menu({} as HTMLElement, async () => ({}) as never, () => 1, detail as never);
+    new Menu({ addEventListener() {} } as unknown as HTMLElement, async () => ({}) as never, () => 1, detail as never);
 
   // R-0887
   it("are read only on the coding screen and in the personal app alike", () => {

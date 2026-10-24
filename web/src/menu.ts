@@ -1,5 +1,6 @@
 import { eventDetail, personDetail, type DetailHooks } from "./detail";
 import { closeX, el, flash, slideOver } from "./dom";
+import { morph, morphInto } from "./morph";
 import { HAND_EDITS, lock, openEditor, openPersonEditor } from "./editor";
 import { Feature, tap } from "./track";
 import { eventDivider, eventRow, fullName, personRow, sections } from "./rows";
@@ -80,7 +81,36 @@ export class Menu {
     /** Where a tapped row opens the read-only detail card instead of the form:
      * the chat app's own drawer. The coding screen passes none. */
     private detail?: Pick<DetailHooks, "talk" | "cluster" | "said" | "notes">,
-  ) {}
+  ) {
+    // one listener for every row, so a row kept across a redraw answers once
+    body.addEventListener("click", (e) => {
+      if (this.tab === Tab.Questions) return;
+      const target = e.target as Element;
+      if (target.closest("[data-order]")) {
+        tap(Feature.PeopleOrder);
+        this.byName = !this.byName;
+        return this.render();
+      }
+      const row = target.closest<HTMLElement>(".row[data-event], .row[data-person]");
+      if (row && body.contains(row)) this.pick(row);
+    });
+  }
+
+  /** A row tapped: its card or form opens, or closes when it was open. */
+  private pick(row: HTMLElement): void {
+    const event = row.dataset.event !== undefined;
+    const id = Number(event ? row.dataset.event : row.dataset.person);
+    this.listTop = this.body.scrollTop;
+    if (this.editing !== id)
+      tap(event ? Feature.EventOpen : Feature.PersonOpen, { kind: event ? ItemKind.Event : ItemKind.Person, id: String(id) });
+    this.editing = this.editing === id ? null : id;
+    this.render();
+    this.onMove?.();
+  }
+
+  /** The item whose card is on screen, kept in place when the record is read
+   * again and replaced only when another opens. */
+  private carded: string | null = null;
 
   private held(form: HTMLElement): HTMLElement {
     return HAND_EDITS ? form : lock(form);
@@ -202,10 +232,17 @@ export class Menu {
     const page = this.tab === Tab.Questions ? null : this.page();
     this.body.parentElement?.classList.toggle("carded", page !== null);
     if (page) {
-      this.body.replaceChildren(page);
-      this.body.scrollTop = 0;
+      const shown = `${this.tab}:${this.editing}`;
+      const card = this.body.firstElementChild;
+      if (shown === this.carded && card && this.body.childElementCount === 1) morphInto(card, page);
+      else {
+        this.body.replaceChildren(page);
+        this.body.scrollTop = 0;
+      }
+      this.carded = shown;
       return;
     }
+    this.carded = null;
     if (this.tab === Tab.People) {
       this.renderPeople();
       return;
@@ -228,20 +265,7 @@ export class Menu {
           ? "Nothing matches that search."
           : "Nothing on the timeline yet."
       }</div>`;
-    const top = this.body.scrollTop;
-    this.body.innerHTML = html;
-    this.body.scrollTop = top;
-    this.body.querySelectorAll<HTMLElement>(".row").forEach((row) => {
-      row.addEventListener("click", () => {
-        const id = Number(row.dataset.event);
-        this.listTop = this.body.scrollTop;
-        if (this.editing !== id)
-          tap(Feature.EventOpen, { kind: ItemKind.Event, id: String(id) });
-        this.editing = this.editing === id ? null : id;
-        this.render();
-        this.onMove?.();
-      });
-    });
+    morph(this.body, html);
     if (this.editing !== null) {
       const event = this.data.events.find((e) => e.id === this.editing);
       const row = this.body.querySelector(`.row[data-event="${this.editing}"]`);
@@ -265,25 +289,7 @@ export class Menu {
       html = `<div class="none">${
         this.data.people.length ? "Nobody matches that search." : "Nobody in the diagram yet."
       }</div>`;
-    const top = this.body.scrollTop;
-    this.body.innerHTML = html;
-    this.body.scrollTop = top;
-    this.body.querySelector('[data-order]')?.addEventListener("click", () => {
-      tap(Feature.PeopleOrder);
-      this.byName = !this.byName;
-      this.render();
-    });
-    this.body.querySelectorAll<HTMLElement>(".row").forEach((row) => {
-      row.addEventListener("click", () => {
-        const id = Number(row.dataset.person);
-        this.listTop = this.body.scrollTop;
-        if (this.editing !== id)
-          tap(Feature.PersonOpen, { kind: ItemKind.Person, id: String(id) });
-        this.editing = this.editing === id ? null : id;
-        this.render();
-        this.onMove?.();
-      });
-    });
+    morph(this.body, html);
     if (this.editing !== null) {
       const person = this.data.people.find((p) => p.id === this.editing);
       const row = this.body.querySelector(`.row[data-person="${this.editing}"]`);
