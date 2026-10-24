@@ -84,6 +84,58 @@ async function staysSlid(page: Page, view: string): Promise<void> {
   expect(Math.abs((await at(page, view)).left - before)).toBeLessThanOrEqual(1);
 }
 
+/** Where the line's first and last events stand: the ruler's end years are
+ * drawn at those two points, and a cluster write moves no event, so the share
+ * of the way between them is the same date before and after. */
+const ends = (page: Page, view: string) =>
+  page.locator(`${view} .ss-line svg`).evaluate((svg) => {
+    const at = (anchor: string) => Number(svg.querySelector(`text.ep-yrs[text-anchor="${anchor}"]`)!.getAttribute("x"));
+    return { first: at("start"), last: at("end") };
+  });
+
+/** The line slid to its middle, and clusters come in and draw it wider: the
+ * date that was in the middle of the screen is still there. A cluster is set
+ * aside first, one that leaves the line wider than the screen, and comes back. */
+async function keepsDate(page: Page, view: string): Promise<void> {
+  const scroll = page.locator(`${view} .ss-scroll`);
+  await expect(scroll).toBeVisible();
+  await page.waitForTimeout(500);
+  const { id, clusters } = await opened(page);
+  let cluster: string | null = null;
+  for (const one of clusters) {
+    await setAside(page, id, one, true);
+    if ((await slack(page, view)) > 0) {
+      cluster = one;
+      break;
+    }
+    await setAside(page, id, one, false);
+  }
+  expect(cluster, "a cluster whose absence leaves the line wider than the screen").not.toBeNull();
+  try {
+    const before = await scroll.evaluate((s) => {
+      s.scrollLeft = Math.round((s.scrollWidth - s.clientWidth) / 2);
+      return { left: s.scrollLeft, half: s.clientWidth / 2, end: s.scrollWidth - s.clientWidth };
+    });
+    await page.waitForTimeout(500);
+    const was = await ends(page, view);
+    const share = (before.left + before.half - was.first) / (was.last - was.first);
+    await setAside(page, id, cluster!, false);
+    const after = await scroll.evaluate((s) => ({ left: s.scrollLeft, end: s.scrollWidth - s.clientWidth }));
+    expect(after.end).toBeGreaterThan(before.end);
+    const now = await ends(page, view);
+    // the same date, as far along the line, is under the middle of the screen
+    expect(Math.abs(now.first + share * (now.last - now.first) - after.left - before.half)).toBeLessThanOrEqual(4);
+  } finally {
+    if ((await opened(page)).clusters.length < clusters.length) await setAside(page, id, cluster!, false);
+  }
+}
+
+// R-0937
+test("the chat's timeline keeps the date in the middle of the screen when clusters come in and widen it", async ({ page }) => {
+  await page.goto("/app/");
+  await keepsDate(page, "#view");
+});
+
 for (const [name, where, view] of [
   ["chat", "/app/", "#view"],
   ["case report", "/app/case-report", "#case-view"],
