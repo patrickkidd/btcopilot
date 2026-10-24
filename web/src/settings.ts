@@ -41,6 +41,22 @@ const PANE_MS = 240;
  * free one. */
 export const SWIPED = ".sn-row[data-diagram]:not([data-free])";
 export const CANNOT_DELETE = "Could not delete the diagram.";
+
+/** What the account view's question sheet asks for. */
+export enum Asked {
+  ShadowsOn = "on",
+  Cancel = "cancel",
+  Delete = "delete",
+}
+
+/** Asked before a swiped diagram is deleted, under its name. */
+export const deleteAsk = (name: string): string =>
+  `<div class="cf-t">Delete ${esc(name)}?</div>` +
+  `<p class="cf-p">It is hidden from you; nothing is erased.</p>` +
+  `<div class="cf-btns">` +
+  `<button class="cf-go" type="button" data-act="${Asked.Delete}">Delete</button>` +
+  `<button class="cf-no" type="button" data-act="${Asked.Cancel}">Cancel</button>` +
+  `</div>`;
 /** How often the coach may message first is a most, never a schedule: the
  * choices say so, and the hint says what makes it write. */
 const PROACTIVE_CHOICE: Record<Proactive, string> = {
@@ -214,10 +230,8 @@ export class Settings {
     this.ask = new Sheet(overlay, "sh");
     this.importer = new Importer(overlay, (made) => this.imported(made), (words) => this.handlers.onSay(words));
     this.ask.panel.addEventListener("click", (e) => {
-      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act;
-      if (!act) return;
-      this.ask.lower();
-      if (act === "on") void this.write({ shadow_models: this.prefs!.shadow_candidates });
+      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act as Asked | undefined;
+      if (act) this.answer(act);
     });
     const frame = el("iframe");
     frame.id = "literature";
@@ -869,8 +883,8 @@ export class Settings {
       `<div class="cf-t">Turn on Conversation Feedback?</div>` +
         `<p class="cf-p">${esc(SHADOW_WARNING)}</p>` +
         `<div class="cf-btns">` +
-        `<button class="cf-go" type="button" data-act="on">Turn on</button>` +
-        `<button class="cf-no" type="button" data-act="cancel">Cancel</button>` +
+        `<button class="cf-go" type="button" data-act="${Asked.ShadowsOn}">Turn on</button>` +
+        `<button class="cf-no" type="button" data-act="${Asked.Cancel}">Cancel</button>` +
         `</div>`,
     );
   }
@@ -1142,10 +1156,28 @@ export class Settings {
         const del = (e.target as Element).closest<HTMLElement>(".fs-act.del");
         if (!del && !swipe.claims()) return;
         e.stopPropagation();
-        if (del) void this.drop(del.closest<HTMLElement>(".sn-row")!);
+        if (del) this.askDrop(del.closest<HTMLElement>(".sn-row")!);
       },
       true,
     );
+  }
+
+  /** The row whose Delete was tapped, while the question is up. */
+  private dropping: HTMLElement | null = null;
+
+  /** Delete asks first, under the diagram's name; only its own Delete sends. */
+  askDrop(row: HTMLElement): void {
+    this.dropping = row;
+    const id = Number(row.dataset.diagram);
+    this.ask.show(deleteAsk(this.account!.diagrams.find((one) => one.id === id)!.name));
+  }
+
+  answer(act: Asked): void {
+    this.ask.lower();
+    const row = this.dropping;
+    this.dropping = null;
+    if (act === Asked.ShadowsOn) void this.write({ shadow_models: this.prefs!.shadow_candidates });
+    else if (act === Asked.Delete) void this.drop(row!);
   }
 
   /** A deleted diagram's row goes; when it was the one open, the app goes to

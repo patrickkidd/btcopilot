@@ -5,7 +5,7 @@ vi.stubGlobal("window", {
   setTimeout: (run: () => void) => run(),
 });
 
-const { Page, Settings, SWIPED } = await import("../src/settings");
+const { Asked, Page, Settings, SWIPED } = await import("../src/settings");
 const { store } = await import("../src/store");
 
 afterEach(() => vi.unstubAllGlobals());
@@ -159,4 +159,26 @@ it("says a refusal once, in the server's sentence when it is one and in plain wo
   const free = deleting([], new Response("Your personal diagram cannot be deleted.", { status: 400 }));
   await free.settings.drop(free.row);
   expect(free.said()).toEqual(["Your personal diagram cannot be deleted."]);
+});
+
+// R-0904
+it("asks under the diagram's name before deleting it, and only its Delete sends the request", () => {
+  const shown: string[] = [];
+  const dropped: unknown[] = [];
+  const settings = Object.assign(Object.create(Settings.prototype), {
+    account: { diagrams: [own(1, "Ann's family", true), own(8, "Reyes family")] },
+    ask: { show: (html: string) => void shown.push(html), lower() {} },
+    drop: async (row: unknown) => void dropped.push(row),
+  });
+  const row = { dataset: { diagram: "8" } };
+  settings.askDrop(row);
+  expect(shown[0]).toContain("Delete Reyes family?");
+  expect(shown[0]).toContain("It is hidden from you; nothing is erased.");
+  expect(shown[0]).toContain(`data-act="${Asked.Delete}">Delete<`);
+  expect(shown[0]).toContain(`data-act="${Asked.Cancel}">Cancel<`);
+  settings.answer(Asked.Cancel);
+  expect(dropped).toEqual([]);
+  settings.askDrop(row);
+  settings.answer(Asked.Delete);
+  expect(dropped).toEqual([row]);
 });
