@@ -2,7 +2,6 @@
 reaches every page following the diagram."""
 
 import json
-import logging
 
 import redis
 from mock import patch
@@ -132,7 +131,7 @@ def test_a_page_that_saw_no_write_is_given_the_writes_made_while_it_was_away(web
     assert [e["turn_id"] for _, e in replayed] == ["t10"]
 
 
-def test_a_broken_redis_link_ends_the_stream_so_the_page_reconnects(web, test_user, caplog):
+def test_a_broken_redis_link_ends_the_stream_so_the_page_reconnects(web, test_user):
     # R-0933
     diagram = test_user.free_diagram
 
@@ -140,9 +139,13 @@ def test_a_broken_redis_link_ends_the_stream_so_the_page_reconnects(web, test_us
         yield 2, {"type": "write", "turn_id": "t1"}
         raise redis.ConnectionError("Connection reset by peer")
 
-    with patch("btcopilot.turnlog.subscribe", following), caplog.at_level(logging.WARNING):
+    with patch("btcopilot.turnlog.subscribe", following), patch(
+        "btcopilot.routes.diagrams._log"
+    ) as log:
         response = web.get(f"/app/diagrams/{diagram.id}/events", buffered=False)
         sent = frames(response, 10)
     assert response.status_code == 200
     assert [event["type"] for _, event in sent] == ["ready", "write"]
-    assert "Connection reset by peer" in caplog.text
+    log.warning.assert_called_once_with(
+        "diagram %s stream lost Redis", diagram.id, exc_info=True
+    )
