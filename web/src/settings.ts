@@ -49,7 +49,7 @@ const PROACTIVE_CHOICE: Record<Proactive, string> = {
   [Proactive.Weekly]: "at most weekly",
 };
 const writesFirst = (often: string) =>
-  `Never more than once a ${often}, and only when the coach notices a pattern in your family's events or follows up on something you agreed to.`;
+  `Never more than once a ${often}, and only when the coach notices a pattern in the family's events or follows up on something you agreed to.`;
 const BUG_REPORTS_CHOICE: Record<BugReports, string> = {
   [BugReports.Ask]: "ask me",
   [BugReports.Always]: "always send",

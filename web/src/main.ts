@@ -666,7 +666,7 @@ async function openDiagram(id: number): Promise<void> {
 }
 
 /** What the title row says with no family open yet. */
-const UNNAMED = $("title").textContent ?? "Your family";
+const UNNAMED = $("title").textContent ?? "This family";
 
 /** The title row shows the current view's title, and the family's name again
  * when the settings stack closes. */

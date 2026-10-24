@@ -226,7 +226,7 @@ export class Menu {
       html = `<div class="none">${
         this.data.events.length
           ? "Nothing matches that search."
-          : "Nothing on your timeline yet."
+          : "Nothing on the timeline yet."
       }</div>`;
     const top = this.body.scrollTop;
     this.body.innerHTML = html;
@@ -263,7 +263,7 @@ export class Menu {
       html += personRow(person, this.editing === person.id);
     if (!shown.length)
       html = `<div class="none">${
-        this.data.people.length ? "Nobody matches that search." : "Nobody in your diagram yet."
+        this.data.people.length ? "Nobody matches that search." : "Nobody in the diagram yet."
       }</div>`;
     const top = this.body.scrollTop;
     this.body.innerHTML = html;
