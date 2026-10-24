@@ -360,7 +360,15 @@ def _line(out: Imported, chunk: dict, events: dict) -> dict | None:
     label = f"relationship line {chunk['id']}"
     out.lines += 1
     _drop(out, "emotions", chunk, LINE_USED)
-    if chunk.get("event") is not None:
+    if chunk.get("event") is not None and chunk["event"] not in events:
+        out.decide(
+            label,
+            "event",
+            chunk["event"],
+            "",
+            "The file names an event it does not hold, so the line is kept as a shift of its own.",
+        )
+    elif chunk.get("event") is not None:
         event = events[chunk["event"]]
         out.joined[label] = event["id"]
         if target is not None and target not in event.setdefault(

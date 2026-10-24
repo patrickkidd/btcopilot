@@ -173,6 +173,19 @@ def test_relationship_lines_go_on_their_event_or_become_a_shift():
     assert out.joined == {"relationship line 30": 23}
 
 
+def test_a_line_naming_an_event_the_file_lacks_is_kept_and_said_in_the_record():
+    # R-0918, R-0932
+    out = imported(
+        events=[shift(23)],
+        emotions=[
+            {"kind": "conflict", "id": 30, "person": 1, "target": 2, "event": 99},
+        ],
+    )
+    events = by_id(out.data["events"])
+    assert (events[30]["relationship"], events[30]["relationshipTargets"]) == ("conflict", [2])
+    assert "event" in reasons(out, "relationship line 30")
+
+
 def test_lines_with_no_other_person_kept_aside_for_the_import_record():
     # R-0932
     out = imported(
