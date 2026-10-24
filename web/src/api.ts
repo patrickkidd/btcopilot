@@ -59,10 +59,11 @@ const PATIENCE_MS = 60_000;
  * (btcopilot/playturn.py WAIT), so a slow model fails with the server's error. */
 export const PLAY_WAIT_S = 390;
 /** How long the page waits for the scribe: the server's own longest answer,
- * every one of its model answers (btcopilot/review/scribe.py MAX_STEPS) at the
- * model's own limit (btcopilot/llmutil.py ANTHROPIC_TIMEOUT) and a little over,
- * so a slow scribe that still writes is never shown as not saved. */
-export const SCRIBE_WAIT_S = 8 * 120 + 30;
+ * every one of its model answers (btcopilot/review/scribe.py MAX_STEPS) at its
+ * Gemini model's own limit (btcopilot/llmutil.py GEMINI_TIMEOUT_MS) and a
+ * little over, so a slow scribe that still writes is never shown as not saved;
+ * btcopilot/tests/review/test_scribe.py fails when the two part ways. */
+export const SCRIBE_WAIT_S = 990;
 
 /** The session's newest CSRF token: the server sends it on every answer, so
  * a token replaced on the server reaches the page with the next answer, not

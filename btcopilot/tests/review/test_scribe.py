@@ -9,13 +9,14 @@ from mock import patch
 
 from btcopilot import prompts
 from btcopilot.coachmodel import ModelTurn, ToolCall
-from btcopilot.llmutil import NotOnBedrockError, Served
+from btcopilot.llmutil import GEMINI_TIMEOUT_MS, NotOnBedrockError, Served
 from btcopilot.extensions import db
 from btcopilot.models import Change, Diagram, ModelCall, Observation, ObservationKind, Purpose, TurnEvent
 from btcopilot.review import adapter
 from btcopilot.review import scribe as scribe_module
 from btcopilot.review.scribe import written
 from btcopilot.review.scribetools import ScribeTools
+from btcopilot.tests.repo import REPO
 from btcopilot.tests.review.conftest import coded, person, shift
 
 HAIKU = Served("claude-haiku-4-5")
@@ -897,3 +898,12 @@ def test_a_year_the_coder_says_alone_is_kept_and_read_back_as_the_year(coder, cu
     assert response.json["lines"] == [added("Marcus & Delphine · Married · 1970")]
     (married,) = db.session.get(Diagram, coding.diagram_id).get_diagram_data().events
     assert (married["dateTime"], married["datePrecision"]) == ("1970-01-01", "year")
+
+
+def test_the_page_waits_for_the_scribe_as_long_as_the_server_can_take():
+    # R-0869, R-0883
+    """A slow scribe that still writes is never shown to the coder as not saved."""
+    api = (REPO / "web" / "src" / "api.ts").read_text()
+    longest = scribe_module.MAX_STEPS * GEMINI_TIMEOUT_MS // 1000 + 30
+    assert scribe_module.MODEL.startswith("gemini")
+    assert f"SCRIBE_WAIT_S = {longest};" in api
