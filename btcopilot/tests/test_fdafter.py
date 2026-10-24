@@ -17,14 +17,17 @@ from btcopilot import (
     fdafter,
     fdfile,
     fdimport,
+    prompts,
     record,
+    recordtext,
 )
 from btcopilot.clusters import sync
 from btcopilot.extensions import db
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.coachturn import MAX_STEPS
-from btcopilot.llmutil import resolve_model
+from btcopilot.llmutil import Spent, resolve_model
+from btcopilot.pricing import cost
 from btcopilot.models import User, Author, Change, Diagram, ModelCall
 from btcopilot.models.modelcall import Purpose
 from btcopilot.schema import DateCertainty, Event, EventKind, ItemKind, Person, asdict
@@ -403,4 +406,23 @@ def test_with_too_few_calls_the_cost_is_read_from_the_models_prices(test_user):
     # R-0902, R-0903
     said = fdafter.coding_cost(test_user.id, test_user.free_diagram)
     assert 0 < said["low"] <= said["high"]
-    assert said["high"] >= said["low"] * MAX_STEPS - 0.01
+    # each end is rounded to cents apart, so low may be up to half a cent over
+    assert said["high"] >= (said["low"] - 0.005) * MAX_STEPS
+
+
+
+def test_the_price_read_cost_counts_what_a_coach_call_writes(test_user):
+    # R-0902, R-0903
+    model = resolve_model(setting.read(SettingKey.CoachModel, test_user.id))
+    words = prompts.get_agent_prompt(
+        record=recordtext.outline(test_user.free_diagram.get_diagram_data(), test_user.free_diagram.version, None)
+    )
+    reading = len(words) // fdafter.CHARS_PER_TOKEN
+    unwritten = fdafter.coding_cost(test_user.id, test_user.free_diagram)
+    assert unwritten["low"] == round(float(cost(model, Spent(input=reading, output=fdafter.OUTPUT_TOKENS))), 2)
+    calls(test_user.id, turns=1, per_turn=3, model="another-model")
+    ModelCall.query.update({"output_tokens": 4000})
+    db.session.commit()
+    written = fdafter.coding_cost(test_user.id, test_user.free_diagram)
+    assert written["low"] == round(float(cost(model, Spent(input=reading, output=4000))), 2)
+    assert written["low"] > unwritten["low"]

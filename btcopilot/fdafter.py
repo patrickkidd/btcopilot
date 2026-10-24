@@ -47,6 +47,8 @@ RECENT_CALLS = 20
 # The repo's rough count of characters to a token (refs.py), for a cost read
 # from prices when the model has too few calls to read it from.
 CHARS_PER_TOKEN = 4
+# What a coach call writes, when the ledger holds no coach call to read it from.
+OUTPUT_TOKENS = 800
 # The first bytes of a zip, and of a pickle the desktop writes (protocol 2 on).
 ZIP = b"PK\x03\x04"
 PICKLED = b"\x80"
@@ -172,7 +174,8 @@ def coding_cost(user_id: int, diagram: Diagram) -> dict:
     [Oracle: R-0902]. With RECENT_CALLS or more of its calls in the last
     COST_DAYS days: the median call times the median calls a turn made, and
     the 90th percentile call times the turn's step cap. With fewer: the
-    model's input price on this diagram's coach prompt, once per step."""
+    model's prices on this diagram's coach prompt and the median a coach call
+    of any model writes (OUTPUT_TOKENS with none), once per step."""
     model = resolve_model(setting.read(SettingKey.CoachModel, user_id))
     since = datetime.datetime.utcnow() - datetime.timedelta(days=COST_DAYS)
     rows = ModelCall.query.filter(
@@ -190,6 +193,13 @@ def coding_cost(user_id: int, diagram: Diagram) -> dict:
         words = prompts.get_agent_prompt(
             record=recordtext.outline(diagram.get_diagram_data(), diagram.version, None)
         )
-        call = float(cost(model, Spent(input=len(words) // CHARS_PER_TOKEN)))
+        said = [
+            row.output_tokens
+            for row in ModelCall.query.filter(ModelCall.purpose == Purpose.Coach)
+        ]
+        output = int(statistics.median(said)) if said else OUTPUT_TOKENS
+        call = float(
+            cost(model, Spent(input=len(words) // CHARS_PER_TOKEN, output=output))
+        )
         low, high = call * steps, call * MAX_STEPS
     return {"low": round(low, 2), "high": round(high, 2)}
