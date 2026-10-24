@@ -104,7 +104,10 @@ export const refusal = (file: File | null): string | null =>
 
 /** What the coach is sent when the person says yes to codes for the events
  * the file left without (R-0899). */
-export const ADD_CODES = "Go through the events in this diagram and add codes where the file left them blank.";
+export const ADD_CODES =
+  "Go through every event in this diagram that has no codes and add codes where the file gives you enough to go on. " +
+  "Don't ask me anything first; leave anything missing blank. Keep the events' titles as they are. " +
+  "Keep going until you have considered every one, then tell me how many you coded and how many you left uncoded.";
 
 export enum Answer {
   Own = "own",
