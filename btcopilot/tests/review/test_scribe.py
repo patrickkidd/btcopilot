@@ -498,17 +498,38 @@ def test_an_event_refused_before_its_person_was_added_is_not_shown_unsaved_once_
     coding = coded(coder.user, cut, {"people": []}, done=False)
     undated = {key: value for key, value in SHIFT.items() if key != "date"}
     model = Scripted(
-        [("add_shift", dict(undated, title="Sleep trouble began in high school", person=-1))],
+        [("add_shift", dict(undated, title="Sleep trouble began", description="in high school", person=-1))],
         [
             ("add_person", {"name": "Client", "sex": "female", "ref": -1}),
-            ("add_shift", dict(SHIFT, title="Sleep trouble began", person=-1)),
+            ("add_shift", dict(SHIFT, title="Sleep trouble", description="began in high school", person=-1)),
         ],
     )
     response = scribe(coder, coding, turns[0], model, "Her sleep trouble started in 2010.")
     assert response.status_code == 200
     assert (response.json["lines"], response.json["refused"]) == (
-        [added("Client"), added("Client · Sleep trouble began · Jan 2010")],
+        [added("Client"), added("Client · Sleep trouble · Jan 2010")],
         [],
+    )
+
+
+def test_a_second_event_of_the_same_kind_really_lost_still_shows_unsaved(coder, cut, turns):
+    # R-0883, R-0884
+    coding = coded(coder.user, cut, {"people": []}, done=False)
+    model = Scripted(
+        [
+            ("add_shift", dict(SHIFT, title="Sleep trouble began", person=-1)),
+            ("add_shift", dict(SHIFT, title="Stopped eating", description="stopped eating", person=-1)),
+        ],
+        [
+            ("add_person", {"name": "Client", "sex": "female", "ref": -1}),
+            ("add_shift", dict(SHIFT, title="Sleep trouble began", person=-1)),
+        ],
+    )
+    response = scribe(coder, coding, turns[0], model, "Her sleep trouble began and she stopped eating.")
+    assert response.status_code == 200
+    assert (response.json["lines"], response.json["refused"]) == (
+        [added("Client"), added("Client · Sleep trouble began · Jan 2010")],
+        [added("someone · Stopped eating · Jan 2010")],
     )
 
 

@@ -294,9 +294,10 @@ def tried(data: dict, kept: list[dict]) -> list[dict]:
 
 def _entered(refused: dict, later: dict) -> bool:
     """Whether a later call entered what a refused one tried: the same item, or
-    an event of the same kind once the person the refused one named by a ref
-    nothing had added yet is in the record, its title and date put right on
-    the way (R-0883, R-0884)."""
+    an event of the same kind and the same words once the person the refused
+    one named by a ref nothing had added yet is in the record, its date put
+    right on the way. Another event of that kind is not it, so one really lost
+    still shows (R-0883, R-0884)."""
     if later["refusal"] or later["name"] != refused["name"]:
         return False
     if _subject(later) == _subject(refused):
@@ -305,7 +306,16 @@ def _entered(refused: dict, later: dict) -> bool:
         _about(refused) == UNADDED
         and _subject(refused)[:2] == _subject(later)[:2]
         and refused["name"] not in (adapter.ToolName.EditPerson, adapter.ToolName.EditPairBond)
+        and _said(refused) == _said(later)
     )
+
+
+def _said(call: dict) -> frozenset[str]:
+    """An event's words, however the scribe split them between its title and
+    its description."""
+    args = call["args"]
+    words = " ".join(str(args.get(key) or "") for key in ("title", "description"))
+    return frozenset(word.lower() for word in WORDS.findall(words))
 
 
 #: Who an event is about when the call named a person by a ref nothing in the
