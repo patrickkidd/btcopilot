@@ -89,6 +89,10 @@ class Invalid(Exception):
         self.plain = plain
 
 
+class NameTaken(Invalid):
+    """A person under a name someone in the record already has."""
+
+
 # A question is closed, never removed (R-0006): what the user declined has to
 # stay where the coach can see it.
 NEVER_REMOVED = ("a question is never removed; close it", "It removed a question, and a question is never removed.")
@@ -1100,7 +1104,7 @@ def _people(data: dict, deltas: list[dict]):
             continue
         for other in people:
             if str(other.get("id")) != person_id and generic_key(other) == key:
-                raise Invalid(
+                raise NameTaken(
                     f"{person['name']} is already person {other['id']} "
                     f"({other['name']}): use that person rather than adding another",
                     f"{person['name']} was already in the diagram as {other['name']}.",

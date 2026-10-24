@@ -519,6 +519,14 @@ def test_record_rules_refuse_before_anything_is_written(test_user):
     assert Diagram.query.filter_by(name="Lund family").count() == 0
 
 
+def test_a_person_refused_for_anything_but_a_taken_name_stops_the_import_with_why():
+    # R-0905
+    file = scene()
+    file["people"][0]["gender"] = "zebra"
+    with pytest.raises(ValueError, match="Ada Lund could not be brought in: The person's gender"):
+        fdimport.build(fdfile.read(dumps(file)))
+
+
 def test_admin_import_previews_then_writes_and_mails_the_record(
     flask_app, test_user, tmp_path, monkeypatch
 ):

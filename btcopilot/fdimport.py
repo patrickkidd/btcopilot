@@ -786,7 +786,8 @@ def _still(out: Imported, kind: ItemKind, item_id: str) -> record.Invalid | None
 def _settle(out: Imported) -> None:
     """One refusal never stops the import: each item the record's rules refuse
     is left out by itself, the later of two copies first, so the earlier one
-    stays; a person is kept under a counted name instead."""
+    stays; a person whose name is taken is kept under a counted name, and a
+    person refused for anything else stops the import with why."""
     while refused := _refused(out):
         copies = collections.Counter(map(record.twin_key, out.data["events"]))
         for kind, item_id in sorted(refused, key=lambda key: -int(key[1])):
@@ -802,8 +803,12 @@ def _settle(out: Imported) -> None:
             item = next(
                 i for i in out.data[ITEM_COLLECTIONS[kind]] if str(i["id"]) == item_id
             )
-            if kind is ItemKind.Person:
+            if kind is ItemKind.Person and isinstance(invalid, record.NameTaken):
                 _counted(out, item, f"The record's rules refused it: {invalid.plain}")
+            elif kind is ItemKind.Person:
+                raise ValueError(
+                    f"{_said('people', item)} could not be brought in: {invalid.plain}"
+                )
             else:
                 _left(out, kind, item, invalid)
 
