@@ -1211,18 +1211,21 @@ let onTurn: string | null = null;
 
 const nextFrame = (): Promise<number> => new Promise((done) => requestAnimationFrame(done));
 
-/** The record and the sittings read again as a turn ends, drawn on a frame of
- * their own so the turn never redraws twice in one frame (R-0898). */
-async function settleRecord(): Promise<boolean> {
+/** The sittings read again as a turn ends, and the record too when a write
+ * landed since it was last read, drawn on a frame of their own so the turn
+ * never redraws twice in one frame (R-0898); a record that came back the same
+ * is not drawn again. */
+async function settleRecord(record = true): Promise<boolean> {
   const live = store.live();
   const [timeline, sittings] = await Promise.all([
-    store.fetch(api.timeline),
+    record ? store.fetch(api.timeline) : Promise.resolve(store.current().record),
     store.fetch(api.sessionIndex),
   ]);
   if (timeline === null || sittings === null) return false;
   await nextFrame();
   if (!live()) return false;
-  store.update({ record: timeline, sittings });
+  const same = JSON.stringify(timeline) === JSON.stringify(store.current().record);
+  store.update(same ? { sittings } : { record: timeline, sittings });
   return true;
 }
 
@@ -1355,7 +1358,7 @@ function follow(turnId: string): void {
         said.settle(reply.statement, (chip) => lens.aim(chip));
         said.vote(turnId);
         stopFollowing();
-        if (!(await settleRecord())) return;
+        if (!(await settleRecord(lock.unread()))) return;
         void notices.refresh();
         // What the message named stays lit after it is written: the spotlight
         // is the resting state of the picture, not a flourish while it types.
@@ -1385,7 +1388,7 @@ function follow(turnId: string): void {
   });
 
   const source = api.turnEvents(turnId);
-  store.hold(source);
+  store.hold(source, turnId);
   source.addEventListener("message", (event) => take(JSON.parse(event.data)));
   source.addEventListener("error", () => {
     // The browser reconnects on its own and says where it got to; only a turn

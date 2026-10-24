@@ -1252,9 +1252,9 @@ export class Picture {
 
   setData(data: Timeline): void {
     this.data = data;
-    // the record has changed under the picture, which is what a reply leaves
-    // behind: the line goes back to the present (R-0381)
-    this.park = Park.Present;
+    // a change to the record, from a reply here or a write anywhere, leaves
+    // the line where the reader slid it (R-0577); a diagram just opened is
+    // parked at the present by the clear before it
     this.render();
   }
 
@@ -1716,10 +1716,34 @@ export class Picture {
       .map((left) => `<i class="ss-snap" style="left:${left}px"></i>`)
       .join("");
 
-    this.host.innerHTML =
-      `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
-      `${svg}${words}${targets}${snaps}</div></div>${title}${shelf}</div>`;
+    this.lay(`${width.toFixed(1)}px`, `${svg}${words}${targets}${snaps}`, `${title}${shelf}`);
     this.settle({ width, screen }, held, on);
+  }
+
+  /** What the line last drew, to change only what differs. */
+  private drawn: { strip: HTMLElement; width: string; line: string; after: string } | null = null;
+
+  /** The line put on screen. A redraw while the line is up keeps its frame and
+   * its scroller, so it neither flashes nor loses where the reader slid it,
+   * and changes only the parts whose drawing differs. */
+  private lay(width: string, line: string, after: string): void {
+    const frame = this.host.querySelector<HTMLElement>(":scope > .ss");
+    const scroll = frame?.querySelector<HTMLElement>(`:scope > ${SCROLLER}`);
+    const strip = scroll?.querySelector<HTMLElement>(":scope > .ss-line");
+    // anything else drawn here since, and the line is drawn whole again
+    if (!scroll || !strip || this.drawn?.strip !== strip) {
+      this.host.innerHTML =
+        `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width}">${line}</div></div>${after}</div>`;
+      this.drawn = { strip: this.host.querySelector<HTMLElement>(".ss-line")!, width, line, after };
+      return;
+    }
+    if (width !== this.drawn.width) strip.style.width = width;
+    if (line !== this.drawn.line) strip.innerHTML = line;
+    if (after !== this.drawn.after) {
+      while (scroll.nextSibling) scroll.nextSibling.remove();
+      scroll.insertAdjacentHTML("afterend", after);
+    }
+    this.drawn = { strip, width, line, after };
   }
 
   /** Where the line comes to rest after this draw: on what was just named

@@ -59,6 +59,9 @@ export class Store {
   /** A write came in while the record was being read for the one before. */
   private stale = false;
   private reading = false;
+  private queued = false;
+  /** The turn whose own stream this page follows, while it runs. */
+  private turnId: string | null = null;
 
   constructor(private stream: (diagramId: number) => EventSource = api.diagramEvents) {}
   /** Counts opens, so whatever was asked for an earlier one is dropped. */
@@ -122,11 +125,23 @@ export class Store {
   private follow(id: number): void {
     const writes = this.stream(id);
     this.writes = writes;
-    writes.addEventListener("open", () => void this.reread());
+    writes.addEventListener("open", () => this.soon());
     writes.addEventListener("message", (event) => {
-      const type = (JSON.parse(event.data) as { type: string }).type;
-      if (type === TurnEventKind.RecordPatch) void this.reread();
-      else if (type === TurnEventKind.Reload) void this.open(id);
+      const said = JSON.parse(event.data) as { type: string; turn_id?: string };
+      // the turn this page follows reads the record for its own writes
+      if (said.type === TurnEventKind.RecordPatch && said.turn_id !== this.turnId) this.soon();
+      else if (said.type === TurnEventKind.Reload) void this.open(id);
+    });
+  }
+
+  /** Writes that land within one frame, or while a read is out, are read
+   * once. */
+  private soon(): void {
+    if (this.queued) return;
+    this.queued = true;
+    window.requestAnimationFrame(() => {
+      this.queued = false;
+      void this.reread();
     });
   }
 
@@ -180,8 +195,9 @@ export class Store {
   }
 
   /** The running turn's stream, closed when another diagram opens. */
-  hold(turn: EventSource): void {
+  hold(turn: EventSource, turnId: string): void {
     this.turn = turn;
+    this.turnId = turnId;
   }
 
   release(): void {

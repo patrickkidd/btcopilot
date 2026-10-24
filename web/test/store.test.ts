@@ -18,6 +18,8 @@ beforeEach(() => {
   asked = [];
   Writes.opened = [];
   vi.stubGlobal("EventSource", class { addEventListener() {} close() {} });
+  // a frame passes at once
+  vi.stubGlobal("window", { requestAnimationFrame: (run: () => void) => void run(), setTimeout });
   vi.stubGlobal("document", { querySelector: () => null });
   vi.stubGlobal(
     "fetch",
@@ -151,7 +153,7 @@ it("drops a part read again for a diagram that is no longer open", async () => {
 it("closes the running turn's stream when another diagram opens", () => {
   const store = new Store();
   const stream = { close: vi.fn() };
-  store.hold(stream as unknown as EventSource);
+  store.hold(stream as unknown as EventSource, "t-9");
   const still = store.live();
   void store.open(2);
   expect(stream.close).toHaveBeenCalledOnce();
@@ -244,7 +246,10 @@ it("reads the record again each time the diagram's stream opens, for what was wr
 // R-0933
 it("tries a read that got no answer again 5 seconds later, never dropping it", async () => {
   const later: [() => void, number][] = [];
-  vi.stubGlobal("window", { setTimeout: (run: () => void, ms: number) => void later.push([run, ms]) });
+  vi.stubGlobal("window", {
+    requestAnimationFrame: (run: () => void) => void run(),
+    setTimeout: (run: () => void, ms: number) => void later.push([run, ms]),
+  });
   const store = streamed();
   const opening = store.open(5);
   answer(5);
@@ -259,4 +264,24 @@ it("tries a read that got no answer again 5 seconds later, never dropping it", a
   later[0][0]();
   await reread(clustered);
   expect(told).toEqual(["draw 5 record"]);
+});
+
+// R-0933
+it("reads the record once for writes that land in one frame, and not for the followed turn's own", async () => {
+  const frames: (() => void)[] = [];
+  vi.stubGlobal("window", { requestAnimationFrame: (run: () => void) => void frames.push(run), setTimeout });
+  const store = streamed();
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  store.hold({ close() {} } as unknown as EventSource, "t-own");
+  const [writes] = Writes.opened;
+  writes.send({ ...patch, turn_id: "t-own" });
+  expect(frames).toHaveLength(0);
+  writes.send(patch);
+  writes.send(patch);
+  writes.send(patch);
+  expect(frames).toHaveLength(1);
+  frames[0]();
+  expect(asked.filter((one) => one.url.startsWith("/app/timeline"))).toHaveLength(1);
 });
