@@ -66,9 +66,16 @@ const link = (href: string, words: string) =>
   `<a href="${href}" target="_blank" rel="noopener">${words}</a>`;
 
 /** One line of links to the pages, or nothing when no code is named. */
-export function conceptLinks(concepts: Concept[], index = false): string {
+export function conceptLinks(concepts: Concept[]): string {
   if (!isCoder() || !concepts.length) return "";
   const links = concepts.map((one) => link(`${INDEX_URL}/${one}`, NAMES[one]));
-  if (index) links.push(link(INDEX_URL, "all concept pages"));
   return `<div class="concepts">read: ${links.join(" · ")}</div>`;
+}
+
+/** Every page, then the guide's index, each named for its row. */
+export function conceptPages(): { href: string; name: string }[] {
+  return [
+    ...Object.values(Concept).map((one) => ({ href: `${INDEX_URL}/${one}`, name: NAMES[one] })),
+    { href: INDEX_URL, name: "all concept pages" },
+  ];
 }

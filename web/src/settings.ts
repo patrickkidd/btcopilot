@@ -2,6 +2,7 @@ import * as api from "./api";
 import { Feature, tap, type Screen } from "./track";
 import { $, el, esc, flash, isAdmin, isCoder, type Title } from "./dom";
 import { INDEX_URL } from "./concepts";
+import { group, guideFrame, tapRow } from "./settingrows";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { Sheet } from "./sheet";
@@ -233,10 +234,8 @@ export class Settings {
       const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act as Asked | undefined;
       if (act) this.answer(act);
     });
-    const frame = el("iframe");
+    const frame = guideFrame(INDEX_URL, GUIDE);
     frame.id = "literature";
-    frame.title = GUIDE;
-    frame.src = INDEX_URL;
     this.literature = { title: GUIDE, screen: frame, at: address(Place.Literature) };
     this.back.hidden = true;
     this.avatar.addEventListener("click", () => {
@@ -441,37 +440,18 @@ export class Settings {
 
   // ---- the pieces every page is made of ----
 
-  private group(rows: HTMLElement[], head?: string): HTMLElement {
-    const wrap = el("div");
-    if (head) wrap.append(el("div", "sn-hd", esc(head)));
-    const box = el("div", "sn-grp");
-    box.append(...rows);
-    wrap.append(box);
-    return wrap;
-  }
-
   private pushRow(label: string, value: string, page: Page): HTMLElement {
-    return this.tapRow(label, value, () => this.push(page));
+    return tapRow(label, value, () => this.push(page));
   }
 
   /** A row that opens a screen of the app's own on this stack. */
   private screenRow(label: string, feature: Feature, go: () => void): HTMLElement {
-    return this.tapRow(label, "", () => {
+    return tapRow(label, "", () => {
       tap(feature);
       go();
     });
   }
 
-  private tapRow(label: string, value: string, go: () => void): HTMLElement {
-    const row = el("div", "sn-row push");
-    row.append(
-      el("div", "sn-lbl", esc(label)),
-      el("div", "sn-val", esc(value)),
-      el("div", "sn-chev", "›"),
-    );
-    row.addEventListener("click", go);
-    return row;
-  }
 
   private valueRow(label: string, value: string, ink = true): HTMLElement {
     const row = el("div", "sn-row");
@@ -593,15 +573,15 @@ export class Settings {
     const notices = this.handlers.notices();
     const unread = notices.filter((one) => one.opened_at === null).length;
     if (notices.length)
-      pane.append(this.group([this.pushRow("Notices", unread ? String(unread) : "", Page.Notices)]));
+      pane.append(group([this.pushRow("Notices", unread ? String(unread) : "", Page.Notices)]));
 
     pane.append(
-      this.group([
+      group([
         this.pushRow("Coach", `speak ${prefs.speak ? "on" : "off"}`, Page.Coach),
         this.pushRow("Appearance", prefs.theme, Page.Appearance),
       ]),
-      this.group([this.notificationsRow()]),
-      this.group([
+      group([this.notificationsRow()]),
+      group([
         this.pushRow(
           DIAGRAMS,
           String(account.diagrams.length),
@@ -621,13 +601,13 @@ export class Settings {
     const admin = isAdmin();
     if (isCoder())
       pane.append(
-        this.group(
+        group(
           [
             this.screenRow("Your coding task", Feature.TaskOpen, () => this.handlers.onTask()),
             ...(admin
               ? [this.screenRow("Next meeting", Feature.AgendaOpen, () => this.handlers.onAgenda())]
               : []),
-            this.tapRow(GUIDE, "", () => this.push(this.literature)),
+            tapRow(GUIDE, "", () => this.push(this.literature)),
           ],
           "Coding",
         ),
@@ -651,7 +631,7 @@ export class Settings {
   private notices(): Built {
     const pane = el("div");
     const rows = this.handlers.notices().map((one) => this.noticeRow(one));
-    pane.append(rows.length ? this.group(rows) : el("div", "sn-hint", "No notices yet."));
+    pane.append(rows.length ? group(rows) : el("div", "sn-hint", "No notices yet."));
     return { title: "Notices", pane };
   }
 
@@ -685,7 +665,7 @@ export class Settings {
   private profile(prefs: Preferences, account: Account): Built {
     const pane = el("div");
     pane.append(
-      this.group(
+      group(
         [
           this.inputRow("first name", prefs.first_name ?? "", "first", "text", (v) =>
             void this.write({ first_name: v }),
@@ -704,14 +684,14 @@ export class Settings {
         "You",
       ),
       el("div", "sn-hint", "Your birthdate anchors your own line on the picture."),
-      this.group(
+      group(
         [
           this.valueRow("email", account.email),
           this.valueRow("sign in", account.sign_in_method),
         ],
         "Email and login",
       ),
-      this.group(this.passkeyRows(), "This device"),
+      group(this.passkeyRows(), "This device"),
     );
     return { title: "Profile", pane };
   }
@@ -823,7 +803,7 @@ export class Settings {
     // the choices are too long to stand beside their label on a phone
     often.classList.add("below");
     pane.append(
-      this.group([
+      group([
         this.switchRow(
           "Speak replies",
           prefs.speak,
@@ -838,7 +818,7 @@ export class Settings {
         often,
       ]),
       el("div", "sn-hint", PROACTIVE_HINT[prefs.proactive]),
-      this.group([
+      group([
         this.segRow(
           "Bug reports",
           [BugReports.Ask, BugReports.Always],
@@ -858,7 +838,7 @@ export class Settings {
     const on = prefs.shadow_models.length > 0;
     const cost = prefs.shadow_cost;
     return [
-      this.group(
+      group(
         [
           this.switchRow("Conversation Feedback", on, (want) =>
             want ? this.confirmShadows() : void this.write({ shadow_models: [] }),
@@ -892,7 +872,7 @@ export class Settings {
   private appearance(prefs: Preferences): Built {
     const pane = el("div");
     pane.append(
-      this.group([
+      group([
         this.segRow(
           "theme",
           [Theme.System, Theme.Light, Theme.Dark],

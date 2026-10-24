@@ -1,13 +1,15 @@
 import * as api from "./api";
-import { Concept, conceptLinks } from "./concepts";
-import { esc, isAdmin } from "./dom";
+import { conceptPages } from "./concepts";
+import { el, esc, isAdmin, isCoder } from "./dom";
+import { group, guideFrame, tapRow } from "./settingrows";
 import { toast } from "./toast";
 import { RuleSource, type Rule } from "./types";
 
 /** The coding guidelines, reached from the (i) at the top of the coding screen
  * (R-0278). Every rule says where it came from. Patrick alone flags one for
  * the next meeting, and the same tap takes the flag off; everyone else reads
- * that it is flagged (R-0276, R-0346). A rule is never deleted, only retired. */
+ * that it is flagged (R-0276, R-0346). A rule is never deleted, only retired.
+ * Under them, the concept pages, each read inside the app (R-0541). */
 
 /** Where a rule came from, in words. */
 function provenance(rule: Rule): string {
@@ -33,8 +35,15 @@ export function flagLine(rule: Rule, className: string): string {
 
 export class Rules {
   private rules: Rule[] = [];
+  /** The concept page open over the list, which the back button closes first. */
+  private page: HTMLIFrameElement | null = null;
+  private heading: string;
 
-  constructor(private body: HTMLElement) {
+  constructor(
+    private body: HTMLElement,
+    private title: HTMLElement,
+  ) {
+    this.heading = title.textContent ?? "";
     this.body.addEventListener("click", (e) => {
       const button = (e.target as Element).closest<HTMLElement>("button.rl-flag");
       if (button) void this.flag(Number(button.dataset.rule));
@@ -42,8 +51,30 @@ export class Rules {
   }
 
   async load(): Promise<void> {
+    this.close();
     this.rules = await api.rules();
     this.render();
+  }
+
+  /** Back from a concept page to the list; false when none is open. */
+  back(): boolean {
+    if (!this.page) return false;
+    this.close();
+    return true;
+  }
+
+  private open(href: string, name: string): void {
+    this.page = guideFrame(href, name);
+    this.body.after(this.page);
+    this.body.hidden = true;
+    this.title.textContent = name;
+  }
+
+  private close(): void {
+    this.page?.remove();
+    this.page = null;
+    this.body.hidden = false;
+    this.title.textContent = this.heading;
   }
 
   private async flag(id: number): Promise<void> {
@@ -55,11 +86,20 @@ export class Rules {
   }
 
   private render(): void {
-    this.body.innerHTML =
-      conceptLinks(Object.values(Concept), true) +
-      (this.rules.length
-        ? this.rules.map((rule) => this.row(rule)).join("")
-        : `<div class="none">No coding guidelines yet.</div>`);
+    const parts: HTMLElement[] = [];
+    if (this.rules.length) {
+      const list = el("div", "", this.rules.map((rule) => this.row(rule)).join(""));
+      list.prepend(el("div", "sn-hd", "Guidelines"));
+      parts.push(list);
+    }
+    if (isCoder()) {
+      const rows = conceptPages().map(({ href, name }) => {
+        const label = name.charAt(0).toUpperCase() + name.slice(1);
+        return tapRow(label, "", () => this.open(href, label));
+      });
+      parts.push(group(rows, "Concept pages"));
+    }
+    this.body.replaceChildren(...parts);
   }
 
   private row(rule: Rule): string {

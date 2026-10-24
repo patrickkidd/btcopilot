@@ -2176,7 +2176,7 @@ button { font-family: inherit; }
 /* A screen of the app's own on the stack scrolls inside itself, so its page
    is only the frame it fills. */
 .sn-pane.host { display: flex; flex-direction: column; overflow: hidden; }
-.sn-pane.host > iframe { flex: 1; width: 100%; border: none; background: var(--bg); }
+.sn-pane.host > iframe, #rules-screen > iframe { flex: 1; width: 100%; border: none; background: var(--bg); }
 .sn-pane.host > .sn-theirs { flex: 1; overflow-y: auto; padding-top: 14px; }
 .sn-grp {
   margin: 0;

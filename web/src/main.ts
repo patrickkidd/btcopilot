@@ -424,7 +424,7 @@ const oneTask = new OneTask($("task-body"), {
   onResult: (cutId) => void openResult(cutId, openTask),
 });
 
-const rules = new Rules($("rules-body"));
+const rules = new Rules($("rules-body"), $("rules-title"));
 
 const coding = new Coding(
   $("coding-chat"),
@@ -642,7 +642,9 @@ $("coding-info").addEventListener("click", () => {
   track.tap(Feature.RulesOpen);
   void openRules();
 });
-$("rules-close").addEventListener("click", () => rulesBack());
+$("rules-close").addEventListener("click", () => {
+  if (!rules.back()) rulesBack();
+});
 $("coding-back").addEventListener("click", () => {
   track.tap(Feature.Back);
   // Reading the transcript is a step out of the ballot, so it steps back into

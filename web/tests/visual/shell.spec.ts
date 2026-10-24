@@ -134,4 +134,40 @@ test.describe("the app frame", () => {
     await expect(page.locator("#rules-screen .ovt")).toHaveText("Coding guidelines");
     await expect(page.locator("#rules-body")).toContainText(rule.text);
   });
+
+  // R-0541, R-0567
+  test("with no guidelines yet, the coding guidelines list the concept pages, each read inside the app", async ({
+    page,
+  }) => {
+    await settle(page);
+    // no fixture is a coder, and the pages are served to coders alone
+    await page.evaluate(() => (window.BOOTSTRAP.user!.coder = true));
+    await page.route(/\/review\/rules$/, (route) => route.fulfill({ json: [] }));
+    await page.route(/\/app\/theory/, (route) =>
+      route.fulfill({ contentType: "text/html", body: "<h1>Symptom</h1>" }),
+    );
+    const info = page.locator(".titlerow #coding-info");
+    await info.evaluate((b) => ((b as HTMLElement).hidden = false));
+    await info.click();
+    const body = page.locator("#rules-body");
+    const rows = body.locator(".sn-row.push");
+    await expect(body.locator(".sn-hd")).toHaveText(["Concept pages"]);
+    await expect(rows).toHaveCount(12);
+    await expect(rows.last()).toHaveText(/All concept pages/);
+    await expect(body).not.toContainText("No coding guidelines yet");
+
+    await rows.first().click();
+    const frame = page.locator('#rules-screen > iframe[title="Symptom"]');
+    await expect(frame).toBeVisible();
+    expect(await frame.getAttribute("src")).toBe("/app/theory/symptom");
+    await expect(page.locator("#rules-title")).toHaveText("Symptom");
+    await expect(body).toBeHidden();
+    expect(page.context().pages()).toHaveLength(1);
+
+    await page.locator("#rules-close").click();
+    await expect(frame).toHaveCount(0);
+    await expect(body).toBeVisible();
+    await expect(page.locator("#rules-title")).toHaveText("Coding guidelines");
+    await expect(page.locator("#rules-screen")).toBeVisible();
+  });
 });
