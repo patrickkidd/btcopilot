@@ -170,4 +170,32 @@ test.describe("the app frame", () => {
     await expect(page.locator("#rules-title")).toHaveText("Coding guidelines");
     await expect(page.locator("#rules-screen")).toBeVisible();
   });
+
+  // R-0541, R-0567
+  test("a concept link under a code opens its page inside the app, and back returns to the screen it was on", async ({
+    page,
+  }) => {
+    await settle(page);
+    await page.route(/\/app\/theory/, (route) =>
+      route.fulfill({ contentType: "text/html", body: "<h1>Anxiety</h1>" }),
+    );
+    // the vote, the meeting and the coding draw these under a code, which no
+    // fixture reaches; the markup is the one they draw
+    await page.locator("#chat-split").evaluate((host) =>
+      host.insertAdjacentHTML(
+        "afterbegin",
+        '<div class="concepts">read: <a href="/app/theory/anxiety">anxiety</a></div>',
+      ),
+    );
+    await page.locator(".concepts a").click();
+    const frame = page.locator('#rules-screen > iframe[title="Anxiety"]');
+    await expect(frame).toBeVisible();
+    expect(await frame.getAttribute("src")).toBe("/app/theory/anxiety");
+    expect(page.context().pages()).toHaveLength(1);
+
+    await page.locator("#rules-close").click();
+    await expect(page.locator("#rules-screen")).toBeHidden();
+    await expect(frame).toHaveCount(0);
+    await expect(page.locator("#chat-split")).toBeVisible();
+  });
 });

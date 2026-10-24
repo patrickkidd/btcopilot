@@ -2,8 +2,9 @@ import { Relationship } from "./editor";
 import { isCoder } from "./dom";
 
 /** The theory expert's concept pages, one per code, for coders alone (R-0541).
- * A page opens in a tab of its own, so the vote or the coding under it stays
- * where it was. */
+ * A page opens inside the app, never in a tab of its own, which an app put on
+ * the home screen cannot come back from; its back returns to the vote or the
+ * coding it was opened from, as it was. */
 export enum Concept {
   Symptom = "symptom",
   Anxiety = "anxiety",
@@ -62,8 +63,10 @@ export function conceptsOf(items: object[]): Concept[] {
   return Object.values(Concept).filter((one) => found.has(one));
 }
 
-const link = (href: string, words: string) =>
-  `<a href="${href}" target="_blank" rel="noopener">${words}</a>`;
+const link = (href: string, words: string) => `<a href="${href}">${words}</a>`;
+
+/** A page's name as the title of the screen it is read on. */
+export const heading = (name: string): string => name.charAt(0).toUpperCase() + name.slice(1);
 
 /** One line of links to the pages, or nothing when no code is named. */
 export function conceptLinks(concepts: Concept[]): string {

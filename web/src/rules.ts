@@ -1,5 +1,5 @@
 import * as api from "./api";
-import { conceptPages } from "./concepts";
+import { conceptPages, heading } from "./concepts";
 import { el, esc, isAdmin, isCoder } from "./dom";
 import { group, guideFrame, tapRow } from "./settingrows";
 import { toast } from "./toast";
@@ -37,13 +37,15 @@ export class Rules {
   private rules: Rule[] = [];
   /** The concept page open over the list, which the back button closes first. */
   private page: HTMLIFrameElement | null = null;
-  private heading: string;
+  /** Opened from a link on another screen, so back leaves for that screen. */
+  private alone = false;
+  private named: string;
 
   constructor(
     private body: HTMLElement,
     private title: HTMLElement,
   ) {
-    this.heading = title.textContent ?? "";
+    this.named = title.textContent ?? "";
     this.body.addEventListener("click", (e) => {
       const button = (e.target as Element).closest<HTMLElement>("button.rl-flag");
       if (button) void this.flag(Number(button.dataset.rule));
@@ -56,11 +58,19 @@ export class Rules {
     this.render();
   }
 
-  /** Back from a concept page to the list; false when none is open. */
+  /** Back from a concept page to the list; false when there is no list to go
+   * back to. */
   back(): boolean {
-    if (!this.page) return false;
+    const over = !!this.page && !this.alone;
     this.close();
-    return true;
+    return over;
+  }
+
+  /** One concept page on its own, from a link on another screen. */
+  read(href: string, name: string): void {
+    this.close();
+    this.open(href, name);
+    this.alone = true;
   }
 
   private open(href: string, name: string): void {
@@ -73,8 +83,9 @@ export class Rules {
   private close(): void {
     this.page?.remove();
     this.page = null;
+    this.alone = false;
     this.body.hidden = false;
-    this.title.textContent = this.heading;
+    this.title.textContent = this.named;
   }
 
   private async flag(id: number): Promise<void> {
@@ -93,10 +104,9 @@ export class Rules {
       parts.push(list);
     }
     if (isCoder()) {
-      const rows = conceptPages().map(({ href, name }) => {
-        const label = name.charAt(0).toUpperCase() + name.slice(1);
-        return tapRow(label, "", () => this.open(href, label));
-      });
+      const rows = conceptPages().map(({ href, name }) =>
+        tapRow(heading(name), "", () => this.open(href, heading(name))),
+      );
       parts.push(group(rows, "Concept pages"));
     }
     this.body.replaceChildren(...parts);

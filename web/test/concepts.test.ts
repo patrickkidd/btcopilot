@@ -23,11 +23,9 @@ it("names nothing for a person or a bond, and a move with no page", () => {
 });
 
 // R-0541
-it("links each page in a tab of its own", () => {
+it("links each page, never in a tab of its own", () => {
   const html = conceptLinks([Concept.TowardAway]);
-  expect(html).toContain(
-    '<a href="/app/theory/toward-away" target="_blank" rel="noopener">toward and away</a>',
-  );
+  expect(html).toContain('<a href="/app/theory/toward-away">toward and away</a>');
 });
 
 // R-0541, R-0567

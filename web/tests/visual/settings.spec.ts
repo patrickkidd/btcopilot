@@ -892,6 +892,12 @@ test.describe("the Auditor's Coding Guide row", () => {
     flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
   const row = (page: Page) =>
     page.locator(".sn-pane.in .sn-row.push", { hasText: "Auditor's Coding Guide" });
+  // by its address: a coder with a conversation on the agenda opens on the
+  // task card, which keeps the avatar out of the title row
+  const toAccount = async (page: Page) => {
+    await page.goto("/app/account");
+    await expect(page.locator('.sn-pane.in[data-page="root"]')).toBeVisible();
+  };
   test.afterAll(() => roles("subscriber"));
 
   // R-0541, R-0567
@@ -900,8 +906,7 @@ test.describe("the Auditor's Coding Guide row", () => {
   }) => {
     for (const role of ["auditor", "admin"]) {
       roles(role, "subscriber");
-      await page.goto("/app/");
-      await openSettings(page);
+      await toAccount(page);
       await expect(row(page)).toHaveCount(1);
     }
     await row(page).click();
@@ -913,8 +918,7 @@ test.describe("the Auditor's Coding Guide row", () => {
     await expect(page.locator(".sn-pane.in")).toHaveAttribute("data-page", "root");
 
     roles("subscriber");
-    await page.goto("/app/");
-    await openSettings(page);
+    await toAccount(page);
     await expect(row(page)).toHaveCount(0);
   });
 });
