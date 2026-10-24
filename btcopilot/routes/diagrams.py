@@ -287,13 +287,14 @@ def diagram_access_update(diagram_id: int):
         p.get("id") == person_id for p in found.get_diagram_data().people
     ):
         raise ValueError(NOT_IN)
+    turn_id = uuid.uuid4().hex
     if person_id is not None:
         # the person they are is the one the diagram is about
         record.apply(
             found.id,
             record.made_primary(found.get_diagram_data(), person_id),
             author=Author.User,
-            turn_id=uuid.uuid4().hex,
+            turn_id=turn_id,
             user_id=user.id,
         )
     if row is None:
@@ -301,6 +302,8 @@ def diagram_access_update(diagram_id: int):
     else:
         row.person_id = person_id
     db.session.commit()
+    # who is on the case decides how its periods are written [Oracle: R-0935]
+    fdafter.regroup(found.id, turn_id, user.id)
     return jsonify(diagram_payload(found, user))
 
 

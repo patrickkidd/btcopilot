@@ -40,7 +40,6 @@ from btcopilot.prompts import case_report_rewrite, get_agent_prompt
 from btcopilot.questions import order, sessions
 from btcopilot.recordtext import note_line, on_map, outline, question_order
 from btcopilot.schema import (
-    DEFAULT_SUBJECT_NAME,
     MIN_CLUSTER_EVENTS,
     CardLine,
     CaseReportCard,
@@ -791,7 +790,7 @@ def audience(diagram: Diagram, data: DiagramData) -> tuple[int | None, str]:
     own = profile.own(data)
     if profile.addressed(diagram, data):
         return (own["id"] if own else None), ""
-    return None, "\n\n" + ABOUT.format(name=(own or {}).get("name") or DEFAULT_SUBJECT_NAME)
+    return None, "\n\n" + ABOUT.format(name=profile.named(diagram, data))
 
 
 def asked(diagram: Diagram, user: User, toolbox: Toolbox, meter: Metered) -> tuple[str, list[dict]]:

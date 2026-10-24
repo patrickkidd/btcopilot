@@ -205,6 +205,7 @@ Changes something with `--apply`. Through `flask admin run`, the words also need
 |---|---|
 | `--diagram` | Only this record. |
 | `--apply` | Regroup the records listed; the default, --dry-run, lists them and makes no model call. |
+| `--by-name` | Only the records nobody on is the person they belong to, whose periods are now written about that person by name, never to "you" [Oracle: R-0935]. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin diagrams remove-user <diagram_id> <email>`

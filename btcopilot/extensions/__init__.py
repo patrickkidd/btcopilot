@@ -387,6 +387,7 @@ def init_celery(app):
         celery.task(turns.run, name=turns.TASK)
         celery.task(casereport.run, name=casereport.TASK)
         celery.task(fdafter.run, name=fdafter.TASK)
+        celery.task(fdafter.catch_up, name=fdafter.REGROUP)
         # the coders' reminders ride the coach's run, one schedule for both
         celery.task(reminders.run, name=proactive.TASK)
         celery.conf.beat_schedule = {

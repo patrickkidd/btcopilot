@@ -3,6 +3,7 @@ through, authored by the user."""
 
 import pytest
 
+from btcopilot import fdafter
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change
 from btcopilot.schema import Person, PersonKind, asdict
@@ -115,3 +116,13 @@ def test_the_mark_is_moved_never_only_taken_off(web, family):
         "/app/people/1", json={"primary": False}, headers={"X-CSRFToken": csrf_token(web)}
     )
     assert refused.status_code == 400
+
+
+def test_marking_someone_primary_regroups_the_clusters_on_the_worker(web, family, monkeypatch):
+    # R-0935
+    asked = []
+    monkeypatch.setattr(fdafter, "regroup", lambda *args: asked.append(args))
+    web.patch("/app/people/1", json={"primary": True}, headers={"X-CSRFToken": csrf_token(web)})
+    assert [a[0] for a in asked] == [family.id]
+    web.patch("/app/people/1", json={"name": "Wren"}, headers={"X-CSRFToken": csrf_token(web)})
+    assert len(asked) == 1

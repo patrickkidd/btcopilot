@@ -30,6 +30,7 @@ from btcopilot.extensions import db
 from btcopilot.models import Diagram, User
 
 TASK = "fd_import_landed"
+REGROUP = "clusters_regroup"
 NOT_FD = "That is not a Family Diagram file."
 #: The ending of a desktop file's name.
 SUFFIX = ".fd"
@@ -112,6 +113,15 @@ def land(
 def ledger(file: str, fd: dict, imported: fdimport.Imported) -> str:
     return fdledger.text(
         file, fd, fdimport.became(imported), imported.decisions, datetime.date.today()
+    )
+
+
+def regroup(diagram_id: int, turn_id: str, user_id: int) -> None:
+    """The diagram's clusters grouped again on the worker, under `turn_id`, as
+    after an import: picking who the case is about changes how its periods are
+    written [Oracle: R-0935]."""
+    extensions.celery.send_task(
+        REGROUP, args=[diagram_id], kwargs={"turn_id": turn_id, "user_id": user_id}
     )
 
 

@@ -8,7 +8,7 @@ them rather than fields on them, so they are edited on the timeline.
 
 from flask import abort, jsonify, request
 
-from btcopilot import record
+from btcopilot import auth, fdafter, record
 from btcopilot.routes import asked_diagram, bp, delta, edit
 from btcopilot.schema import ItemKind, PersonKind
 
@@ -69,13 +69,16 @@ def update_person(person_id: int):
         raise ValueError("Nothing to change on that person")
     # marking one person primary takes the mark off everyone else, in one change
     primary = record.made_primary(data, person_id) if values.pop("primary", None) else []
-    edit(
+    change = edit(
         [
             delta(ItemKind.Person, person_id, field, value)
             for field, value in values.items()
         ]
         + primary
     )
+    if primary:
+        # who the case is about decides how its periods are written
+        fdafter.regroup(change.diagram_id, change.turn_id, auth.current_user().id)
     return jsonify(_payload(_find(asked_diagram().get_diagram_data(), person_id)))
 
 

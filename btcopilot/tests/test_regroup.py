@@ -173,3 +173,28 @@ def test_a_stored_period_set_aside_before_an_answer_that_passes_is_not_failed(
         rows = regroup(flask_app, "--apply")
     assert [r["failed"] for r in rows] == [False]
     assert clusters_of(family)["c1"]["setAside"]
+
+
+BY_NAME = "nobody on the case is the person it belongs to: its periods are written about them by name"
+
+
+def test_by_name_lists_only_the_cases_nobody_on_is_the_person_and_regroups_them(flask_app, family):
+    # R-0935, R-0772
+    with patch("btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)):
+        regroup(flask_app, "--apply")
+    owner = family.access_right(family.user)
+    owner.person_id = None
+    db.session.commit()
+    with patch("btcopilot.metered.gemini_structured_sync") as asked:
+        rows = regroup(flask_app, "--by-name")
+    assert ([(r["diagram"], r["why"]) for r in rows], asked.called) == ([(family.id, BY_NAME)], False)
+    with patch("btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)) as asked:
+        [done] = regroup(flask_app, "--by-name", "--apply")
+    assert 'calling them by their first name' in asked.call_args.args[0]
+    undone = flask_app.test_cli_runner().invoke(
+        admin, ["diagrams", "undo", str(family.id), str(done["change"]), "--yes"]
+    )
+    assert undone.exit_code == 0, undone.output
+    owner.person_id = 1
+    db.session.commit()
+    assert regroup(flask_app, "--by-name") == []

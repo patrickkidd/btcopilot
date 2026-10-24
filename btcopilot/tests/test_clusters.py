@@ -2356,8 +2356,8 @@ def test_the_persons_answer_alone_puts_the_grouping_behind():
     # R-0853
     data = record(*ASH.events)
     data.clusterCacheKey = clusters.compute_cache_key(clusters._events(data))
-    assert not clusters.behind(1, data)
-    assert clusters.behind(1, asked(data, 7))
+    assert not clusters.behind(1, data, None)
+    assert clusters.behind(1, asked(data, 7), None)
 
 
 def test_editing_what_detection_reads_of_an_event_puts_the_diagram_behind():
@@ -2372,7 +2372,7 @@ def test_editing_what_detection_reads_of_an_event_puts_the_diagram_behind():
         edited = record(*ASH.events)
         edited.events[0][field] = value
         edited.clusterCacheKey = data.clusterCacheKey
-        assert clusters.behind(1, edited), field
+        assert clusters.behind(1, edited, None), field
 
 
 def test_a_stored_period_with_undated_events_regroups_and_keeps_them(test_user):
@@ -2451,3 +2451,23 @@ def test_the_second_answer_with_an_id_is_stored_without_that_sentence():
     clusters._plain(cluster, {1: datetime.date(1998, 1, 1), 2: datetime.date(1998, 6, 1)})
     assert cluster.reason == "Sleep went in 1998."
     assert not clusters.record.ided(cluster.name)
+
+
+def test_the_periods_are_written_to_you_or_about_the_person_by_who_is_on_the_case():
+    # R-0935, R-0860
+    with replies(answers()) as ask:
+        detect_clusters(GRANDMOTHER, ask)
+    assert 'as the coach speaking to the person, calling them "you"' in ask.call_args_list[0].args[0]
+    with replies(answers()) as ask:
+        detect_clusters(GRANDMOTHER, ask, name="Ada")
+    told = ask.call_args_list[0].args[0]
+    assert 'speaking about the person, calling them by their first name, Ada, never "you"' in told
+    assert 'calling them "you"' not in told
+
+
+def test_only_a_case_written_by_name_regroups_for_how_it_is_addressed():
+    # R-0935
+    events = clusters._events(GRANDMOTHER)
+    assert clusters.compute_cache_key(events) == clusters.compute_cache_key(events, (), None)
+    assert clusters.compute_cache_key(events, (), "Ada") != clusters.compute_cache_key(events)
+    assert clusters.compute_cache_key(events, (), "Ada") != clusters.compute_cache_key(events, (), "Bo")

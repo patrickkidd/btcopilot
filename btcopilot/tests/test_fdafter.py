@@ -283,3 +283,14 @@ def test_saying_who_you_are_marks_that_person_the_one_the_diagram_is_about(web, 
     db.session.expire_all()
     marked = [p["id"] for p in made().get_diagram_data().people if p.get("primary")]
     assert marked == [4]
+
+
+def test_saying_who_you_are_regroups_the_clusters_on_the_worker(web, landed, monkeypatch):
+    # R-0935, R-0934
+    upload(web, dumps(both_primary()))
+    diagram = made()
+    asked = []
+    monkeypatch.setattr(fdafter, "regroup", lambda *args: asked.append(args))
+    access(web, diagram.id, 3)
+    [(diagram_id, turn_id, _)] = asked
+    assert diagram_id == diagram.id and turn_id

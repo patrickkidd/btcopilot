@@ -8,7 +8,7 @@ import enum
 
 import click
 
-from btcopilot import clusters
+from btcopilot import clusters, profile
 from btcopilot.admin.diagrams import find
 from btcopilot.admin.guard import writes
 from btcopilot.admin.output import rows_option
@@ -24,13 +24,14 @@ class Why(enum.StrEnum):
         "grouping"
     )
     Ungrouped = "events and no groups"
+    ByName = "nobody on the case is the person it belongs to: its periods are written about them by name"
 
 
 def why(diagram: Diagram) -> Why | None:
     data = diagram.get_diagram_data()
     if not clusters.candidates(data) and not clusters.told_ids(diagram.id, data):
         return None
-    if clusters.behind(diagram.id, data):
+    if clusters.behind(diagram.id, data, profile.named(diagram, data)):
         return Why.Changed
     if not data.clusters:
         return Why.Ungrouped
@@ -45,8 +46,14 @@ def why(diagram: Diagram) -> Why | None:
     help="Regroup the records listed; the default, --dry-run, lists them and makes "
     "no model call.",
 )
+@click.option(
+    "--by-name",
+    is_flag=True,
+    help="Only the records nobody on is the person they belong to, whose periods "
+    "are now written about that person by name, never to \"you\" [Oracle: R-0935].",
+)
 @rows_option
-def regroup(diagram_id, apply):
+def regroup(diagram_id, apply, by_name):
     """Regroup each record whose events, or the person's answers to when the
     most was going on, changed since its last grouping, or that has events to
     group and no groups. The dry run lists them and makes no model call;
@@ -64,7 +71,14 @@ def regroup(diagram_id, apply):
     stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%S")
     rows = []
     for diagram in found:
-        reason = why(diagram)
+        if by_name:
+            data = diagram.get_diagram_data()
+            hidden = diagram.scratch or diagram.deleted_at is not None
+            if hidden or profile.named(diagram, data) is None or not data.clusters:
+                continue
+            reason = Why.ByName
+        else:
+            reason = why(diagram)
         if reason is None:
             continue
         row = {
