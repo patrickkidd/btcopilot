@@ -102,7 +102,9 @@ def unclear(said: str, people: list[dict]) -> list[dict] | None:
     if pointed and not _new_name(words):
         could = [p for p in people if _fits(pointed, p)]
         if len(could) != 1:
-            return could or people
+            # With nobody in the record there is no one to pick, so the
+            # statement goes in as given (R-0884).
+            return could or people or None
     return None
 
 

@@ -595,11 +595,27 @@ def test_a_shift_reads_as_its_title():
     assert written(data, ["2"]) == ["Ann · Sleep problems began · Jan 1990"]
 
 
-def test_a_pronoun_with_nobody_in_the_diagram_saves_nothing(coder, cut, turns):
-    # R-0270, R-0883
+def test_a_pronoun_with_nobody_in_the_diagram_goes_to_the_scribe_and_is_written(coder, cut, turns):
+    # R-0884, R-0883
     coding = coded(coder.user, cut, {"people": []}, done=False)
-    response = scribe(coder, coding, turns[0], Never(), "she could not sleep")
-    assert (response.json["lines"], response.json["refused"], response.json["choices"]) == ([], [], [])
+    model = Scripted([("add_person", {"name": "Client"})])
+    with patch.object(model, "turn", wraps=model.turn) as heard:
+        response = scribe(coder, coding, turns[0], model, "Her sleep trouble started in high school.")
+    assert heard.called
+    assert (response.json["lines"], response.json["choices"]) == ([added("Client")], [])
+    record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
+    assert [p["name"] for p in record["people"]] == ["Client"]
+
+
+def test_a_pronoun_two_people_could_mean_still_asks(coder, cut, turns):
+    # R-0270, R-0883
+    people = [
+        {"id": 1, "name": "Ann", "gender": "female"},
+        {"id": 2, "name": "Beth", "gender": "female"},
+    ]
+    coding = coded(coder.user, cut, {"people": people}, done=False)
+    response = scribe(coder, coding, turns[0], Never(), "Her sleep trouble started in high school.")
+    assert [one["id"] for one in response.json["choices"]] == [1, 2]
 
 
 def test_a_death_reads_as_its_kind_name():
