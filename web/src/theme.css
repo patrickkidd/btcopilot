@@ -991,6 +991,9 @@ button { font-family: inherit; }
   padding-left: 14px;
   font: 400 13px/1.5 var(--mono);
   color: var(--faint);
+  /* a row is never typed, so it wraps as words do: a space kept as typed
+     hangs past the row at the end of a wrapped line */
+  white-space: normal;
 }
 /* a line of the reply's own 17/1.45 between what the coach did and what it says */
 .bub .did:not(:has(+ .did)):not(:last-child) { margin-bottom: 24px; }
