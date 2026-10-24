@@ -4,7 +4,7 @@ import type { Person } from "../src/types";
 vi.stubGlobal("window", { BOOTSTRAP: { user: { username: "ann", pro: false } } });
 
 const { Part, store } = await import("../src/store");
-const { ADD_CODES, Answer, CANNOT_BRING, STILL_SENDING, NO_DIAGRAM, ownStep, Pick, bring, fromDrop, UNREAD, ZIP_FIRST, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
+const { ADD_CODES, Answer, CANNOT_BRING, codesStep, costLine, STILL_SENDING, NO_DIAGRAM, ownStep, Pick, bring, fromDrop, UNREAD, ZIP_FIRST, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
   "../src/importer"
 );
 
@@ -21,6 +21,7 @@ function toasts(): () => string[] {
         classList: { add() {}, remove() {} },
         append() {},
         remove() {},
+        replaceChildren() {},
         addEventListener() {},
         setAttribute() {},
       };
@@ -139,7 +140,7 @@ const answering = (status: number, body: string) => {
   return sent;
 };
 
-const lund = { id: 9, name: "Lund family", imported: { people: 4, events: 212, left_out: 3, primary: [12, 11] } };
+const lund = { id: 9, name: "Lund family", imported: { people: 4, events: 212, left_out: 3, primary: [12, 11], coding_cost: { low: 0.4, high: 1.8 } } };
 
 const person = (id: number, name: string, last_name: string | null = "Lund") => ({ id, name, last_name }) as Person;
 const people = [person(10, "Walter"), person(11, "Ann"), person(12, "Karen"), person(13, "Tomas", null)];
@@ -256,6 +257,12 @@ it("cannot be put away until a primary person is set, and then its cross counts 
   one.answer();
   expect([done.lowered, done.said, sent]).toEqual([1, [], ['PATCH /app/people/11?diagram_id=9 {"primary":true}']]);
   expect(ownStep(lund.imported)).not.toContain("cardx");
+});
+
+// R-0899
+it("says under the codes question what a yes is likely to cost", () => {
+  expect(codesStep(lund.imported)).toContain('<p class="cf-p fdc-cost">About $0.40\u2013$1.80 of coach use</p>');
+  expect(costLine({ low: 0.4, high: 0.4 })).toBe("About $0.40 of coach use");
 });
 
 // R-0899, R-0902, R-0905

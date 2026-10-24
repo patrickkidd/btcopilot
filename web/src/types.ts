@@ -624,7 +624,15 @@ export function diagramOwner(diagram: Diagram): string {
  * in; what the app's checks refuse is left out. */
 export interface Imported extends Diagram {
   /** `primary`: the people the file marks primary, in its order. */
-  imported: { people: number; events: number; left_out: number; primary: number[] };
+  /** `coding_cost`: what the coach turn a yes to adding codes starts is
+   * likely to cost, low and high, in dollars. */
+  imported: {
+    people: number;
+    events: number;
+    left_out: number;
+    primary: number[];
+    coding_cost: { low: number; high: number };
+  };
 }
 
 /** Someone with an account, as an admin's search finds them. */

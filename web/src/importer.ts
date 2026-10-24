@@ -3,7 +3,7 @@ import { closeX, el, esc } from "./dom";
 import { OWN_FAMILY } from "./pro";
 import { Sheet } from "./sheet";
 import { Part, store } from "./store";
-import { toast } from "./toast";
+import { clearToasts, toast } from "./toast";
 import type { Imported, Person } from "./types";
 
 /** A desktop Family Diagram file is a folder, and the diagram.pickle in it is
@@ -180,10 +180,18 @@ export const pickStep = (imported: Imported["imported"], people: Person[], pick:
   );
 };
 
-/** Last: whether the coach should add the codes the file has none of. */
+const dollars = (amount: number) => `$${amount.toFixed(2)}`;
+
+/** What a yes is likely to cost: one figure, or the low to the high. */
+export const costLine = ({ low, high }: Imported["imported"]["coding_cost"]): string =>
+  `About ${low === high ? dollars(low) : `${dollars(low)}\u2013${dollars(high)}`} of coach use`;
+
+/** Last: whether the coach should add the codes the file has none of, and
+ * what that is likely to cost. */
 export const codesStep = (imported: Imported["imported"]): string =>
   head(imported, true) +
   `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
+  `<p class="cf-p fdc-cost">${costLine(imported.coding_cost)}</p>` +
   buttons([Answer.Yes, "Yes"], [Answer.NotNow, "Not now"]);
 
 /** The new diagram, or the server's own sentence for a file it refuses. */
@@ -282,6 +290,8 @@ export class Importer {
     if (typeof made === "string") return toast(made, true);
     await this.opened(made);
     this.made = made;
+    // nothing said about the file sits over the sheet's buttons
+    clearToasts();
     this.sheet.show(ownStep(made.imported));
   }
 

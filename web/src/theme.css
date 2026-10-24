@@ -2412,6 +2412,7 @@ button { font-family: inherit; }
 .fdc-who { max-height: 40dvh; overflow-y: auto; margin: 0 -16px 8px; }
 .fdc-who .sn-row { width: 100%; border-left: none; border-right: none; border-bottom: none; background: none; color: inherit; font: inherit; text-align: left; }
 .fdc-find { padding: 0 0 10px; }
+.fdc-cost { color: var(--faint); font-size: 13px; }
 .sn-stack .dropping { outline: 2px dashed var(--data); outline-offset: -6px; }
 .sn-srch input {
   width: 100%;
