@@ -2,7 +2,7 @@ import * as api from "./api";
 import { Feature, tap, type Screen } from "./track";
 import { $, el, esc, flash, isAdmin, isCoder, type Title } from "./dom";
 import { INDEX_URL } from "./concepts";
-import { group, guideFrame, tapRow } from "./settingrows";
+import { frameBack, group, guideFrame, tapRow } from "./settingrows";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { Sheet } from "./sheet";
@@ -242,7 +242,10 @@ export class Settings {
       tap(Feature.OpenSettings);
       void this.raise();
     });
-    this.back.addEventListener("click", () => this.pop());
+    this.back.addEventListener("click", () => {
+      if (this.top() === this.literature && frameBack(frame)) return;
+      this.pop();
+    });
     store.watch({ reset: () => {}, draw: () => tick(this.host) });
   }
 

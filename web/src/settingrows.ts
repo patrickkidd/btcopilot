@@ -31,3 +31,13 @@ export function guideFrame(src: string, title: string): HTMLIFrameElement {
   frame.src = src;
   return frame;
 }
+
+/** Back one page inside the guide when a link in it was followed; false on
+ * the page it opened on, where back leaves the guide. Its links stay on the
+ * app's own pages, so the frame's address is readable. */
+export function frameBack(frame: HTMLIFrameElement): boolean {
+  const view = frame.contentWindow!;
+  if (view.location.href === new URL(frame.getAttribute("src")!, location.href).href) return false;
+  view.history.back();
+  return true;
+}

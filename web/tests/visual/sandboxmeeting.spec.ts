@@ -1,5 +1,6 @@
-import { test } from "./fixtures";
+import { expect, test } from "./fixtures";
 import { need, sandboxOnly, walker } from "./sandbox";
+import { flask, stateFor, username } from "./setup";
 
 // An independent walk of the meeting and the result screen on the FD-362
 // review sandbox: the table, the meeting with the open items most split first,
@@ -255,5 +256,80 @@ test.describe(() => {
     // ── the deterministic gates ───────────────────────────────────────────
 
     await quiet();
+  });
+});
+
+/** The concept links the vote and the meeting draw under a code, on a cut
+ * whose answers are the review API's own shapes, so no coding has to be made
+ * first: the two screens are the app's own, drawn from those answers. */
+test.describe("a concept link on the vote and in the meeting", () => {
+  // WebKit's page routes never see a fetch the service worker makes
+  test.use({ storageState: stateFor("empty"), serviceWorkers: "block" });
+  const roles = (...names: string[]) =>
+    flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
+  test.afterAll(() => roles("subscriber"));
+
+  const CUT = 9001;
+  const event = { kind: "shift", description: "Sleeping badly", dateTime: "2019-01-01", anxiety: "up", person: 1 };
+  const items = [1, 2].map((id) => ({
+    id, cut_id: CUT, item_kind: "event", item_id: null, status: "disputed",
+    coders: 2, not_coded: 0, people: [], line: null,
+    opinions: [
+      { coding_id: 1, item_id: id, person_name: "Client", item: event },
+      { coding_id: 2, item_id: id, person_name: "Client", item: { ...event, anxiety: "down" } },
+    ],
+  }));
+  const cut = {
+    id: CUT, session: "Onboarding case", diagram_id: 1, sitting_id: 1, user_id: 1,
+    start_statement_id: 1, end_statement_id: 3, end_order: 3, cut_day: "Oct 24",
+    meeting_date: "2026-10-31", started: true, ratified_at: null, nudged_at: null,
+    vote_opened_at: "Sat, 24 Oct 2026 16:00:00 GMT", created_at: "Sat, 24 Oct 2026 16:00:00 GMT",
+    updated_at: null, owner: "agenda@fd362-fixture.invalid", audit: null,
+    agreement: { first_pass: { by_status: { agreed: 0, decided: 0, disputed: 2, unresolved: 0 }, codings: 2, items: 2, percent: 0 } },
+  };
+
+  // R-0541, R-0567
+  test("opens the page inside the app, and back returns to the same screen", async ({ page }) => {
+    roles("auditor", "admin", "subscriber");
+    const errors: string[] = [];
+    page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+    page.on("pageerror", (e) => errors.push(String(e)));
+    page.on("response", (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`));
+    await page.route(new RegExp(`/review/cuts/${CUT}$`), (route) => route.fulfill({ json: cut }));
+    await page.route(new RegExp(`/review/items\\?cut_id=${CUT}`), (route) => route.fulfill({ json: items }));
+    await page.route(new RegExp(`/review/(votes|records|tallies)\\?cut_id=${CUT}`), (route) =>
+      route.fulfill({ json: [] }),
+    );
+    await page.route(/\/review\/codings$/, (route) =>
+      route.fulfill({ json: { id: CUT, cut_id: CUT, done_at: null } }),
+    );
+    await page.route(/\/app\/theory/, (route) =>
+      route.fulfill({ contentType: "text/html", body: "<h1>Anxiety</h1>" }),
+    );
+
+    for (const [path, id] of [
+      [`/app/vote/${CUT}`, "#ballot-screen"],
+      [`/app/meeting/${CUT}`, "#meeting-screen"],
+    ]) {
+      await page.goto(path);
+      const screen = page.locator(id);
+      await expect(screen).toBeVisible();
+      const link = screen.locator(".concepts a").first();
+      await expect(link).toBeVisible();
+      const title = await page.locator("#title").textContent();
+
+      await link.click();
+      const frame = page.locator("#rules-screen > iframe");
+      await expect(frame).toBeVisible();
+      expect(await frame.getAttribute("src")).toBe("/app/theory/anxiety");
+      await expect(screen).toBeHidden();
+      expect(page.context().pages()).toHaveLength(1);
+
+      await page.locator("#rules-close").click();
+      await expect(frame).toHaveCount(0);
+      await expect(screen).toBeVisible();
+      await expect(page.locator("#title")).toHaveText(title!);
+    }
+    expect(errors).toEqual([]);
   });
 });

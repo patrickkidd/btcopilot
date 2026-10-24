@@ -1,7 +1,7 @@
 import * as api from "./api";
 import { conceptPages, heading } from "./concepts";
 import { el, esc, isAdmin, isCoder } from "./dom";
-import { group, guideFrame, tapRow } from "./settingrows";
+import { frameBack, group, guideFrame, tapRow } from "./settingrows";
 import { toast } from "./toast";
 import { RuleSource, type Rule } from "./types";
 
@@ -61,6 +61,7 @@ export class Rules {
   /** Back from a concept page to the list; false when there is no list to go
    * back to. */
   back(): boolean {
+    if (this.page && frameBack(this.page)) return true;
     const over = !!this.page && !this.alone;
     this.close();
     return over;

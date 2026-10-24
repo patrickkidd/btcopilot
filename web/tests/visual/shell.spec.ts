@@ -135,6 +135,11 @@ test.describe("the app frame", () => {
     await expect(page.locator("#rules-body")).toContainText(rule.text);
   });
 
+});
+
+test.describe("the concept pages, read inside the app", () => {
+  test.use({ storageState: stateFor("moves"), serviceWorkers: "block" });
+
   // R-0541, R-0567
   test("with no guidelines yet, the coding guidelines list the concept pages, each read inside the app", async ({
     page,
@@ -143,8 +148,14 @@ test.describe("the app frame", () => {
     // no fixture is a coder, and the pages are served to coders alone
     await page.evaluate(() => (window.BOOTSTRAP.user!.coder = true));
     await page.route(/\/review\/rules$/, (route) => route.fulfill({ json: [] }));
+    // a page links on to another, as the guide's pages do
     await page.route(/\/app\/theory/, (route) =>
-      route.fulfill({ contentType: "text/html", body: "<h1>Symptom</h1>" }),
+      route.fulfill({
+        contentType: "text/html",
+        body: route.request().url().endsWith("/anxiety")
+          ? "<h1>Anxiety</h1>"
+          : '<h1>Symptom</h1><a href="/app/theory/anxiety">anxiety</a>',
+      }),
     );
     const info = page.locator(".titlerow #coding-info");
     await info.evaluate((b) => ((b as HTMLElement).hidden = false));
@@ -163,6 +174,14 @@ test.describe("the app frame", () => {
     await expect(page.locator("#rules-title")).toHaveText("Symptom");
     await expect(body).toBeHidden();
     expect(page.context().pages()).toHaveLength(1);
+
+    // back steps through what was read inside the page before it leaves it
+    const inside = page.frameLocator('#rules-screen > iframe[title="Symptom"]');
+    await inside.locator("a").click();
+    await expect(inside.locator("h1")).toHaveText("Anxiety");
+    await page.locator("#rules-close").click();
+    await expect(inside.locator("h1")).toHaveText("Symptom");
+    await expect(frame).toBeVisible();
 
     await page.locator("#rules-close").click();
     await expect(frame).toHaveCount(0);
