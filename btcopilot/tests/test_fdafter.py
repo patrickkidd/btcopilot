@@ -136,7 +136,8 @@ def zipped(files: dict[str, bytes]) -> bytes:
     out = io.BytesIO()
     with zipfile.ZipFile(out, "w") as folder:
         for name, data in files.items():
-            folder.writestr(name, data)
+            # a fixed date, so the bytes are the same in every test process
+            folder.writestr(zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0)), data)
     return out.getvalue()
 
 
@@ -162,6 +163,7 @@ def test_a_desktop_file_over_20_mb_is_refused_before_it_is_read(pro, landed, mon
 @pytest.mark.parametrize(
     "data",
     [b"not a diagram", zipped({"Lund.fd/notes.txt": b"hello"})],
+    ids=["plain bytes", "zip with no pickle"],
 )
 def test_a_file_that_is_not_a_family_diagram_is_refused_in_one_sentence(pro, landed, data):
     # R-0899, R-0882
