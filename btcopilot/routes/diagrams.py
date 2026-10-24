@@ -5,8 +5,10 @@ its own."""
 
 import datetime
 import json
+import logging
 import uuid
 
+import redis
 from flask import Response, abort, jsonify, request, stream_with_context
 
 import btcopilot
@@ -30,6 +32,8 @@ from btcopilot.models.diagram import owner_row
 from btcopilot.models.etc import AccessRight
 from btcopilot.profile import FIRST_PERSON_ID
 from btcopilot.routes.users import require_admin
+
+_log = logging.getLogger(__name__)
 
 GRANTED = (btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE)
 PERSONAL = "Your personal diagram cannot be deleted."
@@ -226,6 +230,14 @@ def diagram_events(diagram_id: int):
     last = request.headers.get("Last-Event-ID") or ""
 
     def stream():
+        # A broken Redis link ends the response; the page reconnects with its
+        # Last-Event-ID and is given what it missed.
+        try:
+            yield from told()
+        except (redis.ConnectionError, redis.TimeoutError):
+            _log.warning("diagram %s stream lost Redis", diagram_id, exc_info=True)
+
+    def told():
         # Listening starts before the replay so a write landing between the
         # two is not lost; anything already replayed is skipped by sequence.
         following = turnlog.subscribe(log)
