@@ -1,8 +1,9 @@
 """A desktop file made into a new diagram from the Diagrams page: the upload
-checked in the request, the diagram built by the worker, and its clusters
-regrouped under the import's own turn."""
+checked and built in the request, its record mailed by the worker, and its
+clusters grouped once the person says who the case is about."""
 
 import io
+import json
 import zipfile
 
 import pytest
@@ -203,13 +204,13 @@ def test_a_file_is_made_in_the_request_as_it_stands_and_opened(
     assert (attachments.held(change.turn_id), outbox) == (pickled, [])
 
 
-def test_the_worker_mails_the_record_and_groups_the_clusters(pro, landed, test_user):
-    # R-0932, R-0917, R-0902
+def test_the_worker_mails_the_record_and_leaves_the_grouping_to_the_subject_pick(pro, landed, test_user):
+    # R-0932, R-0902, R-0935
     upload(pro, dumps(scene(events=[*scene()["events"], shift(23)])))
     caught, outbox = landed
     [(diagram_id, user_id, turn)] = caught
     fdafter.run(diagram_id, user_id, turn)
-    assert caught[1:] == [turn]
+    assert caught[1:] == []
     [mail] = outbox
     record_text = mail.attachments[0].data.decode()
     assert "Ada Lund (person 1)" in record_text
@@ -305,3 +306,10 @@ def test_the_page_is_told_whether_to_say_you_or_name_the_person(web, landed):
     assert (listed()["addressed"], timeline()["addressed"]) == (False, False)
     access(web, diagram.id, 3)
     assert (listed()["addressed"], timeline()["addressed"]) == (True, True)
+
+
+def test_the_regroup_task_hands_the_queue_nothing_it_cannot_keep(test_user, monkeypatch):
+    # R-0935
+    monkeypatch.setattr(fdafter, "catch_up", lambda *args, **kwargs: object())
+    answer = fdafter.regrouped(test_user.free_diagram_id, turn_id="t1", user_id=test_user.id)
+    assert json.dumps(answer) == "null"

@@ -238,7 +238,7 @@ class Model:
 
 
 def _regroup_now(diagram_id: int, turn_id: str, user_id: int) -> None:
-    fdafter.catch_up(diagram_id, turn_id=turn_id, user_id=user_id)
+    fdafter.regrouped(diagram_id, turn_id=turn_id, user_id=user_id)
 
 
 @pytest.fixture(autouse=True)

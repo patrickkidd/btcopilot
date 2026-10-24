@@ -73,6 +73,10 @@ def next_key(prefix: str, taken: set[str]) -> str:
     return f"{prefix}{n}"
 
 
+class Stale(Exception):
+    """A write whose diagram changed between its read and its save."""
+
+
 class Invalid(Exception):
     """The record the deltas would leave behind breaks a rule of the data model.
     The reason is for the coach; `plain` says the same rule to a person editing
@@ -126,20 +130,26 @@ def apply(
     `refile` is the questions catch-up's alone: it moves a question, closed or
     not, to another item and adds copies of it, and does nothing else to one.
     """
-    with _locked(diagram_id) as diagram:
-        data = diagramjson.loads(diagram.data)
-        applied = [d for delta in deltas for d in enact(data, delta)]
-        return _commit(
-            diagram,
-            data,
-            compress(applied),
-            author,
-            turn_id,
-            user_id,
-            session_id,
-            statement_id,
-            refile=refile,
-        )
+    for attempt in (1, 2):
+        try:
+            with _locked(diagram_id) as diagram:
+                data = diagramjson.loads(diagram.data)
+                applied = [d for delta in deltas for d in enact(data, delta)]
+                return _commit(
+                    diagram,
+                    data,
+                    compress(applied),
+                    author,
+                    turn_id,
+                    user_id,
+                    session_id,
+                    statement_id,
+                    refile=refile,
+                )
+        except Stale:
+            # once more on a fresh read; a second loss is a fault to see
+            if attempt == 2:
+                raise
 
 
 def preview(
@@ -371,16 +381,20 @@ def _locked(diagram_id: int):
     savepoint = db.session.begin_nested()
     try:
         yield _lock(diagram_id)
-    except (Invalid, Conflict):
+    except (Invalid, Conflict, Stale):
         savepoint.rollback()
         raise
 
 
 def _lock(diagram_id: int) -> Diagram:
+    """The row as it stands now, never the copy this session loaded earlier:
+    a writer that read the diagram, waited on a model and then writes applies
+    its deltas onto what landed meanwhile, not over it."""
     return (
         db.session.query(Diagram)
         .filter(Diagram.id == diagram_id)
         .with_for_update()
+        .populate_existing()
         .one()
     )
 
@@ -1827,14 +1841,18 @@ def _commit(
     refile=False,
 ) -> Change:
     _check(data, deltas, author, turn_id, undoing, refile)
+    # saved only over the version it was read at: a write that landed between
+    # the read and the save is caught, never written over
     version = db.session.execute(
         sql_update(Diagram)
-        .where(Diagram.id == diagram.id)
+        .where(Diagram.id == diagram.id, Diagram.version == diagram.version)
         .values(
             data=diagramjson.encode(data, diagram.data), version=Diagram.version + 1
         )
         .returning(Diagram.version)
-    ).scalar_one()
+    ).scalar_one_or_none()
+    if version is None:
+        raise Stale(f"diagram {diagram.id} changed while this write read it")
     change = Change(
         diagram_id=diagram.id,
         version=version,

@@ -91,23 +91,22 @@ def run(diagram_id: int, user_id: int, turn: str) -> None:
     fd = fdfile.read(data)
     diagram = db.session.get(Diagram, diagram_id)
     out = fdimport.build(fd)
-    land(diagram, db.session.get(User, user_id), turn, f"{diagram.name}{SUFFIX}", fd, out)
+    land(diagram, db.session.get(User, user_id), f"{diagram.name}{SUFFIX}", fd, out)
     attachments.drop(turn)
 
 
 def land(
     diagram: Diagram,
     user: User,
-    turn_id: str,
     file: str,
     fd: dict,
     imported: fdimport.Imported,
 ) -> None:
-    """What follows once the diagram is as it will stay, on the worker: the
-    import record mailed, then the clusters grouped under the file's own
-    turn, so one undo of the import takes the grouping off with it."""
+    """What follows once the diagram is saved, on the worker: the import record
+    mailed. Its clusters are grouped once the person says who the case is
+    about, which the sheet after an import always asks, so they are named for
+    the right person (R-0935)."""
     fdledger.send(user.username, file, diagram.name, ledger(file, fd, imported))
-    catch_up(diagram.id, turn_id=turn_id, user_id=user.id)
 
 
 def ledger(file: str, fd: dict, imported: fdimport.Imported) -> str:
@@ -123,6 +122,12 @@ def regroup(diagram_id: int, turn_id: str, user_id: int) -> None:
     extensions.celery.send_task(
         REGROUP, args=[diagram_id], kwargs={"turn_id": turn_id, "user_id": user_id}
     )
+
+
+def regrouped(diagram_id: int, *, turn_id: str, user_id: int) -> None:
+    """The worker's regroup task; it returns nothing, since the queue keeps a
+    task's answer as JSON and the regroup is in the diagram itself."""
+    catch_up(diagram_id, turn_id=turn_id, user_id=user_id)
 
 
 def catch_up(diagram_id: int, *, turn_id: str, user_id: int) -> clusters.Regroup | None:

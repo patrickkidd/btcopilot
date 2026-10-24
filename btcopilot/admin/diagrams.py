@@ -332,7 +332,7 @@ def diagram_import(path, email, name, ledger, yes):
         db.session.rollback()
         raise click.ClickException(str(e))
     if made:
-        fdafter.land(made, user, turn, path.name, fd, imported)
+        fdafter.land(made, user, path.name, fd, imported)
     else:
         ledger = ledger or pathlib.Path(fdledger.attachment(name))
         ledger.write_text(fdafter.ledger(path.name, fd, imported))

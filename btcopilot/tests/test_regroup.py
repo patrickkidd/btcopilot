@@ -4,12 +4,15 @@ events, without waiting for the person's next turn."""
 import json
 
 from mock import patch
+from sqlalchemy import select
+from sqlalchemy import update as sql_update
 
-from btcopilot import diagramjson
+from btcopilot import clusters, diagramjson, record
 from btcopilot.admin import admin
 from btcopilot.clusters import ClusterListResponse, ModelCluster, compute_cache_key
 from btcopilot.extensions import db
-from btcopilot.models import ModelCall, Observation, ObservationKind
+from btcopilot.models import Author, Diagram, ModelCall, Observation, ObservationKind
+from btcopilot.toolbox import ToolName, Toolbox
 from btcopilot.schema import (
     Cluster,
     ClusterSource,
@@ -240,3 +243,64 @@ def test_a_regroup_with_no_gemini_key_says_so_in_one_sentence(flask_app, family,
     assert result.exit_code != 0
     assert "The Gemini key, GOOGLE_GEMINI_API_KEY, is not set where this runs" in result.output
     assert "Traceback" not in result.output and "KeyError" not in result.output
+
+
+def landed_elsewhere(diagram_id: int, change) -> None:
+    """Another process's write to the diagram, straight to its row, so this
+    session's loaded copy of it is now stale."""
+    stored = diagramjson.loads(
+        db.session.execute(select(Diagram.data).where(Diagram.id == diagram_id)).scalar_one()
+    )
+    change(stored)
+    db.session.execute(
+        sql_update(Diagram)
+        .where(Diagram.id == diagram_id)
+        .values(data=diagramjson.dumps(stored), version=Diagram.version + 1)
+        # as from another process: this session's loaded copy stays as it was
+        .execution_options(synchronize_session=False)
+    )
+
+
+def test_a_pick_made_while_a_regroup_waits_on_its_model_survives_the_regroup(flask_app, family):
+    # R-0933, R-0935
+    def mark(stored):
+        stored["people"][0]["primary"] = True
+
+    def answer(*args, **kwargs):
+        landed_elsewhere(family.id, mark)
+        return parsed(GROUPED)
+
+    family.get_diagram_data()
+    with patch("btcopilot.metered.gemini_structured_sync", side_effect=answer):
+        clusters.sync(family.id, turn_id="r1", user_id=family.user_id, force=True)
+    db.session.expire_all()
+    data = family.get_diagram_data()
+    assert data.people[0].get("primary") is True
+    assert [c["title"] for c in data.drawn_clusters()] == ["A hard year, 1994"]
+
+
+def test_a_coach_write_after_a_persons_edit_landed_keeps_the_edit(flask_app, family):
+    # R-0933, R-0084
+    tools = Toolbox(family.id, "c1")
+    tools.data
+    landed_elsewhere(family.id, lambda stored: stored["people"][0].update(name="Renamed"))
+    tools.call(ToolName.EditPerson.value, {"name": "Bo", "gender": "male"})
+    db.session.expire_all()
+    names = [p.get("name") for p in family.get_diagram_data().people]
+    assert "Renamed" in names and "Bo" in names
+
+
+def test_a_write_from_a_stale_loaded_copy_applies_onto_what_landed_meanwhile(flask_app, family):
+    # R-0933
+    family.get_diagram_data()
+    landed_elsewhere(family.id, lambda stored: stored["people"][0].update(primary=True))
+    record.apply(
+        family.id,
+        [{"item_kind": "person", "item_id": 99, "field": "name", "after": "Bo"}],
+        author=Author.Coach,
+        turn_id="c2",
+    )
+    db.session.expire_all()
+    people = family.get_diagram_data().people
+    assert people[0].get("primary") is True
+    assert "Bo" in [p.get("name") for p in people]
