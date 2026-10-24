@@ -17,6 +17,7 @@ from btcopilot.coachturn import (
     FINISH,
     MAX_STEPS,
     STALLED_STEPS,
+    WRITELESS_STEPS,
     BareList,
     CoachTurn,
     EmptyReply,
@@ -578,17 +579,28 @@ def test_three_steps_that_write_nothing_and_repeat_a_refused_call_stop_the_turn(
     assert "no progress: 3 steps used" in stopped[0].message
 
 
-def test_a_turn_still_calling_new_tools_at_two_hundred_steps_meets_the_backstop(
+def test_a_turn_still_writing_at_two_hundred_steps_meets_the_backstop(
     discussion, family, caplog
 ):
     # R-0936, R-0411
-    """Reads of new things are not circles, so only the backstop stops them."""
-    reading = [called(ToolName.ReadEvents, person_id=n) for n in range(MAX_STEPS)]
-    model = Model(*reading, said("Here is what the record holds."))
-    run(discussion, "What is in there?", model)
+    """Steps that each write are not circles, so only the backstop stops them."""
+    working = [called(ToolName.EditPerson, name=f"Person {n}") for n in range(MAX_STEPS)]
+    model = Model(*working, said("Here is what the record holds."))
+    run(discussion, "There were many of them.", model)
     stopped = [r for r in caplog.records if "stopped as a runaway" in r.message]
     assert f"backstop: {MAX_STEPS} steps used" in stopped[0].message
     assert MAX_STEPS == 200
+
+
+def test_fifteen_steps_in_a_row_that_write_nothing_stop_the_turn(discussion, family, caplog):
+    # R-0936, R-0411
+    """Reads that never repeat still write nothing, so they stop after fifteen."""
+    reading = [called(ToolName.ReadEvents, person_id=n) for n in range(WRITELESS_STEPS)]
+    model = Model(*reading, said("Here is what the record holds."))
+    run(discussion, "What is in there?", model)
+    stopped = [r for r in caplog.records if "stopped as a runaway" in r.message]
+    assert f"no writes: {WRITELESS_STEPS} steps used" in stopped[0].message
+    assert WRITELESS_STEPS == 15
 
 
 def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(

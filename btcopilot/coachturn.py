@@ -75,14 +75,16 @@ _tracer = trace.get_tracer(__name__)
 
 # A turn runs until the coach stops calling tools; these only stop a runaway,
 # never a turn that is still writing [Oracle: R-0411, R-0936]: the backstop on
-# steps, and how many steps in a row may write nothing while repeating a call
-# that was refused or already made.
+# steps, how many steps in a row may write nothing while repeating a call that
+# was refused or already made, and how many may write nothing at all.
 MAX_STEPS = 200
 STALLED_STEPS = 3
+WRITELESS_STEPS = 15
 
 
 class Runaway(enum.StrEnum):
     NoProgress = "no progress"
+    NoWrites = "no writes"
     Backstop = "backstop"
 RECENT_INTERACTIONS = 50
 # The family's latest words, from every one of the user's sessions on it, that
@@ -503,7 +505,7 @@ class CoachTurn:
         spoken = ""
         silent = False
         made: set[str] = set()
-        stalled = 0
+        stalled = writeless = 0
         stopped = None
 
         for step in range(MAX_STEPS):
@@ -576,8 +578,12 @@ class CoachTurn:
                 }
             )
             stalled = 0 if wrote or not repeated else stalled + 1
+            writeless = 0 if wrote else writeless + 1
             if stalled >= STALLED_STEPS:
                 stopped = Runaway.NoProgress
+                break
+            if writeless >= WRITELESS_STEPS:
+                stopped = Runaway.NoWrites
                 break
         else:
             stopped = Runaway.Backstop
