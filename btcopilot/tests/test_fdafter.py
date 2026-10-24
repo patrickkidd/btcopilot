@@ -10,6 +10,7 @@ import zipfile
 import pytest
 from mock import patch
 
+import btcopilot
 from btcopilot import (
     diagramjson,
     attachments,
@@ -28,6 +29,7 @@ from btcopilot.admin.setting import SettingKey
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.pricing import cost
 from btcopilot.models import User, Author, Change, Diagram, ModelCall
+from btcopilot.models.etc import AccessRight
 from btcopilot.models.modelcall import Purpose
 from btcopilot.schema import DateCertainty, Event, EventKind, ItemKind, Person, asdict
 from btcopilot.tests.conftest import csrf_token
@@ -289,6 +291,27 @@ def test_someone_with_no_row_on_a_diagram_cannot_say_who_they_are_in_it(web):
     db.session.add(theirs)
     db.session.commit()
     assert access(web, theirs.id, None).status_code == 404
+
+
+def test_a_read_only_grantee_cannot_say_who_the_diagram_is_about(web, test_user, monkeypatch):
+    # R-0888, R-0889
+    other = User(username="bo@example.com")
+    db.session.add(other)
+    db.session.flush()
+    theirs = Diagram(user_id=other.id, name="Theirs", data=diagramjson.dumps({}))
+    db.session.add(theirs)
+    db.session.flush()
+    imported(theirs, [Person(id=3, name="Ann")], [])
+    db.session.add(
+        AccessRight(diagram_id=theirs.id, user_id=test_user.id, right=btcopilot.ACCESS_READ_ONLY)
+    )
+    db.session.commit()
+    asked = []
+    monkeypatch.setattr(fdafter, "regroup", lambda *args: asked.append(args))
+    assert access(web, theirs.id, 3).status_code == 404
+    db.session.expire_all()
+    assert not any(p.get("primary") for p in db.session.get(Diagram, theirs.id).get_diagram_data().people)
+    assert asked == []
 
 
 def test_saying_who_you_are_marks_that_person_the_one_the_diagram_is_about(web, landed):

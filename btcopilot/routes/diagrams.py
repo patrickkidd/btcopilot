@@ -289,15 +289,15 @@ def _frame(event_id: str, event: dict) -> str:
 def diagram_access_update(diagram_id: int):
     """Who the signed-in user is on a diagram, on their own access row: a
     person in it, or no one. A person named is also marked the one the
-    diagram is about. The owner's row is made when it has none; anyone else
-    needs a row already."""
+    diagram is about. Only someone who can edit the diagram may; the owner's
+    row is made when it has none."""
     user = auth.current_user()
     found = db.session.get(Diagram, diagram_id)
     if found is None or found.deleted_at is not None:
         abort(404)
-    row = found.access_right(user)
-    if row is None and found.user_id != user.id:
+    if not found.check_write_access(user):
         abort(404)
+    row = found.access_right(user)
     person_id = request.get_json()["person_id"]
     if person_id is not None and not any(
         p.get("id") == person_id for p in found.get_diagram_data().people
