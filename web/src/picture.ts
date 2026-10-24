@@ -1579,8 +1579,12 @@ export class Picture {
       dated.map((e) => e.dateTime as string),
       screen,
     );
-    // where the reader left the line, kept while a cluster's view stood in its place
-    const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? this.left;
+    // where the reader left the line, kept while a cluster's view stood in its
+    // place; a line resting at its end, the present, stays at its end however
+    // much wider or narrower it is drawn now, as when clusters come in (R-0937)
+    const scroller = this.host.querySelector<HTMLElement>(SCROLLER);
+    const atEnd = scroller !== null && scroller.scrollLeft >= scroller.scrollWidth - scroller.clientWidth - 1;
+    const held = atEnd ? null : (scroller?.scrollLeft ?? this.left);
     const x0 = X_PAD;
     const x1 = width - X_PAD;
     const first = years(dated[0].dateTime as string);
