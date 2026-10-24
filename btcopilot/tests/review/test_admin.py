@@ -112,8 +112,8 @@ def test_without_yes_the_preview_prints_and_nothing_changes(flask_app, test_user
 
 def test_an_unknown_email_or_a_coder_with_no_coding_is_named(flask_app, test_user_2, cut):
     # R-0938
-    unknown = invoke(flask_app, "review", "codings", "reset", "nobody@x.invalid", str(cut.id))
-    assert "no account for nobody@x.invalid" in unknown.output
+    unknown = invoke(flask_app, "review", "codings", "reset", "dev-team@example.com", str(cut.id))
+    assert "no account for dev-team@example.com" in unknown.output
     missing = invoke(flask_app, "review", "codings", "reset", test_user_2.username, str(cut.id))
     assert f"{test_user_2.username} has no coding of cut {cut.id}" in missing.output
 
