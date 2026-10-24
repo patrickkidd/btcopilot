@@ -1,5 +1,5 @@
 import { esc, el, flash, shift } from "./dom";
-import { askedChip, chipOf, face, LEAD, Lead, pill, token, tokenize } from "./chips";
+import { askedChip, chipOf, drawn, face, LEAD, Lead, pill, token, tokenize } from "./chips";
 import { hush, say } from "./speech";
 import { INFO, notesView, type Notes } from "./notes";
 import { html, type Line } from "./tools";
@@ -96,6 +96,26 @@ function layout(pieces: Piece[]): Written {
  * is stored, the amber words before then. */
 const asked = (ask: string, statementId: number | null) =>
   statementId === null ? esc(ask) : askedChip(statementId, ask);
+
+/** A whole coach reply as it stands when nothing is typing: the words, the
+ * closing question in amber, and the offers in their own row. A reopened
+ * session, and the conversation a coder codes, read exactly as the reply did
+ * when it was written. A reply not yet stored, or read where it cannot be
+ * answered, has `statementId` null. */
+export function reply(
+  pieces: Piece[],
+  statementId: number | null,
+  piece: (chip: Chip) => string,
+  offer: (chip: Chip) => string,
+): string {
+  const { words, ask, offers, tail } = layout(pieces);
+  return (
+    `<span class="words">${drawn(words, piece)}</span>` +
+    (ask ? `<div class="ask">${asked(ask, statementId)}</div>` : "") +
+    (offers.length ? `<div class="offer">${offers.map(offer).join("")}</div>` : "") +
+    (tail.length ? `<span class="words">${drawn(tail, piece)}</span>` : "")
+  );
+}
 
 /** The statement a bubble was stored as, once the server has said. */
 const stamped = (bubble: HTMLElement) =>
@@ -263,24 +283,11 @@ export class Chat {
   /** Words and chips; the coach's carry the card two people are asked
    * about on, the reader's the pill they sent it back as. */
   private render(pieces: Piece[], coach = true): string {
-    return pieces
-      .map((p) => ("chip" in p ? (coach ? this.piece(p.chip) : this.pill(p.chip)) : esc(p.text)))
-      .join("");
+    return drawn(pieces, (chip) => (coach ? this.piece(chip) : this.pill(chip)));
   }
 
-  /** A whole reply as it stands when nothing is typing: the words, the closing
-   * question in amber, and the offers in their own row. A reopened session must
-   * read exactly as the reply did when it was written. */
   private written(pieces: Piece[], statementId: number | null): string {
-    const { words, ask, offers, tail } = layout(pieces);
-    return (
-      `<span class="words">${this.render(words)}</span>` +
-      (ask ? `<div class="ask">${asked(ask, statementId)}</div>` : "") +
-      (offers.length
-        ? `<div class="offer">${offers.map((c) => this.pill(c)).join("")}</div>`
-        : "") +
-      (tail.length ? `<span class="words">${this.render(tail)}</span>` : "")
-    );
+    return reply(pieces, statementId, (chip) => this.piece(chip), (chip) => this.pill(chip));
   }
 
   /** The tap is itself the gesture iOS wants before it will speak. */
