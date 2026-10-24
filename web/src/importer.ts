@@ -182,9 +182,8 @@ export const pickStep = (imported: Imported["imported"], people: Person[], pick:
 
 const dollars = (amount: number) => `$${amount.toFixed(2)}`;
 
-/** What a yes is likely to cost: one figure, or the low to the high. */
-export const costLine = ({ low, high }: Imported["imported"]["coding_cost"]): string =>
-  `About ${low === high ? dollars(low) : `${dollars(low)}\u2013${dollars(high)}`} of coach use`;
+/** The most a yes is likely to cost. */
+export const costLine = ({ high }: Imported["imported"]["coding_cost"]): string => `Up to about ${dollars(high)}`;
 
 /** Last: whether the coach should add the codes the file has none of, and
  * what that is likely to cost. */

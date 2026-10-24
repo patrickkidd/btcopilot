@@ -261,8 +261,8 @@ it("cannot be put away until a primary person is set, and then its cross counts 
 
 // R-0899
 it("says under the codes question what a yes is likely to cost", () => {
-  expect(codesStep(lund.imported)).toContain('<p class="cf-p fdc-cost">About $0.40\u2013$1.80 of coach use</p>');
-  expect(costLine({ low: 0.4, high: 0.4 })).toBe("About $0.40 of coach use");
+  expect(codesStep(lund.imported)).toContain('<p class="cf-p fdc-cost">Up to about $1.80</p>');
+  expect(costLine({ low: 0.07, high: 3.1 })).toBe("Up to about $3.10");
 });
 
 // R-0899, R-0902, R-0905
