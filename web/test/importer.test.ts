@@ -14,7 +14,16 @@ function toasts(): () => string[] {
   vi.stubGlobal("document", {
     querySelector: () => ({ append() {} }),
     createElement: () => {
-      const node = { className: "", textContent: "", classList: { add() {}, remove() {} }, append() {}, remove() {} };
+      const node = {
+        className: "",
+        textContent: "",
+        dataset: {},
+        classList: { add() {}, remove() {} },
+        append() {},
+        remove() {},
+        addEventListener() {},
+        setAttribute() {},
+      };
       made.push(node);
       return node;
     },
@@ -55,9 +64,18 @@ it("finds the diagram.pickle in a dropped .fd folder and sends it under the fold
 });
 
 // R-0899
-it("asks for a zip when a browser hands the .fd package over as a file it cannot open", async () => {
-  expect(await fromDrop(dropped({ name: "Lund family.fd", isFile: true }, [new File([], "Lund family.fd")]))).toBe(ZIP_FIRST);
-  expect(await fromDrop(dropped(null, [new File([], "Lund family.fd")]))).toBe(ZIP_FIRST);
+it("asks for a zip when a browser hands the .fd package over as a file it cannot open, and sends one it zipped on the way", async () => {
+  const empty = new File([], "Lund family.fd");
+  expect(await fromDrop(dropped({ name: "Lund family.fd", isFile: true }, [empty]))).toBe(empty);
+  expect(await fromDrop(dropped(null, [empty]))).toBe(empty);
+  const said = toasts();
+  const { one } = importer(null);
+  const sent = vi.spyOn(one, "send").mockResolvedValue(undefined);
+  await one.pick(empty);
+  const zipped = new File(["PK\x03\x04"], "Lund family.fd");
+  await one.pick(zipped);
+  expect(said()).toEqual([ZIP_FIRST]);
+  expect(sent.mock.calls).toEqual([[zipped]]);
 });
 
 // R-0899
@@ -254,8 +272,8 @@ it("shows the server's own sentence for a file it refuses, and refuses one over 
 });
 
 // R-0899
-it("offers the import row to a reader without a professional licence", () => {
-  const made: { className: string; innerHTML?: string }[] = [];
+it("offers the import row to a reader without a professional licence: the row picks a file, the link the folder", () => {
+  const made: { className: string; innerHTML?: string; type?: string; accept?: string; webkitdirectory?: boolean }[] = [];
   vi.stubGlobal("document", {
     createElement: () => {
       const node = { className: "", dataset: {}, append() {}, addEventListener() {}, setAttribute() {} };
@@ -266,7 +284,30 @@ it("offers the import row to a reader without a professional licence", () => {
   const page = { addEventListener() {} } as unknown as HTMLElement;
   expect(Importer.prototype.row.call({}, page).className).toBe("sn-row push");
   expect(made.map((one) => one.innerHTML)).toContain("Import a Family Diagram file");
-  expect(made.map((one) => one.innerHTML)).toContain("or a .zip of it");
+  expect(made.map((one) => one.innerHTML)).toContain("or pick the folder");
+  const [file, folder] = made.filter((one) => one.type === "file");
+  expect([file.accept, file.webkitdirectory]).toEqual([".fd,.zip,.pickle", undefined]);
+  expect([folder.accept, folder.webkitdirectory]).toEqual([undefined, true]);
+});
+
+// R-0899
+it("says a drop has landed before anything is read from it", () => {
+  const said = toasts();
+  const heard: Record<string, (e: object) => void> = {};
+  const page = { addEventListener: (kind: string, hear: (e: object) => void) => void (heard[kind] = hear), classList: { add() {}, remove() {} } };
+  const { one } = importer(null);
+  vi.spyOn(one, "pick").mockResolvedValue(undefined);
+  one.row(page);
+  const reader = { readEntries: () => {} };
+  heard.drop({
+    preventDefault() {},
+    dataTransfer: {
+      types: ["Files"],
+      items: [{ webkitGetAsEntry: () => ({ name: "Lund family.fd", isDirectory: true, createReader: () => reader }) }],
+      files: [],
+    },
+  });
+  expect(said()).toEqual(["Reading Lund family.fd\u2026"]);
 });
 
 

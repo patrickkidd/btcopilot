@@ -12,6 +12,8 @@ export const PICKLE = "diagram.pickle";
 /** The most the server takes. */
 export const MAX_BYTES = 20 * 1024 * 1024;
 export const NO_DIAGRAM = "That folder is not a Family Diagram file.";
+/** What the row's own picker offers; the server tells a file by its bytes. */
+export const FILE_KINDS = ".fd,.zip,.pickle";
 export const TOO_BIG = "That file is over 20 MB, more than the app takes.";
 export const CANNOT_BRING = "Could not bring in the file.";
 
@@ -54,14 +56,14 @@ async function inside(folder: FileSystemDirectoryEntry): Promise<File[]> {
   );
 }
 
-export const ZIP_FIRST = "Zip the .fd folder first, or pick it with the button.";
+export const ZIP_FIRST = "Zip the .fd folder first, or pick the folder.";
 export const UNREAD = "Could not read that folder.";
 
 /** What was dropped: a folder's diagram.pickle, a file as it is, or why
  * neither can be sent. The drop's items are read before anything waits, since
  * they are gone once the event is over. A desktop file is a macOS package: a
- * browser may hand it over as a folder, or as a file of no bytes the page
- * cannot open. */
+ * browser may hand it over as a folder, as a file zipped on the way, or as a
+ * file of no bytes the page cannot open, which `pick` turns away. */
 export async function fromDrop(data: DataTransfer): Promise<File | string> {
   const entry = data.items[0]?.webkitGetAsEntry() ?? null;
   const file = data.files[0] ?? null;
@@ -74,8 +76,25 @@ export async function fromDrop(data: DataTransfer): Promise<File | string> {
       return UNREAD;
     }
   }
-  if (/\.fd$/i.test(entry?.name ?? file?.name ?? "")) return ZIP_FIRST;
   return file ?? NO_DIAGRAM;
+}
+
+/** The name a drop is said under while it is read. */
+export const dropName = (data: DataTransfer): string =>
+  data.items[0]?.webkitGetAsEntry()?.name ?? data.files[0]?.name ?? "the file";
+
+/** A .fd handed over as the package itself, which a page cannot open: no
+ * bytes, or bytes the browser will not give. */
+async function unopened(file: File): Promise<boolean> {
+  if (!/\.fd$/i.test(file.name)) return false;
+  if (!file.size) return true;
+  try {
+    await file.slice(0, 1).arrayBuffer();
+    return false;
+  } catch (error) {
+    if (!(error instanceof DOMException)) throw error;
+    return true;
+  }
 }
 
 /** Why a file is not sent at all, or null when it may be. */
@@ -176,8 +195,8 @@ export async function bring(file: File): Promise<Imported | string> {
 }
 
 /** The Diagrams page's way to make a new diagram from a desktop Family
- * Diagram file, for everyone, beside the new diagram row: its row picks the .fd
- * folder, the link under it a .zip of it for a phone, and a folder dropped on
+ * Diagram file, for everyone, beside the new diagram row: its row picks the
+ * file or a .zip of it, the link under it the .fd folder, and a folder dropped on
  * the page on a computer is taken too. The new diagram opens, and the person
  * is asked once whether the coach should add codes (R-0899). */
 export class Importer {
@@ -244,11 +263,12 @@ export class Importer {
 
   /** A file to send, or the sentence saying why there is none. An error
    * anywhere after is said, and still thrown for the console. */
-  pick(file: File | string | null): void {
+  async pick(file: File | string | null): Promise<void> {
     if (this.sending) return;
     const refused = typeof file === "string" ? file : refusal(file);
     if (refused) return toast(refused, true);
-    void this.send(file as File).catch((error) => {
+    if (await unopened(file as File)) return toast(ZIP_FIRST, true);
+    await this.send(file as File).catch((error) => {
       toast(CANNOT_BRING, true);
       throw error;
     });
@@ -267,27 +287,29 @@ export class Importer {
   row(page: HTMLElement): HTMLElement {
     const row = el("div", "sn-row push");
     const sub = el("div", "sn-s");
-    const zip = el("button", "sn-alt", "or a .zip of it");
-    zip.type = "button";
-    sub.append(zip);
+    const alt = el("button", "sn-alt", "or pick the folder");
+    alt.type = "button";
+    sub.append(alt);
     const main = el("div", "sn-m");
     main.append(el("div", "sn-t", "Import a Family Diagram file"), sub);
+    // a Mac's folder picker will not take a .fd package, so the row picks a
+    // file, which the server reads by its bytes, and the link picks the folder
+    const file = picker(FILE_KINDS);
     const folder = picker();
-    const zipped = picker(".zip,application/zip");
-    folder.setAttribute("aria-label", "Pick a Family Diagram file");
-    zipped.setAttribute("aria-label", "Pick a .zip of a Family Diagram file");
-    row.append(main, el("div", "sn-chev", "\u203a"), folder, zipped);
+    file.setAttribute("aria-label", "Pick a Family Diagram file or a .zip of it");
+    folder.setAttribute("aria-label", "Pick a Family Diagram folder");
+    row.append(main, el("div", "sn-chev", "\u203a"), file, folder);
 
     row.addEventListener("click", (e) => {
       if (this.sending || (e.target as Element).closest("input")) return;
-      const input = (e.target as Element).closest(".sn-alt") ? zipped : folder;
+      const input = (e.target as Element).closest(".sn-alt") ? folder : file;
       input.value = "";
       input.click();
     });
-    for (const input of [folder, zipped])
+    for (const input of [file, folder])
       input.addEventListener("change", () => {
         const files = [...(input.files ?? [])];
-        if (files.length) this.pick(fromPicked(files));
+        if (files.length) void this.pick(fromPicked(files));
       });
 
     const files = (e: DragEvent) => !!e.dataTransfer?.types.includes("Files");
@@ -306,6 +328,8 @@ export class Importer {
       if (!files(e)) return;
       e.preventDefault();
       page.classList.remove("dropping");
+      // said before anything is read, so a drop that comes to nothing still shows it landed
+      toast(`Reading ${dropName(e.dataTransfer!)}\u2026`);
       void fromDrop(e.dataTransfer!).then(
         (file) => this.pick(file),
         (error) => {
