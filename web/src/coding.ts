@@ -9,9 +9,11 @@ import { Menu, Tab } from "./menu";
 import { toast } from "./toast";
 import { listButton, PLAY_MARK, tok } from "./tokens";
 import { did, html } from "./tools";
-import { waiting } from "./chat";
+import { drawn, reply, waiting } from "./chat";
+import { pill, tokenize } from "./chips";
 import { WIDE } from "./pro";
 import {
+  type Chip,
   emptyTimeline,
   ItemKind,
   Touch,
@@ -106,6 +108,16 @@ export function scribedRows(written: Scribed): string {
   ];
   return rows.join("") || unsaved("nothing saved");
 }
+
+/** A chip in the conversation, named as it was written: the conversation is
+ * the family's, so the coder's own copy has nothing for it to name. */
+const named = (chip: Chip) => pill(chip, chip.label);
+
+/** A line of the conversation, drawn as the chat draws it: the coach's markup
+ * is its chips and its closing question, never brackets; nothing in it can be
+ * answered from here. */
+export const line = (turn: Pick<CodingTurn, "client" | "text">): string =>
+  turn.client ? drawn(tokenize(turn.text), named) : reply(tokenize(turn.text), null, named, named);
 
 /** Which record events a piece of the thread wrote, for the concept pages
  * hung under it once the record is read. */
@@ -568,12 +580,7 @@ export class Coding {
   }
 
   private bubble(turn: CodingTurn): HTMLElement {
-    const node = el(
-      "div",
-      `bub line ${turn.client ? "user" : "coach"}`,
-      esc(turn.text),
-    );
-    return this.tagged(node, turn.id);
+    return this.tagged(el("div", `bub line ${turn.client ? "user" : "coach"}`, line(turn)), turn.id);
   }
 
   /** What hangs under a turn hangs on that turn's side of the thread. */
