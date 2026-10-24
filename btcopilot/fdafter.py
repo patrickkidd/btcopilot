@@ -9,8 +9,10 @@ change log the import's write already satisfies (R-0825), and coverage is
 worked out from the diagram each time it is read.
 """
 
+import collections
 import datetime
 import io
+import statistics
 import pickle
 import uuid
 import zipfile
@@ -25,13 +27,26 @@ from btcopilot import (
     fdfile,
     fdimport,
     fdledger,
+    prompts,
+    recordtext,
 )
+from btcopilot.admin import setting
+from btcopilot.admin.setting import SettingKey
+from btcopilot.coachturn import MAX_STEPS
 from btcopilot.extensions import db
-from btcopilot.models import Diagram, User
+from btcopilot.llmutil import Spent, resolve_model
+from btcopilot.models import Diagram, ModelCall, Purpose, User
+from btcopilot.pricing import cost
 
 TASK = "fd_import_landed"
 REGROUP = "clusters_regroup"
 NOT_FD = "That is not a Family Diagram file."
+# How far back, and how many calls, the coding question's cost is read from.
+COST_DAYS = 30
+RECENT_CALLS = 20
+# The repo's rough count of characters to a token (refs.py), for a cost read
+# from prices when the model has too few calls to read it from.
+CHARS_PER_TOKEN = 4
 # The first bytes of a zip, and of a pickle the desktop writes (protocol 2 on).
 ZIP = b"PK\x03\x04"
 PICKLED = b"\x80"
@@ -149,3 +164,32 @@ def catch_up(diagram_id: int, *, turn_id: str, user_id: int) -> clusters.Regroup
     regrouped = clusters.sync(diagram_id, turn_id=turn_id, user_id=user_id)
     db.session.commit()
     return regrouped
+
+
+def coding_cost(user_id: int, diagram: Diagram) -> dict:
+    """What the one coach turn the coding question's Yes starts would cost,
+    in dollars, low to high, read from what the user's coach model has cost
+    [Oracle: R-0902]. With RECENT_CALLS or more of its calls in the last
+    COST_DAYS days: the median call times the median calls a turn made, and
+    the 90th percentile call times the turn's step cap. With fewer: the
+    model's input price on this diagram's coach prompt, once per step."""
+    model = resolve_model(setting.read(SettingKey.CoachModel, user_id))
+    since = datetime.datetime.utcnow() - datetime.timedelta(days=COST_DAYS)
+    rows = ModelCall.query.filter(
+        ModelCall.purpose == Purpose.Coach,
+        ModelCall.model == model,
+        ModelCall.created_at >= since,
+    ).all()
+    per_turn = collections.Counter(row.turn_id for row in rows)
+    steps = statistics.median(per_turn.values()) if per_turn else 1
+    if len(rows) >= RECENT_CALLS:
+        costs = sorted(float(row.cost_usd) for row in rows)
+        low = statistics.median(costs) * steps
+        high = statistics.quantiles(costs, n=10)[-1] * MAX_STEPS
+    else:
+        words = prompts.get_agent_prompt(
+            record=recordtext.outline(diagram.get_diagram_data(), diagram.version, None)
+        )
+        call = float(cost(model, Spent(input=len(words) // CHARS_PER_TOKEN)))
+        low, high = call * steps, call * MAX_STEPS
+    return {"low": round(low, 2), "high": round(high, 2)}

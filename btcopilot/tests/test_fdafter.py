@@ -4,6 +4,7 @@ clusters grouped once the person says who the case is about."""
 
 import io
 import json
+import statistics
 import zipfile
 
 import pytest
@@ -20,7 +21,12 @@ from btcopilot import (
 )
 from btcopilot.clusters import sync
 from btcopilot.extensions import db
+from btcopilot.admin import setting
+from btcopilot.admin.setting import SettingKey
+from btcopilot.coachturn import MAX_STEPS
+from btcopilot.llmutil import resolve_model
 from btcopilot.models import User, Author, Change, Diagram, ModelCall
+from btcopilot.models.modelcall import Purpose
 from btcopilot.schema import DateCertainty, Event, EventKind, ItemKind, Person, asdict
 from btcopilot.tests.conftest import csrf_token
 from btcopilot.tests.fdfixtures import dumps, scene, shift
@@ -194,7 +200,13 @@ def test_a_file_is_made_in_the_request_as_it_stands_and_opened(
         diagram.id,
         "Lund family",
         True,
-        {"people": 3, "events": 3, "left_out": 0, "primary": [3]},
+        {
+            "people": 3,
+            "events": 3,
+            "left_out": 0,
+            "primary": [3],
+            "coding_cost": fdafter.coding_cost(test_user.id, diagram),
+        },
     )
     assert "turn_id" not in body
     assert test_user.current_diagram_id == diagram.id
@@ -347,3 +359,48 @@ def test_a_diagram_pickle_is_read_by_its_bytes_whatever_its_name(web, landed):
     assert upload_named(web, dumps(scene()), "anything.fd").status_code == 201
     refused = upload_named(web, b"PK not really", "diagram.pickle")
     assert (refused.status_code, refused.get_data(as_text=True)) == (400, fdafter.NOT_FD)
+
+
+
+def calls(user_id: int, turns: int, per_turn: int, model: str) -> list[float]:
+    """The ledger of a coach model's recent turns, one row per call."""
+    costs = []
+    for turn in range(turns):
+        for step in range(per_turn):
+            spent = round(0.01 * (turn * per_turn + step + 1), 6)
+            costs.append(spent)
+            db.session.add(
+                ModelCall(
+                    user_id=user_id,
+                    turn_id=f"t{turn}",
+                    purpose=Purpose.Coach,
+                    model=model,
+                    input_tokens=1,
+                    output_tokens=1,
+                    cache_creation_tokens=0,
+                    cache_read_tokens=0,
+                    cost_usd=spent,
+                    duration_ms=1,
+                    tool_calls=0,
+                )
+            )
+    db.session.commit()
+    return costs
+
+
+def test_the_coding_question_says_what_the_turn_costs_from_the_models_own_calls(test_user):
+    # R-0902, R-0903
+    model = resolve_model(setting.read(SettingKey.CoachModel, test_user.id))
+    costs = sorted(calls(test_user.id, turns=5, per_turn=5, model=model))
+    said = fdafter.coding_cost(test_user.id, test_user.free_diagram)
+    assert said == {
+        "low": round(statistics.median(costs) * 5, 2),
+        "high": round(statistics.quantiles(costs, n=10)[-1] * MAX_STEPS, 2),
+    }
+
+
+def test_with_too_few_calls_the_cost_is_read_from_the_models_prices(test_user):
+    # R-0902, R-0903
+    said = fdafter.coding_cost(test_user.id, test_user.free_diagram)
+    assert 0 < said["low"] <= said["high"]
+    assert said["high"] >= said["low"] * MAX_STEPS - 0.01

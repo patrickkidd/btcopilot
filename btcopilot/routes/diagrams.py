@@ -189,6 +189,7 @@ def _imported(user):
         "events": out.brought["events"],
         "left_out": out.brought[fdimport.LEFT_OUT],
         "primary": out.primaries,
+        "coding_cost": fdafter.coding_cost(user.id, made),
     }
     return jsonify(diagram_payload(made, user) | {"imported": imported}), 201
 
