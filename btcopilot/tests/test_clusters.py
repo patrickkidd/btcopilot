@@ -2457,11 +2457,11 @@ def test_the_periods_are_written_to_you_or_about_the_person_by_who_is_on_the_cas
     # R-0935, R-0860
     with replies(answers()) as ask:
         detect_clusters(GRANDMOTHER, ask)
-    assert 'as the coach speaking to the person, calling them "you"' in ask.call_args_list[0].args[0]
+    assert clusters.TO_YOU in ask.call_args_list[0].args[0]
     with replies(answers()) as ask:
         detect_clusters(GRANDMOTHER, ask, name="Ada")
     told = ask.call_args_list[0].args[0]
-    assert 'speaking about the person, calling them by their first name, Ada, never "you"' in told
+    assert clusters.BY_NAME.format(name="Ada") in told
     assert '("Ada said\n...")' in told or '("Ada said ...")' in told
     assert 'calling them "you"' not in told and "you said" not in told
 
