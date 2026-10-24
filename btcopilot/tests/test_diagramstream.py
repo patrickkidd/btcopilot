@@ -162,3 +162,22 @@ def test_a_write_still_lands_when_the_stream_cannot_be_told(test_user):
     names = [p["name"] for p in db.session.get(Diagram, diagram.id).get_diagram_data().people]
     assert "Ada" in names
     log.warning.assert_called_once()
+
+
+def test_a_page_told_to_reread_a_lapsed_log_is_not_told_again_when_it_reconnects(web, test_user):
+    # R-0933
+    diagram = test_user.free_diagram
+    with patch("btcopilot.turnlog.subscribe", lambda log: iter(())):
+        response = web.get(
+            f"/app/diagrams/{diagram.id}/events",
+            headers={"Last-Event-ID": "None-0"},
+            buffered=False,
+        )
+        [(place, event)] = frames(response, 1)
+        assert event == {"type": "reload"} and not place.startswith("None")
+        again = web.get(
+            f"/app/diagrams/{diagram.id}/events",
+            headers={"Last-Event-ID": place},
+            buffered=False,
+        )
+        assert frames(again, 1) == []
