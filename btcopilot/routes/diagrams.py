@@ -88,6 +88,9 @@ def diagram_payload(diagram: Diagram, user) -> dict:
         "owner_name": diagram.user.first_name or None,
         "owner_username": diagram.user.username,
         "person_id": profile.person_of(user, diagram),
+        # whether the person the diagram is about is on it, so the page says
+        # "you" to them or names them (FD-387)
+        "addressed": profile.addressed(diagram, diagram.get_diagram_data()),
     }
 
 

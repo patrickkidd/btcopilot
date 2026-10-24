@@ -15,7 +15,7 @@ import re
 from sqlalchemy import or_
 
 import btcopilot
-from btcopilot import clock, clusters, coverage, diagramjson, place, proactive, prompts, record, views
+from btcopilot import clock, clusters, coverage, diagramjson, place, proactive, profile, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
     bond_line,
@@ -1082,6 +1082,13 @@ class Toolbox:
         self.versions: set[int] = set()
 
     @property
+    def viewer(self) -> int | None:
+        """Who the user this turn answers is on the case, or None."""
+        if self.user_id is None:
+            return None
+        return profile.person_of(db.session.get(User, self.user_id), self.diagram)
+
+    @property
     def coder(self) -> bool:
         """Admin counts: `has_role` gives an admin every role."""
         return self.user_id is not None and db.session.get(
@@ -1850,7 +1857,7 @@ class Toolbox:
         if coverage.state_of(data, fact, kind, iid) is FactState.Known:
             raise ToolError(
                 f"The record already answers {coverage.WORDS[fact]} for {where}: "
-                f"{coverage.evidence(data, fact, kind, iid)}. Do not ask it; use the answer",
+                f"{coverage.evidence(data, fact, kind, iid, self.viewer)}. Do not ask it; use the answer",
                 "It was about to ask something the diagram already holds.",
             )
         if self.said is None:

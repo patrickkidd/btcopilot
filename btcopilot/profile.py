@@ -52,6 +52,11 @@ def named(diagram, data: DiagramData) -> str | None:
     "you" (FD-387)."""
     if addressed(diagram, data):
         return None
+    return subject_name(data)
+
+
+def subject_name(data: DiagramData) -> str:
+    """The first name of the person the case belongs to."""
     return (own(data) or {}).get("name") or DEFAULT_SUBJECT_NAME
 
 

@@ -568,12 +568,12 @@ def test_only_a_noted_event_names_the_item_it_records(family):
 
 
 def test_a_closed_children_or_alive_question_makes_the_item_known(family):
-    # R-0760
+    # R-0760, R-0889
     data = parents(family.get_diagram_data())
     children = (Fact.Children, ItemKind.PairBond, HOME)
     alive = (Fact.Alive, ItemKind.Person, TOM)
     assert coverage.state_of(data, *children) is FactState.NotAsked
-    assert coverage.evidence(data, *children) is None
+    assert coverage.evidence(data, *children, ME) is None
     assert coverage.fits(Fact.Children, ItemKind.PairBond)
     assert not coverage.fits(Fact.Children, ItemKind.Person)
     assert not coverage.fits(Fact.Alive, ItemKind.PairBond)
@@ -603,20 +603,24 @@ def test_a_closed_children_or_alive_question_makes_the_item_known(family):
     for item in (children, alive):
         assert coverage.state_of(data, *item) is FactState.Known
         assert coverage.states(data)[item] is FactState.Known
-    assert coverage.evidence(data, *children) == (
+    assert coverage.evidence(data, *children, ME) == (
         'q1 resolved fact "How many children did your parents have?" about pair_bond 4 '
         "outcome=answered"
     )
-    assert coverage.evidence(data, *alive) == (
+    assert coverage.evidence(data, *alive, ME) == (
         'q2 resolved fact "Is your father still alive?" about person 3 outcome=answered'
     )
     # the record's own entries answer first; an item nobody required is still read
     data.events = [{"id": 2, "kind": "death", "person": TOM, "dateTime": "2013-01-01"}]
-    assert coverage.evidence(data, *alive) == "2 2013-01-01 [death] person=3"
+    assert coverage.evidence(data, *alive, ME) == "2 2013-01-01 [death] person=3"
     assert coverage.state_of(data, Fact.BirthDate, ItemKind.Person, NELL) is FactState.NotAsked
     assert coverage.state_of(data, Fact.Alive, ItemKind.Person, ME) is FactState.Known
-    assert coverage.evidence(data, Fact.Alive, ItemKind.Person, ME) == (
+    assert coverage.evidence(data, Fact.Alive, ItemKind.Person, ME, ME) == (
         "they are the person you are talking with"
+    )
+    # a coach on the case is not talking with the person it is about (FD-387)
+    assert coverage.evidence(data, Fact.Alive, ItemKind.Person, ME, None) == (
+        "they are the person the diagram is about"
     )
     assert coverage.label(data, ItemKind.Person, TOM) == "3 Tom (father)"
     assert coverage.label(data, ItemKind.PairBond, HOME) == "couple 4, Ada and Tom (parents)"
@@ -691,4 +695,4 @@ def test_what_brought_the_person_leads_the_list_until_the_coachs_note_on_its_car
     data.questions = [brought()]
     assert coverage.states(data)[item] is FactState.Known
     assert BROUGHT not in coverage.block(data)
-    assert coverage.evidence(data, *item).startswith('i1 raised "You can\'t sleep')
+    assert coverage.evidence(data, *item, ME).startswith('i1 raised "You can\'t sleep')

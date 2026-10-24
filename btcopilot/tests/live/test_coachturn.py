@@ -6,6 +6,8 @@ names only.
 
 import re
 
+from btcopilot.extensions import db
+from btcopilot.models.diagram import owner_row
 from btcopilot.schema import EventKind
 from btcopilot.tests.live.criterion import once, passes, waiting
 from btcopilot.toolbox import ToolName, schemas
@@ -327,3 +329,23 @@ def test_a_question_is_stored_before_the_reply_that_asks_it(coach):
     ]
     assert stored and words
     assert stored[0] < words[0]
+
+
+# The person the diagram is about spoken of as "you" by a coach on the case.
+YOURS = re.compile(r"\byour (?:father|mother|parents|family|dad|mom|childhood)\b", re.I)
+
+
+@passes(2, of=3)
+def test_a_coach_on_the_case_hears_the_person_spoken_of_by_name_never_as_you(coach):
+    # R-0889, R-0888
+    """Pass: with the user's row naming no one, the reply speaks of Wren's
+    family as hers, never as the coach's own."""
+    coach.record()
+    diagram = coach.user.free_diagram
+    diagram.access_rights.append(owner_row(coach.user.id, None))
+    db.session.commit()
+    reply = coach.say(
+        "Her father Hugh died in March 2001, the spring she turned sixteen, "
+        "and she stopped eating for months after."
+    )
+    assert not YOURS.search(reply), reply

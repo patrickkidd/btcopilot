@@ -1,4 +1,5 @@
 import datetime
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -408,3 +409,40 @@ def test_a_dry_run_keeps_and_sends_nothing(family, sent):
     assert ProactiveMessage.query.count() == 0
     assert Statement.query.count() == 0
     assert send.call_count == 0
+
+
+def proactive_prompt(person) -> str:
+    """The prompt the message is asked with, for a recipient whose row on the
+    case names `person`."""
+    data = DiagramData(
+        people=[
+            {"id": 1, "name": "Wren", "primary": True},
+            {"id": 2, "name": "Ada"},
+        ],
+        events=[
+            {"id": 10, "kind": "death", "person": 2, "dateTime": "1990-01-01"},
+            {"id": 11, "kind": "shift", "person": 1, "anxiety": "up", "dateTime": "1990-02-01", "title": "Stopped sleeping", "description": "Stopped sleeping"},
+            {"id": 12, "kind": "death", "person": 2, "dateTime": "2001-01-01"},
+            {"id": 13, "kind": "shift", "person": 1, "anxiety": "up", "dateTime": "2001-02-01", "title": "Stopped eating", "description": "Stopped eating"},
+        ],
+    )
+    asked = []
+
+    class Model:
+        def text(self, prompt):
+            asked.append(prompt)
+            return "Both came close together. What do you notice?"
+
+    firing = SimpleNamespace(pairs=[(10, 11), (12, 13)], person=1)
+    proactive.words(data, firing, Model(), person)
+    return asked[0]
+
+
+def test_a_message_to_the_person_marks_them_and_one_to_a_coach_names_everyone():
+    # R-0889, R-0888
+    mine = proactive_prompt(1)
+    assert "keeps a family record with Wren" in mine
+    assert "1 Wren — the person you are talking with" in mine
+    theirs = proactive_prompt(None)
+    assert "keeps a family record with a coach consulting on Wren's family" in theirs
+    assert "the person you are talking with" not in theirs

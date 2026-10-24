@@ -294,3 +294,14 @@ def test_saying_who_you_are_regroups_the_clusters_on_the_worker(web, landed, mon
     access(web, diagram.id, 3)
     [(diagram_id, turn_id, _)] = asked
     assert diagram_id == diagram.id and turn_id
+
+
+def test_the_page_is_told_whether_to_say_you_or_name_the_person(web, landed):
+    # R-0889, R-0935
+    upload(web, dumps(both_primary()))
+    diagram = made()
+    listed = lambda: next(d for d in web.get("/app/diagrams").get_json() if d["id"] == diagram.id)
+    timeline = lambda: web.get(f"/app/timeline?diagram_id={diagram.id}").get_json()
+    assert (listed()["addressed"], timeline()["addressed"]) == (False, False)
+    access(web, diagram.id, 3)
+    assert (listed()["addressed"], timeline()["addressed"]) == (True, True)
