@@ -493,6 +493,25 @@ def test_a_refused_entry_comes_back_as_a_row_beside_the_ones_that_went_in(coder,
     assert not [words for words in ("went in", "did not", "again", "version") if words in shown]
 
 
+def test_an_event_refused_before_its_person_was_added_is_not_shown_unsaved_once_it_went_in(coder, cut, turns):
+    # R-0883, R-0884
+    coding = coded(coder.user, cut, {"people": []}, done=False)
+    undated = {key: value for key, value in SHIFT.items() if key != "date"}
+    model = Scripted(
+        [("add_shift", dict(undated, title="Sleep trouble began in high school", person=-1))],
+        [
+            ("add_person", {"name": "Client", "sex": "female", "ref": -1}),
+            ("add_shift", dict(SHIFT, title="Sleep trouble began", person=-1)),
+        ],
+    )
+    response = scribe(coder, coding, turns[0], model, "Her sleep trouble started in 2010.")
+    assert response.status_code == 200
+    assert (response.json["lines"], response.json["refused"]) == (
+        [added("Client"), added("Client · Sleep trouble began · Jan 2010")],
+        [],
+    )
+
+
 def test_a_statement_nothing_of_goes_in_is_all_refused_rows(coder, cut, turns):
     # R-0883
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)

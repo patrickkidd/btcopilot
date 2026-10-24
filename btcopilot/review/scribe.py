@@ -285,14 +285,38 @@ def tried(data: dict, kept: list[dict]) -> list[dict]:
     for at, call in enumerate(kept):
         if not call["refusal"] or call["name"] not in TRIED:
             continue
-        key = _subject(call)
-        if any(
-            not later["refusal"] and _subject(later) == key for later in kept[at + 1 :]
-        ):
+        if any(_entered(call, later) for later in kept[at + 1 :]):
             continue
         verb = Verb.Add if call["args"].get("id") is None else Verb.Change
         _add(out, {"verb": verb, "text": _tried_words(data, call)})
     return out
+
+
+def _entered(refused: dict, later: dict) -> bool:
+    """Whether a later call entered what a refused one tried: the same item, or
+    an event of the same kind once the person the refused one named by a ref
+    nothing had added yet is in the record, its title and date put right on
+    the way (R-0883, R-0884)."""
+    if later["refusal"] or later["name"] != refused["name"]:
+        return False
+    if _subject(later) == _subject(refused):
+        return True
+    return (
+        _about(refused) == UNADDED
+        and _subject(refused)[:2] == _subject(later)[:2]
+        and refused["name"] not in (adapter.ToolName.EditPerson, adapter.ToolName.EditPairBond)
+    )
+
+
+#: Who an event is about when the call named a person by a ref nothing in the
+#: same answer had added, which is only ever settled by a later call.
+UNADDED = "unadded"
+
+
+def _about(call: dict) -> str:
+    args = call["args"]
+    about = args.get("child") if args.get("child") is not None else args.get("person")
+    return UNADDED if about is None or str(about).startswith("-") else str(about)
 
 
 def _subject(call: dict) -> tuple:
@@ -305,8 +329,7 @@ def _subject(call: dict) -> tuple:
         return (call["name"], (args.get("name") or "").strip().lower())
     if call["name"] == adapter.ToolName.EditPairBond:
         return (call["name"], _pair_of(args.get("person_a"), args.get("person_b")))
-    about = args.get("child") if args.get("child") is not None else args.get("person")
-    return (call["name"], _plain(args.get("kind")), str(about))
+    return (call["name"], _plain(args.get("kind")), _about(call))
 
 
 def _tried_words(data: dict, call: dict) -> str:
