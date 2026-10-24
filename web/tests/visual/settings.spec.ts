@@ -912,20 +912,30 @@ test.describe("the Auditor's Coding Guide row", () => {
     await row(page).click();
     const frame = page.locator('.sn-pane.in iframe[title="Auditor\'s Coding Guide"]');
     await expect(frame).toBeVisible();
-    await expect(page.locator("#title")).toHaveText("Auditor's Coding Guide");
     expect(await frame.getAttribute("src")).toBe("/app/theory");
 
-    // back steps through what was read inside the guide before it leaves it,
-    // and the title row names the page showing at every step
+    // back steps one page at a time through the pages read, in the order read,
+    // a page read twice included, and the title row names the page showing by
+    // its own heading at every step
     const at = async () => new URL((await (await frame.elementHandle())!.contentFrame())!.url()).pathname;
     const inside = page.frameLocator('.sn-pane.in iframe[title="Auditor\'s Coding Guide"]');
-    await inside.locator('a[href^="/app/theory/"]').first().click();
-    await expect.poll(at).not.toBe("/app/theory");
-    const followed = await inside.locator("h1").first().textContent();
-    await expect(page.locator("#title")).toHaveText(followed!);
-    await page.locator("#settings-back").click();
-    await expect.poll(at).toBe("/app/theory");
-    await expect(page.locator("#title")).toHaveText("Auditor's Coding Guide");
+    const title = page.locator("#title");
+    const heading = () => inside.locator("h1").first();
+    const chain = ["/app/theory", "/app/theory/symptom", "/app/theory", "/app/theory/anxiety"];
+    const named: string[] = [];
+    await expect.poll(at).toBe(chain[0]);
+    for (const [step, path] of chain.entries()) {
+      if (step) await inside.locator(`a[href="${path}"]`).first().click();
+      await expect.poll(at).toBe(path);
+      named.push((await heading().textContent())!);
+      await expect(title).toHaveText(named[step]);
+    }
+    expect(named[0]).toBe("Concept pages: index");
+    for (const step of [2, 1, 0]) {
+      await page.locator("#settings-back").click();
+      await expect.poll(at).toBe(chain[step]);
+      await expect(title).toHaveText(named[step]);
+    }
     await expect(frame).toBeVisible();
 
     await page.locator("#settings-back").click();

@@ -22,15 +22,19 @@ export function tapRow(label: string, value: string, go: () => void): HTMLElemen
   return row;
 }
 
-/** The guide's links stay on the app's own pages, so the frame's address is
- * readable: on the page it opened on, or on one a link led to. */
-const opened = (frame: HTMLIFrameElement): boolean =>
-  frame.contentWindow!.location.href === new URL(frame.getAttribute("src")!, location.href).href;
+/** How many pages each guide frame has been read through, a page read twice
+ * counted twice, and whether the next page to land is a step back. */
+interface Visits {
+  depth: number;
+  back: boolean;
+}
+const visits = new WeakMap<HTMLIFrameElement, Visits>();
 
 /** A page of the auditor's coding guide, read inside the app rather than in a
  * tab of its own, which an app put on the home screen cannot come back from
- * (R-0567). The title row names the page showing: the name it was opened by,
- * and each page a link in it leads to by that page's own title. */
+ * (R-0567). The title row names the page showing by its own first heading,
+ * however it was reached. The guide's links stay on the app's own pages, so
+ * the frame's page is readable. */
 export function guideFrame(
   src: string,
   title: string,
@@ -39,16 +43,27 @@ export function guideFrame(
   const frame = el("iframe");
   frame.title = title;
   frame.src = src;
-  frame.addEventListener("load", () =>
-    onTitle(opened(frame) ? title : frame.contentDocument!.title),
-  );
+  const read: Visits = { depth: 0, back: false };
+  visits.set(frame, read);
+  const landed = () => {
+    read.depth += read.back ? -1 : 1;
+    read.back = false;
+    onTitle(frame.contentDocument!.querySelector("h1")!.textContent!);
+  };
+  frame.addEventListener("load", () => {
+    landed();
+    // a link to a place on the same page lands without loading it
+    frame.contentWindow!.addEventListener("hashchange", landed);
+  });
   return frame;
 }
 
-/** Back one page inside the guide when a link in it was followed; false on
- * the page it opened on, where back leaves the guide. */
+/** Back one page inside the guide, through every page read in the order read;
+ * false on the first, where back leaves the guide. */
 export function frameBack(frame: HTMLIFrameElement): boolean {
-  if (opened(frame)) return false;
+  const read = visits.get(frame)!;
+  if (read.depth <= 1) return false;
+  read.back = true;
   frame.contentWindow!.history.back();
   return true;
 }

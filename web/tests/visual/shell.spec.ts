@@ -148,14 +148,15 @@ test.describe("the concept pages, read inside the app", () => {
     // no fixture is a coder, and the pages are served to coders alone
     await page.evaluate(() => (window.BOOTSTRAP.user!.coder = true));
     await page.route(/\/review\/rules$/, (route) => route.fulfill({ json: [] }));
-    // a page links on to another, as the guide's pages do
+    // the pages link on to one another, as the guide's pages do
+    const pages: Record<string, string> = {
+      "/app/theory":
+        '<h1>Concept pages: index</h1><a id="symptom" href="/app/theory/symptom">symptom</a> <a id="anxiety" href="/app/theory/anxiety">anxiety</a>',
+      "/app/theory/symptom": '<h1>Symptom (S)</h1><a id="index" href="/app/theory">index</a>',
+      "/app/theory/anxiety": "<h1>Anxiety (A)</h1>",
+    };
     await page.route(/\/app\/theory/, (route) =>
-      route.fulfill({
-        contentType: "text/html",
-        body: route.request().url().endsWith("/anxiety")
-          ? "<title>Anxiety (A)</title><h1>Anxiety (A)</h1>"
-          : '<title>Symptom (S)</title><h1>Symptom (S)</h1><a href="/app/theory/anxiety">anxiety</a>',
-      }),
+      route.fulfill({ contentType: "text/html", body: pages[new URL(route.request().url()).pathname] }),
     );
     const info = page.locator(".titlerow #coding-info");
     await info.evaluate((b) => ((b as HTMLElement).hidden = false));
@@ -167,31 +168,40 @@ test.describe("the concept pages, read inside the app", () => {
     await expect(rows.last()).toHaveText(/All concept pages/);
     await expect(body).not.toContainText("No coding guidelines yet");
 
+    const frame = page.locator("#rules-screen > iframe");
+    const inside = page.frameLocator("#rules-screen > iframe");
+    const title = page.locator("#rules-title");
     await rows.first().click();
-    const frame = page.locator('#rules-screen > iframe[title="Symptom"]');
     await expect(frame).toBeVisible();
     expect(await frame.getAttribute("src")).toBe("/app/theory/symptom");
-    await expect(page.locator("#rules-title")).toHaveText("Symptom");
+    // a page is named by its own heading, whichever way it was reached
+    await expect(title).toHaveText("Symptom (S)");
     await expect(body).toBeHidden();
     expect(page.context().pages()).toHaveLength(1);
-
-    // back steps through what was read inside the page before it leaves it,
-    // and the title row names the page showing at every step
-    const inside = page.frameLocator('#rules-screen > iframe[title="Symptom"]');
-    await expect(inside.locator("h1")).toHaveText("Symptom (S)");
-    await expect(page.locator("#rules-title")).toHaveText("Symptom");
-    await inside.locator("a").click();
-    await expect(inside.locator("h1")).toHaveText("Anxiety (A)");
-    await expect(page.locator("#rules-title")).toHaveText("Anxiety (A)");
     await page.locator("#rules-close").click();
-    await expect(inside.locator("h1")).toHaveText("Symptom (S)");
-    await expect(page.locator("#rules-title")).toHaveText("Symptom");
-    await expect(frame).toBeVisible();
+    await expect(frame).toHaveCount(0);
+    await expect(title).toHaveText("Coding guidelines");
 
+    // back steps one page at a time through the pages read, in the order
+    // read, a page read twice included, then leaves for the list
+    await rows.last().click();
+    const steps = ["Concept pages: index", "Symptom (S)", "Concept pages: index", "Anxiety (A)"];
+    await expect(title).toHaveText(steps[0]);
+    await inside.locator("#symptom").click();
+    await expect(title).toHaveText(steps[1]);
+    await inside.locator("#index").click();
+    await expect(title).toHaveText(steps[2]);
+    await inside.locator("#anxiety").click();
+    await expect(title).toHaveText(steps[3]);
+    for (const back of [...steps].reverse().slice(1)) {
+      await page.locator("#rules-close").click();
+      await expect(inside.locator("h1")).toHaveText(back);
+      await expect(title).toHaveText(back);
+    }
     await page.locator("#rules-close").click();
     await expect(frame).toHaveCount(0);
     await expect(body).toBeVisible();
-    await expect(page.locator("#rules-title")).toHaveText("Coding guidelines");
+    await expect(title).toHaveText("Coding guidelines");
     await expect(page.locator("#rules-screen")).toBeVisible();
   });
 
