@@ -24,6 +24,7 @@ from btcopilot.models import Author, Change, Statement
 from btcopilot.prompts import Role
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.models import Diagram
+from btcopilot.models.etc import AccessRight
 from btcopilot.schema import (
     ITEM_COLLECTIONS,
     CaseReportCard,
@@ -1889,6 +1890,16 @@ def _commit(
         deltas=deltas,
     )
     db.session.add(change)
+    if any(_removes(d) and d["item_kind"] == ItemKind.Person.value for d in deltas):
+        # whoever was that person on the case is now nobody on it
+        db.session.execute(
+            sql_update(AccessRight)
+            .where(
+                AccessRight.diagram_id == diagram.id,
+                AccessRight.person_id.notin_([p["id"] for p in data["people"]]),
+            )
+            .values(person_id=None)
+        )
     db.session.commit()
     db.session.expire(diagram)
     told(diagram.id, deltas, turn_id, author, version)

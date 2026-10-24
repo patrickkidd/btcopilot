@@ -29,6 +29,7 @@ from btcopilot.admin.setting import SettingKey
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.pricing import cost
 from btcopilot.models import User, Author, Change, Diagram, ModelCall
+from btcopilot.models.diagram import owner_row
 from btcopilot.models.etc import AccessRight
 from btcopilot.models.modelcall import Purpose
 from btcopilot.schema import DateCertainty, Event, EventKind, ItemKind, Person, asdict
@@ -312,6 +313,31 @@ def test_a_read_only_grantee_cannot_say_who_the_diagram_is_about(web, test_user,
     db.session.expire_all()
     assert not any(p.get("primary") for p in db.session.get(Diagram, theirs.id).get_diagram_data().people)
     assert asked == []
+
+
+def test_removing_the_person_someone_is_on_the_case_makes_them_nobody_on_it(test_user):
+    # R-0888, R-0889
+    other = User(username="bo@example.com")
+    db.session.add(other)
+    db.session.flush()
+    diagram = Diagram(user_id=test_user.id, name="Ours", data=diagramjson.dumps({}))
+    db.session.add(diagram)
+    db.session.flush()
+    imported(diagram, [Person(id=3, name="Ann"), Person(id=4, name="Bo")], [])
+    diagram.access_rights.append(owner_row(test_user.id, 3))
+    db.session.add(
+        AccessRight(diagram_id=diagram.id, user_id=other.id, right=btcopilot.ACCESS_READ_WRITE, person_id=4)
+    )
+    db.session.commit()
+    record.apply(
+        diagram.id,
+        [{"item_kind": ItemKind.Person.value, "item_id": 3, "field": None, "after": None}],
+        author=Author.User,
+        turn_id="t-remove",
+    )
+    db.session.expire_all()
+    rows = {r.user_id: r.person_id for r in AccessRight.query.filter_by(diagram_id=diagram.id)}
+    assert rows == {test_user.id: None, other.id: 4}
 
 
 def test_saying_who_you_are_marks_that_person_the_one_the_diagram_is_about(web, landed):
