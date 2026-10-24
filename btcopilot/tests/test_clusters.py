@@ -2462,7 +2462,8 @@ def test_the_periods_are_written_to_you_or_about_the_person_by_who_is_on_the_cas
         detect_clusters(GRANDMOTHER, ask, name="Ada")
     told = ask.call_args_list[0].args[0]
     assert 'speaking about the person, calling them by their first name, Ada, never "you"' in told
-    assert 'calling them "you"' not in told
+    assert '("Ada said\n...")' in told or '("Ada said ...")' in told
+    assert 'calling them "you"' not in told and "you said" not in told
 
 
 def test_only_a_case_written_by_name_regroups_for_how_it_is_addressed():

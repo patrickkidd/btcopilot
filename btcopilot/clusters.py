@@ -125,8 +125,9 @@ _log = logging.getLogger(__name__)
 # is refused for its length, so every diagram is read again on its next event
 # change [Oracle: R-0850, R-0856, R-0376, R-0846].
 # 21 (prompt only): the line saying how the names, reasons and changes address
-# the person follows who is on the case, "you" when the person it belongs to
-# is, their first name otherwise; the detection rules are unchanged, so the
+# the person, and the example of how a shift is given as they told it, follow
+# who is on the case, "you" when the person it belongs to is, their first name
+# otherwise; the detection rules are unchanged, so the
 # version stays 20 and only the cases written by name regroup [Oracle: R-0935].
 DETECTION_VERSION = 20
 # How the periods' words address the person, by who is on the case.
@@ -958,6 +959,7 @@ def _prompt(
     # The open-source prompt still fills the hints under `candidates`.
     return prompts.CLUSTER_PROMPT.format(
         addressing=TO_YOU if name is None else BY_NAME.format(name=name),
+        said="you said" if name is None else f"{name} said",
         existing=json.dumps(existing, indent=2),
         candidates=hints,
         hints=hints,
