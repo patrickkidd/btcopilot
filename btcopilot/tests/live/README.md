@@ -198,3 +198,16 @@ R-0669), runs: "I have to go. I'll ask Aunt Ruth on Sunday when Grandpa left." i
 in the person's words and the coach assigns no step of its own. There is no case for feeling or
 why questions: both are allowed, tracked against the rates on Murray Bowen's tapes and never gated
 (the 2026-10-06 rulings on why and feeling questions).
+
+## The desktop file import
+
+`test_fdimport_live.py` holds one case per model pass of the import, each 2 of 3, on invented
+families. The coding and grouping calls go through `claude -p` as the grouping cases in
+`test_clusters.py` do; the coding call on `LIVE_IMPORT_MODEL` (Haiku by default).
+
+| Test | What it checks |
+|------|----------------|
+| `test_the_coding_pass_codes_plain_words_keeps_hand_coding_and_reads_no_guess_as_fact` (R-0919, R-0927, R-0918, R-0364) | "Started drinking every night and missed work most Mondays" stays a shift, symptom up; "Moved to Juneau" becomes a noted event on places; a hand-coded symptom stays; the note "In March 1979 her brother Abe was hospitalized" adds an event on Abe in March 1979, and "Probably a cutoff from her mother's side" adds nothing (no event on Ruth or her mother); an event drawn from another event's words, such as the early retirement beside the heart attack, is allowed |
+| `test_a_tag_naming_a_person_is_not_made_a_period` (R-0917, R-0916) | no period is made of the three ordinary events tagged "Uncle Ray"; whether the father's two strokes, tagged alike, make one period or two is left to the model, since a tag is a hint and never decides a period |
+
+On the subscription on 2026-10-11 (coding on Haiku, grouping on claude-opus-5), each 3 of 3; master has no coding prompt.

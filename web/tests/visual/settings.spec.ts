@@ -892,6 +892,12 @@ test.describe("the Auditor's Coding Guide row", () => {
     flask("admin", "run", "--", "users", "roles", username("empty"), ...names, "--yes");
   const row = (page: Page) =>
     page.locator(".sn-pane.in .sn-row.push", { hasText: "Auditor's Coding Guide" });
+  // by its address: a coder with a conversation on the agenda opens on the
+  // task card, which keeps the avatar out of the title row
+  const toAccount = async (page: Page) => {
+    await page.goto("/app/account");
+    await expect(page.locator('.sn-pane.in[data-page="root"]')).toBeVisible();
+  };
   test.afterAll(() => roles("subscriber"));
 
   // R-0541, R-0567
@@ -900,21 +906,43 @@ test.describe("the Auditor's Coding Guide row", () => {
   }) => {
     for (const role of ["auditor", "admin"]) {
       roles(role, "subscriber");
-      await page.goto("/app/");
-      await openSettings(page);
+      await toAccount(page);
       await expect(row(page)).toHaveCount(1);
     }
     await row(page).click();
     const frame = page.locator('.sn-pane.in iframe[title="Auditor\'s Coding Guide"]');
     await expect(frame).toBeVisible();
-    await expect(page.locator("#title")).toHaveText("Auditor's Coding Guide");
     expect(await frame.getAttribute("src")).toBe("/app/theory");
+
+    // back steps one page at a time through the pages read, in the order read,
+    // a page read twice included, and the title row names the page showing by
+    // its own heading at every step
+    const at = async () => new URL((await (await frame.elementHandle())!.contentFrame())!.url()).pathname;
+    const inside = page.frameLocator('.sn-pane.in iframe[title="Auditor\'s Coding Guide"]');
+    const title = page.locator("#title");
+    const heading = () => inside.locator("h1").first();
+    const chain = ["/app/theory", "/app/theory/symptom", "/app/theory", "/app/theory/anxiety"];
+    const named: string[] = [];
+    await expect.poll(at).toBe(chain[0]);
+    for (const [step, path] of chain.entries()) {
+      if (step) await inside.locator(`a[href="${path}"]`).first().click();
+      await expect.poll(at).toBe(path);
+      named.push((await heading().textContent())!);
+      await expect(title).toHaveText(named[step]);
+    }
+    expect(named[0]).toBe("Concept pages: index");
+    for (const step of [2, 1, 0]) {
+      await page.locator("#settings-back").click();
+      await expect.poll(at).toBe(chain[step]);
+      await expect(title).toHaveText(named[step]);
+    }
+    await expect(frame).toBeVisible();
+
     await page.locator("#settings-back").click();
     await expect(page.locator(".sn-pane.in")).toHaveAttribute("data-page", "root");
 
     roles("subscriber");
-    await page.goto("/app/");
-    await openSettings(page);
+    await toAccount(page);
     await expect(row(page)).toHaveCount(0);
   });
 });

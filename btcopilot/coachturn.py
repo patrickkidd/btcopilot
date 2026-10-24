@@ -9,8 +9,10 @@ page can move the picture with the same reply it types out.
 """
 
 import datetime
+import enum
 import hashlib
 import itertools
+import json
 import logging
 import uuid
 from typing import Callable
@@ -71,7 +73,19 @@ from btcopilot.schema import DiagramData, ItemKind, QuestionState
 _log = logging.getLogger(__name__)
 _tracer = trace.get_tracer(__name__)
 
-MAX_STEPS = 20
+# A turn runs until the coach stops calling tools; these only stop a runaway,
+# never a turn that is still writing [Oracle: R-0411, R-0936]: the backstop on
+# steps, how many steps in a row may write nothing while repeating a call that
+# was refused or already made, and how many may write nothing at all.
+MAX_STEPS = 200
+STALLED_STEPS = 3
+WRITELESS_STEPS = 15
+
+
+class Runaway(enum.StrEnum):
+    NoProgress = "no progress"
+    NoWrites = "no writes"
+    Backstop = "backstop"
 RECENT_INTERACTIONS = 50
 # The family's latest words, from every one of the user's sessions on it, that
 # the coach reads back each turn; older ones it finds with the chat search.
@@ -490,6 +504,9 @@ class CoachTurn:
         arrive; a part before it is entered, not answered (R-0897)."""
         spoken = ""
         silent = False
+        made: set[str] = set()
+        stalled = writeless = 0
+        stopped = None
 
         for step in range(MAX_STEPS):
             turn = self._say(system, messages, schemas(self.toolbox.coder), stream=last)
@@ -511,11 +528,18 @@ class CoachTurn:
                 _log.info(f"Turn {self.turn_id} step {step} thought aloud: {turn.text}")
 
             results = []
+            wrote = repeated = False
             for call in turn.calls:
                 self._halt()
                 asked = toolcall(self.toolbox.data, call.name, call.args)
                 text, event, refusal = run_call(self.toolbox, call)
                 asked["refusal"] = refusal
+                said = f"{call.name}:{json.dumps(call.args, sort_keys=True)}"
+                repeated = repeated or refusal is not None or said in made
+                made.add(said)
+                wrote = wrote or (
+                    refusal is None and event is not None and call.name not in LOOKUPS
+                )
                 # a read changes nothing, so which events it read rides on the
                 # call itself, for the page to grey them (R-0540)
                 if call.name in LOOKUPS and event:
@@ -553,10 +577,27 @@ class CoachTurn:
                     "results": results,
                 }
             )
+            stalled = 0 if wrote or not repeated else stalled + 1
+            writeless = 0 if wrote else writeless + 1
+            if stalled >= STALLED_STEPS:
+                stopped = Runaway.NoProgress
+                break
+            if writeless >= WRITELESS_STEPS:
+                stopped = Runaway.NoWrites
+                break
         else:
+            stopped = Runaway.Backstop
+        if stopped:
             _log.warning(
-                f"Turn {self.turn_id} hit the step cap: {MAX_STEPS} steps used, "
-                f"last tool {turn.calls[-1].name}"
+                f"Turn {self.turn_id} stopped as a runaway, {stopped.value}: "
+                f"{step + 1} steps used, last tool {turn.calls[-1].name}"
+            )
+            self.kept.append(
+                {
+                    "type": TurnEventKind.Runaway.value,
+                    "reason": stopped.value,
+                    "steps": step + 1,
+                }
             )
             if not last:
                 return ""

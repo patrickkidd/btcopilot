@@ -23,7 +23,7 @@ from btcopilot.coachturn import SPEAK, run_call
 from btcopilot.models import Diagram, Discussion, Statement, Speaker, SpeakerType
 from btcopilot.promptdir import missing
 from btcopilot.toolbox import ToolName
-from btcopilot import casereport, turnlog, turns
+from btcopilot import casereport, fdafter, turnlog, turns
 from btcopilot.turnlog import TurnEventKind
 
 from btcopilot.tables import TABLES
@@ -237,6 +237,10 @@ class Model:
 
 
 
+def _regroup_now(diagram_id: int, turn_id: str, user_id: int) -> None:
+    fdafter.regrouped(diagram_id, turn_id=turn_id, user_id=user_id)
+
+
 @pytest.fixture(autouse=True)
 def turn_log():
     """Turns run where the test can read them: one log in this process, and the
@@ -244,7 +248,7 @@ def turn_log():
     turnlog.use(turnlog.MemoryLog())
     with patch("btcopilot.turns.enqueue", new=turns.run), patch(
         "btcopilot.casereport.enqueue", new=casereport.run
-    ):
+    ), patch("btcopilot.fdafter.regroup", new=_regroup_now):
         yield turnlog.store()
     turnlog.use(None)
 

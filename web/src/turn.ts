@@ -156,15 +156,25 @@ export interface Redraw<T> {
  * coming back) draws the lines of every batch it is behind on as they come
  * and reads the record once, at the last batch of edits: a batch skips its read
  * whenever a later batch of edits has already landed. */
+/** How many frames with no new edit make a burst of edits over. */
+const QUIET_FRAMES = 3;
+
 export class Lockstep<T> {
   private open: Batch | null = null;
   /** Batches with edits that have landed and are not yet drawn. */
   private waiting = 0;
+  /** An edit has landed since the record was last read. */
+  private stale = false;
 
   constructor(
     private enqueue: (work: () => Promise<void>) => void,
     private page: Redraw<T>,
   ) {}
+
+  /** Whether an edit has landed that no read has caught yet. */
+  unread(): boolean {
+    return this.stale;
+  }
 
   /** Something else is drawn next, so what lands after it is a new batch. */
   close(): void {
@@ -181,6 +191,7 @@ export class Lockstep<T> {
 
   made(items: Made[]): void {
     const batch = this.batch();
+    if (items.length) this.stale = true;
     if (!batch.made.length && items.length) this.waiting += 1;
     merge(batch.made, items);
   }
@@ -194,7 +205,11 @@ export class Lockstep<T> {
       if (this.open === batch) this.open = null;
       if (batch.made.length) this.waiting -= 1;
       let record: T | null = null;
+      // edits come in bursts a few milliseconds apart: the read waits for the
+      // burst to go quiet, and a batch that opens meanwhile reads for both
+      if (batch.made.length) for (let i = 0; i < QUIET_FRAMES; i++) await this.page.frame();
       if (batch.made.length && !this.waiting) {
+        this.stale = false;
         record = await this.page.read();
         // a frame of its own, so no two reads are drawn in one frame
         if (record !== null) await this.page.frame();

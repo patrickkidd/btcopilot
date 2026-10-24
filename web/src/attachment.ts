@@ -7,10 +7,11 @@ export const KINDS =
   ".pdf,.jpg,.jpeg,.png,.heic,.heif,.txt,.text,.md,.markdown,application/pdf,image/jpeg,image/png,image/heic,image/heif,text/plain,text/markdown";
 
 /** The file a message carries: its name as a chip, dimmed while the server
- * reads it, and once read a tap shows what the coach was given. The file
+ * reads it, and once read a tap shows what the coach was given. One its turn
+ * could not take stays dimmed, no longer said to be reading (R-0830). The file
  * itself is never kept or shown again. */
-export const fileChip = (name: string, text: string | null = null): string =>
-  `<div class="file"><button class="chip file${text === null ? " reading" : ""}" type="button"` +
+export const fileChip = (name: string, text: string | null = null, untaken = false): string =>
+  `<div class="file"><button class="chip file${text !== null ? "" : untaken ? " untaken" : " reading"}" type="button"` +
   `${text === null ? " disabled" : ""}>${esc(name)}</button></div>`;
 
 /** What the coach read from a file, in the sheet a tap on its chip raises. */
@@ -109,9 +110,15 @@ export class Attachment {
   }
 
   /** A message's file chip, put on its bubble or filled in once read. */
-  show(bubble: HTMLElement, name: string, text: string | null = null): void {
+  show(bubble: HTMLElement, name: string, text: string | null = null, untaken = false): void {
     bubble.querySelector(":scope > .file")?.remove();
-    bubble.insertAdjacentHTML("afterbegin", fileChip(name, text));
+    bubble.insertAdjacentHTML("afterbegin", fileChip(name, text, untaken));
     if (text !== null) this.texts.set(bubble.querySelector<HTMLElement>(":scope > .file > .chip")!, text);
+  }
+
+  /** The chips still reading once a turn has failed: none is read any more. */
+  untaken(thread: HTMLElement): void {
+    for (const chip of thread.querySelectorAll(".bub > .file > .chip.reading"))
+      chip.classList.replace("reading", "untaken");
   }
 }

@@ -4,6 +4,8 @@ import {
   eventsOf,
   litCoding,
   names,
+  quote,
+  versionLine,
   what,
   when,
   wordedLine,
@@ -186,5 +188,19 @@ describe("the values a coder reads", () => {
   // R-0869
   it("names the variable an up or a down belongs to", () => {
     expect(wordedLine("symptom: up · anxiety: down")).toBe("symptom up · anxiety down");
+  });
+});
+
+describe("a quoted line on the vote", () => {
+  const said = { statement_id: 4, who: "Coach", text: "When did it start? [[ask:high school years]]" };
+
+  // R-0072, R-0270
+  it("draws the coach's markup as the chat does, never as brackets", () => {
+    for (const html of [quote(said), versionLine({ item: {}, line: said }, true)]) {
+      expect(html).not.toContain("[[");
+      expect(html).toContain("<b>Coach:</b> &ldquo;When did it start? ");
+      expect(html).toContain('class="chip ask" data-kind="ask"');
+      expect(html).toContain(">[high school years]</button>&rdquo;");
+    }
   });
 });

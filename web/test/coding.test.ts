@@ -9,7 +9,7 @@ vi.stubGlobal("window", {
   BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
 });
 
-const { Coding, scribedRows, writtenConcepts } = await import("../src/coding");
+const { Coding, line, scribedRows, writtenConcepts } = await import("../src/coding");
 const api = await import("../src/api");
 const { Failed } = api;
 const { Menu } = await import("../src/menu");
@@ -440,7 +440,7 @@ describe("the lines across the thread", () => {
 describe("the drawer's forms", () => {
   type Held = { held(form: HTMLElement): HTMLElement };
   const menu = (detail?: object) =>
-    new Menu({} as HTMLElement, async () => ({}) as never, () => 1, detail as never);
+    new Menu({ addEventListener() {} } as unknown as HTMLElement, async () => ({}) as never, () => 1, detail as never);
 
   // R-0887
   it("are read only on the coding screen and in the personal app alike", () => {
@@ -462,5 +462,23 @@ describe("the drawer's forms", () => {
       } as unknown as InstanceType<typeof Coding>);
     expect(finished("2026-10-19")).toBe(true);
     expect(finished(null)).toBe(false);
+  });
+});
+
+describe("a line of the conversation being coded", () => {
+  // R-0072, R-0270
+  it("is drawn as the chat draws the coach's markup, never as brackets", () => {
+    const html = line({ client: false, text: "That sounds hard. When did it start? [[ask:high school years]]" });
+    expect(html).not.toContain("[[");
+    expect(html).toContain('<div class="ask">When did it start?</div>');
+    expect(html).toContain('<div class="offer"><button type="button" class="chip ask" data-kind="ask"');
+    expect(html).toContain(">[high school years]</button>");
+  });
+
+  // R-0072, R-0270
+  it("keeps a client's words as written, a chip they sent back drawn as one", () => {
+    const html = line({ client: true, text: "It was [[event:7|Dad left]] that year." });
+    expect(html).not.toContain("[[");
+    expect(html).toContain(">Dad left</button> that year.");
   });
 });

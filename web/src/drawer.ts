@@ -309,8 +309,7 @@ export class Drawer {
    * step's event picked on it (R-0796; Patrick, 2026-10-07). */
   private readonly strip = el("div", "view");
   private readonly timeline = new Picture(this.strip, { onTap: (tap) => this.jump(tap) }, Spotlight.Unified, true);
-  /** The telling the timeline was last given, so it is given each one once:
-   * every setData sends the line back to the present. */
+  /** The telling the timeline was last given, so it is given each one once. */
   private given: Told | null = null;
   /** The event a tap on the timeline picked, shown in place of its step's first. */
   private tapped: number | null = null;

@@ -15,7 +15,7 @@ import re
 from sqlalchemy import or_
 
 import btcopilot
-from btcopilot import clock, clusters, coverage, diagramjson, place, proactive, prompts, record, views
+from btcopilot import clock, clusters, coverage, diagramjson, place, proactive, profile, prompts, record, views
 from btcopilot.models import Author, Change, Discussion, ReportKind, Statement
 from btcopilot.recordtext import (
     bond_line,
@@ -1082,6 +1082,13 @@ class Toolbox:
         self.versions: set[int] = set()
 
     @property
+    def viewer(self) -> int | None:
+        """Who the user this turn answers is on the case, or None."""
+        if self.user_id is None:
+            return None
+        return profile.person_of(db.session.get(User, self.user_id), self.diagram)
+
+    @property
     def coder(self) -> bool:
         """Admin counts: `has_role` gives an admin every role."""
         return self.user_id is not None and db.session.get(
@@ -1660,9 +1667,8 @@ class Toolbox:
             )
         except record.Conflict as e:
             raise ToolError(
-                "That has already been changed since, so it cannot be put back "
-                f"as it was: {e}",
-                "That has been changed since, so it cannot be put back as it was.",
+                f"A later change touched this; take that back first: {e}",
+                "A later change touched this; take that back first.",
             )
         except record.Invalid as e:
             raise ToolError(f"Putting that back would leave {e}", e.plain)
@@ -1671,14 +1677,24 @@ class Toolbox:
         return ("Put back what the last turn changed.", self._patch(change))
 
     def _previous_turn(self) -> str | None:
-        """The turn before this one on this diagram — what 'put that back' means.
-        Questions are never put back, so a turn that touched only questions, a
-        dismissal say, is not it."""
+        """The turn before this one on this diagram not already put back — what
+        'put that back' means, so a second undo reaches the turn before that
+        [Oracle: R-0909]. Questions are never put back, so a turn that touched only
+        questions, a dismissal say, is not it."""
+        undone = {
+            turn_id.removeprefix("undo:")
+            for (turn_id,) in db.session.query(Change.turn_id).filter(
+                Change.diagram_id == self.diagram_id,
+                Change.turn_id.like("undo:%"),
+                Change.turn_id.notlike("undo:%#%"),
+            )
+        }
         rows = Change.query.filter(
             Change.diagram_id == self.diagram_id,
             Change.turn_id != self.turn_id,
             Change.turn_id.notlike("undo:%"),
             Change.turn_id.notlike("%backfill:%"),
+            Change.turn_id.notin_(undone),
         ).order_by(Change.id.desc())
         return next(
             (
@@ -1841,7 +1857,7 @@ class Toolbox:
         if coverage.state_of(data, fact, kind, iid) is FactState.Known:
             raise ToolError(
                 f"The record already answers {coverage.WORDS[fact]} for {where}: "
-                f"{coverage.evidence(data, fact, kind, iid)}. Do not ask it; use the answer",
+                f"{coverage.evidence(data, fact, kind, iid, self.viewer)}. Do not ask it; use the answer",
                 "It was about to ask something the diagram already holds.",
             )
         if self.said is None:
@@ -2257,7 +2273,11 @@ class Toolbox:
             if kind is ItemKind.Cluster:
                 item_id = clusters.next_id(taken)
             elif kind is ItemKind.Question:
-                prefix = "i" if fields["kind"] == QuestionKind.Impression else "q"
+                prefix = (
+                    record.IMPRESSION_PREFIX
+                    if fields["kind"] == QuestionKind.Impression
+                    else record.QUESTION_PREFIX
+                )
                 item_id = record.next_key(prefix, {t for t in taken if t.startswith(prefix)})
             else:
                 item_id = record.next_id(data)
@@ -2319,15 +2339,4 @@ class Toolbox:
         return change
 
     def _patch(self, change) -> dict:
-        """What the page is told a write touched. The page re-reads the record,
-        so a question's delta goes out as what it touched only, which keeps the
-        words of a question held for later on the server."""
-        return {
-            "deltas": [
-                {key: d[key] for key in ("item_kind", "item_id", "field")}
-                if d["item_kind"] == ItemKind.Question.value
-                else d
-                for d in change.deltas
-            ],
-            "turn_id": change.turn_id,
-        }
+        return record.patch(change.deltas, change.turn_id)

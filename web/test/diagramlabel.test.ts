@@ -13,6 +13,7 @@ const diagram = (over: Partial<Diagram>): Diagram => ({
   owner_name: "Patrick",
   owner_username: "patrick@example.com",
   person_id: 1,
+  addressed: true,
   ...over,
 });
 

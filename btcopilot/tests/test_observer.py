@@ -262,13 +262,12 @@ def test_a_move_refused_for_no_target_is_retried_with_one(
     assert [(e["relationship"], e["relationshipTargets"]) for e in events] == [("toward", [2])]
 
 
-def test_a_turn_that_used_every_step_is_written_down(
+def test_a_turn_stopped_as_a_runaway_is_written_down_with_why(
     web, token, test_user, monkeypatch
 ):
-    # R-0517
+    # R-0517, R-0936
     record(test_user)
     monkeypatch.setattr("btcopilot.coachturn.MAX_STEPS", 2)
-    monkeypatch.setattr("btcopilot.observer.MAX_STEPS", 2)
     coach(
         monkeypatch,
         Model(
@@ -278,7 +277,7 @@ def test_a_turn_that_used_every_step_is_written_down(
         ),
     )
     post(web, token, "Who is in there?")
-    assert seen() == [(ObservationKind.StepCap, {"steps": 2})]
+    assert seen() == [(ObservationKind.StepCap, {"steps": 2, "reason": "backstop"})]
 
 
 class Declines(Model):

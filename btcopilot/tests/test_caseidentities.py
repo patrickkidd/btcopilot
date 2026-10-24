@@ -7,7 +7,6 @@ Invented names only.
 """
 
 import datetime
-import pickle
 import re
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,7 +14,7 @@ from types import SimpleNamespace
 import pytest
 import sqlalchemy as sa
 from alembic import command
-from PyQt5.QtCore import QDateTime
+from btcopilot.tests.fdfixtures import dumps, when
 
 import btcopilot
 from btcopilot import casereport, diagramjson, discussions, profile, recordtext
@@ -163,10 +162,10 @@ def seeded(flask_app, tmp_path) -> sa.Engine:
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path / 'old.db'}"
     engine = sa.create_engine(flask_app.config["SQLALCHEMY_DATABASE_URI"])
     at = datetime.datetime(2026, 1, 1)
-    pro = pickle.dumps(
+    pro = dumps(
         {
             "people": [
-                {"id": 4, "name": "Ash", "birthDateTime": QDateTime(1950, 1, 1, 0, 0)},
+                {"id": 4, "name": "Ash", "birthDateTime": when(1950, 1, 1)},
                 {"id": 5, "name": "Ivy", "primary": True, "kind": VariableShift.Up},
             ],
             "events": [],

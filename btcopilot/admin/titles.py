@@ -16,7 +16,7 @@ from btcopilot.admin.output import rows_option
 from btcopilot.extensions import db
 from btcopilot.llmutil import EXTRACTION_MODEL
 from btcopilot.metered import Metered
-from btcopilot.models import Diagram
+from btcopilot.models import Author, Diagram
 from btcopilot.models.modelcall import Purpose
 from btcopilot.schema import (
     LOOSE_ENDS,
@@ -180,7 +180,9 @@ def fill(diagram_ids, path, ask, yes):
             meter = Metered(diagram.user_id, diagram.id, f"titles-{diagram.id}", Purpose.Backfill)
             row["title"] = asked(meter, data, event, f"record {diagram.id} event {event['id']}")
         event["title"] = row["title"]
+    saves = []
     for diagram, data, seen in records:
+        saves.append((diagram.id, record.diff(diagramjson.loads(diagram.data), data), seen + 1))
         saved = db.session.execute(
             sql_update(Diagram)
             .where(Diagram.id == diagram.id, Diagram.version == seen)
@@ -193,6 +195,8 @@ def fill(diagram_ids, path, ask, yes):
                 "written. Run it again."
             )
     db.session.commit()
+    for diagram_id, deltas, version in saves:
+        record.told(diagram_id, deltas, None, Author.Pro, version)
     return rows
 
 

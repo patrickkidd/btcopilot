@@ -1,17 +1,23 @@
 """The coding meeting from the command line: what is on the agenda, what has
-been coded, and the switch that stops the app nudging anybody."""
+been coded, a coder's draft cleared to start over, and the switch that stops the app nudging anybody."""
+
+import logging
 
 import click
 
 from btcopilot.admin import setting
-from btcopilot.admin.output import rows_option
-from btcopilot.extensions import db
+from btcopilot.admin.guard import writes
+from btcopilot.admin.output import emit, rows_option
 from btcopilot.admin.setting import SettingKey
-from btcopilot.review.models import Coding, Cut, Rule
+from btcopilot.admin.users import find as find_user
+from btcopilot.extensions import db
+from btcopilot.models import Diagram
+from btcopilot.review import adapter
+from btcopilot.review.models import Coding, Cut, Note, Rule
 from btcopilot.review.routes.coders import roster, state_of
 from btcopilot.review.routes.cuts import agenda_cuts, payload as cut_payload
-from btcopilot.admin.guard import writes
 
+log = logging.getLogger(__name__)
 
 
 def cut_row(cut: Cut) -> dict:
@@ -60,12 +66,15 @@ def review_cuts(meeting_date, every):
     return [cut_row(cut) for cut in cuts]
 
 
-@review.command("codings")
+@review.group("codings", invoke_without_command=True)
 @click.option("--meeting-date", help="Only this meeting's codings.")
 @click.option("--cut", "cut_id", type=int, help="Only this cut's codings.")
-@rows_option
-def review_codings(cut_id, meeting_date):
+@click.option("--json", "as_json", is_flag=True, help="Print JSON, not a table.")
+@click.pass_context
+def review_codings(context, cut_id, meeting_date, as_json):
     """How far each coder has got on what is on the agenda."""
+    if context.invoked_subcommand is not None:
+        return
     cuts = [db.session.get(Cut, cut_id)] if cut_id else agenda_cuts(meeting_date)
     if cut_id and cuts[0] is None:
         raise click.ClickException(f"no cut with id {cut_id}")
@@ -82,6 +91,58 @@ def review_codings(cut_id, meeting_date):
                 "state": state_of(user, cuts).value,
                 "cuts_done": f"{done} of {len(cuts)}",
             }
+        )
+    emit(rows, None, as_json)
+
+
+@writes
+@review_codings.command("reset")
+@click.argument("email")
+@click.argument("cut_id", type=int)
+@click.option(
+    "--yes", is_flag=True, help="Reset it; without it, only the preview."
+)
+@rows_option
+def review_codings_reset(email, cut_id, yes):
+    """Clear one coder's draft coding of one cut so they can start over: their
+    coding copy of the diagram is hidden, their notes to the scribe and the
+    coding row are deleted, and the reset is logged. Nothing is written when the
+    coding was already submitted, or when that coding copy also serves another
+    of the coder's cuts. Without --yes it prints what would change and writes nothing."""
+    user = find_user(email)
+    coding = Coding.query.filter_by(cut_id=cut_id, user_id=user.id).first()
+    if coding is None:
+        raise click.ClickException(f"{user.username} has no coding of cut {cut_id}")
+    if coding.done_at is not None:
+        raise click.ClickException("this coding was submitted; not reset")
+    shared = Coding.query.filter(
+        Coding.user_id == user.id,
+        Coding.diagram_id == coding.diagram_id,
+        Coding.id != coding.id,
+    ).first()
+    if shared is not None:
+        raise click.ClickException(
+            f"this coder's coding copy is also their coding of cut {shared.cut_id}; not reset"
+        )
+    diagram = db.session.get(Diagram, coding.diagram_id)
+    notes = Note.query.filter_by(coding_id=coding.id)
+    count = notes.count()
+    rows = [
+        {"change": "diagram hidden", "value": diagram.id, "done": yes},
+        {"change": "notes deleted", "value": count, "done": yes},
+        {"change": "coding deleted", "value": coding.id, "done": yes},
+    ]
+    if yes:
+        diagram.deleted_at = adapter.utcnow()
+        notes.delete()
+        db.session.delete(coding)
+        db.session.commit()
+        log.info(
+            "admin reset the coding of %s on cut %s: diagram %s hidden, %s notes deleted",
+            user.username,
+            cut_id,
+            diagram.id,
+            count,
         )
     return rows
 

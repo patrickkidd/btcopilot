@@ -991,6 +991,9 @@ button { font-family: inherit; }
   padding-left: 14px;
   font: 400 13px/1.5 var(--mono);
   color: var(--faint);
+  /* a row is never typed, so it wraps as words do: a space kept as typed
+     hangs past the row at the end of a wrapped line */
+  white-space: normal;
 }
 /* a line of the reply's own 17/1.45 between what the coach did and what it says */
 .bub .did:not(:has(+ .did)):not(:last-child) { margin-bottom: 24px; }
@@ -1285,7 +1288,7 @@ button { font-family: inherit; }
    still while the server reads it, a tap once read shows what the coach read. */
 .bub > .file { margin-bottom: 4px; }
 .bub > .file:only-child { margin-bottom: 0; }
-.chip.file.reading { opacity: 0.6; cursor: default; }
+.chip.file:is(.reading, .untaken) { opacity: 0.6; cursor: default; }
 .chip.file.reading::after { content: " · reading"; }
 /* the file picked for the next message, in the box with its cross */
 .field > .attached { grid-area: slot; display: flex; align-items: center; padding-top: 4px; }
@@ -1622,6 +1625,31 @@ button { font-family: inherit; }
   text-align: left;
 }
 .det .foot { padding: 14px 16px 16px; }
+/* long notes take the card's width and the height left under the other lines,
+   scroll inside, and open whole on a page of their own */
+.det:has(> .r.notes) { display: flex; flex-direction: column; height: 100%; }
+.det:has(> .r.notes) > :not(.r.notes) { flex: none; }
+.det .r.notes {
+  flex: 1 1 auto;
+  min-height: 160px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: start;
+}
+.det .r.notes .v { grid-column: 1 / -1; min-height: 0; height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.det .notes-open {
+  min-height: 32px;
+  margin: -7px 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--data);
+  font: 500 13px var(--mono);
+  cursor: pointer;
+}
+.fs-sheet.fn { height: 100%; border-radius: 0; }
+.fs-sheet.fn .fl-text { flex: 1; }
+.fs-sheet.fn .cf-t { padding-right: 44px; overflow-wrap: anywhere; }
 .det .talk {
   width: 100%;
   min-height: 44px;
@@ -1788,6 +1816,9 @@ button { font-family: inherit; }
 
 .overlay { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
 .overlay > * { pointer-events: auto; }
+/* a page of its own over the drawers and slide-overs (30), such as a card's
+   notes read whole */
+.overlay.above { position: fixed; z-index: 40; }
 
 /* Signing out is a state of the app, not leaving it: the shell stays and this
    covers it until someone signs in again. */
@@ -2148,7 +2179,7 @@ button { font-family: inherit; }
 /* A screen of the app's own on the stack scrolls inside itself, so its page
    is only the frame it fills. */
 .sn-pane.host { display: flex; flex-direction: column; overflow: hidden; }
-.sn-pane.host > iframe { flex: 1; width: 100%; border: none; background: var(--bg); }
+.sn-pane.host > iframe, #rules-screen > iframe { flex: 1; width: 100%; border: none; background: var(--bg); }
 .sn-pane.host > .sn-theirs { flex: 1; overflow-y: auto; padding-top: 14px; }
 .sn-grp {
   margin: 0;
@@ -2178,6 +2209,11 @@ button { font-family: inherit; }
 .sn-row:first-child { border-top: none; }
 .sn-row.push { cursor: pointer; }
 .sn-row.push:active { background: var(--tint); }
+/* a diagram row swiped left shows Delete behind it, as a session row does */
+.sn-grp:has(> .sn-row[data-diagram]) { overflow: hidden; }
+.sn-row[data-diagram] { position: relative; background: var(--panel); transition: transform 0.18s ease; }
+.sn-row[data-diagram].swiped { transform: translateX(-96px); }
+.sn-row[data-diagram] .fs-acts { width: 96px; }
 .sn-lbl {
   max-width: 52%;
   font: 400 17px/1.3 var(--sans);
@@ -2371,6 +2407,16 @@ button { font-family: inherit; }
   color: var(--faint);
 }
 .sn-srch { padding: 10px 16px; }
+/* the smaller second way in on a row, and a file dragged over the page */
+/* a finger's height to tap: the space under the link, never the title above it */
+.sn-alt { display: inline-block; min-height: 44px; margin-top: -4px; padding: 4px 8px 0 0; border: none; background: none; color: var(--data); font: inherit; text-align: left; vertical-align: top; cursor: pointer; }
+.sn-row:has(.sn-alt) { padding-bottom: 0; }
+/* the people to say which one you are, in the import's sheet */
+.fdc-who { max-height: 40dvh; overflow-y: auto; margin: 0 -16px 8px; }
+.fdc-who .sn-row { width: 100%; border-left: none; border-right: none; border-bottom: none; background: none; color: inherit; font: inherit; text-align: left; }
+.fdc-find { padding: 0 0 10px; }
+.fdc-cost { color: var(--faint); font-size: 13px; }
+.sn-stack .dropping { outline: 2px dashed var(--data); outline-offset: -6px; }
 .sn-srch input {
   width: 100%;
   height: 44px;

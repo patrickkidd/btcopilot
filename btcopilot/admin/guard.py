@@ -30,7 +30,7 @@ def run(context, words):
     command, rest = group, words
     path = []
     try:
-        while isinstance(command, click.Group) and rest:
+        while isinstance(command, click.Group) and rest and not rest[0].startswith("-"):
             name, command, rest = command.resolve_command(parent, rest)
             path.append(name)
             parent = click.Context(command, parent=parent, info_name=name)

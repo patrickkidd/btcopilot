@@ -2,13 +2,16 @@ import * as api from "./api";
 import { Feature, tap, type Screen } from "./track";
 import { $, el, esc, flash, isAdmin, isCoder, type Title } from "./dom";
 import { INDEX_URL } from "./concepts";
+import { frameBack, group, guideFrame, tapRow } from "./settingrows";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
 import { Sheet } from "./sheet";
+import { Swipe } from "./swipe";
 import { store } from "./store";
 import { shortDate } from "./when";
 import { markup } from "./markup";
 import { addPasskey, available, deviceWords } from "./passkey";
+import { Importer } from "./importer";
 import { IDLE_MS } from "./vote";
 import { device, reach, Reach, subscribe } from "./push";
 import { DIAGRAMS, OWN_FAMILY, PRO } from "./pro";
@@ -23,6 +26,7 @@ import {
   type Account,
   type Delivery,
   type Diagram,
+  type Imported,
   type Passkey,
   type Preferences,
   type User,
@@ -34,6 +38,26 @@ import {
  * chat view is the one named shortcut, and it writes this same value. */
 
 const PANE_MS = 240;
+/** The diagram rows a swipe deletes: every one of the person's own but the
+ * free one. */
+export const SWIPED = ".sn-row[data-diagram]:not([data-free])";
+export const CANNOT_DELETE = "Could not delete the diagram.";
+
+/** What the account view's question sheet asks for. */
+export enum Asked {
+  ShadowsOn = "on",
+  Cancel = "cancel",
+  Delete = "delete",
+}
+
+/** Asked before a swiped diagram is deleted, under its name. */
+export const deleteAsk = (name: string): string =>
+  `<div class="cf-t">Delete ${esc(name)}?</div>` +
+  `<p class="cf-p">It is hidden from you; nothing is erased.</p>` +
+  `<div class="cf-btns">` +
+  `<button class="cf-go" type="button" data-act="${Asked.Delete}">Delete</button>` +
+  `<button class="cf-no" type="button" data-act="${Asked.Cancel}">Cancel</button>` +
+  `</div>`;
 /** How often the coach may message first is a most, never a schedule: the
  * choices say so, and the hint says what makes it write. */
 const PROACTIVE_CHOICE: Record<Proactive, string> = {
@@ -42,7 +66,7 @@ const PROACTIVE_CHOICE: Record<Proactive, string> = {
   [Proactive.Weekly]: "at most weekly",
 };
 const writesFirst = (often: string) =>
-  `Never more than once a ${often}, and only when the coach notices a pattern in your family's events or follows up on something you agreed to.`;
+  `Never more than once a ${often}, and only when the coach notices a pattern in the family's events or follows up on something you agreed to.`;
 const BUG_REPORTS_CHOICE: Record<BugReports, string> = {
   [BugReports.Ask]: "ask me",
   [BugReports.Always]: "always send",
@@ -112,6 +136,8 @@ export interface SettingsHandlers {
   onPrefs(prefs: Preferences): void;
   /** Open a diagram: the page's one step for that (FD-366). */
   onOpen(id: number): Promise<void>;
+  /** Words sent to the coach in the person's name. */
+  onSay(statement: string): void;
   /** The coder's one task (R-0265). */
   onTask(): void;
   /** The agenda, which is Patrick's whole administration (R-0259). */
@@ -186,6 +212,8 @@ export class Settings {
   private host = el("div", "sn-stack");
   /** The question before the shadows are switched on. */
   private ask: Sheet;
+  /** The way in for a desktop Family Diagram file, made once with its sheet. */
+  private importer: Importer;
   /** The auditor's coding guide, read on this stack like any page of it. */
   readonly literature: Sub;
   /** The account read again once the view has slid in, which draws its top
@@ -201,23 +229,23 @@ export class Settings {
     this.host.hidden = true;
     overlay.append(this.host);
     this.ask = new Sheet(overlay, "sh");
+    this.importer = new Importer(overlay, (made) => this.imported(made), (words) => this.handlers.onSay(words));
     this.ask.panel.addEventListener("click", (e) => {
-      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act;
-      if (!act) return;
-      this.ask.lower();
-      if (act === "on") void this.write({ shadow_models: this.prefs!.shadow_candidates });
+      const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act as Asked | undefined;
+      if (act) this.answer(act);
     });
-    const frame = el("iframe");
+    const frame = guideFrame(INDEX_URL, GUIDE, (title) => this.rename(this.literature, title));
     frame.id = "literature";
-    frame.title = GUIDE;
-    frame.src = INDEX_URL;
     this.literature = { title: GUIDE, screen: frame, at: address(Place.Literature) };
     this.back.hidden = true;
     this.avatar.addEventListener("click", () => {
       tap(Feature.OpenSettings);
       void this.raise();
     });
-    this.back.addEventListener("click", () => this.pop());
+    this.back.addEventListener("click", () => {
+      if (this.top() === this.literature && frameBack(frame)) return;
+      this.pop();
+    });
     store.watch({ reset: () => {}, draw: () => tick(this.host) });
   }
 
@@ -273,6 +301,16 @@ export class Settings {
     for (const page of path) this.push(page);
   }
 
+  /** A screen of the app's own names itself again, as the guide does when a
+   * link in it is followed. */
+  private rename(sub: Sub, title: string): void {
+    sub.title = title;
+    const entry = this.stack.find((one) => one.page === sub);
+    if (!entry) return;
+    entry.title = title;
+    if (entry === this.stack.at(-1)) this.retitle();
+  }
+
   /** Down the stack to a screen on it, the way its back chevron goes. */
   popTo(sub: Sub): void {
     while (this.stack.length > 1 && this.stack.at(-1)!.page !== sub) this.pop();
@@ -326,6 +364,17 @@ export class Settings {
     this.stack.push({ page, title, pane });
     this.retitle();
     this.back.hidden = false;
+    if (page === Page.Diagrams) window.setTimeout(() => void this.relist(), PANE_MS);
+  }
+
+  /** The diagrams read again each time their page is shown, so one brought in
+   * from a desktop file since appears (R-0899); drawn again once the page has
+   * landed, and only when the list changed. */
+  async relist(): Promise<void> {
+    const account = await api.account();
+    const changed = JSON.stringify(account.diagrams) !== JSON.stringify(this.account?.diagrams);
+    this.account = account;
+    if (changed && this.top() === Page.Diagrams) this.replaceTop();
   }
 
   private retitle(): void {
@@ -345,6 +394,7 @@ export class Settings {
     window.setTimeout(() => top.pane.remove(), PANE_MS);
     this.stack[this.stack.length - 1].pane.classList.remove("under");
     this.retitle();
+    if (this.top() === Page.Diagrams) window.setTimeout(() => void this.relist(), PANE_MS);
   }
 
   close(): void {
@@ -403,37 +453,18 @@ export class Settings {
 
   // ---- the pieces every page is made of ----
 
-  private group(rows: HTMLElement[], head?: string): HTMLElement {
-    const wrap = el("div");
-    if (head) wrap.append(el("div", "sn-hd", esc(head)));
-    const box = el("div", "sn-grp");
-    box.append(...rows);
-    wrap.append(box);
-    return wrap;
-  }
-
   private pushRow(label: string, value: string, page: Page): HTMLElement {
-    return this.tapRow(label, value, () => this.push(page));
+    return tapRow(label, value, () => this.push(page));
   }
 
   /** A row that opens a screen of the app's own on this stack. */
   private screenRow(label: string, feature: Feature, go: () => void): HTMLElement {
-    return this.tapRow(label, "", () => {
+    return tapRow(label, "", () => {
       tap(feature);
       go();
     });
   }
 
-  private tapRow(label: string, value: string, go: () => void): HTMLElement {
-    const row = el("div", "sn-row push");
-    row.append(
-      el("div", "sn-lbl", esc(label)),
-      el("div", "sn-val", esc(value)),
-      el("div", "sn-chev", "›"),
-    );
-    row.addEventListener("click", go);
-    return row;
-  }
 
   private valueRow(label: string, value: string, ink = true): HTMLElement {
     const row = el("div", "sn-row");
@@ -555,15 +586,15 @@ export class Settings {
     const notices = this.handlers.notices();
     const unread = notices.filter((one) => one.opened_at === null).length;
     if (notices.length)
-      pane.append(this.group([this.pushRow("Notices", unread ? String(unread) : "", Page.Notices)]));
+      pane.append(group([this.pushRow("Notices", unread ? String(unread) : "", Page.Notices)]));
 
     pane.append(
-      this.group([
+      group([
         this.pushRow("Coach", `speak ${prefs.speak ? "on" : "off"}`, Page.Coach),
         this.pushRow("Appearance", prefs.theme, Page.Appearance),
       ]),
-      this.group([this.notificationsRow()]),
-      this.group([
+      group([this.notificationsRow()]),
+      group([
         this.pushRow(
           DIAGRAMS,
           String(account.diagrams.length),
@@ -583,13 +614,13 @@ export class Settings {
     const admin = isAdmin();
     if (isCoder())
       pane.append(
-        this.group(
+        group(
           [
             this.screenRow("Your coding task", Feature.TaskOpen, () => this.handlers.onTask()),
             ...(admin
               ? [this.screenRow("Next meeting", Feature.AgendaOpen, () => this.handlers.onAgenda())]
               : []),
-            this.tapRow(GUIDE, "", () => this.push(this.literature)),
+            tapRow(GUIDE, "", () => this.push(this.literature)),
           ],
           "Coding",
         ),
@@ -613,7 +644,7 @@ export class Settings {
   private notices(): Built {
     const pane = el("div");
     const rows = this.handlers.notices().map((one) => this.noticeRow(one));
-    pane.append(rows.length ? this.group(rows) : el("div", "sn-hint", "No notices yet."));
+    pane.append(rows.length ? group(rows) : el("div", "sn-hint", "No notices yet."));
     return { title: "Notices", pane };
   }
 
@@ -647,7 +678,7 @@ export class Settings {
   private profile(prefs: Preferences, account: Account): Built {
     const pane = el("div");
     pane.append(
-      this.group(
+      group(
         [
           this.inputRow("first name", prefs.first_name ?? "", "first", "text", (v) =>
             void this.write({ first_name: v }),
@@ -666,14 +697,14 @@ export class Settings {
         "You",
       ),
       el("div", "sn-hint", "Your birthdate anchors your own line on the picture."),
-      this.group(
+      group(
         [
           this.valueRow("email", account.email),
           this.valueRow("sign in", account.sign_in_method),
         ],
         "Email and login",
       ),
-      this.group(this.passkeyRows(), "This device"),
+      group(this.passkeyRows(), "This device"),
     );
     return { title: "Profile", pane };
   }
@@ -785,7 +816,7 @@ export class Settings {
     // the choices are too long to stand beside their label on a phone
     often.classList.add("below");
     pane.append(
-      this.group([
+      group([
         this.switchRow(
           "Speak replies",
           prefs.speak,
@@ -800,7 +831,7 @@ export class Settings {
         often,
       ]),
       el("div", "sn-hint", PROACTIVE_HINT[prefs.proactive]),
-      this.group([
+      group([
         this.segRow(
           "Bug reports",
           [BugReports.Ask, BugReports.Always],
@@ -820,7 +851,7 @@ export class Settings {
     const on = prefs.shadow_models.length > 0;
     const cost = prefs.shadow_cost;
     return [
-      this.group(
+      group(
         [
           this.switchRow("Conversation Feedback", on, (want) =>
             want ? this.confirmShadows() : void this.write({ shadow_models: [] }),
@@ -845,8 +876,8 @@ export class Settings {
       `<div class="cf-t">Turn on Conversation Feedback?</div>` +
         `<p class="cf-p">${esc(SHADOW_WARNING)}</p>` +
         `<div class="cf-btns">` +
-        `<button class="cf-go" type="button" data-act="on">Turn on</button>` +
-        `<button class="cf-no" type="button" data-act="cancel">Cancel</button>` +
+        `<button class="cf-go" type="button" data-act="${Asked.ShadowsOn}">Turn on</button>` +
+        `<button class="cf-no" type="button" data-act="${Asked.Cancel}">Cancel</button>` +
         `</div>`,
     );
   }
@@ -854,7 +885,7 @@ export class Settings {
   private appearance(prefs: Preferences): Built {
     const pane = el("div");
     pane.append(
-      this.group([
+      group([
         this.segRow(
           "theme",
           [Theme.System, Theme.Light, Theme.Dark],
@@ -881,8 +912,10 @@ export class Settings {
     const now = new Date();
     for (const diagram of account.diagrams) box.append(this.diagramRow(diagram, now));
     tick(box);
+    this.swipeAway(box);
 
     box.append(this.newDiagramRow());
+    box.append(this.importer.row(pane));
 
     if (account.diagrams.length >= SEARCH_AT) {
       const wrap = el("div", "sn-srch");
@@ -909,6 +942,15 @@ export class Settings {
     return { title: DIAGRAMS, pane };
   }
 
+  /** A diagram made from a desktop file is already the one the app is on, and
+   * opens the way a tap on it in the list does (R-0899). */
+  async imported(made: Imported): Promise<void> {
+    this.close();
+    await this.handlers.onOpen(made.id);
+    // the sheet that follows says the file is in, and a toast would cover it
+    void this.load();
+  }
+
   /** Kept across a re-draw of the page and under a person's diagrams, so the
    * search and its matches are there again on the way back (R-0630). */
   private finding?: { box: HTMLElement; field: HTMLInputElement; mine?: HTMLElement };
@@ -927,6 +969,7 @@ export class Settings {
     const row = el("div", "sn-row push");
     row.dataset.name = diagram.name.toLowerCase();
     row.dataset.diagram = String(diagram.id);
+    if (diagram.free) row.dataset.free = "";
     const main = el("div", "sn-m");
     main.append(
       el(
@@ -1091,6 +1134,64 @@ export class Settings {
     await this.handlers.onOpen(made.id);
     void this.load();
     toast(`Now on ${made.name}`);
+  }
+
+  /** A diagram of the person's own swiped left shows Delete, never on the
+   * free one; the swipe's own taps never open the diagram under it. */
+  private swipeAway(box: HTMLElement): void {
+    const swipe = new Swipe(box, SWIPED, () => ({
+      html: `<button class="fs-act del" type="button">Delete</button>`,
+      wide: false,
+    }));
+    box.addEventListener(
+      "click",
+      (e) => {
+        const del = (e.target as Element).closest<HTMLElement>(".fs-act.del");
+        if (!del && !swipe.claims()) return;
+        e.stopPropagation();
+        if (del) this.askDrop(del.closest<HTMLElement>(".sn-row")!);
+      },
+      true,
+    );
+  }
+
+  /** The row whose Delete was tapped, while the question is up. */
+  private dropping: HTMLElement | null = null;
+
+  /** Delete asks first, under the diagram's name; only its own Delete sends. */
+  askDrop(row: HTMLElement): void {
+    this.dropping = row;
+    const id = Number(row.dataset.diagram);
+    this.ask.show(deleteAsk(this.account!.diagrams.find((one) => one.id === id)!.name));
+  }
+
+  answer(act: Asked): void {
+    this.ask.lower();
+    const row = this.dropping;
+    this.dropping = null;
+    if (act === Asked.ShadowsOn) void this.write({ shadow_models: this.prefs!.shadow_candidates });
+    else if (act === Asked.Delete) void this.drop(row!);
+  }
+
+  /** A deleted diagram's row goes; when it was the one open, the app goes to
+   * the person's free diagram. The server's reason for keeping one is shown
+   * as it is. */
+  async drop(row: HTMLElement): Promise<void> {
+    // a second tap while the first is out is not a second delete
+    if (row.classList.contains("deleting")) return;
+    row.classList.add("deleting");
+    const id = Number(row.dataset.diagram);
+    try {
+      await api.deleteDiagram(id);
+    } catch (error) {
+      return toast(api.refusedWith(error, CANNOT_DELETE), true);
+    } finally {
+      row.classList.remove("deleting");
+    }
+    row.remove();
+    this.account!.diagrams = this.account!.diagrams.filter((one) => one.id !== id);
+    if (id !== store.current().diagram?.id) return;
+    await this.switchTo((await api.diagrams()).find((one) => one.free)!);
   }
 
   /** Put the app on another family. Everything the app shows is about one

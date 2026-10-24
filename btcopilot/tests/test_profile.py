@@ -46,7 +46,7 @@ def test_the_coach_is_told_what_to_get_first(discussion):
     CoachTurn(
         discussion, "I have not been sleeping", purpose=Purpose.Coach, model=model
     ).run()
-    assert "FIRST, BEFORE ANYTHING ELSE" in model.systems[0]
+    assert "WHAT IS STILL MISSING ABOUT THE PERSON" in model.systems[0]
     assert "first name, last name, birth date" in model.systems[0]
 
 
@@ -82,4 +82,4 @@ def test_a_complete_profile_lifts_the_gate_and_reaches_the_account(discussion, t
     CoachTurn(
         discussion, "It started in college", purpose=Purpose.Coach, model=model
     ).run()
-    assert "FIRST, BEFORE ANYTHING ELSE" not in model.systems[0]
+    assert "WHAT IS STILL MISSING ABOUT THE PERSON" not in model.systems[0]

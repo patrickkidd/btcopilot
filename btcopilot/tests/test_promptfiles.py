@@ -113,7 +113,7 @@ def test_the_private_coach_prompt_keeps_every_paragraph_it_had(monkeypatch):
 
 
 def test_the_app_runs_whole_with_no_private_prompts(public):
-    # R-0451
+    # R-0454
     assert public.get_agent_prompt(record="Marcus, 40")
     assert public.scribe_prompt(record="Marcus, 40")
     assert set(public.tool_meanings()) == set(public.ToolText)

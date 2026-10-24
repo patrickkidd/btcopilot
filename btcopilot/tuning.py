@@ -22,12 +22,14 @@ from btcopilot.models import (
 )
 
 QUEUE = 10
-# How a message the coach wrote first fared: measurements, not findings to rule on.
+# How a message the coach wrote first fared, and how much of an imported file
+# the record's rules left out: measurements, not findings to rule on.
 MEASURES = (
     ObservationKind.ProactiveSent,
     ObservationKind.ProactiveOpened,
     ObservationKind.ProactiveReplied,
     ObservationKind.ProactiveReturned,
+    ObservationKind.Import,
 )
 TEST_ACCOUNTS = "claude-test%"
 QUOTED = re.compile(r"(?<!\w)'[^']*'(?!\w)")

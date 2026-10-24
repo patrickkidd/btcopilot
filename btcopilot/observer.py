@@ -7,7 +7,6 @@ repeats for itself, and each row is a candidate case for its regression evals
 import re
 
 from btcopilot import profile, record, turnstore, tuning
-from btcopilot.coachturn import MAX_STEPS
 from btcopilot.extensions import db
 from btcopilot.models import Change, Discussion, Observation, ObservationKind, Statement
 from btcopilot.recordtext import date_text
@@ -209,19 +208,16 @@ def _refused(kept: list[dict]) -> list:
 
 
 def _capped(kept: list[dict]) -> list:
-    """The coach used every tool step it had in one part of the turn since it
-    last failed, so it was made to stop; each part of long notes has its own
-    steps (R-0897)."""
-    since = [TurnEventKind.Failed.value] + [e["type"] for e in kept]
-    last = len(since) - since[::-1].index(TurnEventKind.Failed.value)
-    counts = [0]
-    for kind in since[last:]:
-        if kind == TurnEventKind.Part.value:
-            counts.append(0)
-        elif kind == TurnEventKind.Step.value:
-            counts[-1] += 1
-    steps = max(counts)
-    return [(ObservationKind.StepCap, {"steps": steps})] if steps >= MAX_STEPS else []
+    """Each part of the turn the coach was stopped in as a runaway, since it
+    last failed: how many steps it used and why it was stopped
+    [Oracle: R-0411, R-0517, R-0936]."""
+    since = [{"type": TurnEventKind.Failed.value}] + kept
+    last = len(since) - [e["type"] for e in since][::-1].index(TurnEventKind.Failed.value)
+    return [
+        (ObservationKind.StepCap, {"steps": e["steps"], "reason": e["reason"]})
+        for e in since[last:]
+        if e["type"] == TurnEventKind.Runaway.value
+    ]
 
 
 def _earlier(diagram_id: int, turn_id: str, kept: list[dict]) -> list:

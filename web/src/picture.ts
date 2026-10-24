@@ -1,4 +1,5 @@
 import { book } from "./case";
+import { morph } from "./morph";
 import { nameOnly } from "./caseview";
 import { DateCertainty } from "./certainty";
 import { called } from "./diagram";
@@ -461,6 +462,25 @@ enum Park {
 }
 
 const SCROLLER = ".ss-scroll";
+
+/** What a reader taking the line in hand starts with. */
+const HANDS = ["pointerdown", "touchstart", "wheel"];
+
+/** A redraw moves the line's resting places, and a browser slides a line
+ * resting near one onto it; so while the line is drawn again and put where
+ * it stood its snapping is off, and it comes back the moment the reader next
+ * takes the line in hand, so a swipe still comes to rest (R-0937). */
+function steady(scroll: HTMLElement): void {
+  scroll.style.scrollSnapType = "none";
+  if (scroll.dataset.steady) return;
+  scroll.dataset.steady = "1";
+  const back = () => {
+    scroll.style.scrollSnapType = "";
+    delete scroll.dataset.steady;
+    for (const kind of HANDS) scroll.removeEventListener(kind, back);
+  };
+  for (const kind of HANDS) scroll.addEventListener(kind, back, { passive: true });
+}
 /** What is laid over a screen and answers its own taps. */
 const OVER = ".slideover, .pbp, .fs-sheet, .fs-scrim, [role=dialog]";
 
@@ -1252,9 +1272,9 @@ export class Picture {
 
   setData(data: Timeline): void {
     this.data = data;
-    // the record has changed under the picture, which is what a reply leaves
-    // behind: the line goes back to the present (R-0381)
-    this.park = Park.Present;
+    // a change to the record, from a reply here or a write anywhere, leaves
+    // the line where the reader slid it (R-0577); a diagram just opened is
+    // parked at the present by the clear before it
     this.render();
   }
 
@@ -1469,6 +1489,7 @@ export class Picture {
   }
 
   clear(): void {
+    this.scale = null;
     this.named = [];
     this.selected = null;
     this.park = Park.Present;
@@ -1518,7 +1539,10 @@ export class Picture {
   private card(markup: string): void {
     this.laid = { zones: [], rows: [] };
     this.pin(PIC_H);
-    this.host.innerHTML = `<div class="card">${markup}</div>`;
+    // a card already up is drawn in place, keeping where it was scrolled
+    const up = this.host.querySelector<HTMLElement>(":scope > .card");
+    if (up && this.host.childElementCount === 1) morph(up, markup);
+    else this.host.innerHTML = `<div class="card">${markup}</div>`;
     const card = this.host.firstElementChild as HTMLElement;
     card.style.maxHeight = `${window.innerHeight - this.host.getBoundingClientRect().top}px`;
   }
@@ -1575,8 +1599,12 @@ export class Picture {
       dated.map((e) => e.dateTime as string),
       screen,
     );
-    // where the reader left the line, kept while a cluster's view stood in its place
-    const held = this.host.querySelector<HTMLElement>(SCROLLER)?.scrollLeft ?? this.left;
+    // where the reader left the line, kept while a cluster's view stood in its
+    // place; a line resting at its end, the present, stays at its end however
+    // much wider or narrower it is drawn now, as when clusters come in (R-0937)
+    const scroller = this.host.querySelector<HTMLElement>(SCROLLER);
+    const atEnd = scroller !== null && scroller.scrollLeft >= scroller.scrollWidth - scroller.clientWidth - 1;
+    let held = atEnd ? null : (scroller?.scrollLeft ?? this.left);
     const x0 = X_PAD;
     const x1 = width - X_PAD;
     const first = years(dated[0].dateTime as string);
@@ -1586,6 +1614,14 @@ export class Picture {
       dated.length === 1
         ? (x0 + x1) / 2
         : x0 + ((years(iso) - first) / span) * (x1 - x0);
+    // a line slid in and drawn at a new width keeps the date that was under
+    // the middle of the screen under the middle of the screen (R-0937)
+    const was = this.scale;
+    if (held !== null && was) {
+      const middle = was.first + ((held + screen / 2 - was.x0) / (was.x1 - was.x0)) * was.span;
+      held = Math.max(0, Math.round(x0 + ((middle - first) / span) * (x1 - x0) - screen / 2));
+    }
+    this.scale = { first, span, x0, x1 };
     const open = this.level === Level.Wire ? this.focus : null;
     const lit = new Set(this.named);
     if (this.selected !== null) lit.add(this.selected);
@@ -1716,10 +1752,39 @@ export class Picture {
       .map((left) => `<i class="ss-snap" style="left:${left}px"></i>`)
       .join("");
 
-    this.host.innerHTML =
-      `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width.toFixed(1)}px">` +
-      `${svg}${words}${targets}${snaps}</div></div>${title}${shelf}</div>`;
+    this.lay(`${width.toFixed(1)}px`, `${svg}${words}${targets}${snaps}`, `${title}${shelf}`);
     this.settle({ width, screen }, held, on);
+  }
+
+  /** Where the line last put its years, to keep a date in place when it is
+   * drawn at another width. */
+  private scale: { first: number; span: number; x0: number; x1: number } | null = null;
+
+  /** What the line last drew, to change only what differs. */
+  private drawn: { strip: HTMLElement; width: string; line: string; after: string } | null = null;
+
+  /** The line put on screen. A redraw while the line is up keeps its frame and
+   * its scroller, so it neither flashes nor loses where the reader slid it,
+   * and changes only the parts whose drawing differs. */
+  private lay(width: string, line: string, after: string): void {
+    const frame = this.host.querySelector<HTMLElement>(":scope > .ss");
+    const scroll = frame?.querySelector<HTMLElement>(`:scope > ${SCROLLER}`);
+    const strip = scroll?.querySelector<HTMLElement>(":scope > .ss-line");
+    // anything else drawn here since, and the line is drawn whole again
+    if (!scroll || !strip || this.drawn?.strip !== strip) {
+      this.host.innerHTML =
+        `<div class="ss"><div class="ss-scroll"><div class="ss-line" style="width:${width}">${line}</div></div>${after}</div>`;
+      this.drawn = { strip: this.host.querySelector<HTMLElement>(".ss-line")!, width, line, after };
+      return;
+    }
+    steady(scroll);
+    if (width !== this.drawn.width) strip.style.width = width;
+    if (line !== this.drawn.line) morph(strip, line);
+    if (after !== this.drawn.after) {
+      while (scroll.nextSibling) scroll.nextSibling.remove();
+      scroll.insertAdjacentHTML("afterend", after);
+    }
+    this.drawn = { strip, width, line, after };
   }
 
   /** Where the line comes to rest after this draw: on what was just named

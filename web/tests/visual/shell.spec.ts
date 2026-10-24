@@ -134,4 +134,102 @@ test.describe("the app frame", () => {
     await expect(page.locator("#rules-screen .ovt")).toHaveText("Coding guidelines");
     await expect(page.locator("#rules-body")).toContainText(rule.text);
   });
+
+});
+
+test.describe("the concept pages, read inside the app", () => {
+  test.use({ storageState: stateFor("moves"), serviceWorkers: "block" });
+
+  // R-0541, R-0567
+  test("with no guidelines yet, the coding guidelines list the concept pages, each read inside the app", async ({
+    page,
+  }) => {
+    await settle(page);
+    // no fixture is a coder, and the pages are served to coders alone
+    await page.evaluate(() => (window.BOOTSTRAP.user!.coder = true));
+    await page.route(/\/review\/rules$/, (route) => route.fulfill({ json: [] }));
+    // the pages link on to one another, as the guide's pages do
+    const pages: Record<string, string> = {
+      "/app/theory":
+        '<h1>Concept pages: index</h1><a id="symptom" href="/app/theory/symptom">symptom</a> <a id="anxiety" href="/app/theory/anxiety">anxiety</a>',
+      "/app/theory/symptom": '<h1>Symptom (S)</h1><a id="index" href="/app/theory">index</a>',
+      "/app/theory/anxiety": "<h1>Anxiety (A)</h1>",
+    };
+    await page.route(/\/app\/theory/, (route) =>
+      route.fulfill({ contentType: "text/html", body: pages[new URL(route.request().url()).pathname] }),
+    );
+    const info = page.locator(".titlerow #coding-info");
+    await info.evaluate((b) => ((b as HTMLElement).hidden = false));
+    await info.click();
+    const body = page.locator("#rules-body");
+    const rows = body.locator(".sn-row.push");
+    await expect(body.locator(".sn-hd")).toHaveText(["Concept pages"]);
+    await expect(rows).toHaveCount(12);
+    await expect(rows.last()).toHaveText(/All concept pages/);
+    await expect(body).not.toContainText("No coding guidelines yet");
+
+    const frame = page.locator("#rules-screen > iframe");
+    const inside = page.frameLocator("#rules-screen > iframe");
+    const title = page.locator("#rules-title");
+    await rows.first().click();
+    await expect(frame).toBeVisible();
+    expect(await frame.getAttribute("src")).toBe("/app/theory/symptom");
+    // a page is named by its own heading, whichever way it was reached
+    await expect(title).toHaveText("Symptom (S)");
+    await expect(body).toBeHidden();
+    expect(page.context().pages()).toHaveLength(1);
+    await page.locator("#rules-close").click();
+    await expect(frame).toHaveCount(0);
+    await expect(title).toHaveText("Coding guidelines");
+
+    // back steps one page at a time through the pages read, in the order
+    // read, a page read twice included, then leaves for the list
+    await rows.last().click();
+    const steps = ["Concept pages: index", "Symptom (S)", "Concept pages: index", "Anxiety (A)"];
+    await expect(title).toHaveText(steps[0]);
+    await inside.locator("#symptom").click();
+    await expect(title).toHaveText(steps[1]);
+    await inside.locator("#index").click();
+    await expect(title).toHaveText(steps[2]);
+    await inside.locator("#anxiety").click();
+    await expect(title).toHaveText(steps[3]);
+    for (const back of [...steps].reverse().slice(1)) {
+      await page.locator("#rules-close").click();
+      await expect(inside.locator("h1")).toHaveText(back);
+      await expect(title).toHaveText(back);
+    }
+    await page.locator("#rules-close").click();
+    await expect(frame).toHaveCount(0);
+    await expect(body).toBeVisible();
+    await expect(title).toHaveText("Coding guidelines");
+    await expect(page.locator("#rules-screen")).toBeVisible();
+  });
+
+  // R-0541, R-0567
+  test("a concept link under a code opens its page inside the app, and back returns to the screen it was on", async ({
+    page,
+  }) => {
+    await settle(page);
+    await page.route(/\/app\/theory/, (route) =>
+      route.fulfill({ contentType: "text/html", body: "<h1>Anxiety</h1>" }),
+    );
+    // the vote, the meeting and the coding draw these under a code, which no
+    // fixture reaches; the markup is the one they draw
+    await page.locator("#chat-split").evaluate((host) =>
+      host.insertAdjacentHTML(
+        "afterbegin",
+        '<div class="concepts">read: <a href="/app/theory/anxiety">anxiety</a></div>',
+      ),
+    );
+    await page.locator(".concepts a").click();
+    const frame = page.locator('#rules-screen > iframe[title="Anxiety"]');
+    await expect(frame).toBeVisible();
+    expect(await frame.getAttribute("src")).toBe("/app/theory/anxiety");
+    expect(page.context().pages()).toHaveLength(1);
+
+    await page.locator("#rules-close").click();
+    await expect(page.locator("#rules-screen")).toBeHidden();
+    await expect(frame).toHaveCount(0);
+    await expect(page.locator("#chat-split")).toBeVisible();
+  });
 });

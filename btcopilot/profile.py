@@ -6,7 +6,7 @@ page shows the same values."""
 import datetime
 import enum
 
-from btcopilot.schema import DiagramData, EventKind
+from btcopilot.schema import DEFAULT_SUBJECT_NAME, DiagramData, EventKind
 
 PLACEHOLDER_NAME = "User"
 # the person the chat app makes the user on a diagram that has none yet
@@ -44,6 +44,20 @@ def person_of(user, diagram) -> int | None:
 def is_subject(person_id: int | None, data: DiagramData) -> bool:
     """Whether that is the person the family belongs to."""
     return person_id is not None and person_id == own_id(data)
+
+
+def named(diagram, data: DiagramData) -> str | None:
+    """The first name the coach writes about the person the case belongs to
+    when nobody on it is that person, or None when it speaks to them as
+    "you" (FD-387)."""
+    if addressed(diagram, data):
+        return None
+    return subject_name(data)
+
+
+def subject_name(data: DiagramData) -> str:
+    """The first name of the person the case belongs to."""
+    return (own(data) or {}).get("name") or DEFAULT_SUBJECT_NAME
 
 
 def addressed(diagram, data: DiagramData) -> bool:

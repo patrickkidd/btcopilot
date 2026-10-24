@@ -276,3 +276,30 @@ def test_a_periods_sentence_sets_its_events_side_by_side_never_one_creating_anot
     seen, ours = first_refused()
     assert (1, ClusterCheck.Cause) not in seen
     assert ours
+
+
+YOU = re.compile(r"\byou(?:r|rs)?\b", re.I)
+
+
+def words(result) -> str:
+    return " ".join(
+        " ".join(filter(None, (c.name, c.title, c.reason, c.summary)))
+        for c in result.clusters
+        if c.source is ClusterSource.Model
+    )
+
+
+@passes(2, of=3)
+def test_periods_on_a_case_the_person_is_on_are_written_to_them_as_you():
+    # R-0935, R-0860
+    """Pass: the app keeps a period, and its words address the person as "you"."""
+    said = words(detect_clusters(HALE, ask))
+    assert said and YOU.search(said), said
+
+
+@passes(2, of=3)
+def test_periods_on_a_case_nobody_on_is_the_person_name_her_never_you():
+    # R-0935, R-0860
+    """Pass: the app keeps a period, its words name Nell, and none says "you"."""
+    said = words(detect_clusters(HALE, ask, name="Nell"))
+    assert said and "Nell" in said and not YOU.search(said), said

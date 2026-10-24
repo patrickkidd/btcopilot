@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { versionLine } from "../src/ballot";
 import { choiceOf, markOf, seated, type Side } from "../src/meeting";
 import {
   Decision,
@@ -71,5 +72,16 @@ describe("choiceOf", () => {
     expect(choiceOf(item(7, ItemStatus.Decided))).toBe(Decision.Keep);
     expect(choiceOf(item(7, ItemStatus.Unresolved))).toBe(Decision.Unresolved);
     expect(choiceOf(item(7, ItemStatus.Disputed))).toBe(null);
+  });
+});
+
+describe("a quoted line in the meeting", () => {
+  // R-0072, R-0270
+  it("draws a chip the client sent back as one, never as brackets", () => {
+    const line = { statement_id: 9, who: "Client", text: "It was [[event:7|Dad left]] that year." };
+    const html = versionLine({ item: {}, line }, false);
+    expect(html).not.toContain("[[");
+    expect(html).toContain(">Dad left</button> that year.&rdquo;");
+    expect(html).not.toContain("open in transcript");
   });
 });

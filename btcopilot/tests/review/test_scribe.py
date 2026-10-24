@@ -9,13 +9,14 @@ from mock import patch
 
 from btcopilot import prompts
 from btcopilot.coachmodel import ModelTurn, ToolCall
-from btcopilot.llmutil import NotOnBedrockError, Served
+from btcopilot.llmutil import GEMINI_TIMEOUT_MS, NotOnBedrockError, Served
 from btcopilot.extensions import db
 from btcopilot.models import Change, Diagram, ModelCall, Observation, ObservationKind, Purpose, TurnEvent
 from btcopilot.review import adapter
 from btcopilot.review import scribe as scribe_module
 from btcopilot.review.scribe import written
 from btcopilot.review.scribetools import ScribeTools
+from btcopilot.tests.repo import REPO
 from btcopilot.tests.review.conftest import coded, person, shift
 
 HAIKU = Served("claude-haiku-4-5")
@@ -492,6 +493,46 @@ def test_a_refused_entry_comes_back_as_a_row_beside_the_ones_that_went_in(coder,
     assert not [words for words in ("went in", "did not", "again", "version") if words in shown]
 
 
+def test_an_event_refused_before_its_person_was_added_is_not_shown_unsaved_once_it_went_in(coder, cut, turns):
+    # R-0883, R-0884
+    coding = coded(coder.user, cut, {"people": []}, done=False)
+    undated = {key: value for key, value in SHIFT.items() if key != "date"}
+    model = Scripted(
+        [("add_shift", dict(undated, title="Sleep trouble began", description="in high school", person=-1))],
+        [
+            ("add_person", {"name": "Client", "sex": "female", "ref": -1}),
+            ("add_shift", dict(SHIFT, title="Sleep trouble", description="began in high school", person=-1)),
+        ],
+    )
+    response = scribe(coder, coding, turns[0], model, "Her sleep trouble started in 2010.")
+    assert response.status_code == 200
+    assert (response.json["lines"], response.json["refused"]) == (
+        [added("Client"), added("Client · Sleep trouble · Jan 2010")],
+        [],
+    )
+
+
+def test_a_second_event_of_the_same_kind_really_lost_still_shows_unsaved(coder, cut, turns):
+    # R-0883, R-0884
+    coding = coded(coder.user, cut, {"people": []}, done=False)
+    model = Scripted(
+        [
+            ("add_shift", dict(SHIFT, title="Sleep trouble began", person=-1)),
+            ("add_shift", dict(SHIFT, title="Stopped eating", description="stopped eating", person=-1)),
+        ],
+        [
+            ("add_person", {"name": "Client", "sex": "female", "ref": -1}),
+            ("add_shift", dict(SHIFT, title="Sleep trouble began", person=-1)),
+        ],
+    )
+    response = scribe(coder, coding, turns[0], model, "Her sleep trouble began and she stopped eating.")
+    assert response.status_code == 200
+    assert (response.json["lines"], response.json["refused"]) == (
+        [added("Client"), added("Client · Sleep trouble began · Jan 2010")],
+        [added("someone · Stopped eating · Jan 2010")],
+    )
+
+
 def test_a_statement_nothing_of_goes_in_is_all_refused_rows(coder, cut, turns):
     # R-0883
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
@@ -594,11 +635,27 @@ def test_a_shift_reads_as_its_title():
     assert written(data, ["2"]) == ["Ann · Sleep problems began · Jan 1990"]
 
 
-def test_a_pronoun_with_nobody_in_the_diagram_saves_nothing(coder, cut, turns):
-    # R-0270, R-0883
+def test_a_pronoun_with_nobody_in_the_diagram_goes_to_the_scribe_and_is_written(coder, cut, turns):
+    # R-0884, R-0883
     coding = coded(coder.user, cut, {"people": []}, done=False)
-    response = scribe(coder, coding, turns[0], Never(), "she could not sleep")
-    assert (response.json["lines"], response.json["refused"], response.json["choices"]) == ([], [], [])
+    model = Scripted([("add_person", {"name": "Client"})])
+    with patch.object(model, "turn", wraps=model.turn) as heard:
+        response = scribe(coder, coding, turns[0], model, "Her sleep trouble started in high school.")
+    assert heard.called
+    assert (response.json["lines"], response.json["choices"]) == ([added("Client")], [])
+    record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
+    assert [p["name"] for p in record["people"]] == ["Client"]
+
+
+def test_a_pronoun_two_people_could_mean_still_asks(coder, cut, turns):
+    # R-0270, R-0883
+    people = [
+        {"id": 1, "name": "Ann", "gender": "female"},
+        {"id": 2, "name": "Beth", "gender": "female"},
+    ]
+    coding = coded(coder.user, cut, {"people": people}, done=False)
+    response = scribe(coder, coding, turns[0], Never(), "Her sleep trouble started in high school.")
+    assert [one["id"] for one in response.json["choices"]] == [1, 2]
 
 
 def test_a_death_reads_as_its_kind_name():
@@ -897,3 +954,12 @@ def test_a_year_the_coder_says_alone_is_kept_and_read_back_as_the_year(coder, cu
     assert response.json["lines"] == [added("Marcus & Delphine · Married · 1970")]
     (married,) = db.session.get(Diagram, coding.diagram_id).get_diagram_data().events
     assert (married["dateTime"], married["datePrecision"]) == ("1970-01-01", "year")
+
+
+def test_the_page_waits_for_the_scribe_as_long_as_the_server_can_take():
+    # R-0869, R-0883
+    """A slow scribe that still writes is never shown to the coder as not saved."""
+    api = (REPO / "web" / "src" / "api.ts").read_text()
+    longest = scribe_module.MAX_STEPS * GEMINI_TIMEOUT_MS // 1000 + 30
+    assert scribe_module.MODEL.startswith("gemini")
+    assert f"SCRIBE_WAIT_S = {longest};" in api

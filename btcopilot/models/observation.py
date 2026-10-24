@@ -36,6 +36,9 @@ class ObservationKind(enum.StrEnum):
     # The coach's notes say the person corrected it: it assumed, misheard or
     # read into what they said.
     PersonCorrected = "person_corrected"
+    # A desktop file made into a new diagram: how many people, events and
+    # pair-bonds it brought, and how many items the record's rules left out.
+    Import = "import"
 
 
 class Observation(db.Model, ModelMixin):

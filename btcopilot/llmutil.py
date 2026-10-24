@@ -276,12 +276,29 @@ GEMINI_MAX_RETRIES = 3
 GEMINI_RETRY_BACKOFF = 5  # seconds, doubled each retry
 
 
+GEMINI_KEY = "GOOGLE_GEMINI_API_KEY"
+
+
+class MissingKey(Exception):
+    """A model call this process cannot make, said in one sentence."""
+
+
+def gemini_key() -> str:
+    found = os.environ.get(GEMINI_KEY)
+    if not found:
+        raise MissingKey(
+            f"The Gemini key, {GEMINI_KEY}, is not set where this runs; the "
+            "worker reads it from the same secrets, so run this with them."
+        )
+    return found
+
+
 def _client():
     from google import genai
     from google.genai import types
 
     return genai.Client(
-        api_key=os.environ["GOOGLE_GEMINI_API_KEY"],
+        api_key=gemini_key(),
         http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS),
     )
 
@@ -310,9 +327,7 @@ def gemini_client(timeout: float | None = None) -> genai.Client:
             location=os.environ["GOOGLE_CLOUD_LOCATION"],
             http_options=options,
         )
-    return genai.Client(
-        api_key=os.environ["GOOGLE_GEMINI_API_KEY"], http_options=options
-    )
+    return genai.Client(api_key=gemini_key(), http_options=options)
 
 
 def openai_client(timeout: float | None = None) -> openai.OpenAI:

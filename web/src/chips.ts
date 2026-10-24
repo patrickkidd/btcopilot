@@ -186,6 +186,14 @@ export const pill = (chip: Chip, full: string, mark = ""): string =>
   `data-full="${esc(full)}" title="${esc(full)}"${chip.bare ? " data-bare" : ""}>` +
   `${mark}${esc(face(chip.kind, full))}</button>`;
 
+/** Words and chips, each chip drawn by `chip`; never a bracket of the markup. */
+export const drawn = (pieces: Piece[], chip: (chip: Chip) => string): string =>
+  pieces.map((p) => ("chip" in p ? chip(p.chip) : esc(p.text))).join("");
+
+/** A chip named as it was written, for a conversation read away from the
+ * record it names: a coder's own copy, or a quoted line on a vote. */
+export const asWritten = (chip: Chip): string => pill(chip, chip.label);
+
 /** The play-by-play message whose own cluster this pill names, if any. */
 function playOf(button: HTMLElement): number | undefined {
   const bubble = button.closest<HTMLElement>(".bub[data-play][data-statement]");

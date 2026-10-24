@@ -9,7 +9,7 @@ runs across the cut.
 
 import re
 
-# About as much as the coach enters well within one loop of MAX_STEPS rounds.
+# About as much as the coach enters well within twenty rounds of tool calls.
 PART_WORDS = 1500
 REMINDER_LINES = 5
 

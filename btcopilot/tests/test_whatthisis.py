@@ -54,7 +54,7 @@ def test_onboarding_lets_the_sentence_ride_with_the_request():
         "what this is and what builds up over a few conversations may come with that request"
         in text
     )
-    assert "do nothing else" in text
+    assert "before any other person, event or topic" in text
 
 
 def test_the_example_reply_passes():

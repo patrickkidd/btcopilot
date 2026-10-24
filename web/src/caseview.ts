@@ -193,6 +193,8 @@ export interface CaseView {
   /** The aim in the person's words, or the event the coach rested it on. */
   work: { aim: Fact | null; said: string | null; guesses: Guess[] };
   effort: string;
+  /** Whether the report speaks to its subject: "you said", or said by name. */
+  addressed: boolean;
 }
 
 /** The most guesses the card on what to work on holds (R-0709). */
@@ -520,7 +522,7 @@ export function subjectName(tl: Timeline): string | null {
   return name && name !== "User" ? name : null;
 }
 
-export function caseView(tl: Timeline, sessions: Session[], owner: string | null): CaseView {
+export function caseView(tl: Timeline, sessions: Session[], owner: string | null, addressed = true): CaseView {
   const r = new Reader(tl);
   const s = r.subject;
   // a note or a recording is not the person talking with the coach
@@ -545,6 +547,7 @@ export function caseView(tl: Timeline, sessions: Session[], owner: string | null
   const { him, his } = pronouns(s);
   return {
     name: s.name,
+    addressed,
     him,
     his,
     owner,

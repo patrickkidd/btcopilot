@@ -11,6 +11,7 @@ import json
 import queue
 import threading
 import time
+import uuid
 
 import redis
 from flask import current_app
@@ -57,6 +58,14 @@ class TurnEventKind(enum.StrEnum):
     # nothing for it.
     Story = "story"
     Done = "done"
+    # A page following a diagram reads it again: the log lost its place.
+    Reload = "reload"
+    # The coach's turn stopped as a runaway, and why (R-0936); kept with the
+    # turn's events, never sent to the page.
+    Runaway = "runaway"
+    # The place a page following a diagram starts from, so a reconnect always
+    # has one to replay from.
+    Ready = "ready"
     Failed = "failed"
     # Every model declined the message on safety grounds. The page says so in
     # the coach's voice and offers no retry, since the same words would be
@@ -174,6 +183,20 @@ class RedisLog:
     def release(self, diagram_id: int, turn_id: str) -> None:
         self.redis.eval(RELEASE, 1, f"diagram:{diagram_id}:report", turn_id)
 
+    def stamp(self, log: str, fresh: bool) -> None:
+        key = f"turn:{log}:epoch"
+        if fresh:
+            self.redis.set(key, uuid.uuid4().hex[:8], ex=TTL)
+        else:
+            self.redis.expire(key, TTL)
+
+    def epoch(self, log: str) -> str | None:
+        found = self.redis.get(f"turn:{log}:epoch")
+        return found.decode() if found else None
+
+    def length(self, log: str) -> int:
+        return self.redis.llen(f"turn:{log}")
+
 
 class MemoryLog:
     """The same log in one process, which is what the tests read and write."""
@@ -185,6 +208,7 @@ class MemoryLog:
         self.reports: dict[int, tuple[str, float]] = {}
         self.reported: dict[str, int] = {}
         self.stops: set[str] = set()
+        self.epochs: dict[str, str] = {}
         self.readers: dict[str, list[queue.Queue]] = {}
         self.lock = threading.Lock()
 
@@ -285,6 +309,17 @@ class MemoryLog:
         if self.rewriting(diagram_id) == turn_id:
             self.reports.pop(diagram_id)
 
+    def stamp(self, log: str, fresh: bool) -> None:
+        if fresh or log not in self.epochs:
+            self.epochs[log] = uuid.uuid4().hex[:8]
+
+    def epoch(self, log: str) -> str | None:
+        return self.epochs.get(log)
+
+    def length(self, log: str) -> int:
+        with self.lock:
+            return len(self.events.get(log, []))
+
 
 _store = None
 
@@ -374,3 +409,25 @@ def release(diagram_id: int, turn_id: str) -> None:
     """Lets the report go, only if this rewrite holds it: one whose hold ran
     out never lets go of the next one's."""
     store().release(diagram_id, turn_id)
+
+
+def diagram_log(diagram_id: int) -> str:
+    """Every write to one diagram, from any writer, kept like a turn's events
+    so a page following the diagram picks up where it left off [Oracle: R-0933]."""
+    return f"diagram-{diagram_id}"
+
+
+def publish(diagram_id: int, event: dict) -> None:
+    log = diagram_log(diagram_id)
+    seq = store().append(log, event)
+    # a log that starts again after it lapsed is a new one, so an id from the
+    # old one is never read as a place in it
+    store().stamp(log, fresh=seq == 1)
+
+
+def epoch(log: str) -> str | None:
+    return store().epoch(log)
+
+
+def length(log: str) -> int:
+    return store().length(log)

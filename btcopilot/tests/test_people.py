@@ -3,6 +3,7 @@ through, authored by the user."""
 
 import pytest
 
+from btcopilot import fdafter
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change
 from btcopilot.schema import Person, PersonKind, asdict
@@ -56,6 +57,7 @@ def test_changing_someone_keeps_their_id(web, family):
         "gender": "female",
         "notes": None,
         "parents": None,
+        "primary": None,
     }
 
 
@@ -94,3 +96,33 @@ def test_a_record_behind_its_own_counter_never_renames_someone(web, family):
     ).get_json()
     assert added["id"] == 3
     assert [p["name"] for p in people(family)] == ["Wren", "Sol", "Bo"]
+
+
+def test_marking_someone_primary_moves_the_mark_in_one_change(web, family):
+    # R-0888, R-0084
+    token = csrf_token(web)
+    web.post("/app/people", json={"name": "Bo"}, headers={"X-CSRFToken": token})
+    web.patch("/app/people/1", json={"primary": True}, headers={"X-CSRFToken": token})
+    before = Change.query.count()
+    moved = web.patch("/app/people/2", json={"primary": True}, headers={"X-CSRFToken": token})
+    assert moved.get_json()["primary"] is True
+    assert {p["id"]: bool(p.get("primary")) for p in people(family)} == {1: False, 2: True}
+    assert Change.query.count() == before + 1
+
+
+def test_the_mark_is_moved_never_only_taken_off(web, family):
+    # R-0888
+    refused = web.patch(
+        "/app/people/1", json={"primary": False}, headers={"X-CSRFToken": csrf_token(web)}
+    )
+    assert refused.status_code == 400
+
+
+def test_marking_someone_primary_regroups_the_clusters_on_the_worker(web, family, monkeypatch):
+    # R-0935
+    asked = []
+    monkeypatch.setattr(fdafter, "regroup", lambda *args: asked.append(args))
+    web.patch("/app/people/1", json={"primary": True}, headers={"X-CSRFToken": csrf_token(web)})
+    assert [a[0] for a in asked] == [family.id]
+    web.patch("/app/people/1", json={"name": "Wren"}, headers={"X-CSRFToken": csrf_token(web)})
+    assert len(asked) == 1

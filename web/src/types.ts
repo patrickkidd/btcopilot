@@ -413,6 +413,8 @@ export interface ToolCall {
 export enum TurnEventKind {
   ToolCall = "tool_call",
   RecordPatch = "record_patch",
+  /** The diagram's stream could not replay what was missed: read it again. */
+  Reload = "reload",
   /** The coach starting part k of n of notes too long for one part (R-0897). */
   Part = "part",
   View = "view",
@@ -604,6 +606,10 @@ export interface Diagram {
   /** Who the user is in the diagram, or null for someone who is not in the
    * family, such as a human coach (FD-387). */
   person_id: number | null;
+  /** Whether someone on the diagram is the person it is about, so what that
+   * person said is "you said" rather than said by name; only false says it by
+   * name. */
+  addressed?: boolean;
 }
 
 /** Whose diagram it is, as the diagram list shows it beside the name: "you"
@@ -612,6 +618,21 @@ export interface Diagram {
 export function diagramOwner(diagram: Diagram): string {
   if (diagram.owned) return "you";
   return diagram.owner_name || diagram.owner_username.split("@")[0];
+}
+
+/** A diagram just made from a desktop file, with how much of the file came
+ * in; what the app's checks refuse is left out. */
+export interface Imported extends Diagram {
+  /** `primary`: the people the file marks primary, in its order. */
+  /** `coding_cost`: what the coach turn a yes to adding codes starts is
+   * likely to cost, low and high, in dollars. */
+  imported: {
+    people: number;
+    events: number;
+    left_out: number;
+    primary: number[];
+    coding_cost: { low: number; high: number };
+  };
 }
 
 /** Someone with an account, as an admin's search finds them. */

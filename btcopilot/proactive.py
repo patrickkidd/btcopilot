@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 from pywebpush import WebPushException
 
-from btcopilot import correlation, prompts, push
+from btcopilot import correlation, profile, prompts, push
 from btcopilot.discussions import chats, sitting, sync_chat_speakers
 from btcopilot.extensions import db
 from btcopilot.metered import Metered
@@ -31,7 +31,7 @@ from btcopilot.models import (
 )
 from btcopilot.models.preferences import PrefKey, Proactive
 from btcopilot.recordtext import event_line, person_line
-from btcopilot.schema import DiagramData
+from btcopilot.schema import DEFAULT_SUBJECT_NAME, DiagramData
 
 TASK = "proactive_run"
 # Unanswered this long, a message stops holding back the next and counts as ignored.
@@ -52,6 +52,9 @@ CAUSES = (
     "made you",
 )
 CAUSE = re.compile(r"\b(" + "|".join(CAUSES) + r")\b", re.IGNORECASE)
+# Whom a message to a coach on the case is written for: the record is kept
+# with them about another person's family (FD-387).
+CONSULTING = "a coach consulting on {name}'s family"
 REPLIED_WITHIN = datetime.timedelta(hours=48)
 RETURNED_WITHIN = datetime.timedelta(days=7)
 # How long after sending the loop's counts are still looked for.
@@ -299,7 +302,8 @@ def _compose(user: User, found) -> tuple[ProactiveMessage, str, bool]:
         metered = Metered(
             user.id, diagram.id, f"proactive:{found.key}", Purpose.Proactive
         )
-        return message, words(diagram.get_diagram_data(), found, metered), False
+        person = profile.person_of(user, diagram)
+        return message, words(diagram.get_diagram_data(), found, metered, person), False
     except Unsendable as refused:
         db.session.add(message)
         db.session.flush()
@@ -307,11 +311,15 @@ def _compose(user: User, found) -> tuple[ProactiveMessage, str, bool]:
         return message, str(refused), True
 
 
-def words(data: DiagramData, firing: correlation.Firing, metered: Metered) -> str:
-    """One short model call: the two events side by side, then a question."""
+def words(
+    data: DiagramData, firing: correlation.Firing, metered: Metered, person: int | None
+) -> str:
+    """One short model call: the two events side by side, then a question,
+    in the voice the recipient's own row on the case sets: to them as "you"
+    when it names them, else to a coach consulting on the family, who hears
+    everyone named (FD-387)."""
     events = {e["id"]: e for e in data.events}
     people = {p["id"]: p for p in data.people}
-    speaker = (data.primary_person() or {}).get("id")
     *earlier, newest = firing.pairs
     involved = {firing.person} | {
         who
@@ -321,14 +329,14 @@ def words(data: DiagramData, firing: correlation.Firing, metered: Metered) -> st
     }
     lines = [
         "PEOPLE",
-        *(person_line(people[i], i == speaker) for i in sorted(involved)),
+        *(person_line(people[i], i == person) for i in sorted(involved)),
         "EARLIER",
         *(event_line(events[i]) for pair in earlier for i in pair),
         "NEWEST",
         *(event_line(events[i]) for i in newest),
     ]
     text = metered.text(
-        prompts.proactive(events="\n".join(lines), speaker=data.subject_display_name())
+        prompts.proactive(events="\n".join(lines), speaker=_speaker(data, person))
     ).strip()
     if (
         not text.endswith("?")
@@ -337,6 +345,13 @@ def words(data: DiagramData, firing: correlation.Firing, metered: Metered) -> st
     ):
         raise Unsendable(text)
     return text
+
+
+def _speaker(data: DiagramData, person: int | None) -> str:
+    """Whom the record is kept with, as the message's prompt names them."""
+    if person is None:
+        return CONSULTING.format(name=profile.subject_name(data))
+    return next(p for p in data.people if p["id"] == person).get("name") or DEFAULT_SUBJECT_NAME
 
 
 def _people_in(event: dict) -> set[int]:

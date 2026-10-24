@@ -124,7 +124,15 @@ _log = logging.getLogger(__name__)
 # free to use, and only a period covering more than half of the diagram's dated years
 # is refused for its length, so every diagram is read again on its next event
 # change [Oracle: R-0850, R-0856, R-0376, R-0846].
+# 21 (prompt only): the line saying how the names, reasons and changes address
+# the person, and the example of how a shift is given as they told it, follow
+# who is on the case, "you" when the person it belongs to is, their first name
+# otherwise; the detection rules are unchanged, so the
+# version stays 20 and only the cases written by name regroup [Oracle: R-0935].
 DETECTION_VERSION = 20
+# How the periods' words address the person, by who is on the case.
+TO_YOU = 'speaking to the person, calling them "you"'
+BY_NAME = 'speaking about the person, calling them by their first name, {name}, never "you"'
 
 SHIFT_FIELDS = ("symptom", "anxiety", "relationship", "functioning")
 ARRIVALS = frozenset({EventKind.Birth, EventKind.Adopted})
@@ -818,11 +826,16 @@ def most_going_on(diagram_id: int, data: DiagramData) -> list[Answer]:
     ]
 
 
-def compute_cache_key(events: list[Event], told_ids: tuple[int, ...] = ()) -> str:
+def compute_cache_key(
+    events: list[Event], told_ids: tuple[int, ...] = (), name: str | None = None
+) -> str:
     """What detection reads of each event, so editing any of it regroups: an
     event's kind sets what may open a period, its description whether a shift
     is how things always were, and its person whether a lift counts beside
-    another's rise [Oracle: R-0853, R-0850]."""
+    another's rise [Oracle: R-0853, R-0850]. `name` is the person's first name
+    when the periods are written about them, so a change of who is on the
+    case regroups; a case written to "you" keeps the key it had
+    [Oracle: R-0935]."""
     event_data = [
         {
             "id": e.id,
@@ -838,9 +851,10 @@ def compute_cache_key(events: list[Event], told_ids: tuple[int, ...] = ()) -> st
         }
         for e in events
     ]
-    digest = hash_sarf_dicts(
-        [{"detectionVersion": DETECTION_VERSION, "told": sorted(told_ids)}] + event_data
-    )
+    head = {"detectionVersion": DETECTION_VERSION, "told": sorted(told_ids)}
+    if name is not None:
+        head["byName"] = name
+    digest = hash_sarf_dicts([head] + event_data)
     return f"v{DETECTION_VERSION}:{digest}"
 
 
@@ -910,6 +924,7 @@ def _prompt(
     born: datetime.date | None,
     told: set[str] = frozenset(),
     people: list[str] = (),
+    name: str | None = None,
 ) -> str:
     when = {e.id: parse_date(e.dateTime) for e in free}
     sure = {e.id for e in free if not unsure(e)}
@@ -943,6 +958,8 @@ def _prompt(
     )
     # The open-source prompt still fills the hints under `candidates`.
     return prompts.CLUSTER_PROMPT.format(
+        addressing=TO_YOU if name is None else BY_NAME.format(name=name),
+        said="you said" if name is None else f"{name} said",
         existing=json.dumps(existing, indent=2),
         candidates=hints,
         hints=hints,
@@ -1683,6 +1700,7 @@ def detect_clusters(
     refused=None,
     said: list[Answer] = (),
     fresh: bool = False,
+    name: str | None = None,
 ) -> ClusterResult:
     """`ask` takes the prompt, the answer's schema and its token limit and
     returns the model's ClusterListResponse; `refused`, when given, hears each
@@ -1696,9 +1714,11 @@ def detect_clusters(
     answer that cannot be read, or keeps nothing out of what it returned,
     raises [Oracle: R-0846, R-0844]. `fresh` hands the model none of the
     stored model clusters, only the person's own periods, so a new prompt's
-    answer is not anchored on the old one's [Oracle: R-0772, R-0851]."""
+    answer is not anchored on the old one's [Oracle: R-0772, R-0851]. `name`
+    is the person's first name when nobody on the case is them, and the
+    periods are written about them by it, never to "you" [Oracle: R-0935]."""
     cache_key = compute_cache_key(
-        _events(data), tuple(sorted(one.messageId for one in said))
+        _events(data), tuple(sorted(one.messageId for one in said)), name
     )
     cands = candidates(data)
     if not cands and not said:
@@ -1712,7 +1732,9 @@ def detect_clusters(
     if fresh:
         existing = {i: c for i, c in existing.items() if not _regroupable(c)}
     told = trouble_words(data)
-    prompt = _prompt(cands, free, existing, said, birth(data), told, _cast(data, free))
+    prompt = _prompt(
+        cands, free, existing, said, birth(data), told, _cast(data, free), name
+    )
     schema = answer_schema(existing, said, cands)
     limit = (
         THINKING_ROOM
@@ -2075,11 +2097,12 @@ def _events(data: DiagramData) -> list[Event]:
     ]
 
 
-def behind(diagram_id: int, data: DiagramData) -> bool:
-    """Whether the record's events, or the person's answers to when the most
-    was going on, changed since its last grouping."""
+def behind(diagram_id: int, data: DiagramData, name: str | None) -> bool:
+    """Whether the record's events, the person's answers to when the most was
+    going on, or who on the case the periods are written to (`name`, as
+    profile.named gives it) changed since its last grouping."""
     return (
-        compute_cache_key(_events(data), told_ids(diagram_id, data))
+        compute_cache_key(_events(data), told_ids(diagram_id, data), name)
         != data.clusterCacheKey
     )
 
@@ -2108,7 +2131,8 @@ def sync(
     data = diagram.get_diagram_data()
     events = _events(data)
     said = most_going_on(diagram_id, data)
-    cache_key = compute_cache_key(events, tuple(one.messageId for one in said))
+    name = profile.named(diagram, data)
+    cache_key = compute_cache_key(events, tuple(one.messageId for one in said), name)
     if not force and cache_key == data.clusterCacheKey:
         return None
     fresh = fresh or older(data.clusterCacheKey)
@@ -2166,6 +2190,7 @@ def sync(
             refused,
             said,
             fresh,
+            name,
         )
     except ClusterError as failed:
         # No usable answer: the clusters that pass stay, a stored model cluster

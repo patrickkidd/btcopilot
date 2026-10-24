@@ -7,7 +7,6 @@ from btcopilot import questions
 from btcopilot.admin.diagrams import find
 from btcopilot.admin.guard import writes
 from btcopilot.admin.output import rows_option
-from btcopilot.coachturn import MAX_STEPS
 from btcopilot.models import Diagram, Discussion
 
 
@@ -38,7 +37,7 @@ def backfill_command(kind: questions.Kind, noun: str) -> click.Command:
                     "sessions_to_do": len(todo),
                     "sessions_done": len(done),
                     "estimated_model_calls": len(todo) * questions.CALLS_PER_SESSION,
-                    "most_model_calls": len(todo) * MAX_STEPS,
+                    "most_model_calls": len(todo) * questions.BACKFILL_STEPS,
                 }
             )
         return rows

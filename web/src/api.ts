@@ -15,6 +15,7 @@ import type {
   Scribed,
   Tasks,
   Diagram,
+  Imported,
   InteractionKind,
   ItemKind,
   PlayReply,
@@ -57,6 +58,12 @@ const PATIENCE_MS = 60_000;
 /** How long the page waits for a play-by-play: the server's own longest answer
  * (btcopilot/playturn.py WAIT), so a slow model fails with the server's error. */
 export const PLAY_WAIT_S = 390;
+/** How long the page waits for the scribe: the server's own longest answer,
+ * every one of its model answers (btcopilot/review/scribe.py MAX_STEPS) at its
+ * Gemini model's own limit (btcopilot/llmutil.py GEMINI_TIMEOUT_MS) and a
+ * little over, so a slow scribe that still writes is never shown as not saved;
+ * btcopilot/tests/review/test_scribe.py fails when the two part ways. */
+export const SCRIBE_WAIT_S = 990;
 
 /** The session's newest CSRF token: the server sends it on every answer, so
  * a token replaced on the server reaches the page with the next answer, not
@@ -108,6 +115,16 @@ export function whatFailed(error: unknown, words = instruction): string {
   return words(failed.said) || "That did not go in";
 }
 
+/** The server's own words for a refusal when they are one plain sentence,
+ * these words otherwise: an error page is never shown as it came. */
+export function refusedWith(error: unknown, words: string): string {
+  const failed = error instanceof Failed ? error : null;
+  if (!failed) throw error;
+  console.warn(failed.message);
+  const said = failed.said.trim();
+  return failed.status >= 400 && failed.status < 500 && /^[^<>\n]{1,300}$/.test(said) ? said : words;
+}
+
 /** A request for a diagram that is no longer the one open: the page opened
  * another before the answer came, so nothing is drawn from it. */
 export class Dropped extends Error {
@@ -128,8 +145,8 @@ export async function call<T>(
 }
 
 /** The same request against the review's own endpoints. */
-async function ask<T>(method: string, path: string, body?: unknown): Promise<T> {
-  return send(method, REVIEW + path, body);
+async function ask<T>(method: string, path: string, body?: unknown, patience?: number): Promise<T> {
+  return send(method, REVIEW + path, body, false, patience);
 }
 
 async function send<T>(
@@ -265,6 +282,12 @@ export const stop = (turnId: string) =>
  * with Last-Event-ID, so nothing already read is read twice. */
 export const turnEvents = (turnId: string) =>
   new EventSource(`${ROOT}/turns/${turnId}/events`);
+
+/** Every write to one diagram, whoever made it, for as long as the diagram
+ * is open; the browser's own reconnect says where it got to with
+ * Last-Event-ID. */
+export const diagramEvents = (diagramId: number) =>
+  new EventSource(`${ROOT}/diagrams/${diagramId}/events`);
 
 /** The release the server is running now. */
 export const version = () =>
@@ -427,6 +450,22 @@ export const newDiagram = (name: string, ownFamily: boolean) =>
 export const renameDiagram = (id: number, name: string) =>
   call<Diagram>("PATCH", `/diagrams/${id}`, { name });
 
+/** A new diagram from a desktop Family Diagram file, made in the request and
+ * put the app on (R-0899). */
+export function importDiagram(file: File, name: string): Promise<Imported> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  form.append("name", name);
+  return call("POST", "/diagrams", form, READ_MS);
+}
+
+/** Who the signed-in user is in a diagram, or nobody (FD-387). */
+export const setPerson = (diagramId: number, personId: number | null) =>
+  call<Diagram>("PATCH", `/diagrams/${diagramId}/access`, { person_id: personId });
+
+/** A diagram gone for good; the free one is never deleted. */
+export const deleteDiagram = (id: number) => call<void>("DELETE", `/diagrams/${id}`);
+
 /** The audio goes to this server, which sends it on to be transcribed and
  * answers with the id to ask after (R-0348). */
 export async function startTranscription(file: File): Promise<string> {
@@ -497,11 +536,12 @@ export const scribe = (
   text: string,
   personId: number | null = null,
 ) =>
-  ask<Scribed>("POST", `/codings/${codingId}/scribe`, {
-    statement_id: statementId,
-    text,
-    person_id: personId,
-  });
+  ask<Scribed>(
+    "POST",
+    `/codings/${codingId}/scribe`,
+    { statement_id: statementId, text, person_id: personId },
+    SCRIBE_WAIT_S * 1000,
+  );
 
 /** Done: the coding is submitted for the meeting and cannot change (R-0271). */
 export const finishCoding = (codingId: number) =>

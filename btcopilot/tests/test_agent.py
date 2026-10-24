@@ -16,6 +16,8 @@ from btcopilot.metered import Metered
 from btcopilot.coachturn import (
     FINISH,
     MAX_STEPS,
+    STALLED_STEPS,
+    WRITELESS_STEPS,
     BareList,
     CoachTurn,
     EmptyReply,
@@ -224,26 +226,52 @@ def test_undo_puts_back_what_the_previous_turn_changed(discussion, family):
     assert Change.query.filter_by(turn_id="undo:earlier").count() == 1
 
 
-def test_undoing_the_same_turn_twice_is_refused_in_plain_words(discussion, family):
-    # R-0084
+def rename(discussion, family, name, turn_id):
     record.apply(
         family.id,
-        [{"item_kind": ItemKind.Person, "item_id": 1, "field": "name", "after": "Wrenn"}],
+        [{"item_kind": ItemKind.Person, "item_id": 1, "field": "name", "after": name}],
         author=Author.Coach,
-        turn_id="earlier",
+        turn_id=turn_id,
         user_id=discussion.user_id,
     )
-    run(discussion, "Put that back.", Model(called(ToolName.Undo), said("Done.")))
-    assert family.get_diagram_data().people[0]["name"] == "Wren"
 
-    model = Model(called(ToolName.Undo), said("That is already back."))
+
+def test_a_second_undo_reaches_the_turn_before_the_one_already_put_back(
+    discussion, family
+):
+    # R-0084, R-0909
+    rename(discussion, family, "Wrenn", "import")
+    rename(discussion, family, "Wrenna", "answer")
+    run(discussion, "Put that back.", Model(called(ToolName.Undo), said("Done.")))
+    assert family.get_diagram_data().people[0]["name"] == "Wrenn"
+
+    run(discussion, "And the import.", Model(called(ToolName.Undo), said("Done.")))
+    assert family.get_diagram_data().people[0]["name"] == "Wren"
+    assert Change.query.filter_by(turn_id="undo:import").count() == 1
+
+    model = Model(called(ToolName.Undo), said("Nothing is left to put back."))
     reply = run(discussion, "Put that back again.", model)
     assert EventKind.RecordPatch.value not in kinds(reply)
-    assert family.get_diagram_data().people[0]["name"] == "Wren"
+    refused = model.histories[-1][-1]["content"][0]
+    assert refused["is_error"] is True
+    assert "nothing before this to put back" in refused["content"]
+
+
+def test_an_undo_a_later_change_blocks_says_to_take_that_back_first(
+    discussion, family
+):
+    # R-0084, R-0909
+    rename(discussion, family, "Wrenn", "earlier")
+    rename(discussion, family, "Wrenna", f"case-report-backfill:{family.id}")
+
+    model = Model(called(ToolName.Undo), said("That changed since."))
+    reply = run(discussion, "Put that back.", model)
+    assert EventKind.RecordPatch.value not in kinds(reply)
+    assert family.get_diagram_data().people[0]["name"] == "Wrenna"
 
     refused = model.histories[-1][-1]["content"][0]
     assert refused["is_error"] is True
-    assert "cannot be put back" in refused["content"]
+    assert "A later change touched this; take that back first" in refused["content"]
 
 
 def test_show_with_an_unknown_id_fails_where_the_model_can_see_it(discussion, family):
@@ -520,65 +548,59 @@ def test_offered_chips_never_reach_the_transcript():
     assert kept == "[[person:1|Wren]] is where it starts. What came next?"
 
 
-def test_a_turn_that_never_stops_calling_tools_still_says_something(
-    discussion, family
-):
-    # R-0411
-    """The page shows what the coach said, so a turn may not end on a tool
-    call. When the steps run out the coach is asked for its reply with no tools
-    at all, and that is what the person reads."""
-    working = [
-        called(
-            ToolName.EditPerson,
-            text=f"Working out step {n}.",
-            name=f"Person {n}",
-        )
-        for n in range(MAX_STEPS)
-    ]
-    before = len(discussion.statements)
-    model = Model(*working, said("I added them all. Who else was around then?"))
-    reply = run(discussion, "There were six of them.", model)
+def test_a_long_turn_that_keeps_writing_runs_to_its_own_end(discussion, family, caplog):
+    # R-0936, R-0411
+    """Thirty steps that each write something are no runaway: the turn ends
+    when the coach stops calling tools, with every edit kept."""
+    working = [called(ToolName.EditPerson, name=f"Person {n}") for n in range(30)]
+    model = Model(*working, said("All thirty are down. Who came next?"))
+    reply = run(discussion, "There were thirty of them.", model)
+    assert reply["statement"] == "All thirty are down. Who came next?"
+    assert FINISH not in str(model.histories[-1][-1]["content"])
+    assert not [r for r in caplog.records if "runaway" in r.message]
+    names = [p.get("name") for p in family.get_diagram_data().people]
+    assert [f"Person {n}" for n in range(30)] == names[-30:]
 
+
+def test_three_steps_that_write_nothing_and_repeat_a_refused_call_stop_the_turn(
+    discussion, family, caplog
+):
+    # R-0936, R-0411, R-0517
+    """A coach going round in circles is stopped after three such steps and
+    asked for its words with no tools; why it was stopped is logged."""
+    stuck = [called(ToolName.EditPerson, id=999, name="Nobody") for _ in range(STALLED_STEPS)]
+    model = Model(*stuck, said("I could not add them. Who were they?"))
+    reply = run(discussion, "Add them.", model)
     assert model.offered[-1] == []
     assert FINISH in model.histories[-1][-1]["content"]
-
-    spoken = [s.text for s in discussion.statements]
-    assert len(spoken) - before == 2
-    assert spoken[-2:] == [
-        "There were six of them.",
-        "I added them all. Who else was around then?",
-    ]
-    assert "Working out" not in " ".join(spoken)
-    assert discussion.statements[-1].id == reply["statement_id"]
+    assert reply["statement"] == "I could not add them. Who were they?"
+    stopped = [r for r in caplog.records if "stopped as a runaway" in r.message]
+    assert [r.levelname for r in stopped] == ["WARNING"]
+    assert "no progress: 3 steps used" in stopped[0].message
 
 
-def test_the_edits_of_a_capped_turn_are_all_kept(discussion, family, caplog):
-    # R-0411
-    """Running out of steps ends the talking, not the record: everything the
-    coach put in before the cap stays in."""
-    working = [
-        called(ToolName.EditPerson, name=f"Person {n}") for n in range(MAX_STEPS)
-    ]
-    reply = run(
-        discussion,
-        "There were six of them.",
-        Model(*working, said("All six are down.")),
-    )
-    capped = [r for r in caplog.records if "hit the step cap" in r.message]
-    assert [r.levelname for r in capped] == ["WARNING"]
-    assert reply["turn_id"] in capped[0].message
-    assert f"{MAX_STEPS} steps used" in capped[0].message
-    assert ToolName.EditPerson.value in capped[0].message
-    assert kinds(reply).count(EventKind.ToolCall.value) == MAX_STEPS
+def test_a_turn_still_writing_at_two_hundred_steps_meets_the_backstop(
+    discussion, family, caplog
+):
+    # R-0936, R-0411
+    """Steps that each write are not circles, so only the backstop stops them."""
+    working = [called(ToolName.EditPerson, name=f"Person {n}") for n in range(MAX_STEPS)]
+    model = Model(*working, said("Here is what the record holds."))
+    run(discussion, "There were many of them.", model)
+    stopped = [r for r in caplog.records if "stopped as a runaway" in r.message]
+    assert f"backstop: {MAX_STEPS} steps used" in stopped[0].message
+    assert MAX_STEPS == 200
 
-    names = [p.get("name") for p in family.get_diagram_data().people]
-    assert [f"Person {n}" for n in range(MAX_STEPS)] == names[-MAX_STEPS:]
 
-    # The forced last call must not roll anything back or run anything twice:
-    # the rows are still there and still point at the statement.
-    written = Change.query.filter_by(turn_id=reply["turn_id"]).all()
-    assert len(written) == MAX_STEPS
-    assert {c.statement_id for c in written} == {reply["statement_id"]}
+def test_fifteen_steps_in_a_row_that_write_nothing_stop_the_turn(discussion, family, caplog):
+    # R-0936, R-0411
+    """Reads that never repeat still write nothing, so they stop after fifteen."""
+    reading = [called(ToolName.ReadEvents, person_id=n) for n in range(WRITELESS_STEPS)]
+    model = Model(*reading, said("Here is what the record holds."))
+    run(discussion, "What is in there?", model)
+    stopped = [r for r in caplog.records if "stopped as a runaway" in r.message]
+    assert f"no writes: {WRITELESS_STEPS} steps used" in stopped[0].message
+    assert WRITELESS_STEPS == 15
 
 
 def test_a_turn_with_no_words_at_all_fails_rather_than_showing_a_bare_bubble(

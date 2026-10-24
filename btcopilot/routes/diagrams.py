@@ -3,29 +3,57 @@ granted. One resource per table, so the account page, the settings stack and the
 family switcher all read the same list rather than each growing an endpoint of
 its own."""
 
-from flask import abort, jsonify, request
+import datetime
+import json
+import logging
+import uuid
+
+import redis
+from flask import Response, abort, jsonify, request, stream_with_context
 
 import btcopilot
-from btcopilot import auth, diagramjson, profile
-from btcopilot.routes import Access, access, bp, last_activity, utc_iso
+from btcopilot import (
+    attachments,
+    auth,
+    diagramjson,
+    fdafter,
+    fdimport,
+    profile,
+    record,
+    turnlog,
+)
+from btcopilot.routes import Access, access, bp, last_activity, opens, utc_iso
+from btcopilot.routes.turns import HEARTBEAT_TICKS
+from btcopilot.turnlog import TurnEventKind
 from btcopilot.extensions import db
 from btcopilot.models import Discussion
-from btcopilot.models import Diagram, User
+from btcopilot.models import Author, Diagram, User
 from btcopilot.models.diagram import owner_row
 from btcopilot.models.etc import AccessRight
 from btcopilot.profile import FIRST_PERSON_ID
 from btcopilot.routes.users import require_admin
 
+_log = logging.getLogger(__name__)
+
 GRANTED = (btcopilot.ACCESS_READ_ONLY, btcopilot.ACCESS_READ_WRITE)
+PERSONAL = "Your personal diagram cannot be deleted."
+NOT_IN = "That person is not in this diagram."
+# A form carrying a desktop file at its size limit, with room for its name.
+FORM_BYTES = attachments.MAX_BYTES + 1024 * 1024
 
 
 def readable(user) -> list[Diagram]:
-    """Owned first, then granted, each once."""
-    found = [d for d in user.diagrams if not d.scratch]
+    """Owned first, then granted, each once; never a scratch copy or one its
+    owner deleted."""
+    found = [d for d in user.diagrams if not d.scratch and d.deleted_at is None]
     seen = {d.id for d in found}
     granted = (
         Diagram.query.join(AccessRight, AccessRight.diagram_id == Diagram.id)
-        .filter(AccessRight.user_id == user.id, AccessRight.right.in_(GRANTED))
+        .filter(
+            AccessRight.user_id == user.id,
+            AccessRight.right.in_(GRANTED),
+            Diagram.deleted_at.is_(None),
+        )
         # a scratch copy carries its owner's row and is never listed to anyone
         .filter(Diagram.scratch.is_(False))
         .all()
@@ -64,6 +92,9 @@ def diagram_payload(diagram: Diagram, user) -> dict:
         "owner_name": diagram.user.first_name or None,
         "owner_username": diagram.user.username,
         "person_id": profile.person_of(user, diagram),
+        # whether the person the diagram is about is on it, so the page says
+        # "you" to them or names them (FD-387)
+        "addressed": profile.addressed(diagram, diagram.get_diagram_data()),
     }
 
 
@@ -112,6 +143,8 @@ def diagram_create():
     maker is the person the chat app makes first; no, and they are a human
     coach on it, the person it belongs to no one on it yet."""
     user = auth.current_user()
+    if request.mimetype == "multipart/form-data":
+        return _imported(user)
     body = request.get_json()
     name = _name(body)
     own = body.get("own_family")
@@ -139,6 +172,154 @@ def diagram_update(diagram_id: int):
         abort(404)
     found.name = _name(request.get_json())
     db.session.commit()
+    return jsonify(diagram_payload(found, user))
+
+
+def _imported(user):
+    """A new case from a Family Diagram desktop file, made here as the file
+    stands and opened; the worker then mails its record and groups its
+    clusters [Oracle: R-0899, R-0902]."""
+    if request.content_length and request.content_length > FORM_BYTES:
+        abort(413, description=attachments.TOO_BIG)
+    name = _name(request.form)
+    data = request.files["file"].read()
+    if len(data) > attachments.MAX_BYTES:
+        abort(413, description=attachments.TOO_BIG)
+    pickled, fd = fdafter.scene(data)
+    made, turn, out = fdafter.made(user, name, fd)
+    fdafter.enqueue(made, user.id, turn, pickled)
+    imported = {
+        "people": out.brought["people"],
+        "events": out.brought["events"],
+        "left_out": out.brought[fdimport.LEFT_OUT],
+        "primary": out.primaries,
+        "coding_cost": fdafter.coding_cost(user.id, made),
+    }
+    return jsonify(diagram_payload(made, user) | {"imported": imported}), 201
+
+
+@bp.route("/diagrams/<int:diagram_id>", methods=["DELETE"])
+def diagram_delete(diagram_id: int):
+    """The owner deletes a diagram: it is hidden and nothing is removed, and
+    anyone the app was on it goes back to their personal diagram. The personal
+    diagram stays [Oracle: R-0904, R-0908]."""
+    user = auth.current_user()
+    found = db.session.get(Diagram, diagram_id)
+    if found is None or found.user_id != user.id or found.deleted_at is not None:
+        abort(404)
+    if found.id == user.free_diagram_id:
+        raise ValueError(PERSONAL)
+    found.deleted_at = datetime.datetime.utcnow()
+    User.query.filter_by(current_diagram_id=found.id).update(
+        {"current_diagram_id": None}
+    )
+    db.session.commit()
+    return "", 204
+
+
+@bp.route("/diagrams/<int:diagram_id>/events")
+def diagram_events(diagram_id: int):
+    """Every write to the diagram as it lands, from any writer in any process,
+    so the page never has to refresh [Oracle: R-0933]. The page says where it
+    got to with Last-Event-ID and is given everything since, or told to read
+    the diagram again when the log no longer holds that place."""
+    found = db.session.get(Diagram, diagram_id)
+    if found is None or not opens(found, auth.current_user()):
+        abort(404)
+    log = turnlog.diagram_log(diagram_id)
+    last = request.headers.get("Last-Event-ID") or ""
+
+    def stream():
+        # A broken Redis link ends the response; the page reconnects with its
+        # Last-Event-ID and is given what it missed.
+        try:
+            yield from told()
+        except (redis.ConnectionError, redis.TimeoutError):
+            _log.warning("diagram %s stream lost Redis", diagram_id, exc_info=True)
+
+    def told():
+        # Listening starts before the replay so a write landing between the
+        # two is not lost; anything already replayed is skipped by sequence.
+        following = turnlog.subscribe(log)
+        if not turnlog.length(log):
+            # an empty or lapsed log is started, so the place given below is
+            # one a reconnect can replay from, never a reload again
+            turnlog.publish(diagram_id, {"type": TurnEventKind.Ready.value})
+        epoch, count = turnlog.epoch(log), turnlog.length(log)
+        sent = count
+        was, _, seq = last.partition("-")
+        if last and was == epoch and seq.isdigit() and int(seq) <= count:
+            sent = int(seq)
+            for at, event in turnlog.read_from(log, sent):
+                sent = at
+                yield _frame(f"{epoch}-{at}", event)
+        elif last:
+            yield _frame(f"{epoch}-{count}", {"type": TurnEventKind.Reload.value})
+        else:
+            yield _frame(f"{epoch}-{count}", {"type": TurnEventKind.Ready.value})
+        quiet = 0
+        for carried in following:
+            if carried is None:
+                quiet += 1
+                if quiet >= HEARTBEAT_TICKS:
+                    quiet = 0
+                    yield ": still here\n\n"
+                continue
+            quiet = 0
+            at, event = carried
+            if at <= sent:
+                # the log lapsed and began again; its first writes are new
+                if turnlog.epoch(log) == epoch:
+                    continue
+                epoch = turnlog.epoch(log)
+            sent = at
+            yield _frame(f"{epoch}-{at}", event)
+
+    response = Response(stream_with_context(stream()), mimetype="text/event-stream")
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["X-Accel-Buffering"] = "no"
+    return response
+
+
+def _frame(event_id: str, event: dict) -> str:
+    return f"id: {event_id}\ndata: {json.dumps(event)}\n\n"
+
+
+@bp.route("/diagrams/<int:diagram_id>/access", methods=["PATCH"])
+def diagram_access_update(diagram_id: int):
+    """Who the signed-in user is on a diagram, on their own access row: a
+    person in it, or no one. A person named is also marked the one the
+    diagram is about. Only someone who can edit the diagram may; the owner's
+    row is made when it has none."""
+    user = auth.current_user()
+    found = db.session.get(Diagram, diagram_id)
+    if found is None or found.deleted_at is not None:
+        abort(404)
+    if not found.check_write_access(user):
+        abort(404)
+    row = found.access_right(user)
+    person_id = request.get_json()["person_id"]
+    if person_id is not None and not any(
+        p.get("id") == person_id for p in found.get_diagram_data().people
+    ):
+        raise ValueError(NOT_IN)
+    turn_id = uuid.uuid4().hex
+    if person_id is not None:
+        # the person they are is the one the diagram is about
+        record.apply(
+            found.id,
+            record.made_primary(found.get_diagram_data(), person_id),
+            author=Author.User,
+            turn_id=turn_id,
+            user_id=user.id,
+        )
+    if row is None:
+        found.access_rights.append(owner_row(user.id, person_id))
+    else:
+        row.person_id = person_id
+    db.session.commit()
+    # who is on the case decides how its periods are written [Oracle: R-0935]
+    fdafter.regroup(found.id, turn_id, user.id)
     return jsonify(diagram_payload(found, user))
 
 

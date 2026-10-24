@@ -10,6 +10,11 @@ let host: HTMLElement | null = null;
  * for refusing something, stays this long for each of its letters. */
 const LETTER_MS = 60;
 
+/** Every toast showing goes at once, for a sheet that would sit under one. */
+export function clearToasts(): void {
+  host?.replaceChildren();
+}
+
 export function toast(text: string, read = false): void {
   if (!host) {
     host = el("div", "toasts");
