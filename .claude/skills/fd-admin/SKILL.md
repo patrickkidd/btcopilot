@@ -605,6 +605,17 @@ How far each coder has got on what is on the agenda.
 | `--cut` | Only this cut's codings. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin review codings given`
+
+Put the given facts on every draft coding's copy of the diagram that lacks them: the person the case belongs to and their birth, from the case's own diagram (R-0940). Each copy gets one change, which `diagrams undo` takes back. A copy whose person already has a birth, at any precision, is kept; a copy on submitted codings only, or hidden, is not touched.
+
+Changes something with `--apply`. Through `flask admin run`, the words also need `--yes`, even for the dry run.
+
+| Argument | What it is |
+|---|---|
+| `--apply` | Write the given facts; the default, --dry-run, lists them and writes nothing. |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin review codings reset <email> <cut_id>`
 
 Clear one coder's draft coding of one cut so they can start over: their coding copy of the diagram is hidden, their notes to the scribe and the coding row are deleted, and the reset is logged. Nothing is written when the coding was already submitted, or when that coding copy also serves another of the coder's cuts. Without --yes it prints what would change and writes nothing.
