@@ -51,8 +51,8 @@ def links(text: str, targets: dict[str, str]) -> str:
 
 
 def page_table(text: str) -> str:
-    """The index as coders read it: its title and the table of pages, without
-    the column on the state of the code (R-0939)."""
+    # [Oracle: R-0939]
+    """The index with its title and page table, minus the implementation-status column."""
     lines = text.splitlines()
     rows = [line.strip("|").split("|") for line in lines if line.startswith("|")]
     drop = [cell.strip() for cell in rows[0]].index(CODE_STATUS)
