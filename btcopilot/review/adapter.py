@@ -8,6 +8,7 @@ it reached into the app.
 
 import datetime
 import re
+import uuid
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -15,7 +16,7 @@ from sqlalchemy import func
 import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
-from btcopilot import observer, proactive, prompts, push, record, turnstore
+from btcopilot import observer, proactive, profile, prompts, push, record, turnstore
 from btcopilot.record import Invalid
 from btcopilot.coachmodel import COACH_EFFORT, CoachModel, model_for
 from btcopilot.coachturn import CoachTurn
@@ -34,6 +35,7 @@ from btcopilot.models import (
 )
 from btcopilot.recordtext import date_text, render, version_line
 from btcopilot.toolnames import toolcall
+from btcopilot.turnlog import TurnEventKind
 from btcopilot.prompts import ToolText
 from btcopilot.toolbox import CERTAINTY, GONE, ToolError, Toolbox, ToolName, choice
 from btcopilot.models import (
@@ -44,7 +46,17 @@ from btcopilot.models import (
     ShadowTurn,
     User,
 )
-from btcopilot.schema import PDP, Event, ItemKind, PairBond, Person, from_dict
+from btcopilot.schema import (
+    PDP,
+    DatePrecision,
+    Event,
+    EventKind,
+    ItemKind,
+    PairBond,
+    Person,
+    from_dict,
+    stated_date,
+)
 
 __all__ = [
     "Author",
@@ -71,6 +83,8 @@ __all__ = [
     "scribe_prompt",
     "scribe_toolbox",
     "keep_calls",
+    "reply_event",
+    "replies",
     "toolcall",
     "meanings",
     "Diagram",
@@ -87,6 +101,10 @@ __all__ = [
     "Invalid",
     "grant_write",
     "given",
+    "give",
+    "given_facts",
+    "subject",
+    "subject_on",
     "initials",
     "pdp_of",
     "plain",
@@ -166,6 +184,23 @@ def keep_calls(
     db.session.flush()
     observer.refusals(diagram_id, turn_id)
     db.session.commit()
+
+
+def reply_event(text: str) -> dict:
+    """What the scribe said back to the coder, kept as the coach's own words
+    are (R-0942)."""
+    return {"type": TurnEventKind.Text.value, "text": text}
+
+
+def replies(turn_ids: set[str]) -> dict[str, str]:
+    """What the scribe said back on each of these turns, where it said
+    anything."""
+    return {
+        turn_id: event["text"]
+        for turn_id, events in turnstore.kept(turn_ids).items()
+        for event in events
+        if event["type"] == TurnEventKind.Text.value
+    }
 
 
 def discussion_of(discussion_id: int) -> Discussion:
@@ -274,6 +309,84 @@ def coding_diagram(
     db.session.add(diagram)
     db.session.flush()
     return diagram
+
+
+#: What a coding copy holds of the case before anything is coded: the person
+#: the case belongs to and their birth, which every user gives first (R-0940).
+GIVEN_PERSON = ("name", "last_name", "gender", "primary")
+GIVEN_BIRTH = ("dateTime", "dateCertainty", "datePrecision")
+#: The turn the given facts are written under, so a catch-up can be taken back.
+GIVEN = "given"
+
+
+def subject(case: Diagram) -> tuple[dict | None, dict | None]:
+    """The person a case belongs to and their dated birth, as the case's own
+    diagram holds them."""
+    data = case.get_diagram_data()
+    person = profile.own(data)
+    return person, profile.birth(data, person["id"]) if person else None
+
+
+def subject_on(copy: Diagram, person: dict) -> dict | None:
+    """The case's person on a coding copy: the one flagged as the person the
+    copy belongs to, or else the one person holding their exact name."""
+    people = copy.get_diagram_data().people
+    flagged = next((p for p in people if p.get("primary")), None)
+    if flagged is not None:
+        return flagged
+    name = (person.get("name"), person.get("last_name"))
+    named = [p for p in people if (p.get("name"), p.get("last_name")) == name]
+    if len(named) > 1:
+        raise ValueError(f"{len(named)} people on diagram {copy.id} are named {person.get('name')}")
+    return named[0] if named else None
+
+
+def given_facts(case: Diagram, copy: Diagram) -> list[dict]:
+    """The deltas that put the case's person and their birth on a coding copy
+    lacking them; none when the copy already has the person and a birth of
+    them at any precision, or the case has no person (R-0940)."""
+    person, birth = subject(case)
+    if person is None:
+        return []
+    data = copy.get_diagram_data()
+    there = subject_on(copy, person)
+    deltas = []
+    if there is None:
+        there = {"id": record.next_id(data)}
+        deltas += _fields(ItemKind.Person, there["id"], person, GIVEN_PERSON)
+    born = any(
+        e.get("kind") == EventKind.Birth.value and e.get("child") == there["id"]
+        for e in data.events
+    )
+    if birth is not None and not born:
+        one = there["id"] + 1 if deltas else record.next_id(data)
+        made = dict(birth, kind=EventKind.Birth.value, child=there["id"])
+        if made.get("datePrecision") is None:
+            made["datePrecision"] = _precision(birth["dateTime"]).value
+        deltas += _fields(ItemKind.Event, one, made, ("kind", "child") + GIVEN_BIRTH)
+    return deltas
+
+
+def _precision(value) -> DatePrecision:
+    """How much of a date its own form says: a Pro date is a whole day."""
+    return stated_date(value if isinstance(value, str) else date_text(value))[1]
+
+
+def _fields(kind: ItemKind, item_id: int, item: dict, fields: tuple) -> list[dict]:
+    return [
+        {"item_kind": kind.value, "item_id": item_id, "field": field, "after": to_json(item[field])}
+        for field in fields
+        if item.get(field) is not None
+    ]
+
+
+def give(case: Diagram, copy: Diagram, user_id: int) -> Change | None:
+    """The case's given facts written on a coding copy as one change, which
+    `diagrams undo` takes back."""
+    deltas = given_facts(case, copy)
+    if not deltas:
+        return None
+    return commit(copy.id, deltas, user_id, f"{GIVEN}:{uuid.uuid4().hex}")
 
 
 def grant_write(diagram: Diagram, user):

@@ -3,6 +3,7 @@ work by coders alone; the public edition is made outside the app (R-0541)."""
 
 import logging
 import re
+from enum import StrEnum
 
 from flask import abort, current_app, render_template, url_for
 from markdown_it import MarkdownIt
@@ -16,6 +17,22 @@ _log = logging.getLogger(__name__)
 _markdown = MarkdownIt("commonmark").enable("table")
 GUIDE = "Auditor's Coding Guide"
 LINK = re.compile(r"(?<!!)\[((?:[^\[\]\n]|\[[^\]\n]*\])*)\]\(([^)\s]+)\)")
+CODE_STATUS = "Status of the code"
+PAGE = "Page"
+SENTENCE = re.compile(r"(?<=\.) (?=\S)")
+LIST_ITEM = re.compile(r"\s*(?:[-*] |\d+\. )?")
+INTRO = re.compile(r"\A.*?(?=^## Coder summary$)", re.M | re.S)
+INTRO_ITEM = re.compile(r"^- .*\n", re.M)
+CONFIDENTIAL_HEADING = re.compile(r"^(#+ .*?) \(confidential\)$", re.M)
+
+
+class Mark(StrEnum):
+    Public = "PUBLIC"
+    Confidential = "CONFIDENTIAL"
+
+
+MARK = re.compile(rf" · (?:{'|'.join(Mark)})\b")
+MAINTAINER_SENTENCE = re.compile(rf"\]\(README\.md|\b(?:{'|'.join(Mark)})\b")
 
 
 def links(text: str, targets: dict[str, str]) -> str:
@@ -34,14 +51,63 @@ def links(text: str, targets: dict[str, str]) -> str:
     return LINK.sub(link, text)
 
 
-def _render(text: str, names: list[str]):
+def page_table(text: str, titles: dict[str, str]) -> str:
+    # [Oracle: R-0939]
+    """The index with its title and page table, minus the implementation-status
+    column, each page named by its own title (file name to title) rather than
+    its file name."""
+    lines = text.splitlines()
+    rows = [line.strip("|").split("|") for line in lines if line.startswith("|")]
+    header = [cell.strip() for cell in rows[0]]
+    drop = header.index(CODE_STATUS)
+    page = header.index(PAGE)
+
+    def titled(cell: str) -> str:
+        m = LINK.search(cell)
+        if m is None or m.group(2) not in titles:
+            return cell
+        return f" [{titles[m.group(2)]}]({m.group(2)}) "
+
+    table = [
+        "|" + "|".join(titled(c) if i == page else c for i, c in enumerate(r) if i != drop) + "|"
+        for r in rows
+    ]
+    return "\n".join([lines[0], "", *table]) + "\n"
+
+
+def title(text: str, name: str) -> str:
+    """A page's first-line heading, or its file name when it has none."""
+    m = re.match(r"# (.+)", text)
+    return m.group(1) if m else name
+
+
+def _without_maintainer_sentences(line: str) -> str | None:
+    if not MAINTAINER_SENTENCE.search(line):
+        return line
+    prefix = LIST_ITEM.match(line).group(0)
+    body = SENTENCE.split(line[len(prefix) :])
+    kept = [s for s in body if not MAINTAINER_SENTENCE.search(s)]
+    return prefix + " ".join(kept) if kept else None
+
+
+def unmarked(text: str) -> str:
+    """A concept page without its maintainers' lines: the notes before the
+    coder summary, the PUBLIC or CONFIDENTIAL mark on entries and headings,
+    and any sentence still naming a mark or pointing to README.md; every
+    entry stays (R-0939)."""
+    text = INTRO.sub(lambda m: INTRO_ITEM.sub("", m.group(0)), text, count=1)
+    text = CONFIDENTIAL_HEADING.sub(r"\1", MARK.sub("", text))
+    lines = (_without_maintainer_sentences(line) for line in text.split("\n"))
+    return "\n".join(line for line in lines if line is not None)
+
+
+def _render(text: str, names: list[str], name: str):
     targets = {f"{n}.md": url_for("app.theory_page", name=n) for n in names}
     targets["INDEX.md"] = url_for("app.theory_index")
-    targets["README.md"] = url_for("app.theory_page", name="README")
     return render_template(
         "theory.html",
         guide=GUIDE,
-        title=re.match(r"# (.+)", text).group(1),
+        title=title(text, name),
         body=Markup(_markdown.render(links(text, targets))),
     )
 
@@ -65,7 +131,9 @@ def _unavailable(e):
 def theory_index():
     coder()
     pages = current_app.extensions["theory"]
-    return _render(pages.text("INDEX"), pages.names())
+    names = pages.names()
+    titles = {f"{n}.md": title(pages.text(n), n) for n in names}
+    return _render(page_table(pages.text("INDEX"), titles), names, "INDEX")
 
 
 @bp.route("/theory/<name>")
@@ -73,6 +141,6 @@ def theory_page(name):
     coder()
     pages = current_app.extensions["theory"]
     names = pages.names()
-    if name not in names and name != "README":
+    if name not in names:
         abort(404)
-    return _render(pages.text(name), names)
+    return _render(unmarked(pages.text(name)), names, name)

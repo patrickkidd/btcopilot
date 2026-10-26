@@ -1,6 +1,7 @@
 import datetime
 import re
 
+from btcopilot import diagramjson
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
@@ -96,6 +97,69 @@ def test_coding_reuses_the_coders_record_from_the_last_cut(
 
     second = coder.post("/review/codings", json={"cut_id": later.id}).get_json()
     assert second["diagram_id"] == first["diagram_id"]
+
+
+ANN = {"id": 1, "name": "Ann", "last_name": "Lee", "gender": "female", "primary": True}
+BORN = {"id": 3, "kind": "birth", "child": 1, "dateTime": "1980-05-11", "dateCertainty": "certain"}
+
+
+def given_case(case, events):
+    case.data = diagramjson.dumps(
+        {
+            "people": [ANN, {"id": 2, "name": "Bob", "gender": "male"}],
+            "events": events + [shift(4, 1, "could not sleep")],
+            "lastItemId": 4,
+        }
+    )
+    db.session.commit()
+
+
+def test_a_new_coding_copy_starts_with_the_subject_and_their_birth(coder, case, cut):
+    # R-0940
+    given_case(case, [BORN])
+    coding = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
+    data = adapter.record_of(adapter.diagram_of(coding["diagram_id"]))
+    assert data["people"] == [{"id": 1, "name": "Ann", "last_name": "Lee", "gender": "female", "primary": True}]
+    assert [
+        (e["kind"], e["child"], adapter.date_text(e["dateTime"]), e["dateCertainty"], e["datePrecision"])
+        for e in data["events"]
+    ] == [("birth", 1, "1980-05-11", "certain", "day")]
+    assert data.get("pair_bonds", []) == []
+
+
+def test_a_given_birth_keeps_the_precision_the_case_states(coder, case, cut):
+    # R-0940
+    given_case(case, [dict(BORN, dateTime="1980-05-01", datePrecision="month")])
+    coding = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
+    data = adapter.record_of(adapter.diagram_of(coding["diagram_id"]))
+    assert [e["datePrecision"] for e in data["events"]] == ["month"]
+
+
+def test_a_subject_with_no_birth_starts_the_copy_with_the_person_alone(coder, case, cut):
+    # R-0940
+    given_case(case, [])
+    coding = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
+    data = adapter.record_of(adapter.diagram_of(coding["diagram_id"]))
+    assert [p["name"] for p in data["people"]] == ["Ann"]
+    assert data.get("events", []) == []
+
+
+def test_a_copy_carried_forward_gets_no_given_facts(coder, test_user_2, case, session, turns, cut):
+    # R-0267, R-0940
+    given_case(case, [BORN])
+    earlier = coded(test_user_2, cut, {"people": [person(1, "Marcus")]}, done=True)
+    later = Cut(
+        diagram_id=session.diagram_id,
+        start_statement_id=turns[2].id,
+        end_statement_id=turns[3].id,
+        user_id=test_user_2.id,
+    )
+    db.session.add(later)
+    db.session.commit()
+    coding = coder.post("/review/codings", json={"cut_id": later.id}).get_json()
+    assert coding["diagram_id"] == earlier.diagram_id
+    data = adapter.record_of(adapter.diagram_of(coding["diagram_id"]))
+    assert ([p["name"] for p in data["people"]], data.get("events", [])) == (["Marcus"], [])
 
 
 def test_done_freezes_the_coders_record(coder, cut):

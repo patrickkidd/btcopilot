@@ -528,8 +528,8 @@ export const codingThread = (codingId: number) =>
   ask<CodingThread>("GET", `/codings/${codingId}/thread`);
 
 /** What the coder says one turn tells them happened. The scribe writes it into
- * their record, or offers the people it could be; `personId` is the one the
- * coder tapped. */
+ * their record, or offers the people it could be, and answers in words when
+ * the coder asked something; `personId` is the one the coder tapped. */
 export const scribe = (
   codingId: number,
   statementId: number,

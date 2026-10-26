@@ -78,7 +78,8 @@ def coding_patch(coding_id: int):
 
 def _diagram_for(user, cut: Cut):
     """The coder's own record of this case: the one they built coding it last
-    time, carried forward, or a fresh empty one (R-0267)."""
+    time, carried forward, or a fresh one holding only the given facts, the
+    person the case belongs to and their birth (R-0267, R-0940)."""
     case = adapter.diagram_of(cut.diagram_id)
     previous = _previous_coding(user, case.id, cut.id)
     if previous is not None:
@@ -86,6 +87,7 @@ def _diagram_for(user, cut: Cut):
     diagram = adapter.coding_diagram(user, f"coding of {case.name or case.id}")
     adapter.grant_write(diagram, user)
     db.session.flush()
+    adapter.give(case, diagram, user.id)
     return diagram
 
 
@@ -227,11 +229,12 @@ def _said_by_turn(
     correction to an event still reads as the record has it (R-0270), people
     and pair-bonds first as when the words were sent (R-0883), and the
     events those lines are, whose codes' concept pages hang under them
-    (R-0541)."""
+    (R-0541), and what the scribe said back (R-0942)."""
     by_scribe_turn = adapter.touched_by_turn(diagram_id)
     deltas = adapter.deltas_by_turn(diagram_id)
     by_turn: dict[int, list[dict]] = {}
-    notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc())
+    notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc()).all()
+    replies = adapter.replies({note.turn_id for note in notes if note.turn_id})
     for note in notes:
         event_ids = by_scribe_turn.get(note.turn_id, [])
         by_turn.setdefault(note.statement_id, []).append(
@@ -239,6 +242,7 @@ def _said_by_turn(
                 "text": note.text,
                 "lines": scribe.lines_of(data, deltas.get(note.turn_id, [])),
                 "event_ids": event_ids,
+                "reply": replies.get(note.turn_id, ""),
             }
         )
     return by_turn

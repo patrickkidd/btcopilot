@@ -191,14 +191,17 @@ button { font-family: inherit; }
   text-overflow: ellipsis;
 }
 /* A title in two parts stays one line: the name gives way first and the tail,
-   which says how far through the conversation the screen is, never does. */
+   which says how far through the conversation the screen is, never does. The
+   tail leaves the name room for a few letters and the ellipsis, so the name
+   never collapses to a sliver. */
 .ttl:has(.ttl-tail) { display: flex; align-items: baseline; }
-.ttl-name {
+.ttl-name,
+.ttl-tail {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ttl-tail { flex: none; }
+.ttl-tail { flex: none; max-width: calc(100% - 2.75em); white-space: pre; }
 .iconbtn {
   flex: none;
   width: 44px;
@@ -2968,6 +2971,8 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .bub.coach.sub.left { align-self: flex-start; margin: 0 0 0 14px; border-top-right-radius: 12px; border-top-left-radius: 3px; }
 .bub.said.left::before,
 .bub.coach.sub.left::before { right: auto; left: 14px; }
+/* the given facts head the thread and hang under nothing, so no stem */
+.bub.coach.sub.given::before { content: none; }
 
 /* what the scribe tried that the diagram did not take: the same row, muted
    (R-0883) */

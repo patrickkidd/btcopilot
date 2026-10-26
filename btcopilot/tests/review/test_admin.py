@@ -2,9 +2,10 @@ import datetime
 import json
 import logging
 
+from btcopilot import diagramjson
 from btcopilot.admin import admin
 from btcopilot.extensions import db
-from btcopilot.models import Diagram
+from btcopilot.models import Change, Diagram
 from btcopilot.review.models import Coding, Cut, Note
 from btcopilot.tests.review.conftest import coded
 
@@ -124,3 +125,74 @@ def test_the_codings_table_still_reads_without_a_subcommand(flask_app, test_user
     result = invoke(flask_app, "run", "--", "review", "codings", "--cut", str(cut.id))
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)[0]["cuts_done"] == "1 of 1"
+
+
+ANN = {"id": 1, "name": "Ann", "last_name": "Lee", "gender": "female", "primary": True}
+BORN = {"id": 3, "kind": "birth", "child": 1, "dateTime": "1980-05-11", "dateCertainty": "certain"}
+
+
+def given(flask_app, case, events, *flags):
+    case.data = diagramjson.dumps({"people": [ANN], "events": events, "lastItemId": 3})
+    db.session.commit()
+    result = invoke(flask_app, "review", "codings", "given", "--json", *flags)
+    assert result.exit_code == 0, result.output
+    return json.loads(result.output)
+
+
+def test_the_dry_run_lists_what_each_draft_copy_lacks_and_writes_nothing(flask_app, test_user_2, case, cut):
+    # R-0940
+    draft = coded(test_user_2, cut, {"people": [{"id": 1, "name": "Bob"}]}, done=False)
+    before = db.session.get(Diagram, draft.diagram_id).data
+    rows = given(flask_app, case, [BORN])
+    assert [(r["diagram"], r["subject"], r["birth"], r["action"], r["change"]) for r in rows] == [
+        (draft.diagram_id, "Ann", "1980-05-11", "adds person and birth", None)
+    ]
+    db.session.expire_all()
+    assert db.session.get(Diagram, draft.diagram_id).data == before
+
+
+def test_apply_adds_the_person_and_birth_as_one_change_undo_takes_back(flask_app, test_user_2, case, cut):
+    # R-0940
+    draft = coded(test_user_2, cut, {"people": [{"id": 1, "name": "Bob"}], "lastItemId": 1}, done=False)
+    (row,) = given(flask_app, case, [BORN], "--apply")
+    copy = db.session.get(Diagram, draft.diagram_id).get_diagram_data()
+    assert [(p["id"], p["name"]) for p in copy.people] == [(1, "Bob"), (2, "Ann")]
+    assert [(e["kind"], e["child"], e["dateTime"]) for e in copy.events] == [("birth", 2, "1980-05-11")]
+    assert Change.query.filter_by(diagram_id=draft.diagram_id).count() == 1
+    undone = invoke(flask_app, "diagrams", "undo", str(draft.diagram_id), str(row["change"]), "--yes")
+    assert undone.exit_code == 0, undone.output
+    db.session.expire_all()
+    assert [p["name"] for p in db.session.get(Diagram, draft.diagram_id).get_diagram_data().people] == ["Bob"]
+
+
+def test_a_copy_holding_the_person_by_name_gets_only_the_birth(flask_app, test_user_2, case, cut):
+    # R-0940
+    draft = coded(test_user_2, cut, {"people": [{"id": 5, "name": "Ann", "last_name": "Lee"}]}, done=False)
+    (row,) = given(flask_app, case, [BORN], "--apply")
+    assert row["action"] == "adds birth"
+    copy = db.session.get(Diagram, draft.diagram_id).get_diagram_data()
+    assert [(e["kind"], e["child"]) for e in copy.events] == [("birth", 5)]
+
+
+def test_a_person_with_a_birth_of_any_precision_is_kept(flask_app, test_user_2, case, cut):
+    # R-0940
+    born = {"id": 2, "kind": "birth", "child": 1, "dateTime": "1979-01-01", "datePrecision": "year"}
+    coded(test_user_2, cut, {"people": [dict(ANN, name="Annie")], "events": [born]}, done=False)
+    (row,) = given(flask_app, case, [BORN], "--apply")
+    assert (row["action"], row["change"]) == ("kept", None)
+
+
+def test_a_subject_with_no_birth_adds_the_person_alone(flask_app, test_user_2, case, cut):
+    # R-0940
+    draft = coded(test_user_2, cut, {}, done=False)
+    (row,) = given(flask_app, case, [], "--apply")
+    assert row["action"] == "adds person"
+    copy = db.session.get(Diagram, draft.diagram_id).get_diagram_data()
+    assert ([p["name"] for p in copy.people], copy.events) == (["Ann"], [])
+
+
+def test_submitted_codings_are_not_touched(flask_app, test_user_2, case, cut):
+    # R-0940
+    done = coded(test_user_2, cut, {}, done=True)
+    assert given(flask_app, case, [BORN], "--apply") == []
+    assert Change.query.filter_by(diagram_id=done.diagram_id).count() == 0

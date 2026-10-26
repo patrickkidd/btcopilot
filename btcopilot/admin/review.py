@@ -1,5 +1,6 @@
 """The coding meeting from the command line: what is on the agenda, what has
-been coded, a coder's draft cleared to start over, and the switch that stops the app nudging anybody."""
+been coded, a coder's draft cleared to start over, the given facts put on
+draft copies, and the switch that stops the app nudging anybody."""
 
 import logging
 
@@ -11,7 +12,7 @@ from btcopilot.admin.output import emit, rows_option
 from btcopilot.admin.setting import SettingKey
 from btcopilot.admin.users import find as find_user
 from btcopilot.extensions import db
-from btcopilot.models import Diagram
+from btcopilot.models import Diagram, User
 from btcopilot.review import adapter
 from btcopilot.review.models import Coding, Cut, Note, Rule
 from btcopilot.review.routes.coders import roster, state_of
@@ -145,6 +146,64 @@ def review_codings_reset(email, cut_id, yes):
             count,
         )
     return rows
+
+
+#: What a catch-up adds to a copy, by the kinds of item its deltas make.
+ADDS = {
+    frozenset({"person", "event"}): "adds person and birth",
+    frozenset({"person"}): "adds person",
+    frozenset({"event"}): "adds birth",
+}
+
+
+@writes
+@review_codings.command("given")
+@click.option(
+    "--apply/--dry-run",
+    default=False,
+    help="Write the given facts; the default, --dry-run, lists them and writes nothing.",
+)
+@rows_option
+def review_codings_given(apply):
+    """Put the given facts on every draft coding's copy of the diagram that
+    lacks them: the person the case belongs to and their birth, from the case's
+    own diagram (R-0940). Each copy gets one change, which `diagrams undo`
+    takes back. A copy whose person already has a birth, at any precision, is
+    kept; a copy on submitted codings only, or hidden, is not touched."""
+    drafts = (
+        Coding.query.join(Diagram, Coding.diagram_id == Diagram.id)
+        .filter(Coding.done_at.is_(None), Diagram.deleted_at.is_(None))
+        .order_by(Coding.id.desc())
+        .all()
+    )
+    rows, seen = [], set()
+    for coding in drafts:
+        if coding.diagram_id in seen:
+            continue
+        seen.add(coding.diagram_id)
+        case = db.session.get(Diagram, coding.cut.diagram_id)
+        copy = db.session.get(Diagram, coding.diagram_id)
+        person, birth = adapter.subject(case)
+        row = {
+            "coding": coding.id,
+            "coder": db.session.get(User, coding.user_id).username,
+            "diagram": copy.id,
+            "subject": (person or {}).get("name"),
+            "birth": adapter.date_text((birth or {}).get("dateTime")),
+            "change": None,
+        }
+        try:
+            deltas = adapter.given_facts(case, copy)
+        except ValueError as e:
+            rows.append(dict(row, action=f"kept: {e}"))
+            continue
+        row["action"] = ADDS.get(frozenset(d["item_kind"] for d in deltas), "kept")
+        if apply and deltas:
+            row["change"] = adapter.give(case, copy, coding.user_id).id
+            log.info("admin added the given facts to diagram %s: %s", copy.id, row["action"])
+        rows.append(row)
+    columns = ["coding", "coder", "diagram", "subject", "birth", "action", "change"]
+    return columns, rows
 
 
 def _coding_done(cut_id: int, user_id: int) -> bool:

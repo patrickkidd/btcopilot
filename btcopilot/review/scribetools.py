@@ -279,7 +279,7 @@ def schemas() -> list[dict]:
                 "location": location,
                 "ref": ref,
             },
-            ["person", "title", "description", *dated],
+            ["person", "title", "description"],
         ),
         tool(
             ScribeTool.AddNoted,
@@ -294,7 +294,7 @@ def schemas() -> list[dict]:
                 "location": location,
                 "ref": ref,
             },
-            ["person", "title", "description", *dated],
+            ["person", "title", "description"],
         ),
         tool(
             ScribeTool.ChangePerson,

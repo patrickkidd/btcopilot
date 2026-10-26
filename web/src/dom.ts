@@ -164,9 +164,10 @@ export function slideOver(panel: HTMLElement, up: boolean): void {
 }
 
 /** A screen's title in two parts. The name is the part that gives way when the
- * row runs out of width; the tail says which stretch of the conversation is on
- * screen and has to stay readable, so at phone width a long name ellipsises
- * and "· up to Sep 4" stays. */
+ * row runs out of width, down to a few letters and the ellipsis, never less;
+ * the tail says which stretch of the conversation is on screen and has to stay
+ * readable, so at phone width a long name ellipsises and "· up to Sep 4"
+ * stays whole. */
 export interface Title {
   name: string;
   tail: string;

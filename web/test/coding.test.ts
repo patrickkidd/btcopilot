@@ -9,7 +9,7 @@ vi.stubGlobal("window", {
   BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
 });
 
-const { Coding, line, scribedRows, writtenConcepts } = await import("../src/coding");
+const { Coding, given, line, scribedRows, writtenConcepts } = await import("../src/coding");
 const api = await import("../src/api");
 const { Failed } = api;
 const { Menu } = await import("../src/menu");
@@ -127,8 +127,8 @@ describe("the concept pages under what the scribe wrote", () => {
     expect(line?.innerHTML).toContain('href="/app/theory/anxiety"');
   });
 
-  // R-0883
-  it("rebuilds one statement's rows in one bubble, verb first, and a statement that saved nothing as its muted row", () => {
+  // R-0883, R-0942
+  it("rebuilds one statement's rows in one bubble, verb first, a statement that saved nothing as its muted row, and the scribe's words as their row", () => {
     const nodes: {
       innerHTML: string;
       className: string;
@@ -154,8 +154,15 @@ describe("the concept pages under what the scribe wrote", () => {
                   { verb: "change", text: "Ann & Tom · Married · 1970" },
                 ],
                 event_ids: [7],
+                reply: "",
               },
-              { text: "she left", lines: [], event_ids: [] },
+              { text: "she left", lines: [], event_ids: [], reply: "" },
+              {
+                text: "do we have her birth yet?",
+                lines: [],
+                event_ids: [],
+                reply: "Not yet.",
+              },
             ],
           },
         ],
@@ -184,6 +191,7 @@ describe("the concept pages under what the scribe wrote", () => {
       '<div class="did">Added <em>Tom</em></div>' +
         '<div class="did">Changed <em>Ann &amp; Tom · Married · 1970</em></div>',
       '<div class="did no">nothing saved</div>',
+      '<div class="did ask">Not yet.</div>',
     ]);
     expect(rows[0].dataset.events).toBe("7");
   });
@@ -243,8 +251,31 @@ describe("the rows under what the coder said", () => {
       choices: [],
       made: [],
       turn_id: "t",
+      reply: "",
       ...fields,
     }) as never;
+
+  // R-0942
+  it("shows the scribe's words as the row its question to pick a person is", () => {
+    expect(scribedRows(scribed({ reply: "Not yet. Who told you?" }))).toBe(
+      '<div class="did ask">Not yet. Who told you?</div>',
+    );
+  });
+
+  // R-0942
+  it("puts the scribe's words under the rows it wrote", () => {
+    expect(
+      scribedRows(
+        scribed({
+          lines: [{ verb: "add", text: "Ann · Birth · 1950" }],
+          reply: "Added her birth.",
+        }),
+      ),
+    ).toBe(
+      '<div class="did">Added <em>Ann · Birth · 1950</em></div>' +
+        '<div class="did ask">Added her birth.</div>',
+    );
+  });
 
   // R-0883
   it("draws a row for each entry that went in and a muted one for each refused, verb first as the chat does", () => {
@@ -400,6 +431,48 @@ describe("the rows under what the coder said", () => {
     expect(drawn[1].innerHTML).toBe(
       '<div class="did">Added <em>Marcus</em></div>',
     );
+  });
+});
+
+describe("the given facts at the top of the thread", () => {
+  const person = (fields: object) =>
+    ({
+      id: 1,
+      name: "Ann",
+      last_name: "Cole",
+      primary: false,
+      birth_event: null,
+      ...fields,
+    }) as never;
+  const copy = (people: never[], events: object[] = []) =>
+    ({ people, events }) as never;
+
+  // R-0940
+  it("name the subject and their birth as the drawer dates it", () => {
+    const events = [
+      { id: 5, dateTime: "1950-03-03", datePrecision: "day" },
+    ];
+    expect(
+      given(
+        copy([person({ primary: true, birth_event: 5 }), person({ id: 2 })], events),
+        true,
+      ),
+    ).toBe("Given: Ann Cole, born 3 Mar 1950");
+    expect(given(copy([person({ birth_event: 5 })], events), false)).toBe(
+      "Given: Ann Cole, born 3 Mar 1950",
+    );
+  });
+
+  // R-0940
+  it("name the subject alone when the copy holds no birth for them", () => {
+    expect(given(copy([person({ primary: true })]), false)).toBe(
+      "Given: Ann Cole",
+    );
+  });
+
+  // R-0940
+  it("are not there when the copy is empty", () => {
+    expect(given(copy([]), false)).toBe("");
   });
 });
 

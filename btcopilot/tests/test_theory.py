@@ -25,23 +25,40 @@ PAGES = {
 """,
     "INDEX.md": """# Concept pages: index
 
+One line per page and the state of the code in five words. Format and rules: [`README.md`](README.md).
+
 | Page | Covers | Entries | Status of the code |
 |---|---|---|---|
 | [`anxiety.md`](anxiety.md) (A) | What anxiety is | 3 | Own evidence ruled |
 | [`conflict.md`](conflict.md) (C) | Conflict as a move | 1 | Two rules |
 
 Total: 4 entries, 2 CONFIDENTIAL.
+
+## Pages that merge two old files
+
+- **[`triangles.md`](triangles.md) replaces the old `10-inside.md`.**
 """,
     "anxiety.md": """# Anxiety (A)
 
-- Sources are in [`README.md`](README.md); see [`conflict.md`](conflict.md#C1) and [`../REFERENCE.md`](../REFERENCE.md).
+For coders: what the original authors wrote about anxiety.
+
+- Built 2026-09-26 from the sources listed in [`README.md`](README.md). Every quote was checked by [`verify.py`](verify.py).
+- Every excerpt is marked PUBLIC or CONFIDENTIAL.
+
+## Coder summary
+
+The core rule is settled. Sources are in [`README.md`](README.md). See [`conflict.md`](conflict.md#C1) and [`../REFERENCE.md`](../REFERENCE.md).
 
 ## 2. What the original authors wrote
 
 - <a id="A1"></a>**A1** “anxiety is the response to a threat” Kerr, FE5 L9 · PUBLIC. The standard definition. <!-- v BT:FE Chapters/5 - Chronic Anxiety.md L9 -->
 - <a id="A2"></a>**A2** “the lighthouse keeper worried all winter” Member, SEM 2024 @00:01:00 · CONFIDENTIAL. A seminar reading. <!-- v FR:transcripts/seminar/x.tsv @00:01:00 -->
+## 3. Seminar and IRR discussion
+
+IRR coders' meeting entries in this section are PUBLIC. App Seminar entries are CONFIDENTIAL, other people's words from closed meetings, and the public copy leaves them out. Speakers in IRR meetings 3 to 6 are inferred.
+
 <!-- CONFIDENTIAL -->
-### App Seminar
+#### App Seminar (confidential)
 - <a id="A3"></a>**A3** “the ferry captain stopped sleeping” Member, SEM 2025 @00:02:00. A second reading.
 <!-- /CONFIDENTIAL -->
 """,
@@ -179,19 +196,69 @@ def test_missing_token_fails_loudly(github):
 
 
 def test_coder_reads_the_full_edition(theory, coder):
-    # R-0311, R-0541, R-0567
+    # R-0311, R-0541, R-0567, R-0939
     html = coder.get("/app/theory/anxiety").get_data(as_text=True)
     assert "lighthouse" in html
     assert "ferry" in html
     assert 'href="/app/theory/conflict#C1"' in html
-    assert 'href="/app/theory/README"' in html
     assert "../REFERENCE.md" in html and 'href="../REFERENCE.md"' not in html
-    assert coder.get("/app/theory/README").status_code == HTTPStatus.OK
-    assert "Total: 4 entries" in coder.get("/app/theory").get_data(as_text=True)
+
+
+def test_index_shows_only_the_table_of_pages(theory, coder):
+    # R-0939
+    html = coder.get("/app/theory").get_data(as_text=True)
+    assert 'href="/app/theory/anxiety"' in html
+    assert "What anxiety is" in html
+    assert "Status of the code" not in html
+    assert "Own evidence ruled" not in html
+    assert "state of the code" not in html
+    assert "Total: 4 entries" not in html
+    assert "merge two old files" not in html
+    assert "README" not in html
+
+
+def test_index_names_each_page_by_its_title(theory, coder):
+    # R-0939
+    html = coder.get("/app/theory").get_data(as_text=True)
+    assert '<a href="/app/theory/anxiety">Anxiety (A)</a>' in html
+    assert '<a href="/app/theory/conflict">Conflict (C)</a>' in html
+    assert ".md" not in html
+
+
+def test_a_page_with_no_heading_is_named_by_its_file(theory, coder):
+    # R-0939
+    theory.files["loose.md"] = "No heading on this page.\n"
+    assert coder.get("/app/theory").status_code == HTTPStatus.OK
+    html = coder.get("/app/theory/loose").get_data(as_text=True)
+    assert "<title>loose</title>" in html
+
+
+def test_concept_page_drops_the_maintainers_lines_and_keeps_every_entry(theory, coder):
+    # R-0939, R-0691
+    html = coder.get("/app/theory/anxiety").get_data(as_text=True)
+    assert "Built 2026-09-26" not in html
+    assert "verify.py" not in html
+    assert "README" not in html
+    assert "Sources are in" not in html
+    assert "The core rule is settled." in html
+    assert "PUBLIC" not in html
+    assert "· CONFIDENTIAL" not in html
+    assert "“the lighthouse keeper worried all winter” Member, SEM 2024 @00:01:00. A seminar reading." in html
+    assert "<h4>App Seminar</h4>" in html
+    assert "(confidential)" not in html
+    assert "entries in this section" not in html
+    assert "public copy" not in html
+    assert "<p>Speakers in IRR meetings 3 to 6 are inferred.</p>" in html
+    assert "the ferry captain stopped sleeping" in html
+
+
+def test_readme_is_not_served(theory, coder):
+    # R-0939
+    assert coder.get("/app/theory/README").status_code == HTTPStatus.NOT_FOUND
 
 
 def test_a_subscriber_is_refused(theory, web):
-    # R-0311, R-0541, R-0567
+    # R-0311, R-0541, R-0567, R-0939
     for path in ("/app/theory", "/app/theory/anxiety", "/app/theory/README"):
         assert web.get(path).status_code == HTTPStatus.FORBIDDEN
     assert theory.calls == []
