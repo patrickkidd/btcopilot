@@ -57,6 +57,15 @@ test.describe(() => {
       "the coder's task on this fixture is the vote, not a coding",
     );
     check(await visible("#coding-screen"), "the coding thread opens");
+    // The copy starts with the subject's name and birth from their own diagram,
+    // which the coder did not code; it heads the thread above every line.
+    const facts = page.locator("#coding-chat > :first-child.given");
+    const head = (await facts.count()) ? await facts.innerText() : "";
+    say(`the thread opens on: "${head}"`);
+    check(
+      /^Given: \S.*, born \S/.test(head),
+      "the subject's name and birth head the thread as given",
+    );
 
     const married = await code(6, "Marcus and Delphine married in 1970.");
     say(`after the marriage sentence: ${JSON.stringify(married.slice(-3))}`);
@@ -77,6 +86,21 @@ test.describe(() => {
     );
     await shot("2-written");
 
+    // A question to the scribe is answered in words, as its own row, and
+    // nothing is written from it.
+    const asks = page.locator("#coding-chat .did.ask");
+    const before = await asks.count();
+    const asked = await code(7, "Do you have a birthdate for her yet?");
+    say(`after the question: ${JSON.stringify(asked.slice(-2))}`);
+    check(
+      (await asks.count()) > before,
+      "a question gets the scribe's words as a row",
+    );
+    check(
+      !asked.slice(-2).some((l) => /^Added/.test(l)),
+      "a question writes nothing into the diagram",
+    );
+    await shot("3-answered");
 
     await quiet();
   });

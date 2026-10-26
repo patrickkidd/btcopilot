@@ -12,6 +12,7 @@ import { did, html } from "./tools";
 import { reply, waiting } from "./chat";
 import { asWritten, drawn, tokenize } from "./chips";
 import { WIDE } from "./pro";
+import { fullName, when } from "./rows";
 import {
   emptyTimeline,
   ItemKind,
@@ -89,23 +90,39 @@ function asked(choices: Scribed["choices"]): string {
 
 /** What the scribe did, as rows the way the chat shows tool calls: one per
  * entry that went in, one muted per entry the diagram refused, or one button
- * per person when it cannot tell who is meant. Never a sentence (R-0883). */
+ * per person when it cannot tell who is meant; then its own words, when it
+ * said any, as the row its question to pick a person is (R-0883). */
 export function scribedRows(written: Scribed): string {
-  if (written.choices.length)
-    return (
-      `<div class="did ask">${esc(asked(written.choices))}</div>` +
-      written.choices
-        .map(
+  const rows = written.choices.length
+    ? [
+        `<div class="did ask">${esc(asked(written.choices))}</div>`,
+        ...written.choices.map(
           (one) =>
             `<button class="did pick" type="button" data-person="${one.id}">${esc(one.name)}</button>`,
-        )
-        .join("")
-    );
-  const rows = [
-    ...written.lines.map((line) => row(line)),
-    ...written.refused.map((line) => row(line, REFUSED)),
-  ];
+        ),
+      ]
+    : [
+        ...written.lines.map((line) => row(line)),
+        ...written.refused.map((line) => row(line, REFUSED)),
+      ];
+  if (written.reply) rows.push(`<div class="did ask">${esc(written.reply)}</div>`);
   return rows.join("") || unsaved("nothing saved");
+}
+
+/** What the coding copy started with that the coder did not code: the
+ * subject's name and birth, copied from their own diagram. The subject is the
+ * primary person, or the one person a copy nobody has written into holds. */
+export function given(timeline: Timeline, said: boolean): string {
+  const { people } = timeline;
+  const subject =
+    people.find((one) => one.primary) ??
+    (people.length === 1 && !said ? people[0] : undefined);
+  if (!subject) return "";
+  const birth = timeline.events.find((one) => one.id === subject.birth_event);
+  const born = birth?.dateTime
+    ? `, born ${when(birth.dateTime, birth.datePrecision)}`
+    : "";
+  return `Given: ${fullName(subject)}${born}`;
 }
 
 /** A line of the conversation, drawn as the chat draws it: the coach's markup
@@ -226,6 +243,16 @@ export class Coding {
     this.drawer?.show(await this.reread());
     this.marks();
     this.paintConcepts();
+    this.paintGiven();
+  }
+
+  /** The given facts head the thread, read off the copy as it stands. */
+  private paintGiven(): void {
+    this.list.querySelector(".given")?.remove();
+    const said = this.list.querySelector(".bub.said") !== null;
+    const words = given(this.timeline, said);
+    if (words)
+      this.list.prepend(el("div", "bub coach sub left given", unsaved(words)));
   }
 
   /** The codes are read off the record as it stands, so a line written long
@@ -547,6 +574,7 @@ export class Coding {
           choices: [],
           made: [],
           turn_id: "",
+          reply: "",
         });
         this.list.append(
           this.tagged(

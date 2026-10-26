@@ -913,6 +913,10 @@ export interface Scribed {
   /** What the record now holds, so the picture lights it as the line lands. */
   made: { kind: ItemKind; id: string }[];
   turn_id: string;
+  /** The scribe's own words: an answer to the coder's question, or its short
+   * question when it cannot tell whom a statement is about; "" when it said
+   * nothing. */
+  reply: string;
 }
 
 export enum RuleSource {

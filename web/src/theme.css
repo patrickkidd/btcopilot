@@ -2968,6 +2968,8 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .bub.coach.sub.left { align-self: flex-start; margin: 0 0 0 14px; border-top-right-radius: 12px; border-top-left-radius: 3px; }
 .bub.said.left::before,
 .bub.coach.sub.left::before { right: auto; left: 14px; }
+/* the given facts head the thread and hang under nothing, so no stem */
+.bub.coach.sub.given::before { content: none; }
 
 /* what the scribe tried that the diagram did not take: the same row, muted
    (R-0883) */
