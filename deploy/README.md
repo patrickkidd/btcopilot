@@ -54,7 +54,12 @@ stops once the new one is healthy, so no request is dropped), and runs
 `flask admin db upgrade` between the two. The old worker gets Celery's warm shutdown and up
 to 30 minutes (`stop_grace_period`) to finish the coach turn it is running, so the worker's
 rollout, and the `up -d` that replaces fd-shadow, can each wait that long; the deploy step's
-ssh timeout is 75 minutes for it. Nothing is built on the box. The plugin is installed
+ssh timeout is 75 minutes for it. A deploy never restarts Redis or Postgres: it pulls only the
+app's image, and recreates fd-postgres, fd-redis, fd-otel or fd-caddy only when that service's own
+settings in `docker-compose.yml` changed (its compose config hash differs from the running
+container's). On 2026-10-26 a bare `pull` fetched a new build of `redis:7-alpine` and the `up -d`
+after it recreated fd-redis; the app and worker lost Redis for six seconds and a turn streaming
+its words failed. Nothing is built on the box. The plugin is installed
 once at /root/.docker/cli-plugins/docker-rollout (github.com/wowu/docker-rollout).
 
 **One-time stamp (R-0417).** The seven old migrations became one revision, `1b00000000aa`.
@@ -85,7 +90,7 @@ master; `docker images ghcr.io/patrickkidd/btcopilot` on the box lists them). As
     docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker fd-shadow fd-beat
     docker rollout --env-file /etc/fd/secrets.env fd-app
     docker rollout --env-file /etc/fd/secrets.env fd-worker
-    docker compose --env-file /etc/fd/secrets.env up -d fd-shadow fd-beat
+    docker compose --env-file /etc/fd/secrets.env up -d --no-deps fd-shadow fd-beat
     docker compose --env-file /etc/fd/secrets.env ps
 
 This holds only when the release being left added no migration: the database stays where it

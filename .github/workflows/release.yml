@@ -153,13 +153,25 @@ jobs:
               *) [ -z "$at" ] || ls ../btcopilot/migrations/versions | grep -q "^${at}_" || { echo "database is at unknown revision $at; stamp it by hand before deploying" >&2; exit 1; } ;;
             esac
             prev=$(docker compose --env-file /etc/fd/secrets.env images fd-app --format json | python3 -c 'import sys,json; d=json.load(sys.stdin); d=d if isinstance(d,list) else [d]; print(d[0]["Tag"] if d else "")' || true)
-            docker compose --env-file /etc/fd/secrets.env pull
+            # the app's image only: a bare pull fetched a new upstream build of redis:7-alpine and the
+            # `up -d` after it recreated fd-redis, six seconds with no Redis (2026-10-26, FD-390)
+            docker compose --env-file /etc/fd/secrets.env pull fd-app fd-worker fd-shadow fd-beat
             # the new app and worker start beside the old ones; the old stop once the new are healthy
             docker rollout --env-file /etc/fd/secrets.env fd-app
             # before the worker's rollout, which can wait up to 30 minutes for a turn in flight
             docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
             docker rollout --env-file /etc/fd/secrets.env fd-worker
-            docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
+            # --no-deps, or compose also brings up fd-postgres and fd-redis and may recreate them
+            docker compose --env-file /etc/fd/secrets.env up -d --no-deps fd-shadow fd-beat
+            # starts a service not yet running; never recreates a running one
+            docker compose --env-file /etc/fd/secrets.env up -d --no-recreate --remove-orphans
+            # Postgres, Redis, the collector and Caddy are recreated only when their own settings in
+            # this file changed; compose's config hash covers the settings, not the image a tag points to
+            for s in fd-postgres fd-redis fd-otel fd-caddy; do
+              want=$(docker compose --env-file /etc/fd/secrets.env config --hash "$s" | cut -d' ' -f2)
+              have=$(docker inspect --format '{{index .Config.Labels "com.docker.compose.config-hash"}}' $(docker compose --env-file /etc/fd/secrets.env ps -q "$s"))
+              [ "$want" = "$have" ] || docker compose --env-file /etc/fd/secrets.env up -d --no-deps "$s"
+            done
             # Caddy's file is a single-file mount, which keeps the replaced file until the container restarts
             git diff --quiet "$was" HEAD -- Caddyfile || docker compose --env-file /etc/fd/secrets.env restart fd-caddy
             # the quality dashboard's recorded runs, from this commit (R-0517)
