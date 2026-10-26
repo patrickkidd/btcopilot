@@ -775,21 +775,20 @@ def test_a_birth_is_entered_on_the_person_born(coder, cut, turns):
     assert (response.json["lines"], response.json["refused"]) == ([added("Robert · Birth · 1948")], [])
 
 
-def test_a_scribe_that_answers_in_words_is_told_once_to_enter_the_statement(coder, cut, turns):
-    # R-0884
+def test_words_with_no_tool_call_are_the_answer_and_the_model_is_not_asked_again(coder, cut, turns):
+    # R-0942
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
     model = Scripted(
-        "Does the coder mean Marcus could not sleep, though the turn says he slept well?",
+        "Marcus could not sleep is already in the diagram.",
         [("add_shift", dict(SHIFT, title="Could not sleep"))],
     )
     with patch.object(model, "turn", wraps=model.turn) as heard:
         response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
-    assert (response.json["lines"], response.json["refused"]) == (
-        [added("Marcus · Could not sleep · Jan 2010")],
+    assert len(heard.call_args_list) == 1
+    assert (response.json["lines"], response.json["reply"]) == (
         [],
+        "Marcus could not sleep is already in the diagram.",
     )
-    assert {"role": "user", "content": scribe_module.ENTER} in heard.call_args_list[1].args[1]
-    assert "slept well" not in response.get_data(as_text=True)
 
 
 def test_a_birth_has_no_person_and_a_couple_event_no_title_to_fill():

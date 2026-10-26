@@ -39,9 +39,6 @@ EARLIER = "What the coder said earlier on this coding, oldest first:\n{lines}\n\
 #: Said back to a scribe that stopped on words while a call was refused, so it
 #: corrects the call rather than giving up on it.
 AGAIN = "Not entered yet: {refused} Correct the call and make it again."
-#: Said back to a scribe that answered in words before making any call: the
-#: coder's statement goes in as given, never weighed against the turn (R-0884).
-ENTER = "Nothing is entered yet. Enter the coder's statement as they gave it."
 
 
 class Verb(enum.StrEnum):
@@ -208,7 +205,6 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     kept: list[dict] = []
     nudged = False
     reply = ""
-    asked = _asks(said)
 
     for step in range(MAX_STEPS):
         turn = _say(coach, system, messages, hands.tools)
@@ -217,16 +213,15 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
             if reply:
                 _log.info(f"Scribe said: {reply!r}")
             # A scribe that stops on words after a refusal is told once what
-            # did not go in, so it fixes its own call instead of giving up; one
-            # that answers in words before any call is told once to enter it,
-            # unless the coder asked a question (R-0884, R-0942).
-            if nudged or (kept and not refused) or (asked and not refused):
+            # did not go in, so it fixes its own call instead of giving up.
+            # Words with no refusal are its answer: whether the coder asked
+            # something is the model's call, not the code's (R-0942).
+            if nudged or not refused:
                 break
             nudged = True
             if turn.blocks:
                 messages.append({"role": "assistant", "content": turn.blocks})
-            told = AGAIN.format(refused=" ".join(refused)) if refused else ENTER
-            messages.append({"role": "user", "content": told})
+            messages.append({"role": "user", "content": AGAIN.format(refused=" ".join(refused))})
             continue
         nudged = False
         reply = ""
@@ -254,7 +249,7 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
 
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
     # Words after a write that worked are not for the coder (R-0942).
-    if lines and not asked:
+    if lines:
         reply = ""
     spoken = [adapter.reply_event(reply)] if reply else []
     adapter.keep_calls(turn_id, statement.discussion_id, coding.diagram_id, kept + spoken)
@@ -287,12 +282,6 @@ def _result(lines, refused, made, turn_id, choices, reply="") -> dict:
         "turn_id": turn_id,
         "reply": reply,
     }
-
-
-def _asks(said: str) -> bool:
-    """Whether the coder asked the scribe something rather than telling it
-    what happened (R-0942)."""
-    return said.rstrip().endswith("?")
 
 
 #: The tools whose refused calls are drawn as what they tried to enter.
