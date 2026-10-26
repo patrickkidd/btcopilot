@@ -217,6 +217,14 @@ def test_index_shows_only_the_table_of_pages(theory, coder):
     assert "README" not in html
 
 
+def test_index_names_each_page_by_its_title(theory, coder):
+    # R-0939
+    html = coder.get("/app/theory").get_data(as_text=True)
+    assert '<a href="/app/theory/anxiety">Anxiety (A)</a>' in html
+    assert '<a href="/app/theory/conflict">Conflict (C)</a>' in html
+    assert ".md" not in html
+
+
 def test_concept_page_drops_the_maintainers_lines_and_keeps_every_entry(theory, coder):
     # R-0939, R-0691
     html = coder.get("/app/theory/anxiety").get_data(as_text=True)

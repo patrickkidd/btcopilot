@@ -18,6 +18,7 @@ _markdown = MarkdownIt("commonmark").enable("table")
 GUIDE = "Auditor's Coding Guide"
 LINK = re.compile(r"(?<!!)\[((?:[^\[\]\n]|\[[^\]\n]*\])*)\]\(([^)\s]+)\)")
 CODE_STATUS = "Status of the code"
+PAGE = "Page"
 SENTENCE = re.compile(r"(?<=\.) (?=\S)")
 LIST_ITEM = re.compile(r"\s*(?:[-*] |\d+\. )?")
 INTRO = re.compile(r"\A.*?(?=^## Coder summary$)", re.M | re.S)
@@ -50,14 +51,32 @@ def links(text: str, targets: dict[str, str]) -> str:
     return LINK.sub(link, text)
 
 
-def page_table(text: str) -> str:
+def page_table(text: str, titles: dict[str, str]) -> str:
     # [Oracle: R-0939]
-    """The index with its title and page table, minus the implementation-status column."""
+    """The index with its title and page table, minus the implementation-status
+    column, each page named by its own title (file name to title) rather than
+    its file name."""
     lines = text.splitlines()
     rows = [line.strip("|").split("|") for line in lines if line.startswith("|")]
-    drop = [cell.strip() for cell in rows[0]].index(CODE_STATUS)
-    table = ["|" + "|".join(c for i, c in enumerate(r) if i != drop) + "|" for r in rows]
+    header = [cell.strip() for cell in rows[0]]
+    drop = header.index(CODE_STATUS)
+    page = header.index(PAGE)
+
+    def titled(cell: str) -> str:
+        m = LINK.search(cell)
+        if m is None or m.group(2) not in titles:
+            return cell
+        return f" [{titles[m.group(2)]}]({m.group(2)}) "
+
+    table = [
+        "|" + "|".join(titled(c) if i == page else c for i, c in enumerate(r) if i != drop) + "|"
+        for r in rows
+    ]
     return "\n".join([lines[0], "", *table]) + "\n"
+
+
+def title(text: str) -> str:
+    return re.match(r"# (.+)", text).group(1)
 
 
 def _without_maintainer_sentences(line: str) -> str | None:
@@ -86,7 +105,7 @@ def _render(text: str, names: list[str]):
     return render_template(
         "theory.html",
         guide=GUIDE,
-        title=re.match(r"# (.+)", text).group(1),
+        title=title(text),
         body=Markup(_markdown.render(links(text, targets))),
     )
 
@@ -110,7 +129,9 @@ def _unavailable(e):
 def theory_index():
     coder()
     pages = current_app.extensions["theory"]
-    return _render(page_table(pages.text("INDEX")), pages.names())
+    names = pages.names()
+    titles = {f"{n}.md": title(pages.text(n)) for n in names}
+    return _render(page_table(pages.text("INDEX"), titles), names)
 
 
 @bp.route("/theory/<name>")
