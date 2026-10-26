@@ -127,7 +127,7 @@ describe("the concept pages under what the scribe wrote", () => {
     expect(line?.innerHTML).toContain('href="/app/theory/anxiety"');
   });
 
-  // R-0883
+  // R-0883, R-0942
   it("rebuilds one statement's rows in one bubble, verb first, a statement that saved nothing as its muted row, and the scribe's words as their row", () => {
     const nodes: {
       innerHTML: string;
@@ -255,14 +255,14 @@ describe("the rows under what the coder said", () => {
       ...fields,
     }) as never;
 
-  // R-0883
+  // R-0942
   it("shows the scribe's words as the row its question to pick a person is", () => {
     expect(scribedRows(scribed({ reply: "Not yet. Who told you?" }))).toBe(
       '<div class="did ask">Not yet. Who told you?</div>',
     );
   });
 
-  // R-0883
+  // R-0942
   it("puts the scribe's words under the rows it wrote", () => {
     expect(
       scribedRows(
@@ -447,7 +447,7 @@ describe("the given facts at the top of the thread", () => {
   const copy = (people: never[], events: object[] = []) =>
     ({ people, events }) as never;
 
-  // R-0883
+  // R-0940
   it("name the subject and their birth as the drawer dates it", () => {
     const events = [
       { id: 5, dateTime: "1950-03-03", datePrecision: "day" },
@@ -463,14 +463,14 @@ describe("the given facts at the top of the thread", () => {
     );
   });
 
-  // R-0883
+  // R-0940
   it("name the subject alone when the copy holds no birth for them", () => {
     expect(given(copy([person({ primary: true })]), false)).toBe(
       "Given: Ann Cole",
     );
   });
 
-  // R-0883
+  // R-0940
   it("are not there when the copy is empty", () => {
     expect(given(copy([]), false)).toBe("");
   });
