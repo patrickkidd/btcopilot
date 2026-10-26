@@ -775,7 +775,8 @@ test.describe("the coding and quality sections", () => {
       await inside(tail, title);
       const [end, next] = [await boxOf(title), await boxOf(page.locator("#coding-info"))];
       expect(end.x + end.width).toBeLessThanOrEqual(next.x);
-      // at phone width the name gives way with an ellipsis and the tail stays
+      // at phone width the name gives way with an ellipsis, keeping a few
+      // letters, and the tail stays whole
       expect(await cut()).toBe(shortened);
       await expect(name).toHaveCSS("text-overflow", "ellipsis");
     }
