@@ -41,17 +41,29 @@ const CHECK = "&#10003;";
 /** What a coder reads above the start button until they tap Got it, so
  * nobody has to be told what the task is or how to do it. Kept per person
  * rather than per browser. */
-const HOW_IT_WORKS = [
-  "A cut is the part of one conversation Patrick put on the agenda for the next meeting.",
-  "Tap a line of it and type what that line tells you happened.",
-  "The app writes what you type onto the family diagram for you.",
-  "When you are finished, tap Done, then Submit for the meeting, before the meeting day.",
+const HOW_IT_WORKS: { line: string; examples?: string[] }[] = [
+  { line: "A cut is the part of one conversation Patrick put on the agenda for the next meeting." },
+  {
+    line: "Tap a line of it and type what that line tells you happened: who, what changed, and when. For example:",
+    examples: [
+      "Steve had a symptom shift up in May 1997",
+      "Martha and John separated in June 2006",
+      "Steve moved toward his father sometime around 2003",
+      "Ann was born to Martha and John on 3 March 1990",
+    ],
+  },
+  { line: "The app writes what you type onto the family diagram for you." },
+  { line: "When you are finished, tap Done, then Submit for the meeting, before the meeting day." },
 ];
 
 const HELP =
   `<div class="r2" data-help>How this works</div><div data-help>` +
   HOW_IT_WORKS.map(
-    (line, at) => `<p class="cta-p">${at + 1}. ${esc(line)}</p>`,
+    ({ line, examples }, at) =>
+      `<p class="cta-p">${at + 1}. ${esc(line)}</p>` +
+      (examples
+        ? `<ul class="hs-steps">${examples.map((one) => `<li>${esc(one)}</li>`).join("")}</ul>`
+        : ""),
   ).join("") +
   `</div><button class="donebtn" type="button" data-help>Got it</button>`;
 

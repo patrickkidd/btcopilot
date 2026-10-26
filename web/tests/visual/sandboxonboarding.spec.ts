@@ -66,6 +66,21 @@ test.describe(() => {
     const card = page.locator("#task-body .tkcard");
     await expect(card.getByText(HOW)).toBeVisible();
     await expect(card.locator(".cta-p")).toHaveCount(4);
+    await expect(card.locator(".cta-p").nth(1)).toHaveText(
+      "2. Tap a line of it and type what that line tells you happened: who, what changed, and when. For example:",
+    );
+    const examples = card.locator(".cta-p + ul li");
+    await expect(examples).toHaveText([
+      "Steve had a symptom shift up in May 1997",
+      "Martha and John separated in June 2006",
+      "Steve moved toward his father sometime around 2003",
+      "Ann was born to Martha and John on 3 March 1990",
+    ]);
+    // every example whole on a phone: wrapped if it must be, never cut off
+    for (const one of await examples.all()) {
+      const fits = await one.evaluate((li) => li.scrollWidth <= li.clientWidth && li.getBoundingClientRect().right <= innerWidth);
+      expect(fits).toBe(true);
+    }
     const patched = saved(page);
     await card.getByRole("button", { name: "Got it" }).click();
     await patched;
