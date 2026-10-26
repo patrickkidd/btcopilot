@@ -15,6 +15,7 @@ import uuid
 from collections import Counter
 
 from btcopilot.review import adapter
+from btcopilot.review.models import Note
 from btcopilot.review.scribetools import ScribeTools
 from btcopilot.schema import DateCertainty, DatePrecision, EventKind, event_title
 
@@ -32,6 +33,9 @@ What the coder says it tells them happened:
 {said}
 """
 CHOSEN = "\nThe person this is about: {line}\n"
+#: The coder's earlier statements on the same coding, so a later one builds on
+#: them (R-0941).
+EARLIER = "What the coder said earlier on this coding, oldest first:\n{lines}\n\n"
 #: Said back to a scribe that stopped on words while a call was refused, so it
 #: corrects the call rather than giving up on it.
 AGAIN = "Not entered yet: {refused} Correct the call and make it again."
@@ -194,9 +198,8 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     messages = [
         {
             "role": "user",
-            "content": TURN.format(
-                who=_who(statement), turn=statement.text or "", said=said
-            )
+            "content": _earlier(coding.id)
+            + TURN.format(who=_who(statement), turn=statement.text or "", said=said)
             + about,
         }
     ]
@@ -257,6 +260,13 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     if missed:
         _log.warning(f"Scribe left refused: {[c['refusal'] for c in kept if c['refusal']]}")
     return _result(lines, missed, made(toolbox.deltas), turn_id, [])
+
+
+def _earlier(coding_id: int) -> str:
+    notes = Note.query.filter_by(coding_id=coding_id).order_by(Note.id).all()
+    if not notes:
+        return ""
+    return EARLIER.format(lines="\n".join(f"- {note.text}" for note in notes))
 
 
 def _result(lines, refused, made, turn_id, choices) -> dict:

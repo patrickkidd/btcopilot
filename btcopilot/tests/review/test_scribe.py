@@ -963,3 +963,20 @@ def test_the_page_waits_for_the_scribe_as_long_as_the_server_can_take():
     longest = scribe_module.MAX_STEPS * GEMINI_TIMEOUT_MS // 1000 + 30
     assert scribe_module.MODEL.startswith("gemini")
     assert f"SCRIBE_WAIT_S = {longest};" in api
+
+
+def test_each_message_carries_the_coders_earlier_statements_on_the_coding(coder, cut, turns):
+    # R-0941
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    first = Scripted()
+    with patch.object(first, "turn", wraps=first.turn) as heard:
+        scribe(coder, coding, turns[0], first, "Marcus could not sleep")
+    assert "earlier" not in heard.call_args_list[0].args[1][0]["content"]
+    second = Scripted()
+    with patch.object(second, "turn", wraps=second.turn) as heard:
+        scribe(coder, coding, turns[1], second, "Marcus was born in 1980")
+    sent = heard.call_args_list[0].args[1][0]["content"]
+    assert sent.startswith(
+        "What the coder said earlier on this coding, oldest first:\n- Marcus could not sleep\n\n"
+    )
+    assert sent.endswith("Marcus was born in 1980\n")
