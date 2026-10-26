@@ -75,8 +75,10 @@ def page_table(text: str, titles: dict[str, str]) -> str:
     return "\n".join([lines[0], "", *table]) + "\n"
 
 
-def title(text: str) -> str:
-    return re.match(r"# (.+)", text).group(1)
+def title(text: str, name: str) -> str:
+    """A page's first-line heading, or its file name when it has none."""
+    m = re.match(r"# (.+)", text)
+    return m.group(1) if m else name
 
 
 def _without_maintainer_sentences(line: str) -> str | None:
@@ -99,13 +101,13 @@ def unmarked(text: str) -> str:
     return "\n".join(line for line in lines if line is not None)
 
 
-def _render(text: str, names: list[str]):
+def _render(text: str, names: list[str], name: str):
     targets = {f"{n}.md": url_for("app.theory_page", name=n) for n in names}
     targets["INDEX.md"] = url_for("app.theory_index")
     return render_template(
         "theory.html",
         guide=GUIDE,
-        title=title(text),
+        title=title(text, name),
         body=Markup(_markdown.render(links(text, targets))),
     )
 
@@ -130,8 +132,8 @@ def theory_index():
     coder()
     pages = current_app.extensions["theory"]
     names = pages.names()
-    titles = {f"{n}.md": title(pages.text(n)) for n in names}
-    return _render(page_table(pages.text("INDEX"), titles), names)
+    titles = {f"{n}.md": title(pages.text(n), n) for n in names}
+    return _render(page_table(pages.text("INDEX"), titles), names, "INDEX")
 
 
 @bp.route("/theory/<name>")
@@ -141,4 +143,4 @@ def theory_page(name):
     names = pages.names()
     if name not in names:
         abort(404)
-    return _render(unmarked(pages.text(name)), names)
+    return _render(unmarked(pages.text(name)), names, name)

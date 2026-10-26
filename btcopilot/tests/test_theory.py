@@ -225,6 +225,14 @@ def test_index_names_each_page_by_its_title(theory, coder):
     assert ".md" not in html
 
 
+def test_a_page_with_no_heading_is_named_by_its_file(theory, coder):
+    # R-0939
+    theory.files["loose.md"] = "No heading on this page.\n"
+    assert coder.get("/app/theory").status_code == HTTPStatus.OK
+    html = coder.get("/app/theory/loose").get_data(as_text=True)
+    assert "<title>loose</title>" in html
+
+
 def test_concept_page_drops_the_maintainers_lines_and_keeps_every_entry(theory, coder):
     # R-0939, R-0691
     html = coder.get("/app/theory/anxiety").get_data(as_text=True)

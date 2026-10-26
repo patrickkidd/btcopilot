@@ -48,7 +48,8 @@ export function guideFrame(
   const landed = () => {
     read.depth += read.back ? -1 : 1;
     read.back = false;
-    onTitle(frame.contentDocument!.querySelector("h1")!.textContent!);
+    // an error page has no heading; the row keeps the name the guide was opened by
+    onTitle(frame.contentDocument!.querySelector("h1")?.textContent ?? title);
   };
   frame.addEventListener("load", () => {
     landed();
