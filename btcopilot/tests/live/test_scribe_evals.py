@@ -71,7 +71,11 @@ def told(coding, statement, words: str) -> dict:
 
 def events(coding) -> list[dict]:
     data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
-    return [e for e in data.get("events") or [] if e["id"] != BORN["id"]]
+    return [
+        e
+        for e in data.get("events") or []
+        if (e["id"], adapter.plain(e.get("kind"))) != (BORN["id"], "birth")
+    ]
 
 
 def shifts(coding) -> list[dict]:
