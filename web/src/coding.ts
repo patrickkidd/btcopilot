@@ -567,14 +567,15 @@ export class Coding {
           ),
         );
         // One statement's rows share one bubble, as they did when it was
-        // sent; refused rows are not kept, so only what went in comes back.
+        // sent; refused rows are not kept, so only what went in comes back,
+        // with what the scribe said back.
         const rows = scribedRows({
           lines: said.lines,
           refused: [],
           choices: [],
           made: [],
           turn_id: "",
-          reply: "",
+          reply: said.reply,
         });
         this.list.append(
           this.tagged(

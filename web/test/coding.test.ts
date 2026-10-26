@@ -128,7 +128,7 @@ describe("the concept pages under what the scribe wrote", () => {
   });
 
   // R-0883
-  it("rebuilds one statement's rows in one bubble, verb first, and a statement that saved nothing as its muted row", () => {
+  it("rebuilds one statement's rows in one bubble, verb first, a statement that saved nothing as its muted row, and the scribe's words as their row", () => {
     const nodes: {
       innerHTML: string;
       className: string;
@@ -154,8 +154,15 @@ describe("the concept pages under what the scribe wrote", () => {
                   { verb: "change", text: "Ann & Tom · Married · 1970" },
                 ],
                 event_ids: [7],
+                reply: "",
               },
-              { text: "she left", lines: [], event_ids: [] },
+              { text: "she left", lines: [], event_ids: [], reply: "" },
+              {
+                text: "do we have her birth yet?",
+                lines: [],
+                event_ids: [],
+                reply: "Not yet.",
+              },
             ],
           },
         ],
@@ -184,6 +191,7 @@ describe("the concept pages under what the scribe wrote", () => {
       '<div class="did">Added <em>Tom</em></div>' +
         '<div class="did">Changed <em>Ann &amp; Tom · Married · 1970</em></div>',
       '<div class="did no">nothing saved</div>',
+      '<div class="did ask">Not yet.</div>',
     ]);
     expect(rows[0].dataset.events).toBe("7");
   });

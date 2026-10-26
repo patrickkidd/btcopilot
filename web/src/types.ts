@@ -868,6 +868,8 @@ export interface Said {
   lines: ScribeLine[];
   /** The record events those lines are. */
   event_ids: number[];
+  /** What the scribe said back in words; "" when it said nothing. */
+  reply: string;
 }
 
 export interface CodingTurn {
