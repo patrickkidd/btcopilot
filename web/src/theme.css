@@ -190,15 +190,17 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* A title in two parts stays one line: the name gives way first and the tail,
-   which says how far through the conversation the screen is, never does. */
+/* A title in two parts stays one line and is cut at its end like any title:
+   the tail gives way before the name, so at phone width the name reads and
+   the tail shows whole only where there is room for both. */
 .ttl:has(.ttl-tail) { display: flex; align-items: baseline; }
-.ttl-name {
+.ttl-name,
+.ttl-tail {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ttl-tail { flex: none; }
+.ttl-tail { flex: 1 1 0; white-space: pre; }
 .iconbtn {
   flex: none;
   width: 44px;
