@@ -123,6 +123,9 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script_stop: true
+          # the rollout waits for the old worker's turn in flight, up to 30 minutes each
+          # for fd-worker and fd-shadow (deploy/docker-compose.yml); the default is 10m
+          command_timeout: 75m
           script: |
             set -e
             export BTCOPILOT_TAG=${{ needs.build.outputs.tag }}
@@ -153,11 +156,12 @@ jobs:
             docker compose --env-file /etc/fd/secrets.env pull
             # the new app and worker start beside the old ones; the old stop once the new are healthy
             docker rollout --env-file /etc/fd/secrets.env fd-app
+            # before the worker's rollout, which can wait up to 30 minutes for a turn in flight
+            docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
             docker rollout --env-file /etc/fd/secrets.env fd-worker
             docker compose --env-file /etc/fd/secrets.env up -d --remove-orphans
             # Caddy's file is a single-file mount, which keeps the replaced file until the container restarts
             git diff --quiet "$was" HEAD -- Caddyfile || docker compose --env-file /etc/fd/secrets.env restart fd-caddy
-            docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin db upgrade
             # the quality dashboard's recorded runs, from this commit (R-0517)
             docker compose --env-file /etc/fd/secrets.env exec -T fd-app flask admin quality load
             docker compose --env-file /etc/fd/secrets.env ps

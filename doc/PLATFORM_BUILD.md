@@ -95,4 +95,6 @@ droplet familydiagram-app · sfo3 · s-2vcpu-2gb ($18/mo) · Ubuntu 24.04 · bac
 
 **Box shape**: one compose file — caddy, app, postgres (config in repo), datadog agent (container logs by label), nightly pg_dump; secrets as one sops-encrypted env decrypted at deploy with the box's own age key; deploy = one image from GitHub Actions, tagged by branch and commit, with a git tag only for a release from master after the PR merges → compose pull and up over SSH, also drivable from the admin CLI.
 
+**A deploy waits for the coach turns in flight (FD-390)**: the old worker stops taking turns and gets up to 30 minutes to finish the one it is running before it is killed, so a deploy cuts no healthy turn. Only a runaway turn, one still going after 30 minutes, is ever cut, and it then shows the person the resume button.
+
 **Still needs Patrick at that time**: the droplet's own age key; rotated credentials; Stripe account and keys; the Pro freeze; import cutover approval; fdserver archive; what discussions.familydiagram.com is.

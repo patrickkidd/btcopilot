@@ -51,7 +51,10 @@ day's tags) and tags the image the same with `-` for `+` (R-0419). The dispatch 
 image, pushes it to GHCR, then pulls it on the box, rolls the app and the worker with
 `docker rollout` (the new container comes up beside the old one and the old one
 stops once the new one is healthy, so no request is dropped), and runs
-`flask admin db upgrade`. Nothing is built on the box. The plugin is installed
+`flask admin db upgrade` between the two. The old worker gets Celery's warm shutdown and up
+to 30 minutes (`stop_grace_period`) to finish the coach turn it is running, so the worker's
+rollout, and the `up -d` that replaces fd-shadow, can each wait that long; the deploy step's
+ssh timeout is 75 minutes for it. Nothing is built on the box. The plugin is installed
 once at /root/.docker/cli-plugins/docker-rollout (github.com/wowu/docker-rollout).
 
 **One-time stamp (R-0417).** The seven old migrations became one revision, `1b00000000aa`.
