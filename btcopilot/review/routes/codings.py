@@ -78,7 +78,8 @@ def coding_patch(coding_id: int):
 
 def _diagram_for(user, cut: Cut):
     """The coder's own record of this case: the one they built coding it last
-    time, carried forward, or a fresh empty one (R-0267)."""
+    time, carried forward, or a fresh one holding only the given facts, the
+    person the case belongs to and their birth (R-0267, R-0940)."""
     case = adapter.diagram_of(cut.diagram_id)
     previous = _previous_coding(user, case.id, cut.id)
     if previous is not None:
@@ -86,6 +87,7 @@ def _diagram_for(user, cut: Cut):
     diagram = adapter.coding_diagram(user, f"coding of {case.name or case.id}")
     adapter.grant_write(diagram, user)
     db.session.flush()
+    adapter.give(case, diagram, user.id)
     return diagram
 
 
