@@ -6,6 +6,7 @@ one channel per turn to follow it live. The discussion remembers the turn it
 is running, which is how a page that comes back knows to reattach.
 """
 
+import contextlib
 import enum
 import json
 import queue
@@ -23,6 +24,10 @@ TICK = 1.0
 # in an hour. The task pushes it out again with every event it writes, so a turn
 # that is still working never lets go.
 RUNNING_TTL = 180
+# How often a worker running a turn holds its session again, whatever the turn
+# is doing: a model call can run longer than the hold, so only a worker that is
+# gone lets it run out (FD-390).
+BEAT = 60
 # How long a family's case report stays held for the rewrite writing it without
 # a word from it: the rewrite holds it again on every piece the model sends, so
 # a worker that dies lets go within minutes.
@@ -139,6 +144,12 @@ class RedisLog:
         replayed, so a finished turn is still only its owner's to read."""
         found = self.redis.get(f"turn:{turn_id}:session")
         return int(found) if found else None
+
+    def owned(self) -> list[str]:
+        return [
+            key.decode().split(":")[1]
+            for key in self.redis.scan_iter(match="turn:*:session")
+        ]
 
     def start(self, discussion_id: int, turn_id: str) -> bool:
         if not self.redis.set(
@@ -257,6 +268,9 @@ class MemoryLog:
     def owner(self, turn_id: str) -> int | None:
         return self.owners.get(turn_id)
 
+    def owned(self) -> list[str]:
+        return list(self.owners)
+
     def start(self, discussion_id: int, turn_id: str) -> bool:
         with self.lock:
             if self.running(discussion_id) is not None:
@@ -361,12 +375,37 @@ def owner(turn_id: str) -> int | None:
     return store().owner(turn_id)
 
 
+def owned() -> list[str]:
+    """Every turn whose log can still be read."""
+    return store().owned()
+
+
 def start(discussion_id: int, turn_id: str) -> bool:
     return store().start(discussion_id, turn_id)
 
 
 def keep(discussion_id: int) -> None:
     store().keep(discussion_id)
+
+
+@contextlib.contextmanager
+def kept_alive(discussion_id: int):
+    """The session stays held every BEAT seconds while the worker is alive, so
+    a hold that ran out means the worker running the turn is gone."""
+    log = store()
+    over = threading.Event()
+
+    def beat():
+        while not over.wait(BEAT):
+            log.keep(discussion_id)
+
+    beating = threading.Thread(target=beat, daemon=True)
+    beating.start()
+    try:
+        yield
+    finally:
+        over.set()
+        beating.join()
 
 
 def clear(discussion_id: int) -> None:

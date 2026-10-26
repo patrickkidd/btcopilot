@@ -7,6 +7,7 @@ got to.
 
 import json
 import re
+import time
 
 import aiohttp
 import pytest
@@ -413,6 +414,27 @@ def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
     assert turnlog.running(body["discussion_id"]) is None
 
     assert post(web, token, "And another thing.").status_code == 202
+
+
+def test_a_model_call_longer_than_the_hold_keeps_the_session_held(
+    web, token, family, monkeypatch
+):
+    # R-0182
+    """A worker still running its turn holds the session whatever the turn is
+    doing, so a hold that ran out always means the worker is gone."""
+    held = []
+
+    class Slow(Model):
+        def turn(self, system, messages, tools, turn_id=""):
+            time.sleep(0.2)
+            held.append(turnlog.running(turnlog.owner(turn_id)) == turn_id)
+            return (yield from super().turn(system, messages, tools, turn_id))
+
+    monkeypatch.setattr(turnlog, "RUNNING_TTL", 0.05)
+    monkeypatch.setattr(turnlog, "BEAT", 0.01)
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: Slow(said("Go on.")))
+    assert post(web, token).status_code == 202
+    assert held == [True]
 
 
 def test_the_session_says_which_turn_is_running(web, token, family, monkeypatch):
