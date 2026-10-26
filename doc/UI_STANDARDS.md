@@ -56,7 +56,8 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
   ruled shortcut today is speak-replies on the chat view mirroring preferences.
 - No surface repeats another surface's list.
 - Nothing a person reads names how the code works underneath: no version, step, id, tool, model or call. When a write does not go in, the screen shows what went in and what did not, never the model's or the server's own words. [Oracle: R-0869]
-- The coding task's scribe never holds a conversation with the coder: every outcome is rows, the way the chat shows tool calls, one per entry that went in, one muted "not saved" row per entry the diagram refused, and one button per person when it cannot tell which person is meant. [Oracle: R-0883]
+- The coding task's scribe shows what it entered as rows, the way the chat shows tool calls: one per entry that went in, one muted "not saved" row per entry the diagram refused, and one button per person when it cannot tell which person is meant. [Oracle: R-0883]
+- A coder may ask the scribe a question: it answers in one or two short sentences, shown as its own row, and a question never becomes a code; the scribe stays biased toward writing codes. [Oracle: R-0942]
 
 ## Behaviour
 - A control that starts something starts it immediately, not on the next tick of a
