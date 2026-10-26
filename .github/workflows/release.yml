@@ -169,7 +169,10 @@ jobs:
             # this file changed; compose's config hash covers the settings, not the image a tag points to
             for s in fd-postgres fd-redis fd-otel fd-caddy; do
               want=$(docker compose --env-file /etc/fd/secrets.env config --hash "$s" | cut -d' ' -f2)
-              have=$(docker inspect --format '{{index .Config.Labels "com.docker.compose.config-hash"}}' $(docker compose --env-file /etc/fd/secrets.env ps -q "$s"))
+              # a service with no container gets an empty hash and is created below
+              id=$(docker compose --env-file /etc/fd/secrets.env ps -q "$s")
+              have=""
+              [ -z "$id" ] || have=$(docker inspect --format '{{index .Config.Labels "com.docker.compose.config-hash"}}' "$id")
               [ "$want" = "$have" ] || docker compose --env-file /etc/fd/secrets.env up -d --no-deps "$s"
             done
             # Caddy's file is a single-file mount, which keeps the replaced file until the container restarts
