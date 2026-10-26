@@ -18,7 +18,6 @@ _markdown = MarkdownIt("commonmark").enable("table")
 GUIDE = "Auditor's Coding Guide"
 LINK = re.compile(r"(?<!!)\[((?:[^\[\]\n]|\[[^\]\n]*\])*)\]\(([^)\s]+)\)")
 CODE_STATUS = "Status of the code"
-README_LINK = "](README.md"
 SENTENCE = re.compile(r"(?<=\.) (?=\S)")
 LIST_ITEM = re.compile(r"\s*(?:[-*] |\d+\. )?")
 INTRO = re.compile(r"\A.*?(?=^## Coder summary$)", re.M | re.S)
@@ -32,6 +31,7 @@ class Mark(StrEnum):
 
 
 MARK = re.compile(rf" · (?:{'|'.join(Mark)})\b")
+MAINTAINER_SENTENCE = re.compile(rf"\]\(README\.md|\b(?:{'|'.join(Mark)})\b")
 
 
 def links(text: str, targets: dict[str, str]) -> str:
@@ -60,22 +60,24 @@ def page_table(text: str) -> str:
     return "\n".join([lines[0], "", *table]) + "\n"
 
 
-def _without_readme(line: str) -> str | None:
-    if README_LINK not in line:
+def _without_maintainer_sentences(line: str) -> str | None:
+    if not MAINTAINER_SENTENCE.search(line):
         return line
     prefix = LIST_ITEM.match(line).group(0)
-    kept = [s for s in SENTENCE.split(line[len(prefix) :]) if README_LINK not in s]
+    body = SENTENCE.split(line[len(prefix) :])
+    kept = [s for s in body if not MAINTAINER_SENTENCE.search(s)]
     return prefix + " ".join(kept) if kept else None
 
 
 def unmarked(text: str) -> str:
     """A concept page without its maintainers' lines: the notes before the
-    coder summary, sentences pointing to README.md, and the PUBLIC or
-    CONFIDENTIAL mark on entries and headings; every entry stays (R-0939)."""
+    coder summary, the PUBLIC or CONFIDENTIAL mark on entries and headings,
+    and any sentence still naming a mark or pointing to README.md; every
+    entry stays (R-0939)."""
     text = INTRO.sub(lambda m: INTRO_ITEM.sub("", m.group(0)), text, count=1)
-    lines = (_without_readme(line) for line in text.split("\n"))
-    text = "\n".join(line for line in lines if line is not None)
-    return CONFIDENTIAL_HEADING.sub(r"\1", MARK.sub("", text))
+    text = CONFIDENTIAL_HEADING.sub(r"\1", MARK.sub("", text))
+    lines = (_without_maintainer_sentences(line) for line in text.split("\n"))
+    return "\n".join(line for line in lines if line is not None)
 
 
 def _render(text: str, names: list[str]):

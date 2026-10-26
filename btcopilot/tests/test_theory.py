@@ -53,6 +53,10 @@ The core rule is settled. Sources are in [`README.md`](README.md). See [`conflic
 
 - <a id="A1"></a>**A1** “anxiety is the response to a threat” Kerr, FE5 L9 · PUBLIC. The standard definition. <!-- v BT:FE Chapters/5 - Chronic Anxiety.md L9 -->
 - <a id="A2"></a>**A2** “the lighthouse keeper worried all winter” Member, SEM 2024 @00:01:00 · CONFIDENTIAL. A seminar reading. <!-- v FR:transcripts/seminar/x.tsv @00:01:00 -->
+## 3. Seminar and IRR discussion
+
+IRR coders' meeting entries in this section are PUBLIC. App Seminar entries are CONFIDENTIAL, other people's words from closed meetings, and the public copy leaves them out. Speakers in IRR meetings 3 to 6 are inferred.
+
 <!-- CONFIDENTIAL -->
 #### App Seminar (confidential)
 - <a id="A3"></a>**A3** “the ferry captain stopped sleeping” Member, SEM 2025 @00:02:00. A second reading.
@@ -226,6 +230,10 @@ def test_concept_page_drops_the_maintainers_lines_and_keeps_every_entry(theory, 
     assert "“the lighthouse keeper worried all winter” Member, SEM 2024 @00:01:00. A seminar reading." in html
     assert "<h4>App Seminar</h4>" in html
     assert "(confidential)" not in html
+    assert "entries in this section" not in html
+    assert "public copy" not in html
+    assert "<p>Speakers in IRR meetings 3 to 6 are inferred.</p>" in html
+    assert "the ferry captain stopped sleeping" in html
 
 
 def test_readme_is_not_served(theory, coder):
