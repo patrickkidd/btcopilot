@@ -228,3 +228,11 @@ reply marked unacceptable never wins; with only one acceptable, that one wins;
 with neither, it is a tie; any other `choice` is a 400. The two flags are
 optional, true or false. `source` is optional and may only be `chat`, which a
 pick voted in the chat sets. `note` is optional, at most 200 characters.
+
+## Coding (`/review/codings`, a coder's coding of one cut)
+
+| | |
+|---|---|
+| `POST /review/codings` | `{cut_id}`; an auditor: their coding of the cut, made here if missing (201) on their coding copy of the case from an earlier cut, or on a new copy holding only the given facts, the case's own person with their name and their dated birth [Oracle: R-0940] |
+| `GET /review/codings/<id>/thread` | the coder's own coding: the conversation up to the cut, each turn with `said: [{text, lines, event_ids, reply}]`, what the coder typed about it, the rows the scribe wrote from those words, the events they are, and `reply`, what the scribe said back, `""` when it said nothing [Oracle: R-0942] |
+| `POST /review/codings/<id>/scribe` | `{statement_id, text, person_id}`; the scribe writes the coder's words into their copy: `{lines, refused, choices, made, turn_id, reply}`, `reply` being the scribe's answer to a question the coder asked or its short question when it cannot tell who is meant, `""` otherwise [Oracle: R-0942]; each call's message carries the coder's earlier statements on the coding [Oracle: R-0941] |

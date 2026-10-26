@@ -35,6 +35,7 @@ from btcopilot.models import (
 )
 from btcopilot.recordtext import date_text, render, version_line
 from btcopilot.toolnames import toolcall
+from btcopilot.turnlog import TurnEventKind
 from btcopilot.prompts import ToolText
 from btcopilot.toolbox import CERTAINTY, GONE, ToolError, Toolbox, ToolName, choice
 from btcopilot.models import (
@@ -72,6 +73,8 @@ __all__ = [
     "scribe_prompt",
     "scribe_toolbox",
     "keep_calls",
+    "reply_event",
+    "replies",
     "toolcall",
     "meanings",
     "Diagram",
@@ -171,6 +174,23 @@ def keep_calls(
     db.session.flush()
     observer.refusals(diagram_id, turn_id)
     db.session.commit()
+
+
+def reply_event(text: str) -> dict:
+    """What the scribe said back to the coder, kept as the coach's own words
+    are (R-0942)."""
+    return {"type": TurnEventKind.Text.value, "text": text}
+
+
+def replies(turn_ids: set[str]) -> dict[str, str]:
+    """What the scribe said back on each of these turns, where it said
+    anything."""
+    return {
+        turn_id: event["text"]
+        for turn_id, events in turnstore.kept(turn_ids).items()
+        for event in events
+        if event["type"] == TurnEventKind.Text.value
+    }
 
 
 def discussion_of(discussion_id: int) -> Discussion:

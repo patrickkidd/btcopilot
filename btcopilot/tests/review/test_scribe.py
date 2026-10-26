@@ -559,19 +559,53 @@ def test_the_scribe_fixes_its_own_refused_call_after_stopping_on_words(coder, cu
     )
 
 
-def test_the_scribe_talking_instead_of_writing_saves_nothing(coder, cut, turns):
-    # R-0883, R-0869
+def test_the_scribe_talking_instead_of_writing_saves_nothing_and_its_words_come_back(coder, cut, turns):
+    # R-0883, R-0942
     coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
-    model = Scripted(
-        said=(
-            "I need to reread the current record. Could you provide the current "
-            "version number shown in the record for event 2?"
-        )
-    )
+    model = Scripted(said="Which night does the coder mean?")
     response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
     assert response.status_code == 200
     assert (response.json["lines"], response.json["refused"], response.json["choices"]) == ([], [], [])
-    assert "version" not in response.get_data(as_text=True)
+    assert response.json["reply"] == "Which night does the coder mean?"
+    assert adapter.record_of(adapter.diagram_of(coding.diagram_id)).get("events", []) == []
+
+
+def test_a_question_is_answered_in_words_and_writes_nothing(coder, cut, turns):
+    # R-0942
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted(said="No, the diagram holds no birth for Marcus yet.")
+    with patch.object(model, "turn", wraps=model.turn) as heard:
+        response = scribe(coder, coding, turns[0], model, "Do you have a birthdate for him yet?")
+    assert len(heard.call_args_list) == 1
+    assert (response.json["lines"], response.json["reply"]) == (
+        [],
+        "No, the diagram holds no birth for Marcus yet.",
+    )
+    assert Change.query.filter_by(diagram_id=coding.diagram_id).count() == 0
+
+
+def test_words_after_a_write_that_worked_are_not_a_reply(coder, cut, turns):
+    # R-0942
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    model = Scripted([("add_shift", dict(SHIFT, title="Could not sleep"))], said="Added it.")
+    response = scribe(coder, coding, turns[0], model, "Marcus could not sleep")
+    assert (response.json["lines"], response.json["reply"]) == (
+        [added("Marcus · Could not sleep · Jan 2010")],
+        "",
+    )
+
+
+def test_a_reopened_thread_carries_what_the_scribe_said_back(coder, cut, turns):
+    # R-0942
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    scribe(coder, coding, turns[0], Scripted(said="Not yet."), "Do you have a birthdate for him yet?")
+    scribe(coder, coding, turns[0], Scripted([("add_shift", dict(SHIFT, title="Could not sleep"))]), "Marcus could not sleep")
+    thread = coder.get(f"/review/codings/{coding.id}/thread").json
+    said = {turn["id"]: turn["said"] for turn in thread["turns"]}
+    assert [(one["text"], one["reply"]) for one in said[turns[0].id]] == [
+        ("Do you have a birthdate for him yet?", "Not yet."),
+        ("Marcus could not sleep", ""),
+    ]
 
 
 def test_two_people_the_words_fit_come_back_as_choices(coder, cut, turns):

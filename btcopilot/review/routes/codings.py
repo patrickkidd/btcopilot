@@ -229,11 +229,12 @@ def _said_by_turn(
     correction to an event still reads as the record has it (R-0270), people
     and pair-bonds first as when the words were sent (R-0883), and the
     events those lines are, whose codes' concept pages hang under them
-    (R-0541)."""
+    (R-0541), and what the scribe said back (R-0942)."""
     by_scribe_turn = adapter.touched_by_turn(diagram_id)
     deltas = adapter.deltas_by_turn(diagram_id)
     by_turn: dict[int, list[dict]] = {}
-    notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc())
+    notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc()).all()
+    replies = adapter.replies({note.turn_id for note in notes if note.turn_id})
     for note in notes:
         event_ids = by_scribe_turn.get(note.turn_id, [])
         by_turn.setdefault(note.statement_id, []).append(
@@ -241,6 +242,7 @@ def _said_by_turn(
                 "text": note.text,
                 "lines": scribe.lines_of(data, deltas.get(note.turn_id, [])),
                 "event_ids": event_ids,
+                "reply": replies.get(note.turn_id, ""),
             }
         )
     return by_turn

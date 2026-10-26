@@ -1,11 +1,11 @@
 """The scribe: one coder's words about one turn, written into their record.
 
-It is not the coach. There is no conversation, no coaching and no reply: a
-cheap model reads the turn and what the coder said about it, and calls the
-record-writing tools. When it cannot tell which person is meant it writes
-nothing and offers the people it could be, one tap each (R-0270). What it
-wrote and what the diagram refused reach the coder as rows, never sentences
-(R-0883).
+It is not the coach. A cheap model reads the turn and what the coder said
+about it, and calls the record-writing tools. When it cannot tell which person
+is meant it writes nothing and offers the people it could be, one tap each
+(R-0270). What it wrote and what the diagram refused reach the coder as rows
+(R-0883); its words reach them only as an answer to a question the coder asked
+or its own question about who is meant (R-0942).
 """
 
 import enum
@@ -207,16 +207,20 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     refused: list[str] = []
     kept: list[dict] = []
     nudged = False
+    reply = ""
+    asked = _asks(said)
 
     for step in range(MAX_STEPS):
         turn = _say(coach, system, messages, hands.tools)
         if not turn.calls:
-            if turn.text.strip():
-                _log.info(f"Scribe said: {turn.text.strip()!r}")
+            reply = turn.text.strip()
+            if reply:
+                _log.info(f"Scribe said: {reply!r}")
             # A scribe that stops on words after a refusal is told once what
             # did not go in, so it fixes its own call instead of giving up; one
-            # that answers in words before any call is told once to enter it.
-            if nudged or (kept and not refused):
+            # that answers in words before any call is told once to enter it,
+            # unless the coder asked a question (R-0884, R-0942).
+            if nudged or (kept and not refused) or (asked and not refused):
                 break
             nudged = True
             if turn.blocks:
@@ -225,6 +229,7 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
             messages.append({"role": "user", "content": told})
             continue
         nudged = False
+        reply = ""
         results = []
         refused = []
         for call in turn.calls:
@@ -247,19 +252,23 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     else:
         _log.warning("Scribe ran out of steps")
 
-    adapter.keep_calls(turn_id, statement.discussion_id, coding.diagram_id, kept)
     lines = edit_lines(coding.diagram_id, toolbox.deltas)
+    # Words after a write that worked are not for the coder (R-0942).
+    if lines and not asked:
+        reply = ""
+    spoken = [adapter.reply_event(reply)] if reply else []
+    adapter.keep_calls(turn_id, statement.discussion_id, coding.diagram_id, kept + spoken)
     # Every call is committed as it lands, so a scribe that ran out of steps or
     # gave up on a refusal has written part of the sentence; the coder sees
     # those rows and a "not saved" row for each entry the diagram still refused
-    # (R-0302: no silent loss). The refusals' own words and the model's speak
-    # of how the code works, so they stay in the log (R-0869, R-0883).
+    # (R-0302: no silent loss). The refusals' own words speak of how the code
+    # works, so they stay in the log (R-0869, R-0883).
     data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     entered = {line["text"] for line in lines}
     missed = [one for one in tried(data, kept) if one["text"] not in entered]
     if missed:
         _log.warning(f"Scribe left refused: {[c['refusal'] for c in kept if c['refusal']]}")
-    return _result(lines, missed, made(toolbox.deltas), turn_id, [])
+    return _result(lines, missed, made(toolbox.deltas), turn_id, [], reply)
 
 
 def _earlier(coding_id: int) -> str:
@@ -269,14 +278,21 @@ def _earlier(coding_id: int) -> str:
     return EARLIER.format(lines="\n".join(f"- {note.text}" for note in notes))
 
 
-def _result(lines, refused, made, turn_id, choices) -> dict:
+def _result(lines, refused, made, turn_id, choices, reply="") -> dict:
     return {
         "lines": lines,
         "refused": refused,
         "choices": choices,
         "made": made,
         "turn_id": turn_id,
+        "reply": reply,
     }
+
+
+def _asks(said: str) -> bool:
+    """Whether the coder asked the scribe something rather than telling it
+    what happened (R-0942)."""
+    return said.rstrip().endswith("?")
 
 
 #: The tools whose refused calls are drawn as what they tried to enter.
