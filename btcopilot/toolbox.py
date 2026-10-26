@@ -1379,7 +1379,10 @@ class Toolbox:
         start = len(self.deltas)
         new = args.get("id") is None
         was = {} if new else self._find_event(args["id"])
-        if new and not args.get("date"):
+        # The coach dates every event it adds; a coder's statement may give
+        # none, and the review writes it undated (R-0943).
+        dates = new and self.author == Author.Coach
+        if dates and not args.get("date"):
             raise ToolError(
                 "Every event needs a date: estimate one from what was said, with "
                 "date_certainty unknown when it is your own guess",
@@ -1397,7 +1400,7 @@ class Toolbox:
             fields["dateCertainty"] = choice(
                 DateCertainty, args["date_certainty"], "date certainties"
             ).value
-        elif new or args.get("date"):
+        elif dates or args.get("date"):
             raise ToolError(
                 f"Say how sure the date is with date_certainty: {CERTAINTY}",
                 f"Say how sure the date is: {CERTAINTY}.",

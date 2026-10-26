@@ -1013,3 +1013,24 @@ def test_each_message_carries_the_coders_earlier_statements_on_the_coding(coder,
         "What the coder said earlier on this coding, oldest first:\n- Marcus could not sleep\n\n"
     )
     assert sent.endswith("Marcus was born in 1980\n")
+
+
+AGED = {"person": "1", "title": "Anxiety started", "description": "at 16", "symptom": "up"}
+
+
+def test_an_age_with_no_birth_in_the_diagram_is_written_with_no_date(coder, cut, turns):
+    # R-0943
+    coding = coded(coder.user, cut, {"people": [person(1, "Ann")]}, done=False)
+    response = scribe(coder, coding, turns[0], Scripted([("add_shift", AGED)]), "Ann's anxiety started at 16")
+    assert (len(response.json["lines"]), response.json["refused"]) == (1, [])
+    (event,) = adapter.record_of(adapter.diagram_of(coding.diagram_id))["events"]
+    assert (event["kind"], event.get("dateTime")) == ("shift", None)
+
+
+def test_an_age_with_a_birth_in_the_diagram_is_written_dated(coder, cut, turns):
+    # R-0943, R-0940
+    born = {"id": 2, "kind": "birth", "child": 1, "dateTime": "1980-01-01"}
+    coding = coded(coder.user, cut, {"people": [person(1, "Ann")], "events": [born]}, done=False)
+    aged = dict(AGED, date="1996", date_certainty="approximate")
+    response = scribe(coder, coding, turns[0], Scripted([("add_shift", aged)]), "Ann's anxiety started at 16")
+    assert (response.json["lines"], response.json["refused"]) == ([added("Ann · Anxiety started · 1996")], [])
