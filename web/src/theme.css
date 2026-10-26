@@ -201,7 +201,7 @@ button { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ttl-tail { flex: none; max-width: calc(100% - 2.75em); }
+.ttl-tail { flex: none; max-width: calc(100% - 2.75em); white-space: pre; }
 .iconbtn {
   flex: none;
   width: 44px;
