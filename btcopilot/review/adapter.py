@@ -46,7 +46,17 @@ from btcopilot.models import (
     ShadowTurn,
     User,
 )
-from btcopilot.schema import PDP, Event, EventKind, ItemKind, PairBond, Person, from_dict
+from btcopilot.schema import (
+    PDP,
+    DatePrecision,
+    Event,
+    EventKind,
+    ItemKind,
+    PairBond,
+    Person,
+    from_dict,
+    stated_date,
+)
 
 __all__ = [
     "Author",
@@ -351,8 +361,15 @@ def given_facts(case: Diagram, copy: Diagram) -> list[dict]:
     if birth is not None and not born:
         one = there["id"] + 1 if deltas else record.next_id(data)
         made = dict(birth, kind=EventKind.Birth.value, child=there["id"])
+        if made.get("datePrecision") is None:
+            made["datePrecision"] = _precision(birth["dateTime"]).value
         deltas += _fields(ItemKind.Event, one, made, ("kind", "child") + GIVEN_BIRTH)
     return deltas
+
+
+def _precision(value) -> DatePrecision:
+    """How much of a date its own form says: a Pro date is a whole day."""
+    return stated_date(value if isinstance(value, str) else date_text(value))[1]
 
 
 def _fields(kind: ItemKind, item_id: int, item: dict, fields: tuple) -> list[dict]:

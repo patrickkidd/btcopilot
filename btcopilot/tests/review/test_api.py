@@ -121,10 +121,18 @@ def test_a_new_coding_copy_starts_with_the_subject_and_their_birth(coder, case, 
     data = adapter.record_of(adapter.diagram_of(coding["diagram_id"]))
     assert data["people"] == [{"id": 1, "name": "Ann", "last_name": "Lee", "gender": "female", "primary": True}]
     assert [
-        (e["kind"], e["child"], adapter.date_text(e["dateTime"]), e["dateCertainty"])
+        (e["kind"], e["child"], adapter.date_text(e["dateTime"]), e["dateCertainty"], e["datePrecision"])
         for e in data["events"]
-    ] == [("birth", 1, "1980-05-11", "certain")]
+    ] == [("birth", 1, "1980-05-11", "certain", "day")]
     assert data.get("pair_bonds", []) == []
+
+
+def test_a_given_birth_keeps_the_precision_the_case_states(coder, case, cut):
+    # R-0940
+    given_case(case, [dict(BORN, dateTime="1980-05-01", datePrecision="month")])
+    coding = coder.post("/review/codings", json={"cut_id": cut.id}).get_json()
+    data = adapter.record_of(adapter.diagram_of(coding["diagram_id"]))
+    assert [e["datePrecision"] for e in data["events"]] == ["month"]
 
 
 def test_a_subject_with_no_birth_starts_the_copy_with_the_person_alone(coder, case, cut):
