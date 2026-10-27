@@ -620,8 +620,17 @@ export function diagramOwner(diagram: Diagram): string {
   return diagram.owner_name || diagram.owner_username.split("@")[0];
 }
 
-/** A diagram just made from a desktop file, with how much of the file came
- * in; what the app's checks refuse is left out. */
+/** One object of a desktop file the import skipped: its kind, its id in the
+ * file when it has one, what it was in plain words and why (R-0947). */
+export interface Skipped {
+  kind: ItemKind;
+  id: number | null;
+  label: string;
+  reason: string;
+}
+
+/** A diagram just made from a desktop file, with the import's report: how
+ * much of the file came in and each object skipped (R-0947). */
 export interface Imported extends Diagram {
   /** `primary`: the people the file marks primary, in its order. */
   /** `coding_cost`: what the coach turn a yes to adding codes starts is
@@ -629,7 +638,8 @@ export interface Imported extends Diagram {
   imported: {
     people: number;
     events: number;
-    left_out: number;
+    pair_bonds: number;
+    failed: Skipped[];
     primary: number[];
     coding_cost: { low: number; high: number };
   };
