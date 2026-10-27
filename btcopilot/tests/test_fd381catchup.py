@@ -15,9 +15,9 @@ from decimal import Decimal
 import pytest
 from mock import patch
 
-from btcopilot import casereport, diagramjson, record
+from btcopilot import casereport, clusters, diagramjson, profile, record
 from btcopilot.admin import admin, fd381catchup
-from btcopilot.clusters import ClusterListResponse, ModelCluster, compute_cache_key
+from btcopilot.clusters import ClusterListResponse, ModelCluster
 from btcopilot.extensions import db
 from btcopilot.models import (
     Author,
@@ -86,7 +86,7 @@ def reported(user, name: str) -> Diagram:
     data = diagram.get_diagram_data()
     data.people = [asdict(Person(id=1, name=name))]
     data.lastItemId = 1
-    data.clusterCacheKey = compute_cache_key([])
+    data.clusterCacheKey = clusters.key(diagram, data)
     diagram.set_diagram_data(data)
     db.session.commit()
     impress(box(diagram, "r1"), text="When things get tense, she goes quiet.")
@@ -272,6 +272,38 @@ def test_the_plan_shows_each_record_and_makes_no_model_call(
     saved = json.loads(open(path).read())
     assert [d["diagram"] for d in saved["diagrams"]] == [family.id, old.id, current.id]
     assert saved["per_call_usd"] == 0.0125
+
+
+def test_a_record_nobody_on_is_the_person_of_is_planned_only_when_it_changed(
+    flask_app, tmp_path, family, old, current
+):
+    # R-0772, R-0935
+    for row in family.access_rights:
+        row.person_id = None
+    db.session.commit()
+    with patch(
+        "btcopilot.metered.gemini_structured_sync", return_value=parsed(GROUPED)
+    ):
+        clusters.sync(family.id, turn_id="t1", user_id=family.user_id, force=True)
+    db.session.commit()
+    data = family.get_diagram_data()
+    assert profile.named(family, data) == "Wren"
+    assert not clusters.behind(family, data)
+
+    rows, _ = planned(flask_app, tmp_path)
+    assert [r["regroup"] for r in rows] == [False, False, False]
+
+    data.events[0]["description"] = "moved out"
+    family.set_diagram_data(data)
+    db.session.commit()
+    assert clusters.behind(family, family.get_diagram_data())
+
+    rows, _ = planned(flask_app, tmp_path)
+    assert [(r["diagram"], r["regroup"]) for r in rows] == [
+        (family.id, True),
+        (old.id, False),
+        (current.id, False),
+    ]
 
 
 def test_apply_regroups_only_the_planned_record_through_sync_and_never_refreshes_a_report(
