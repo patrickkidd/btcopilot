@@ -14,7 +14,7 @@ import { CutSelect } from "./cut";
 import { Agenda } from "./agenda";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
-import { CODER, OneTask, beforeMeeting, cardDue } from "./task";
+import { OneTask, beforeMeeting, landing as cardLanding } from "./task";
 import { Rules } from "./rules";
 import { heading } from "./concepts";
 import { Sessions } from "./sessions";
@@ -2028,10 +2028,21 @@ function reveal(): void {
 }
 
 /** Opened at an address, the app goes there once the record is in; opened at
- * the chat it is there already. */
+ * the chat it is there already. A coder opens on their one task the first time
+ * a new cut is on the agenda, whatever address the app opened at, and never on
+ * the task card again for that cut (R-0265 frame f1, R-0944). Only an auditor
+ * is a coder (R-0311). A server without the review tables leaves the app where
+ * it opened. */
 async function arrive(): Promise<void> {
-  if (parse(location.pathname)?.place !== Place.Chat)
-    return navigate(location.pathname, Step.Kept);
+  const opened = parse(location.pathname)?.place;
+  const place = await cardLanding(opened).catch((error) => {
+    if (!(error instanceof api.Failed)) throw error;
+    console.warn(error.message);
+    return opened;
+  });
+  if (place !== undefined && place !== opened)
+    return navigate(address(place), opened === Place.Chat ? Step.New : Step.Kept);
+  if (place !== Place.Chat) return navigate(location.pathname, Step.Kept);
   going = false;
   sync();
 }
@@ -2095,22 +2106,6 @@ matchMedia(SIDEWAYS).addEventListener("change", (e) => {
 // first, so a saved edit still reaches the page.
 if ("serviceWorker" in navigator)
   register(`/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`);
-
-// A coder opens on their one task the first time a new cut is on the agenda
-// (R-0265, frame f1), and on the chat after that, reaching the card from the
-// account view. Only an auditor is a coder (R-0311): a professional or a
-// plain subscriber never asks for a task and opens on the chat. A server
-// without the review tables leaves the chat exactly as it was.
-if (CODER && parse(location.pathname)?.place === Place.Chat) {
-  void cardDue()
-    .then((due) => {
-      if (due) void openTask();
-    })
-    .catch((error) => {
-      if (!(error instanceof api.Failed)) throw error;
-      console.warn(error.message);
-    });
-}
 
 // The page is only served to a signed-in reader, so this is the moment to ask
 // about a key on this device, and then about the home screen or, once on it,

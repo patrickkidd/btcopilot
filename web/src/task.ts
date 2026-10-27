@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { esc, isCoder } from "./dom";
+import { Place } from "./place";
 import { TaskKind, type FinishedTask, type Task, type Tasks } from "./types";
 
 /** The coder's one task. One card, one button, and under it a faint record of
@@ -38,6 +39,15 @@ export async function cardDue(): Promise<boolean> {
   if (!found.task || found.task.cut_id === prefs.task_card_seen) return false;
   await api.setPreferences({ task_card_seen: found.task.cut_id });
   return true;
+}
+
+/** Where a coder's first load of the app opens: on the task card once per
+ * cut, and for a cut already seen never on it again, so a reload onto the
+ * card's own address lands on the chat (R-0944). Any other address stays
+ * where it opened. */
+export async function landing(place: Place | undefined): Promise<Place | undefined> {
+  if (!CODER || (place !== Place.Chat && place !== Place.Task)) return place;
+  return (await cardDue()) ? Place.Task : Place.Chat;
 }
 
 const CHECK = "&#10003;";

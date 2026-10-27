@@ -15,7 +15,8 @@ vi.mock("../src/api", () => ({
   setPreferences: async (body: object) => saved.push(body),
 }));
 
-const { cardDue, finishedRow, OneTask } = await import("../src/task");
+const { cardDue, finishedRow, landing, OneTask } = await import("../src/task");
+const { Place } = await import("../src/place");
 
 const done = (ratified: boolean): FinishedTask => ({
   coding_id: 3,
@@ -123,5 +124,26 @@ describe("the task card on opening the app", () => {
     found.tasks = { task: { ...open, cut_id: 10 }, done: [] };
     found.seen = 9;
     expect(await cardDue()).toBe(true);
+  });
+
+  // R-0944
+  it("lands a reload on the card's own address on the chat once the cut was seen", async () => {
+    saved.length = 0;
+    found.tasks = { task: open, done: [] };
+    found.seen = 9;
+    expect(await landing(Place.Task)).toBe(Place.Chat);
+    expect(await landing(Place.Account)).toBe(Place.Account);
+    expect(saved).toEqual([]);
+  });
+
+  // R-0944
+  it("opens the card where it landed for a cut not yet seen, noting it first", async () => {
+    saved.length = 0;
+    found.tasks = { task: open, done: [] };
+    found.seen = null;
+    expect(await landing(Place.Task)).toBe(Place.Task);
+    expect(saved).toEqual([{ task_card_seen: 9 }]);
+    found.seen = 9;
+    expect(await landing(Place.Chat)).toBe(Place.Chat);
   });
 });
