@@ -22,7 +22,7 @@ from btcopilot.review import adapter, divergence, export, ruledraft, snapshot
 from btcopilot.review.adapter import initials
 from btcopilot.models import User
 from btcopilot.review.freeze import frozen
-from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule, RuleSource
+from btcopilot.review.models import Coding, Cut, Item, Note, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.conftest import Model, said
 from btcopilot.tests.review.conftest import coded, person, shift
 
@@ -842,3 +842,49 @@ def test_words_the_coach_answered_and_were_sent_again_are_listed_twice(
     coding = coder.post("/review/codings", json={"cut_id": cut.id}).json
     thread = coder.get(f"/review/codings/{coding['id']}/thread").json
     assert [turn["id"] for turn in thread["turns"]] == [t.id for t in turns[:3]]
+
+
+def test_words_sent_again_stay_where_the_coder_already_wrote_from_them(
+    coder, session, turns, cut
+):
+    # R-0946, R-0270
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    db.session.commit()
+    coding = coder.post("/review/codings", json={"cut_id": cut.id}).json
+    db.session.add(
+        Note(
+            coding_id=coding["id"],
+            statement_id=turns[0].id,
+            text="A father",
+            turn_id="scribe-1",
+        )
+    )
+    db.session.commit()
+    thread = coder.get(f"/review/codings/{coding['id']}/thread").json
+    assert [turn["id"] for turn in thread["turns"]] == [turns[0].id, turns[1].id]
+    assert [s["text"] for s in thread["turns"][0]["said"]] == ["A father"]
+
+
+def test_words_sent_again_stay_when_the_last_agreed_line_is_on_them(
+    test_user, coder, session, turns, cut
+):
+    # R-0946, R-0267
+    turns[1].text, turns[1].turn_id = "Add my father", "first"
+    turns[2].text, turns[2].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    cut.ratified_at = datetime.datetime(2026, 10, 1)
+    later = Cut(
+        diagram_id=session.diagram_id,
+        start_statement_id=turns[2].id,
+        end_statement_id=turns[3].id,
+        user_id=test_user.id,
+        meeting_date=datetime.date(2026, 10, 8),
+    )
+    db.session.add(later)
+    db.session.commit()
+    coding = coder.post("/review/codings", json={"cut_id": later.id}).json
+    thread = coder.get(f"/review/codings/{coding['id']}/thread").json
+    assert [turn["id"] for turn in thread["turns"]] == [t.id for t in turns]
+    assert thread["agreed"]["order"] == 2

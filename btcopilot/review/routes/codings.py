@@ -113,17 +113,21 @@ def coding_thread(coding_id: int):
     coding = _mine_or_404(coding_id)
     cut = coding.cut
     orders = adapter.statement_order(cut.diagram_id)
-    turns = adapter.heard(
-        adapter.statements_between(
-            cut.diagram_id,
-            adapter.first_statement(cut.diagram_id).id,
-            cut.end_statement_id,
-        )
+    lines = adapter.statements_between(
+        cut.diagram_id,
+        adapter.first_statement(cut.diagram_id).id,
+        cut.end_statement_id,
     )
     agreed = _last_ratified(cut)
     agreed_order = orders[agreed.end_statement_id] if agreed else None
     data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     said = _said_by_turn(coding.id, coding.diagram_id, data)
+    # a line the coder wrote from, or one a cut ends on, stays even when it
+    # was sent again after a failed turn
+    kept = {s.id for s in adapter.heard(lines)} | said.keys() | {cut.end_statement_id}
+    if agreed:
+        kept.add(agreed.end_statement_id)
+    turns = [s for s in lines if s.id in kept]
 
     return jsonify(
         {
