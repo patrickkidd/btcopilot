@@ -648,3 +648,23 @@ describe("where the coding screen opens", () => {
     expect(resumeAt(thread([turn(1, true), turn(2, true)]))).toBe(Resume.End);
   });
 });
+
+describe("the row under the coding screen's picture", () => {
+  /** The row drawn by the screen's own code with no cluster open, before a
+   * line is picked and after one is. */
+  function cta(picked: number | null): string {
+    const screen = {
+      picked,
+      caption: { innerHTML: "" },
+      picture: { openCluster: () => null },
+      wireList() {},
+    };
+    (Coding.prototype as unknown as { marks(): void }).marks.call(screen);
+    return screen.caption.innerHTML.match(/class="cta">([^<]*)</)![1];
+  }
+
+  // R-0270
+  it("asks the coder to tap a line whatever the copy holds", () => {
+    expect([cta(null), cta(4)]).toEqual(["tap a line", "tap a line"]);
+  });
+});

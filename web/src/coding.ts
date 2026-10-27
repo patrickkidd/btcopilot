@@ -438,13 +438,13 @@ export class Coding {
   /** The row under the picture. Nothing in a coding speaks to the coach, so
    * the chat's "ask" and "in chat" are not here: the one thing the row offers
    * is the play-by-play of an open cluster, told by nobody, on the record this
-   * coding is being written onto (R-0570). */
+   * coding is being written onto (R-0570). With none open it asks for the
+   * coder's own action, a line, whatever the copy holds. */
   private marks(): void {
     const open = this.picture.openCluster();
     if (!open) {
-      const say = this.picked === null ? "tap a line" : "tap a cluster";
       this.caption.innerHTML =
-        `<span class="cta">${say}</span>` + listButton(LIST_ID);
+        `<span class="cta">tap a line</span>` + listButton(LIST_ID);
       this.wireList();
       return;
     }

@@ -3,7 +3,9 @@
 an event, and a birth given later that left the wrong year in place
 (R-0940 to R-0943), and of one on 2026-10-27: asked how a person's parents
 were added, the scribe said they were there from the beginning when a
-distance note of the coder's had added them (R-0946). The family is invented.
+distance note of the coder's had added them (R-0946), and of a sandbox run
+on 2026-10-26 where a distance from Ann to her parents added one person named
+"Ann's parents" and a partner. The family is invented.
 The run stops at CAP dollars of model calls.
 """
 
@@ -152,3 +154,26 @@ def test_a_question_about_how_people_were_added_names_the_statement_that_added_t
     answer = told(coding, statement, "How were her parents added?")["reply"].lower()
     assert "distance" in answer, answer
     assert "beginning" not in answer, answer
+
+
+@passes(2, of=3)
+def test_a_distance_to_unnamed_parents_adds_her_mother_and_father(test_user):
+    # R-0941, R-0325
+    """Passes when the diagram ends with Ann and two generically named people,
+    her mother and her father, joined as a pair that is Ann's parents, and one
+    distance shift from Ann to both, starting 1994, marked approximate."""
+    coding, statement = coding_of(test_user, GIVEN)
+    told(coding, statement, "Add distance from Ann to her parents starting in high school")
+    data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
+    ann = next(p for p in data["people"] if p["id"] == ANN["id"])
+    bond = next(b for b in data.get("pair_bonds") or [] if b["id"] == ann.get("parents"))
+    parents = {bond["person_a"], bond["person_b"]}
+    names = sorted(p["name"].lower() for p in data["people"] if p["id"] in parents)
+    assert (len(data["people"]), names) == (3, ["ann's father", "ann's mother"]), data
+    (shift,) = shifts(coding)
+    assert (
+        shift.get("person"),
+        adapter.plain(shift.get("relationship")),
+        set(shift.get("relationshipTargets") or []),
+        dated(shift),
+    ) == (ANN["id"], "distance", parents, ("1994", "approximate")), shift
