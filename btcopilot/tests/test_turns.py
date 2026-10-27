@@ -435,6 +435,32 @@ def test_a_turn_that_ends_never_looks_lost_to_a_reader(
     assert seen == [None, None]
 
 
+def test_a_lost_turn_with_no_words_is_left_and_the_others_are_ended(
+    web, token, family, monkeypatch, caplog
+):
+    # R-0182
+    coach(monkeypatch, said("Go on."))
+    lost = []
+    for words in ("My sister is Nell.", "And another thing."):
+        with patch("btcopilot.turns.enqueue"):
+            body = post(web, token, words).get_json()
+        turnlog.append(body["turn_id"], {"type": TurnEventKind.Text.value, "text": "So"})
+        turnlog.clear(body["discussion_id"])
+        lost.append(body)
+    db.session.delete(db.session.get(Statement, lost[0]["statement_id"]))
+    db.session.commit()
+
+    turns.sweep()
+    ended = {
+        body["turn_id"]: TurnEvent.query.filter_by(
+            turn_id=body["turn_id"], kind=TurnEventKind.Failed.value
+        ).count()
+        for body in lost
+    }
+    assert ended == {lost[0]["turn_id"]: 0, lost[1]["turn_id"]: 1}
+    assert f"coach_turn {lost[0]['turn_id']} left lost" in caplog.text
+
+
 def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
     # R-0182
     """A worker that dies mid-turn says nothing. The hold on the session has to

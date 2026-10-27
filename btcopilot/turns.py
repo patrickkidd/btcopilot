@@ -173,11 +173,19 @@ def interrupted(turn_id: str, reason: str) -> dict | None:
         if any(turnlog.ended(event) for event in logged):
             return None
         discussion = db.session.get(Discussion, session_id)
-        said = Statement.query.filter_by(
+        words = Statement.query.filter_by(
             discussion_id=session_id,
             turn_id=turn_id,
             speaker_id=discussion.chat_user_speaker_id,
-        ).one()
+        ).all()
+        # a turn with no words of the person's, or two, has nothing to end on;
+        # it is left as it is, so one odd turn never breaks a read or a sweep
+        if len(words) != 1:
+            _log.warning(
+                f"coach_turn {turn_id} left lost: {len(words)} statements hold its words"
+            )
+            return None
+        said = words[0]
         Change.query.filter_by(
             diagram_id=discussion.diagram_id, turn_id=turn_id
         ).update({"statement_id": said.id})
