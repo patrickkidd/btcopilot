@@ -34,8 +34,9 @@ What the coder says it tells them happened:
 """
 CHOSEN = "\nThe person this is about: {line}\n"
 #: The coder's earlier statements on the same coding, so a later one builds on
-#: them (R-0941).
-EARLIER = "What the coder said earlier on this coding, oldest first:\n{lines}\n\n"
+#: them (R-0941), each with what it produced, so a question about how the
+#: record came to be has something true to be answered from (R-0946).
+EARLIER = "What the coder said earlier on this coding, oldest first, each with what it produced:\n{lines}\n\n"
 #: Said back to a scribe that stopped on words while a call was refused, so it
 #: corrects the call rather than giving up on it.
 AGAIN = "Not entered yet: {refused} Correct the call and make it again."
@@ -47,6 +48,10 @@ class Verb(enum.StrEnum):
 
     Add = "add"
     Change = "change"
+
+
+#: How an earlier statement's rows read in the clause saying what it produced.
+DID = {Verb.Add: "added", Verb.Change: "changed"}
 
 
 class Pronoun(enum.StrEnum):
@@ -195,7 +200,7 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     messages = [
         {
             "role": "user",
-            "content": _earlier(coding.id)
+            "content": _earlier(coding, record)
             + TURN.format(who=_who(statement), turn=statement.text or "", said=said)
             + about,
         }
@@ -266,11 +271,51 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     return _result(lines, missed, made(toolbox.deltas), turn_id, [], reply)
 
 
-def _earlier(coding_id: int) -> str:
-    notes = Note.query.filter_by(coding_id=coding_id).order_by(Note.id).all()
-    if not notes:
+def _earlier(coding, data: dict) -> str:
+    said = statements(coding.id, coding.diagram_id, data)
+    if not said:
         return ""
-    return EARLIER.format(lines="\n".join(f"- {note.text}" for note in notes))
+    return EARLIER.format(
+        lines="\n".join(f"- {one['text']} → {produced(one)}" for _, one in said)
+    )
+
+
+def statements(coding_id: int, diagram_id: int, data: dict) -> list[tuple[int, dict]]:
+    """What this coder typed on a coding, oldest first, each with the line of
+    the conversation it was about, the rows the scribe wrote from those words
+    in the record's own words so a later correction to an event still reads as
+    the record has it (R-0270), people and pair-bonds first as when the words
+    were sent (R-0883), the events those rows are, whose codes' concept pages
+    hang under them (R-0541), and what the scribe said back (R-0942)."""
+    by_scribe_turn = adapter.touched_by_turn(diagram_id)
+    deltas = adapter.deltas_by_turn(diagram_id)
+    notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc()).all()
+    replies = adapter.replies({note.turn_id for note in notes if note.turn_id})
+    return [
+        (
+            note.statement_id,
+            {
+                "text": note.text,
+                "lines": lines_of(data, deltas.get(note.turn_id, [])),
+                "event_ids": by_scribe_turn.get(note.turn_id, []),
+                "reply": replies.get(note.turn_id, ""),
+            },
+        )
+        for note in notes
+    ]
+
+
+def produced(said: dict) -> str:
+    """What one statement produced, in its rows' words, or what the scribe
+    answered (R-0946)."""
+    parts = [
+        f"{DID[verb]} " + ", ".join(line["text"] for line in said["lines"] if line["verb"] == verb)
+        for verb in Verb
+        if any(line["verb"] == verb for line in said["lines"])
+    ]
+    if said["reply"]:
+        parts.append(f"answered: {said['reply']}")
+    return "; ".join(parts) or "nothing written"
 
 
 def _result(lines, refused, made, turn_id, choices, reply="") -> dict:

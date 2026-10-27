@@ -1010,9 +1010,26 @@ def test_each_message_carries_the_coders_earlier_statements_on_the_coding(coder,
         scribe(coder, coding, turns[1], second, "Marcus was born in 1980")
     sent = heard.call_args_list[0].args[1][0]["content"]
     assert sent.startswith(
-        "What the coder said earlier on this coding, oldest first:\n- Marcus could not sleep\n\n"
+        "What the coder said earlier on this coding, oldest first, each with what it produced:\n"
+        "- Marcus could not sleep → nothing written\n\n"
     )
     assert sent.endswith("Marcus was born in 1980\n")
+
+
+def test_each_earlier_statement_carries_what_it_produced(coder, cut, turns):
+    # R-0946, R-0941
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    scribe(coder, coding, turns[0], Scripted([("add_person", {"name": "Paul"})]), "Add Marcus's father Paul")
+    asked = Scripted(said="The first statement added him.")
+    with patch.object(asked, "turn", wraps=asked.turn) as heard:
+        scribe(coder, coding, turns[1], asked, "How was Paul added?")
+    assert "- Add Marcus's father Paul → added Paul\n" in heard.call_args_list[0].args[1][0]["content"]
+    after = Scripted()
+    with patch.object(after, "turn", wraps=after.turn) as heard:
+        scribe(coder, coding, turns[1], after, "Paul was born in 1950")
+    assert "- How was Paul added? → answered: The first statement added him.\n" in (
+        heard.call_args_list[0].args[1][0]["content"]
+    )
 
 
 AGED = {"person": "1", "title": "Anxiety started", "description": "at 16", "symptom": "up"}

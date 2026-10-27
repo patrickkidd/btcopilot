@@ -1,8 +1,10 @@
 """Live checks of the scribe on the faults of a production coding on
 2026-10-25: an age dated with an invented year, a coder's question written as
 an event, and a birth given later that left the wrong year in place
-(R-0940 to R-0943). The family is invented. One try each; the run stops at
-CAP dollars of model calls.
+(R-0940 to R-0943), and of one on 2026-10-27: asked how a person's parents
+were added, the scribe said they were there from the beginning when a
+distance note of the coder's had added them (R-0946). The family is invented.
+The run stops at CAP dollars of model calls.
 """
 
 import datetime
@@ -15,7 +17,7 @@ from btcopilot.extensions import db
 from btcopilot.models import Diagram, Discussion, Speaker, SpeakerType, Statement
 from btcopilot.review import adapter, scribe
 from btcopilot.review.models import Cut, Note
-from btcopilot.tests.live.criterion import once
+from btcopilot.tests.live.criterion import once, passes
 from btcopilot.tests.review.conftest import coded
 
 CAP = Decimal("0.50")
@@ -132,7 +134,21 @@ def test_a_birth_given_after_an_age_dates_the_earlier_event(test_user):
     shift ends dated 1996, marked approximate, the only shift on the diagram."""
     coding, statement = coding_of(test_user, UNBORN)
     told(coding, statement, AGE)
-    assert "- " + AGE in scribe._earlier(coding.id)
+    assert "- " + AGE in scribe._earlier(coding, adapter.record_of(adapter.diagram_of(coding.diagram_id)))
     told(coding, statement, "She was born in 1980")
     (shift,) = shifts(coding)
     assert dated(shift) == ("1996", "approximate"), events(coding)
+
+
+@passes(2, of=3)
+def test_a_question_about_how_people_were_added_names_the_statement_that_added_them(test_user):
+    # R-0946
+    """Passes when the distance note wrote something and the answer to how her
+    parents were added speaks of that distance note and never says they were
+    there from the beginning."""
+    coding, statement = coding_of(test_user, GIVEN)
+    wrote = told(coding, statement, "Add distance from Ann to her parents")
+    assert wrote["lines"], wrote
+    answer = told(coding, statement, "How were her parents added?")["reply"].lower()
+    assert "distance" in answer, answer
+    assert "beginning" not in answer, answer
