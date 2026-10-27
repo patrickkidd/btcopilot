@@ -190,20 +190,20 @@ it("asks who the case is about when it is not the person's own family, with no q
   expect(done.shown[0]).toContain("Your file is in: 4 people, 212 events and 3 pair-bonds.");
 });
 
-const denver = { kind: ItemKind.Event, id: 23, label: "Event 'Moved to Denver' (2019)", reason: "It has no kind." };
+const denver = { kind: ItemKind.Event, id: 23, label: "Event 'Moved to Denver' (2019)", reason: "The file does not say what kind of event it is." };
 
 // R-0947
 it("shows the coach's report of the import on every step until the sheet is put away, a line for each object skipped", () => {
   const note =
     "Your file is in: 1 person, 1 event and 1 pair-bond.\nOne part of the file could not come in:\n" +
-    "Event 'Moved to Denver' (2019) was skipped. It has no kind.";
+    "Event 'Moved to Denver' (2019) was skipped. The file does not say what kind of event it is.";
   const imported = { ...lund.imported, people: 1, events: 1, pair_bonds: 1, failed: [denver], note };
   const { one, done } = importer({ ...lund, imported });
   one.answer(Answer.Own);
   for (const html of [ownStep(imported), done.shown[0], codesStep(imported)]) {
     expect(html).toContain('<div class="cf-t">Your file is in: 1 person, 1 event and 1 pair-bond.</div>');
     expect(html).toContain('<p class="cf-p">One part of the file could not come in:</p>');
-    expect(html).toContain('<p class="cf-p">Event &#39;Moved to Denver&#39; (2019) was skipped. It has no kind.</p>');
+    expect(html).toContain('<p class="cf-p">Event &#39;Moved to Denver&#39; (2019) was skipped. The file does not say what kind of event it is.</p>');
   }
   expect(ownStep(lund.imported)).not.toContain("could not come in");
 });
@@ -290,6 +290,16 @@ it("cannot be put away until a primary person is set, and then its cross counts 
 it("says under the codes question what a yes is likely to cost", () => {
   expect(codesStep(lund.imported)).toContain('<p class="cf-p fdc-cost">Up to about $1.80</p>');
   expect(costLine({ low: 0.07, high: 3.1 })).toBe("Up to about $3.10");
+});
+
+// R-0899, R-0947
+it("asks nothing about codes when no event the file brought needs them, and shows only the report and its cross", () => {
+  const html = codesStep({ ...lund.imported, coding_cost: { low: 0, high: 0 } });
+  expect(html).not.toContain(asked);
+  expect(html).not.toContain("Up to about");
+  expect(html).not.toContain("data-act");
+  expect(html).toContain("cardx");
+  expect(html).toContain('<div class="cf-t">Your file is in: 4 people, 212 events and 3 pair-bonds.</div>');
 });
 
 // R-0899, R-0902, R-0905

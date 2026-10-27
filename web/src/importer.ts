@@ -196,12 +196,16 @@ const dollars = (amount: number) => `$${amount.toFixed(2)}`;
 export const costLine = ({ high }: Imported["imported"]["coding_cost"]): string => `Up to about ${dollars(high)}`;
 
 /** Last: whether the coach should add the codes the file has none of, and
- * what that is likely to cost. */
+ * what that is likely to cost; with no event left needing codes, only the
+ * report and its cross. The high end is a price per such event, so it is zero
+ * exactly when there are none. */
 export const codesStep = (imported: Imported["imported"]): string =>
   head(imported, true) +
-  `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
-  `<p class="cf-p fdc-cost">${costLine(imported.coding_cost)}</p>` +
-  buttons([Answer.Yes, "Yes"], [Answer.NotNow, "Not now"]);
+  (imported.coding_cost.high
+    ? `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
+      `<p class="cf-p fdc-cost">${costLine(imported.coding_cost)}</p>` +
+      buttons([Answer.Yes, "Yes"], [Answer.NotNow, "Not now"])
+    : "");
 
 /** The new diagram, or the server's own sentence for a file it refuses. */
 export async function bring(file: File): Promise<Imported | string> {

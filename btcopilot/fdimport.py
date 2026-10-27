@@ -118,11 +118,11 @@ PERSON_LISTS = ("relationshipTargets", "relationshipTriangles")
 KINDS = {kind.value for kind in EventKind} | {MOVED, OLD_SHIFT}
 # Why an object of the file is skipped, in the words the person reads after
 # the import [Oracle: R-0947].
-NO_ID = "The file gives it no id."
-SAME_ID = "Another item in the file has the same id."
-NO_KIND = "It has no kind."
-NO_SUCH_KIND = 'The app has no kind of event called "{}".'
-NOBODY = "It names someone who did not come in."
+NO_ID = "The file gives it no identity."
+SAME_ID = "The file lists it twice."
+NO_KIND = "The file does not say what kind of event it is."
+NO_SUCH_KIND = "The file calls it a kind of event this app does not have."
+NOBODY = "It belongs to a person the file could not bring in."
 ASKED = "{} The coach will ask about it."
 
 
@@ -763,7 +763,7 @@ def _sound(out: Imported, fd: dict) -> dict:
         if not kind:
             return NO_KIND
         if known is not None and kind not in known:
-            return NO_SUCH_KIND.format(kind)
+            return NO_SUCH_KIND
         return NOBODY if _people_of(chunk) - named.keys() else None
 
     bonds = keep(

@@ -571,7 +571,7 @@ def test_an_event_with_no_kind_is_skipped_and_everything_else_comes_in(test_user
 @pytest.mark.parametrize(
     "broken, label, reason",
     [
-        (event(23, "zebra", person=1), "A zebra event", 'The app has no kind of event called "zebra".'),
+        (event(23, "zebra", person=1), "A zebra event", fdimport.NO_SUCH_KIND),
         (event(23, "noted", person=99, description="Left home"), "Event 'Left home'", fdimport.NOBODY),
         ({**event(0, "noted", description="Left home"), "id": None}, "Event 'Left home'", fdimport.NO_ID),
         (event(20, "noted", person=1, description="Left home"), "Event 'Left home'", fdimport.SAME_ID),
@@ -593,7 +593,7 @@ def test_a_person_with_no_id_is_skipped_and_the_ledger_still_builds():
         (ItemKind.Person, None, "Person 'Dee Lund'")
     ]
     text = fdafter.ledger("Lund family.fd", fd, out)
-    assert "Person 'Dee Lund' was skipped. The file gives it no id." in text
+    assert "Person 'Dee Lund' was skipped. The file gives it no identity." in text
 
 
 def test_a_clean_file_skips_nothing():

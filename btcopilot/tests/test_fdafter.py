@@ -283,11 +283,11 @@ def test_one_bad_event_is_reported_in_a_coach_message_and_the_rest_of_the_file_c
     assert coach_lines(made()) == [
         "Your file is in: 3 people, 3 events and 1 pair-bond.\n"
         "One part of the file could not come in:\n"
-        "Event 'Moved to Denver' (2019) was skipped. It has no kind."
+        "Event 'Moved to Denver' (2019) was skipped. The file does not say what kind of event it is."
     ]
     assert imported["note"] == coach_lines(made())[0]
     caught, _ = landed
-    assert "Event 'Moved to Denver' (2019) was skipped. It has no kind." in caught[0][3]
+    assert "Event 'Moved to Denver' (2019) was skipped. The file does not say what kind of event it is." in caught[0][3]
 
 
 def locked() -> bytes:
