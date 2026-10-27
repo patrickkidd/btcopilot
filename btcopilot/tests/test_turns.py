@@ -403,6 +403,38 @@ def test_a_refused_turn_says_so_in_the_coachs_voice_and_is_not_retried(
     assert turnlog.running(discussion.id) is None
 
 
+@pytest.mark.parametrize(
+    "after, raised",
+    [((said("Added Nell."),), None), ((), IndexError)],
+    ids=["done", "broken"],
+)
+def test_a_turn_that_ends_never_looks_lost_to_a_reader(
+    web, token, family, monkeypatch, after, raised
+):
+    # R-0182
+    """A thread read that lands as the turn lets its session go must not take
+    a finished turn for one whose worker died and end it a second time. The
+    broken coach runs out of script after its tool call."""
+    coach(monkeypatch, called(ToolName.EditPerson, name="Nell"), *after)
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    seen = []
+    clear = turnlog.clear
+
+    def watched(discussion_id):
+        seen.append(turns.lost(body["turn_id"]))
+        clear(discussion_id)
+        seen.append(turns.lost(body["turn_id"]))
+
+    monkeypatch.setattr(turnlog, "clear", watched)
+    if raised:
+        with pytest.raises(raised):
+            turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    else:
+        turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    assert seen == [None, None]
+
+
 def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
     # R-0182
     """A worker that dies mid-turn says nothing. The hold on the session has to

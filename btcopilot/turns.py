@@ -295,10 +295,10 @@ def _turn(
             {"category": refused.category, "reason": str(refused.category)},
         )
         _unanswered(turn, statement_id, {"type": TurnEventKind.Refused.value})
-        turnlog.clear(discussion_id)
         _log.warning(f"coach_turn {turn_id} refused: {refused.category}")
         event = {"type": TurnEventKind.Refused.value, "message": REFUSED}
         turnlog.append(turn_id, event)
+        turnlog.clear(discussion_id)
         return event
     # The one router in this file: whatever went wrong, the page is told the
     # turn ended, and the error goes on to be logged and retried as usual.
@@ -315,8 +315,8 @@ def _turn(
         )
         failed = {"type": TurnEventKind.Failed.value, "message": BROKE}
         _unanswered(turn, statement_id, failed)
-        turnlog.clear(discussion_id)
         turnlog.append(turn_id, failed)
+        turnlog.clear(discussion_id)
         raise
     _keep(
         turn,
@@ -328,9 +328,9 @@ def _turn(
     )
     reply["kind"] = StatementKind.Turn.value
     reply["discussion_id"] = discussion_id
-    turnlog.clear(discussion_id)
-    reply["session"] = session_payload(discussion)
+    reply["session"] = _freed(discussion)
     turnlog.append(turn_id, dict(reply, type=TurnEventKind.Done.value))
+    turnlog.clear(discussion_id)
     for model in shadows:
         shadow.start(turn, statement_id, model, before)
     return reply
@@ -386,8 +386,8 @@ def _read(turn_id: str, discussion: Discussion, said: Statement) -> dict | None:
         }
         turnstore.save(turn_id, discussion.id, [failed])
         db.session.commit()
-        turnlog.clear(discussion.id)
         turnlog.append(turn_id, failed)
+        turnlog.clear(discussion.id)
         if own is None:
             raise
         return failed
@@ -426,7 +426,6 @@ def _stopped(turn: CoachTurn, statement_id: int) -> dict:
     ).update({"statement_id": statement_id})
     turnstore.save(turn.turn_id, discussion.id, kept + [ending])
     db.session.commit()
-    turnlog.clear(discussion.id)
     event = dict(
         ending,
         statement=None,
@@ -435,10 +434,18 @@ def _stopped(turn: CoachTurn, statement_id: int) -> dict:
         turn_id=turn.turn_id,
         kind=StatementKind.Turn.value,
         discussion_id=discussion.id,
-        session=session_payload(discussion),
+        session=_freed(discussion),
     )
     turnlog.append(turn.turn_id, event)
+    turnlog.clear(discussion.id)
     return event
+
+
+def _freed(discussion: Discussion) -> dict:
+    """The session as a turn's last event shows it. That event is logged before
+    the hold is let go, so no reader finds the hold gone with no ending logged
+    and takes a finished turn for a lost one; the session it carries is free."""
+    return dict(session_payload(discussion), turn=None)
 
 
 def _unanswered(turn: CoachTurn, statement_id: int, ending: dict) -> None:
