@@ -685,8 +685,8 @@ MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
 
 
 def _when(value, certainty=None, precision=None) -> str:
-    """A day in the words the rest of the app uses: the month and the year,
-    or the year alone when that is all the coder said (R-0896).
+    """A day in the words the rest of the app uses, only as far as it was
+    said: the day, the month and the year, or the year alone (R-0896).
 
     An event from before precision was kept, dated the first of January and
     marked approximate, was a year alone too; the month there was never said,
@@ -701,7 +701,10 @@ def _when(value, certainty=None, precision=None) -> str:
     approximate = _plain(certainty) == DateCertainty.Approximate.value
     if approximate and month == "01" and day == "01":
         return year
-    return f"{MONTHS[int(month) - 1]} {year}"
+    said = f"{MONTHS[int(month) - 1]} {year}"
+    if _plain(precision) == DatePrecision.Day.value and day.isdigit():
+        return f"{int(day)} {said}"
+    return said
 
 
 def _plain(value) -> str:

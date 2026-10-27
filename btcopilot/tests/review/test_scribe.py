@@ -892,6 +892,15 @@ def test_a_corrected_father_on_the_birth_moves_the_child_too(coder, cut, turns):
     assert parents_of_liam(coding) == ({6, 3}, {6, 3})
 
 
+def test_a_changed_birth_said_to_the_day_reads_the_day(coder, cut, turns):
+    # R-0896, R-0883
+    family = dict(FAMILY, events=[dict(FAMILY["events"][0], dateTime="1980-05-11", dateCertainty="certain", datePrecision="day")])
+    coding = coded(coder.user, cut, family, done=False)
+    model = Versioned([("change_event", {"id": 5, "parents": [6]})])
+    response = scribe(coder, coding, turns[0], model, "Liam's father was Declan, not Owen")
+    assert changed("Liam · Birth · 11 May 1980") in response.json["lines"]
+
+
 def test_a_corrected_father_on_the_child_moves_the_birth_too(coder, cut, turns):
     # R-0886
     coding = coded(coder.user, cut, FAMILY, done=False)
