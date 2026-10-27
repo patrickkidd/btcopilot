@@ -102,6 +102,31 @@ test.describe(() => {
     );
     await shot("3-answered");
 
+    // Opened again, the thread picks up where the coder left off: the line
+    // after the last one they coded sits at the top, or the thread is as far
+    // down as it goes when that line is near the cut.
+    await page.reload({ waitUntil: "networkidle" });
+    await page.locator("#account").click();
+    await page.waitForTimeout(800);
+    await page.locator(".sn-pane.in .sn-row", { hasText: "Your coding task" }).click();
+    await page.waitForTimeout(1500);
+    await page.locator("#task-screen .addbtn").first().click();
+    await page.waitForTimeout(2500);
+    const resumed = await page.evaluate(() => {
+      const list = document.querySelector<HTMLElement>("#coding-chat")!;
+      const coded = new Set(
+        [...list.querySelectorAll<HTMLElement>(".bub.said")].map((n) => n.dataset.turn),
+      );
+      const lines = [...list.querySelectorAll<HTMLElement>(".bub.line")];
+      const next = lines[lines.map((l) => coded.has(l.dataset.turn)).lastIndexOf(true) + 1];
+      const bottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
+      if (!next) return bottom;
+      const gap = next.getBoundingClientRect().top - list.getBoundingClientRect().top;
+      return Math.abs(gap) < 4 || (gap > 0 && bottom);
+    });
+    check(resumed, "the thread reopens on the line after the last one coded");
+    await shot("4-resumed");
+
     await quiet();
   });
 });

@@ -133,6 +133,26 @@ export const line = (turn: Pick<CodingTurn, "client" | "text">): string =>
     ? drawn(tokenize(turn.text), asWritten)
     : reply(tokenize(turn.text), null, asWritten, asWritten);
 
+/** Where the thread opens when it is not opened at one line. */
+export enum Resume {
+  Top = "top",
+  End = "end",
+}
+
+/** The coder picks up where they left off: the line after the last one they
+ * coded sits at the top of the thread. Nothing coded yet opens where coding
+ * starts, under the last ratified cut or at the top; everything coded opens
+ * on the last line. */
+export function resumeAt(thread: CodingThread): number | Resume {
+  const { turns } = thread;
+  const last = turns.map((turn) => turn.said.length > 0).lastIndexOf(true);
+  if (last === -1)
+    return thread.agreed
+      ? (turns.find((turn) => !turn.above)?.id ?? Resume.End)
+      : Resume.Top;
+  return turns[last + 1]?.id ?? Resume.End;
+}
+
 /** Which record events a piece of the thread wrote, for the concept pages
  * hung under it once the record is read. */
 function wrote(node: HTMLElement, ids: number[]): HTMLElement {
@@ -233,7 +253,7 @@ export class Coding {
       const line = this.list.querySelector(`[data-turn="${atStatement}"]`);
       line?.classList.add("sel");
       line?.scrollIntoView({ block: "center" });
-    }
+    } else this.resume(resumeAt(this.thread));
   }
 
   /** The record after something was written into it: the picture, the drawer
@@ -590,19 +610,23 @@ export class Coding {
     }
     this.list.append(this.cutline(thread, true));
     this.paint();
-    this.toEnd();
   }
 
-  /** The thread opens on the cut, which is what the task is about. The web
-   * font lands after the bubbles are measured and every one of them grows, so
-   * the end is held in view until the page has settled. */
-  private toEnd(): void {
-    const end = () => {
-      this.list.scrollTop = this.list.scrollHeight;
+  /** The web font lands after the bubbles are measured and every one of them
+   * grows, so the place is held in view until the page has settled. */
+  private resume(at: number | Resume): void {
+    const place = () => {
+      if (at === Resume.Top) this.list.scrollTop = 0;
+      else if (at === Resume.End) this.list.scrollTop = this.list.scrollHeight;
+      else {
+        const line = this.list.querySelector(`[data-turn="${at}"]`)!;
+        this.list.scrollTop +=
+          line.getBoundingClientRect().top - this.list.getBoundingClientRect().top;
+      }
     };
-    end();
-    requestAnimationFrame(end);
-    void document.fonts?.ready.then(end);
+    place();
+    requestAnimationFrame(place);
+    void document.fonts?.ready.then(place);
   }
 
   private bubble(turn: CodingTurn): HTMLElement {

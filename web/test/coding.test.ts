@@ -9,7 +9,8 @@ vi.stubGlobal("window", {
   BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
 });
 
-const { Coding, given, line, scribedRows, writtenConcepts } = await import("../src/coding");
+const { Coding, Resume, given, line, resumeAt, scribedRows, writtenConcepts } =
+  await import("../src/coding");
 const api = await import("../src/api");
 const { Failed } = api;
 const { Menu } = await import("../src/menu");
@@ -118,7 +119,6 @@ describe("the concept pages under what the scribe wrote", () => {
       },
       cutline: () => ({ dataset: {}, innerHTML: "", className: "" }),
       paint: () => {},
-      toEnd: () => {},
     });
     screen.render();
     screen.paintConcepts();
@@ -175,7 +175,6 @@ describe("the concept pages under what the scribe wrote", () => {
       },
       cutline: () => ({ dataset: {}, innerHTML: "", className: "" }),
       paint: () => {},
-      toEnd: () => {},
     });
     screen.render();
     vi.unstubAllGlobals();
@@ -553,5 +552,38 @@ describe("a line of the conversation being coded", () => {
     const html = line({ client: true, text: "It was [[event:7|Dad left]] that year." });
     expect(html).not.toContain("[[");
     expect(html).toContain(">Dad left</button> that year.");
+  });
+});
+
+describe("where the coding screen opens", () => {
+  const turn = (id: number, coded: boolean, above = false) => ({
+    id,
+    order: id,
+    who: "",
+    client: true,
+    text: "",
+    above,
+    said: coded ? [{ text: "x", lines: [], event_ids: [], reply: "" }] : [],
+  });
+  const thread = (turns: ReturnType<typeof turn>[], agreed = false) =>
+    ({
+      turns,
+      agreed: agreed ? { order: 2, day: "Sep 1", ratified: "Sep 3" } : null,
+    }) as unknown as Parameters<typeof resumeAt>[0];
+
+  // R-0265
+  it("opens on the line after the last one the coder coded", () => {
+    expect(resumeAt(thread([turn(1, true), turn(2, false), turn(3, true), turn(4, false), turn(5, false)]))).toBe(4);
+  });
+
+  // R-0265
+  it("opens where coding starts when nothing is coded yet", () => {
+    expect(resumeAt(thread([turn(1, false), turn(2, false)]))).toBe(Resume.Top);
+    expect(resumeAt(thread([turn(1, false, true), turn(2, false, true), turn(3, false)], true))).toBe(3);
+  });
+
+  // R-0265
+  it("opens on the last line when every line is coded", () => {
+    expect(resumeAt(thread([turn(1, true), turn(2, true)]))).toBe(Resume.End);
   });
 });
