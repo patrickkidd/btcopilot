@@ -591,6 +591,7 @@ What it is for: saying what each line of a conversation tells you happened, so w
 - The task names the conversation, the point it is frozen at, how many turns are new since you last pressed Done, and roughly how long it will take. [drawn] {R-0267}
 - One green button starts it, and under it is a faint record of the tasks you have already finished. [drawn] {R-0265}
 - Starting opens the conversation as a thread you cannot type into. [drawn]
+- The thread lists each message once: words the person sent again after their first send got no reply are listed only where they were sent again, while a repeat the coach answered is listed twice; the chat itself is unchanged. [built] {R-0946}
 - The thread opens scrolled to the line just past your last coded one, so you see where you left off; before anything is coded it opens at the start, and once everything is coded at the end. [built] {R-0945}
 - You tap a line and it is outlined in green. [drawn]
 - You then type, in your own words, what that line tells you happened. [drawn]

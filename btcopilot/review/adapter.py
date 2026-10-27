@@ -9,6 +9,7 @@ it reached into the app.
 import datetime
 import re
 import uuid
+from collections import Counter
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -115,6 +116,7 @@ __all__ = [
     "sitting",
     "utc_iso",
     "thread",
+    "heard",
     "statement_order",
 ]
 
@@ -422,6 +424,28 @@ def thread(diagram_id: int) -> list[Statement]:
         found,
         key=lambda s: (started[s.discussion_id], s.discussion_id, s.order or 0, s.id),
     )
+
+
+def heard(lines: list[Statement]) -> list[Statement]:
+    """Lines less the person's words whose turn failed with no reply and that
+    they sent again word for word later on: those never became part of the
+    conversation. A repeat the coach answered stays."""
+    sharing = Counter(s.turn_id for s in lines if s.turn_id)
+    kept = turnstore.kept(set(sharing))
+    return [
+        s
+        for at, s in enumerate(lines)
+        if not (
+            s.turn_id
+            and sharing[s.turn_id] == 1
+            and turnstore.failed(kept.get(s.turn_id, []))
+            and any(
+                later.speaker_id == s.speaker_id
+                and (later.text or "").strip() == (s.text or "").strip()
+                for later in lines[at + 1 :]
+            )
+        )
+    ]
 
 
 def sitting(discussion_id: int) -> list[Statement]:
