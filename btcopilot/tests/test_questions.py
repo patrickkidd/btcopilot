@@ -567,6 +567,19 @@ def test_the_page_gets_asked_questions_only_each_with_where_it_was_asked(web, fa
     ]
 
 
+def test_a_question_taken_off_after_it_was_asked_leaves_the_page(web, family, monkeypatch):
+    # R-0006, R-0072
+    body = asking_turn(web, monkeypatch)
+    reply = statements(web, body["discussion_id"])[1]["id"]
+    added = Change.query.filter_by(statement_id=reply).order_by(Change.id).first()
+    [taken] = record.undo_changes(family.id, [added.id], author=Author.Coach)
+    taken.statement_id = reply
+    db.session.commit()
+    assert record.asked_in(family.id) == {}
+
+    assert web.get("/app/timeline").get_json()["asked_questions"] == []
+
+
 def test_the_user_dismisses_a_question_and_the_coach_sees_it_declined(web, family, monkeypatch):
     # R-0077
     asking_turn(web, monkeypatch)

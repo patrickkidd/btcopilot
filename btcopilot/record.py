@@ -2060,7 +2060,7 @@ SHOWN = (QuestionState.Asked, QuestionState.Raised)
 
 def asks(delta: dict) -> bool:
     if delta["field"] is None:
-        return delta["after"].get("state") in SHOWN
+        return delta["after"] is not None and delta["after"].get("state") in SHOWN
     return delta["field"] == "state" and delta["after"] in SHOWN
 
 
@@ -2071,7 +2071,11 @@ def asked_in(diagram_id: int) -> dict[str, dict]:
     rows, said = _stated(diagram_id)
     for row in rows:
         for delta in row.deltas:
-            if delta["item_kind"] == ItemKind.Question.value and asks(delta):
+            if delta["item_kind"] != ItemKind.Question.value:
+                continue
+            if _removes(delta):
+                found.pop(str(delta["item_id"]), None)
+            elif asks(delta):
                 found[str(delta["item_id"])] = {
                     "discussion_id": said[row.statement_id],
                     "statement_id": row.statement_id,
