@@ -3,7 +3,8 @@ import pytest
 import btcopilot
 from btcopilot import extensions, reports, toolbox
 from btcopilot.extensions import db
-from btcopilot.models import Report, ReportKind, ReportStatus
+from btcopilot import diagramjson
+from btcopilot.models import Diagram, Report, ReportKind, ReportStatus
 from btcopilot.toolbox import ToolName
 
 BUG = {
@@ -39,6 +40,19 @@ def test_a_bug_the_coach_offered_is_one_row_for_the_person_and_the_diagram_the_a
         9100,
         BUG["words"],
     )
+
+
+def test_a_report_from_a_coding_screen_is_on_the_coders_copy(web, test_user, test_user_2):
+    # R-0946
+    copy = Diagram(user_id=test_user.id, name="coding of Case A", data=diagramjson.dumps({}))
+    theirs = Diagram(user_id=test_user_2.id, name="Case B", data=diagramjson.dumps({}))
+    db.session.add_all([copy, theirs])
+    db.session.commit()
+    coding = dict(BUG, address="/app/coding/7", diagram_id=copy.id)
+    assert post(web, coding).status_code == 201
+    assert Report.query.one().diagram_id == copy.id
+    assert post(web, dict(coding, diagram_id=theirs.id)).status_code == 403
+    assert Report.query.count() == 1
 
 
 def test_a_signed_out_page_reports_without_a_person_or_a_csrf_token(flask_app):

@@ -134,7 +134,10 @@ token, so only a post from this site is taken (403 otherwise); one sender (the
 person, or a signed-out page's address) gets 20 an hour, then 429. `kind` is
 `bug` or `feedback`, `status` is `sent` or `declined`, `release` is the app's
 version; `address` (the screen), `turn_id` and `statement_id` (the coach's
-reply that offered it) are optional. A report sent carries the offered `words`;
+reply that offered it) are optional. `diagram_id`, also optional, names the
+diagram the report is about, as a coding screen names the coder's copy; one the
+person cannot read is a 403; without it the report is on the diagram the app is
+on. A report sent carries the offered `words`;
 one declined, none. During the beta a declined bug is a 400. Any other field is a
 400; answers `{"id"}` with 201. An
 error in the page or the server is never a report: the page posts its own to
