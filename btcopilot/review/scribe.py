@@ -16,8 +16,8 @@ from collections import Counter
 
 from btcopilot.review import adapter
 from btcopilot.review.models import Note
-from btcopilot.review.scribetools import ScribeTools
-from btcopilot.schema import DateCertainty, DatePrecision, EventKind, event_title
+from btcopilot.review.scribetools import ScribeTool, ScribeTools
+from btcopilot.schema import DateCertainty, DatePrecision, EventKind, event_title, stated_date
 
 _log = logging.getLogger(__name__)
 
@@ -70,10 +70,9 @@ WORDS = re.compile(r"[A-Za-z][A-Za-z']*")
 
 
 def unclear(said: str, people: list[dict]) -> list[dict] | None:
-    """The people the coder could mean, to tap one of, or None when the words
-    say who. A coder who points at a person without naming one, or names one
-    that could be two people in the record, picks which before any word of it
-    is written (R-0270)."""
+    """The people the coder could mean, or None when the words say who: a
+    coder who points at a person without naming one, or names one that could
+    be two people in the record (R-0270)."""
     words = WORDS.findall(said)
     spoken = {word.lower() for word in words}
     # A whole name said outright settles it ("Marcus's father" against
@@ -162,6 +161,25 @@ def _new_name(words: list[str]) -> bool:
     )
 
 
+#: The arguments of a scribe tool that name people in the record.
+NAMING = ("id", "person", "spouse", "child", "couple", "parents", "relationship_targets", "relationship_triangles")
+
+
+def _names_one_of(calls, could: list[dict]) -> bool:
+    """Whether a write names one of the people the coder's words could not
+    tell apart; a report or an answer in words never asks who."""
+    ids = {str(person["id"]) for person in could}
+    for call in calls:
+        if call.name == ScribeTool.Report:
+            continue
+        for key in NAMING:
+            value = call.args.get(key)
+            named = value if isinstance(value, list) else [value]
+            if ids & {str(one) for one in named if one is not None}:
+                return True
+    return False
+
+
 def _choices(could: list[dict], data: dict) -> list[dict]:
     names = called(data, full=True)
     return [{"id": person["id"], "name": names[str(person["id"])]} for person in could]
@@ -170,17 +188,19 @@ def _choices(could: list[dict], data: dict) -> list[dict]:
 def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     """One coding turn. Returns the rows it wrote and the rows the diagram
     refused, or the people to pick from instead. `chosen` is the person the
-    coder tapped when they were asked which."""
+    coder tapped when they were asked which.
+
+    The model reads the words first, so a question or a note about the app is
+    answered or offered as a report whoever it mentions; only a write naming
+    one of the people the words could not tell apart stops, before anything
+    is written, to ask which (R-0270, R-0946)."""
     turn_id = uuid.uuid4().hex
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     people = record.get("people") or []
     about = ""
+    could = None
     if chosen is None:
         could = unclear(said, people)
-        if could is not None:
-            choices = _choices(could, record)
-            _log.info(f"Scribe asked which person: {choices}")
-            return _result([], [], [], turn_id, choices)
     else:
         person = next((p for p in people if str(p["id"]) == str(chosen)), None)
         if person is None:
@@ -228,6 +248,10 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
                 messages.append({"role": "assistant", "content": turn.blocks})
             messages.append({"role": "user", "content": AGAIN.format(refused=" ".join(refused))})
             continue
+        if could and not toolbox.deltas and _names_one_of(turn.calls, could):
+            choices = _choices(could, record)
+            _log.info(f"Scribe asked which person: {choices}")
+            return _result([], [], [], turn_id, choices)
         nudged = False
         reply = ""
         results = []
@@ -418,7 +442,7 @@ def _tried_words(data: dict, call: dict) -> str:
         return _bond_words({**bonds.get(one, {}), **args}, names, events)
     event = {**events.get(one, {}), **args}
     if args.get("date"):
-        event["dateTime"] = args["date"]
+        event["dateTime"], event["datePrecision"] = stated_date(str(args["date"]))
     if args.get("date_certainty"):
         event["dateCertainty"] = args["date_certainty"]
     # A missing title is often why it was refused; what happened stands in.
