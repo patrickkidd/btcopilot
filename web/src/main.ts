@@ -35,7 +35,8 @@ import { $, CLUSTER, el, flash, setTitle, slideOver, type Title } from "./dom";
 import { notesSheet } from "./detail";
 import { Sheet } from "./sheet";
 import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
-import { Return, returnKey, touch } from "./keyboard";
+import { onReturn } from "./keyboard";
+import { Typing } from "./typing";
 import { Drawer, SIDEWAYS } from "./drawer";
 import { among, family, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
@@ -1110,8 +1111,10 @@ function whatFailed(error: unknown): string {
  * and a warning sits under them with the way to send them again. Nothing is
  * left half-typed and nothing looks like it is still coming. */
 let inFlight = false;
+const typing = new Typing($("composer"));
 
 async function send(): Promise<void> {
+  if (!(await typing.free())) return;
   const statement = chat.draft();
   if (!statement && !attachment.picked.file) return;
   // sent while the coach replies, it waits in the box for the reply to end,
@@ -1588,56 +1591,13 @@ function widen(which: Screen, sub?: Sub): void {
 let here = Screen.Chat;
 track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 
-// With a real keyboard Return sends; a new line is Shift- or Alt-Return, and
-// on a touch screen Return, so a message can have paragraphs (R-0368). The
-// break is a plain newline so the draft keeps it.
 // Escape puts the cluster's about page away, as its cross does
 document.addEventListener("keydown", (e) => {
   // not while the book's passages are up over it: that Escape is theirs (books.ts)
   if (e.key === "Escape" && picture.aboutOpen() && !books.up && $("chat-screen").offsetParent) lens.climb(CLUSTER);
 });
 
-$("composer").addEventListener("keydown", (e) => {
-  const key = e as KeyboardEvent;
-  const act = returnKey(key, touch());
-  if (!act) return;
-  key.preventDefault();
-  if (act === Return.Send) return void send();
-  const selection = window.getSelection();
-  if (!selection?.rangeCount) return;
-  const range = selection.getRangeAt(0);
-  range.deleteContents();
-  const br = document.createTextNode("\n");
-  range.insertNode(br);
-  // A newline that ends the box draws no line of its own, so the next letters
-  // would join the line above; a second one holds the line open, and the
-  // draft trims it on send.
-  let next = br.nextSibling;
-  while (next instanceof Text && next.data === "") next = next.nextSibling;
-  if (!next) br.after(document.createTextNode("\n"));
-  // No browser scrolls a box to a caret a script put there, so the new line
-  // would open below the box's bottom edge once the box is full (FD-366). The
-  // box is only measured, never written to: an element put into the focused
-  // box can make iOS scroll the page to it, sliding the box off the keyboard.
-  const composer = e.currentTarget as HTMLElement;
-  const style = getComputedStyle(composer);
-  const breaks = document.createRange();
-  breaks.selectNode(br);
-  const glyph = breaks.getBoundingClientRect();
-  const line = parseFloat(style.lineHeight);
-  // the glyph sits centred in its line; the new line is the one under it
-  const below =
-    glyph.bottom +
-    (line - glyph.height) / 2 +
-    line -
-    composer.getBoundingClientRect().bottom +
-    parseFloat(style.paddingBottom);
-  if (below > 0) composer.scrollTop += Math.ceil(below);
-  range.setStartAfter(br);
-  range.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(range);
-});
+onReturn($("composer"), () => void send());
 $("send").addEventListener("click", () => void (chat.stops() ? halt() : send()));
 $("menu-close").addEventListener("click", () => {
   track.tap(Feature.CloseMenu);

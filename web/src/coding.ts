@@ -7,6 +7,8 @@ import { dragScroll } from "./drag";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { toast } from "./toast";
+import { onReturn } from "./keyboard";
+import { Typing } from "./typing";
 import { listButton, PLAY_MARK, tok } from "./tokens";
 import { did, html } from "./tools";
 import { reply, waiting } from "./chat";
@@ -178,6 +180,7 @@ export class Coding {
   private wide = window.matchMedia(WIDE);
   private scrim = el("div", "fs-scrim");
   private sheet = el("div", "fs-sheet cf-sheet");
+  private typing: Typing;
 
   constructor(
     private list: HTMLElement,
@@ -212,6 +215,7 @@ export class Coding {
         throw new Error("a case nobody told has no question to answer");
       },
     );
+    this.typing = new Typing(composer);
     this.overlay.append(this.scrim, this.sheet);
     this.scrim.hidden = true;
     this.sheet.hidden = true;
@@ -359,13 +363,7 @@ export class Coding {
       if (bubble) this.pick(Number(bubble.dataset.turn));
     });
     this.send.addEventListener("click", () => void this.say());
-    this.composer.addEventListener("keydown", (e) => {
-      const key = e as KeyboardEvent;
-      if (key.key === "Enter" && !key.shiftKey) {
-        key.preventDefault();
-        void this.say();
-      }
-    });
+    onReturn(this.composer, () => void this.say());
     this.scrim.addEventListener("click", () => this.close());
     this.sheet.addEventListener("click", (e) => {
       const target = e.target as Element;
@@ -482,6 +480,7 @@ export class Coding {
   /** What the coder typed, sent to the scribe: their own words go into the
    * thread under the line, and what the scribe wrote goes under those. */
   private async say(): Promise<void> {
+    if (!(await this.typing.free())) return;
     const thread = this.thread;
     const said = (this.composer.textContent ?? "").trim();
     if (!thread || this.sending || !said) return;
