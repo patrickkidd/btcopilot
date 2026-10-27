@@ -4,7 +4,7 @@ import { OWN_FAMILY } from "./pro";
 import { Sheet } from "./sheet";
 import { Part, store } from "./store";
 import { clearToasts, toast } from "./toast";
-import type { Imported, Person, Skipped } from "./types";
+import type { Imported, Person } from "./types";
 
 /** A desktop Family Diagram file is a folder, and the diagram.pickle in it is
  * all the app needs: that one file is sent, under the folder's name (R-0899). */
@@ -119,22 +119,18 @@ export enum Answer {
 /** From how many people on the list a name can be typed to find one. */
 const FIND_FROM = 8;
 
-const count = (n: number, one: string, more = `${one}s`) => `${n} ${n === 1 ? one : more}`;
-
-/** One object of the file the import skipped, and why, in plain words (R-0947). */
-export const skippedLine = ({ label, reason }: Skipped): string => `${label} was skipped. ${reason}`;
-
-/** The import's report, on top of every step of the sheet, so it is read
- * before anything can be sent and stays until the sheet is put away: what
- * came in, then each object skipped (R-0947). Only the last step has a cross,
- * since the diagram must end with one primary person (R-0930). */
-const head = ({ people, events, pair_bonds, failed }: Imported["imported"], closable = false): string =>
-  `${closable ? closeX() : ""}<div class="cf-t">Your file is in: ${count(people, "person", "people")}, ` +
-  `${count(events, "event")} and ${count(pair_bonds, "pair-bond")}.</div>` +
-  (failed.length
-    ? `<p class="cf-p">${failed.length === 1 ? "One part" : `${failed.length} parts`} of the file could not come in:</p>` +
-      failed.map((one) => `<p class="cf-p fdc-skipped">${esc(skippedLine(one))}</p>`).join("")
-    : "");
+/** The import's report, the coach's message the import wrote into the chat,
+ * on top of every step of the sheet, so it is read before anything can be
+ * sent: its first line, what came in, as the title, then a line for each
+ * object skipped (R-0947). Only the last step has a cross, since the diagram
+ * must end with one primary person (R-0930). */
+const head = ({ note }: Imported["imported"], closable = false): string => {
+  const [counts, ...skipped] = note.split("\n");
+  return (
+    `${closable ? closeX() : ""}<div class="cf-t">${esc(counts)}</div>` +
+    skipped.map((line) => `<p class="cf-p">${esc(line)}</p>`).join("")
+  );
+};
 
 const buttons = (yes: [Answer, string], no: [Answer, string]): string =>
   `<div class="cf-btns">` +

@@ -186,9 +186,10 @@ def _imported(user):
     if len(data) > attachments.MAX_BYTES:
         abort(413, description=attachments.TOO_BIG)
     fd = fdafter.scene(data)
-    made, out = fdafter.made(user, name, fd)
+    made, out, note = fdafter.made(user, name, fd)
     fdafter.mail(user, made, fd, out)
     imported = out.report() | {
+        "note": note,
         "primary": out.primaries,
         "coding_cost": fdafter.coding_cost(user.id, made),
     }

@@ -4,7 +4,7 @@ import { ItemKind, type Person } from "../src/types";
 vi.stubGlobal("window", { BOOTSTRAP: { user: { username: "ann", pro: false } } });
 
 const { Part, store } = await import("../src/store");
-const { ADD_CODES, Answer, CANNOT_BRING, codesStep, costLine, STILL_SENDING, NO_DIAGRAM, ownStep, Pick, bring, fromDrop, UNREAD, ZIP_FIRST, fromPicked, Importer, PICKLE, refusal, skippedLine, TOO_BIG } = await import(
+const { ADD_CODES, Answer, CANNOT_BRING, codesStep, costLine, STILL_SENDING, NO_DIAGRAM, ownStep, Pick, bring, fromDrop, UNREAD, ZIP_FIRST, fromPicked, Importer, PICKLE, refusal, TOO_BIG } = await import(
   "../src/importer"
 );
 
@@ -140,7 +140,7 @@ const answering = (status: number, body: string) => {
   return sent;
 };
 
-const lund = { id: 9, name: "Lund family", imported: { people: 4, events: 212, pair_bonds: 3, failed: [], primary: [12, 11], coding_cost: { low: 0.4, high: 1.8 } } };
+const lund = { id: 9, name: "Lund family", imported: { people: 4, events: 212, pair_bonds: 3, failed: [], note: "Your file is in: 4 people, 212 events and 3 pair-bonds.", primary: [12, 11], coding_cost: { low: 0.4, high: 1.8 } } };
 
 const person = (id: number, name: string, last_name: string | null = "Lund") => ({ id, name, last_name }) as Person;
 const people = [person(10, "Walter"), person(11, "Ann"), person(12, "Karen"), person(13, "Tomas", null)];
@@ -193,19 +193,19 @@ it("asks who the case is about when it is not the person's own family, with no q
 const denver = { kind: ItemKind.Event, id: 23, label: "Event 'Moved to Denver' (2019)", reason: "It has no kind." };
 
 // R-0947
-it("lists each object the file could not give under the counts, on every step until the sheet is put away", () => {
-  const one = { people: 1, events: 1, pair_bonds: 1, failed: [denver] };
-  const { one: sheet, done } = importer({ ...lund, imported: { ...lund.imported, ...one } });
-  sheet.answer(Answer.Own);
-  const line = `<p class="cf-p fdc-skipped">Event &#39;Moved to Denver&#39; (2019) was skipped. It has no kind.</p>`;
-  for (const html of [ownStep({ ...lund.imported, ...one }), done.shown[0], codesStep({ ...lund.imported, ...one })]) {
-    expect(html).toContain("Your file is in: 1 person, 1 event and 1 pair-bond.");
-    expect(html).toContain("One part of the file could not come in:");
-    expect(html).toContain(line);
+it("shows the coach's report of the import on every step until the sheet is put away, a line for each object skipped", () => {
+  const note =
+    "Your file is in: 1 person, 1 event and 1 pair-bond.\nOne part of the file could not come in:\n" +
+    "Event 'Moved to Denver' (2019) was skipped. It has no kind.";
+  const imported = { ...lund.imported, people: 1, events: 1, pair_bonds: 1, failed: [denver], note };
+  const { one, done } = importer({ ...lund, imported });
+  one.answer(Answer.Own);
+  for (const html of [ownStep(imported), done.shown[0], codesStep(imported)]) {
+    expect(html).toContain('<div class="cf-t">Your file is in: 1 person, 1 event and 1 pair-bond.</div>');
+    expect(html).toContain('<p class="cf-p">One part of the file could not come in:</p>');
+    expect(html).toContain('<p class="cf-p">Event &#39;Moved to Denver&#39; (2019) was skipped. It has no kind.</p>');
   }
-  const two = ownStep({ ...lund.imported, failed: [denver, { ...denver, id: null, label: "A person with no name", kind: ItemKind.Person }] });
-  expect(two).toContain("2 parts of the file could not come in:");
-  expect(skippedLine(denver)).toBe("Event 'Moved to Denver' (2019) was skipped. It has no kind.");
+  expect(ownStep(lund.imported)).not.toContain("could not come in");
 });
 
 // R-0947

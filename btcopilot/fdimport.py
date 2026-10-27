@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from btcopilot import diagramjson, record
 from btcopilot.coverage import CHILD_ROLE
 from btcopilot.extensions import db
-from btcopilot.fdledger import Decision, about, filed
+from btcopilot.fdledger import Decision, about, filed, many
 from btcopilot.metered import Metered
 from btcopilot.models import Author, Diagram, Observation, ObservationKind
 from btcopilot.models.diagram import owner_row
@@ -136,6 +136,9 @@ class Failed:
     label: str
     reason: str
 
+    def said(self) -> str:
+        return f"{self.label} was skipped. {self.reason}"
+
     def json(self) -> dict:
         return {
             "kind": self.kind.value,
@@ -182,6 +185,22 @@ class Imported:
         [Oracle: R-0947]."""
         return {**self.brought, "failed": [one.json() for one in self.failed]}
 
+    def said(self) -> str:
+        """The report as the coach's message in the chat, which the sheet
+        after the import shows too: the counts, then a line for each object
+        skipped [Oracle: R-0947]."""
+        counts = self.brought
+        lines = [
+            f"Your file is in: {many(counts['people'], 'person', 'people')}, "
+            f"{many(counts['events'], 'event')} and {many(counts['pair_bonds'], 'pair-bond')}."
+        ]
+        if self.failed:
+            n = len(self.failed)
+            parts = "One part" if n == 1 else f"{n} parts"
+            lines.append(f"{parts} of the file could not come in:")
+            lines += [one.said() for one in self.failed]
+        return "\n".join(lines)
+
     def decide(self, item: str, name: str, before, after, reason: str) -> None:
         self.decisions.append(Decision(item, name, _text(before), _text(after), reason))
 
@@ -189,7 +208,7 @@ class Imported:
         """An object skipped: listed for the person, and said in the ledger
         under `item`, its name there."""
         self.failed.append(Failed(kind, file_id, label, reason))
-        self.decide(item, "", "", "", f"{label} was skipped. {reason}")
+        self.decide(item, "", "", "", self.failed[-1].said())
 
 
 def _text(value) -> str:

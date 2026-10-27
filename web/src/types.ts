@@ -630,7 +630,8 @@ export interface Skipped {
 }
 
 /** A diagram just made from a desktop file, with the import's report: how
- * much of the file came in and each object skipped (R-0947). */
+ * much of the file came in and each object skipped, and `note`, the same
+ * report as the coach's message the import wrote into the chat (R-0947). */
 export interface Imported extends Diagram {
   /** `primary`: the people the file marks primary, in its order. */
   /** `coding_cost`: what the coach turn a yes to adding codes starts is
@@ -640,6 +641,7 @@ export interface Imported extends Diagram {
     events: number;
     pair_bonds: number;
     failed: Skipped[];
+    note: string;
     primary: number[];
     coding_cost: { low: number; high: number };
   };

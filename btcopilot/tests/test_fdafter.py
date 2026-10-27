@@ -35,9 +35,12 @@ from btcopilot.models import (
     Author,
     Change,
     Diagram,
+    Discussion,
     ModelCall,
     Observation,
     ObservationKind,
+    SpeakerType,
+    Statement,
 )
 from btcopilot.models.diagram import owner_row
 from btcopilot.models.etc import AccessRight
@@ -158,6 +161,17 @@ def made() -> Diagram:
     return Diagram.query.filter_by(name="Lund family").one()
 
 
+def coach_lines(diagram: Diagram) -> list[str]:
+    """What the coach has said in the diagram's chat, oldest first."""
+    return [
+        statement.text
+        for statement in Statement.query.join(Discussion)
+        .filter(Discussion.diagram_id == diagram.id)
+        .order_by(Statement.order)
+        if statement.speaker.type == SpeakerType.Expert
+    ]
+
+
 def test_anyone_makes_a_diagram_from_a_desktop_file_and_is_no_one_in_it(web, landed, test_user):
     # R-0888, R-0899
     assert upload(web, dumps(scene())).status_code == 201
@@ -217,11 +231,13 @@ def test_a_file_is_made_in_the_request_as_it_stands_and_opened(
             "events": 3,
             "pair_bonds": 1,
             "failed": [],
+            "note": "Your file is in: 3 people, 3 events and 1 pair-bond.",
             "primary": [3],
             "coding_cost": fdafter.coding_cost(test_user.id, diagram),
         },
     )
     assert "turn_id" not in body
+    assert coach_lines(diagram) == [body["imported"]["note"]]
     assert test_user.current_diagram_id == diagram.id
     assert sorted(p["name"] for p in diagram.get_diagram_data().people) == ["Ada", "Bo", "Cy"]
     assert ModelCall.query.count() == 0
@@ -245,7 +261,7 @@ def test_the_worker_mails_the_record_the_request_wrote_and_reads_no_file(pro, la
     assert mail.attachments[0].data.decode() == args[3]
 
 
-def test_one_bad_event_is_reported_and_the_rest_of_the_file_comes_in(pro, landed):
+def test_one_bad_event_is_reported_in_a_coach_message_and_the_rest_of_the_file_comes_in(pro, landed):
     # R-0947
     moved = event(23, None, person=1, description="Moved to Denver", dateTime=when(2019, 4, 1))
     answered = upload(pro, dumps(scene(events=[*scene()["events"], moved])))
@@ -264,6 +280,12 @@ def test_one_bad_event_is_reported_and_the_rest_of_the_file_comes_in(pro, landed
     )
     [counted] = Observation.query.filter_by(kind=ObservationKind.Import).all()
     assert counted.detail == {key: imported[key] for key in counted.detail}
+    assert coach_lines(made()) == [
+        "Your file is in: 3 people, 3 events and 1 pair-bond.\n"
+        "One part of the file could not come in:\n"
+        "Event 'Moved to Denver' (2019) was skipped. It has no kind."
+    ]
+    assert imported["note"] == coach_lines(made())[0]
     caught, _ = landed
     assert "Event 'Moved to Denver' (2019) was skipped. It has no kind." in caught[0][3]
 
@@ -295,6 +317,7 @@ def test_a_file_that_cannot_be_opened_is_refused_in_one_sentence_and_nothing_is_
     assert (refused.status_code, refused.get_data(as_text=True)) == (400, said)
     caught, outbox = landed
     assert (Diagram.query.filter_by(name="Lund family").count(), caught, outbox) == (0, [], [])
+    assert Statement.query.count() == 0
 
 
 

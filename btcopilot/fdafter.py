@@ -31,6 +31,7 @@ from btcopilot import (
 )
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
+from btcopilot.discussions import coach_said, sitting
 from btcopilot.extensions import db
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.models import Diagram, ModelCall, Purpose, User
@@ -110,14 +111,19 @@ def _unzipped(data: bytes) -> bytes:
         raise ValueError(DAMAGED)
 
 
-def made(user: User, name: str, fd: dict) -> tuple[Diagram, fdimport.Imported]:
-    """The file as a new diagram of the user's, the app put on it; returns
-    the diagram and the import."""
+def made(user: User, name: str, fd: dict) -> tuple[Diagram, fdimport.Imported, str]:
+    """The file as a new diagram of the user's, the app put on it, and the
+    import's report written into its chat as the coach's message, a note
+    that stays [Oracle: R-0947]; returns the diagram, the import and the
+    message's words."""
     out = fdimport.build(fd)
     diagram = fdimport.save(user.id, name, out, yes=True)
     user.current_diagram_id = diagram.id
+    # the person's speaker is set from who they say they are with their own
+    # first words, so nothing is added to the diagram here
+    note = coach_said(sitting(user, diagram), out.said())
     db.session.commit()
-    return diagram, out
+    return diagram, out, note.text
 
 
 def mail(user: User, diagram: Diagram, fd: dict, imported: fdimport.Imported) -> None:
