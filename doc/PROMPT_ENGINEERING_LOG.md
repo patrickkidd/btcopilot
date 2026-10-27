@@ -2,9 +2,18 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-21 (the review scribe on Gemini Flash with its own tools)
+**Last Updated**: 2026-10-27 (the review scribe answers from what earlier notes produced and offers bug reports)
 
 ---
+
+## FD-389, FD-390 — the review scribe: dates from births, questions answered, history grounded, reports offered (2026-10-25 to 2026-10-27)
+
+R-0942, R-0943, R-0946. Four lines added to the scribe prompt, in the open and private copies, both goldens re-captured.
+- Date rule (R-0943, 2026-10-25): an age or a life stage is dated only by counting from a birth already in the diagram, marked approximate; with no birth there the event goes in undated. Fault: a production coding dated an age with an invented year.
+- Question rule (R-0942, 2026-10-25): a question from the coder is answered in one or two short sentences and writes no code. Fault: a coder's question was written as an event.
+- History grounded (R-0946, 2026-10-27): "Answer a question about the record only from the record and the earlier statements with what they produced; when they do not say, say you do not know." The earlier-statements block now carries after each note what it produced ("→ added …; changed …", "→ answered: …", "→ nothing written"), read from the same rows the coding screen shows. Fault: asked how a person's parents were added, the scribe said they had been in the record from the beginning; an earlier distance note had added them as unnamed parents. The block had carried only the coder's words, so the model had nothing true to answer from.
+- Reports (R-0946, 2026-10-27): the scribe has the coach's own report tool (same schema and fragment), and one line tells it to call report when the coder speaks about the app itself rather than the family, or when it misread the record, and to write no code for it. The page opens the chat's sheet with the coding's diagram and address.
+- Evals: `btcopilot/tests/live/test_scribe_evals.py` gains one case, 2 of 3: the distance note adds unnamed parents, then the question "How were her parents added?" must name the distance note and never "the beginning". Written, not run; $0 so far. The report line has unit coverage only.
 
 ## FD-385 — the review scribe on Gemini Flash with its own tools (2026-10-21)
 

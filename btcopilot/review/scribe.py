@@ -268,7 +268,7 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     missed = [one for one in tried(data, kept) if one["text"] not in entered]
     if missed:
         _log.warning(f"Scribe left refused: {[c['refusal'] for c in kept if c['refusal']]}")
-    return _result(lines, missed, made(toolbox.deltas), turn_id, [], reply)
+    return _result(lines, missed, made(toolbox.deltas), turn_id, [], reply, hands.offered)
 
 
 def _earlier(coding, data: dict) -> str:
@@ -318,7 +318,7 @@ def produced(said: dict) -> str:
     return "; ".join(parts) or "nothing written"
 
 
-def _result(lines, refused, made, turn_id, choices, reply="") -> dict:
+def _result(lines, refused, made, turn_id, choices, reply="", report=None) -> dict:
     return {
         "lines": lines,
         "refused": refused,
@@ -326,6 +326,7 @@ def _result(lines, refused, made, turn_id, choices, reply="") -> dict:
         "made": made,
         "turn_id": turn_id,
         "reply": reply,
+        "report": report,
     }
 
 

@@ -433,6 +433,67 @@ describe("the rows under what the coder said", () => {
   });
 });
 
+describe("a note the scribe offers to send as a report", () => {
+  // R-0946, R-0056
+  it("opens the chat's sheet for the tapped line's turn, on the coding's own diagram and address", async () => {
+    vi.stubGlobal("document", {
+      createElement: () => ({
+        className: "",
+        innerHTML: "",
+        dataset: {},
+        addEventListener() {},
+        remove() {},
+      }),
+    });
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+      localStorage: { getItem: () => null, setItem() {} },
+    });
+    const { Reports } = await import("../src/report");
+    const raise = vi.fn();
+    const reports = Object.assign(Object.create(Reports.prototype), {
+      always: false,
+      at: null,
+      waiting: [],
+      raise,
+    });
+    const words = "this is a bug, the parents were added though never mentioned";
+    vi.mocked(api.scribe).mockResolvedValueOnce({
+      lines: [],
+      refused: [],
+      choices: [],
+      made: [],
+      turn_id: "t7",
+      reply: "Thanks, noted.",
+      report: { kind: "bug", words },
+    } as never);
+    const screen = Object.assign(Object.create(Coding.prototype), {
+      thread: { coding_id: 9, diagram_id: 41, turns: [{ id: 3, client: true }] },
+      picture: { untouch() {} },
+      after() {},
+      handlers: {
+        onReport: (...offered: unknown[]) => reports.offer(...offered),
+      },
+    });
+    await screen.scribe(3, words, null);
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    expect(raise).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "bug",
+        status: "sent",
+        words,
+        turn_id: "t7",
+        statement_id: 3,
+        address: "/app/coding/9",
+        diagram_id: 41,
+      }),
+    );
+  });
+});
+
 describe("the given facts at the top of the thread", () => {
   const person = (fields: object) =>
     ({

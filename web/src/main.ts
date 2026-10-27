@@ -442,6 +442,7 @@ const coding = new Coding(
     onDone: () => void openTask(),
     onGuidelines: () => void openRules(),
     onTitle: (title) => entitle(title),
+    onReport: (...offered) => reports.offer(...offered),
   },
 );
 

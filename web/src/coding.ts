@@ -13,6 +13,7 @@ import { reply, waiting } from "./chat";
 import { asWritten, drawn, tokenize } from "./chips";
 import { WIDE } from "./pro";
 import { fullName, when } from "./rows";
+import type { Reports } from "./report";
 import {
   emptyTimeline,
   ItemKind,
@@ -41,6 +42,9 @@ export interface CodingHandlers {
   onGuidelines(): void;
   /** What the screen is called, which the title row shows. */
   onTitle(title: string | Title): void;
+  /** The scribe offered to send the coder's words, as the coach does in the
+   * chat; the coding is the sitting (R-0946). */
+  onReport: Reports["offer"];
 }
 
 /** The list button on the coding screen's own picture. */
@@ -539,6 +543,18 @@ export class Coding {
       void this.scribe(turn, said, Number(pick.dataset.person));
     });
     this.after(turn, rows, turn);
+    if (written.report)
+      this.handlers.onReport(
+        written.report.kind,
+        written.report.words,
+        written.turn_id,
+        turn,
+        thread.coding_id,
+        {
+          address: `/app/coding/${thread.coding_id}`,
+          diagram_id: thread.diagram_id,
+        },
+      );
     if (written.made.length) {
       await this.refresh();
       // what the scribe writes, it adds
@@ -596,6 +612,7 @@ export class Coding {
           made: [],
           turn_id: "",
           reply: said.reply,
+          report: null,
         });
         this.list.append(
           this.tagged(

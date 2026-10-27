@@ -1051,3 +1051,15 @@ def test_an_age_with_a_birth_in_the_diagram_is_written_dated(coder, cut, turns):
     aged = dict(AGED, date="1996", date_certainty="approximate")
     response = scribe(coder, coding, turns[0], Scripted([("add_shift", aged)]), "Ann's anxiety started at 16")
     assert (response.json["lines"], response.json["refused"]) == ([added("Ann · Anxiety started · 1996")], [])
+
+
+def test_a_note_about_the_app_is_offered_as_a_report_and_writes_nothing(coder, cut, turns):
+    # R-0946, R-0056
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    words = "this is a bug, the parents were added though never mentioned"
+    before = adapter.diagram_of(coding.diagram_id).version
+    model = Scripted([("report", {"kind": "bug", "words": words})], said="Thanks, noted.")
+    response = scribe(coder, coding, turns[0], model, words)
+    assert response.json["report"] == {"kind": "bug", "words": words}
+    assert (response.json["lines"], response.json["refused"]) == ([], [])
+    assert adapter.diagram_of(coding.diagram_id).version == before

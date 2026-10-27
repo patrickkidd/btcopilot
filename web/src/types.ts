@@ -709,6 +709,9 @@ export interface Report {
   statement_id: number;
   /** The words the coach offered to send; none once turned down. */
   words?: string;
+  /** The diagram it is about, where that is not the one the app is on: a
+   * coding screen's copy (R-0946). */
+  diagram_id?: number;
 }
 
 export interface Preferences {
@@ -921,6 +924,9 @@ export interface Scribed {
    * question when it cannot tell whom a statement is about; "" when it said
    * nothing. */
   reply: string;
+  /** What the scribe offered to send, as the coach offers in the chat
+   * (R-0946). */
+  report: { kind: ReportKind; words: string } | null;
 }
 
 export enum RuleSource {

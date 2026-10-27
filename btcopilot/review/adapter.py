@@ -38,7 +38,15 @@ from btcopilot.recordtext import date_text, render, version_line
 from btcopilot.toolnames import toolcall
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.prompts import ToolText
-from btcopilot.toolbox import CERTAINTY, GONE, ToolError, Toolbox, ToolName, choice
+from btcopilot.toolbox import (
+    CERTAINTY,
+    GONE,
+    ToolError,
+    Toolbox,
+    ToolName,
+    choice,
+    report_schema,
+)
 from btcopilot.models import (
     Diagram,
     Notification,
@@ -117,6 +125,7 @@ __all__ = [
     "utc_iso",
     "thread",
     "heard",
+    "report_schema",
     "statement_order",
 ]
 

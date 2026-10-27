@@ -65,8 +65,16 @@ export class Reports {
   }
 
   /** The coach offered to send these words, in the reply now done; words
-   * already offered in this sitting are not offered again. */
-  offer(kind: ReportKind, words: string, turnId: string, statementId: number, sitting: number): void {
+   * already offered in this sitting are not offered again. A coding screen
+   * says where the report is from and which diagram it is about (R-0946). */
+  offer(
+    kind: ReportKind,
+    words: string,
+    turnId: string,
+    statementId: number,
+    sitting: number,
+    where: Pick<Report, "address" | "diagram_id"> = { address: location.pathname },
+  ): void {
     const said = words.trim().toLowerCase();
     const kept = JSON.parse(window.localStorage.getItem(OFFERED) ?? "null") as { sitting: number; words: string[] } | null;
     const offered = kept?.sitting === sitting ? kept.words : [];
@@ -76,7 +84,7 @@ export class Reports {
       kind,
       status: ReportStatus.Sent,
       release: window.BOOTSTRAP.version,
-      address: location.pathname,
+      ...where,
       turn_id: turnId,
       statement_id: statementId,
       words,
