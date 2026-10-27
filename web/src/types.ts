@@ -722,6 +722,8 @@ export interface Preferences {
   birthdate: string | null;
   how_it_works: boolean;
   line_hint: boolean;
+  /** The cut whose task card was last shown on opening the app. */
+  task_card_seen: number | null;
   bug_reports: BugReports;
   /** The models each turn also runs on, for a vote; none is off (R-0636). */
   shadow_models: string[];

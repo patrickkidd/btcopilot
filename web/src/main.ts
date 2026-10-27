@@ -14,7 +14,7 @@ import { CutSelect } from "./cut";
 import { Agenda } from "./agenda";
 import { Meeting } from "./meeting";
 import { ResultScreen } from "./result";
-import { CODER, OneTask, beforeMeeting, coder } from "./task";
+import { CODER, OneTask, beforeMeeting, cardDue } from "./task";
 import { Rules } from "./rules";
 import { heading } from "./concepts";
 import { Sessions } from "./sessions";
@@ -2095,17 +2095,15 @@ matchMedia(SIDEWAYS).addEventListener("change", (e) => {
 if ("serviceWorker" in navigator)
   register(`/app/sw.js?release=${encodeURIComponent(window.BOOTSTRAP.version)}`);
 
-// A coder opens on their one task rather than on the chat (R-0265, frame f1),
-// and still does between meetings, when the card carries what they finished
-// instead. Only an auditor is a coder (R-0311): a professional or a plain
-// subscriber never asks for a task and opens on the chat. A reader who has
-// never coded never sees the card, and a server without the review tables
-// leaves the chat exactly as it was.
+// A coder opens on their one task the first time a new cut is on the agenda
+// (R-0265, frame f1), and on the chat after that, reaching the card from the
+// account view. Only an auditor is a coder (R-0311): a professional or a
+// plain subscriber never asks for a task and opens on the chat. A server
+// without the review tables leaves the chat exactly as it was.
 if (CODER && parse(location.pathname)?.place === Place.Chat) {
-  void api
-    .tasks()
-    .then((found) => {
-      if (coder(found)) void openTask();
+  void cardDue()
+    .then((due) => {
+      if (due) void openTask();
     })
     .catch((error) => {
       if (!(error instanceof api.Failed)) throw error;

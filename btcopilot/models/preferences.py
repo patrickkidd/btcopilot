@@ -14,6 +14,9 @@ class PrefKey(enum.StrEnum):
     # tap Got it, and the hint on the first line they tap in the coding screen.
     HowItWorks = "how_it_works"
     LineHint = "line_hint"
+    # The cut whose task card a coder was last shown full screen on opening
+    # the app: shown once per cut, then reached from the account view.
+    TaskCardSeen = "task_card_seen"
     BugReports = "bug_reports"
     # The models each of this person's turns runs again on, for comparison
     # only [R-0596]; none is off.
@@ -71,6 +74,7 @@ PREF_DEFAULTS = {
     PrefKey.Spotlight: Spotlight.Unified,
     PrefKey.HowItWorks: True,
     PrefKey.LineHint: True,
+    PrefKey.TaskCardSeen: None,
     PrefKey.BugReports: BugReports.Ask,
     PrefKey.ShadowModels: (),
     PrefKey.ShadowSince: None,
@@ -84,6 +88,8 @@ def coerce_pref(key: PrefKey, value):
             if value is None
             else datetime.datetime.fromisoformat(value).isoformat()
         )
+    if key is PrefKey.TaskCardSeen:
+        return None if value is None else int(value)
     if key is PrefKey.ShadowModels:
         if not isinstance(value, (list, tuple)) or set(value) - set(MODEL_ALIASES):
             raise ValueError(f"{key} must name only model aliases, got {value!r}")

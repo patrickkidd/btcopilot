@@ -394,6 +394,7 @@ def test_preferences_defaults(web, test_user):
         PrefKey.Spotlight.value: Spotlight.Unified.value,
         PrefKey.HowItWorks.value: True,
         PrefKey.LineHint.value: True,
+        PrefKey.TaskCardSeen.value: None,
         PrefKey.BugReports.value: BugReports.Ask.value,
         PrefKey.ShadowModels.value: [],
         PrefKey.ShadowSince.value: None,

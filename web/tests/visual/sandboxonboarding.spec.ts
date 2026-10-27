@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 
 // A new auditor is walked through the work by the app itself: the task card
 // says how it works until they tap Got it, and the first line they tap says
-// what to do with it. Each test signs in as a new auditor seedauditor.py makes,
+// what to do with it. The card opens by itself once per cut, then from the
+// account view. Each test signs in as a new auditor seedauditor.py makes,
 // so it always meets one who has seen nothing. SANDBOX_ENV names a shell file
 // with the sandbox's Flask settings, and FIXTURE_CWD where its Python is.
 
@@ -47,6 +48,17 @@ async function signIn(
   return { bad, notification };
 }
 
+/** The task card once the app has shown it on opening: the app opens on the
+ * chat, and the card is the account view's "Your coding task" row. */
+async function toTask(page: Page): Promise<void> {
+  await page.reload({ waitUntil: "load" });
+  await expect(page.locator("#chat-split")).toBeVisible();
+  await expect(page.locator("#task-screen")).toBeHidden();
+  await page.locator("#account").click();
+  await page.locator(".sn-pane.in .sn-row", { hasText: "Your coding task" }).click();
+  await expect(page.locator("#task-screen")).toBeVisible();
+}
+
 const saved = (page: Page) =>
   page.waitForResponse(
     (r) => r.request().method() === "PATCH" && r.url().endsWith("/preferences"),
@@ -59,7 +71,7 @@ test.describe(() => {
   );
 
   // R-0265
-  test("a new auditor reads how the task works until Got it", async ({
+  test("a new auditor reads how the task works until Got it, and the card opens by itself only once", async ({
     page,
   }) => {
     const { bad } = await signIn(page);
@@ -86,7 +98,7 @@ test.describe(() => {
     await patched;
     await expect(card.getByText(HOW)).toHaveCount(0);
 
-    await page.reload({ waitUntil: "load" });
+    await toTask(page);
     await expect(card.locator(".addbtn")).toBeVisible();
     await expect(card.getByText(HOW)).toHaveCount(0);
     expect(bad).toEqual([]);
@@ -107,7 +119,7 @@ test.describe(() => {
     await lines.nth(1).click();
     await expect(hint).toHaveCount(0);
 
-    await page.reload({ waitUntil: "load" });
+    await toTask(page);
     await page.locator("#task-body .addbtn").click();
     await lines.first().click();
     await expect(lines.first()).toHaveClass(/sel/);

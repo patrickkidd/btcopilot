@@ -3,13 +3,19 @@ import { TaskKind, type FinishedTask, type Tasks } from "../src/types";
 
 vi.stubGlobal("window", { BOOTSTRAP: { user: { coder: true } } });
 
-const found: { tasks: Tasks; help: boolean } = { tasks: { task: null, done: [] }, help: false };
+const found: { tasks: Tasks; help: boolean; seen: number | null } = {
+  tasks: { task: null, done: [] },
+  help: false,
+  seen: null,
+};
+const saved: object[] = [];
 vi.mock("../src/api", () => ({
   tasks: async () => found.tasks,
-  preferences: async () => ({ how_it_works: found.help }),
+  preferences: async () => ({ how_it_works: found.help, task_card_seen: found.seen }),
+  setPreferences: async (body: object) => saved.push(body),
 }));
 
-const { finishedRow, OneTask } = await import("../src/task");
+const { cardDue, finishedRow, OneTask } = await import("../src/task");
 
 const done = (ratified: boolean): FinishedTask => ({
   coding_id: 3,
@@ -87,5 +93,35 @@ describe("how the coding task is explained", () => {
     expect(html).toContain("The app writes what you type onto the family diagram for you.");
     expect(html).not.toMatch(/\brecord\b/);
     expect(html).toContain("A cut is the part of one conversation");
+  });
+});
+
+describe("the task card on opening the app", () => {
+  // R-0265
+  it("opens once for a cut the coder has not seen, and notes it", async () => {
+    found.tasks = { task: open, done: [] };
+    found.seen = null;
+    saved.length = 0;
+    expect(await cardDue()).toBe(true);
+    expect(saved).toEqual([{ task_card_seen: 9 }]);
+  });
+
+  // R-0265
+  it("stays on the chat for a cut already seen, or no cut at all", async () => {
+    saved.length = 0;
+    found.tasks = { task: open, done: [] };
+    found.seen = 9;
+    expect(await cardDue()).toBe(false);
+    found.tasks = { task: null, done: history };
+    found.seen = null;
+    expect(await cardDue()).toBe(false);
+    expect(saved).toEqual([]);
+  });
+
+  // R-0265
+  it("opens again when a new cut is on the agenda", async () => {
+    found.tasks = { task: { ...open, cut_id: 10 }, done: [] };
+    found.seen = 9;
+    expect(await cardDue()).toBe(true);
   });
 });
