@@ -97,7 +97,7 @@ describe("how the coding task is explained", () => {
 });
 
 describe("the task card on opening the app", () => {
-  // R-0265
+  // R-0944
   it("opens once for a cut the coder has not seen, and notes it", async () => {
     found.tasks = { task: open, done: [] };
     found.seen = null;
@@ -106,7 +106,7 @@ describe("the task card on opening the app", () => {
     expect(saved).toEqual([{ task_card_seen: 9 }]);
   });
 
-  // R-0265
+  // R-0944
   it("stays on the chat for a cut already seen, or no cut at all", async () => {
     saved.length = 0;
     found.tasks = { task: open, done: [] };
@@ -118,7 +118,7 @@ describe("the task card on opening the app", () => {
     expect(saved).toEqual([]);
   });
 
-  // R-0265
+  // R-0944
   it("opens again when a new cut is on the agenda", async () => {
     found.tasks = { task: { ...open, cut_id: 10 }, done: [] };
     found.seen = 9;
