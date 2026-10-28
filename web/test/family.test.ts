@@ -210,3 +210,12 @@ describe("names", () => {
     expect(clashes(arrange(generations()))).toEqual([]);
   });
 });
+
+// R-0742, R-0775
+it("opens on a couple with a divorce and no wedding in the record, and refuses one marked unmarried", () => {
+  const tl = timeline();
+  tl.events = tl.events.filter((e) => e.id !== 109);
+  expect(() => new Told(tl, wholeFamily(tl), true)).not.toThrow();
+  tl.pair_bonds[1].married = false;
+  expect(() => new Told(tl, wholeFamily(tl), true)).toThrow("record fault: event 204 is a divorced for a couple not marked married");
+});
