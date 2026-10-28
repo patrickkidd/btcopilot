@@ -11,6 +11,7 @@ import time
 
 import aiohttp
 import pytest
+import redis
 from freezegun import freeze_time
 from google.genai.errors import ServerError
 from mock import patch
@@ -518,6 +519,23 @@ def test_a_turn_whose_hold_ran_out_in_the_queue_is_not_lost_once_started(
 
     turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
     assert found == [None, None]
+
+
+def test_the_hold_is_kept_after_a_redis_error(monkeypatch):
+    # R-0182
+    beats = []
+
+    class Flaky:
+        def keep(self, discussion_id):
+            beats.append(discussion_id)
+            if len(beats) == 1:
+                raise redis.ConnectionError("Redis went away")
+
+    monkeypatch.setattr(turnlog, "store", lambda: Flaky())
+    monkeypatch.setattr(turnlog, "BEAT", 0.01)
+    with turnlog.kept_alive(7):
+        time.sleep(0.1)
+    assert len(beats) > 1
 
 
 def test_the_session_says_which_turn_is_running(web, token, family, monkeypatch):

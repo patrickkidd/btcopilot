@@ -9,6 +9,7 @@ is running, which is how a page that comes back knows to reattach.
 import contextlib
 import enum
 import json
+import logging
 import queue
 import threading
 import time
@@ -16,6 +17,8 @@ import uuid
 
 import redis
 from flask import current_app
+
+_log = logging.getLogger(__name__)
 
 TTL = 3600
 TICK = 1.0
@@ -421,7 +424,11 @@ def kept_alive(discussion_id: int):
 
     def beat():
         while not over.wait(BEAT):
-            log.keep(discussion_id)
+            try:
+                log.keep(discussion_id)
+            # one lost beat is made up by the next, well inside the hold
+            except (redis.ConnectionError, redis.TimeoutError) as error:
+                _log.warning(f"session {discussion_id} hold not kept: {error}")
 
     beating = threading.Thread(target=beat, daemon=True)
     beating.start()
