@@ -6,7 +6,7 @@ behaviour, tagged `[built]` if it is in the app today, `[drawn]` if it is approv
 but not built, and `[open]` if it is a choice Patrick has not made yet. It is rewritten as
 decisions land; the exact sizes and colours live in the internal interface spec, not here.
 
-Updated: 2026-10-07
+Updated: 2026-10-27
 
 ---
 
@@ -418,6 +418,8 @@ What it is for: you, your families, your plan, and signing out.
 - Auditors and admins see a Coding section above Sign out: Your coding task, which opens the one task card (the card opens by itself only the first time the app is opened with a new cut on the agenda, and on the chat after that); Next meeting, for admins only, which opens the agenda; and Auditor's Coding Guide, which opens the concept pages on a page of its own. [built] {R-0265, R-0944, R-0259, R-0541, R-0567}
 - There is no Quality section and no screen of its own for comparing coach replies: replies are compared only by the vote in the chat, under the coach's reply. [built] {R-0831}
 - Each of those opens as a page of the account view, sliding in over it the way Coach, Appearance and Your Plan do, and the back arrow at the top left returns to the account view. [built] {R-0259, R-0265}
+- The concept pages open inside the app, never in a new tab: the (i) on the coding task card and the coding screen opens "Coding guidelines" with one row per concept page and "All concept pages"; a concept link on the coding screen, the vote or the meeting opens the same page in place; the title row names the page showing, and back steps one page at a time, then returns to the screen it came from. [built] {R-0265, R-0541, R-0567}
+- A coder sees the confidential entries on a concept page too, each with its source; notes meant only for whoever keeps the pages up are not shown. [built] {R-0939}
 - A plain subscriber or a professional sees neither section. [built] {R-0311}
 - Sign out sits alone at the bottom and signs you out immediately, with no confirmation step. [built]
 - Every icon button in the app is the same size: a forty-four point target with a forty point mark inside it. [built] {R-0234}
@@ -599,6 +601,12 @@ What it is for: saying what each line of a conversation tells you happened, so w
 - A cheap scribe turns your words into an event in the record, and the line it wrote appears under your words. [drawn]
 - The new event appears in the events drawer and lights in the picture as it lands. [drawn]
 - If the scribe cannot tell which person you mean, nothing is written and one amber line asks which person, and you answer by typing again. [drawn]
+- The task's help text gives example statements, such as "Steve had a symptom shift up in May 1997" and "Martha and John separated in June 2006". [built]
+- Before you code anything, your copy already holds whose case it is, by name, with their birth date taken from their own diagram; all else comes from your coding of the chat. [built] {R-0940}
+- The scribe hears your earlier statements on the same coding, oldest first, with what each one put in, so a later statement can build on an earlier one. [built] {R-0941}
+- Asked a question, the scribe replies briefly in words and adds nothing to the diagram; the reply has a row of its own, kept on reload. Asked why something is in the diagram, it relies on the diagram and what you told it before, and admits when those do not say. [built] {R-0942, R-0946}
+- "At 16" or "in high school" gets an approximate date worked out from the person's birth when the diagram has it; without a birth, the event is saved with no date. [built] {R-0943}
+- When you tell the scribe something went wrong, it offers the same bug report sheet the chat does, and the report names the coding's diagram. [built] {R-0946}
 - A faint hairline marks the last point that was already agreed, and everything below it is what this task is about. [drawn] {R-0267}
 - Your own earlier coding of the turns above that line is shown as small marks; nobody else's is. [drawn] {R-0242}
 - The bottom of the thread is marked with the point the conversation is frozen at, and turns after it are not shown at all. [drawn] {R-0267}

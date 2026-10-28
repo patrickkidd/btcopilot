@@ -2228,3 +2228,61 @@ was deployed to production on 2026-10-09 as fd-375-gf73d6d8 (HEAD f73d6d87); PR 
 awaiting his merge. Left: five Greptile threads for his rulings, the case-report rewrite catch-up (needs
 his spend yes), the command to reopen find-out questions, and whether one writer should produce both
 clusters and the coach's guess.
+
+## 2026-10-24 to 27 — FD-389 and FD-390: the bugs from Patrick's first coded cut fixed and deployed, deploys that wait for a running turn, the .fd import object by object, the baseline pattern deferred to FD-392 [T-3, T-1, T-4, T-6, T-11, T-16, T-21]
+<!-- session: 11939f55-aaa1-45a4-aeb6-369c438be084 · flushed: 2026-10-28T01:55:00Z -->
+
+Session "First Coding Bugs". Patrick coded his first cut on production and reported each thing
+that got in his way; the session fixed them on FD-389 (PR 166) and then FD-390 (PR 167), both
+merged, with four deploys, each after a database backup; the last was fd41ff7c at 01:33 UTC on
+2026-10-28.
+
+**The coding guide and the task.** The (i) opened a near-empty page with no way back to the app;
+the concept pages now open inside the app as rows, with back one page at a time and one title per
+page, and concept links on the coding screen, the vote and the meeting open in place [Oracle:
+R-0265, R-0541, R-0567]. He ruled that auditors see confidential content; the maintainers' lines
+are cut from the pages [R-0939]. He approved the help text's example statements. A coder who had
+misread the instructions needed her coding cleared: an admin command now does it and logs it, and
+it was proven on a sandbox and run on production for her and later for Patrick's own cut [R-0938].
+
+**The scribe.** It did not know what he was getting at and dated high school wrongly. Patrick set
+the frame: name and birth date are known for every account, so they are given; the rest comes
+from coding the chat, and that is what the reliability measure is about. So the coding copy starts
+with those facts [R-0940], each message carries the coder's earlier statements with what each
+produced [R-0941], a question gets a short answer in words shown as its own row and kept after a
+reload, with the scribe still biased toward writing codes [R-0942], and an age or a stage of life
+is dated only from a birth on the diagram, otherwise left undated [R-0943]. Six live evals on
+Gemini Flash pass (his yes to the spend). Later: "her parents" becomes a mother and a father
+joined as a pair; the scribe answers how something came to be in the diagram only from the
+diagram and the earlier statements; it offers the chat's bug report sheet [R-0946].
+
+**The coding screen.** The full-screen task card opened on every launch; it now opens once per
+cut [R-0944]. The coding screen opens just past the last coded line [R-0945]. Words he had sent
+twice after a lost turn were listed twice; they are listed once [R-0946]. With the phone keyboard
+up he could read almost none of the chat; he picked frame K1, where the timeline shrinks to the
+strip and the box sits on the keyboard [R-0949]. Dictation sometimes left the last words in the
+box after a send; one send path now reads the box only once the keyboard has handed over its
+words, waiting at most 300 ms.
+
+**Deploys.** A deploy cut one of his coach turns mid-reply. He asked for zero downtime with a much
+longer wait, cutting only runaways [R-0950]: the worker now has 30 minutes to finish its turn,
+migrations only add and run first, Redis and Postgres are left running, a turn whose worker died
+ends as failed and can be tried again. A burst of 21 server error mails at 04:36 to 04:39 UTC on
+2026-10-27 was not the deploy: since 28 September a question the coach took back broke that
+diagram's timeline page on every open; it is fixed with a regression test. FD-391 (an event-driven server worker, so open pages stop holding a
+server thread each) was created on his word and is queued.
+
+**The .fd import.** He corrected a proposal to refuse a bad file whole: the file is checked object
+by object, and what fails is reported as a coach message before the person can post [R-0947].
+The cluster catch-up's cache key was also fixed.
+
+**The baseline pattern.** He asked how to code a usual pattern between two people that is not a
+shift. Worker job 047 searched the theory; he picked option 2 [R-0948], asked for the seminar deck
+to be copied for a future date with a new section 6 on the concept, then judged the drawn options
+as ungrounded inference and moved all further work to FD-392. He also corrected the deck copy:
+only the counts and the new section change; the title slide and the Havstad passages stay.
+
+**Rules he set** (in CLAUDE.local.md): build only what he hit or a user would plainly notice; a
+review finding on Claude's own design is Claude's to fix before his PR review; a drawn option for
+a theory concept carries its passage or says the sources are silent; a deck copy changes only
+what he named.
