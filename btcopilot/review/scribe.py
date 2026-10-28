@@ -311,17 +311,22 @@ def statements(coding_id: int, diagram_id: int, data: dict) -> list[tuple[int, d
     the record has it (R-0270), people and pair-bonds first as when the words
     were sent (R-0883), the events those rows are, whose codes' concept pages
     hang under them (R-0541), and what the scribe said back (R-0942)."""
-    by_scribe_turn = adapter.touched_by_turn(diagram_id)
-    deltas = adapter.deltas_by_turn(diagram_id)
     notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc()).all()
-    replies = adapter.replies({note.turn_id for note in notes if note.turn_id})
+    turn_ids = {note.turn_id for note in notes}
+    deltas = adapter.deltas_by_turn(diagram_id, turn_ids)
+    replies = adapter.replies(turn_ids)
     return [
         (
             note.statement_id,
             {
                 "text": note.text,
                 "lines": lines_of(data, deltas.get(note.turn_id, [])),
-                "event_ids": by_scribe_turn.get(note.turn_id, []),
+                "event_ids": [
+                    int(one)
+                    for one in _touched(
+                        deltas.get(note.turn_id, []), adapter.ItemKind.Event.value
+                    )
+                ],
                 "reply": replies.get(note.turn_id, ""),
             },
         )

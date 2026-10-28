@@ -1056,6 +1056,22 @@ def test_each_earlier_statement_carries_what_it_produced(coder, cut, turns):
     )
 
 
+def test_earlier_statements_read_only_the_changes_their_own_turns_made(coder, cut, turns):
+    # R-0946, R-0941
+    coding = coded(coder.user, cut, {"people": [person(1, "Marcus")]}, done=False)
+    adapter.commit(coding.diagram_id, [], coder.user.id, "another-turn")
+    first = scribe(coder, coding, turns[0], Scripted([("add_person", {"name": "Paul"})]), "Add Marcus's father Paul")
+    after = Scripted()
+    with patch.object(adapter, "deltas_by_turn", wraps=adapter.deltas_by_turn) as read:
+        with patch.object(after, "turn", wraps=after.turn) as heard:
+            scribe(coder, coding, turns[1], after, "Paul was born in 1950")
+    assert "- Add Marcus's father Paul → added Paul\n" in heard.call_args_list[0].args[1][0]["content"]
+    assert read.call_args.args == (coding.diagram_id, {first.json["turn_id"]})
+    logged = {c.turn_id for c in Change.query.filter_by(diagram_id=coding.diagram_id)}
+    assert "another-turn" in logged
+    assert set(adapter.deltas_by_turn(coding.diagram_id, {first.json["turn_id"]})) == {first.json["turn_id"]}
+
+
 AGED = {"person": "1", "title": "Anxiety started", "description": "at 16", "symptom": "up"}
 
 
