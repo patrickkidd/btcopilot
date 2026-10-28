@@ -30,6 +30,7 @@ from btcopilot.models import Author, Diagram, User
 from btcopilot.models.diagram import owner_row
 from btcopilot.models.etc import AccessRight
 from btcopilot.profile import FIRST_PERSON_ID
+from btcopilot.review.models import Coding
 from btcopilot.routes.users import require_admin
 
 _log = logging.getLogger(__name__)
@@ -100,8 +101,16 @@ def diagram_payload(diagram: Diagram, user) -> dict:
 def diagrams_payload(user) -> list[dict]:
     """Most recently active first, so the switcher opens on what you were
     last in. Only the diagrams the user may write to — this is the switcher's
-    list, and a diagram shared read-only is never a place the app can be put."""
-    payload = [diagram_payload(d, user) for d in writable(user)]
+    list, and a diagram shared read-only is never a place the app can be put.
+    A coder's coding copy is internal and never listed (R-0951)."""
+    found = writable(user)
+    coded = {
+        id
+        for (id,) in db.session.query(Coding.diagram_id).filter(
+            Coding.diagram_id.in_([d.id for d in found])
+        )
+    }
+    payload = [diagram_payload(d, user) for d in found if d.id not in coded]
     return sorted(
         payload,
         key=lambda d: (d["last_activity"] or "", d["id"]),
