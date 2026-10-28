@@ -495,6 +495,31 @@ def test_a_model_call_longer_than_the_hold_keeps_the_session_held(
     assert held == [True]
 
 
+def test_a_turn_whose_hold_ran_out_in_the_queue_is_not_lost_once_started(
+    web, token, family, monkeypatch
+):
+    # R-0182
+    found = []
+
+    class Checked(Model):
+        def turn(self, system, messages, tools, turn_id=""):
+            found.append(turns.lost(turn_id))
+            return (yield from super().turn(system, messages, tools, turn_id))
+
+    monkeypatch.setattr(
+        "btcopilot.turns.model_for",
+        lambda *a, **k: Checked(
+            called(ToolName.EditPerson, name="Nell"), said("Added Nell.")
+        ),
+    )
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    turnlog.clear(body["discussion_id"])
+
+    turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    assert found == [None, None]
+
+
 def test_the_session_says_which_turn_is_running(web, token, family, monkeypatch):
     # R-0369
     coach(monkeypatch, said("Still going."))

@@ -37,6 +37,10 @@ HOLD = """if redis.call('get', KEYS[1]) == ARGV[1] then
   return redis.call('expire', KEYS[1], ARGV[2]) end return 0"""
 RELEASE = """if redis.call('get', KEYS[1]) == ARGV[1] then
   return redis.call('del', KEYS[1]) end return 0"""
+# Hold a session for a turn unless another turn holds it.
+TAKE = """local held = redis.call('get', KEYS[1])
+if held and held ~= ARGV[1] then return 0 end
+return redis.call('set', KEYS[1], ARGV[1], 'EX', ARGV[2]) and 1"""
 
 
 class TurnLogBackend(enum.StrEnum):
@@ -159,6 +163,13 @@ class RedisLog:
         self.redis.set(f"turn:{turn_id}:session", discussion_id, ex=TTL)
         return True
 
+    def take(self, discussion_id: int, turn_id: str) -> bool:
+        return bool(
+            self.redis.eval(
+                TAKE, 1, f"discussion:{discussion_id}:turn", turn_id, RUNNING_TTL
+            )
+        )
+
     def keep(self, discussion_id: int) -> None:
         self.redis.expire(f"discussion:{discussion_id}:turn", RUNNING_TTL)
 
@@ -279,6 +290,13 @@ class MemoryLog:
             self.owners[turn_id] = discussion_id
         return True
 
+    def take(self, discussion_id: int, turn_id: str) -> bool:
+        with self.lock:
+            if self.running(discussion_id) not in (None, turn_id):
+                return False
+            self.turns[discussion_id] = (turn_id, time.time() + RUNNING_TTL)
+        return True
+
     def keep(self, discussion_id: int) -> None:
         held = self.turns.get(discussion_id)
         if held:
@@ -382,6 +400,12 @@ def owned() -> list[str]:
 
 def start(discussion_id: int, turn_id: str) -> bool:
     return store().start(discussion_id, turn_id)
+
+
+def take(discussion_id: int, turn_id: str) -> bool:
+    """Hold the session for a turn the worker starts, whose hold may have run
+    out while it waited in the queue; False when another turn holds it."""
+    return store().take(discussion_id, turn_id)
 
 
 def keep(discussion_id: int) -> None:

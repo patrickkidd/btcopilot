@@ -250,7 +250,8 @@ def run(
     yet read has it read first, here on the worker; the coach never starts
     without the text (R-0829). The session stays held for as long as the
     worker runs it, so a turn whose worker died is the one whose hold ran
-    out."""
+    out. A turn that waited in the queue past its hold takes it again first."""
+    turnlog.take(discussion_id, turn_id)
     with turnlog.kept_alive(discussion_id):
         return _turn(turn_id, discussion_id, statement_id, resume, zone)
 
