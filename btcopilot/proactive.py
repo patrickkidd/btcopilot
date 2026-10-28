@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from pywebpush import WebPushException
 
 from btcopilot import correlation, profile, prompts, push
-from btcopilot.discussions import chats, sitting, sync_chat_speakers
+from btcopilot.discussions import chats, coach_said, sitting, sync_chat_speakers
 from btcopilot.extensions import db
 from btcopilot.metered import Metered
 from btcopilot.models import (
@@ -25,7 +25,6 @@ from btcopilot.models import (
     ProductEvent,
     Purpose,
     Statement,
-    StatementKind,
     Trigger,
     User,
 )
@@ -364,15 +363,7 @@ def _people_in(event: dict) -> set[int]:
 def _send(user: User, message: ProactiveMessage, text: str, now):
     diagram = db.session.get(Diagram, message.diagram_id)
     discussion = sitting(user, diagram)
-    statement = Statement(
-        discussion_id=discussion.id,
-        text=text,
-        speaker=discussion.chat_ai_speaker,
-        order=discussion.next_order(),
-        kind=StatementKind.Turn,
-        created_at=now,
-    )
-    db.session.add(statement)
+    statement = coach_said(discussion, text, created_at=now)
     sync_chat_speakers(discussion)
     message.statement = statement
     message.sent_at = now

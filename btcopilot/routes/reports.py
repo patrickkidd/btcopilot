@@ -13,6 +13,6 @@ def create_report():
     user = auth.signed_in()
     if not reports.allowed(reports.sender(user)):
         return "Too many reports from here; try again in an hour", 429
-    diagram = (user.current_diagram or user.free_diagram) if user else None
-    row = reports.take(request.get_json(), user, diagram)
+    body = request.get_json()
+    row = reports.take(body, user, reports.about(body, user))
     return jsonify({"id": row.id}), 201

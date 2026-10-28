@@ -6,6 +6,7 @@ Invented names only.
 """
 
 import datetime
+import json
 
 import pytest
 from mock import patch
@@ -19,6 +20,7 @@ from btcopilot.models import (
     Author,
     Change,
     Discussion,
+    Observation,
     ShadowTurn,
     Statement,
     TurnEvent,
@@ -315,6 +317,116 @@ def test_only_the_last_unanswered_message_can_be_tried_again(
     assert resume(web, token, body["turn_id"]).status_code == 409
     assert resume(web, token, later["turn_id"]).status_code == 409
     assert resume(web, token, "nosuchturn").status_code == 404
+
+
+class Killed(BaseException):
+    """The worker's process ended: nothing in the turn runs after it."""
+
+
+class Dies(Model):
+    def turn(self, system, messages, tools, turn_id=""):
+        if not self.turns:
+            raise Killed()
+        return (yield from super().turn(system, messages, tools, turn_id))
+
+
+def killed(web, token, monkeypatch) -> dict:
+    """A turn that adds Nell and then loses its worker before it answers, so
+    nothing holds its session any more."""
+    coach(monkeypatch, Dies(called(ToolName.EditPerson, name="Nell")))
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    with pytest.raises(Killed):
+        turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    db.session.rollback()
+    turnlog.clear(body["discussion_id"])
+    return body
+
+
+def failures(turn_id: str) -> int:
+    return TurnEvent.query.filter_by(
+        turn_id=turn_id, kind=TurnEventKind.Failed.value
+    ).count()
+
+
+def test_a_turn_whose_worker_died_shows_on_the_thread_as_failed_and_goes_on(
+    web, token, family, monkeypatch
+):
+    # R-0182, R-0477
+    body = killed(web, token, monkeypatch)
+    assert failures(body["turn_id"]) == 0
+
+    shown = statements(web, body["discussion_id"])
+    assert shown[0]["unfinished"] is True
+    assert shown[0]["failure"] == turns.INTERRUPTED
+    assert shown[0]["tools"] == NELL
+    assert failures(body["turn_id"]) == 1
+    change = Change.query.filter_by(turn_id=body["turn_id"]).one()
+    assert change.statement_id == body["statement_id"]
+    seen = Observation.query.filter_by(turn_id=body["turn_id"]).one()
+    assert seen.detail["reason"] == turns.LAPSED
+
+    coach(monkeypatch, Model(said("Nell is your sister, then.")))
+    assert resume(web, token, body["turn_id"]).status_code == 202
+    shown = statements(web, body["discussion_id"])
+    assert [s["text"] for s in shown] == [
+        "My sister is Nell.",
+        "Nell is your sister, then.",
+    ]
+    assert nells(family) == 1
+
+
+def test_a_page_following_a_turn_whose_worker_died_is_told_it_failed(
+    web, token, family, monkeypatch
+):
+    # R-0182
+    body = killed(web, token, monkeypatch)
+
+    events = web.get(f"/app/turns/{body['turn_id']}/events")
+    ending = [
+        json.loads(line[len("data: ") :])
+        for line in events.get_data(as_text=True).splitlines()
+        if line.startswith("data: ")
+    ][-1]
+    assert ending == {"type": TurnEventKind.Failed.value, "message": turns.INTERRUPTED}
+
+    assert statements(web, body["discussion_id"])[0]["unfinished"] is True
+    assert failures(body["turn_id"]) == 1
+
+
+def test_a_worker_starting_ends_only_the_turns_nothing_holds(
+    web, token, family, monkeypatch
+):
+    # R-0182
+    """A deploy starts the new worker while the old one still finishes its
+    turn: that turn is held, so the new worker leaves it alone."""
+    coach(monkeypatch, Model(said("Still going.")))
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    turnlog.append(body["turn_id"], {"type": TurnEventKind.Text.value, "text": "Still"})
+
+    turns.sweep()
+    assert failures(body["turn_id"]) == 0
+
+    turnlog.clear(body["discussion_id"])
+    turns.sweep()
+    assert failures(body["turn_id"]) == 1
+    seen = Observation.query.filter_by(turn_id=body["turn_id"]).one()
+    assert seen.detail["reason"] == turns.RESTARTED
+
+
+def test_a_turn_still_waiting_for_a_worker_is_not_ended(
+    web, token, family, monkeypatch
+):
+    # R-0182
+    coach(monkeypatch, Model(said("Go on.")))
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    turnlog.clear(body["discussion_id"])
+
+    turns.sweep()
+    assert statements(web, body["discussion_id"])[0]["unfinished"] is False
+    assert failures(body["turn_id"]) == 0
 
 
 def test_another_users_failed_turn_is_not_found(

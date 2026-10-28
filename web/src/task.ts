@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { esc, isCoder } from "./dom";
+import { Place } from "./place";
 import { TaskKind, type FinishedTask, type Task, type Tasks } from "./types";
 
 /** The coder's one task. One card, one button, and under it a faint record of
@@ -25,16 +26,29 @@ export function beforeMeeting(task: Task | null): string {
   })}`;
 }
 
-/** A coder is anyone with a task to do or a task already finished, and they
- * keep the one task card between meetings so what they finished, and the
- * result of the last meeting under it, stays reachable (R-0265). */
-export const coder = (found: Tasks): boolean =>
-  Boolean(found.task) || found.done.length > 0;
-
 /** Whether this reader takes part in the coding work at all: only a user with
  * the auditor role does, Patrick included (R-0311). A professional licence is
  * not a coding role. */
 export const CODER = isCoder();
+
+/** The task card opens over the chat once per cut: the first time a coder
+ * opens the app with a cut they have not seen, which is then noted so the
+ * next open lands on the chat. */
+export async function cardDue(): Promise<boolean> {
+  const [found, prefs] = await Promise.all([api.tasks(), api.preferences()]);
+  if (!found.task || found.task.cut_id === prefs.task_card_seen) return false;
+  await api.setPreferences({ task_card_seen: found.task.cut_id });
+  return true;
+}
+
+/** Where a coder's first load of the app opens: on the task card once per
+ * cut, and for a cut already seen never on it again, so a reload onto the
+ * card's own address lands on the chat (R-0944). Any other address stays
+ * where it opened. */
+export async function landing(place: Place | undefined): Promise<Place | undefined> {
+  if (!CODER || (place !== Place.Chat && place !== Place.Task)) return place;
+  return (await cardDue()) ? Place.Task : Place.Chat;
+}
 
 const CHECK = "&#10003;";
 

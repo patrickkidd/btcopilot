@@ -86,7 +86,7 @@ def regrouping(diagram: Diagram, data: DiagramData) -> RegroupWhy:
     """Whether `sync` would group this diagram anew, and with a call: it
     calls the model only when the rules find a run or the person named when
     the most was going on (`clusters.detect_clusters`)."""
-    if not clusters.behind(diagram.id, data, None):
+    if not clusters.behind(diagram, data):
         return RegroupWhy.Current
     if clusters.candidates(data) or clusters.told_ids(diagram.id, data):
         return RegroupWhy.Called
@@ -329,7 +329,7 @@ def owed(entry: dict, saved: dict, marks: dict[str, str]) -> tuple[bool, bool]:
     regroup = (
         entry["regroup"]
         and not ran(diagram.id, turn_id)
-        and clusters.behind(diagram.id, data, None)
+        and clusters.behind(diagram, data)
     )
     mark = (
         entry["mark"]
@@ -423,7 +423,7 @@ def state(entry: dict, saved: dict, marks: dict[str, str]) -> dict:
     )
     notes, lost, regroup_done, same = [], None, True, None
     if entry["regroup"]:
-        behind = clusters.behind(diagram.id, data, None)
+        behind = clusters.behind(diagram, data)
         if ran(diagram.id, turn_id):
             lost = failed(turn_id) or not regrouped
         else:

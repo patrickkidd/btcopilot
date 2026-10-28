@@ -113,13 +113,21 @@ def coding_thread(coding_id: int):
     coding = _mine_or_404(coding_id)
     cut = coding.cut
     orders = adapter.statement_order(cut.diagram_id)
-    turns = adapter.statements_between(
-        cut.diagram_id, adapter.first_statement(cut.diagram_id).id, cut.end_statement_id
+    lines = adapter.statements_between(
+        cut.diagram_id,
+        adapter.first_statement(cut.diagram_id).id,
+        cut.end_statement_id,
     )
     agreed = _last_ratified(cut)
     agreed_order = orders[agreed.end_statement_id] if agreed else None
     data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     said = _said_by_turn(coding.id, coding.diagram_id, data)
+    # a line the coder wrote from, or one a cut ends on, stays even when it
+    # was sent again after a failed turn
+    kept = {s.id for s in adapter.heard(lines)} | said.keys() | {cut.end_statement_id}
+    if agreed:
+        kept.add(agreed.end_statement_id)
+    turns = [s for s in lines if s.id in kept]
 
     return jsonify(
         {
@@ -224,27 +232,10 @@ def _last_ratified(cut: Cut) -> Cut | None:
 def _said_by_turn(
     coding_id: int, diagram_id: int, data: dict
 ) -> dict[int, list[dict]]:
-    """What this coder typed about each turn, oldest first, each with the lines
-    the scribe wrote from those words, in the record's own words so a later
-    correction to an event still reads as the record has it (R-0270), people
-    and pair-bonds first as when the words were sent (R-0883), and the
-    events those lines are, whose codes' concept pages hang under them
-    (R-0541), and what the scribe said back (R-0942)."""
-    by_scribe_turn = adapter.touched_by_turn(diagram_id)
-    deltas = adapter.deltas_by_turn(diagram_id)
+    """What this coder typed about each turn, oldest first (R-0270)."""
     by_turn: dict[int, list[dict]] = {}
-    notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc()).all()
-    replies = adapter.replies({note.turn_id for note in notes if note.turn_id})
-    for note in notes:
-        event_ids = by_scribe_turn.get(note.turn_id, [])
-        by_turn.setdefault(note.statement_id, []).append(
-            {
-                "text": note.text,
-                "lines": scribe.lines_of(data, deltas.get(note.turn_id, [])),
-                "event_ids": event_ids,
-                "reply": replies.get(note.turn_id, ""),
-            }
-        )
+    for statement_id, said in scribe.statements(coding_id, diagram_id, data):
+        by_turn.setdefault(statement_id, []).append(said)
     return by_turn
 
 

@@ -119,11 +119,18 @@ export enum Answer {
 /** From how many people on the list a name can be typed to find one. */
 const FIND_FROM = 8;
 
-/** What came in, on top of every step of the sheet; only the last step has
- * a cross, since the diagram must end with one primary person (R-0930). */
-const head = ({ people, events, left_out }: Imported["imported"], closable = false): string =>
-  `${closable ? closeX() : ""}<div class="cf-t">Your file is in: ${people} people and ${events} events.</div>` +
-  (left_out > 0 ? `<p class="cf-p">${left_out} could not be brought in; the coach will ask about them.</p>` : "");
+/** The import's report, the coach's message the import wrote into the chat,
+ * on top of every step of the sheet, so it is read before anything can be
+ * sent: its first line, what came in, as the title, then a line for each
+ * object skipped (R-0947). Only the last step has a cross, since the diagram
+ * must end with one primary person (R-0930). */
+const head = ({ note }: Imported["imported"], closable = false): string => {
+  const [counts, ...skipped] = note.split("\n");
+  return (
+    `${closable ? closeX() : ""}<div class="cf-t">${esc(counts)}</div>` +
+    skipped.map((line) => `<p class="cf-p">${esc(line)}</p>`).join("")
+  );
+};
 
 const buttons = (yes: [Answer, string], no: [Answer, string]): string =>
   `<div class="cf-btns">` +
@@ -189,12 +196,16 @@ const dollars = (amount: number) => `$${amount.toFixed(2)}`;
 export const costLine = ({ high }: Imported["imported"]["coding_cost"]): string => `Up to about ${dollars(high)}`;
 
 /** Last: whether the coach should add the codes the file has none of, and
- * what that is likely to cost. */
+ * what that is likely to cost; with no event left needing codes, only the
+ * report and its cross. The high end is a price per such event, so it is zero
+ * exactly when there are none. */
 export const codesStep = (imported: Imported["imported"]): string =>
   head(imported, true) +
-  `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
-  `<p class="cf-p fdc-cost">${costLine(imported.coding_cost)}</p>` +
-  buttons([Answer.Yes, "Yes"], [Answer.NotNow, "Not now"]);
+  (imported.coding_cost.high
+    ? `<p class="cf-p">Should the coach go through the events and add codes where the file has none?</p>` +
+      `<p class="cf-p fdc-cost">${costLine(imported.coding_cost)}</p>` +
+      buttons([Answer.Yes, "Yes"], [Answer.NotNow, "Not now"])
+    : "");
 
 /** The new diagram, or the server's own sentence for a file it refuses. */
 export async function bring(file: File): Promise<Imported | string> {

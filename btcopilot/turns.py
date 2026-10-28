@@ -37,6 +37,18 @@ TASK = "coach_turn"
 
 BUSY = "the coach is still answering the last message"
 BROKE = "The coach did not finish that turn."
+INTERRUPTED = "The coach was interrupted before it finished that turn."
+# Why a turn whose worker is gone was ended, kept for the tuning queue: found
+# by a worker as it started, or by a page or a thread read once the hold ran out.
+RESTARTED = "worker restarted"
+LAPSED = "hold ran out"
+# What a turn's log carries that its kept events never do: the record's edits
+# are in the change log and the words are not kept.
+UNKEPT = (
+    TurnEventKind.RecordPatch.value,
+    TurnEventKind.Text.value,
+    TurnEventKind.TextReset.value,
+)
 REFUSED = (
     "I can't take that one up here. Say it another way, or tell me what "
     "happened next."
@@ -129,6 +141,80 @@ def stop(discussion: Discussion, turn_id: str) -> dict:
     return {"turn_id": turn_id}
 
 
+def lost(turn_id: str) -> int | None:
+    """The session of a turn whose worker is gone: it started, it never ended,
+    and its session is no longer held for it. None for any other turn,
+    including one still queued, which has written nothing yet."""
+    session_id = turnlog.owner(turn_id)
+    if session_id is None or turnlog.running(session_id) == turn_id:
+        return None
+    events = [event for _, event in turnlog.read_from(turn_id, 0)]
+    if not events or any(turnlog.ended(event) for event in events):
+        return None
+    return session_id
+
+
+def interrupted(turn_id: str, reason: str) -> dict | None:
+    """Ends a lost turn the way a failed one ends, so the thread offers to try
+    it again: its edits stay, tied to the words that asked for them, its tool
+    calls are kept, and its log ends in failed for a page still following it.
+    The session is held while this is written, so two readers finding the
+    turn at once write it once. The failed event, written or not; None when
+    the turn is not lost or another reader has just ended it."""
+    session_id = lost(turn_id)
+    if session_id is None:
+        return None
+    failed = {"type": TurnEventKind.Failed.value, "message": INTERRUPTED}
+    # words sent since hold the session, and only the last can be tried again
+    if not turnlog.start(session_id, turn_id):
+        return failed
+    try:
+        logged = [event for _, event in turnlog.read_from(turn_id, 0)]
+        if any(turnlog.ended(event) for event in logged):
+            return None
+        discussion = db.session.get(Discussion, session_id)
+        words = Statement.query.filter_by(
+            discussion_id=session_id,
+            turn_id=turn_id,
+            speaker_id=discussion.chat_user_speaker_id,
+        ).all()
+        # a turn with no words of the person's, or two, has nothing to end on;
+        # it is left as it is, so one odd turn never breaks a read or a sweep
+        if len(words) != 1:
+            _log.warning(
+                f"coach_turn {turn_id} left lost: {len(words)} statements hold its words"
+            )
+            return None
+        said = words[0]
+        Change.query.filter_by(
+            diagram_id=discussion.diagram_id, turn_id=turn_id
+        ).update({"statement_id": said.id})
+        db.session.add(
+            Observation(
+                diagram_id=discussion.diagram_id,
+                turn_id=turn_id,
+                kind=ObservationKind.TurnFailed,
+                detail={"error": reason, "reason": reason},
+            )
+        )
+        # a resumed turn's log opens with the calls it already kept
+        tried = turnstore.kept({turn_id})
+        kept = [] if tried else [e for e in logged if e["type"] not in UNKEPT]
+        turnstore.save(turn_id, session_id, kept + [failed])
+        db.session.commit()
+        _log.warning(f"coach_turn {turn_id} ended as interrupted: {reason}")
+        turnlog.append(turn_id, failed)
+    finally:
+        turnlog.clear(session_id)
+    return failed
+
+
+def sweep() -> None:
+    """A worker starting ends every turn a worker before it left unfinished."""
+    for turn_id in turnlog.owned():
+        interrupted(turn_id, RESTARTED)
+
+
 def enqueue(
     turn_id: str,
     discussion_id: int,
@@ -162,7 +248,21 @@ def run(
     sentence saying it did not finish. A resumed turn carries no zone, so its
     day is in the zone kept on the person's row. A message whose file is not
     yet read has it read first, here on the worker; the coach never starts
-    without the text (R-0829)."""
+    without the text (R-0829). The session stays held for as long as the
+    worker runs it, so a turn whose worker died is the one whose hold ran
+    out. A turn that waited in the queue past its hold takes it again first."""
+    turnlog.take(discussion_id, turn_id)
+    with turnlog.kept_alive(discussion_id):
+        return _turn(turn_id, discussion_id, statement_id, resume, zone)
+
+
+def _turn(
+    turn_id: str,
+    discussion_id: int,
+    statement_id: int,
+    resume: bool,
+    zone: str | None,
+) -> dict:
     _log.info(f"coach_turn {turn_id} discussion={discussion_id}")
     discussion = db.session.get(Discussion, discussion_id)
     said = db.session.get(Statement, statement_id)
@@ -204,10 +304,10 @@ def run(
             {"category": refused.category, "reason": str(refused.category)},
         )
         _unanswered(turn, statement_id, {"type": TurnEventKind.Refused.value})
-        turnlog.clear(discussion_id)
         _log.warning(f"coach_turn {turn_id} refused: {refused.category}")
         event = {"type": TurnEventKind.Refused.value, "message": REFUSED}
         turnlog.append(turn_id, event)
+        turnlog.clear(discussion_id)
         return event
     # The one router in this file: whatever went wrong, the page is told the
     # turn ended, and the error goes on to be logged and retried as usual.
@@ -224,8 +324,8 @@ def run(
         )
         failed = {"type": TurnEventKind.Failed.value, "message": BROKE}
         _unanswered(turn, statement_id, failed)
-        turnlog.clear(discussion_id)
         turnlog.append(turn_id, failed)
+        turnlog.clear(discussion_id)
         raise
     _keep(
         turn,
@@ -237,9 +337,9 @@ def run(
     )
     reply["kind"] = StatementKind.Turn.value
     reply["discussion_id"] = discussion_id
-    turnlog.clear(discussion_id)
-    reply["session"] = session_payload(discussion)
+    reply["session"] = _freed(discussion)
     turnlog.append(turn_id, dict(reply, type=TurnEventKind.Done.value))
+    turnlog.clear(discussion_id)
     for model in shadows:
         shadow.start(turn, statement_id, model, before)
     return reply
@@ -295,8 +395,8 @@ def _read(turn_id: str, discussion: Discussion, said: Statement) -> dict | None:
         }
         turnstore.save(turn_id, discussion.id, [failed])
         db.session.commit()
-        turnlog.clear(discussion.id)
         turnlog.append(turn_id, failed)
+        turnlog.clear(discussion.id)
         if own is None:
             raise
         return failed
@@ -335,7 +435,6 @@ def _stopped(turn: CoachTurn, statement_id: int) -> dict:
     ).update({"statement_id": statement_id})
     turnstore.save(turn.turn_id, discussion.id, kept + [ending])
     db.session.commit()
-    turnlog.clear(discussion.id)
     event = dict(
         ending,
         statement=None,
@@ -344,10 +443,18 @@ def _stopped(turn: CoachTurn, statement_id: int) -> dict:
         turn_id=turn.turn_id,
         kind=StatementKind.Turn.value,
         discussion_id=discussion.id,
-        session=session_payload(discussion),
+        session=_freed(discussion),
     )
     turnlog.append(turn.turn_id, event)
+    turnlog.clear(discussion.id)
     return event
+
+
+def _freed(discussion: Discussion) -> dict:
+    """The session as a turn's last event shows it. That event is logged before
+    the hold is let go, so no reader finds the hold gone with no ending logged
+    and takes a finished turn for a lost one; the session it carries is free."""
+    return dict(session_payload(discussion), turn=None)
 
 
 def _unanswered(turn: CoachTurn, statement_id: int, ending: dict) -> None:

@@ -30,13 +30,24 @@ from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.pricing import cost
-from btcopilot.models import User, Author, Change, Diagram, ModelCall
+from btcopilot.models import (
+    User,
+    Author,
+    Change,
+    Diagram,
+    Discussion,
+    ModelCall,
+    Observation,
+    ObservationKind,
+    SpeakerType,
+    Statement,
+)
 from btcopilot.models.diagram import owner_row
 from btcopilot.models.etc import AccessRight
 from btcopilot.models.modelcall import Purpose
 from btcopilot.schema import DateCertainty, Event, EventKind, ItemKind, Person, asdict
 from btcopilot.tests.conftest import csrf_token
-from btcopilot.tests.fdfixtures import Qt, dumps, scene, shift
+from btcopilot.tests.fdfixtures import Qt, dumps, event, scene, shift, when
 from btcopilot.tests.test_pro import pro  # noqa: F401
 from btcopilot.tests.test_casereportrewrite import out_of_date, written  # noqa: F401
 from btcopilot.tests.test_clustersync import clusters_of, detects
@@ -116,15 +127,7 @@ def test_an_import_into_a_diagram_with_a_report_puts_it_out_of_date(written, fam
 
 
 @pytest.fixture
-def held():
-    store = attachments.MemoryFiles()
-    attachments.use(store)
-    yield store
-    attachments.use(None)
-
-
-@pytest.fixture
-def landed(flask_app, monkeypatch, held):
+def landed(flask_app, monkeypatch):
     """The worker's steps after a file is in, run where the test sees them."""
     caught = []
     monkeypatch.setattr(
@@ -156,6 +159,17 @@ def zipped(files: dict[str, bytes]) -> bytes:
 
 def made() -> Diagram:
     return Diagram.query.filter_by(name="Lund family").one()
+
+
+def coach_lines(diagram: Diagram) -> list[str]:
+    """What the coach has said in the diagram's chat, oldest first."""
+    return [
+        statement.text
+        for statement in Statement.query.join(Discussion)
+        .filter(Discussion.diagram_id == diagram.id)
+        .order_by(Statement.order)
+        if statement.speaker.type == SpeakerType.Expert
+    ]
 
 
 def test_anyone_makes_a_diagram_from_a_desktop_file_and_is_no_one_in_it(web, landed, test_user):
@@ -199,9 +213,9 @@ def test_a_file_saved_by_a_desktop_too_old_is_refused_with_what_to_do(pro, lande
 
 @pytest.mark.parametrize("zip_it", [False, True])
 def test_a_file_is_made_in_the_request_as_it_stands_and_opened(
-    pro, landed, held, test_user, zip_it
+    pro, landed, test_user, zip_it
 ):
-    # R-0899, R-0902, R-0882
+    # R-0899, R-0902, R-0882, R-0947
     pickled = dumps(scene())
     data = zipped({"Lund family.fd/diagram.pickle": pickled}) if zip_it else pickled
     answered = upload(pro, data)
@@ -215,32 +229,95 @@ def test_a_file_is_made_in_the_request_as_it_stands_and_opened(
         {
             "people": 3,
             "events": 3,
-            "left_out": 0,
+            "pair_bonds": 1,
+            "failed": [],
+            "note": "Your file is in: 3 people, 3 events and 1 pair-bond.",
             "primary": [3],
             "coding_cost": fdafter.coding_cost(test_user.id, diagram),
         },
     )
     assert "turn_id" not in body
+    assert coach_lines(diagram) == [body["imported"]["note"]]
     assert test_user.current_diagram_id == diagram.id
     assert sorted(p["name"] for p in diagram.get_diagram_data().people) == ["Ada", "Bo", "Cy"]
     assert ModelCall.query.count() == 0
-    [change] = Change.query.filter_by(diagram_id=diagram.id).all()
+    assert Change.query.filter_by(diagram_id=diagram.id).count() == 1
     caught, outbox = landed
-    assert caught == [(diagram.id, test_user.id, change.turn_id)]
-    assert (attachments.held(change.turn_id), outbox) == (pickled, [])
+    [(user_id, file, name, text)] = caught
+    assert (user_id, file, name, outbox) == (test_user.id, "Lund family.fd", "Lund family", [])
+    assert "Ada Lund (person 1)" in text
 
 
-def test_the_worker_mails_the_record_and_leaves_the_grouping_to_the_subject_pick(pro, landed, test_user):
-    # R-0932, R-0902, R-0935
+def test_the_worker_mails_the_record_the_request_wrote_and_reads_no_file(pro, landed, test_user, monkeypatch):
+    # R-0932, R-0902, R-0935, R-0947
     upload(pro, dumps(scene(events=[*scene()["events"], shift(23)])))
     caught, outbox = landed
-    [(diagram_id, user_id, turn)] = caught
-    fdafter.run(diagram_id, user_id, turn)
+    [args] = caught
+    monkeypatch.setattr(fdfile, "read", lambda *args: pytest.fail("the file was read again"))
+    monkeypatch.setattr(fdimport, "build", lambda *args: pytest.fail("the file was built again"))
+    fdafter.run(*args)
     assert caught[1:] == []
     [mail] = outbox
-    record_text = mail.attachments[0].data.decode()
-    assert "Ada Lund (person 1)" in record_text
-    assert attachments.held(turn) is None
+    assert mail.attachments[0].data.decode() == args[3]
+
+
+def test_one_bad_event_is_reported_in_a_coach_message_and_the_rest_of_the_file_comes_in(pro, landed):
+    # R-0947
+    moved = event(23, None, person=1, description="Moved to Denver", dateTime=when(2019, 4, 1))
+    answered = upload(pro, dumps(scene(events=[*scene()["events"], moved])))
+    assert answered.status_code == 201
+    imported = answered.get_json()["imported"]
+    assert (imported["events"], imported["failed"]) == (
+        3,
+        [
+            {
+                "kind": "event",
+                "id": 23,
+                "label": "Event 'Moved to Denver' (2019)",
+                "reason": fdimport.NO_KIND,
+            }
+        ],
+    )
+    [counted] = Observation.query.filter_by(kind=ObservationKind.Import).all()
+    assert counted.detail == {key: imported[key] for key in counted.detail}
+    assert coach_lines(made()) == [
+        "Your file is in: 3 people, 3 events and 1 pair-bond.\n"
+        "One part of the file could not come in:\n"
+        "Event 'Moved to Denver' (2019) was skipped. The file does not say what kind of event it is."
+    ]
+    assert imported["note"] == coach_lines(made())[0]
+    caught, _ = landed
+    assert "Event 'Moved to Denver' (2019) was skipped. The file does not say what kind of event it is." in caught[0][3]
+
+
+def locked() -> bytes:
+    """A zip whose diagram.pickle is marked encrypted, as a zip made with a
+    password is."""
+    data = bytearray(zipped({"Lund.fd/diagram.pickle": dumps(scene())}))
+    data[6] |= fdafter.ENCRYPTED
+    central = data.rfind(b"PK\x01\x02")
+    data[central + 8] |= fdafter.ENCRYPTED
+    return bytes(data)
+
+
+@pytest.mark.parametrize(
+    "data, said",
+    [
+        (zipped({"Lund.fd/diagram.pickle": dumps(scene())})[:-30], fdafter.DAMAGED),
+        (b"PK\x03\x04" + b"\x00" * 40, fdafter.DAMAGED),
+        (locked(), fdafter.LOCKED),
+    ],
+    ids=["cut short", "no zip after its first bytes", "locked with a password"],
+)
+def test_a_file_that_cannot_be_opened_is_refused_in_one_sentence_and_nothing_is_mailed(
+    pro, landed, data, said
+):
+    # R-0947
+    refused = upload(pro, data)
+    assert (refused.status_code, refused.get_data(as_text=True)) == (400, said)
+    caught, outbox = landed
+    assert (Diagram.query.filter_by(name="Lund family").count(), caught, outbox) == (0, [], [])
+    assert Statement.query.count() == 0
 
 
 

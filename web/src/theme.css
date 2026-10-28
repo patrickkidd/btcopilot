@@ -3654,3 +3654,7 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 /* The lines inside the cut are lit in the cut's own colour. */
 .bub.lit { box-shadow: 0 0 0 2px var(--ask); }
 
+/* The coding screen while the phone's keyboard is up: the bottom inset is room
+   for the home bar, which the keyboard covers, so the message box sits on it
+   (R-0949). */
+#coding-screen .typing > .inbar { padding-bottom: 8px; }

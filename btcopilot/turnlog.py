@@ -6,8 +6,10 @@ one channel per turn to follow it live. The discussion remembers the turn it
 is running, which is how a page that comes back knows to reattach.
 """
 
+import contextlib
 import enum
 import json
+import logging
 import queue
 import threading
 import time
@@ -16,6 +18,8 @@ import uuid
 import redis
 from flask import current_app
 
+_log = logging.getLogger(__name__)
+
 TTL = 3600
 TICK = 1.0
 # How long a session stays held for the turn it is running. A worker that dies
@@ -23,6 +27,10 @@ TICK = 1.0
 # in an hour. The task pushes it out again with every event it writes, so a turn
 # that is still working never lets go.
 RUNNING_TTL = 180
+# How often a worker running a turn holds its session again, whatever the turn
+# is doing: a model call can run longer than the hold, so only a worker that is
+# gone lets it run out (FD-390).
+BEAT = 60
 # How long a family's case report stays held for the rewrite writing it without
 # a word from it: the rewrite holds it again on every piece the model sends, so
 # a worker that dies lets go within minutes.
@@ -32,6 +40,10 @@ HOLD = """if redis.call('get', KEYS[1]) == ARGV[1] then
   return redis.call('expire', KEYS[1], ARGV[2]) end return 0"""
 RELEASE = """if redis.call('get', KEYS[1]) == ARGV[1] then
   return redis.call('del', KEYS[1]) end return 0"""
+# Hold a session for a turn unless another turn holds it.
+TAKE = """local held = redis.call('get', KEYS[1])
+if held and held ~= ARGV[1] then return 0 end
+return redis.call('set', KEYS[1], ARGV[1], 'EX', ARGV[2]) and 1"""
 
 
 class TurnLogBackend(enum.StrEnum):
@@ -140,6 +152,12 @@ class RedisLog:
         found = self.redis.get(f"turn:{turn_id}:session")
         return int(found) if found else None
 
+    def owned(self) -> list[str]:
+        return [
+            key.decode().split(":")[1]
+            for key in self.redis.scan_iter(match="turn:*:session")
+        ]
+
     def start(self, discussion_id: int, turn_id: str) -> bool:
         if not self.redis.set(
             f"discussion:{discussion_id}:turn", turn_id, nx=True, ex=RUNNING_TTL
@@ -147,6 +165,13 @@ class RedisLog:
             return False
         self.redis.set(f"turn:{turn_id}:session", discussion_id, ex=TTL)
         return True
+
+    def take(self, discussion_id: int, turn_id: str) -> bool:
+        return bool(
+            self.redis.eval(
+                TAKE, 1, f"discussion:{discussion_id}:turn", turn_id, RUNNING_TTL
+            )
+        )
 
     def keep(self, discussion_id: int) -> None:
         self.redis.expire(f"discussion:{discussion_id}:turn", RUNNING_TTL)
@@ -257,12 +282,22 @@ class MemoryLog:
     def owner(self, turn_id: str) -> int | None:
         return self.owners.get(turn_id)
 
+    def owned(self) -> list[str]:
+        return list(self.owners)
+
     def start(self, discussion_id: int, turn_id: str) -> bool:
         with self.lock:
             if self.running(discussion_id) is not None:
                 return False
             self.turns[discussion_id] = (turn_id, time.time() + RUNNING_TTL)
             self.owners[turn_id] = discussion_id
+        return True
+
+    def take(self, discussion_id: int, turn_id: str) -> bool:
+        with self.lock:
+            if self.running(discussion_id) not in (None, turn_id):
+                return False
+            self.turns[discussion_id] = (turn_id, time.time() + RUNNING_TTL)
         return True
 
     def keep(self, discussion_id: int) -> None:
@@ -361,12 +396,47 @@ def owner(turn_id: str) -> int | None:
     return store().owner(turn_id)
 
 
+def owned() -> list[str]:
+    """Every turn whose log can still be read."""
+    return store().owned()
+
+
 def start(discussion_id: int, turn_id: str) -> bool:
     return store().start(discussion_id, turn_id)
 
 
+def take(discussion_id: int, turn_id: str) -> bool:
+    """Hold the session for a turn the worker starts, whose hold may have run
+    out while it waited in the queue; False when another turn holds it."""
+    return store().take(discussion_id, turn_id)
+
+
 def keep(discussion_id: int) -> None:
     store().keep(discussion_id)
+
+
+@contextlib.contextmanager
+def kept_alive(discussion_id: int):
+    """The session stays held every BEAT seconds while the worker is alive, so
+    a hold that ran out means the worker running the turn is gone."""
+    log = store()
+    over = threading.Event()
+
+    def beat():
+        while not over.wait(BEAT):
+            try:
+                log.keep(discussion_id)
+            # one lost beat is made up by the next, well inside the hold
+            except (redis.ConnectionError, redis.TimeoutError) as error:
+                _log.warning(f"session {discussion_id} hold not kept: {error}")
+
+    beating = threading.Thread(target=beat, daemon=True)
+    beating.start()
+    try:
+        yield
+    finally:
+        over.set()
+        beating.join()
 
 
 def clear(discussion_id: int) -> None:

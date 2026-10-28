@@ -6,10 +6,13 @@ got to.
 """
 
 import json
+import logging
 import re
+import time
 
 import aiohttp
 import pytest
+import redis
 from freezegun import freeze_time
 from google.genai.errors import ServerError
 from mock import patch
@@ -402,6 +405,65 @@ def test_a_refused_turn_says_so_in_the_coachs_voice_and_is_not_retried(
     assert turnlog.running(discussion.id) is None
 
 
+@pytest.mark.parametrize(
+    "after, raised",
+    [((said("Added Nell."),), None), ((), IndexError)],
+    ids=["done", "broken"],
+)
+def test_a_turn_that_ends_never_looks_lost_to_a_reader(
+    web, token, family, monkeypatch, after, raised
+):
+    # R-0182
+    """A thread read that lands as the turn lets its session go must not take
+    a finished turn for one whose worker died and end it a second time. The
+    broken coach runs out of script after its tool call."""
+    coach(monkeypatch, called(ToolName.EditPerson, name="Nell"), *after)
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    seen = []
+    clear = turnlog.clear
+
+    def watched(discussion_id):
+        seen.append(turns.lost(body["turn_id"]))
+        clear(discussion_id)
+        seen.append(turns.lost(body["turn_id"]))
+
+    monkeypatch.setattr(turnlog, "clear", watched)
+    if raised:
+        with pytest.raises(raised):
+            turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    else:
+        turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    assert seen == [None, None]
+
+
+def test_a_lost_turn_with_no_words_is_left_and_the_others_are_ended(
+    web, token, family, monkeypatch, caplog, logged
+):
+    # R-0182
+    caplog.set_level(logging.WARNING, logger=turns.__name__)
+    coach(monkeypatch, said("Go on."))
+    lost = []
+    for words in ("My sister is Nell.", "And another thing."):
+        with patch("btcopilot.turns.enqueue"):
+            body = post(web, token, words).get_json()
+        turnlog.append(body["turn_id"], {"type": TurnEventKind.Text.value, "text": "So"})
+        turnlog.clear(body["discussion_id"])
+        lost.append(body)
+    db.session.delete(db.session.get(Statement, lost[0]["statement_id"]))
+    db.session.commit()
+
+    turns.sweep()
+    ended = {
+        body["turn_id"]: TurnEvent.query.filter_by(
+            turn_id=body["turn_id"], kind=TurnEventKind.Failed.value
+        ).count()
+        for body in lost
+    }
+    assert ended == {lost[0]["turn_id"]: 0, lost[1]["turn_id"]: 1}
+    assert f"coach_turn {lost[0]['turn_id']} left lost" in caplog.text
+
+
 def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
     # R-0182
     """A worker that dies mid-turn says nothing. The hold on the session has to
@@ -413,6 +475,69 @@ def test_a_hold_left_by_a_dead_worker_runs_out(web, token, family, monkeypatch):
     assert turnlog.running(body["discussion_id"]) is None
 
     assert post(web, token, "And another thing.").status_code == 202
+
+
+def test_a_model_call_longer_than_the_hold_keeps_the_session_held(
+    web, token, family, monkeypatch
+):
+    # R-0182
+    """A worker still running its turn holds the session whatever the turn is
+    doing, so a hold that ran out always means the worker is gone."""
+    held = []
+
+    class Slow(Model):
+        def turn(self, system, messages, tools, turn_id=""):
+            time.sleep(0.2)
+            held.append(turnlog.running(turnlog.owner(turn_id)) == turn_id)
+            return (yield from super().turn(system, messages, tools, turn_id))
+
+    monkeypatch.setattr(turnlog, "RUNNING_TTL", 0.05)
+    monkeypatch.setattr(turnlog, "BEAT", 0.01)
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: Slow(said("Go on.")))
+    assert post(web, token).status_code == 202
+    assert held == [True]
+
+
+def test_a_turn_whose_hold_ran_out_in_the_queue_is_not_lost_once_started(
+    web, token, family, monkeypatch
+):
+    # R-0182
+    found = []
+
+    class Checked(Model):
+        def turn(self, system, messages, tools, turn_id=""):
+            found.append(turns.lost(turn_id))
+            return (yield from super().turn(system, messages, tools, turn_id))
+
+    monkeypatch.setattr(
+        "btcopilot.turns.model_for",
+        lambda *a, **k: Checked(
+            called(ToolName.EditPerson, name="Nell"), said("Added Nell.")
+        ),
+    )
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token).get_json()
+    turnlog.clear(body["discussion_id"])
+
+    turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    assert found == [None, None]
+
+
+def test_the_hold_is_kept_after_a_redis_error(monkeypatch):
+    # R-0182
+    beats = []
+
+    class Flaky:
+        def keep(self, discussion_id):
+            beats.append(discussion_id)
+            if len(beats) == 1:
+                raise redis.ConnectionError("Redis went away")
+
+    monkeypatch.setattr(turnlog, "store", lambda: Flaky())
+    monkeypatch.setattr(turnlog, "BEAT", 0.01)
+    with turnlog.kept_alive(7):
+        time.sleep(0.1)
+    assert len(beats) > 1
 
 
 def test_the_session_says_which_turn_is_running(web, token, family, monkeypatch):

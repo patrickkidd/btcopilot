@@ -7,12 +7,16 @@ import { dragScroll } from "./drag";
 import { Picture, Target, type Tap } from "./picture";
 import { Menu, Tab } from "./menu";
 import { toast } from "./toast";
+import { onReturn } from "./keyboard";
+import { Typing } from "./typing";
 import { listButton, PLAY_MARK, tok } from "./tokens";
 import { did, html } from "./tools";
 import { reply, waiting } from "./chat";
 import { asWritten, drawn, tokenize } from "./chips";
 import { WIDE } from "./pro";
+import { fold } from "./viewport";
 import { fullName, when } from "./rows";
+import type { Reports } from "./report";
 import {
   emptyTimeline,
   ItemKind,
@@ -41,6 +45,9 @@ export interface CodingHandlers {
   onGuidelines(): void;
   /** What the screen is called, which the title row shows. */
   onTitle(title: string | Title): void;
+  /** The scribe offered to send the coder's words, as the coach does in the
+   * chat; the coding is the sitting (R-0946). */
+  onReport: Reports["offer"];
 }
 
 /** The list button on the coding screen's own picture. */
@@ -133,6 +140,26 @@ export const line = (turn: Pick<CodingTurn, "client" | "text">): string =>
     ? drawn(tokenize(turn.text), asWritten)
     : reply(tokenize(turn.text), null, asWritten, asWritten);
 
+/** Where the thread opens when it is not opened at one line. */
+export enum Resume {
+  Top = "top",
+  End = "end",
+}
+
+/** The coder picks up where they left off: the line after the last one they
+ * coded sits at the top of the thread. Nothing coded yet opens where coding
+ * starts, under the last ratified cut or at the top; everything coded opens
+ * on the last line. */
+export function resumeAt(thread: CodingThread): number | Resume {
+  const { turns } = thread;
+  const last = turns.map((turn) => turn.said.length > 0).lastIndexOf(true);
+  if (last === -1)
+    return thread.agreed
+      ? (turns.find((turn) => !turn.above)?.id ?? Resume.End)
+      : Resume.Top;
+  return turns[last + 1]?.id ?? Resume.End;
+}
+
 /** Which record events a piece of the thread wrote, for the concept pages
  * hung under it once the record is read. */
 function wrote(node: HTMLElement, ids: number[]): HTMLElement {
@@ -154,6 +181,7 @@ export class Coding {
   private wide = window.matchMedia(WIDE);
   private scrim = el("div", "fs-scrim");
   private sheet = el("div", "fs-sheet cf-sheet");
+  private typing: Typing;
 
   constructor(
     private list: HTMLElement,
@@ -188,10 +216,19 @@ export class Coding {
         throw new Error("a case nobody told has no question to answer");
       },
     );
+    this.typing = new Typing(composer);
     this.overlay.append(this.scrim, this.sheet);
     this.scrim.hidden = true;
     this.sheet.hidden = true;
     this.wire();
+    // While the phone's keyboard is up the timeline shrinks to the chat's strip,
+    // as the chat's does, and the tapped line stays in view (R-0949).
+    fold(
+      composer,
+      view.closest<HTMLElement>(".screen")!,
+      () => this.list.querySelector(".bub.line.sel")?.scrollIntoView({ block: "nearest" }),
+      () => Promise.resolve(),
+    );
     this.wide.addEventListener("change", () =>
       this.showRows(this.wide.matches),
     );
@@ -233,7 +270,7 @@ export class Coding {
       const line = this.list.querySelector(`[data-turn="${atStatement}"]`);
       line?.classList.add("sel");
       line?.scrollIntoView({ block: "center" });
-    }
+    } else this.resume(resumeAt(this.thread));
   }
 
   /** The record after something was written into it: the picture, the drawer
@@ -335,13 +372,7 @@ export class Coding {
       if (bubble) this.pick(Number(bubble.dataset.turn));
     });
     this.send.addEventListener("click", () => void this.say());
-    this.composer.addEventListener("keydown", (e) => {
-      const key = e as KeyboardEvent;
-      if (key.key === "Enter" && !key.shiftKey) {
-        key.preventDefault();
-        void this.say();
-      }
-    });
+    onReturn(this.composer, () => void this.say());
     this.scrim.addEventListener("click", () => this.close());
     this.sheet.addEventListener("click", (e) => {
       const target = e.target as Element;
@@ -414,13 +445,13 @@ export class Coding {
   /** The row under the picture. Nothing in a coding speaks to the coach, so
    * the chat's "ask" and "in chat" are not here: the one thing the row offers
    * is the play-by-play of an open cluster, told by nobody, on the record this
-   * coding is being written onto (R-0570). */
+   * coding is being written onto (R-0570). With none open it asks for the
+   * coder's own action, a line, whatever the copy holds. */
   private marks(): void {
     const open = this.picture.openCluster();
     if (!open) {
-      const say = this.picked === null ? "tap a line" : "tap a cluster";
       this.caption.innerHTML =
-        `<span class="cta">${say}</span>` + listButton(LIST_ID);
+        `<span class="cta">tap a line</span>` + listButton(LIST_ID);
       this.wireList();
       return;
     }
@@ -458,6 +489,7 @@ export class Coding {
   /** What the coder typed, sent to the scribe: their own words go into the
    * thread under the line, and what the scribe wrote goes under those. */
   private async say(): Promise<void> {
+    if (!(await this.typing.free())) return;
     const thread = this.thread;
     const said = (this.composer.textContent ?? "").trim();
     if (!thread || this.sending || !said) return;
@@ -519,6 +551,18 @@ export class Coding {
       void this.scribe(turn, said, Number(pick.dataset.person));
     });
     this.after(turn, rows, turn);
+    if (written.report)
+      this.handlers.onReport(
+        written.report.kind,
+        written.report.words,
+        written.turn_id,
+        turn,
+        thread.coding_id,
+        {
+          address: `/app/coding/${thread.coding_id}`,
+          diagram_id: thread.diagram_id,
+        },
+      );
     if (written.made.length) {
       await this.refresh();
       // what the scribe writes, it adds
@@ -576,6 +620,7 @@ export class Coding {
           made: [],
           turn_id: "",
           reply: said.reply,
+          report: null,
         });
         this.list.append(
           this.tagged(
@@ -590,19 +635,23 @@ export class Coding {
     }
     this.list.append(this.cutline(thread, true));
     this.paint();
-    this.toEnd();
   }
 
-  /** The thread opens on the cut, which is what the task is about. The web
-   * font lands after the bubbles are measured and every one of them grows, so
-   * the end is held in view until the page has settled. */
-  private toEnd(): void {
-    const end = () => {
-      this.list.scrollTop = this.list.scrollHeight;
+  /** The web font lands after the bubbles are measured and every one of them
+   * grows, so the place is held in view until the page has settled. */
+  private resume(at: number | Resume): void {
+    const place = () => {
+      if (at === Resume.Top) this.list.scrollTop = 0;
+      else if (at === Resume.End) this.list.scrollTop = this.list.scrollHeight;
+      else {
+        const line = this.list.querySelector(`[data-turn="${at}"]`)!;
+        this.list.scrollTop +=
+          line.getBoundingClientRect().top - this.list.getBoundingClientRect().top;
+      }
     };
-    end();
-    requestAnimationFrame(end);
-    void document.fonts?.ready.then(end);
+    place();
+    requestAnimationFrame(place);
+    void document.fonts?.ready.then(place);
   }
 
   private bubble(turn: CodingTurn): HTMLElement {

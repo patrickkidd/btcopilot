@@ -54,6 +54,10 @@ def statements_payload(statements: list[Statement], user) -> list[dict]:
     of a turn the person stopped say so (R-0636)."""
     turn_ids = {s.turn_id for s in statements if s.turn_id}
     kept = turnstore.kept(turn_ids)
+    # a turn whose worker died kept nothing; ended here, it can be tried again
+    ended = [turns.interrupted(t, turns.LAPSED) for t in turn_ids - kept.keys()]
+    if any(ended):
+        kept = turnstore.kept(turn_ids)
     shadowed = dict(
         db.session.query(ShadowTurn.turn_id, func.count())
         .filter(ShadowTurn.turn_id.in_(turn_ids))

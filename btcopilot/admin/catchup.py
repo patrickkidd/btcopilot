@@ -278,6 +278,7 @@ def kept_from(diagram: Diagram) -> set[int]:
         if any(
             d["item_kind"] == ItemKind.Question.value
             and d["field"] is None
+            and d["after"] is not None
             and d["after"].get("state") == QuestionState.Held
             for d in change.deltas
         )

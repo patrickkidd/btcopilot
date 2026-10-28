@@ -9,7 +9,8 @@ vi.stubGlobal("window", {
   BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
 });
 
-const { Coding, given, line, scribedRows, writtenConcepts } = await import("../src/coding");
+const { Coding, Resume, given, line, resumeAt, scribedRows, writtenConcepts } =
+  await import("../src/coding");
 const api = await import("../src/api");
 const { Failed } = api;
 const { Menu } = await import("../src/menu");
@@ -118,7 +119,6 @@ describe("the concept pages under what the scribe wrote", () => {
       },
       cutline: () => ({ dataset: {}, innerHTML: "", className: "" }),
       paint: () => {},
-      toEnd: () => {},
     });
     screen.render();
     screen.paintConcepts();
@@ -175,7 +175,6 @@ describe("the concept pages under what the scribe wrote", () => {
       },
       cutline: () => ({ dataset: {}, innerHTML: "", className: "" }),
       paint: () => {},
-      toEnd: () => {},
     });
     screen.render();
     vi.unstubAllGlobals();
@@ -434,6 +433,67 @@ describe("the rows under what the coder said", () => {
   });
 });
 
+describe("a note the scribe offers to send as a report", () => {
+  // R-0946, R-0056
+  it("opens the chat's sheet for the tapped line's turn, on the coding's own diagram and address", async () => {
+    vi.stubGlobal("document", {
+      createElement: () => ({
+        className: "",
+        innerHTML: "",
+        dataset: {},
+        addEventListener() {},
+        remove() {},
+      }),
+    });
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+      localStorage: { getItem: () => null, setItem() {} },
+    });
+    const { Reports } = await import("../src/report");
+    const raise = vi.fn();
+    const reports = Object.assign(Object.create(Reports.prototype), {
+      always: false,
+      at: null,
+      waiting: [],
+      raise,
+    });
+    const words = "this is a bug, the parents were added though never mentioned";
+    vi.mocked(api.scribe).mockResolvedValueOnce({
+      lines: [],
+      refused: [],
+      choices: [],
+      made: [],
+      turn_id: "t7",
+      reply: "Thanks, noted.",
+      report: { kind: "bug", words },
+    } as never);
+    const screen = Object.assign(Object.create(Coding.prototype), {
+      thread: { coding_id: 9, diagram_id: 41, turns: [{ id: 3, client: true }] },
+      picture: { untouch() {} },
+      after() {},
+      handlers: {
+        onReport: (...offered: unknown[]) => reports.offer(...offered),
+      },
+    });
+    await screen.scribe(3, words, null);
+    vi.unstubAllGlobals();
+    vi.stubGlobal("window", {
+      BOOTSTRAP: { user: { username: "c", admin: false, pro: false, coder: true } },
+    });
+    expect(raise).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "bug",
+        status: "sent",
+        words,
+        turn_id: "t7",
+        statement_id: 3,
+        address: "/app/coding/9",
+        diagram_id: 41,
+      }),
+    );
+  });
+});
+
 describe("the given facts at the top of the thread", () => {
   const person = (fields: object) =>
     ({
@@ -553,5 +613,58 @@ describe("a line of the conversation being coded", () => {
     const html = line({ client: true, text: "It was [[event:7|Dad left]] that year." });
     expect(html).not.toContain("[[");
     expect(html).toContain(">Dad left</button> that year.");
+  });
+});
+
+describe("where the coding screen opens", () => {
+  const turn = (id: number, coded: boolean, above = false) => ({
+    id,
+    order: id,
+    who: "",
+    client: true,
+    text: "",
+    above,
+    said: coded ? [{ text: "x", lines: [], event_ids: [], reply: "" }] : [],
+  });
+  const thread = (turns: ReturnType<typeof turn>[], agreed = false) =>
+    ({
+      turns,
+      agreed: agreed ? { order: 2, day: "Sep 1", ratified: "Sep 3" } : null,
+    }) as unknown as Parameters<typeof resumeAt>[0];
+
+  // R-0945
+  it("opens on the line after the last one the coder coded", () => {
+    expect(resumeAt(thread([turn(1, true), turn(2, false), turn(3, true), turn(4, false), turn(5, false)]))).toBe(4);
+  });
+
+  // R-0945
+  it("opens where coding starts when nothing is coded yet", () => {
+    expect(resumeAt(thread([turn(1, false), turn(2, false)]))).toBe(Resume.Top);
+    expect(resumeAt(thread([turn(1, false, true), turn(2, false, true), turn(3, false)], true))).toBe(3);
+  });
+
+  // R-0945
+  it("opens on the last line when every line is coded", () => {
+    expect(resumeAt(thread([turn(1, true), turn(2, true)]))).toBe(Resume.End);
+  });
+});
+
+describe("the row under the coding screen's picture", () => {
+  /** The row drawn by the screen's own code with no cluster open, before a
+   * line is picked and after one is. */
+  function cta(picked: number | null): string {
+    const screen = {
+      picked,
+      caption: { innerHTML: "" },
+      picture: { openCluster: () => null },
+      wireList() {},
+    };
+    (Coding.prototype as unknown as { marks(): void }).marks.call(screen);
+    return screen.caption.innerHTML.match(/class="cta">([^<]*)</)![1];
+  }
+
+  // R-0270
+  it("asks the coder to tap a line whatever the copy holds", () => {
+    expect([cta(null), cta(4)]).toEqual(["tap a line", "tap a line"]);
   });
 });

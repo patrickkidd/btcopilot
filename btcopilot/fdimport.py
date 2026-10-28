@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from btcopilot import diagramjson, record
 from btcopilot.coverage import CHILD_ROLE
 from btcopilot.extensions import db
-from btcopilot.fdledger import Decision, about, filed
+from btcopilot.fdledger import Decision, about, filed, many
 from btcopilot.metered import Metered
 from btcopilot.models import Author, Diagram, Observation, ObservationKind
 from btcopilot.models.diagram import owner_row
@@ -41,8 +41,6 @@ TURN = record.IMPORT + "{}"
 # The file's words for a field the app has no value for, kept beside the item
 # while it is mapped; the import record holds them from the file itself.
 RAW = "fileValues"
-# Of the items the file held, how many the record's rules left out.
-LEFT_OUT = "left_out"
 # The desktop's own words for two kinds the app names otherwise [Oracle: R-0923].
 MOVED = "moved"
 OLD_SHIFT = "variable-shift"
@@ -116,6 +114,38 @@ DROPPED = ("layers", "layerItems", "multipleBirths", "items", "pruned")
 COLLECTIONS = ("people", "pair_bonds", "events")
 PERSON_REFS = ("person", "spouse", "child")
 PERSON_LISTS = ("relationshipTargets", "relationshipTriangles")
+# Every kind an event of the file may have, in the app's words or the desktop's.
+KINDS = {kind.value for kind in EventKind} | {MOVED, OLD_SHIFT}
+# Why an object of the file is skipped, in the words the person reads after
+# the import [Oracle: R-0947].
+NO_ID = "The file gives it no identity."
+SAME_ID = "The file lists it twice."
+NO_KIND = "The file does not say what kind of event it is."
+NO_SUCH_KIND = "The file calls it a kind of event this app does not have."
+NOBODY = "It belongs to a person the file could not bring in."
+ASKED = "{} The coach will ask about it."
+
+
+@dataclass(frozen=True)
+class Failed:
+    """An object of the file the import skipped, and why [Oracle: R-0947]."""
+
+    kind: ItemKind
+    # Its id in the file, when it has one.
+    id: int | None
+    label: str
+    reason: str
+
+    def said(self) -> str:
+        return f"{self.label} was skipped. {self.reason}"
+
+    def json(self) -> dict:
+        return {
+            "kind": self.kind.value,
+            "id": self.id,
+            "label": self.label,
+            "reason": self.reason,
+        }
 
 
 @dataclass
@@ -128,10 +158,12 @@ class Imported:
     joined: dict[str, int] = field(default_factory=dict)
     lines: int = 0
     dropped: collections.Counter = field(default_factory=collections.Counter)
-    # How many people, events and pair-bonds the file brought, and how many
-    # items the record's rules left out.
+    # How many people, events and pair-bonds the file brought.
     brought: dict[str, int] = field(default_factory=dict)
-    left: int = 0
+    # Each object of the file skipped, in file order.
+    failed: list[Failed] = field(default_factory=list)
+    # Each item's id in the file, by its id in the diagram.
+    files: dict[int, int] = field(default_factory=dict)
     # Everyone the file marks primary, in file order, so the person can say
     # which of them they are.
     primaries: list[int] = field(default_factory=list)
@@ -144,11 +176,39 @@ class Imported:
             "relationship_lines": self.lines,
             "choices": len(self.decisions),
             "dropped": sum(self.dropped.values()),
-            "left out": self.left,
+            "left out": len(self.failed),
         }
+
+    def report(self) -> dict:
+        """What came across and what was skipped, as the person is shown it
+        after the import and as the import's observation keeps it
+        [Oracle: R-0947]."""
+        return {**self.brought, "failed": [one.json() for one in self.failed]}
+
+    def said(self) -> str:
+        """The report as the coach's message in the chat, which the sheet
+        after the import shows too: the counts, then a line for each object
+        skipped [Oracle: R-0947]."""
+        counts = self.brought
+        lines = [
+            f"Your file is in: {many(counts['people'], 'person', 'people')}, "
+            f"{many(counts['events'], 'event')} and {many(counts['pair_bonds'], 'pair-bond')}."
+        ]
+        if self.failed:
+            n = len(self.failed)
+            parts = "One part" if n == 1 else f"{n} parts"
+            lines.append(f"{parts} of the file could not come in:")
+            lines += [one.said() for one in self.failed]
+        return "\n".join(lines)
 
     def decide(self, item: str, name: str, before, after, reason: str) -> None:
         self.decisions.append(Decision(item, name, _text(before), _text(after), reason))
+
+    def fail(self, kind: ItemKind, item: str, file_id, label: str, reason: str) -> None:
+        """An object skipped: listed for the person, and said in the ledger
+        under `item`, its name there."""
+        self.failed.append(Failed(kind, file_id, label, reason))
+        self.decide(item, "", "", "", self.failed[-1].said())
 
 
 def _text(value) -> str:
@@ -621,16 +681,144 @@ def _notes(fd: dict) -> str:
     return "\n\n".join(text for text in texts if _kept(text))
 
 
+def _full(first, last) -> str:
+    return " ".join(filter(None, (first, last))).strip()
+
+
+def _person_label(name: str) -> str:
+    return f"Person '{name}'" if name else "A person with no name"
+
+
+def _event_label(words: str | None, day, kind: str | None) -> str:
+    said = f"Event '{words}'" if words else f"A {kind} event" if kind else "An event"
+    return f"{said} ({day[:4]})" if day else said
+
+
+def _bond_label(a: str | None, b: str | None) -> str:
+    return f"The pair-bond of {a or 'someone'} and {b or 'someone'}"
+
+
+def _line_label(name: str | None) -> str:
+    return f"A relationship line of {name}" if name else "A relationship line"
+
+
+def _people_of(chunk: dict) -> set:
+    """Everyone an event or a line of the file names."""
+    named = {chunk.get(key) for key in (*PERSON_REFS, "target")}
+    named.update(one for key in PERSON_LISTS for one in chunk.get(key) or [])
+    named.discard(None)
+    return named
+
+
+def _sound(out: Imported, fd: dict) -> dict:
+    """The file with each person, pair-bond, event and relationship line that
+    cannot come in taken out on its own and listed with why, so the rest of
+    the diagram comes in [Oracle: R-0947]."""
+    seen = set()
+
+    def ided(name: str, kind: ItemKind, noun: str, label) -> list[dict]:
+        kept = []
+        for chunk in fd.get(name) or []:
+            found = chunk.get("id")
+            if not isinstance(found, int):
+                out.fail(kind, f"{noun} with no id", None, label(chunk), NO_ID)
+            elif found in seen:
+                item = f"{noun} {found}, a second item with that id"
+                out.fail(kind, item, found, label(chunk), SAME_ID)
+            else:
+                seen.add(found)
+                kept.append(chunk)
+        return kept
+
+    people = ided(
+        "people",
+        ItemKind.Person,
+        "person",
+        lambda chunk: _person_label(_full(chunk.get("name"), chunk.get("lastName"))),
+    )
+    named = {chunk["id"]: _full(chunk.get("name"), chunk.get("lastName")) for chunk in people}
+
+    def bond_label(chunk: dict) -> str:
+        return _bond_label(named.get(chunk.get("person_a")), named.get(chunk.get("person_b")))
+
+    def event_label(chunk: dict) -> str:
+        words = (chunk.get("description") or "").strip()
+        return _event_label(words, chunk.get("dateTime"), enum_val(chunk.get("kind")))
+
+    def line_label(chunk: dict) -> str:
+        return _line_label(named.get(chunk.get("person")))
+
+    def keep(chunks, kind: ItemKind, noun: str, label, why) -> list[dict]:
+        kept = []
+        for chunk in chunks:
+            reason = why(chunk)
+            if reason is None:
+                kept.append(chunk)
+            else:
+                out.fail(kind, f"{noun} {chunk['id']}", chunk["id"], label(chunk), reason)
+        return kept
+
+    def kind_of(chunk: dict, known) -> str | None:
+        kind = enum_val(chunk.get("kind"))
+        if not kind:
+            return NO_KIND
+        if known is not None and kind not in known:
+            return NO_SUCH_KIND
+        return NOBODY if _people_of(chunk) - named.keys() else None
+
+    bonds = keep(
+        ided(
+            "pair_bonds" if fd.get("pair_bonds") else "marriages",
+            ItemKind.PairBond,
+            "pair-bond",
+            bond_label,
+        ),
+        ItemKind.PairBond,
+        "pair-bond",
+        bond_label,
+        lambda chunk: None if {chunk.get("person_a"), chunk.get("person_b")} <= named.keys() else NOBODY,
+    )
+    joined = {chunk["id"] for chunk in bonds}
+    for n, chunk in enumerate(people):
+        parents = chunk.get("parents") or (chunk.get("childOf") or {}).get("parents")
+        if parents is not None and parents not in joined:
+            people[n] = {**chunk, "parents": None, "childOf": None}
+            out.decide(
+                f"person {chunk['id']}",
+                "parents",
+                parents,
+                "",
+                "The file names parents who did not come in, so they come in without them.",
+            )
+    events = keep(
+        ided("events", ItemKind.Event, "event", event_label),
+        ItemKind.Event,
+        "event",
+        event_label,
+        lambda chunk: kind_of(chunk, KINDS),
+    )
+    lines = keep(
+        ided("emotions", ItemKind.Event, "relationship line", line_label),
+        ItemKind.Event,
+        "relationship line",
+        line_label,
+        lambda chunk: kind_of(chunk, None),
+    )
+    return {**fd, "people": people, "pair_bonds": bonds, "events": events, "emotions": lines}
+
+
 def convert(fd: dict) -> Imported:
-    """The file's items mapped onto the app's, under the file's own ids."""
+    """The file's items mapped onto the app's, under the file's own ids; an
+    object that cannot come in is skipped on its own [Oracle: R-0947]."""
     out = Imported(data={"tags": list(fd.get("tags") or [])})
-    chunks = fd.get("people") or []
+    fd = _sound(out, fd)
+    chunks = fd["people"]
     out.data["people"] = [_person(out, chunk) for chunk in chunks]
-    bonds = fd.get("pair_bonds") or fd.get("marriages") or []
+    bonds = fd["pair_bonds"]
     out.data["pair_bonds"] = [_bond(out, chunk) for chunk in bonds]
     out.data["events"] = [_event(out, chunk) for chunk in filed(fd)]
     by_id = {event["id"]: event for event in out.data["events"]}
-    for chunk in fd.get("emotions") or []:
+    for chunk in fd["emotions"]:
         made = _line(out, chunk, by_id)
         if made is not None:
             out.data["events"].append(made)
@@ -708,8 +896,20 @@ def build(fd: dict) -> Imported:
         item.pop(RAW, None)
     _settle(out)
     out.brought = {name: len(out.data[name]) for name in COLLECTIONS}
-    out.brought[LEFT_OUT] = out.left
     return out
+
+
+def listed(fd: dict) -> dict:
+    """The file with only the items that have an id, as the ledger lists them
+    by it; one with none is said there by its skip alone [Oracle: R-0947]."""
+    return {
+        **fd,
+        **{
+            name: [chunk for chunk in fd[name] if isinstance(chunk.get("id"), int)]
+            for name in ("people", "pair_bonds", "marriages", "events", "emotions")
+            if fd.get(name)
+        },
+    }
 
 
 def _labeled(out: Imported) -> None:
@@ -742,6 +942,7 @@ def _labeled(out: Imported) -> None:
 
 def _moved(out: Imported, new: dict[int, int]) -> None:
     """The file's names and its primary people follow each item to its new id."""
+    out.files = {n: old for old, n in new.items()}
     out.primaries = [new[old] for old in out.primaries]
     out.joined = {label: new[old] for label, old in out.joined.items() if old in new}
     out.labels = {new[old]: label for old, label in out.labels.items() if old in new}
@@ -795,7 +996,8 @@ def _settle(out: Imported) -> None:
     """One refusal never stops the import: each item the record's rules refuse
     is left out by itself, the later of two copies first, so the earlier one
     stays; a person whose name is taken is kept under a counted name, and a
-    person refused for anything else stops the import with why."""
+    person refused for anything else is skipped with whatever names them
+    [Oracle: R-0905, R-0947]."""
     while refused := _refused(out):
         copies = collections.Counter(map(record.twin_key, out.data["events"]))
         for kind, item_id in sorted(refused, key=lambda key: -int(key[1])):
@@ -809,14 +1011,16 @@ def _settle(out: Imported) -> None:
             if twin and (invalid := _still(out, kind, item_id)) is None:
                 continue
             item = next(
-                i for i in out.data[ITEM_COLLECTIONS[kind]] if str(i["id"]) == item_id
+                (i for i in out.data[ITEM_COLLECTIONS[kind]] if str(i["id"]) == item_id),
+                None,
             )
+            # a person skipped this round took the items naming them along
+            if item is None:
+                continue
             if kind is ItemKind.Person and isinstance(invalid, record.NameTaken):
                 _counted(out, item, f"The record's rules refused it: {invalid.plain}")
             elif kind is ItemKind.Person:
-                raise ValueError(
-                    f"{_said('people', item)} could not be brought in: {invalid.plain}"
-                )
+                _without(out, item, invalid.plain)
             else:
                 _left(out, kind, item, invalid)
 
@@ -829,23 +1033,69 @@ def _noun(kind: ItemKind) -> str:
     return kind.value.replace("_", "-")
 
 
-def _left(out: Imported, kind: ItemKind, item: dict, invalid: record.Invalid) -> None:
-    """The item left out of the diagram, and one question about it kept for
-    the coach to ask when there is an opening [Oracle: R-0905]."""
-    asked = _question(out, kind, item, invalid)
+def _plain(out: Imported, kind: ItemKind, item: dict) -> str:
+    """An item of the diagram as the person is told it was skipped."""
+    if kind is ItemKind.Person:
+        return _person_label(_full(item.get("name"), item.get("last_name")))
+    if kind is ItemKind.PairBond:
+        return _bond_label(_who(out, item["person_a"]), _who(out, item["person_b"]))
+    words = item.get("title") or item.get("description")
+    return _event_label(words, item.get("dateTime"), item["kind"])
+
+
+def _take(out: Imported, kind: ItemKind, item: dict) -> str:
+    """The item out of the diagram with nothing left hanging on it; returns
+    its name in the ledger."""
+    label = _label(out, kind, item)
     out.data[ITEM_COLLECTIONS[kind]].remove(item)
     if kind is ItemKind.PairBond:
         for person in out.data["people"]:
             if person.get("parents") == item["id"]:
                 del person["parents"]
+    out.labels.pop(item["id"], None)
+    out.joined = {k: v for k, v in out.joined.items() if v != item["id"]}
+    return label
+
+
+def _without(out: Imported, person: dict, reason: str) -> None:
+    """A person the record's rules refuse is skipped, and with them every
+    pair-bond and event that names them, each listed [Oracle: R-0947]."""
+    pid = person["id"]
+    hanging = [
+        (ItemKind.Person, person, reason),
+        *(
+            (ItemKind.PairBond, bond, NOBODY)
+            for bond in out.data["pair_bonds"]
+            if pid in (bond["person_a"], bond["person_b"])
+        ),
+        *((ItemKind.Event, e, NOBODY) for e in out.data["events"] if pid in _people_of(e)),
+    ]
+    shown = [(kind, item, _plain(out, kind, item), why) for kind, item, why in hanging]
+    for kind, item, label, why in shown:
+        out.fail(kind, _take(out, kind, item), out.files.get(item["id"]), label, why)
+    out.primaries = [one for one in out.primaries if one != pid]
+    if "questions" in out.data:
+        out.data["questions"] = [
+            q
+            for q in out.data["questions"]
+            if (q["item_kind"], q["item_id"]) != (ItemKind.Person.value, pid)
+        ]
+
+
+def _left(out: Imported, kind: ItemKind, item: dict, invalid: record.Invalid) -> None:
+    """The item left out of the diagram, listed for the person, and one
+    question about it kept for the coach to ask when there is an opening
+    [Oracle: R-0905, R-0947]."""
+    asked = _question(out, kind, item, invalid)
+    shown = _plain(out, kind, item)
+    label = _take(out, kind, item)
     questions = out.data.setdefault("questions", [])
     # the record keeps a question once in the same words; one asks for both
     if not any(record.normal(q["text"]) == record.normal(asked["text"]) for q in questions):
         questions.append(asked)
-    label = _label(out, kind, item)
-    out.labels.pop(item["id"], None)
-    out.joined = {k: v for k, v in out.joined.items() if v != item["id"]}
-    out.left += 1
+    out.failed.append(
+        Failed(kind, out.files.get(item["id"]), shown, ASKED.format(invalid.plain))
+    )
     words = [item.get(key) for key in ("title", "description", "notes", "text")]
     out.decide(
         label,
@@ -1090,7 +1340,7 @@ def save(
             diagram_id=diagram.id,
             turn_id=turn,
             kind=ObservationKind.Import,
-            detail=out.brought,
+            detail=out.report(),
         )
     )
     db.session.commit()

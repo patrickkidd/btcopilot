@@ -16,8 +16,8 @@ from collections import Counter
 
 from btcopilot.review import adapter
 from btcopilot.review.models import Note
-from btcopilot.review.scribetools import ScribeTools
-from btcopilot.schema import DateCertainty, DatePrecision, EventKind, event_title
+from btcopilot.review.scribetools import ScribeTool, ScribeTools
+from btcopilot.schema import DateCertainty, DatePrecision, EventKind, event_title, stated_date
 
 _log = logging.getLogger(__name__)
 
@@ -34,8 +34,9 @@ What the coder says it tells them happened:
 """
 CHOSEN = "\nThe person this is about: {line}\n"
 #: The coder's earlier statements on the same coding, so a later one builds on
-#: them (R-0941).
-EARLIER = "What the coder said earlier on this coding, oldest first:\n{lines}\n\n"
+#: them (R-0941), each with what it produced, so a question about how the
+#: record came to be has something true to be answered from (R-0946).
+EARLIER = "What the coder said earlier on this coding, oldest first, each with what it produced:\n{lines}\n\n"
 #: Said back to a scribe that stopped on words while a call was refused, so it
 #: corrects the call rather than giving up on it.
 AGAIN = "Not entered yet: {refused} Correct the call and make it again."
@@ -47,6 +48,10 @@ class Verb(enum.StrEnum):
 
     Add = "add"
     Change = "change"
+
+
+#: How an earlier statement's rows read in the clause saying what it produced.
+DID = {Verb.Add: "added", Verb.Change: "changed"}
 
 
 class Pronoun(enum.StrEnum):
@@ -65,10 +70,9 @@ WORDS = re.compile(r"[A-Za-z][A-Za-z']*")
 
 
 def unclear(said: str, people: list[dict]) -> list[dict] | None:
-    """The people the coder could mean, to tap one of, or None when the words
-    say who. A coder who points at a person without naming one, or names one
-    that could be two people in the record, picks which before any word of it
-    is written (R-0270)."""
+    """The people the coder could mean, or None when the words say who: a
+    coder who points at a person without naming one, or names one that could
+    be two people in the record (R-0270)."""
     words = WORDS.findall(said)
     spoken = {word.lower() for word in words}
     # A whole name said outright settles it ("Marcus's father" against
@@ -157,6 +161,25 @@ def _new_name(words: list[str]) -> bool:
     )
 
 
+#: The arguments of a scribe tool that name people in the record.
+NAMING = ("id", "person", "spouse", "child", "couple", "parents", "relationship_targets", "relationship_triangles")
+
+
+def _names_one_of(calls, could: list[dict]) -> bool:
+    """Whether a write names one of the people the coder's words could not
+    tell apart; a report or an answer in words never asks who."""
+    ids = {str(person["id"]) for person in could}
+    for call in calls:
+        if call.name == ScribeTool.Report:
+            continue
+        for key in NAMING:
+            value = call.args.get(key)
+            named = value if isinstance(value, list) else [value]
+            if ids & {str(one) for one in named if one is not None}:
+                return True
+    return False
+
+
 def _choices(could: list[dict], data: dict) -> list[dict]:
     names = called(data, full=True)
     return [{"id": person["id"], "name": names[str(person["id"])]} for person in could]
@@ -165,17 +188,19 @@ def _choices(could: list[dict], data: dict) -> list[dict]:
 def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     """One coding turn. Returns the rows it wrote and the rows the diagram
     refused, or the people to pick from instead. `chosen` is the person the
-    coder tapped when they were asked which."""
+    coder tapped when they were asked which.
+
+    The model reads the words first, so a question or a note about the app is
+    answered or offered as a report whoever it mentions; only a write naming
+    one of the people the words could not tell apart stops, before anything
+    is written, to ask which (R-0270, R-0946)."""
     turn_id = uuid.uuid4().hex
     record = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     people = record.get("people") or []
     about = ""
+    could = None
     if chosen is None:
         could = unclear(said, people)
-        if could is not None:
-            choices = _choices(could, record)
-            _log.info(f"Scribe asked which person: {choices}")
-            return _result([], [], [], turn_id, choices)
     else:
         person = next((p for p in people if str(p["id"]) == str(chosen)), None)
         if person is None:
@@ -195,7 +220,7 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     messages = [
         {
             "role": "user",
-            "content": _earlier(coding.id)
+            "content": _earlier(coding, record)
             + TURN.format(who=_who(statement), turn=statement.text or "", said=said)
             + about,
         }
@@ -223,6 +248,10 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
                 messages.append({"role": "assistant", "content": turn.blocks})
             messages.append({"role": "user", "content": AGAIN.format(refused=" ".join(refused))})
             continue
+        if could and not toolbox.deltas and _names_one_of(turn.calls, could):
+            choices = _choices(could, record)
+            _log.info(f"Scribe asked which person: {choices}")
+            return _result([], [], [], turn_id, choices)
         nudged = False
         reply = ""
         results = []
@@ -263,17 +292,62 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     missed = [one for one in tried(data, kept) if one["text"] not in entered]
     if missed:
         _log.warning(f"Scribe left refused: {[c['refusal'] for c in kept if c['refusal']]}")
-    return _result(lines, missed, made(toolbox.deltas), turn_id, [], reply)
+    return _result(lines, missed, made(toolbox.deltas), turn_id, [], reply, hands.offered)
 
 
-def _earlier(coding_id: int) -> str:
-    notes = Note.query.filter_by(coding_id=coding_id).order_by(Note.id).all()
-    if not notes:
+def _earlier(coding, data: dict) -> str:
+    said = statements(coding.id, coding.diagram_id, data)
+    if not said:
         return ""
-    return EARLIER.format(lines="\n".join(f"- {note.text}" for note in notes))
+    return EARLIER.format(
+        lines="\n".join(f"- {one['text']} → {produced(one)}" for _, one in said)
+    )
 
 
-def _result(lines, refused, made, turn_id, choices, reply="") -> dict:
+def statements(coding_id: int, diagram_id: int, data: dict) -> list[tuple[int, dict]]:
+    """What this coder typed on a coding, oldest first, each with the line of
+    the conversation it was about, the rows the scribe wrote from those words
+    in the record's own words so a later correction to an event still reads as
+    the record has it (R-0270), people and pair-bonds first as when the words
+    were sent (R-0883), the events those rows are, whose codes' concept pages
+    hang under them (R-0541), and what the scribe said back (R-0942)."""
+    notes = Note.query.filter(Note.coding_id == coding_id).order_by(Note.id.asc()).all()
+    turn_ids = {note.turn_id for note in notes}
+    deltas = adapter.deltas_by_turn(diagram_id, turn_ids)
+    replies = adapter.replies(turn_ids)
+    return [
+        (
+            note.statement_id,
+            {
+                "text": note.text,
+                "lines": lines_of(data, deltas.get(note.turn_id, [])),
+                "event_ids": [
+                    int(one)
+                    for one in _touched(
+                        deltas.get(note.turn_id, []), adapter.ItemKind.Event.value
+                    )
+                ],
+                "reply": replies.get(note.turn_id, ""),
+            },
+        )
+        for note in notes
+    ]
+
+
+def produced(said: dict) -> str:
+    """What one statement produced, in its rows' words, or what the scribe
+    answered (R-0946)."""
+    parts = [
+        f"{DID[verb]} " + ", ".join(line["text"] for line in said["lines"] if line["verb"] == verb)
+        for verb in Verb
+        if any(line["verb"] == verb for line in said["lines"])
+    ]
+    if said["reply"]:
+        parts.append(f"answered: {said['reply']}")
+    return "; ".join(parts) or "nothing written"
+
+
+def _result(lines, refused, made, turn_id, choices, reply="", report=None) -> dict:
     return {
         "lines": lines,
         "refused": refused,
@@ -281,6 +355,7 @@ def _result(lines, refused, made, turn_id, choices, reply="") -> dict:
         "made": made,
         "turn_id": turn_id,
         "reply": reply,
+        "report": report,
     }
 
 
@@ -372,7 +447,7 @@ def _tried_words(data: dict, call: dict) -> str:
         return _bond_words({**bonds.get(one, {}), **args}, names, events)
     event = {**events.get(one, {}), **args}
     if args.get("date"):
-        event["dateTime"] = args["date"]
+        event["dateTime"], event["datePrecision"] = stated_date(str(args["date"]))
     if args.get("date_certainty"):
         event["dateCertainty"] = args["date_certainty"]
     # A missing title is often why it was refused; what happened stands in.
@@ -639,8 +714,8 @@ MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
 
 
 def _when(value, certainty=None, precision=None) -> str:
-    """A day in the words the rest of the app uses: the month and the year,
-    or the year alone when that is all the coder said (R-0896).
+    """A day in the words the rest of the app uses, only as far as it was
+    said: the day, the month and the year, or the year alone (R-0896).
 
     An event from before precision was kept, dated the first of January and
     marked approximate, was a year alone too; the month there was never said,
@@ -655,7 +730,10 @@ def _when(value, certainty=None, precision=None) -> str:
     approximate = _plain(certainty) == DateCertainty.Approximate.value
     if approximate and month == "01" and day == "01":
         return year
-    return f"{MONTHS[int(month) - 1]} {year}"
+    said = f"{MONTHS[int(month) - 1]} {year}"
+    if _plain(precision) == DatePrecision.Day.value and day.isdigit():
+        return f"{int(day)} {said}"
+    return said
 
 
 def _plain(value) -> str:

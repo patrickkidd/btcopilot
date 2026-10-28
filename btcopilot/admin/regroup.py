@@ -32,7 +32,7 @@ def why(diagram: Diagram) -> Why | None:
     data = diagram.get_diagram_data()
     if not clusters.candidates(data) and not clusters.told_ids(diagram.id, data):
         return None
-    if clusters.behind(diagram.id, data, profile.named(diagram, data)):
+    if clusters.behind(diagram, data):
         return Why.Changed
     if not data.clusters:
         return Why.Ungrouped

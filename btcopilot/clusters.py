@@ -2097,14 +2097,17 @@ def _events(data: DiagramData) -> list[Event]:
     ]
 
 
-def behind(diagram_id: int, data: DiagramData, name: str | None) -> bool:
-    """Whether the record's events, the person's answers to when the most was
-    going on, or who on the case the periods are written to (`name`, as
-    profile.named gives it) changed since its last grouping."""
-    return (
-        compute_cache_key(_events(data), told_ids(diagram_id, data), name)
-        != data.clusterCacheKey
+def key(diagram: Diagram, data: DiagramData) -> str:
+    """The grouping cache key `sync` stores and `behind` checks: the record's
+    events, the person's answers to when the most was going on, and who on
+    the case the periods are written to."""
+    return compute_cache_key(
+        _events(data), told_ids(diagram.id, data), profile.named(diagram, data)
     )
+
+
+def behind(diagram: Diagram, data: DiagramData) -> bool:
+    return key(diagram, data) != data.clusterCacheKey
 
 
 def sync(
@@ -2129,10 +2132,9 @@ def sync(
     """
     diagram = db.session.get(Diagram, diagram_id)
     data = diagram.get_diagram_data()
-    events = _events(data)
     said = most_going_on(diagram_id, data)
     name = profile.named(diagram, data)
-    cache_key = compute_cache_key(events, tuple(one.messageId for one in said), name)
+    cache_key = key(diagram, data)
     if not force and cache_key == data.clusterCacheKey:
         return None
     fresh = fresh or older(data.clusterCacheKey)

@@ -53,12 +53,22 @@ def turn_events(turn_id: str):
             yield frame(seq, event)
             if turnlog.ended(event):
                 return
+        # A turn whose worker is gone ends here in failed, so the page offers
+        # to try it again instead of waiting on it for good.
+        lost = turns.interrupted(turn_id, turns.LAPSED)
+        if lost:
+            yield frame(sent + 1, lost)
+            return
         quiet = 0
         for carried in following:
             if carried is None:
                 quiet += 1
                 if quiet >= HEARTBEAT_TICKS:
                     quiet = 0
+                    lost = turns.interrupted(turn_id, turns.LAPSED)
+                    if lost:
+                        yield frame(sent + 1, lost)
+                        return
                     yield ": still here\n\n"
                 continue
             quiet = 0

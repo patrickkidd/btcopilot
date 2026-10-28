@@ -23,6 +23,7 @@ from btcopilot.models import (
     Observation,
     ObservationKind,
 )
+from btcopilot.schema import ItemKind
 from btcopilot.tests.fdfixtures import bundle, dumps, event, person, scene, shift, when
 
 TODAY = datetime.date(2026, 10, 10)
@@ -532,12 +533,72 @@ def test_record_rules_refuse_before_anything_is_written(test_user):
     assert Diagram.query.filter_by(name="Lund family").count() == 0
 
 
-def test_a_person_refused_for_anything_but_a_taken_name_stops_the_import_with_why():
-    # R-0905
+def test_a_person_refused_for_anything_but_a_taken_name_is_skipped_with_what_names_them():
+    # R-0947, R-0905
     file = scene()
     file["people"][0]["gender"] = "zebra"
-    with pytest.raises(ValueError, match="Ada Lund could not be brought in: The person's gender"):
-        fdimport.build(fdfile.read(dumps(file)))
+    out = fdimport.build(fdfile.read(dumps(file)))
+    assert [p["name"] for p in out.data["people"]] == ["Bo", "Cy"]
+    assert [(one.kind, one.id, one.label) for one in out.failed] == [
+        (ItemKind.Person, 1, "Person 'Ada Lund'"),
+        (ItemKind.PairBond, 10, "The pair-bond of Ada Lund and Bo Lund"),
+        (ItemKind.Event, 20, "A birth event (1990)"),
+        (ItemKind.Event, 21, "A married event (1985)"),
+    ]
+    assert out.failed[0].reason.startswith("The person's gender")
+    assert {one.reason for one in out.failed[1:]} == {fdimport.NOBODY}
+    assert "parents" not in out.data["people"][1]
+
+
+def test_an_event_with_no_kind_is_skipped_and_everything_else_comes_in(test_user):
+    # R-0947
+    moved = event(23, None, person=1, description="Moved to Denver", dateTime=when(2019, 4, 1))
+    out = built(events=[*scene()["events"], moved])
+    assert out.brought == {"people": 3, "pair_bonds": 1, "events": 3}
+    assert out.report()["failed"] == [
+        {
+            "kind": "event",
+            "id": 23,
+            "label": "Event 'Moved to Denver' (2019)",
+            "reason": fdimport.NO_KIND,
+        }
+    ]
+    diagram = fdimport.save(test_user.id, "Lund family", out, yes=True)
+    [counted] = Observation.query.filter_by(kind=ObservationKind.Import).all()
+    assert (counted.diagram_id, counted.detail) == (diagram.id, out.report())
+
+
+@pytest.mark.parametrize(
+    "broken, label, reason",
+    [
+        (event(23, "zebra", person=1), "A zebra event", fdimport.NO_SUCH_KIND),
+        (event(23, "noted", person=99, description="Left home"), "Event 'Left home'", fdimport.NOBODY),
+        ({**event(0, "noted", description="Left home"), "id": None}, "Event 'Left home'", fdimport.NO_ID),
+        (event(20, "noted", person=1, description="Left home"), "Event 'Left home'", fdimport.SAME_ID),
+    ],
+    ids=["unknown kind", "names no one in the file", "no id", "id taken"],
+)
+def test_an_event_the_file_cannot_give_whole_is_skipped_on_its_own(broken, label, reason):
+    # R-0947
+    out = built(events=[*scene()["events"], broken])
+    assert [(one.label, one.reason) for one in out.failed] == [(label, reason)]
+    assert out.brought["events"] == 3
+
+
+def test_a_person_with_no_id_is_skipped_and_the_ledger_still_builds():
+    # R-0947, R-0932
+    fd = fdfile.read(dumps(scene(people=[*scene()["people"], {**person(0, "Dee", "female"), "id": None}])))
+    out = fdimport.build(fd)
+    assert [(one.kind, one.id, one.label) for one in out.failed] == [
+        (ItemKind.Person, None, "Person 'Dee Lund'")
+    ]
+    text = fdafter.ledger("Lund family.fd", fd, out)
+    assert "Person 'Dee Lund' was skipped. The file gives it no identity." in text
+
+
+def test_a_clean_file_skips_nothing():
+    # R-0947
+    assert built().report() == {"people": 3, "pair_bonds": 1, "events": 3, "failed": []}
 
 
 def test_admin_import_previews_then_writes_and_mails_the_record(
@@ -575,7 +636,7 @@ def test_admin_import_previews_then_writes_and_mails_the_record(
             "people": 3,
             "events": 3,
             "pair_bonds": 1,
-            "left_out": 0,
+            "failed": [],
         },
     )
     [mail] = outbox
@@ -639,7 +700,7 @@ def test_a_death_the_file_only_ticks_is_named_in_the_ledger_by_whom_it_is_about(
 
 
 def test_a_refused_event_is_left_out_and_kept_as_a_question_the_coach_asks_later(test_user):
-    # R-0905, R-0909
+    # R-0905, R-0909, R-0947
     out = built(events=[*scene()["events"], event(23, "shift", person=1, description="Ada lost the job", anxiety="up", dateTime=when(2000, 3, 4))])
     assert "Ada lost the job" not in [e.get("description") for e in out.data["events"]]
     [asked] = out.data["questions"]
@@ -647,7 +708,11 @@ def test_a_refused_event_is_left_out_and_kept_as_a_question_the_coach_asks_later
         'The file had an event for Ada Lund on 4 March 2000, "Ada lost the job".'
     )
     assert (asked["state"], asked["kind"], asked["item_id"]) == ("held", "fact", 3)
-    assert out.brought[fdimport.LEFT_OUT] == 1
+    [skipped] = out.failed
+    assert (skipped.label, skipped.reason.endswith("The coach will ask about it.")) == (
+        "Event 'Ada lost the job' (2000)",
+        True,
+    )
     diagram = fdimport.save(test_user.id, "Lund family", out, yes=True, turn="t1")
     [change] = Change.query.filter_by(diagram_id=diagram.id).all()
     [kept] = diagram.get_diagram_data().questions

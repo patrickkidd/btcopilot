@@ -39,6 +39,9 @@ class ScribeTool(enum.StrEnum):
     ChangeBond = "change_bond"
     ChangeEvent = "change_event"
     Delete = "delete"
+    # The coach's own report tool: the coding screen offers it as the chat
+    # does (R-0946).
+    Report = "report"
 
 
 class Married(enum.StrEnum):
@@ -373,6 +376,7 @@ def schemas() -> list[dict]:
             },
             ["kind", "id", "version"],
         ),
+        adapter.report_schema(),
     ]
 
 
@@ -388,6 +392,8 @@ class ScribeTools:
             tool["name"]: set(tool["input_schema"]["properties"]) for tool in self.tools
         }
         self.refs: dict[int, tuple[ItemKind, int]] = {}
+        # What the scribe offered to send, which the page asks the coder about.
+        self.offered: dict | None = None
 
     def call(self, name: str, args: dict) -> tuple[str, str, list[dict]]:
         """What the model reads, the refusal's plain words when the record or
@@ -502,6 +508,11 @@ class ScribeTools:
             for k, v in _event_args(_kind(tool, args), args).items()
             if v is not None
         }
+
+    def _report(self, args: dict, kept: list[dict]) -> str:
+        text, patch = self._run(kept, ToolName.Report, args)
+        self.offered = patch["report"]
+        return text
 
     def _add_person(self, args: dict, kept: list[dict]) -> str:
         parents = self._people(args.get("parents"))

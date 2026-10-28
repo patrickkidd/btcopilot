@@ -8,6 +8,7 @@ import time
 from collections import deque
 
 from flask import current_app, request
+from werkzeug.exceptions import Forbidden
 
 import btcopilot
 from btcopilot.auth import emails
@@ -21,7 +22,7 @@ HOUR_S = 3600
 _lock = threading.Lock()
 
 # What the page may send.
-FIELDS = {"kind", "status", "release", "address", "turn_id", "statement_id", "words"}
+FIELDS = {"kind", "status", "release", "address", "turn_id", "statement_id", "diagram_id", "words"}
 
 
 def sender(user: User | None) -> str:
@@ -43,6 +44,18 @@ def allowed(who: str) -> bool:
             return False
         times.append(now)
         return True
+
+
+def about(body: dict, user: User | None) -> Diagram | None:
+    """The diagram a report is about: the one it names, as a coding screen
+    names the coder's own copy, which the person must be able to read; else
+    the one the app is on (R-0946)."""
+    if body.get("diagram_id") is None:
+        return (user.current_diagram or user.free_diagram) if user else None
+    diagram = db.session.get(Diagram, body["diagram_id"])
+    if diagram is None or user is None or not diagram.check_read_access(user):
+        raise Forbidden("That diagram is not yours to report on")
+    return diagram
 
 
 def take(body: dict, user: User | None, diagram: Diagram | None) -> Report:

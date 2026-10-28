@@ -230,6 +230,42 @@ VERSION = {
 }
 
 
+def report_schema() -> dict:
+    """The report tool, which the coach and the scribe offer alike (R-0056,
+    R-0946)."""
+    return {
+        "name": ToolName.Report.value,
+        "description": (
+            "Offer to send what the person said about the app, or what you "
+            "misread, to the people who make it: the app asks them whether "
+            "to send it, and nothing is sent unless they say so.\n\n"
+            + prompts.files().fragment("report")
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "enum": [kind.value for kind in ReportKind],
+                    "description": (
+                        "bug: the app or you behaved wrongly as they "
+                        "experienced it; feedback: a wish or a dislike about "
+                        "the app."
+                    ),
+                },
+                "words": {
+                    "type": "string",
+                    "description": (
+                        "The person's own words, as they said them; for a "
+                        "bug about your own misreading, yours."
+                    ),
+                },
+            },
+            "required": ["kind", "words"],
+        },
+    }
+
+
 def schemas(coder: bool = False) -> list[dict]:
     """The coach's tool schemas; a coder's navigate also lists the coder's
     screens (R-0626). What a field means clinically comes from
@@ -795,37 +831,7 @@ def schemas(coder: bool = False) -> list[dict]:
                 "required": ["address"],
             },
         },
-        {
-            "name": ToolName.Report.value,
-            "description": (
-                "Offer to send what the person said about the app, or what you "
-                "misread, to the people who make it: the app asks them whether "
-                "to send it, and nothing is sent unless they say so.\n\n"
-                + prompts.files().fragment("report")
-            ),
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "kind": {
-                        "type": "string",
-                        "enum": [kind.value for kind in ReportKind],
-                        "description": (
-                            "bug: the app or you behaved wrongly as they "
-                            "experienced it; feedback: a wish or a dislike about "
-                            "the app."
-                        ),
-                    },
-                    "words": {
-                        "type": "string",
-                        "description": (
-                            "The person's own words, as they said them; for a "
-                            "bug about your own misreading, yours."
-                        ),
-                    },
-                },
-                "required": ["kind", "words"],
-            },
-        },
+        report_schema(),
         {
             "name": ToolName.CoachNotes.value,
             "description": (

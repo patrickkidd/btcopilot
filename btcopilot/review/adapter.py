@@ -9,6 +9,7 @@ it reached into the app.
 import datetime
 import re
 import uuid
+from collections import Counter
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -32,12 +33,21 @@ from btcopilot.models import (
     Speaker,
     SpeakerType,
     Statement,
+    TurnEvent,
 )
 from btcopilot.recordtext import date_text, render, version_line
 from btcopilot.toolnames import toolcall
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.prompts import ToolText
-from btcopilot.toolbox import CERTAINTY, GONE, ToolError, Toolbox, ToolName, choice
+from btcopilot.toolbox import (
+    CERTAINTY,
+    GONE,
+    ToolError,
+    Toolbox,
+    ToolName,
+    choice,
+    report_schema,
+)
 from btcopilot.models import (
     Diagram,
     Notification,
@@ -72,7 +82,6 @@ __all__ = [
     "Toolbox",
     "ToolName",
     "coded_in",
-    "touched_by_turn",
     "deltas_by_turn",
     "date_text",
     "diagram_of",
@@ -115,6 +124,8 @@ __all__ = [
     "sitting",
     "utc_iso",
     "thread",
+    "heard",
+    "report_schema",
     "statement_order",
 ]
 
@@ -130,28 +141,19 @@ def coded_in(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[int, dict
     return record.coded_in(diagram_id, kind)
 
 
-def touched_by_turn(diagram_id: int, kind: ItemKind = ItemKind.Event) -> dict[str, list[int]]:
-    """Every item of one kind each turn added or changed, oldest first, from
-    the command log: an item changed later still belongs to each turn that
-    touched it, where coded_in gives it to the last one only."""
-    by_turn: dict[str, list[int]] = {}
-    for change in Change.query.filter_by(diagram_id=diagram_id).order_by(Change.id):
-        for delta in change.deltas or []:
-            if change.turn_id is None or delta.get("item_kind") != kind.value:
-                continue
-            ids = by_turn.setdefault(change.turn_id, [])
-            if int(delta["item_id"]) not in ids:
-                ids.append(int(delta["item_id"]))
-    return by_turn
-
-
-def deltas_by_turn(diagram_id: int) -> dict[str, list[dict]]:
-    """Every delta each turn wrote on a record, oldest first, from the command
-    log."""
+def deltas_by_turn(diagram_id: int, turn_ids: set[str]) -> dict[str, list[dict]]:
+    """Every delta each of these turns wrote on a record, oldest first, from
+    the command log, reading only those turns' changes."""
+    if not turn_ids:
+        return {}
     by_turn: dict[str, list[dict]] = {}
-    for change in Change.query.filter_by(diagram_id=diagram_id).order_by(Change.id):
-        if change.turn_id is not None:
-            by_turn.setdefault(change.turn_id, []).extend(change.deltas or [])
+    for change in (
+        Change.query.filter(
+            Change.diagram_id == diagram_id, Change.turn_id.in_(turn_ids)
+        )
+        .order_by(Change.id)
+    ):
+        by_turn.setdefault(change.turn_id, []).extend(change.deltas or [])
     return by_turn
 
 
@@ -422,6 +424,55 @@ def thread(diagram_id: int) -> list[Statement]:
         found,
         key=lambda s: (started[s.discussion_id], s.discussion_id, s.order or 0, s.id),
     )
+
+
+def heard(lines: list[Statement]) -> list[Statement]:
+    """Lines less the person's words whose turn failed with no reply and that
+    they sent again word for word later on: those never became part of the
+    conversation. A repeat the coach answered stays."""
+    sharing = Counter(s.turn_id for s in lines if s.turn_id)
+    failed = _failed(set(sharing))
+    return [
+        s
+        for at, s in enumerate(lines)
+        if not (
+            s.turn_id
+            and sharing[s.turn_id] == 1
+            and s.turn_id in failed
+            and any(
+                later.speaker_id == s.speaker_id
+                and (later.text or "").strip() == (s.text or "").strip()
+                for later in lines[at + 1 :]
+            )
+        )
+    ]
+
+
+def _failed(turn_ids: set[str]) -> set[str]:
+    """The turns whose last ending event is a failure, read from the kinds of
+    their ending events alone in one query."""
+    if not turn_ids:
+        return set()
+    last = (
+        db.session.query(TurnEvent.turn_id, func.max(TurnEvent.seq).label("seq"))
+        .filter(
+            TurnEvent.turn_id.in_(turn_ids),
+            TurnEvent.kind.in_(
+                (TurnEventKind.Done.value, TurnEventKind.Failed.value)
+            ),
+        )
+        .group_by(TurnEvent.turn_id)
+        .subquery()
+    )
+    return {
+        turn_id
+        for (turn_id,) in db.session.query(TurnEvent.turn_id)
+        .join(
+            last,
+            (TurnEvent.turn_id == last.c.turn_id) & (TurnEvent.seq == last.c.seq),
+        )
+        .filter(TurnEvent.kind == TurnEventKind.Failed.value)
+    }
 
 
 def sitting(discussion_id: int) -> list[Statement]:

@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import type { Person } from "../src/types";
+import { ItemKind, type Person } from "../src/types";
 
 vi.stubGlobal("window", { BOOTSTRAP: { user: { username: "ann", pro: false } } });
 
@@ -140,7 +140,7 @@ const answering = (status: number, body: string) => {
   return sent;
 };
 
-const lund = { id: 9, name: "Lund family", imported: { people: 4, events: 212, left_out: 3, primary: [12, 11], coding_cost: { low: 0.4, high: 1.8 } } };
+const lund = { id: 9, name: "Lund family", imported: { people: 4, events: 212, pair_bonds: 3, failed: [], note: "Your file is in: 4 people, 212 events and 3 pair-bonds.", primary: [12, 11], coding_cost: { low: 0.4, high: 1.8 } } };
 
 const person = (id: number, name: string, last_name: string | null = "Lund") => ({ id, name, last_name }) as Person;
 const people = [person(10, "Walter"), person(11, "Ann"), person(12, "Karen"), person(13, "Tomas", null)];
@@ -163,15 +163,15 @@ const importer = (made: object | null = lund) => {
 
 const asked = "Should the coach go through the events and add codes where the file has none?";
 
-// R-0899, R-0902, R-0905
+// R-0899, R-0902, R-0947
 it("opens the new diagram and then says how much of the file came in and asks whose family it is", async () => {
   const sent = answering(201, JSON.stringify(lund));
   const { one, done } = importer(null);
   await one.send(new File(["\x80\x03}q"], "Lund family.fd.zip"));
   expect([sent[0].get("name"), sent[0].has("coding")]).toEqual(["Lund family", false]);
   expect(done.opened).toEqual([lund]);
-  expect(done.shown[0]).toContain("Your file is in: 4 people and 212 events.");
-  expect(done.shown[0]).toContain("3 could not be brought in; the coach will ask about them.");
+  expect(done.shown[0]).toContain("Your file is in: 4 people, 212 events and 3 pair-bonds.");
+  expect(done.shown[0]).not.toContain("could not come in");
   expect(done.shown[0]).toContain("Is this your own family?");
   expect(done.shown[0]).not.toContain(asked);
 });
@@ -187,7 +187,34 @@ it("asks who the case is about when it is not the person's own family, with no q
   expect(done.shown[0]).not.toContain("Which person are you?");
   expect(done.shown[0]).not.toContain(asked);
   expect(listed(done.shown[0], Pick.About)).toEqual([12, 11, 10, 13]);
-  expect(done.shown[0]).toContain("Your file is in: 4 people and 212 events.");
+  expect(done.shown[0]).toContain("Your file is in: 4 people, 212 events and 3 pair-bonds.");
+});
+
+const denver = { kind: ItemKind.Event, id: 23, label: "Event 'Moved to Denver' (2019)", reason: "The file does not say what kind of event it is." };
+
+// R-0947
+it("shows the coach's report of the import on every step until the sheet is put away, a line for each object skipped", () => {
+  const note =
+    "Your file is in: 1 person, 1 event and 1 pair-bond.\nOne part of the file could not come in:\n" +
+    "Event 'Moved to Denver' (2019) was skipped. The file does not say what kind of event it is.";
+  const imported = { ...lund.imported, people: 1, events: 1, pair_bonds: 1, failed: [denver], note };
+  const { one, done } = importer({ ...lund, imported });
+  one.answer(Answer.Own);
+  for (const html of [ownStep(imported), done.shown[0], codesStep(imported)]) {
+    expect(html).toContain('<div class="cf-t">Your file is in: 1 person, 1 event and 1 pair-bond.</div>');
+    expect(html).toContain('<p class="cf-p">One part of the file could not come in:</p>');
+    expect(html).toContain('<p class="cf-p">Event &#39;Moved to Denver&#39; (2019) was skipped. The file does not say what kind of event it is.</p>');
+  }
+  expect(ownStep(lund.imported)).not.toContain("could not come in");
+});
+
+// R-0947
+it("says in one sentence that a file it cannot open at all is refused, and opens nothing", async () => {
+  answering(400, "That file is damaged and cannot be opened.");
+  const said = toasts();
+  const { one, done } = importer(null);
+  await one.send(new File(["PK\x03\x04"], "Lund family.zip"));
+  expect([said(), done.opened, done.shown]).toEqual([["That file is damaged and cannot be opened."], [], []]);
 });
 
 // R-0899, R-0930
@@ -263,6 +290,16 @@ it("cannot be put away until a primary person is set, and then its cross counts 
 it("says under the codes question what a yes is likely to cost", () => {
   expect(codesStep(lund.imported)).toContain('<p class="cf-p fdc-cost">Up to about $1.80</p>');
   expect(costLine({ low: 0.07, high: 3.1 })).toBe("Up to about $3.10");
+});
+
+// R-0899, R-0947
+it("asks nothing about codes when no event the file brought needs them, and shows only the report and its cross", () => {
+  const html = codesStep({ ...lund.imported, coding_cost: { low: 0, high: 0 } });
+  expect(html).not.toContain(asked);
+  expect(html).not.toContain("Up to about");
+  expect(html).not.toContain("data-act");
+  expect(html).toContain("cardx");
+  expect(html).toContain('<div class="cf-t">Your file is in: 4 people, 212 events and 3 pair-bonds.</div>');
 });
 
 // R-0899, R-0902, R-0905

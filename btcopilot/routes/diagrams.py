@@ -17,7 +17,6 @@ from btcopilot import (
     auth,
     diagramjson,
     fdafter,
-    fdimport,
     profile,
     record,
     turnlog,
@@ -177,21 +176,20 @@ def diagram_update(diagram_id: int):
 
 def _imported(user):
     """A new case from a Family Diagram desktop file, made here as the file
-    stands and opened; the worker then mails its record and groups its
-    clusters [Oracle: R-0899, R-0902]."""
+    stands, each object on its own, and opened; the answer carries what came
+    across and each object skipped, the import's report, and the worker then
+    mails its record [Oracle: R-0899, R-0902, R-0947]."""
     if request.content_length and request.content_length > FORM_BYTES:
         abort(413, description=attachments.TOO_BIG)
     name = _name(request.form)
     data = request.files["file"].read()
     if len(data) > attachments.MAX_BYTES:
         abort(413, description=attachments.TOO_BIG)
-    pickled, fd = fdafter.scene(data)
-    made, turn, out = fdafter.made(user, name, fd)
-    fdafter.enqueue(made, user.id, turn, pickled)
-    imported = {
-        "people": out.brought["people"],
-        "events": out.brought["events"],
-        "left_out": out.brought[fdimport.LEFT_OUT],
+    fd = fdafter.scene(data)
+    made, out, note = fdafter.made(user, name, fd)
+    fdafter.mail(user, made, fd, out)
+    imported = out.report() | {
+        "note": note,
         "primary": out.primaries,
         "coding_cost": fdafter.coding_cost(user.id, made),
     }

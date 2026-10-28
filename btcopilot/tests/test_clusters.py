@@ -39,6 +39,7 @@ from btcopilot.llmutil import Parsed, Served, Spent, gemini_structured_sync
 from btcopilot.models import (
     Author,
     Change,
+    Diagram,
     Observation,
     ObservationKind,
     Speaker,
@@ -2355,15 +2356,15 @@ def test_an_answer_closed_before_its_message_was_kept_is_found_in_the_change_log
 def test_the_persons_answer_alone_puts_the_grouping_behind():
     # R-0853
     data = record(*ASH.events)
-    data.clusterCacheKey = clusters.compute_cache_key(clusters._events(data))
-    assert not clusters.behind(1, data, None)
-    assert clusters.behind(1, asked(data, 7), None)
+    data.clusterCacheKey = clusters.key(Diagram(id=1), data)
+    assert not clusters.behind(Diagram(id=1), data)
+    assert clusters.behind(Diagram(id=1), asked(data, 7))
 
 
 def test_editing_what_detection_reads_of_an_event_puts_the_diagram_behind():
     # R-0853
     data = record(*ASH.events)
-    data.clusterCacheKey = clusters.compute_cache_key(clusters._events(data))
+    data.clusterCacheKey = clusters.key(Diagram(id=1), data)
     for field, value in (
         ("description", "always anxious"),
         ("person", 99),
@@ -2372,7 +2373,7 @@ def test_editing_what_detection_reads_of_an_event_puts_the_diagram_behind():
         edited = record(*ASH.events)
         edited.events[0][field] = value
         edited.clusterCacheKey = data.clusterCacheKey
-        assert clusters.behind(1, edited, None), field
+        assert clusters.behind(Diagram(id=1), edited), field
 
 
 def test_a_stored_period_with_undated_events_regroups_and_keeps_them(test_user):

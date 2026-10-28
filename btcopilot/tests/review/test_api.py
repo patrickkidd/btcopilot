@@ -5,14 +5,25 @@ from btcopilot import diagramjson
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
 from btcopilot.extensions import db
-from btcopilot.models import Author, Change, Discussion, ModelCall, Purpose, Statement
+from btcopilot.models import (
+    Author,
+    Change,
+    Discussion,
+    ModelCall,
+    Purpose,
+    Speaker,
+    SpeakerType,
+    Statement,
+    TurnEvent,
+)
 from mock import patch
+from sqlalchemy import event
 
 from btcopilot.review import adapter, divergence, export, ruledraft, snapshot
 from btcopilot.review.adapter import initials
 from btcopilot.models import User
 from btcopilot.review.freeze import frozen
-from btcopilot.review.models import Coding, Cut, Item, ReviewStatus, Rule, RuleSource
+from btcopilot.review.models import Coding, Cut, Item, Note, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.conftest import Model, said
 from btcopilot.tests.review.conftest import coded, person, shift
 
@@ -787,3 +798,114 @@ def test_a_coder_without_a_name_is_still_shown_as_initials(flask_app):
     assert initials(User(username="ballot1@fd362-fixture.invalid")) == "B1."
     assert initials(User(username="ballot3@fd362-fixture.invalid")) == "B3."
     assert initials(User(username="patrickkidd+beta@gmail.com")) == "P.B."
+
+
+def ended(turn_id: str, session, end: str) -> None:
+    """A turn that made one tool call and then ended as `end` says."""
+    for seq, kind in enumerate(("tool_call", end), start=1):
+        db.session.add(
+            TurnEvent(
+                turn_id=turn_id,
+                discussion_id=session.id,
+                seq=seq,
+                kind=kind,
+                payload={"type": kind, "name": "add_person", "args": {}},
+            )
+        )
+
+
+def test_words_whose_turn_failed_and_were_sent_again_are_listed_once(
+    coder, session, turns, cut
+):
+    # R-0946
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    db.session.commit()
+    coding = coder.post("/review/codings", json={"cut_id": cut.id}).json
+    thread = coder.get(f"/review/codings/{coding['id']}/thread").json
+    assert [turn["id"] for turn in thread["turns"]] == [turns[1].id]
+
+
+def test_the_failed_turn_check_reads_no_turn_event_payload(session, turns):
+    # R-0946
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    ended("again", session, "done")
+    db.session.commit()
+    sent = []
+    keep = lambda conn, cursor, sql, *rest: sent.append(sql)
+    event.listen(db.engine, "before_cursor_execute", keep)
+    try:
+        shown = adapter.heard(turns[:2])
+    finally:
+        event.remove(db.engine, "before_cursor_execute", keep)
+    assert shown == [turns[1]]
+    read = [sql for sql in sent if "turn_events" in sql]
+    assert len(read) == 1
+    assert "payload" not in read[0]
+
+
+def test_words_the_coach_answered_and_were_sent_again_are_listed_twice(
+    coder, session, turns, cut
+):
+    # R-0946
+    coach = Speaker(discussion_id=session.id, name="Coach", type=SpeakerType.Expert)
+    db.session.add(coach)
+    db.session.flush()
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id, turns[1].speaker_id = "Done.", "first", coach.id
+    turns[2].text, turns[2].turn_id = "Add my father", "again"
+    cut.end_statement_id = turns[2].id
+    ended("first", session, "done")
+    db.session.commit()
+    coding = coder.post("/review/codings", json={"cut_id": cut.id}).json
+    thread = coder.get(f"/review/codings/{coding['id']}/thread").json
+    assert [turn["id"] for turn in thread["turns"]] == [t.id for t in turns[:3]]
+
+
+def test_words_sent_again_stay_where_the_coder_already_wrote_from_them(
+    coder, session, turns, cut
+):
+    # R-0946, R-0270
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    db.session.commit()
+    coding = coder.post("/review/codings", json={"cut_id": cut.id}).json
+    db.session.add(
+        Note(
+            coding_id=coding["id"],
+            statement_id=turns[0].id,
+            text="A father",
+            turn_id="scribe-1",
+        )
+    )
+    db.session.commit()
+    thread = coder.get(f"/review/codings/{coding['id']}/thread").json
+    assert [turn["id"] for turn in thread["turns"]] == [turns[0].id, turns[1].id]
+    assert [s["text"] for s in thread["turns"][0]["said"]] == ["A father"]
+
+
+def test_words_sent_again_stay_when_the_last_agreed_line_is_on_them(
+    test_user, coder, session, turns, cut
+):
+    # R-0946, R-0267
+    turns[1].text, turns[1].turn_id = "Add my father", "first"
+    turns[2].text, turns[2].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    cut.ratified_at = datetime.datetime(2026, 10, 1)
+    later = Cut(
+        diagram_id=session.diagram_id,
+        start_statement_id=turns[2].id,
+        end_statement_id=turns[3].id,
+        user_id=test_user.id,
+        meeting_date=datetime.date(2026, 10, 8),
+    )
+    db.session.add(later)
+    db.session.commit()
+    coding = coder.post("/review/codings", json={"cut_id": later.id}).json
+    thread = coder.get(f"/review/codings/{coding['id']}/thread").json
+    assert [turn["id"] for turn in thread["turns"]] == [t.id for t in turns]
+    assert thread["agreed"]["order"] == 2

@@ -16,6 +16,7 @@ from btcopilot.models import (
     Speaker,
     SpeakerType,
     Statement,
+    StatementKind,
 )
 from btcopilot import turnlog
 from btcopilot.schema import DEFAULT_SUBJECT_NAME
@@ -217,6 +218,21 @@ def sitting(user, diagram: Diagram) -> Discussion:
     ):
         return last
     return open_session(user, diagram)
+
+
+def coach_said(discussion: Discussion, text: str, **more) -> Statement:
+    """The coach's words written straight into the session with no model
+    turn: a message it writes first, or an import's report [Oracle: R-0947]."""
+    statement = Statement(
+        discussion_id=discussion.id,
+        text=text,
+        speaker=discussion.chat_ai_speaker,
+        order=discussion.next_order(),
+        kind=StatementKind.Turn,
+        **more,
+    )
+    db.session.add(statement)
+    return statement
 
 
 def voice(user, diagram: Diagram, data) -> tuple[int | None, str]:

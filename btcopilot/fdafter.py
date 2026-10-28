@@ -1,8 +1,8 @@
 """A desktop file made into a new diagram from the Diagrams page
 [Oracle: R-0899, R-0902]. The request reads the file, builds it as it stands
-with no model call, saves it as one change-log turn and puts the app on it.
-The worker then mails the import record and groups the clusters
-[Oracle: R-0932].
+with no model call, each object on its own, saves it as one change-log turn
+and puts the app on it [Oracle: R-0947]. The worker then mails the import
+record the request wrote from that one build [Oracle: R-0932].
 
 The case report needs nothing here: a report is out of date by a rule on the
 change log the import's write already satisfies (R-0825), and coverage is
@@ -12,8 +12,8 @@ worked out from the diagram each time it is read.
 import datetime
 import io
 import pickle
-import uuid
 import zipfile
+import zlib
 from pathlib import Path
 
 from sqlalchemy import func
@@ -31,6 +31,7 @@ from btcopilot import (
 )
 from btcopilot.admin import setting
 from btcopilot.admin.setting import SettingKey
+from btcopilot.discussions import coach_said, sitting
 from btcopilot.extensions import db
 from btcopilot.llmutil import Spent, resolve_model
 from btcopilot.models import Diagram, ModelCall, Purpose, User
@@ -40,6 +41,10 @@ from btcopilot.schema import EventKind
 TASK = "fd_import_landed"
 REGROUP = "clusters_regroup"
 NOT_FD = "That is not a Family Diagram file."
+DAMAGED = "That file is damaged and cannot be opened."
+LOCKED = "That file is locked with a password and cannot be opened."
+# The flag a zip sets on a file it holds encrypted.
+ENCRYPTED = 0x1
 # How far back, and how many calls, the coding question's cost is read from.
 COST_DAYS = 30
 RECENT_CALLS = 20
@@ -63,14 +68,28 @@ MAC_FORKS = "__MACOSX"
 SUFFIX = ".fd"
 
 
-def scene(data: bytes) -> tuple[bytes, dict]:
-    """The diagram.pickle of an upload, itself or inside a zip of the .fd
-    folder, and the scene read from it; a file that is neither is refused in
-    one sentence, and one saved before events had a list of their own in the
-    reader's words [Oracle: R-0914, R-0882]."""
+def scene(data: bytes) -> dict:
+    """The scene read from an upload's diagram.pickle, itself or inside a zip
+    of the .fd folder; a file that is neither, or one that cannot be opened at
+    all, is refused in one sentence, and one saved before events had a list of
+    their own in the reader's words [Oracle: R-0914, R-0882, R-0947]."""
     # read by what the bytes are, never by the file's name: a browser sends
     # an .fd package as a zip under any name, or its diagram.pickle itself
     if data.startswith(ZIP):
+        data = _unzipped(data)
+    if not data.startswith(PICKLED):
+        raise ValueError(NOT_FD)
+    try:
+        return fdfile.read(data)
+    except fdfile.TooOld:
+        raise
+    except (pickle.UnpicklingError, EOFError, ValueError, TypeError, AttributeError, IndexError, KeyError):
+        raise ValueError(NOT_FD)
+
+
+def _unzipped(data: bytes) -> bytes:
+    """The diagram.pickle inside a zip of the .fd folder."""
+    try:
         with zipfile.ZipFile(io.BytesIO(data)) as folder:
             found = next(
                 (
@@ -83,51 +102,45 @@ def scene(data: bytes) -> tuple[bytes, dict]:
             )
             if found is None:
                 raise ValueError(NOT_FD)
+            if found.flag_bits & ENCRYPTED:
+                raise ValueError(LOCKED)
             if found.file_size > attachments.MAX_BYTES:
                 raise RequestEntityTooLarge(attachments.TOO_BIG)
-            data = folder.read(found)
-    if not data.startswith(PICKLED):
-        raise ValueError(NOT_FD)
-    try:
-        return data, fdfile.read(data)
-    except fdfile.TooOld:
-        raise
-    except (pickle.UnpicklingError, EOFError, ValueError, TypeError, AttributeError, IndexError, KeyError):
-        raise ValueError(NOT_FD)
+            return folder.read(found)
+    except (zipfile.BadZipFile, zlib.error, EOFError, NotImplementedError):
+        raise ValueError(DAMAGED)
 
 
-def made(user: User, name: str, fd: dict) -> tuple[Diagram, str, fdimport.Imported]:
-    """The file as a new diagram of the user's, the app put on it; returns
-    the diagram, the turn that wrote it and the import."""
-    turn = fdimport.TURN.format(uuid.uuid4().hex)
+def made(user: User, name: str, fd: dict) -> tuple[Diagram, fdimport.Imported, str]:
+    """The file as a new diagram of the user's, the app put on it, and the
+    import's report written into its chat as the coach's message, a note
+    that stays [Oracle: R-0947]; returns the diagram, the import and the
+    message's words."""
     out = fdimport.build(fd)
-    diagram = fdimport.save(user.id, name, out, yes=True, turn=turn)
+    diagram = fdimport.save(user.id, name, out, yes=True)
     user.current_diagram_id = diagram.id
+    # the person's speaker is set from who they say they are with their own
+    # first words, so nothing is added to the diagram here
+    note = coach_said(sitting(user, diagram), out.said())
     db.session.commit()
-    return diagram, turn, out
+    return diagram, out, note.text
 
 
-def enqueue(diagram: Diagram, user_id: int, turn: str, data: bytes) -> None:
-    """The file held for the worker under the turn that wrote it, then the
-    worker told to mail its record and group its clusters."""
-    attachments.hold(turn, data)
-    send(diagram.id, user_id, turn)
+def mail(user: User, diagram: Diagram, fd: dict, imported: fdimport.Imported) -> None:
+    """The import record written from the request's own build, and the worker
+    told to mail it: the file is never read or built a second time
+    [Oracle: R-0932, R-0947]."""
+    file = f"{diagram.name}{SUFFIX}"
+    send(user.id, file, diagram.name, ledger(file, fd, imported))
 
 
-def send(diagram_id: int, user_id: int, turn: str) -> None:
-    extensions.celery.send_task(TASK, args=[diagram_id, user_id, turn])
+def send(user_id: int, file: str, name: str, text: str) -> None:
+    extensions.celery.send_task(TASK, args=[user_id, file, name, text])
 
 
-def run(diagram_id: int, user_id: int, turn: str) -> None:
-    """The task: the import record mailed, and the diagram's clusters grouped."""
-    data = attachments.held(turn)
-    if data is None:
-        raise attachments.Gone(attachments.GONE)
-    fd = fdfile.read(data)
-    diagram = db.session.get(Diagram, diagram_id)
-    out = fdimport.build(fd)
-    land(diagram, db.session.get(User, user_id), f"{diagram.name}{SUFFIX}", fd, out)
-    attachments.drop(turn)
+def run(user_id: int, file: str, name: str, text: str) -> None:
+    """The task: the import record mailed."""
+    fdledger.send(db.session.get(User, user_id).username, file, name, text)
 
 
 def land(
@@ -146,7 +159,11 @@ def land(
 
 def ledger(file: str, fd: dict, imported: fdimport.Imported) -> str:
     return fdledger.text(
-        file, fd, fdimport.became(imported), imported.decisions, datetime.date.today()
+        file,
+        fdimport.listed(fd),
+        fdimport.became(imported),
+        imported.decisions,
+        datetime.date.today(),
     )
 
 

@@ -620,8 +620,18 @@ export function diagramOwner(diagram: Diagram): string {
   return diagram.owner_name || diagram.owner_username.split("@")[0];
 }
 
-/** A diagram just made from a desktop file, with how much of the file came
- * in; what the app's checks refuse is left out. */
+/** One object of a desktop file the import skipped: its kind, its id in the
+ * file when it has one, what it was in plain words and why (R-0947). */
+export interface Skipped {
+  kind: ItemKind;
+  id: number | null;
+  label: string;
+  reason: string;
+}
+
+/** A diagram just made from a desktop file, with the import's report: how
+ * much of the file came in and each object skipped, and `note`, the same
+ * report as the coach's message the import wrote into the chat (R-0947). */
 export interface Imported extends Diagram {
   /** `primary`: the people the file marks primary, in its order. */
   /** `coding_cost`: what the coach turn a yes to adding codes starts is
@@ -629,7 +639,9 @@ export interface Imported extends Diagram {
   imported: {
     people: number;
     events: number;
-    left_out: number;
+    pair_bonds: number;
+    failed: Skipped[];
+    note: string;
     primary: number[];
     coding_cost: { low: number; high: number };
   };
@@ -709,6 +721,9 @@ export interface Report {
   statement_id: number;
   /** The words the coach offered to send; none once turned down. */
   words?: string;
+  /** The diagram it is about, where that is not the one the app is on: a
+   * coding screen's copy (R-0946). */
+  diagram_id?: number;
 }
 
 export interface Preferences {
@@ -722,6 +737,8 @@ export interface Preferences {
   birthdate: string | null;
   how_it_works: boolean;
   line_hint: boolean;
+  /** The cut whose task card was last shown on opening the app. */
+  task_card_seen: number | null;
   bug_reports: BugReports;
   /** The models each turn also runs on, for a vote; none is off (R-0636). */
   shadow_models: string[];
@@ -919,6 +936,9 @@ export interface Scribed {
    * question when it cannot tell whom a statement is about; "" when it said
    * nothing. */
   reply: string;
+  /** What the scribe offered to send, as the coach offers in the chat
+   * (R-0946). */
+  report: { kind: ReportKind; words: string } | null;
 }
 
 export enum RuleSource {

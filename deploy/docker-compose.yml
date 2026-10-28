@@ -82,6 +82,10 @@ services:
       FD_IS_CELERY: "1"
       OTEL_SERVICE_NAME: fd-worker
     command: ["python", "-m", "celery", "-A", "btcopilot.celery:celery", "worker", "-Q", "celery", "--pool=solo", "--loglevel=info"]
+    # A stop lets the turn in flight finish (Celery's warm shutdown) before the kill:
+    # a healthy turn takes minutes, so past thirty only a runaway is cut (FD-390).
+    # fd-shadow takes it through the anchor.
+    stop_grace_period: 30m
     healthcheck:
       test: ["CMD-SHELL", "python -m celery -A btcopilot.celery:celery inspect ping -d celery@$$HOSTNAME --timeout 10 || exit 1"]
       interval: 30s

@@ -181,3 +181,14 @@ def test_a_vote_keeps_shadows_on_five_minutes_after_it(web, test_user):
     body = web.get("/app/preferences").get_json()
     assert body[PrefKey.ShadowModels.value] == ["sonnet"]
     assert body["shadow_expires_at"] == utc_iso(voted + shadow.IDLE)
+
+
+def test_task_card_seen_is_kept_per_cut(web, token, test_user):
+    # R-0265
+    saved = web.patch(
+        "/app/preferences",
+        json={PrefKey.TaskCardSeen.value: 9},
+        headers={"X-CSRFToken": token},
+    )
+    assert saved.get_json()[PrefKey.TaskCardSeen.value] == 9
+    assert test_user.pref(PrefKey.TaskCardSeen) == 9
