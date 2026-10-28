@@ -620,7 +620,7 @@ def test_a_diagram_the_caller_may_not_open_is_not_found_by_its_id(web, theirs):
 def test_an_admin_viewing_a_diagram_writes_nothing_on_it(
     admin, test_user, test_license, theirs, method, path, body
 ):
-    # R-0080
+    # R-0080, R-0952
     data = theirs.get_diagram_data()
     data.people = [{"id": 1, "name": "Ann"}, {"id": 2, "name": "Bo"}]
     data.events = [{"id": 3, "kind": EventKind.Shift.value, "person": 1}]
