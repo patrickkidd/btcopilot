@@ -273,6 +273,8 @@ button { font-family: inherit; }
 .ab-list li.on .ab-what { color: var(--data); font-weight: 500; }
 .ab-dot.on { filter: drop-shadow(0 0 1.5px var(--move)) drop-shadow(0 0 1px var(--move)); }
 .ab-yr { flex: none; width: 44px; color: var(--data); }
+/* each row's event mark, the drawing's own, in one column left of the year (R-0955) */
+.ss.about svg.ab-mark { position: static; flex: none; align-self: flex-start; margin-top: 1px; width: 16px; height: 16px; overflow: visible; }
 .ab-what { color: var(--ink); }
 /* the cluster's drawing: dots by date, a line at each event they cluster around, the years at the ends */
 .ss.about svg.ab-draw { position: static; width: 100%; height: auto; margin: 4px 0 2px; overflow: visible; }
