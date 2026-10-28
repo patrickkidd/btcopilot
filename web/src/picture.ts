@@ -463,13 +463,14 @@ enum Park {
 
 const SCROLLER = ".ss-scroll";
 
-/** What a reader taking the line in hand starts with. */
-const HANDS = ["pointerdown", "touchstart", "wheel"];
+/** A reader's hand moving the line; a tap only touches it. */
+const HANDS = ["touchmove", "wheel"];
 
 /** A redraw moves the line's resting places, and a browser slides a line
  * resting near one onto it; so while the line is drawn again and put where
- * it stood its snapping is off, and it comes back the moment the reader next
- * takes the line in hand, so a swipe still comes to rest (R-0937). */
+ * it stood its snapping is off, and it comes back the moment the reader's
+ * hand next moves the line, so a swipe still comes to rest and a tap moves
+ * nothing (R-0937, R-0953). */
 function steady(scroll: HTMLElement): void {
   scroll.style.scrollSnapType = "none";
   if (scroll.dataset.steady) return;
@@ -1797,7 +1798,8 @@ export class Picture {
   ): number {
     const end = Math.max(0, view.width - view.screen);
     const left = held === null ? null : Math.min(end, held);
-    if (this.park === Park.Named && on) return into(on, left, view.width, view.screen);
+    // a line resting at the present has no held place, but is in sight there
+    if (this.park === Park.Named && on) return into(on, left ?? end, view.width, view.screen);
     if (this.park !== Park.Present && left !== null) return left;
     return end;
   }
