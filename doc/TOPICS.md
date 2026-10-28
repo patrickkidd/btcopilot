@@ -16,6 +16,11 @@ Patrick never reads a page generated from this file; the register and the dashbo
 retired (his word, 2026-09-11: too verbose to read). The ledger `events.json` is kept for the
 record only.
 
+Pages the flush republishes (same links every time, Artifact tool with `url`): the topic
+register https://claude.ai/artifact/AG6fBUrJwLKWSeKRfPWKG5 (bin/topicpage.py) and the thought
+trace https://claude.ai/artifact/Xixnp1rqdJL9WAv6ygRyy8 (bin/tracepage.py), both first published
+2026-10-27; the older copies of 2026-09-11 and 12 are no longer updated.
+
 ---
 
 ## T-1 · Ship the personal app to the first beta users
