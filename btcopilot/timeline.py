@@ -493,7 +493,7 @@ def build_timeline(data: DiagramData) -> dict:
                 "id": bond["id"],
                 "person_a": bond.get("person_a"),
                 "person_b": bond.get("person_b"),
-                "married": bool(bond.get("married")),
+                "married": bond.get("married") is not False,
                 "label": label,
             }
         )

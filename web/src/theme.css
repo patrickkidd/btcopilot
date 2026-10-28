@@ -163,7 +163,7 @@ button { font-family: inherit; }
   color: var(--data);
   font: inherit;
 }
-:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
+:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot, #cap-play, #cap-chip, .cf-go[data-act="refresh"]) {
   display: none;
 }
 

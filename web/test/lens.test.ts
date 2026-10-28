@@ -54,3 +54,13 @@ it("answers a tap on a cluster's page row or dot with a selection, before anythi
   expect(lens).toContain("onHold: (id) => hooks.edit(id),");
   expect(lens).not.toContain("Target.Dot");
 });
+
+// R-0080
+it("draws no explain, ask or report refresh while another person's diagram is open read-only", () => {
+  const hidden = source("theme.css").match(/:root\[data-access="admin-view"\] :is\(([^)]*)\) \{\s*display: none;/);
+  const gone = hidden?.[1].split(",").map((s) => s.trim());
+  expect(gone).toEqual(expect.arrayContaining(["#cap-play", "#cap-chip", '.cf-go[data-act="refresh"]']));
+  expect(source("lens.ts")).toContain('tok("cap-play", "g", PLAY_MARK, "explain"');
+  expect(source("lens.ts")).toContain('tok("cap-chip", "", ASK_MARK, "ask"');
+  expect(source("outdated.ts")).toContain('<button class="cf-go" type="button" data-act="refresh">Refresh the report</button>');
+});
