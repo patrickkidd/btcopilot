@@ -686,6 +686,17 @@ export function keysOf(
 const laneOf = (e: TimelineEvent) =>
   (e.kind === EventKind.Birth || e.kind === EventKind.Adopted ? (e.child ?? e.person) : (e.person ?? e.child)) ?? -1;
 
+/** Which way through a cluster's events each arrow key steps (R-0954). */
+const STEPS = new Map([
+  ["ArrowUp", -1],
+  ["ArrowLeft", -1],
+  ["ArrowDown", 1],
+  ["ArrowRight", 1],
+]);
+
+const typing = (el: Element | null) =>
+  el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || (el instanceof HTMLElement && el.isContentEditable);
+
 /** How long a press is held before it opens the event, as in the sessions list. */
 const HOLD_MS = 500;
 const LANE_H = 30;
@@ -846,6 +857,27 @@ export function place(
   };
 }
 
+const f = (n: number) => n.toFixed(1);
+
+/** A key event's line through the drawing, from `top` to `bottom`. */
+const keyLine = (key: Key, x: number, top: number, bottom: number) =>
+  `<line class="ab-key ab-${key}" x1="${f(x)}" x2="${f(x)}" y1="${f(top)}" y2="${f(bottom)}"/>`;
+
+/** An event's dot: its colour, hollow for a date the diagram is unsure of. */
+const dotMark = (d: { colour: string; hollow: boolean }, x: number, y: number, attrs = "") =>
+  `<circle class="ab-dot"${attrs} cx="${f(x)}" cy="${f(y)}" r="5" stroke="${d.colour}" fill="${d.hollow ? "var(--panel)" : d.colour}"/>`;
+
+const MARK = 16;
+
+/** An event's mark in the drawing, drawn again beside its row of the list,
+ * so a row and its dot read as one (R-0955); nothing for an undated event,
+ * the column kept. */
+export const rowMark = (dot?: { colour: string; hollow: boolean }, key?: Key) =>
+  `<svg class="ab-mark" viewBox="0 0 ${MARK} ${MARK}" width="${MARK}" height="${MARK}" aria-hidden="true">` +
+  (key ? keyLine(key, MARK / 2, 0, MARK) : "") +
+  (dot ? dotMark(dot, MARK / 2, MARK / 2) : "") +
+  `</svg>`;
+
 /** The baseline of a row of line labels. */
 const keyY = (row: number) => TOP - 10 + KEY_ROW * row;
 
@@ -862,7 +894,6 @@ export function drawing(
 ): string {
   if (!events.some((e) => e.dateTime)) return "";
   const p = place(events, view, width, opening, people, you);
-  const f = (n: number) => n.toFixed(1);
   const marks =
     p.lanes
       .map((l) => `<text class="ab-name" x="0" y="${f(l.y + 4)}">${esc(l.name)}</text>`)
@@ -873,14 +904,14 @@ export function drawing(
     p.keys
       .map(
         (k) =>
-          `<line class="ab-key ab-${k.key}" x1="${f(k.x)}" x2="${f(k.x)}" y1="${f(keyY(k.row) + 3)}" y2="${f(p.height - 16)}"/>` +
+          keyLine(k.key, k.x, keyY(k.row) + 3, p.height - 16) +
           `<text class="ab-keyname ab-${k.key}" x="${f(k.from)}" y="${f(keyY(k.row))}">${esc(k.label)}</text>`,
       )
       .join("") +
     p.dots
       .map(
         (d) =>
-          `<circle class="ab-dot" data-event="${d.id}" cx="${f(d.x)}" cy="${f(d.y)}" r="5" stroke="${d.colour}" fill="${d.hollow ? "var(--panel)" : d.colour}"/>` +
+          dotMark(d, d.x, d.y, ` data-event="${d.id}"`) +
           `<rect class="ab-hit" data-target="${Target.Dot}" data-index="${d.id}" x="${f(d.hit.x)}" y="${f(d.hit.y)}" width="${f(d.hit.w)}" height="${f(d.hit.h)}"/>`,
       )
       .join("") +
@@ -918,10 +949,17 @@ export function clusterPage(
 ): string {
   const why = (cluster.reason ?? cluster.summary ?? "").trim();
   const events = membersOf(cluster, all);
-  const moments = events.map((e) => ({ id: e.id, year: e.dateTime?.slice(0, 4) ?? "", label: e.label }));
   const names = new Map(people.map((p) => [p.id, p.name]));
   const you = people.find((p) => p.primary)?.id ?? null;
-  const draw = drawing(events, view, width, cluster.openingEventId ?? null, names, you);
+  const opening = cluster.openingEventId ?? null;
+  const p = events.some((e) => e.dateTime) ? place(events, view, width, opening, names, you) : null;
+  const moments = events.map((e) => ({
+    id: e.id,
+    year: e.dateTime?.slice(0, 4) ?? "",
+    label: e.label,
+    mark: rowMark(p?.dots.find((d) => d.id === e.id), p?.keys.find((k) => k.id === e.id)?.key),
+  }));
+  const draw = drawing(events, view, width, opening, names, you);
   return aboutMarkup(why, cluster.label, moments, draw);
 }
 
@@ -939,6 +977,16 @@ export function chosen(now: number[], id: number, via: Via, events: TimelineEven
   return next.length === now.length && next.every((n) => now.includes(n)) ? [] : next;
 }
 
+/** The event an arrow key makes current on a cluster's page, from what is
+ * selected among `ids`, in the list's order: one before the first selected or
+ * one after the last, the first or the last with nothing selected, never past
+ * an end (R-0954). */
+export function stepped(now: number[], ids: number[], by: number): number {
+  const at = now.map((id) => ids.indexOf(id));
+  const next = at.length ? (by > 0 ? Math.max(...at) + 1 : Math.min(...at) - 1) : by > 0 ? 0 : ids.length - 1;
+  return ids[Math.max(0, Math.min(ids.length - 1, next))];
+}
+
 /** The page behind a cluster's i, as markup: the coach's reason, the years and
  * the count, each moment with its year, and the app's book button, which
  * opens the passages behind what a cluster is (R-0213, R-0691; Patrick,
@@ -947,11 +995,11 @@ export function chosen(now: number[], id: number, via: Via, events: TimelineEven
 export function aboutMarkup(
   why: string,
   span: string,
-  moments: { id?: number; year: string; label: string }[],
+  moments: { id?: number; year: string; label: string; mark?: string }[],
   draw = "",
 ): string {
   const rows = moments
-    .map((m) => `<li${m.id === undefined ? "" : ` data-event="${m.id}"`}><span class="ab-yr">${esc(m.year)}</span><span class="ab-what">${esc(m.label)}</span></li>`)
+    .map((m) => `<li${m.id === undefined ? "" : ` data-event="${m.id}"`}>${m.mark ?? ""}<span class="ab-yr">${esc(m.year)}</span><span class="ab-what">${esc(m.label)}</span></li>`)
     .join("");
   return (
     `<div class="ss about">` +
@@ -1198,6 +1246,19 @@ export class Picture {
     const dot = el.closest<HTMLElement>(`.ab-draw [data-target="${Target.Dot}"]`);
     return dot ? { id: Number(dot.dataset.index), via: Via.Dot } : null;
   }
+
+  /** An arrow key on a cluster's page makes the event before or after the
+   * current one current, in the list's order, stopping at the ends; the list
+   * scrolls its row into view (R-0954). */
+  private arrow = (e: KeyboardEvent): void => {
+    const by = STEPS.get(e.key);
+    if (!by || !this.focus || typing(document.activeElement)) return;
+    e.preventDefault();
+    const id = stepped(this.chosen, membersOf(this.focus, this.data?.events ?? []).map((ev) => ev.id), by);
+    this.chosen = [id];
+    this.mark();
+    this.host.querySelector(`.ab-list li[data-event="${id}"]`)?.scrollIntoView({ block: "nearest" });
+  };
 
   private choose(id: number, via: Via): void {
     this.chosen = chosen(this.chosen, id, via, this.focus ? membersOf(this.focus, this.data?.events ?? []) : []);
@@ -1933,9 +1994,11 @@ export class Picture {
 
   private draw(): void {
     if (this.level === Level.About && this.focus) {
+      document.addEventListener("keydown", this.arrow);
       this.renderAbout(this.focus);
       return;
     }
+    document.removeEventListener("keydown", this.arrow);
     if (this.level === Level.Compare) {
       const markup = this.renderPair();
       if (markup) {

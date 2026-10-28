@@ -436,6 +436,7 @@ What it is for: what the app is, one level in from the picture.
 - It slides in over the picture the same way every other lower level does. [built] {R-0224}
 - It is words, so no hint line is drawn under it. [built]
 - Going back from it returns you to the whole line. [built]
+- Each event row carries, left of its year, the same mark its event has on the drawing above, and the arrow keys step the current event through the list: up and left to the previous, down and right to the next. [built] {R-0954, R-0955}
 
 ## Addresses
 
