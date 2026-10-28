@@ -14,6 +14,7 @@ import { did, html } from "./tools";
 import { reply, waiting } from "./chat";
 import { asWritten, drawn, tokenize } from "./chips";
 import { WIDE } from "./pro";
+import { fold } from "./viewport";
 import { fullName, when } from "./rows";
 import type { Reports } from "./report";
 import {
@@ -220,6 +221,14 @@ export class Coding {
     this.scrim.hidden = true;
     this.sheet.hidden = true;
     this.wire();
+    // While the phone's keyboard is up the timeline shrinks to the chat's strip,
+    // as the chat's does, and the tapped line stays in view (R-0949).
+    fold(
+      composer,
+      view.closest<HTMLElement>(".screen")!,
+      () => this.list.querySelector(".bub.line.sel")?.scrollIntoView({ block: "nearest" }),
+      () => Promise.resolve(),
+    );
     this.wide.addEventListener("change", () =>
       this.showRows(this.wide.matches),
     );

@@ -605,6 +605,7 @@ What it is for: saying what each line of a conversation tells you happened, so w
 - Done ends the task, and the next single task card takes its place. [drawn] {R-0265}
 - A task you cannot start yet is shown greyed with what it is waiting for, rather than leaving you an empty screen. [drawn]
 - On a phone it is the same screen, with the drawer sliding over instead of pinned, and the sessions button giving way to Done. [drawn]
+- On a phone, while the keyboard is up for the message box, the timeline shrinks to the chat's thin strip and the box sits right on the keyboard, until the keyboard goes down or the strip is tapped. [built] {R-0949}
 - A sentence about a marriage or a parent is written the same way, and the line under it reads "+ Marcus & Delphine · married · 1970" or "+ Corinne · daughter of Marcus & Delphine". [built] {R-0326}
 - A bond or a birth the coder gives only one side of still gets written: the record adds the other as a generically named person. [built] {R-0325}
 - A sentence naming two people is written as being about both of them, not just the one the line was tapped for. [built]
