@@ -79,3 +79,12 @@ def test_a_deploy_imports_no_old_records():
     assert "flask admin db upgrade" in DEPLOY
     assert "imports" not in DEPLOY and "proimport" not in DEPLOY
 
+
+
+def test_a_deploy_waits_for_the_turn_in_flight_and_cuts_only_a_runaway():
+    # R-0950
+    compose = yaml.safe_load((REPO / "deploy" / "docker-compose.yml").read_text())
+    workers = [compose["services"][name] for name in ("fd-worker", "fd-shadow")]
+    assert [w["stop_grace_period"] for w in workers] == ["30m", "30m"]
+    timeout = RELEASE["jobs"]["deploy"]["steps"][0]["with"]["command_timeout"]
+    assert int(timeout.rstrip("m")) > 2 * 30
