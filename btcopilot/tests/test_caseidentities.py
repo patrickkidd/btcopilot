@@ -24,6 +24,7 @@ from btcopilot.admin.database import config
 from btcopilot.discussions import SITTING_GAP, chats, open_session, sync_chat_speakers
 from btcopilot.extensions import db
 from btcopilot.models import AccessRight, Diagram, Speaker, SpeakerType, Statement
+from btcopilot.review.models import Coding, Cut
 from btcopilot.routes.diagrams import diagrams_payload, readable
 from btcopilot.schema import EventKind, Person, VariableShift, asdict
 from btcopilot.tests.conftest import Model, calling, csrf_token, said, wrote
@@ -472,6 +473,31 @@ def test_the_owners_own_row_never_lists_their_diagram_twice(test_user):
     assert len(ids) == len(set(ids))
     listed = [d["id"] for d in diagrams_payload(test_user)]
     assert len(listed) == len(set(listed))
+
+
+def test_a_coding_copy_is_listed_neither_to_its_owner_nor_to_an_admin(
+    admin, test_user_2
+):
+    # R-0951
+    theirs = case(test_user_2)
+    copy = Diagram(user_id=test_user_2.id, name="coding of The Hales")
+    db.session.add(copy)
+    db.session.flush()
+    cut = Cut(
+        diagram_id=theirs.id,
+        start_statement_id=1,
+        end_statement_id=1,
+        user_id=test_user_2.id,
+    )
+    db.session.add(cut)
+    db.session.flush()
+    db.session.add(Coding(cut_id=cut.id, user_id=test_user_2.id, diagram_id=copy.id))
+    db.session.commit()
+    own = {d["id"] for d in diagrams_payload(test_user_2)}
+    searched = {
+        d["id"] for d in admin.get(f"/app/diagrams?user_id={test_user_2.id}").get_json()
+    }
+    assert own == searched == {theirs.id}
 
 
 # 3. the coach answering a human coach reads the diagram, never another's chat

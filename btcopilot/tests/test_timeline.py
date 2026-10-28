@@ -621,3 +621,11 @@ def test_a_set_aside_cluster_is_not_in_the_payload_and_the_payload_names_its_ope
     assert [c["id"] for c in drawn] == ["cl-1"]
     assert drawn[0]["openingEventId"] == 10
     assert drawn[0]["setAside"] is False
+
+
+@pytest.mark.parametrize("married, sent", [(None, True), (True, True), (False, False)])
+def test_a_bond_is_sent_married_unless_it_is_marked_unmarried(married, sent):
+    # R-0742, R-0775, R-0430, R-0560
+    data = _data([1, 2], [])
+    data.pair_bonds = [asdict(PairBond(id=3, person_a=1, person_b=2, married=married))]
+    assert build_timeline(data)["pair_bonds"][0]["married"] is sent

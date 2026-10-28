@@ -16,6 +16,11 @@ Patrick never reads a page generated from this file; the register and the dashbo
 retired (his word, 2026-09-11: too verbose to read). The ledger `events.json` is kept for the
 record only.
 
+Pages the flush republishes (same links every time, Artifact tool with `url`): the topic
+register https://claude.ai/artifact/AG6fBUrJwLKWSeKRfPWKG5 (bin/topicpage.py) and the thought
+trace https://claude.ai/artifact/Xixnp1rqdJL9WAv6ygRyy8 (bin/tracepage.py), both first published
+2026-10-27; the older copies of 2026-09-11 and 12 are no longer updated.
+
 ---
 
 ## T-1 · Ship the personal app to the first beta users
@@ -76,13 +81,14 @@ superseded until he says so (R-0381 is resolved: it stands, unchanged by the pil
 [R-0577]); (12) [ruling] a candidate with no id yet needs his yes: "after a deploy, the
 home-screen app loads the new release when it comes back to the front"; its tests cite R-0486
 until then; (13) [verify] the 8ad08dc batch — the restored timeline zoom, explain's caching,
-and the tuning queue — is deployed but untested by him. (14) [waiting] PR #147 waits for his squash-merge.
+and the tuning queue — is deployed but untested by him. (14) [waiting] PR #147 waits for his squash-merge. (15) [verify] the dictation send fix on a real iPhone over several days of his own use; it was checked in phone Safari and Chrome emulation and once on his phone in the sandbox.
 **Lives in:** btcopilot PR #138 (branch FD-363, open, not merged); doc/STATE.md; the private
 corpus's PREDEPLOY_TESTING_RULES.md, session-dc02180f/ and
 session-b147ab7f/; deploy/; .github/workflows/release.yml; btcopilot/tests/live/replay.py; the
 backup prod-2026-09-26-0540-pre-fd363-5b2a6bb.dump in btcopilot-sources.
-**Next action:** he squash-merges PR #147.
-**Updated:** 2026-10-02.
+**2026-10-24 to 27 (FD-389 PR 166 and FD-390 PR 167, both merged; session "First Coding Bugs"):** Patrick tested on production in his own diagram throughout. Fixed and deployed: a message is read and emptied only once the phone has put all its dictated words into the box, by one send path for the chat and the coding screen, and a send waits at most 300 ms for them, so the last phrase of a dictation is never left behind and a keyboard that never finishes never blocks a send; the timeline page no longer breaks when a question is taken off. A deploy lost one of his coach replies mid-turn; what changed so it cannot recur is under the platform topic [R-0950].
+**Next action:** he keeps testing on production in his own account; new bugs go to the session he opened for them on 2026-10-28.
+**Updated:** 2026-10-27.
 
 ## T-2 · The coach knows the clinical definitions, and we can measure it
 
@@ -244,7 +250,7 @@ deleted after re-coding [R-0238]; (11) [waiting] migrating last year's IRR mater
 keyed to meeting number, six meetings' agreement tables of about 40–60 rows, six deliberation
 records in prose, six raw transcripts never migrated — needs his yes on the plan [R-0262,
 R-0273]; (12) [waiting] the interface calls still on the drawing page, none of which block the
-beta.
+beta. (13) [verify] the scribe's question answers, its dating from the birth and its use of earlier statements hold on the next coders' cuts on production; so far they are proven by the six live evals and his own coding. (14) [build] Safari ends any request at 60 seconds; a scribe answer that runs longer (the longest on production so far 47 seconds) should come back over the turn stream. (15) [build] three faults the review found in the diagram's writer, listed on FD-390, not built because nothing a person sees depends on them yet: the event title rule, a retry when the diagram changed underneath, and the errors the scribe is told about a refused write.
 **Lives in:** the spec sheet for beta users, doc/SCREENS.md, rendered by
 bin/screenspage.py to https://claude.ai/code/artifact/4d218257-5aac-4196-b8ca-c76b159a95ba; the
 review screens https://claude.ai/code/artifact/78a2f31e-45b3-44c9-8c46-29ce877aaed9; the coding
@@ -256,10 +262,9 @@ run by bin/t; VERIFY_2026-09-14.md; TEST_2026-09-14.md; doc/EVENT_MODEL.md and i
 page https://claude.ai/code/artifact/d4dbc090-fbde-464c-bcdc-0cc31e1a5c53; the names
 comparison https://claude.ai/code/artifact/2c391e04-6283-4590-b9ba-9e46910b5fab; the walk page
 https://claude.ai/code/artifact/ad9750a2-d38c-469c-b5af-5a143f7ab3ab.
-**Next action:** Patrick walks sections seven, eight and nine of
-doc/archive/2026-09-TEST_2026-09-14.md, and rules on the rest of the event model page and on the
-names comparison page.
-**Updated:** 2026-09-22.
+**2026-10-24 to 27 (FD-389 PR 166 and FD-390 PR 167, both merged; session "First Coding Bugs"):** Patrick coded his first cut on production and reported what broke; every fix below is on production (last deploy fd41ff7c, 2026-10-28 01:33 UTC). The (i) on the coding task card and coding screen opens the concept pages inside the app, one row per page, back one page at a time, one title per page; concept links on the coding screen, the vote and the meeting open in place [R-0265, R-0541, R-0567]. Coders read confidential entries; the lines written for the pages' maintainers are cut [R-0939]. The task's help text gives example statements ("Steve had a symptom shift up in May 1997"). The coder's coding copy starts with the person's name and birth [R-0940]; the scribe hears the coder's earlier statements with what each produced [R-0941], answers a question in one or two sentences shown as its own row that survives a reload [R-0942], dates an age or a stage of life from a birth on the diagram and otherwise leaves the event undated [R-0943], adds "her parents" as a mother and a father joined as a pair, and offers the chat's bug report sheet [R-0946]. The task card opens by itself once per cut [R-0944]; the coding screen opens past the last coded line [R-0945]; words sent again after a failed turn are listed once [R-0946]; on a phone with the keyboard up the timeline shrinks to the strip and the box sits on the keyboard (frame K1) [R-0949]; a coding answer slower than a minute is no longer shown as not saved. An admin command, `flask admin review codings reset`, clears a coder's unsubmitted coding of a cut [R-0938]; it was run on production for one coder who had misread the instructions and for Patrick's own cut. Six live scribe evals pass on Gemini Flash. Rules Patrick set on the way are in CLAUDE.local.md: build only what he hit or a user would plainly notice; a review finding on Claude's own design is Claude's to fix before his PR review.
+**Next action:** the next coders code their cuts on production; the leftovers listed on FD-390 wait for a round where they matter to what a person sees.
+**Updated:** 2026-10-27.
 
 ## T-4 · Existing records and conversations in the new app; wipe and re-code
 
@@ -290,12 +295,12 @@ read as plain words, so the re-code should re-link matches on kind, date and peo
 (4) [build] the by-hand re-code script is ephemeral and the feature needs the same thing as a
 session-menu item; (5) [verify] the importer dry run against a restored July dump stays
 Patrick's to run — restoring the dump here was refused as personal-data handling (review log
-row 137).
+row 137). (6) [build] the import record mailed to the person keeps the file's report only as long as the mail does; how long it is kept on the server is not settled (listed on FD-390).
 **Lives in:** btcopilot/tests/test_prorecord.py; doc/specs/DATA_MODEL.md;
 MERGE_REVIEW.md §4; run_agent_f1.replay.
-**Next action:** build "re-code with the coach" in the session menu (T-3 build); the per-diagram
-import waits until after the beta.
-**Updated:** 2026-09-22.
+**2026-10-24 to 27 (FD-389 PR 166 and FD-390 PR 167, both merged; session "First Coding Bugs"):** The desktop .fd import (FD-377, PR 160, merged) now checks the file one person, pair-bond and event at a time, so as much of the diagram as possible comes in; each skipped object is listed with why in plain words, written into the new diagram's chat as a message from the coach and shown on the sheet before the person can post, and mailed in the import record; the "add codes" question is not asked when no imported event needs codes [R-0947]. Deployed to production 2026-10-27.
+**Next action:** nothing until a beta user imports a file; the report shows what failed.
+**Updated:** 2026-10-27.
 
 ## T-5 · Picture and interface rulings still open
 
@@ -480,14 +485,14 @@ and never a count [R-0376].
 carries the trouble in it, which is what the picture has to show [R-0376]; (2) [ruling]
 he has marked no example clusters yet, and the examples are the input only he can give;
 (3) [waiting] cluster quality on anyone else's record stays unmeasured until the coding loop
-produces numbers.
+produces numbers. (4) [build] the FD-381 cluster catch-up stops on a person who has no name (listed on FD-390).
 **Lives in:** btcopilot/clusters.py; the grouping prompt in the private prompt files;
 doc/CLUSTERS.md "When a cluster looks wrong" (how a new session evaluates a cluster discrepancy against the F1 suite [R-0857]);
 doc/PICTURE_IDEAS.md; the drawings in btcopilot-sources/fd-corpus/design/ and
 their pages https://claude.ai/artifact/FzfjSGH6EQVt61vC5R2DFi , https://claude.ai/artifact/G5gYDqzhvar5KXPJAhtbzm and https://claude.ai/artifact/WrGWM6m2cXJfQ3FLHnNMu3 .
-**Next action:** teach the model to name each grouping's key shift and who carries the trouble,
-so the picture can say it.
-**Updated:** 2026-09-22.
+**2026-10-24 to 27 (FD-389 PR 166 and FD-390 PR 167, both merged; session "First Coding Bugs"):** The cluster catch-up regrouped, on every run, each diagram where nobody on it is the person it is about, because the store and the check built the grouping's cache key differently; one function now builds the key for both. A dry run on a fresh production copy found the same ten diagrams to group before and after the fix. Deployed 2026-10-27.
+**Next action:** nothing on clusters from this session; the prompt stays frozen at version 20 on Gemini [R-0872].
+**Updated:** 2026-10-27.
 
 **2026-10-08 (FD-375):** the reading is settled: a cluster is a loose hypothesis of a broader family process, none spans more than ten years, none is named by its years, one reading per family so none overlap, and the coach asks about the wider family around its years [R-0841 to R-0846]; DETECTION_VERSION 9. Details in doc/CLUSTERS.md; clusters also show as hypothesis chips on the case report's guess card (T-19).
 
@@ -758,7 +763,7 @@ dashboards, all the other session's: the form for the browser session recordings
 figures after the metrics agent was remounted, and revoking the administrator token used to set
 the stack up. (8) [waiting] the dashboards are built but not on the box: deploying them
 needs the Grafana token there, a refresh of the dependency lock at the workspace root that only
-Patrick can run, and a release build.
+Patrick can run, and a release build. (9) [build] FD-391: the live stream holds one server thread per open page (one worker, eight threads), so a handful of open pages can starve the server. (10) [build] the model-calls ledger prices Gemini Flash calls at the Opus rate, so the eval spend it shows is too high. (11) [waiting] the deploy lock still names FD-390; it moves when Patrick names the session that takes it.
 **Note for the next session:** the permission classifier refuses a sub-agent both `sops
 updatekeys`, because it writes the secret store, and `docker compose pull` and `up` on the box,
 because that is a production deploy. Production reads on the box are refused to sub-agents too.
@@ -793,11 +798,9 @@ keyed session assigns the id (T-10).
 **Deploy, 2026-09-28: commit 8ad08dc, database 1b00000000b4, run 36443507214.** Carried the
 restored timeline zoom, explain's per-cluster caching, and the observations table feeding the
 tuning queue on the quality dashboard.
-**Next action:** he sets a spend limit on the testing workspace in the Anthropic console; he
-puts the Grafana token on the box and refreshes the dependency lock so the observability commit
-can deploy; the release workflow gets automatic image pruning; he force-pushes the rebased
-FD-367.
-**Updated:** 2026-10-02.
+**2026-10-24 to 27 (FD-389 PR 166 and FD-390 PR 167, both merged; session "First Coding Bugs"):** A deploy lost one of Patrick's coach replies mid-turn on 2026-10-26: the worker was stopped after ten seconds. Now a deploy waits for the turn in flight up to 30 minutes per worker and stops only a runaway [R-0950], the release step allows 75 minutes, migrations run before the worker rolls and only add, Redis and Postgres are never restarted by a deploy unless their own settings changed, the worker renews its hold on the session every minute and keeps it through a Redis error, a turn whose worker died ends as failed and can be tried again, and the live stream closes instead of running on. Four deploys from FD-389 and FD-390 went out with a backup first; the last, fd41ff7c at 01:33 UTC 2026-10-28, rolled with zero errors. FD-391 (an event-driven server worker, Patrick's pick for the live stream holding one server thread per open page) is queued, not started.
+**Next action:** FD-391 when Patrick starts it; the deploy lock moves on his word.
+**Updated:** 2026-10-27.
 
 ## T-12 · The learning loop: a scout that looks outward and a review of the scout
 
@@ -900,11 +903,12 @@ thread; one row per answer in the `reports` table, sent or declined; errors in t
 logs (the page's posted to `/app/browser-errors` since FD-374, the server's in its own log), never a report [queued R-0615].
 **Open:** (1) [build] the beta's forced send, "Don't send" disabled on the bug sheet and a declined
 bug refused by the server, is on branch FD-365, not deployed; (2) [build] the report route's limit
-is held in server memory; (3) [verify] a real turn on production offering a report.
+is held in server memory; (3) [verify] a real turn on production offering a report. (4) [verify] a report sent from a coding screen on production lands on the coder's copy of the diagram.
 **Lives in:** doc/API.md (Reports); doc/SCREENS.md (Bug reports and feedback); doc/KNOWN_DEFECTS.md;
 doc/FEEDBACK_LOOPS.md row 8.
-**Next action:** disable the bug sheet's not-send button for the beta.
-**Updated:** 2026-09-30.
+**2026-10-24 to 27 (FD-389 PR 166 and FD-390 PR 167, both merged; session "First Coding Bugs"):** Patrick asked whether bug reports are stored in the database: they are, one row each in the reports table. The scribe now offers the same bug report sheet the chat does when a coder says something went wrong, and the report names the coding's diagram [R-0946].
+**Next action:** nothing until a coder sends one.
+**Updated:** 2026-10-27.
 
 ## T-17 · In-app addresses and the coach's navigate tool
 
@@ -1051,3 +1055,27 @@ the real screen for the seminar, in a new session started from these notes.
 **Lives in:** branch FD-375, draft PR 155; doc/API.md (case report rewrites, attachments); doc/SCREENS.md; btcopilot/casereport.py, btcopilot/admin/casereport.py; web/src/attachment.ts, outdated.ts, casereport.ts; evals tests/live/test_executivesummary.py, test_casereportrewrite.py, test_casereportcards.py; box commands in the casereport handover under ~/.claude/jobs/6dcb6777/tmp/.
 **Next action:** he tests the deployed build and answers the five open threads in STATE.md; the case-report rewrite catch-up waits on his spend yes.
 **Updated:** 2026-10-07.
+
+## T-21 · A baseline emotional configuration between two people
+
+**Status:** deferred to FD-392 on 2026-10-27; nothing built. Patrick asked how to code a usual
+pattern between two people that is not a shift ("always trying to gain his approval, kind of
+chasing him"). Worker job 047 searched the theory sources; he picked its option 2, then judged
+the drawn options as inference the sources do not ground, and moved all further work to FD-392.
+**Decided:** option 2 of the worker's search: a single entry for the two people, lasting through
+one period of their lives between structural events, shown as a band beneath that pair's shifts,
+its date certainty marked unknown; when the scribe writes one is to come from the books, with an eval and
+signals to the observations table [R-0948]; his later words on the mockups put that drawing on hold, recorded
+under the same ruling. A drawn option for a theory concept carries the passage it rests on or says
+the sources are silent (CLAUDE.local.md).
+**Open:** (1) [ruling] what he means by the concept, in his own words, is the start of the next
+round; the passages the worker found do not settle whether it is a pattern of one pair or of the
+whole family; (2) [build] the scribe's rule for when to code one, from the theory, with a live
+eval (R-0948 is TEST OWED in exceptions.txt); (3) [waiting] the app seminar, date not set, gets
+section 6 of the deck copy with what the sources say.
+**Lives in:** Jira FD-392; the theory note theory/notes/baseline-pattern-vs-shift.md and open
+questions 45 to 47 in theory/OPEN_QUESTIONS.md of the private corpus (worker job 047); the
+mockups in fd-corpus/design/baseline-pattern/; the seminar deck copy
+https://claude.ai/artifact/BjbxGxXajLLt2FohjUbXVK, section 6.
+**Next action:** FD-392 starts from his own statement of the concept.
+**Updated:** 2026-10-27.
