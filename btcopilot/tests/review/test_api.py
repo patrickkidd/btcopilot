@@ -17,6 +17,7 @@ from btcopilot.models import (
     TurnEvent,
 )
 from mock import patch
+from sqlalchemy import event
 
 from btcopilot.review import adapter, divergence, export, ruledraft, snapshot
 from btcopilot.review.adapter import initials
@@ -824,6 +825,26 @@ def test_words_whose_turn_failed_and_were_sent_again_are_listed_once(
     coding = coder.post("/review/codings", json={"cut_id": cut.id}).json
     thread = coder.get(f"/review/codings/{coding['id']}/thread").json
     assert [turn["id"] for turn in thread["turns"]] == [turns[1].id]
+
+
+def test_the_failed_turn_check_reads_no_turn_event_payload(session, turns):
+    # R-0946
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    ended("again", session, "done")
+    db.session.commit()
+    sent = []
+    keep = lambda conn, cursor, sql, *rest: sent.append(sql)
+    event.listen(db.engine, "before_cursor_execute", keep)
+    try:
+        shown = adapter.heard(turns[:2])
+    finally:
+        event.remove(db.engine, "before_cursor_execute", keep)
+    assert shown == [turns[1]]
+    read = [sql for sql in sent if "turn_events" in sql]
+    assert len(read) == 1
+    assert "payload" not in read[0]
 
 
 def test_words_the_coach_answered_and_were_sent_again_are_listed_twice(

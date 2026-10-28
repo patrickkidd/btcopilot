@@ -33,6 +33,7 @@ from btcopilot.models import (
     Speaker,
     SpeakerType,
     Statement,
+    TurnEvent,
 )
 from btcopilot.recordtext import date_text, render, version_line
 from btcopilot.toolnames import toolcall
@@ -440,14 +441,14 @@ def heard(lines: list[Statement]) -> list[Statement]:
     they sent again word for word later on: those never became part of the
     conversation. A repeat the coach answered stays."""
     sharing = Counter(s.turn_id for s in lines if s.turn_id)
-    kept = turnstore.kept(set(sharing))
+    failed = _failed(set(sharing))
     return [
         s
         for at, s in enumerate(lines)
         if not (
             s.turn_id
             and sharing[s.turn_id] == 1
-            and turnstore.failed(kept.get(s.turn_id, []))
+            and s.turn_id in failed
             and any(
                 later.speaker_id == s.speaker_id
                 and (later.text or "").strip() == (s.text or "").strip()
@@ -455,6 +456,33 @@ def heard(lines: list[Statement]) -> list[Statement]:
             )
         )
     ]
+
+
+def _failed(turn_ids: set[str]) -> set[str]:
+    """The turns whose last ending event is a failure, read from the kinds of
+    their ending events alone in one query."""
+    if not turn_ids:
+        return set()
+    last = (
+        db.session.query(TurnEvent.turn_id, func.max(TurnEvent.seq).label("seq"))
+        .filter(
+            TurnEvent.turn_id.in_(turn_ids),
+            TurnEvent.kind.in_(
+                (TurnEventKind.Done.value, TurnEventKind.Failed.value)
+            ),
+        )
+        .group_by(TurnEvent.turn_id)
+        .subquery()
+    )
+    return {
+        turn_id
+        for (turn_id,) in db.session.query(TurnEvent.turn_id)
+        .join(
+            last,
+            (TurnEvent.turn_id == last.c.turn_id) & (TurnEvent.seq == last.c.seq),
+        )
+        .filter(TurnEvent.kind == TurnEventKind.Failed.value)
+    }
 
 
 def sitting(discussion_id: int) -> list[Statement]:
