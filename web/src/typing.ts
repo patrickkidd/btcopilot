@@ -3,7 +3,10 @@
  * hearing) belongs to the keyboard: a box emptied under it gets the phrase
  * back the moment the keyboard lets go of it. So a send ends the composition
  * by taking the focus away, and reads and empties the box only once the
- * composition has ended. */
+ * composition has ended, or after SETTLE when the keyboard never says so,
+ * taking the box as it stands. */
+const SETTLE = 300;
+
 export class Typing {
   private composing = false;
   private ended: (() => void) | null = null;
@@ -23,9 +26,14 @@ export class Typing {
   async free(): Promise<boolean> {
     if (!this.composing) return true;
     if (this.ended) return false;
-    const ended = new Promise<void>((go) => (this.ended = go));
+    const ended = new Promise<void>((go) => {
+      this.ended = go;
+      setTimeout(go, SETTLE);
+    });
     this.box.blur();
     await ended;
+    this.composing = false;
+    this.ended = null;
     return true;
   }
 }

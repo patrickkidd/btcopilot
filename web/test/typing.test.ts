@@ -118,3 +118,18 @@ it("sends once when Return and the send button both fire", async () => {
   expect(sent).toEqual([SAID]);
   expect(box.textContent).toBe("");
 });
+
+// R-0883
+it("sends the box as it stands when the keyboard never says it is done, and sends again after", async () => {
+  const box = new Box();
+  const { screen, sent } = coding(box);
+  box.textContent = SAID;
+  box.dispatchEvent(new Event("compositionstart"));
+  await screen.say();
+  expect(sent).toEqual([SAID]);
+  expect(box.textContent).toBe("");
+
+  box.textContent = "Add Nell.";
+  await screen.say();
+  expect(sent).toEqual([SAID, "Add Nell."]);
+});
