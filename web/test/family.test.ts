@@ -211,7 +211,7 @@ describe("names", () => {
   });
 });
 
-// R-0742, R-0775
+// R-0742, R-0775, R-0430, R-0560
 it("opens on a couple with a divorce and no wedding in the record, and refuses one marked unmarried", () => {
   const tl = timeline();
   tl.events = tl.events.filter((e) => e.id !== 109);

@@ -55,7 +55,7 @@ it("answers a tap on a cluster's page row or dot with a selection, before anythi
   expect(lens).not.toContain("Target.Dot");
 });
 
-// R-0080
+// R-0080, R-0952
 it("draws no explain, ask or report refresh while another person's diagram is open read-only", () => {
   const hidden = source("theme.css").match(/:root\[data-access="admin-view"\] :is\(([^)]*)\) \{\s*display: none;/);
   const gone = hidden?.[1].split(",").map((s) => s.trim());
