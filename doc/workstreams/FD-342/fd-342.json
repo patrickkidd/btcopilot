@@ -1,0 +1,19 @@
+{
+  "ticket": "FD-342",
+  "state": "validate",
+  "worktrees": {
+    "btcopilot": "/Users/patrick/theapp/btcopilot/.claude/worktrees/FD-342",
+    "fdserver": "/Users/patrick/theapp/fdserver/.claude/worktrees/FD-342",
+    "familydiagram": "/Users/patrick/theapp/familydiagram/.claude/worktrees/FD-342"
+  },
+  "notes": [
+    "Ticket is a human dogfood walk; agent scope = environment + test data + bug fixes found during the walk.",
+    "Prod export 2026-08-25: diagram 1924 v342, discussions 55 (200 stmts) + 58 (16). Discussion 60 named in the ticket does not exist on prod.",
+    "Sandbox = independent SQLite server on 8889 seeded from doc/workstreams/FD-342/prod_diagram_1924.json; Personal app from the familydiagram FD-342 worktree."
+  ],
+  "criteria": [
+    {"id": "AC-1", "track": "human", "text": "Friction log with >=1 entry per session (3 sessions, >=3 days apart) committed to doc/brainstorming/", "status": "open"},
+    {"id": "AC-2", "track": "human", "text": "Written ruling: structure vs arrangement as the return-loop blocker", "status": "open"}
+  ],
+  "findings": []
+}
