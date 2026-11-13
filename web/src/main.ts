@@ -592,10 +592,11 @@ async function openResult(cutId: number, back: () => Promise<void>): Promise<voi
 async function openCut(cut: Cut): Promise<void> {
   uncover();
   screen(Screen.Chat);
-  await openDiagram(cut.diagram_id);
-  const first = await thread.reach(bubbleOf(cut.start_statement_id));
-  await selecting.start(cut.diagram_id, cut.meeting_date, cut);
-  first?.scrollIntoView({ block: "center" });
+  await openDiagram(cut.diagram_id, async () => {
+    const first = await thread.reach(bubbleOf(cut.start_statement_id));
+    await selecting.start(cut.diagram_id, cut.meeting_date, cut);
+    first?.scrollIntoView({ block: "center" });
+  });
 }
 
 /** The agenda from outside the stack: back from a result. */
@@ -681,13 +682,14 @@ $("coding-back").addEventListener("click", () => {
 
 /** Another family is another record and another set of sittings: the one
  * step that opens a diagram (FD-366). A turn already running on it is joined
- * once it is drawn. */
-async function openDiagram(id: number): Promise<void> {
+ * once it is drawn, then `then` runs, whichever try opened it. */
+async function openDiagram(id: number, then: () => Promise<void> = async () => {}): Promise<void> {
   const armed = arming;
   arming = null;
   await store.open(id, undefined, async () => {
     if (armed) await selecting.start(id, armed.day);
     await reattach();
+    await then();
   });
 }
 
