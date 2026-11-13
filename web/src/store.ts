@@ -64,6 +64,7 @@ export class Store {
   private turnId: string | null = null;
   /** The open diagram's parts have all come in. */
   private filled = false;
+  private join: () => Promise<void> = async () => {};
 
   constructor(private stream: (diagramId: number) => EventSource = api.diagramEvents) {}
   /** Counts opens, so whatever was asked for an earlier one is dropped. */
@@ -95,22 +96,37 @@ export class Store {
   }
 
   /** The one way a diagram is opened. False when another open overtook it.
-   * `after` runs once it is drawn, whether the first try or a later one
-   * opened it: a running turn is joined there. */
+   * `after` runs once it is drawn, whichever try opened it. An open that got
+   * no answer at all is tried again a little later, as a read of the record
+   * is, until it lands or another diagram is opened; only its first failure
+   * is thrown. A refusal is thrown and never tried again. */
   async open(id: number | null, seed?: Seed, after: () => Promise<void> = async () => {}): Promise<boolean> {
-    return this.load(id, seed, after, this.begin(id), false);
+    const live = this.begin(id);
+    const once = () => this.load(id, seed, after, live);
+    try {
+      return await once();
+    } catch (error) {
+      if (unanswered(error)) this.retry(live, once);
+      throw error;
+    }
   }
 
-  /** An open that got no answer is tried again a little later, as a read of
-   * the record is, until it lands or another diagram is opened; only the
-   * first failure is thrown. */
-  private async load(
-    id: number | null,
-    seed: Seed | undefined,
-    after: () => Promise<void>,
-    live: () => boolean,
-    again: boolean,
-  ): Promise<boolean> {
+  /** Steps every open that lands runs, before its own `after`: a turn still
+   * running on the diagram is joined there. */
+  joins(run: () => Promise<void>): void {
+    this.join = run;
+  }
+
+  private retry(live: () => boolean, once: () => Promise<boolean>): void {
+    this.later(live, () =>
+      void once().catch((error) => {
+        if (!unanswered(error)) throw error;
+        this.retry(live, once);
+      }),
+    );
+  }
+
+  private async load(id: number | null, seed: Seed | undefined, after: () => Promise<void>, live: () => boolean): Promise<boolean> {
     const signal = this.control.signal;
     let read;
     try {
@@ -122,9 +138,6 @@ export class Store {
       ]);
     } catch (error) {
       if (error instanceof api.Dropped) return false;
-      if (!(error instanceof api.Failed)) throw error;
-      this.later(live, () => void this.load(id, seed, after, live, true));
-      if (again) return false;
       throw error;
     }
     if (!live()) return false;
@@ -133,7 +146,8 @@ export class Store {
     this.filled = true;
     this.draw(EVERY);
     if (diagram) this.follow(diagram.id);
-    await after();
+    await this.join();
+    if (live()) await after();
     return true;
   }
 
@@ -192,11 +206,13 @@ export class Store {
     window.setTimeout(() => live() && run(), REREAD_MS);
   }
 
-  /** Read parts of the open diagram again and draw them; false when another
-   * diagram was opened before they came back. */
+  /** Read parts of the open diagram again and draw them; false when nothing
+   * was drawn because an open, this one still landing or another, reads and
+   * draws every part itself. */
   async refresh(...parts: Part[]): Promise<boolean> {
+    if (!this.filled) return false;
     const read = await Promise.all(parts.map((part) => this.fetch(READ[part])));
-    if (!this.filled || read.some((one) => one === null)) return false;
+    if (read.some((one) => one === null)) return false;
     this.update(Object.fromEntries(parts.map((part, i) => [KEY[part], read[i]])));
     return true;
   }
@@ -264,6 +280,10 @@ const READ: Record<Part, (id: number | null, signal: AbortSignal) => Promise<unk
   [Part.Thread]: (id, signal) => api.thread(id, undefined, signal),
   [Part.Sittings]: (id, signal) => api.sessionIndex(id, signal),
 };
+
+/** Nothing came back at all, so the same request may be answered later; a
+ * refusal will not change. */
+const unanswered = (error: unknown): boolean => error instanceof api.Failed && error.silent;
 
 /** The page's one store. */
 export const store = new Store();

@@ -593,6 +593,8 @@ async function openCut(cut: Cut): Promise<void> {
   uncover();
   screen(Screen.Chat);
   await openDiagram(cut.diagram_id, async () => {
+    // a retry can land after the person has gone back to the agenda
+    if (here !== Screen.Chat) return;
     const first = await thread.reach(bubbleOf(cut.start_statement_id));
     await selecting.start(cut.diagram_id, cut.meeting_date, cut);
     first?.scrollIntoView({ block: "center" });
@@ -681,14 +683,13 @@ $("coding-back").addEventListener("click", () => {
 });
 
 /** Another family is another record and another set of sittings: the one
- * step that opens a diagram (FD-366). A turn already running on it is joined
- * once it is drawn, then `then` runs, whichever try opened it. */
+ * step that opens a diagram (FD-366). Once it is drawn, whichever try opened
+ * it, a turn running on it is joined and then `then` runs. */
 async function openDiagram(id: number, then: () => Promise<void> = async () => {}): Promise<void> {
   const armed = arming;
   arming = null;
   await store.open(id, undefined, async () => {
     if (armed) await selecting.start(id, armed.day);
-    await reattach();
     await then();
   });
 }
@@ -2041,18 +2042,24 @@ window.addEventListener("pageshow", (e) => {
 // first event, so a reload lands back in the middle of it rather than on
 // nothing; coming back a week later, the picture is where the last message
 // left it.
-void store.open(
-  window.BOOTSTRAP.diagram?.id ?? null,
-  { diagram: window.BOOTSTRAP.diagram, thread: window.BOOTSTRAP.statements },
-  async () => {
-    session = window.BOOTSTRAP.session?.id ?? session;
-    const running = window.BOOTSTRAP.session?.turn ?? null;
-    if (running) follow(running);
-    await arrive();
-    reveal();
-    landing(land);
-  },
-);
+let booted = false;
+// Every diagram that opens, whichever try or whoever opened it, joins the turn
+// running on it as it stands then; the first one also takes the app where it
+// was opened at and lifts the splash.
+store.joins(async () => {
+  stopFollowing();
+  await reattach();
+  if (booted) return;
+  booted = true;
+  await arrive();
+  reveal();
+  landing(land);
+});
+session = window.BOOTSTRAP.session?.id ?? session;
+void store.open(window.BOOTSTRAP.diagram?.id ?? null, {
+  diagram: window.BOOTSTRAP.diagram,
+  thread: window.BOOTSTRAP.statements,
+});
 
 // Safari zooms on a pinch whatever the viewport says; the page's scale stays put (R-0786)
 document.addEventListener("gesturestart", (e) => e.preventDefault());

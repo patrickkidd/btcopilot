@@ -9,6 +9,8 @@ interface Asked {
   answer: (body: unknown) => void;
   /** No answer at all, as when the device is offline. */
   fail: () => void;
+  /** The server says no, as for a diagram no longer shared. */
+  refuse: () => void;
   aborted: boolean;
 }
 
@@ -30,6 +32,7 @@ beforeEach(() => {
           answer: (body) =>
             resolve(new Response(JSON.stringify(body), { status: 200 })),
           fail: () => reject(new TypeError("Failed to fetch")),
+          refuse: () => resolve(new Response("not found", { status: 404 })),
           aborted: false,
         };
         init.signal?.addEventListener("abort", () => {
@@ -79,14 +82,23 @@ const diagram = (id: number, access = Access.Own) => ({
   owner: "Pat",
 });
 
+/** The requests that open one diagram, by their exact address. */
+const of = (id: number) => (one: Asked) =>
+  [
+    `/app/diagrams/${id}/select`,
+    `/app/timeline?diagram_id=${id}`,
+    `/app/statements?diagram_id=${id}`,
+    `/app/sessions?diagram_id=${id}`,
+  ].includes(one.url);
+
 /** Answer every open request for one diagram by what it asks for. */
 function answer(id: number, access = Access.Own): void {
-  for (const one of asked.filter((a) => a.url.includes(`${id}`))) {
+  for (const one of asked.filter(of(id))) {
     if (one.url.includes("/select")) one.answer(diagram(id, access));
     else if (one.url.includes("/timeline")) one.answer({ people: [], events: [], id });
     else one.answer([]);
   }
-  asked = asked.filter((a) => !a.url.includes(`${id}`));
+  asked = asked.filter((a) => !of(id)(a));
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -298,8 +310,8 @@ function timers(): [() => void, number][] {
 
 /** Every request for the diagram gets no answer, as when the device drops. */
 function drop(id: number): void {
-  for (const one of asked.filter((a) => a.url.includes(`${id}`))) one.fail();
-  asked = asked.filter((a) => !a.url.includes(`${id}`));
+  for (const one of asked.filter(of(id))) one.fail();
+  asked = asked.filter((a) => !of(id)(a));
 }
 
 // R-0933
@@ -345,7 +357,7 @@ it("stops trying an open again once another diagram is opened", async () => {
   answer(6);
   await second;
   later[0][0]();
-  expect(asked.filter((a) => a.url.includes("5"))).toHaveLength(0);
+  expect(asked.filter(of(5))).toHaveLength(0);
   expect(told).toEqual(["reset", "reset", "draw 6 record,thread,sittings"]);
 });
 
@@ -365,4 +377,41 @@ it("rejoins a running coach turn once a retry is what opens the diagram", async 
   expect(rejoin).toHaveBeenCalledOnce();
   void store.open(6);
   expect(turn.close).toHaveBeenCalledOnce();
+});
+
+// R-0243
+it("throws an open the server refused and never tries it again", async () => {
+  const later = timers();
+  const store = new Store();
+  const opening = store.open(5);
+  for (const one of asked) one.refuse();
+  await expect(opening).rejects.toThrow("404");
+  expect(later).toHaveLength(0);
+});
+
+// R-0369
+it("joins the running turn when an open that overtook the first one lands, so the page still arrives", async () => {
+  const store = new Store();
+  const join = vi.fn(async () => {});
+  store.joins(join);
+  const first = store.open(5);
+  const second = store.open(6);
+  answer(6);
+  await second;
+  expect(await first).toBe(false);
+  expect(join).toHaveBeenCalledOnce();
+});
+
+// R-0369, R-0933
+it("joins the running turn again when the diagram is read whole after its stream could not replay", async () => {
+  const store = streamed();
+  const join = vi.fn(async () => {});
+  store.joins(join);
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  Writes.opened[0].send({ type: "reload" });
+  answer(5);
+  await flush();
+  expect(join).toHaveBeenCalledTimes(2);
 });
