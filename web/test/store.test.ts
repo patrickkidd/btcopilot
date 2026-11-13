@@ -348,3 +348,21 @@ it("stops trying an open again once another diagram is opened", async () => {
   expect(asked.filter((a) => a.url.includes("5"))).toHaveLength(0);
   expect(told).toEqual(["reset", "reset", "draw 6 record,thread,sittings"]);
 });
+
+// R-0369
+it("rejoins a running coach turn once a retry is what opens the diagram", async () => {
+  const later = timers();
+  const store = new Store();
+  const turn = { close: vi.fn() } as unknown as EventSource;
+  const rejoin = vi.fn(async () => store.hold(turn, "t-run"));
+  const opening = store.open(5, undefined, rejoin);
+  drop(5);
+  await expect(opening).rejects.toThrow("Failed to fetch");
+  expect(rejoin).not.toHaveBeenCalled();
+  later[0][0]();
+  answer(5);
+  await flush();
+  expect(rejoin).toHaveBeenCalledOnce();
+  void store.open(6);
+  expect(turn.close).toHaveBeenCalledOnce();
+});

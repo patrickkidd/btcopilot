@@ -685,9 +685,10 @@ $("coding-back").addEventListener("click", () => {
 async function openDiagram(id: number): Promise<void> {
   const armed = arming;
   arming = null;
-  if (!(await store.open(id))) return;
-  if (armed) await selecting.start(id, armed.day);
-  await reattach();
+  await store.open(id, undefined, async () => {
+    if (armed) await selecting.start(id, armed.day);
+    await reattach();
+  });
 }
 
 /** What the title row says with no family open yet. */
@@ -2038,19 +2039,18 @@ window.addEventListener("pageshow", (e) => {
 // first event, so a reload lands back in the middle of it rather than on
 // nothing; coming back a week later, the picture is where the last message
 // left it.
-void store
-  .open(window.BOOTSTRAP.diagram?.id ?? null, {
-    diagram: window.BOOTSTRAP.diagram,
-    thread: window.BOOTSTRAP.statements,
-  })
-  .then(() => {
+void store.open(
+  window.BOOTSTRAP.diagram?.id ?? null,
+  { diagram: window.BOOTSTRAP.diagram, thread: window.BOOTSTRAP.statements },
+  async () => {
     session = window.BOOTSTRAP.session?.id ?? session;
     const running = window.BOOTSTRAP.session?.turn ?? null;
     if (running) follow(running);
-  })
-  .then(arrive)
-  .then(reveal)
-  .then(() => landing(land));
+    await arrive();
+    reveal();
+    landing(land);
+  },
+);
 
 // Safari zooms on a pinch whatever the viewport says; the page's scale stays put (R-0786)
 document.addEventListener("gesturestart", (e) => e.preventDefault());

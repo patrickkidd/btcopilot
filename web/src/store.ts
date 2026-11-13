@@ -94,15 +94,23 @@ export class Store {
     return () => this.count === was;
   }
 
-  /** The one way a diagram is opened. False when another open overtook it. */
-  async open(id: number | null, seed?: Seed): Promise<boolean> {
-    return this.load(id, seed, this.begin(id), false);
+  /** The one way a diagram is opened. False when another open overtook it.
+   * `after` runs once it is drawn, whether the first try or a later one
+   * opened it: a running turn is joined there. */
+  async open(id: number | null, seed?: Seed, after: () => Promise<void> = async () => {}): Promise<boolean> {
+    return this.load(id, seed, after, this.begin(id), false);
   }
 
   /** An open that got no answer is tried again a little later, as a read of
    * the record is, until it lands or another diagram is opened; only the
    * first failure is thrown. */
-  private async load(id: number | null, seed: Seed | undefined, live: () => boolean, again: boolean): Promise<boolean> {
+  private async load(
+    id: number | null,
+    seed: Seed | undefined,
+    after: () => Promise<void>,
+    live: () => boolean,
+    again: boolean,
+  ): Promise<boolean> {
     const signal = this.control.signal;
     let read;
     try {
@@ -115,7 +123,7 @@ export class Store {
     } catch (error) {
       if (error instanceof api.Dropped) return false;
       if (!(error instanceof api.Failed)) throw error;
-      this.later(live, () => void this.load(id, seed, live, true));
+      this.later(live, () => void this.load(id, seed, after, live, true));
       if (again) return false;
       throw error;
     }
@@ -125,6 +133,7 @@ export class Store {
     this.filled = true;
     this.draw(EVERY);
     if (diagram) this.follow(diagram.id);
+    await after();
     return true;
   }
 
