@@ -18,7 +18,7 @@ export enum Part {
 }
 
 const EVERY = [Part.Record, Part.Thread, Part.Sittings];
-/** How soon a read of the record that got no answer is tried again. */
+/** How soon a read that got no answer is tried again. */
 const REREAD_MS = 5_000;
 
 export interface Opened {
@@ -62,6 +62,8 @@ export class Store {
   private queued = false;
   /** The turn whose own stream this page follows, while it runs. */
   private turnId: string | null = null;
+  /** The open diagram's parts have all come in. */
+  private filled = false;
 
   constructor(private stream: (diagramId: number) => EventSource = api.diagramEvents) {}
   /** Counts opens, so whatever was asked for an earlier one is dropped. */
@@ -94,7 +96,13 @@ export class Store {
 
   /** The one way a diagram is opened. False when another open overtook it. */
   async open(id: number | null, seed?: Seed): Promise<boolean> {
-    const live = this.begin(id);
+    return this.load(id, seed, this.begin(id), false);
+  }
+
+  /** An open that got no answer is tried again a little later, as a read of
+   * the record is, until it lands or another diagram is opened; only the
+   * first failure is thrown. */
+  private async load(id: number | null, seed: Seed | undefined, live: () => boolean, again: boolean): Promise<boolean> {
     const signal = this.control.signal;
     let read;
     try {
@@ -106,11 +114,15 @@ export class Store {
       ]);
     } catch (error) {
       if (error instanceof api.Dropped) return false;
+      if (!(error instanceof api.Failed)) throw error;
+      this.later(live, () => void this.load(id, seed, live, true));
+      if (again) return false;
       throw error;
     }
     if (!live()) return false;
     const [diagram, record, thread, sittings] = read;
     this.opened = { diagram, record, thread, sittings };
+    this.filled = true;
     this.draw(EVERY);
     if (diagram) this.follow(diagram.id);
     return true;
@@ -160,23 +172,30 @@ export class Store {
       } while (this.stale);
     } catch (error) {
       if (!(error instanceof api.Failed)) throw error;
-      window.setTimeout(() => live() && void this.reread(), REREAD_MS);
+      this.later(live, () => void this.reread());
     } finally {
       this.reading = false;
     }
+  }
+
+  /** Run again a little later, unless another diagram was opened since. */
+  private later(live: () => boolean, run: () => void): void {
+    window.setTimeout(() => live() && run(), REREAD_MS);
   }
 
   /** Read parts of the open diagram again and draw them; false when another
    * diagram was opened before they came back. */
   async refresh(...parts: Part[]): Promise<boolean> {
     const read = await Promise.all(parts.map((part) => this.fetch(READ[part])));
-    if (read.some((one) => one === null)) return false;
+    if (!this.filled || read.some((one) => one === null)) return false;
     this.update(Object.fromEntries(parts.map((part, i) => [KEY[part], read[i]])));
     return true;
   }
 
-  /** Parts read elsewhere for the open diagram, drawn as if refreshed. */
+  /** Parts read elsewhere for the open diagram, drawn as if refreshed; none
+   * until its open has landed, so no screen is drawn without the diagram. */
   update(fresh: Partial<Opened>): void {
+    if (!this.filled) return;
     this.opened = { ...this.opened, ...fresh };
     this.draw(EVERY.filter((part) => KEY[part] in fresh));
   }
@@ -214,6 +233,7 @@ export class Store {
     this.writes?.close();
     this.writes = null;
     this.stale = false;
+    this.filled = false;
     this.opened = { ...EMPTY };
     for (const view of this.views) view.reset();
     return this.live();

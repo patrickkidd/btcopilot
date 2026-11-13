@@ -186,7 +186,7 @@ export class CaseReport implements View {
     try {
       v = caseView(opened.record, opened.sittings, subjectName(opened.record), opened.diagram!.addressed !== false);
     } catch (error) {
-      console.error(error);
+      reportError(error);
       this.body.innerHTML = `<p class="fault">The case report cannot be drawn from this diagram: ${esc((error as Error).message)}</p>`;
       this.rail.replaceChildren();
       return;

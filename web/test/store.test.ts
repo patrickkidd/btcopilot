@@ -285,3 +285,66 @@ it("reads the record once for writes that land in one frame, and not for the fol
   frames[0]();
   expect(asked.filter((one) => one.url.startsWith("/app/timeline"))).toHaveLength(1);
 });
+
+/** The timer the store sets, run when the test says so. */
+function timers(): [() => void, number][] {
+  const later: [() => void, number][] = [];
+  vi.stubGlobal("window", {
+    requestAnimationFrame: (run: () => void) => void run(),
+    setTimeout: (run: () => void, ms: number) => void later.push([run, ms]),
+  });
+  return later;
+}
+
+/** Every request for the diagram gets no answer, as when the device drops. */
+function drop(id: number): void {
+  for (const one of asked.filter((a) => a.url.includes(`${id}`))) one.fail();
+  asked = asked.filter((a) => !a.url.includes(`${id}`));
+}
+
+// R-0933
+it("opens a diagram again 5 seconds after an open that got no answer, drawing nothing until it lands", async () => {
+  const later = timers();
+  const store = new Store();
+  const told = screens(store);
+  const opening = store.open(5);
+  drop(5);
+  await expect(opening).rejects.toThrow("Failed to fetch");
+  store.update({ record: clustered as never });
+  expect(told).toEqual(["reset"]);
+  expect(later.map(([, ms]) => ms)).toEqual([5000]);
+  asked = [];
+  later[0][0]();
+  answer(5);
+  await flush();
+  expect(told).toEqual(["reset", "draw 5 record,thread,sittings"]);
+  expect(store.current().diagram?.id).toBe(5);
+});
+
+// R-0933
+it("does not apply a part read elsewhere while the diagram is still opening", async () => {
+  const store = new Store();
+  const told = screens(store);
+  const opening = store.open(5);
+  store.update({ record: clustered as never });
+  expect(told).toEqual(["reset"]);
+  answer(5);
+  await opening;
+  expect(store.current().record).toEqual({ people: [], events: [], id: 5 });
+});
+
+// R-0243
+it("stops trying an open again once another diagram is opened", async () => {
+  const later = timers();
+  const store = new Store();
+  const told = screens(store);
+  const opening = store.open(5);
+  drop(5);
+  await expect(opening).rejects.toThrow();
+  const second = store.open(6);
+  answer(6);
+  await second;
+  later[0][0]();
+  expect(asked.filter((a) => a.url.includes("5"))).toHaveLength(0);
+  expect(told).toEqual(["reset", "reset", "draw 6 record,thread,sittings"]);
+});
