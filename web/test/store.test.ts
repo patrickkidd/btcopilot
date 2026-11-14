@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { Failed } from "../src/api";
 import { Part, Store, type Opened } from "../src/store";
 import { Access } from "../src/types";
 
@@ -23,6 +24,7 @@ beforeEach(() => {
   // a frame passes at once
   vi.stubGlobal("window", { requestAnimationFrame: (run: () => void) => void run(), setTimeout });
   vi.stubGlobal("document", { querySelector: () => null });
+  vi.stubGlobal("reportError", vi.fn());
   vi.stubGlobal(
     "fetch",
     (url: string, init: RequestInit) =>
@@ -414,4 +416,35 @@ it("joins the running turn again when the diagram is read whole after its stream
   answer(5);
   await flush();
   expect(join).toHaveBeenCalledTimes(2);
+});
+
+// R-0369
+it("runs the steps after an open once it is drawn even when joining the turn fails, and reports that failure", async () => {
+  const store = new Store();
+  const refused = new Failed(500, "GET /app/sessions/3", "broke");
+  store.joins(async () => {
+    throw refused;
+  });
+  const after = vi.fn(async () => {});
+  const opening = store.open(5, undefined, after);
+  answer(5);
+  expect(await opening).toBe(true);
+  expect(after).toHaveBeenCalledOnce();
+  expect(reportError).toHaveBeenCalledWith(refused);
+});
+
+// R-0933
+it("keeps one stream for the diagram: a step after the open that gets no answer never opens it again", async () => {
+  const later = timers();
+  const store = streamed();
+  store.joins(async () => {
+    throw new Failed(0, "GET /app/sessions/3", "Failed to fetch");
+  });
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  for (const [run] of later) run();
+  answer(5);
+  await flush();
+  expect(Writes.opened.filter((one) => !one.closed)).toHaveLength(1);
 });

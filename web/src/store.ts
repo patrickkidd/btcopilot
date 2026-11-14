@@ -99,10 +99,11 @@ export class Store {
    * `after` runs once it is drawn, whichever try opened it. An open that got
    * no answer at all is tried again a little later, as a read of the record
    * is, until it lands or another diagram is opened; only its first failure
-   * is thrown. A refusal is thrown and never tried again. */
+   * is thrown. A refusal is thrown and never tried again. Once it is drawn,
+   * a step after it that fails is reported and never opens it again. */
   async open(id: number | null, seed?: Seed, after: () => Promise<void> = async () => {}): Promise<boolean> {
     const live = this.begin(id);
-    const once = () => this.load(id, seed, after, live);
+    const once = async () => (await this.load(id, seed, live)) && this.settle(after, live);
     try {
       return await once();
     } catch (error) {
@@ -126,7 +127,7 @@ export class Store {
     );
   }
 
-  private async load(id: number | null, seed: Seed | undefined, after: () => Promise<void>, live: () => boolean): Promise<boolean> {
+  private async load(id: number | null, seed: Seed | undefined, live: () => boolean): Promise<boolean> {
     const signal = this.control.signal;
     let read;
     try {
@@ -146,8 +147,13 @@ export class Store {
     this.filled = true;
     this.draw(EVERY);
     if (diagram) this.follow(diagram.id);
-    await this.join();
-    if (live()) await after();
+    return true;
+  }
+
+  /** The steps once an open is drawn, each run whether the one before it
+   * failed; a failure is reported, never thrown into the open. */
+  private async settle(after: () => Promise<void>, live: () => boolean): Promise<true> {
+    for (const step of [this.join, after]) if (live()) await step().catch(reportError);
     return true;
   }
 
@@ -158,6 +164,7 @@ export class Store {
    * When the stream cannot replay what was missed, the whole diagram is read
    * again (R-0933). */
   private follow(id: number): void {
+    this.writes?.close();
     const writes = this.stream(id);
     this.writes = writes;
     writes.addEventListener("open", () => this.soon());

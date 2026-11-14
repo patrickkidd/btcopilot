@@ -2043,17 +2043,18 @@ window.addEventListener("pageshow", (e) => {
 // nothing; coming back a week later, the picture is where the last message
 // left it.
 let booted = false;
-// Every diagram that opens, whichever try or whoever opened it, joins the turn
-// running on it as it stands then; the first one also takes the app where it
-// was opened at and lifts the splash.
+// The first diagram that opens, whichever try or whoever opened it, takes the
+// app where it was opened at and lifts the splash; every one then joins the
+// turn running on it as it stands then.
 store.joins(async () => {
+  if (!booted) {
+    booted = true;
+    await arrive();
+    reveal();
+    landing(land);
+  }
   stopFollowing();
   await reattach();
-  if (booted) return;
-  booted = true;
-  await arrive();
-  reveal();
-  landing(land);
 });
 session = window.BOOTSTRAP.session?.id ?? session;
 void store.open(window.BOOTSTRAP.diagram?.id ?? null, {
