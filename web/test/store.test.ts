@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { Failed } from "../src/api";
 import { Part, Store, type Opened } from "../src/store";
 import { Access } from "../src/types";
 
@@ -9,6 +10,8 @@ interface Asked {
   answer: (body: unknown) => void;
   /** No answer at all, as when the device is offline. */
   fail: () => void;
+  /** The server says no, as for a diagram no longer shared. */
+  refuse: () => void;
   aborted: boolean;
 }
 
@@ -21,6 +24,7 @@ beforeEach(() => {
   // a frame passes at once
   vi.stubGlobal("window", { requestAnimationFrame: (run: () => void) => void run(), setTimeout });
   vi.stubGlobal("document", { querySelector: () => null });
+  vi.stubGlobal("reportError", vi.fn());
   vi.stubGlobal(
     "fetch",
     (url: string, init: RequestInit) =>
@@ -30,6 +34,7 @@ beforeEach(() => {
           answer: (body) =>
             resolve(new Response(JSON.stringify(body), { status: 200 })),
           fail: () => reject(new TypeError("Failed to fetch")),
+          refuse: () => resolve(new Response("not found", { status: 404 })),
           aborted: false,
         };
         init.signal?.addEventListener("abort", () => {
@@ -79,14 +84,23 @@ const diagram = (id: number, access = Access.Own) => ({
   owner: "Pat",
 });
 
+/** The requests that open one diagram, by their exact address. */
+const of = (id: number) => (one: Asked) =>
+  [
+    `/app/diagrams/${id}/select`,
+    `/app/timeline?diagram_id=${id}`,
+    `/app/statements?diagram_id=${id}`,
+    `/app/sessions?diagram_id=${id}`,
+  ].includes(one.url);
+
 /** Answer every open request for one diagram by what it asks for. */
 function answer(id: number, access = Access.Own): void {
-  for (const one of asked.filter((a) => a.url.includes(`${id}`))) {
+  for (const one of asked.filter(of(id))) {
     if (one.url.includes("/select")) one.answer(diagram(id, access));
     else if (one.url.includes("/timeline")) one.answer({ people: [], events: [], id });
     else one.answer([]);
   }
-  asked = asked.filter((a) => !a.url.includes(`${id}`));
+  asked = asked.filter((a) => !of(id)(a));
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -284,4 +298,153 @@ it("reads the record once for writes that land in one frame, and not for the fol
   expect(frames).toHaveLength(1);
   frames[0]();
   expect(asked.filter((one) => one.url.startsWith("/app/timeline"))).toHaveLength(1);
+});
+
+/** The timer the store sets, run when the test says so. */
+function timers(): [() => void, number][] {
+  const later: [() => void, number][] = [];
+  vi.stubGlobal("window", {
+    requestAnimationFrame: (run: () => void) => void run(),
+    setTimeout: (run: () => void, ms: number) => void later.push([run, ms]),
+  });
+  return later;
+}
+
+/** Every request for the diagram gets no answer, as when the device drops. */
+function drop(id: number): void {
+  for (const one of asked.filter(of(id))) one.fail();
+  asked = asked.filter((a) => !of(id)(a));
+}
+
+// R-0933
+it("opens a diagram again 5 seconds after an open that got no answer, drawing nothing until it lands", async () => {
+  const later = timers();
+  const store = new Store();
+  const told = screens(store);
+  const opening = store.open(5);
+  drop(5);
+  await expect(opening).rejects.toThrow("Failed to fetch");
+  store.update({ record: clustered as never });
+  expect(told).toEqual(["reset"]);
+  expect(later.map(([, ms]) => ms)).toEqual([5000]);
+  asked = [];
+  later[0][0]();
+  answer(5);
+  await flush();
+  expect(told).toEqual(["reset", "draw 5 record,thread,sittings"]);
+  expect(store.current().diagram?.id).toBe(5);
+});
+
+// R-0933
+it("does not apply a part read elsewhere while the diagram is still opening", async () => {
+  const store = new Store();
+  const told = screens(store);
+  const opening = store.open(5);
+  store.update({ record: clustered as never });
+  expect(told).toEqual(["reset"]);
+  answer(5);
+  await opening;
+  expect(store.current().record).toEqual({ people: [], events: [], id: 5 });
+});
+
+// R-0243
+it("stops trying an open again once another diagram is opened", async () => {
+  const later = timers();
+  const store = new Store();
+  const told = screens(store);
+  const opening = store.open(5);
+  drop(5);
+  await expect(opening).rejects.toThrow();
+  const second = store.open(6);
+  answer(6);
+  await second;
+  later[0][0]();
+  expect(asked.filter(of(5))).toHaveLength(0);
+  expect(told).toEqual(["reset", "reset", "draw 6 record,thread,sittings"]);
+});
+
+// R-0369
+it("rejoins a running coach turn once a retry is what opens the diagram", async () => {
+  const later = timers();
+  const store = new Store();
+  const turn = { close: vi.fn() } as unknown as EventSource;
+  const rejoin = vi.fn(async () => store.hold(turn, "t-run"));
+  const opening = store.open(5, undefined, rejoin);
+  drop(5);
+  await expect(opening).rejects.toThrow("Failed to fetch");
+  expect(rejoin).not.toHaveBeenCalled();
+  later[0][0]();
+  answer(5);
+  await flush();
+  expect(rejoin).toHaveBeenCalledOnce();
+  void store.open(6);
+  expect(turn.close).toHaveBeenCalledOnce();
+});
+
+// R-0243
+it("throws an open the server refused and never tries it again", async () => {
+  const later = timers();
+  const store = new Store();
+  const opening = store.open(5);
+  for (const one of asked) one.refuse();
+  await expect(opening).rejects.toThrow("404");
+  expect(later).toHaveLength(0);
+});
+
+// R-0369
+it("joins the running turn when an open that overtook the first one lands, so the page still arrives", async () => {
+  const store = new Store();
+  const join = vi.fn(async () => {});
+  store.joins(join);
+  const first = store.open(5);
+  const second = store.open(6);
+  answer(6);
+  await second;
+  expect(await first).toBe(false);
+  expect(join).toHaveBeenCalledOnce();
+});
+
+// R-0369, R-0933
+it("joins the running turn again when the diagram is read whole after its stream could not replay", async () => {
+  const store = streamed();
+  const join = vi.fn(async () => {});
+  store.joins(join);
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  Writes.opened[0].send({ type: "reload" });
+  answer(5);
+  await flush();
+  expect(join).toHaveBeenCalledTimes(2);
+});
+
+// R-0369
+it("runs the steps after an open once it is drawn even when joining the turn fails, and reports that failure", async () => {
+  const store = new Store();
+  const refused = new Failed(500, "GET /app/sessions/3", "broke");
+  store.joins(async () => {
+    throw refused;
+  });
+  const after = vi.fn(async () => {});
+  const opening = store.open(5, undefined, after);
+  answer(5);
+  expect(await opening).toBe(true);
+  expect(after).toHaveBeenCalledOnce();
+  expect(reportError).toHaveBeenCalledWith(refused);
+});
+
+// R-0933
+it("keeps one stream for the diagram: a step after the open that gets no answer never opens it again", async () => {
+  const later = timers();
+  const store = streamed();
+  store.joins(async () => {
+    throw new Failed(0, "GET /app/sessions/3", "Failed to fetch");
+  });
+  const opening = store.open(5);
+  answer(5);
+  await opening;
+  for (const [run] of later) run();
+  answer(5);
+  await flush();
+  expect(Writes.opened.filter((one) => !one.closed)).toHaveLength(1);
 });

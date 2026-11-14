@@ -24,6 +24,7 @@ import enum
 import hashlib
 import json
 import subprocess
+import time
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
@@ -106,7 +107,7 @@ class Replay:
                 text=True,
             ).stdout
             tracked = {REPO / name for name in listed.split("\0") if name}
-        stale = (datetime.datetime.now() - KEEP).timestamp()
+        stale = time.time() - KEEP.total_seconds()
         for path in self.store.glob("*.json"):
             if path not in tracked and path.stat().st_mtime < stale:
                 path.unlink()

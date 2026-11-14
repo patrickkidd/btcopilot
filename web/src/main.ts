@@ -592,10 +592,13 @@ async function openResult(cutId: number, back: () => Promise<void>): Promise<voi
 async function openCut(cut: Cut): Promise<void> {
   uncover();
   screen(Screen.Chat);
-  await openDiagram(cut.diagram_id);
-  const first = await thread.reach(bubbleOf(cut.start_statement_id));
-  await selecting.start(cut.diagram_id, cut.meeting_date, cut);
-  first?.scrollIntoView({ block: "center" });
+  await openDiagram(cut.diagram_id, async () => {
+    // a retry can land after the person has gone back to the agenda
+    if (here !== Screen.Chat) return;
+    const first = await thread.reach(bubbleOf(cut.start_statement_id));
+    await selecting.start(cut.diagram_id, cut.meeting_date, cut);
+    first?.scrollIntoView({ block: "center" });
+  });
 }
 
 /** The agenda from outside the stack: back from a result. */
@@ -680,14 +683,15 @@ $("coding-back").addEventListener("click", () => {
 });
 
 /** Another family is another record and another set of sittings: the one
- * step that opens a diagram (FD-366). A turn already running on it is joined
- * once it is drawn. */
-async function openDiagram(id: number): Promise<void> {
+ * step that opens a diagram (FD-366). Once it is drawn, whichever try opened
+ * it, a turn running on it is joined and then `then` runs. */
+async function openDiagram(id: number, then: () => Promise<void> = async () => {}): Promise<void> {
   const armed = arming;
   arming = null;
-  if (!(await store.open(id))) return;
-  if (armed) await selecting.start(id, armed.day);
-  await reattach();
+  await store.open(id, undefined, async () => {
+    if (armed) await selecting.start(id, armed.day);
+    await then();
+  });
 }
 
 /** What the title row says with no family open yet. */
@@ -2038,19 +2042,25 @@ window.addEventListener("pageshow", (e) => {
 // first event, so a reload lands back in the middle of it rather than on
 // nothing; coming back a week later, the picture is where the last message
 // left it.
-void store
-  .open(window.BOOTSTRAP.diagram?.id ?? null, {
-    diagram: window.BOOTSTRAP.diagram,
-    thread: window.BOOTSTRAP.statements,
-  })
-  .then(() => {
-    session = window.BOOTSTRAP.session?.id ?? session;
-    const running = window.BOOTSTRAP.session?.turn ?? null;
-    if (running) follow(running);
-  })
-  .then(arrive)
-  .then(reveal)
-  .then(() => landing(land));
+let booted = false;
+// The first diagram that opens, whichever try or whoever opened it, takes the
+// app where it was opened at and lifts the splash; every one then joins the
+// turn running on it as it stands then.
+store.joins(async () => {
+  if (!booted) {
+    booted = true;
+    await arrive();
+    reveal();
+    landing(land);
+  }
+  stopFollowing();
+  await reattach();
+});
+session = window.BOOTSTRAP.session?.id ?? session;
+void store.open(window.BOOTSTRAP.diagram?.id ?? null, {
+  diagram: window.BOOTSTRAP.diagram,
+  thread: window.BOOTSTRAP.statements,
+});
 
 // Safari zooms on a pinch whatever the viewport says; the page's scale stays put (R-0786)
 document.addEventListener("gesturestart", (e) => e.preventDefault());
