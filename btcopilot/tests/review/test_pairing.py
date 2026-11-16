@@ -217,6 +217,51 @@ def test_people_are_agreed_by_who_they_are_not_by_their_numbers(
     assert rows[(ItemKind.Event, 1)] is ReviewStatus.Disputed
 
 
+def test_parents_named_in_either_order_are_the_same_parents(
+    patrick, test_user, test_user_2, cut
+):
+    # R-0961
+    a = coded(
+        test_user,
+        cut,
+        {
+            "people": [
+                person(1, "Wally"),
+                person(2, "Louann"),
+                dict(person(3, "Kid"), parents=7),
+            ],
+            "pair_bonds": [{"id": 7, "person_a": 1, "person_b": 2}],
+        },
+    )
+    b = coded(
+        test_user_2,
+        cut,
+        {
+            "people": [
+                person(4, "Louann"),
+                person(5, "Wally"),
+                dict(person(6, "Kid"), parents=8),
+            ],
+            "pair_bonds": [{"id": 8, "person_a": 4, "person_b": 5}],
+        },
+    )
+    together = [
+        [Entry(a.id, 1), Entry(b.id, 5)],
+        [Entry(a.id, 2), Entry(b.id, 4)],
+        [Entry(a.id, 3), Entry(b.id, 6)],
+        [Entry(a.id, 7), Entry(b.id, 8)],
+    ]
+    build(
+        patrick,
+        cut,
+        Answer([Pairing(e, "same", PairingConfidence.Sure) for e in together]),
+    )
+
+    assert {i.status for i in Item.query.filter_by(cut_id=cut.id)} == {
+        ReviewStatus.Agreed
+    }
+
+
 def test_one_coder_with_two_versions_of_one_thing_is_not_agreed(
     patrick, test_user, test_user_2, cut
 ):

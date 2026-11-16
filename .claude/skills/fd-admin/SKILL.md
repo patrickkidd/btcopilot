@@ -201,7 +201,7 @@ Re-date the events stored at a stand-in date (1 January 1900, year 1, or 1 Janua
 
 ### `flask admin diagrams redate apply <path>`
 
-Make each call the plan saved through the event tool, one change row per call under the plan's turn for that record; an event whose date moved since the plan is left as it is.
+Make each call the plan saved through the event tool, one change row per call under the plan's turn for that record; an event whose date moved since the plan is left as it is, and one the event tool now refuses is counted as refused. Runs once per plan. Ends with what it did, saved into the plan too.
 
 Changes something: needs `--yes`.
 

@@ -123,7 +123,7 @@ export class Pairings {
       (pairing.line ? passage(pairing.line, this.whole.has(item.id)) : "") +
       `<div class="progress">${esc(item.pairing_confidence ?? Confidence.Unsure)}</div>` +
       (item.pairing_reason ? `<div class="note">${esc(item.pairing_reason)}</div>` : "") +
-      opinionCards(pairing, eachVersion(pairing), null, this.full.has(item.id), this.chosen) +
+      opinionCards(eachVersion(pairing), null, this.full.has(item.id), this.chosen) +
       leftOut(item) +
       `</div>`
     );

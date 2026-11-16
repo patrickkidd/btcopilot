@@ -497,6 +497,20 @@ describe("the drawing on a cluster's page", () => {
     expect(p.lanes).toEqual([]);
   });
 
+  // R-0213, R-0850
+  it("keeps every dot's target inside the drawing, the end dots too", () => {
+    for (const view of [ClusterView.Row, ClusterView.Lanes])
+      for (const width of [300, 700]) {
+        const p = place(events, view, width, null, people);
+        for (const { hit } of p.dots) {
+          expect(hit.x).toBeGreaterThanOrEqual(0);
+          expect(hit.x + hit.w).toBeLessThanOrEqual(width);
+          expect(hit.y).toBeGreaterThanOrEqual(0);
+          expect(hit.y + hit.h).toBeLessThanOrEqual(p.height);
+        }
+      }
+  });
+
   // R-0862, R-0867
   it("draws a solid line at every death, a dashed one at each illness found in someone other than the diagram's own person, and one at the stored opening when it is neither", () => {
     const keys = (opening: number | null, you: number | null) =>

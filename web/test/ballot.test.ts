@@ -22,6 +22,7 @@ import {
   ItemStatus,
   VoteChoice,
   type BallotItem,
+  type CodingRecord,
   type Opinion,
   type Vote,
 } from "../src/types";
@@ -283,13 +284,49 @@ describe("a pairing on the vote", () => {
       opinion(2, 2, { ...moved, anxiety: "down" }, { toward_names: ["Jim"] }),
     ]);
     const seen = toPairing(item, new Map());
-    const html = opinionCards(seen, pairOpinions(seen), null, false);
+    const html = opinionCards(pairOpinions(seen), null, false);
     expect(html).toContain('<span class="chip pv-diff">anxiety ↑</span>');
     expect(html).toContain('<span class="pv-same">1994</span>');
     expect(html).toContain('<span class="pv-diff">Jim</span>');
     expect(html).toContain('<span class="pv-tag pv-same">shift</span>');
     expect(html).not.toMatch(/ballot1|coders?\b|date:|kind:/);
     expect(html.match(/opinion \d/g)).toEqual(["opinion 1", "opinion 2"]);
+  });
+
+  // R-0965, R-0966
+  it("accents nothing inside one opinion, even where a coder's own entries differ", () => {
+    const item = pairing(4, [opinion(1, 1, moved), opinion(1, 2, { ...moved, anxiety: "down" })]);
+    const seen = toPairing(item, new Map());
+    const html = opinionCards(pairOpinions(seen), null, false);
+    expect(html).not.toContain("pv-diff");
+  });
+
+  // R-0961, R-0965
+  it("merges parents named in either order, and accents neither order", () => {
+    const record = (bond: [number, number]) =>
+      ({
+        people: [
+          { id: 1, name: "Wally" },
+          { id: 2, name: "Louann" },
+          { id: 3, name: "Kid" },
+        ],
+        pair_bonds: [{ id: 7, person_a: bond[0], person_b: bond[1] }],
+      }) as unknown as CodingRecord;
+    const kid = { id: 3, name: "Kid", gender: "male", parents: 7 };
+    const item = {
+      ...pairing(5, [opinion(1, 3, kid), opinion(2, 3, kid)]),
+      item_kind: ItemKind.Person,
+    };
+    const seen = toPairing(
+      item,
+      new Map([
+        [1, record([1, 2])],
+        [2, record([2, 1])],
+      ]),
+    );
+    const opinions = pairOpinions(seen);
+    expect(opinions).toHaveLength(1);
+    expect(opinionCards(opinions, null, false)).not.toContain("pv-diff");
   });
 
   // R-0965

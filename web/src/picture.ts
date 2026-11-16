@@ -722,10 +722,11 @@ export interface Box {
 
 /** Each dot's own target: a thumb's reach around it, cut halfway to any dot
  * nearer than that, along the way the two stand furthest apart, so no target
- * covers another dot and every dot answers its own tap (R-0168). */
-export function targets(dots: { x: number; y: number }[]): Box[] {
+ * covers another dot and every dot answers its own tap (R-0168); an end
+ * dot's target stops at the drawing's edge. */
+export function targets(dots: { x: number; y: number }[], width: number): Box[] {
   return dots.map((d) => {
-    let [l, r, t, b] = [d.x - THUMB, d.x + THUMB, d.y - THUMB, d.y + THUMB];
+    let [l, r, t, b] = [Math.max(0, d.x - THUMB), Math.min(width, d.x + THUMB), d.y - THUMB, d.y + THUMB];
     for (const o of dots) {
       const [dx, dy] = [o.x - d.x, o.y - d.y];
       if (o === d || Math.abs(dx) >= 2 * THUMB || Math.abs(dy) >= 2 * THUMB) continue;
@@ -842,7 +843,7 @@ export function place(
       hollow: e.dateCertainty !== DateCertainty.Certain,
     };
   });
-  const hits = targets(dots);
+  const hits = targets(dots, width);
   return {
     dots: dots.map((d, i) => ({ ...d, hit: hits[i] })),
     keys,

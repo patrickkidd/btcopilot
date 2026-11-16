@@ -511,10 +511,11 @@ export function fieldValue(entry: PairEntry, field: string): string {
   return entry.values.find((one) => one.field === field)?.said ?? "";
 }
 
-/** The fields the entries of a pairing part ways on, which alone take the
- * accent (R-0965). */
-export function pairDiffers(pairing: Pairing): Set<string> {
-  const entries = pairing.versions.flat();
+/** The fields the opinions of a pairing part ways on, which alone take the
+ * accent; what differs between one coder's own entries is never accented
+ * (R-0965). */
+export function pairDiffers(opinions: PairOpinion[]): Set<string> {
+  const entries = opinions.flatMap((one) => one.entries);
   const fields = new Set([
     "kind",
     "who",
@@ -522,10 +523,10 @@ export function pairDiffers(pairing: Pairing): Set<string> {
     "date",
     ...entries.flatMap((one) => one.values.map((value) => value.field)),
   ]);
+  const said = (one: PairOpinion, field: string) =>
+    [...new Set(one.entries.map((entry) => fieldValue(entry, field)))].sort().join("‖");
   return new Set(
-    [...fields].filter(
-      (field) => new Set(entries.map((one) => fieldValue(one, field))).size > 1,
-    ),
+    [...fields].filter((field) => new Set(opinions.map((one) => said(one, field))).size > 1),
   );
 }
 
@@ -567,13 +568,12 @@ export const entryKey = (entry: { coding_id: number; item_id: number | string })
  * `lit` is the opinion picked; `chosen` the entries selected for a split.
  * No count of the coders behind an opinion is shown (R-0252, R-0272). */
 export function opinionCards(
-  pairing: Pairing,
   opinions: PairOpinion[],
   lit: number | null,
   whole: boolean,
   chosen: Set<string> = new Set(),
 ): string {
-  const differs = pairDiffers(pairing);
+  const differs = pairDiffers(opinions);
   return (
     `<div class="pv-ops">` +
     opinions
@@ -819,7 +819,7 @@ export class Ballot {
         ? passage(pairing.line, this.whole.has(item.id)) +
           `<div><button class="chip" id="bl-line" type="button">open in transcript</button></div>`
         : "") +
-      opinionCards(pairing, opinions, lit >= 0 ? lit : null, this.full.has(item.id)) +
+      opinionCards(opinions, lit >= 0 ? lit : null, this.full.has(item.id)) +
       own +
       leftOut(item) +
       `</div>` +
