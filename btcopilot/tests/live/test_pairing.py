@@ -1,14 +1,16 @@
 """The pairing prompt against Patrick's own pairing of the High School Sleep
 Problems cut: four coders' 191 events, which he put together by hand into 66
 things [Oracle: R-0964]. Names, places and exact days are fictionalized
-(pairing/cut.json); every coder's line number and what they wrote is kept.
+(fd-corpus/private/eval/pairing/cut.json in the private corpus: the chat is
+real, so it never enters this repo); every coder's line number and what they
+wrote is kept.
 
 The call is the app's own: the pairing prompt rendered by pairing.py, sent
 through claude_structured on Fable, answered on the subscription."""
 
 import asyncio
+import functools
 import json
-from pathlib import Path
 
 import pytest
 
@@ -18,8 +20,14 @@ from btcopilot.review.models.item import PairingConfidence
 from btcopilot.review.pairing import CODER, KINDS, Answer
 from btcopilot.tests.live.conftest import REPLAY
 from btcopilot.tests.live.criterion import passes
+from btcopilot.tests.repo import SOURCES
 
-CUT = json.loads((Path(__file__).parent / "pairing" / "cut.json").read_text())
+PRIVATE = SOURCES / "fd-corpus" / "private" / "eval" / "pairing" / "cut.json"
+
+
+@functools.cache
+def cut() -> dict:
+    return json.loads(PRIVATE.read_text())
 # Of his 66 pairings of events, how many the call must give exactly: three in
 # four. Every one it misses must touch a pairing it did not mark sure, so his
 # review of the unsure ones first brings it up (R-0963).
@@ -49,15 +57,17 @@ def written() -> list[dict]:
                 for key in KINDS.values()
             },
         }
-        for coding in CUT["codings"]
+        for coding in cut()["codings"]
     ]
 
 
-EVENTS = {
-    (coding["coding_id"], event["id"])
-    for coding in CUT["codings"]
-    for event in coding["events"]
-}
+@functools.cache
+def events() -> set[tuple[int, int]]:
+    return {
+        (coding["coding_id"], event["id"])
+        for coding in cut()["codings"]
+        for event in coding["events"]
+    }
 
 
 def events_paired(answer: Answer) -> list[tuple[list[list[int]], PairingConfidence]]:
@@ -66,7 +76,7 @@ def events_paired(answer: Answer) -> list[tuple[list[list[int]], PairingConfiden
         keys = sorted(
             [e.coding_id, e.item_id]
             for e in one.entries
-            if (e.coding_id, e.item_id) in EVENTS
+            if (e.coding_id, e.item_id) in events()
         )
         if keys:
             found.append((keys, PairingConfidence(one.confidence)))
@@ -76,7 +86,7 @@ def events_paired(answer: Answer) -> list[tuple[list[list[int]], PairingConfiden
 @passes(1, of=1)
 def test_the_call_pairs_the_events_as_patrick_did(answered):
     # R-0964, R-0961
-    prompt = pairing.render(CUT["lines"], written())
+    prompt = pairing.render(cut()["lines"], written())
     parsed = asyncio.run(
         llmutil.gemini_structured(
             prompt,
@@ -88,7 +98,7 @@ def test_the_call_pairs_the_events_as_patrick_did(answered):
     )
     versions = {
         (coding["coding_id"], item["id"]): (kind,)
-        for coding in CUT["codings"]
+        for coding in cut()["codings"]
         for kind, key in KINDS.items()
         for item in coding[key]
     }
@@ -96,13 +106,13 @@ def test_the_call_pairs_the_events_as_patrick_did(answered):
         [(e.coding_id, e.item_id) for e in p.entries] for p in parsed.value.pairings
     ]
     assert (
-        pairing.problems(groups, versions, {c["coding_id"] for c in CUT["codings"]})
+        pairing.problems(groups, versions, {c["coding_id"] for c in cut()["codings"]})
         == {}
     )
     given = events_paired(parsed.value)
     exact = [keys for keys, _ in given]
-    missed = [one for one in CUT["answer"] if one not in exact]
-    assert len(CUT["answer"]) - len(missed) >= KEPT, f"missed: {missed}"
+    missed = [one for one in cut()["answer"] if one not in exact]
+    assert len(cut()["answer"]) - len(missed) >= KEPT, f"missed: {missed}"
     doubtful = {
         tuple(key)
         for keys, sure in given
