@@ -1416,13 +1416,16 @@ class Toolbox:
             )
         if args.get("date_evidence"):
             fields["dateEvidence"] = args["date_evidence"]
-        if record.standin_day(args.get("date")) and not (
-            {**was, **fields}.get("dateEvidence")
+        dated = {**was, **fields}
+        if (
+            {"dateTime", "dateCertainty"} & set(fields)
+            and record.standin_day(dated.get("dateTime"))
+            and dated.get("dateCertainty") == DateCertainty.Unknown.value
         ):
             raise ToolError(
-                f"{args['date']} is a stand-in, not a date anyone said: leave the date "
-                "out when nothing was said about when, or give the words that place "
-                "it in date_evidence",
+                f"{args.get('date') or dated['dateTime']} marked unknown is a stand-in, not a "
+                "date anyone said: estimate it from the words about when and the births "
+                "in the record, or leave the date out",
                 "A stand-in year was given as the date.",
             )
         for key in ("title", "description", "notes", "location"):

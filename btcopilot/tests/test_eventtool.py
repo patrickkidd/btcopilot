@@ -513,8 +513,17 @@ def test_an_event_with_nothing_said_about_when_is_kept_with_no_date(subscriber):
 def test_a_stand_in_year_is_refused(subscriber, date):
     # R-0956
     diagram = _diagram(subscriber.user)
-    with pytest.raises(ToolError, match="is a stand-in"):
+    with pytest.raises(ToolError, match="is a stand-in, not a date anyone said"):
         _event(diagram, date=date, date_certainty="unknown", **SHIFT)
+    assert diagram.get_diagram_data().events == []
+
+
+@pytest.mark.parametrize("date", ["1900-01-01", "1970", "1970-01-01", "0001"])
+def test_a_stand_in_day_marked_unknown_is_refused_even_with_words(subscriber, date):
+    # R-0956
+    diagram = _diagram(subscriber.user)
+    with pytest.raises(ToolError, match="estimate it from the words"):
+        _event(diagram, date=date, date_certainty="unknown", date_evidence="after the wedding", **SHIFT)
     assert diagram.get_diagram_data().events == []
 
 

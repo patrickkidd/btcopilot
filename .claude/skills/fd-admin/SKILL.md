@@ -212,7 +212,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin diagrams redate plan`
 
-One model call per event at a stand-in date, on every record but the scratch copies, coders' copies included; saves what each call would write, with the kind of date it judged, and writes nothing to any record. The plan is saved after every event; a rerun continues the newest plan not yet applied and calls only for events it does not hold. An event whose call fails is kept in the plan with its error and never called again.
+One model call per event at a stand-in date, on every record but the scratch copies, coders' copies included; saves what each call would write, with the kind of date it judged, and writes nothing to any record. The plan is saved after every event. An event whose call fails, or whose write the event tool refuses, is kept in the plan as failed with its error and is never applied. A rerun continues the newest plan not yet applied and calls the model again only for its failed events and the events it does not hold; an event planned without a failure is never called again.
 
 Changes something: needs `--yes`.
 

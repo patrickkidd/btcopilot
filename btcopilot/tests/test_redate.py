@@ -277,7 +277,26 @@ class Broken(Answer):
         return (yield from super().turn(system, messages, tools, turn_id))
 
 
-def test_a_failed_event_is_kept_in_the_plan_and_a_rerun_calls_only_the_unplanned(
+def test_a_planned_write_the_tool_refuses_is_failed_and_called_again_on_a_rerun(
+    flask_app, test_user, tmp_path
+):
+    # R-0956, R-0960
+    family(test_user)
+    model = Answer(
+        {"id": 2, "date": "1970", "date_certainty": "unknown", "date_evidence": WORDS, "kind_of_date": "b"}
+    )
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--plans", str(tmp_path))
+    assert row["left"].startswith("failed: ") and "stand-in" in row["left"]
+    again = Answer(
+        {"id": 2, "date": "1996", "date_certainty": "unknown", "date_evidence": WORDS, "kind_of_date": "a"}
+    )
+    with patch.object(REDATE, "model_for", return_value=again):
+        (rerun,) = redate(flask_app, "plan", "--plans", str(tmp_path))
+    assert (rerun["new"], rerun["left"], rerun["plan"]) == ("1996-01-01", None, row["plan"])
+
+
+def test_a_failed_event_is_kept_in_the_plan_and_a_rerun_calls_only_the_failed_and_unplanned(
     flask_app, test_user, tmp_path
 ):
     # R-0960, R-0772
@@ -300,8 +319,11 @@ def test_a_failed_event_is_kept_in_the_plan_and_a_rerun_calls_only_the_unplanned
         (2, None, "failed:"),
         (4, "1996-01-01", ""),
     ]
-    again = Answer()
+    again = Answer({"id": 2, "clear": ["date", "date_evidence"], "kind_of_date": "c"})
     with patch.object(REDATE, "model_for", return_value=again):
         rerun = redate(flask_app, "plan", "--plans", str(tmp_path))
-    assert again.asked == []
-    assert [r["plan"] for r in rerun] == [rows[0]["plan"]] * 2
+    assert len(again.asked) == 1 and "Event 2 " in again.asked[0]
+    assert [(r["event"], r["kind"], r["left"], r["plan"]) for r in rerun] == [
+        (2, "c", None, rows[0]["plan"]),
+        (4, "a", None, rows[0]["plan"]),
+    ]

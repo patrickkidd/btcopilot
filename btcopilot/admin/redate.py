@@ -37,7 +37,6 @@ from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
 TURN = "redate:{}:{}"
 PLANS = "redate-plans"
 APPLIED = ".applied.json"
-REFUSED = "refused: "
 FAILED = "failed: "
 COLUMNS = ["diagram", "event", "copy", "kind", "old", "new", "certainty", "evidence", "left"]
 
@@ -236,7 +235,7 @@ def planned(diagram: Diagram, event: dict, made: str) -> dict:
             ToolName.EditEvent, {**args, "version": diagram.version}
         )
     except ToolError as e:
-        entry["left"] = f"{REFUSED}{e}"
+        entry["left"] = f"{FAILED}{e}"
     return entry
 
 
@@ -271,9 +270,11 @@ def plan(diagram_id, plans, fresh):
     """One model call per event at a stand-in date, on every record but the
     scratch copies, coders' copies included; saves what each call would write,
     with the kind of date it judged, and writes nothing to any record. The plan
-    is saved after every event; a rerun continues the newest plan not yet
-    applied and calls only for events it does not hold. An event whose call
-    fails is kept in the plan with its error and never called again."""
+    is saved after every event. An event whose call fails, or whose write the
+    event tool refuses, is kept in the plan as failed with its error and is
+    never applied. A rerun continues the newest plan not yet applied and calls
+    the model again only for its failed events and the events it does not hold;
+    an event planned without a failure is never called again."""
     query = Diagram.query.filter(Diagram.scratch.is_(False))
     if diagram_id:
         query = query.filter(Diagram.id == diagram_id)
@@ -286,24 +287,29 @@ def plan(diagram_id, plans, fresh):
         saved = {"made": made, "events": []}
     else:
         saved = loaded(path)
-    held = {(e["diagram"], str(e["event"])) for e in saved["events"]}
+    held = {(e["diagram"], str(e["event"])): e for e in saved["events"]}
     for diagram in query.order_by(Diagram.id):
         for event in diagram.get_diagram_data().events:
-            if not record.standin(event) or (diagram.id, str(event["id"])) in held:
+            key = (diagram.id, str(event["id"]))
+            if not record.standin(event) or (key in held and not failed(held[key])):
                 continue
-            saved["events"].append(attempted(diagram, event, saved["made"]))
+            held[key] = attempted(diagram, event, saved["made"])
+            saved["events"] = list(held.values())
             path.write_text(json.dumps(saved, indent=2, ensure_ascii=False))
     rows = saved["events"]
-    kinds = Counter(r["kind"] for r in rows if r["kind"])
+    kinds = Counter(r["kind"] for r in rows if r["kind"] and not failed(r))
     click.echo(
         f"{len(rows)} events in {path}: "
         + ", ".join(f"kind {k} {kinds[k.value]}" for k in Kind)
-        + f"; refused {sum((r['left'] or '').startswith(REFUSED) for r in rows)}"
-        + f"; failed {sum((r['left'] or '').startswith(FAILED) for r in rows)}"
+        + f"; failed {sum(failed(r) for r in rows)}"
         + f"; not called {sum(r['left'] in {l.value for l in Left} for r in rows)}",
         err=True,
     )
     return [*COLUMNS, "plan"], [dict(row, plan=str(path)) for row in rows]
+
+
+def failed(entry: dict) -> bool:
+    return (entry["left"] or "").startswith(FAILED)
 
 
 def unapplied(folder: pathlib.Path) -> pathlib.Path | None:
