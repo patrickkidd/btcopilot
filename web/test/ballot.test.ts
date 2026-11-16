@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  DOTS,
+  drawPairs,
   drawTimeline,
+  opinionCards,
+  pairOpinions,
+  toPairing,
+  writtenDate,
   eventsOf,
   litCoding,
   names,
@@ -16,6 +22,7 @@ import {
   ItemStatus,
   VoteChoice,
   type BallotItem,
+  type Opinion,
   type Vote,
 } from "../src/types";
 
@@ -202,5 +209,97 @@ describe("a quoted line on the vote", () => {
       expect(html).toContain('class="chip ask" data-kind="ask"');
       expect(html).toContain(">[high school years]</button>&rdquo;");
     }
+  });
+});
+
+const opinion = (
+  coding: number,
+  itemId: number,
+  event: Record<string, unknown>,
+  extra: Partial<Opinion> = {},
+): Opinion => ({ coding_id: coding, item_id: itemId, person_name: "Ada", item: event, ...extra });
+
+const pairing = (id: number, opinions: Opinion[]): BallotItem =>
+  ({
+    id,
+    item_kind: ItemKind.Event,
+    status: ItemStatus.Disputed,
+    coders: 3,
+    not_coded: 0,
+    people: [],
+    line: null,
+    opinions,
+  }) as unknown as BallotItem;
+
+const moved = {
+  kind: "shift",
+  dateTime: "1994-01-01",
+  datePrecision: "year",
+  dateCertainty: "approximate",
+  anxiety: "up",
+  title: "Moved",
+};
+
+describe("a pairing on the vote", () => {
+  // R-0965
+  it("merges versions that say the same thing, whatever their words, and keeps a coder's joined entries as one version", () => {
+    const item = pairing(14, [
+      opinion(1, 10, { ...moved, title: "Moved in" }),
+      opinion(2, 20, { ...moved, title: "Into the stepfather's house" }),
+      opinion(3, 30, moved),
+      opinion(3, 31, { kind: "noted", dateTime: "1994-01-01", datePrecision: "year", title: "Moved" }),
+    ]);
+    const opinions = pairOpinions(toPairing(item, new Map()));
+    expect(opinions).toHaveLength(2);
+    expect(opinions.find((one) => one.codings.length === 2)!.codings.sort()).toEqual([1, 2]);
+    expect(opinions.find((one) => one.codings[0] === 3)!.entries).toHaveLength(2);
+  });
+
+  // R-0252, R-0965
+  it("shuffles the versions per pairing, the same way on every visit", () => {
+    const item = pairing(
+      7,
+      [1, 2, 3, 4].map((coding) => opinion(coding, coding, { ...moved, title: String(coding) })),
+    );
+    const order = (seen: BallotItem) =>
+      toPairing(seen, new Map()).versions.map((one) => one[0].coding_id).join();
+    expect(order(item)).toBe(order(item));
+    expect([7, 8, 9, 10, 11].some((id) => order({ ...item, id }) !== "1,2,3,4")).toBe(true);
+  });
+
+  // R-0956, R-0965
+  it("shows the date as far as it was said, and a stand-in or unknown date as no sure date", () => {
+    const [entry] = toPairing(pairing(1, [opinion(1, 1, moved)]), new Map()).versions[0];
+    expect(writtenDate(entry)).toBe("1994");
+    for (const date of ["1900-01-01", "0001-01-01", "1970-01-01"])
+      expect(writtenDate({ ...entry, date })).toBe("no sure date");
+    expect(writtenDate({ ...entry, cert: "unknown" })).toBe("no sure date");
+  });
+
+  // R-0965, R-0966
+  it("puts the accent only on what the opinions part ways on, with no field names, coder names or counts", () => {
+    const item = pairing(3, [
+      opinion(1, 1, moved, { coder: "ballot1" }),
+      opinion(2, 2, { ...moved, anxiety: "down" }, { toward_names: ["Jim"] }),
+    ]);
+    const seen = toPairing(item, new Map());
+    const html = opinionCards(seen, pairOpinions(seen), null, false);
+    expect(html).toContain('<span class="chip pv-diff">anxiety ↑</span>');
+    expect(html).toContain('<span class="pv-same">1994</span>');
+    expect(html).toContain('<span class="pv-diff">Jim</span>');
+    expect(html).toContain('<span class="pv-tag pv-same">shift</span>');
+    expect(html).not.toMatch(/ballot1|coders?\b|date:|kind:/);
+    expect(html.match(/opinion \d/g)).toEqual(["opinion 1", "opinion 2"]);
+  });
+
+  // R-0965
+  it("draws one dot per pairing, in rows of 33, the one on screen enlarged", () => {
+    const ids = Array.from({ length: 66 }, (_, at) => at + 1);
+    const { svg, height } = drawPairs(ids, 5, (id) => id < 5);
+    expect(svg.match(/<circle/g)).toHaveLength(66);
+    expect(height).toBe(DOTS.top * 2 + DOTS.row);
+    expect(svg.match(/d-on/g)).toHaveLength(1);
+    expect(svg.match(/d-ok/g)).toHaveLength(4);
+    expect(svg).not.toMatch(/<text/);
   });
 });

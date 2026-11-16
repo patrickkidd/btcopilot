@@ -3,6 +3,9 @@ import type {
   Attached,
   NextMeeting,
   BallotItem,
+  BallotState,
+  Entry,
+  Repaired,
   Vote,
   VoteChoice,
   CoderLine,
@@ -628,6 +631,26 @@ export const castVote = (
   value: Record<string, unknown> | null,
   reason: string | null,
 ) => ask<Vote>("PUT", `/items/${itemId}/vote`, { choice, value, reason });
+
+/** A second tap on what was picked takes the vote back, and the item is open
+ * again (R-0965). */
+export const unvote = (itemId: number) =>
+  ask<{ id: number }>("DELETE", `/items/${itemId}/vote`);
+
+/** ── The pairings ──────────────────────────────────────────────────────
+ * The ballot's pairings are built by a model call in the background; Patrick
+ * looks them over, joins and splits, then opens the vote (R-0961, R-0963). */
+
+export const buildPairings = (cutId: number) =>
+  ask<{ ballot: BallotState }>("POST", "/items", { cut_id: cutId });
+
+/** A split: these entries leave their pairings and become one of their own. */
+export const split = (cutId: number, opinions: Entry[]) =>
+  ask<Repaired>("POST", "/items", { cut_id: cutId, opinions });
+
+/** A join: the pairing's whole entry list, the ones named elsewhere moved in. */
+export const join = (itemId: number, opinions: Entry[]) =>
+  ask<Repaired>("PATCH", `/items/${itemId}`, { opinions });
 
 /** ── The meeting ───────────────────────────────────────────────────────
  * The same items read with the names on, which is where they first appear,

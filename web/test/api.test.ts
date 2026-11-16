@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { call, cut, Failed, say, scribe } from "../src/api";
+import { call, cut, Failed, join, say, scribe, split, unvote } from "../src/api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -73,4 +73,23 @@ it("writes with the CSRF token of the newest answer, not the one the page was se
   await call("POST", "/diagrams", { name: "x" });
   await call("POST", "/diagrams", { name: "y" });
   expect(sent).toEqual(["served", "fresh-1", "fresh-2"]);
+});
+
+// R-0963, R-0965
+it("splits, joins and takes a vote back on the routes the ballot by pairing names", async () => {
+  vi.stubGlobal("document", { querySelector: () => ({ content: "served" }) });
+  const sent: string[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    sent.push(`${init.method} ${url} ${init.body ?? ""}`);
+    return new Response('{"items": [], "deleted": []}', { status: 200, headers: { "Content-Type": "application/json" } });
+  });
+  const entry = [{ coding_id: 3, item_id: 31 }];
+  await split(2, entry);
+  await join(9, entry);
+  await unvote(9);
+  expect(sent).toEqual([
+    `POST /review/items ${JSON.stringify({ cut_id: 2, opinions: entry })}`,
+    `PATCH /review/items/9 ${JSON.stringify({ opinions: entry })}`,
+    "DELETE /review/items/9/vote ",
+  ]);
 });

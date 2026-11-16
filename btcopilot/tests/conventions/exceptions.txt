@@ -246,7 +246,4 @@ R-0959 | TEST OWED | being built on FD-393 round 3: the coach's prompt rule for 
 R-0960 | TEST OWED | being built on FD-393 round 3: the catch-up that rereads the thread for each stand-in date
 R-0961 | TEST OWED | being built on FD-393 round 3: the pairing call, its fixed check and agreement by who people are
 R-0962 | TEST OWED | being built on FD-393 round 3: the pairing columns and the ledger purpose
-R-0963 | TEST OWED | being built on FD-393 round 3: Patrick's join and split before a vote opens
 R-0964 | TEST OWED | being built on FD-393 round 3: the pairing prompt's live eval against his hand pairings
-R-0965 | TEST OWED | being built on FD-393 round 3: the vote screen by pairing
-R-0966 | TEST OWED | being built on FD-393 round 3: the vote screen's card, values in fixed places

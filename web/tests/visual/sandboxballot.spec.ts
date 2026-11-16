@@ -1,14 +1,15 @@
 import { test } from "./fixtures";
 import { need, sandboxOnly, walker } from "./sandbox";
 
-// An independent walk of the ballot on the FD-362 review sandbox: the card
-// says vote, one disputed event per screen with its takes, voting a take,
+// An independent walk of the ballot on the review sandbox: the card says vote,
+// one pairing per screen with its opinions, a pick and a drop that both
+// un-tap, an opinion of your own, and the last vote back to the card.
 
 test.describe(() => {
   sandboxOnly("coder");
   test.describe.configure({ timeout: 600_000 });
 
-  // R-0257, R-0268
+  // R-0257, R-0268, R-0965
   test("the ballot: a coder votes on every disputed item", async ({ page }, info) => {
     const { say, check, shot, text, visible, gates, changed, quiet } = walker(
       page,
@@ -28,12 +29,13 @@ test.describe(() => {
     await gates("the task card");
     await shot("1-card");
 
-    // ── 2. the first item, with the takes and the timeline above it ───────
+    // ── 2. the first pairing, its opinions and the strip of dots above it ─
     await page.locator(".tkcard .addbtn").click();
     await page.waitForTimeout(1600);
     check(await visible("#ballot-screen"), "the vote opens as its own screen");
     const title = await text("#title");
-    const takes = await page.locator(".opinion").allInnerTexts();
+    const takes = await page.locator(".opinion.pv").allInnerTexts();
+    const labels = await page.locator(".pv-label").allInnerTexts();
     const dots = await page.locator("#ballot-view circle").count();
     const green = await page.locator("#ballot-view .d-on").count();
     const amber = await page.locator("#ballot-view .d-no").count();
@@ -41,30 +43,33 @@ test.describe(() => {
     say(
       `title="${title}" takes=${JSON.stringify(takes)} dots=${dots} teal=${teal} amber=${amber} green=${green}`,
     );
-    check(/ballot · 1 of \d+$/.test(title), "the title says which item of how many");
-    check(takes.length >= 2, `the takes are shown (${takes.length})`);
+    check(/ballot · 1 of \d+$/.test(title), "the title says which pairing of how many");
+    check(takes.length >= 1, `the opinions are shown (${takes.length})`);
     check(
-      takes.every((t) => !/@|ballot\d/.test(t)),
-      "no coder is named on a take",
+      labels.every((t, at) => t === `opinion ${at + 1}`),
+      "each opinion is labelled by its place, with no count of coders behind it",
     );
-    // People and bonds are read before the events and are not on the wire, so
-    // while the room is on one no dot is green and the strip says who it is on
-    // (R-0326). The wire's own dot is checked on the first event, below.
-    check(green === 0, "a person is not a dot on the wire");
+    check(
+      takes.every((t) => !/@|ballot\d|coders? /.test(t)),
+      "no coder is named on an opinion",
+    );
+    // one dot per pairing on the ballot, the one on screen enlarged, none voted yet
+    check(green === 1, "one dot is the pairing on screen");
+    check(dots === green + amber && teal === 0, `one dot per pairing, all open (${dots})`);
     check(/^now · /.test(await text("#ballot-caption .tok.g")),
-      "the strip says who the room is on");
-    check(teal >= 1 && amber >= 1, `agreed and disputed dots (${teal}/${amber})`);
+      "the strip says what the screen is on");
+    check(await visible("#ballot-bar #bl-next"), "the bar is pinned under the card");
     await gates("the first item");
     await shot("2-item");
 
-    // ── 2b. the first event: its own dot, its line, and the way in ────────
-    await page.locator("#ballot-view circle").first().click();
+    // ── 2b. the last pairing by its dot: its line, and the way in ─────────
+    await page.locator("#ballot-view circle").last().click();
     await page.waitForTimeout(1200);
     check((await page.locator("#ballot-view .d-on").count()) === 1,
-      "one dot is the event being voted on");
-    check(await visible(".quote"), "the transcript line it came from is shown");
+      "one dot is the pairing being voted on");
+    check(await visible("#bl-quote"), "the line it was written from is on top");
     check(await visible("#bl-line"), "the transcript can be opened at that line");
-    await gates("the first event");
+    await gates("a pairing reached by its dot");
     await shot("2c-event");
 
     // ── 3. the transcript, opened at the line and stepped back out of ─────
@@ -82,7 +87,7 @@ test.describe(() => {
     // sandbox takes; waiting for the takes to be drawn again rather than a
     // fixed count is what makes this step honest.
     await page
-      .waitForSelector("#ballot-screen:not([hidden]) .opinion", {
+      .waitForSelector("#ballot-screen:not([hidden]) .opinion.pv", {
         timeout: 60_000,
       })
       .catch(() => {});
@@ -96,26 +101,43 @@ test.describe(() => {
       "back from the transcript is the same item of the ballot",
     );
 
-    // ── 4. voting a take ──────────────────────────────────────────────────
+    // ── 4. picking an opinion, un-picking it, and picking it again ────────
+    await page.locator("#ballot-view circle").first().click();
+    await page.waitForTimeout(900);
     const first = await text("#title");
-    await page.locator(".opinion:not(.off)").first().click();
+    const open = async () => Number(/(\d+) open/.exec(await text("#ballot-caption"))?.[1]);
+    const before = await open();
+    await page.locator(".opinion.pv").first().click();
     await page.waitForTimeout(900);
     check(
-      (await page.locator(".opinion.on").count()) === 1,
-      "the take you voted for is marked",
+      (await page.locator(".opinion.pv.on").count()) === 1 && (await open()) === before - 1,
+      "the opinion you picked is marked and one fewer is open",
     );
+    await page.locator(".opinion.pv.on").click();
+    await page.waitForTimeout(900);
+    check(
+      (await page.locator(".opinion.pv.on").count()) === 0 && (await open()) === before,
+      "a second tap takes the pick back",
+    );
+    await page.locator(".opinion.pv").first().click();
+    await page.waitForTimeout(900);
     await shot("3-voted");
     await page.locator("#bl-next").click();
     await page.waitForTimeout(900);
     check((await text("#title")) !== first, "next moves to another item");
 
-    // ── 4. dropping one ───────────────────────────────────────────────────
+    // ── 4b. dropping one, un-dropping it, dropping it again ───────────────
     await page.locator("#bl-drop").click();
     await page.waitForTimeout(900);
     check(
       await page.locator("#bl-drop.on").isVisible(),
       "drop is marked as the vote on this one",
     );
+    await page.locator("#bl-drop").click();
+    await page.waitForTimeout(900);
+    check(!(await page.locator("#bl-drop.on").isVisible()), "a second tap on drop takes it back");
+    await page.locator("#bl-drop").click();
+    await page.waitForTimeout(900);
     await shot("4-dropped");
     await page.locator("#bl-next").click();
     await page.waitForTimeout(900);
@@ -139,15 +161,15 @@ test.describe(() => {
       .waitForSelector(".bl-sheet", { state: "detached", timeout: 60_000 })
       .catch(() => {});
     await page
-      .locator(".opinion.on", { hasText: "came back for a winter" })
+      .locator(".opinion.pv.on", { hasText: "came back for a winter" })
       .first()
       .waitFor({ timeout: 60_000 })
       .catch(() => {});
-    const own = await page.locator(".opinion.on").allInnerTexts();
+    const own = await page.locator(".opinion.pv.on").allInnerTexts();
     say(`own take: ${JSON.stringify(own)}`);
     check(
       own.some((t) => /came back for a winter/.test(t)),
-      "the take you wrote joins the count as one more take",
+      "the opinion you wrote is shown as your opinion",
     );
     await shot("6-own");
     await page.locator("#bl-next").click();
@@ -179,10 +201,9 @@ test.describe(() => {
     // and stays on it. The button only says done on the last one left.
     let done = await text("#bl-next");
     for (let i = 0; i < 10; i += 1) {
-      // An item whose only take you already voted on is voted with drop.
-      const takes = await page.locator(".take.tap:not(.on)").count();
-      if (takes) await page.locator(".take.tap:not(.on)").first().click();
-      else await page.locator("#bl-drop").click();
+      // A pairing already voted on keeps its vote; another gets its first opinion.
+      const takes = await page.locator(".opinion.pv.on, #bl-drop.on").count();
+      if (!takes) await page.locator(".opinion.pv").first().click();
       await page.waitForTimeout(800);
       say(`voted on "${(await text("#title")).replace(/\s+/g, " ")}" takes=${takes}`);
       done = await text("#bl-next");

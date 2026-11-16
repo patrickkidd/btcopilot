@@ -9,6 +9,7 @@ import { CaseReport } from "./casereport";
 import { adding, Menu, Tab, shut } from "./menu";
 import { Questions } from "./questions";
 import { Ballot } from "./ballot";
+import { Pairings } from "./pairings";
 import { Coding } from "./coding";
 import { CutSelect } from "./cut";
 import { Agenda } from "./agenda";
@@ -476,11 +477,16 @@ async function startTask(task: Task): Promise<void> {
 }
 
 /** The vote before the meeting: one disputed event per screen (R-0257). */
+const BALLOT_SCREEN = {
+  view: $("ballot-view"),
+  caption: $("ballot-caption"),
+  body: $("ballot-body"),
+  bar: $("ballot-bar"),
+  overlay: $("overlay"),
+};
+
 const ballot = new Ballot(
-  $("ballot-view"),
-  $("ballot-caption"),
-  $("ballot-body"),
-  $("overlay"),
+  BALLOT_SCREEN,
   {
     onTitle: (title) => entitle(title),
     onDone: () => void openTask(),
@@ -498,6 +504,7 @@ async function openBallot(
   itemId: number | null = null,
 ): Promise<void> {
   voting = { cutId, codingId, itemId };
+  pairings.close();
   await ballot.open(cutId, itemId);
   screenAt = address(Place.Vote, cutId);
   screen(Screen.Ballot);
@@ -511,6 +518,20 @@ async function openLine(statementId: number): Promise<void> {
   await coding.open(voting.codingId, statementId);
   screenAt = address(Place.Coding, voting.codingId);
   screen(Screen.Coding);
+}
+
+/** Patrick's look over a cut's pairings before he opens the vote, on the
+ * vote's own screen (R-0963). */
+const pairings = new Pairings(BALLOT_SCREEN, {
+  onTitle: (title) => entitle(title),
+  onDone: () => void openAgenda(),
+});
+
+async function openPairings(cutId: number): Promise<void> {
+  voting = null;
+  ballot.close();
+  await pairings.open(cutId);
+  screen(Screen.Ballot);
 }
 
 /** ── Patrick's own screens ────────────────────────────────────────────────
@@ -546,6 +567,7 @@ const agenda = new Agenda($("agenda-body"), $("meet-body"), {
     settings.push(MEET);
   },
   onRatify: (cutId) => void openMeeting(cutId),
+  onPairings: (cutId) => void openPairings(cutId),
   onResult: (cutId) => void openResult(cutId, openAgenda),
 }, $("overlay").parentElement!);
 
@@ -677,6 +699,7 @@ $("coding-back").addEventListener("click", () => {
   // it on the item it was left on.
   if (here === Screen.Coding && voting)
     void openBallot(voting.cutId, voting.codingId, voting.itemId);
+  else if (here === Screen.Ballot && !voting) void openAgenda();
   else if (here === Screen.Coding || here === Screen.Ballot) void openTask();
   else if (here === Screen.Meeting) void backToMeeting();
   else if (here === Screen.Result) void resultBack();
@@ -1751,6 +1774,7 @@ function uncover(keep = Keep.Nothing): void {
   pbp.leave();
   coding.close();
   ballot.close();
+  pairings.close();
   meeting.close();
   shut();
   screen(Screen.Chat);

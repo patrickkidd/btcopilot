@@ -6,6 +6,7 @@ import { Sheet } from "./sheet";
 import { dayText } from "./when";
 import { spanWords } from "./cut";
 import {
+  BallotState,
   CoderState,
   type NextMeeting,
   type CoderLine,
@@ -40,7 +41,21 @@ export interface AgendaHandlers {
   onRatify(cutId: number): void;
   /** What the meeting produced on a cut the room has ratified (R-0275). */
   onResult(cutId: number): void;
+  /** Patrick's look over a cut's pairings before he opens its vote (R-0963). */
+  onPairings(cutId: number): void;
 }
+
+/** How often the agenda reads again while a ballot is building. */
+const BUILDING_MS = 5000;
+
+/** What a cut's row says of its ballot, by where the pairings stand (R-0961). */
+const BALLOT_WORDS: Record<BallotState, string> = {
+  [BallotState.None]: "",
+  [BallotState.Building]: "building the ballot",
+  [BallotState.Built]: "the ballot is built",
+  [BallotState.Failed]: "the ballot did not build",
+  [BallotState.Open]: "",
+};
 
 const CROSS = "&#10005;";
 /** A coder who has submitted a coding of a cut, whether or not they voted. */
@@ -59,6 +74,7 @@ export class Agenda {
   private ask: Sheet;
   /** The cut the question is about while it is up. */
   private asking: number | null = null;
+  private again = 0;
 
   constructor(
     private body: HTMLElement,
@@ -96,6 +112,10 @@ export class Agenda {
     const spans = await Promise.all(cuts.map((cut) => this.span(cut)));
     this.spans = new Map(cuts.map((cut, at) => [cut.id, spans[at]]));
     this.render();
+    // the pairing call runs in the background; the row follows it until done
+    window.clearTimeout(this.again);
+    if (cuts.some((cut) => cut.ballot === BallotState.Building))
+      this.again = window.setTimeout(() => void this.load(), BUILDING_MS);
   }
 
   /** The days from the sitting of a cut's first line to the sitting of its
@@ -163,6 +183,15 @@ export class Agenda {
     if (target.closest(".tb-nudge")) {
       tap(Feature.AgendaNudge);
       await this.nudge();
+      return;
+    }
+    const pairs = target.closest<HTMLElement>(".tb-pairs");
+    if (pairs) {
+      this.handlers.onPairings(Number(pairs.dataset.cut));
+      return;
+    }
+    if (target.closest(".tb-build")) {
+      await this.build();
       return;
     }
     if (target.closest(".tb-vote")) {
@@ -246,11 +275,36 @@ export class Agenda {
     await this.load();
   }
 
+  /** Opening is two steps: the pairings are built by a model call and looked
+   * over, then the vote opens on them (R-0963). */
+  private async build(): Promise<void> {
+    for (const cut of this.toBuild()) await api.buildPairings(cut.id);
+    await this.load();
+  }
+
+  private toBuild(): Cut[] {
+    return this.cuts.filter(
+      (cut) => cut.ballot === BallotState.None || cut.ballot === BallotState.Failed,
+    );
+  }
+
   private async openVote(): Promise<void> {
     for (const cut of this.cuts)
-      if (cut.vote_opened_at === null) await api.openVote(cut.id);
+      if (cut.ballot === BallotState.Built) await api.openVote(cut.id);
     toast("The vote is open");
     await this.load();
+  }
+
+  /** The one button under the coders: build the ballots, then once every one
+   * is built, open the vote; while one builds, neither. */
+  private step(): string {
+    if (this.cuts.every((cut) => cut.ballot === BallotState.Open))
+      return `<div class="plnote">The vote is open.</div>`;
+    if (this.toBuild().length)
+      return `<button class="nudge tb-build" type="button">build the ballot</button>`;
+    if (this.cuts.some((cut) => cut.ballot === BallotState.Building))
+      return `<div class="plnote">building the ballot</div>`;
+    return `<button class="nudge tb-vote" type="button">open the vote</button>`;
   }
 
   private render(): void {
@@ -258,9 +312,6 @@ export class Agenda {
     const behind = this.waiting().length;
     // The button stands while anything on the agenda still needs the vote
     // opening on it; once every one of them is open it becomes a plain line.
-    const open =
-      this.cuts.length > 0 &&
-      this.cuts.every((cut) => cut.vote_opened_at !== null);
     this.body.innerHTML =
       (this.cuts.length
         ? this.meetings()
@@ -279,9 +330,7 @@ export class Agenda {
         ? `<button class="nudge tb-nudge" type="button">nudge the ${behind} ` +
           `who ${behind === 1 ? "is" : "are"} not done</button>`
         : "") +
-      (open
-        ? `<div class="plnote">The vote is open.</div>`
-        : `<button class="nudge tb-vote" type="button">open the vote</button>`) +
+      (this.cuts.length ? this.step() : "") +
       this.agendaBox();
   }
 
@@ -389,10 +438,16 @@ export class Agenda {
       ? ""
       : `<button class="pl-btn" type="button" data-cut="${cut.id}" ` +
         `aria-label="take off the agenda">${CROSS}</button>`;
+    const said = BALLOT_WORDS[cut.ballot];
     return (
       `<div class="sn-row push tb-cut" data-cut="${cut.id}">` +
       this.cutLines(cut) +
-      `</div>${off}</div>`
+      (said ? `<div class="sn-s">${said}</div>` : "") +
+      `</div>${off}</div>` +
+      (cut.ballot === BallotState.Built
+        ? `<button class="nudge go tb-pairs" type="button" data-cut="${cut.id}">` +
+          `look over the pairings</button>`
+        : "")
     );
   }
 
