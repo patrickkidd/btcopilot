@@ -293,7 +293,7 @@ def plan(diagram_id, plans, fresh):
     folder.mkdir(parents=True, exist_ok=True)
     path = None if fresh else unapplied(folder)
     if path is None:
-        made = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%S")
+        made = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%S%f")
         path = folder / f"redate-{made}.json"
         saved = {"made": made, "events": []}
     else:
@@ -325,13 +325,10 @@ def failed(entry: dict) -> bool:
 
 
 def unapplied(folder: pathlib.Path) -> pathlib.Path | None:
-    """The newest plan in the folder that apply has not run."""
-    plans = [
-        p
-        for p in sorted(folder.glob("redate-*.json"))
-        if not p.name.endswith(APPLIED) and not done_at(p).exists()
-    ]
-    return plans[-1] if plans else None
+    """The newest plan in the folder, when apply has not run it: an older plan
+    a newer one replaced is never continued."""
+    plans = [p for p in sorted(folder.glob("redate-*.json")) if not p.name.endswith(APPLIED)]
+    return plans[-1] if plans and not done_at(plans[-1]).exists() else None
 
 
 def attempted(diagram: Diagram, event: dict, made: str) -> dict:

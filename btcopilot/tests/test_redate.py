@@ -373,3 +373,22 @@ def test_apply_ends_with_what_it_did_saves_it_and_runs_once(flask_app, test_user
         }
     again = runner.invoke(admin, ["diagrams", "redate", "apply", row["plan"]])
     assert again.exit_code != 0 and "applied already" in again.output
+
+
+def test_a_rerun_after_the_newest_plan_was_applied_starts_a_new_plan(
+    flask_app, test_user, tmp_path
+):
+    # R-0960, R-0772
+    family(test_user)
+    older = tmp_path / "redate-20000101T000000.json"
+    older.write_text(json.dumps({"made": "20000101T000000", "events": []}))
+    model = Answer(
+        {"id": 2, "date": "1970", "date_certainty": "unknown", "kind_of_date": "b"},
+        {"id": 2, "date": "1996", "date_certainty": "unknown", "kind_of_date": "a"},
+    )
+    with patch.object(REDATE, "model_for", return_value=model):
+        (newest,) = redate(flask_app, "plan", "--plans", str(tmp_path), "--new")
+        redate(flask_app, "apply", newest["plan"])
+        (rerun,) = redate(flask_app, "plan", "--plans", str(tmp_path))
+    assert rerun["plan"] not in (newest["plan"], str(older))
+    assert rerun["new"] == "1996-01-01"
