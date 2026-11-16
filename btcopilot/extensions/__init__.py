@@ -382,7 +382,7 @@ def init_celery(app):
     if not hasattr(celery, "_tasks_registered"):
 
         from btcopilot import casereport, fdafter, proactive, shadow, turns
-        from btcopilot.review import reminders, tasks as review_tasks
+        from btcopilot.review import pairing, reminders, tasks as review_tasks
 
         celery.task(turns.run, name=turns.TASK)
         celery.task(casereport.run, name=casereport.TASK)
@@ -400,6 +400,7 @@ def init_celery(app):
         # a shadow waits on its own worker, never ahead of a real turn
         celery.conf.task_routes = {shadow.TASK: {"queue": shadow.QUEUE}}
         celery.task(review_tasks.replay_cut, name="review_replay_cut")
+        celery.task(pairing.built, name=pairing.TASK)
 
         # Mark tasks as registered to avoid duplicate registration
         celery._tasks_registered = True

@@ -11,6 +11,7 @@ from btcopilot.review import (
     divergence,
     export,
     notify,
+    pairing,
     ruledraft,
     decision,
     snapshot,
@@ -42,6 +43,8 @@ def payload(cut: Cut) -> dict:
     data["end_order"] = adapter.statement_order(cut.diagram_id).get(cut.end_statement_id)
     data["cut_day"] = when.strftime("%b %-d") if when else None
     data["started"] = len(cut.codings) > 0
+    data["pairing_agent"] = pairing.agent(cut)
+    data["ballot"] = pairing.ballot(cut).value
     return data
 
 
@@ -134,8 +137,13 @@ def cut_patch(cut_id: int):
         admin()
         if cut.vote_opened_at is not None:
             raise ValueError("that vote is already open")
+        # Opening is the second step: the pairings are built and looked over
+        # first, and opening never builds them again (R-0963).
+        if pairing.ballot(cut) is not pairing.Ballot.Built:
+            raise ValueError("the ballot's pairings are not built yet")
+        pairing.check(cut)
+        pairing.settle(cut)
         cut.vote_opened_at = adapter.utcnow()
-        snapshot.build(cut)
         snapshot.recompute(cut)
 
     if body.get("ratified_at"):

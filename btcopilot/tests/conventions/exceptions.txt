@@ -244,6 +244,3 @@ R-0957 | TEST OWED | being built on FD-393 round 3: the event's words about when
 R-0958 | TEST OWED | being built on FD-393 round 3: the three kinds in the coach's and the scribe's prompts, with their live evals
 R-0959 | TEST OWED | being built on FD-393 round 3: the coach's prompt rule for re-dating events with an unknown date, with its live eval
 R-0960 | TEST OWED | being built on FD-393 round 3: the catch-up that rereads the thread for each stand-in date
-R-0961 | TEST OWED | being built on FD-393 round 3: the pairing call, its fixed check and agreement by who people are
-R-0962 | TEST OWED | being built on FD-393 round 3: the pairing columns and the ledger purpose
-R-0964 | TEST OWED | being built on FD-393 round 3: the pairing prompt's live eval against his hand pairings

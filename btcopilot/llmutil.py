@@ -248,7 +248,8 @@ PDP_SCHEMA_DESCRIPTIONS = {
     "Event.person": "REQUIRED - NEVER null. ID of the main person this event is about",
     "Event.description": "REQUIRED - NEVER null. Minimal phrase, 3 words ideal, 5 max (e.g., 'Trouble sleeping', 'Diagnosed with dementia')",
     "Event.notes": "Optional additional detail about the event, multi-line text for context not captured in description. May contain opinions, feelings, and other subjective material that adds detail to the factual Event.description. Put opinions in quotes.",
-    "Event.dateTime": "REQUIRED - NEVER null. When it happened (ISO format or fuzzy like '2025-03-15')",
+    "Event.dateTime": "When it happened (ISO format, e.g. '2025-03-15'); null only when nothing at all was said about when, never a stand-in year",
+    "Event.dateEvidence": "The person's own words about when, verbatim; never your own working-out",
     "Event.dateCertainty": "REQUIRED - NEVER null. Certainty of the date: certain, approximate, unknown",
     "Event.symptom": "Change in physical/mental health: up, down, or same",
     "Event.anxiety": "Change in anxiety level: up (more anxious), down (relieved), same",
@@ -263,7 +264,7 @@ PDP_SCHEMA_DESCRIPTIONS = {
 }
 
 PDP_FORCE_REQUIRED = {
-    "Event": ["description", "dateTime", "person", "dateCertainty"],
+    "Event": ["description", "person", "dateCertainty"],
     "PairBond": ["id", "person_a", "person_b"],
 }
 
@@ -872,6 +873,22 @@ async def claude_structured(prompt, response_format, model, schema, limit):
 
     if local_model():
         prompt += CLAUDE_JSON_INSTRUCTION.format(schema=json.dumps(schema))
+
+    if subscribed():
+        message = await asyncio.to_thread(
+            asked,
+            {
+                "model": wire_model(model),
+                "effort": None if model in NO_ADAPTIVE_THINKING else STRUCTURED_EFFORT,
+                "max_tokens": limit,
+                "system": "",
+                "messages": [{"role": "user", "content": prompt}],
+                "tools": [],
+                "schema": config["format"]["schema"],
+            },
+        )
+        value = json.loads(message["content"][0]["text"])
+        return Parsed(from_dict(response_format, value), Spent(), Served(message["model"]))
 
     client = _extraction_anthropic_client()
     resolved_model = wire_model(model)

@@ -12,37 +12,37 @@ from btcopilot.review.models import Item, ReviewStatus
 from btcopilot.schema import ItemKind
 
 
-def value_of(item: Item, given) -> dict:
-    """What the meeting decided on: a coder's opinion picked by its coding, or a
-    written-out item of its own."""
+def values_of(item: Item, given) -> list[dict]:
+    """What the meeting decided on: a coder's version picked by its coding,
+    every entry that coder has in the pairing (a move and the shift with it are
+    one thing written twice), or a written-out item of its own."""
     if isinstance(given, dict) and "coding_id" in given:
-        for opinion in item.opinions or []:
-            if opinion.get("coding_id") == given["coding_id"]:
-                return opinion["item"]
-        raise ValueError("no opinion on this item from that coding")
+        found = [
+            opinion["item"]
+            for opinion in item.opinions or []
+            if opinion.get("coding_id") == given["coding_id"]
+        ]
+        if not found:
+            raise ValueError("no opinion on this item from that coding")
+        return found
     if isinstance(given, dict) and given:
-        return given
+        return [given]
     opinions = item.opinions or []
     if len(opinions) != 1:
         raise ValueError("say which opinion or what to write")
-    return opinions[0]["item"]
+    return [opinions[0]["item"]]
 
 
-def write(item: Item, value: dict, user):
+def write(item: Item, values: list[dict], user):
     """The room's decision on one item, onto the case. What the room already
     read the same way goes on first: a person born to a bond, or a bond between
     two people, cannot be written while what it stands on is missing (R-0326)."""
     confirm_agreed(item.cut, user)
-    return _write(item, value, user)
+    return _write(item, values, user)
 
 
-def _write(item: Item, value: dict, user):
-    case = adapter.diagram_of(item.cut.diagram_id)
-    data = adapter.record_of(case)
-    # A change is a rewording of the same moment, so it lands on the item the
-    # opinions already name rather than adding a second one beside it.
-    target = str(item.item_id or value.get("id") or _take_id(item) or _next_id(data))
-    deltas = [
+def _deltas(item: Item, target: str, value: dict) -> list[dict]:
+    return [
         {
             "item_kind": item.item_kind.value,
             "item_id": target,
@@ -52,6 +52,19 @@ def _write(item: Item, value: dict, user):
         for field, field_value in value.items()
         if field != "id"
     ]
+
+
+def _write(item: Item, values: list[dict], user):
+    case = adapter.diagram_of(item.cut.diagram_id)
+    data = adapter.record_of(case)
+    first, *rest = values
+    # A change is a rewording of the same moment, so it lands on the item the
+    # opinions already name rather than adding a second one beside it; a
+    # coder's further entries land on their own numbers.
+    target = str(item.item_id or first.get("id") or _take_id(item) or _next_id(data))
+    deltas = _deltas(item, target, first)
+    for value in rest:
+        deltas += _deltas(item, str(value["id"]), value)
     change = adapter.commit(case.id, deltas, user.id, f"review-decision-{item.id}")
     item.item_id = target
     return change
@@ -70,7 +83,7 @@ def confirm_agreed(cut, user) -> list[Item]:
     )
     for item in found:
         # Agreed means every coder wrote it the same way, so any opinion is it.
-        change = _write(item, item.opinions[0]["item"], user)
+        change = _write(item, [item.opinions[0]["item"]], user)
         item.decision_change_id = change.id
     db.session.flush()
     return found

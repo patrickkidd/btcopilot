@@ -157,6 +157,11 @@ def deltas_by_turn(diagram_id: int, turn_ids: set[str]) -> dict[str, list[dict]]
     return by_turn
 
 
+def prompt_text(name: str, **inputs) -> str:
+    """A review prompt by name, private over open source like every prompt."""
+    return prompts.files().text(name, **inputs)
+
+
 def scribe_prompt(record_text: str) -> str:
     """The scribe's system prompt, read at call time so fdserver's override is
     the one in force (R-0314)."""

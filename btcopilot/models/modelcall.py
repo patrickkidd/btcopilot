@@ -26,6 +26,7 @@ class Purpose(enum.StrEnum):
     Judge = "judge"
     Transcribe = "transcribe"
     Import = "import"
+    Pairing = "pairing"
 
 
 class ModelCall(db.Model, ModelMixin):

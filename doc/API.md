@@ -250,17 +250,21 @@ holding several entries (a joined move and shift); every entry of one pairing is
 The cut payload (`GET /review/cuts/<id>`) adds `pairing_agent` (`{model, prompt}` or null) and
 `ballot`, one of `none` (no pairings), `building` (the pairing job is running; the page shows
 "building the ballot"), `built` (pairings ready for Patrick, vote not open), `failed` (the fixed
-check failed; an observations row of kind `pairing_check` on the cut's diagram says which
-entries), `open` (vote open).
+check failed, or the call did; an observations row of kind `pairing_check` on the cut's
+diagram says which entries or what error), `open` (vote open). `building`, `built` and
+`failed` are stored as `state` inside `review_cuts.pairing_agent`; the payload's
+`pairing_agent` leaves it out. A pairing Patrick joins or splits, and one that lost an entry
+to it, reads `pairing_reason` "Set by Patrick" and `pairing_confidence` `sure`.
 
 | | |
 |---|---|
-| `POST /review/items` | `{cut_id}`; admin, vote not open: starts the pairing job (202, `{ballot: "building"}`); it replaces the cut's items when it finishes; 409 while building or once open |
+| `POST /review/items` | `{cut_id}`; admin: starts the pairing job (202, `{ballot: "building"}`) on Fable through the structured output option; it replaces the cut's items when it finishes; 409 while building, once open, or while any vote stands on the cut's items (votes are deleted only by an explicit admin command) |
 | `POST /review/items` | `{cut_id, opinions: [{coding_id, item_id}]}`; admin, vote not open: a split, a new pairing of those entries, each moved out of the pairing it was in; a pairing left empty is deleted; 201 `{items, deleted}` |
-| `PATCH /review/items/<id>` | before open, admin: `{opinions: [{coding_id, item_id}]}`, the pairing's whole entry list; a join: entries named leave their old pairing, a pairing left empty is deleted; `{items, deleted}`; after open it is the meeting decision as before |
+| `PATCH /review/items/<id>` | before open, admin: `{opinions: [{coding_id, item_id}]}`, the pairing's whole entry list, which keeps its own entries; a join: entries named leave their old pairing, a pairing left empty is deleted; `{items, deleted}`; after open it is the meeting decision as before |
 | `GET /review/items?cut_id=<id>` | as before (`voting_payload`); each opinion is one entry, plus `toward_names` (names of its relationship targets in that coder's copy); before open, admin only, each item adds `pairing_reason` and `pairing_confidence` (`sure`, `likely`, `unsure`); coders never get the reason or confidence (R-0254) |
 | `PATCH /review/cuts/<id>` | `{vote_opened_at}`: needs `ballot` `built`, runs the fixed check again, sets each item agreed or disputed, people compared by who they are through the people pairings; no rebuild |
 | `PUT /review/items/<id>/vote` | unchanged; for an opinion the page groups entries by `coding_id` and merges identical versions, and sends any one `coding_id` of the picked opinion |
+| `DELETE /review/items/<id>/vote` | the caller's own vote taken back, the second tap on a pick or a drop; vote open only, else 400 as the PUT answers; 204 [Oracle: R-0965] |
 
 An event carries `dateEvidence`, a string of the person's own words about when, or null/absent
 when nothing was said [Oracle: R-0957]; the timeline payload passes it through, and the event

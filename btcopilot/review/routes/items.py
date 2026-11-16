@@ -5,8 +5,10 @@ import enum
 
 from flask import jsonify, request
 
+import btcopilot
+
 from btcopilot.extensions import db
-from btcopilot.review import adapter, decision, snapshot
+from btcopilot.review import adapter, decision, pairing, snapshot
 from btcopilot.review.models import Item, ReviewStatus
 from btcopilot.schema import ItemKind
 from btcopilot.review.routes import (
@@ -39,6 +41,15 @@ DECISION_STATUS = {
 
 def payload(item: Item, named: bool) -> dict:
     data = item.as_dict()
+    # The pairing call's reason and confidence are Patrick's, before the vote
+    # opens, when only he reads the items; a coder never reads them (R-0961).
+    if item.cut.vote_opened_at is None:
+        data["pairing_confidence"] = (
+            item.pairing_confidence and item.pairing_confidence.value
+        )
+    else:
+        data.pop("pairing_reason", None)
+        data.pop("pairing_confidence", None)
     if not named:
         data["opinions"] = [
             {k: v for k, v in opinion.items() if k != "user_id"}
@@ -84,19 +95,18 @@ def voting_payload(item: Item, records: dict, named: bool = False) -> dict:
     ]
     coders = len(records)
     data["coders"] = coders
-    data["not_coded"] = max(coders - len(raws), 0)
+    data["not_coded"] = max(coders - len({one["coding_id"] for one in raws}), 0)
     for raw, opinion in zip(raws, data["opinions"]):
         record = records[raw["coding_id"]]
         opinion["statement_id"] = _turn_of(item, raw, record)
         opinion["line"] = _line(opinion["statement_id"])
         opinion["person_name"] = _name_of(raw["item"], record)
+        opinion["toward_names"] = _toward_names(raw["item"], record)
         if named:
             opinion["user_id"] = record["user_id"]
             opinion["coder"] = record["coder"]
     data["people"] = _people_of(item, records)
-    data["line"] = next(
-        (one["line"] for one in data["opinions"] if one["line"]), None
-    )
+    data["line"] = next((one["line"] for one in data["opinions"] if one["line"]), None)
     return data
 
 
@@ -117,13 +127,22 @@ def _turn_of(item: Item, raw: dict, record: dict) -> int | None:
 
 
 def _name_of(value: dict, record: dict) -> str | None:
-    about = value.get("child") if value.get("child") is not None else value.get("person")
+    about = (
+        value.get("child") if value.get("child") is not None else value.get("person")
+    )
     if about is None:
         return None
     for one in record.get("people") or []:
         if str(one.get("id")) == str(about):
             return one.get("name")
     return None
+
+
+def _toward_names(value: dict, record: dict) -> list[str]:
+    """Who a relationship shift is toward, named as that coder's copy names
+    them."""
+    names = {str(one.get("id")): one.get("name") for one in record.get("people") or []}
+    return [names.get(str(one)) for one in value.get("relationshipTargets") or []]
 
 
 def _people_of(item: Item, records: dict) -> list[dict]:
@@ -166,14 +185,38 @@ def item_index():
     cut = cut_or_404(request.args.get("cut_id", type=int) or 0)
     if not sees_others(cut, user):
         return jsonify([])
-    rows = sorted(cut.items, key=lambda i: i.id)
+    # Before the vote opens the pairings are Patrick's to look over (R-0963).
+    if cut.vote_opened_at is None and not user.has_role(btcopilot.ROLE_ADMIN):
+        return jsonify([])
+    return jsonify(listing(cut.items, cut, named))
+
+
+def listing(items: list[Item], cut, named: bool = False) -> list[dict]:
     records = read(cut)
-    return jsonify(
-        [
-            voting_payload(i, records, named or cut.ratified_at is not None)
-            for i in rows
-        ]
-    )
+    return [
+        voting_payload(i, records, named or cut.ratified_at is not None)
+        for i in sorted(items, key=lambda i: i.id)
+    ]
+
+
+@bp.route("/items", methods=["POST"])
+def item_create():
+    """The ballot's pairings: with only a cut, the pairing job starts; with
+    entries named, Patrick splits them off into a pairing of their own
+    (R-0961, R-0963)."""
+    user = admin()
+    body = request.get_json() or {}
+    cut = cut_or_404(body.get("cut_id") or 0)
+    if "opinions" not in body:
+        pairing.start(cut, user.id)
+        return jsonify({"ballot": pairing.Ballot.Building.value}), 202
+    return _moved(cut, None, body["opinions"]), 201
+
+
+def _moved(cut, target: Item | None, named: list[dict]):
+    touched, deleted = pairing.moved(cut, target, named)
+    db.session.commit()
+    return jsonify({"items": listing(touched, cut), "deleted": deleted})
 
 
 @bp.route("/items/<int:item_id>", methods=["PATCH"])
@@ -185,6 +228,9 @@ def item_patch(item_id: int):
     if item.cut.ratified_at is not None:
         raise ValueError("that cut is ratified and cannot be decided again")
     body = request.get_json() or {}
+    if item.cut.vote_opened_at is None:
+        # Before the vote opens a PATCH is Patrick's join (R-0963).
+        return _moved(item.cut, item, body.get("opinions") or [])
     try:
         choice = Decision(body.get("choice"))
     except ValueError:
@@ -204,8 +250,7 @@ def item_patch(item_id: int):
     if choice is Decision.Reopen:
         item.decision_change_id = None
     elif choice is not Decision.Unresolved:
-        value = decision.value_of(item, given)
-        change = decision.write(item, value, user)
+        change = decision.write(item, decision.values_of(item, given), user)
         item.decision_change_id = change.id
 
     db.session.commit()

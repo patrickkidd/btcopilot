@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, JSON, String
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
@@ -16,12 +16,19 @@ class ReviewStatus(enum.StrEnum):
     Unresolved = "unresolved"
 
 
-class Item(db.Model, ModelMixin):
-    """One event, person or pair bond as every coder saw it.
+class PairingConfidence(enum.StrEnum):
+    Sure = "sure"
+    Likely = "likely"
+    Unsure = "unsure"
 
-    `opinions` is the list of {coding_id, item_id, item} the matcher paired across
-    the codings, each item the schema's own dict. It is a snapshot taken when
-    the vote opens and is never maintained afterwards.
+
+class Item(db.Model, ModelMixin):
+    """One event, person or pair bond as every coder saw it: a pairing.
+
+    `opinions` is the list of {coding_id, item_id, item} the pairing call put
+    together across the codings, each item the schema's own dict; one coder may
+    hold several entries. Patrick may join or split pairings before the vote
+    opens; once open the row is never maintained afterwards (R-0275, R-0963).
     """
 
     __tablename__ = "review_items"
@@ -49,6 +56,13 @@ class Item(db.Model, ModelMixin):
         Integer, ForeignKey("review_codings.id"), nullable=True
     )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    #: The pairing call's one line on why these versions are one thing, and
+    #: how sure it was; for Patrick before the vote, never for coders (R-0961).
+    pairing_reason = Column(Text, nullable=True)
+    pairing_confidence = Column(
+        Enum(PairingConfidence, values_callable=lambda e: [x.value for x in e]),
+        nullable=True,
+    )
 
     cut = relationship("Cut", back_populates="items")
     votes = relationship("Vote", back_populates="item", cascade="all, delete-orphan")

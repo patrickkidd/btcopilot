@@ -23,7 +23,8 @@ from btcopilot.models import (
     Statement,
     User,
 )
-from btcopilot.review import adapter, snapshot
+from btcopilot.review import adapter, pairing, snapshot
+from btcopilot.review.models.item import PairingConfidence
 from btcopilot.review.models import Coding, Cut
 from btcopilot.routes.fixtures import DOMAIN
 
@@ -158,8 +159,18 @@ with app.app_context():
     for version, user in enumerate(coders):
         coded(user, cut, version)
     db.session.refresh(cut)
+    # Both coders wrote each event under the same number, so the pairings the
+    # call would build are by number; the seed makes no model call.
+    versions = pairing.listed(snapshot.done_codings(cut))
+    by_id = {}
+    for key in versions:
+        by_id.setdefault(key[1], []).append(key)
+    pairing.stored(
+        cut,
+        [(keys, "Same number", PairingConfidence.Sure) for keys in by_id.values()],
+        versions,
+    )
     cut.vote_opened_at = adapter.utcnow()
-    snapshot.build(cut)
     snapshot.recompute(cut)
     db.session.commit()
     print(f"cut {cut.id}")

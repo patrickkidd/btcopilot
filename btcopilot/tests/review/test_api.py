@@ -26,6 +26,7 @@ from btcopilot.review.freeze import frozen
 from btcopilot.review.models import Coding, Cut, Item, Note, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.conftest import Model, said
 from btcopilot.tests.review.conftest import coded, person, shift
+from btcopilot.tests.review.test_pairing import open_vote
 
 # The real drafter, from before the autouse fixture stands it down.
 DRAFT = ruledraft.draft
@@ -271,7 +272,7 @@ def test_snapshot_marks_the_shared_event_agreed_and_the_lone_one_disputed(
 ):
     # R-0242, R-0250
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     events = Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
     statuses = sorted(i.status for i in events)
@@ -282,7 +283,7 @@ def test_snapshot_marks_the_shared_event_agreed_and_the_lone_one_disputed(
 def test_agreement_lands_on_the_cut(patrick, test_user, test_user_2, cut):
     # R-0242
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     agreement = db.session.get(Cut, cut.id).agreement["first_pass"]
     assert agreement["codings"] == 2
@@ -292,7 +293,7 @@ def test_agreement_lands_on_the_cut(patrick, test_user, test_user_2, cut):
 def test_one_vote_per_coder_per_item(patrick, coder, test_user, test_user_2, cut):
     # R-0341
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = disputed_event(cut)
 
     coder.put(f"/review/items/{item.id}/vote", json={"choice": "opinion"})
@@ -307,7 +308,7 @@ def test_a_coder_reads_only_their_own_votes(
 ):
     # R-0252
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = disputed_event(cut)
     patrick.put(f"/review/items/{item.id}/vote", json={"choice": "opinion"})
 
@@ -322,7 +323,7 @@ def test_decision_writes_a_change_on_the_case_record(
 ):
     # R-0275, R-0262
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = next(
         i
         for i in Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
@@ -348,7 +349,7 @@ def test_ratifying_writes_the_ground_truth_export(
 ):
     # R-0293
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     agreed = next(
         i
         for i in Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
@@ -375,7 +376,7 @@ def test_ratifying_asks_the_coach_for_a_first_draft_of_the_rules(
 ):
     # R-0313
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     decide_everything(patrick, db.session.get(Cut, cut.id))
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
     assert no_coach.called
@@ -384,7 +385,7 @@ def test_ratifying_asks_the_coach_for_a_first_draft_of_the_rules(
 def test_the_coachs_draft_lands_as_ai_rules(patrick, test_user, test_user_2, cut):
     # R-0259
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = Item.query.filter_by(cut_id=cut.id, item_kind="event").first()
     item.status = ReviewStatus.Decided
     db.session.commit()
@@ -403,7 +404,7 @@ def test_the_rule_draft_is_charged_to_the_admin_who_ratified(
 ):
     # R-0259, R-0388
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = Item.query.filter_by(cut_id=cut.id, item_kind="event").first()
     item.status = ReviewStatus.Decided
     db.session.commit()
@@ -483,7 +484,7 @@ def test_only_patrick_runs_the_agenda(patrick, coder, session, turns, cut):
 def test_only_patrick_decides_an_item(patrick, coder, test_user, test_user_2, cut):
     # R-0346
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = Item.query.filter_by(cut_id=cut.id).first()
 
     refused = coder.patch(f"/review/items/{item.id}", json={"choice": "unresolved"})
@@ -495,7 +496,7 @@ def test_the_agenda_gathers_what_the_meeting_must_take_up(
 ):
     # R-0312
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = Item.query.filter_by(cut_id=cut.id).first()
     patrick.patch(f"/review/items/{item.id}", json={"choice": "unresolved"})
     rule = coder.post("/review/rules", json={"text": "A rule to look at"}).get_json()
@@ -651,7 +652,7 @@ def test_the_ballot_carries_the_turn_and_the_person_of_each_opinion(
     # R-0337
     first, _ = two_codings(test_user, test_user_2, cut)
     wrote_from(first, 10, turns[1].id, test_user.id)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     agreed = next(
@@ -672,7 +673,7 @@ def test_each_version_of_a_person_carries_the_line_its_coder_wrote_it_from(
     first, second = two_codings(test_user, test_user_2, cut)
     wrote_from(first, 1, turns[0].id, test_user.id, kind="person")
     wrote_from(second, 1, turns[1].id, test_user_2.id, kind="person")
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     ann = next(r for r in rows if r["item_kind"] == "person")
@@ -684,7 +685,7 @@ def test_an_item_one_coder_left_out_says_how_many_left_it_out(
 ):
     # R-0315
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     lone = next(
@@ -696,7 +697,7 @@ def test_an_item_one_coder_left_out_says_how_many_left_it_out(
 def test_no_name_reaches_the_ballot(patrick, test_user, test_user_2, cut):
     # R-0272, R-0252
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     assert all("user_id" not in row for row in rows)
@@ -714,7 +715,7 @@ def test_the_coachs_own_reading_is_not_on_the_ballot(
     coach = coded(robot, cut, {"people": [person(1, "Ann")], "events": []})
     coach.agent = {"model": "a model", "prompt_version": 1}
     db.session.commit()
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     shared = next(
@@ -728,7 +729,7 @@ def test_the_coachs_own_reading_is_not_on_the_ballot(
 def test_an_agreed_item_cannot_be_voted_on(patrick, test_user, test_user_2, cut):
     # R-0257
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     agreed = next(
         i
         for i in Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
@@ -746,7 +747,7 @@ def test_a_disputed_person_can_be_voted_on(patrick, test_user, test_user_2, cut)
     event about somebody nobody has agreed on yet cannot be settled (R-0326)."""
     coded(test_user, cut, {"people": [person(1, "Ann")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann"), person(2, "Lee")]})
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     disputed = next(
         i
         for i in Item.query.filter_by(cut_id=cut.id, item_kind="person").all()
@@ -766,7 +767,7 @@ def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
     mine = Coding.query.filter_by(cut_id=cut.id, user_id=coder.user.id).first()
     mine.done_at = datetime.datetime.utcnow()
     db.session.commit()
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     card = coder.get("/review/tasks").get_json()["task"]
     assert card["kind"] == "vote"
