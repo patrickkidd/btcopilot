@@ -65,6 +65,32 @@ it("puts an event's notes last on its card, whole and full width, with a way to 
   expect(read).toEqual([["Moved to Denver", notes]]);
 });
 
+const hooks = {
+  talk() {},
+  cluster() {},
+  person() {},
+  event() {},
+  back() {},
+  said: () => null,
+  notes() {},
+};
+
+// R-0957, R-0958
+it("shows the person's own words about when under a date not sure of", () => {
+  const { view } = drawn();
+  eventDetail({ ...event, dateCertainty: "unknown", dateEvidence: "around <high> school" }, [], undefined, hooks);
+  expect(view.innerHTML).toContain(
+    '1962 <span class="sub">· not sure of the date</span><br><span class="sub">“around &lt;high&gt; school”</span></div>',
+  );
+});
+
+// R-0957
+it("adds no words line when nothing was said about when", () => {
+  const { view } = drawn();
+  eventDetail({ ...event, dateEvidence: null }, [], undefined, hooks);
+  expect(view.innerHTML).not.toContain("<br>");
+});
+
 // R-0899
 it("shows the notes whole on their own page, under the event's name", () => {
   const page = notesSheet("Moved <to> Denver", "Line one\nLine <two>");
