@@ -589,6 +589,25 @@ def test_the_write_refuses_a_moment_already_in_the_record(subscriber):
     assert len(diagram.get_diagram_data().events) == 1
 
 
+def test_two_undated_events_alike_are_not_one_event(subscriber):
+    # R-0956, R-0489
+    noted = {"kind": "noted", "person": 1, "title": "Worked late", "description": "Worked late"}
+    diagram = _diagram(
+        subscriber.user,
+        {"people": [{"id": 1, "name": "Ada"}], "events": [{"id": 10, **noted}], "lastItemId": 10},
+    )
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": ItemKind.Event, "item_id": 11, "field": field, "after": value}
+            for field, value in noted.items()
+        ],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    assert len(diagram.get_diagram_data().events) == 2
+
+
 def test_a_shift_that_names_its_move_beside_an_anchoring_birth_commits(subscriber):
     # R-0037
     diagram = _diagram(

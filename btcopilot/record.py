@@ -790,6 +790,28 @@ def day(value) -> str | None:
     return str(value)[:10]
 
 
+#: The days a writer put on an event nobody had dated, never a day anyone said
+#: [Oracle: R-0956].
+STANDIN_DAYS = ("1900-01-01", "1970-01-01")
+
+
+def standin_day(value) -> bool:
+    """A day a writer stood in for no date: year 1, or the first of January
+    1900 or 1970 given to the day. A year said alone is a year said."""
+    on = day(value)
+    return on is not None and (on.startswith("0001") or on in STANDIN_DAYS)
+
+
+def standin(event: dict) -> bool:
+    """An event the catch-up re-dates: year 1, 1 January 1900, or 1 January
+    1970 marked unknown; a 1970 date marked surer is somebody's estimate
+    [Oracle: R-0960]."""
+    on = day(event.get("dateTime"))
+    if not standin_day(on):
+        return False
+    return on != "1970-01-01" or _val(event.get("dateCertainty")) == DateCertainty.Unknown.value
+
+
 def _values(data: dict, deltas: list[dict]):
     """Every closed field holds one of its own values, and a person has a name.
     Checked on the items this write touches."""
@@ -1009,10 +1031,11 @@ def _moves_of(event: dict) -> tuple:
 
 def twin_key(event: dict) -> tuple:
     """Two events are the same event when kind, day, people, what moved and,
-    for a noted event, its item all match."""
+    for a noted event, its item all match. An event with no date is nobody's
+    twin: nothing says when it was [Oracle: R-0956]."""
     return (
         _val(event.get("kind")),
-        day(event.get("dateTime")),
+        day(event.get("dateTime")) or ("undated", str(event.get("id"))),
         _links(event),
         _moves_of(event),
         _val(event.get("item")),

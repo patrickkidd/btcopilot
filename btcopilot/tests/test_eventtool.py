@@ -6,7 +6,7 @@ import pickle
 import pytest
 
 from btcopilot.extensions import db
-from btcopilot.recordtext import event_line, render
+from btcopilot.recordtext import event_line, outline, render
 from btcopilot.timeline import build_timeline
 from btcopilot.models import Author, Change
 from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
@@ -443,7 +443,6 @@ MOVE = {"kind": "shift", "date": "2001-02-03", "person": 1, "title": "Stopped ca
         ("edit_event", dict(MOVE, kind="noted", anxiety="up"), "is a noted event, and only a shift carries"),
         ("edit_event", dict(MOVE, description=None, anxiety="up"), "is a shift event with no words"),
         ("edit_event", dict(MOVE, date="spring 1998", anxiety="up"), "'spring 1998' is not a date"),
-        ("edit_event", dict(MOVE, date=None, anxiety="up"), "Every event needs a date"),
         ("edit_event", {"kind": "birth", "date": "1980-01-01", "person": 4, "child": 6}, "names person 4 as a parent of person 6, who is born to pair bond 9"),
         ("edit_event", {"kind": "birth", "date": "1976-01-01", "child": 3}, "person 3 already has a birth, event 20"),
         ("edit_event", {"kind": "death", "date": "1990-01-01", "person": 5}, "person 5 already has a death, event 21"),
@@ -497,3 +496,68 @@ def test_a_date_is_kept_only_as_far_as_it_was_said(subscriber):
     assert (day["dateTime"], day["datePrecision"]) == ("1986-03-02", "day")
     events = build_timeline(diagram.get_diagram_data())["events"]
     assert [e["dateTime"] for e in sorted(events, key=lambda e: e["dateTime"])] == ["1986-03-02", "1998-06-01"]
+
+
+SHIFT = dict(kind="shift", person=1, symptom="up", title="Stopped eating", description="Stopped eating")
+
+
+def test_an_event_with_nothing_said_about_when_is_kept_with_no_date(subscriber):
+    # R-0956
+    diagram = _diagram(subscriber.user)
+    Toolbox(diagram.id, "t1").call(ToolName.EditEvent.value, SHIFT)
+    (event,) = diagram.get_diagram_data().events
+    assert event.get("dateTime") is None
+
+
+@pytest.mark.parametrize("date", ["1900-01-01", "0001", "0001-01-01", "1970-01-01"])
+def test_a_stand_in_year_is_refused(subscriber, date):
+    # R-0956
+    diagram = _diagram(subscriber.user)
+    with pytest.raises(ToolError, match="is a stand-in"):
+        _event(diagram, date=date, date_certainty="unknown", **SHIFT)
+    assert diagram.get_diagram_data().events == []
+
+
+def test_a_year_the_person_said_is_kept_with_their_words(subscriber):
+    # R-0956, R-0957
+    diagram = _diagram(subscriber.user)
+    said = "New Year's Day 1900, my gran always said"
+    event = _event(diagram, date="1900-01-01", date_certainty="certain", date_evidence=said, **SHIFT)
+    assert (event["dateTime"], event["dateEvidence"]) == ("1900-01-01", said)
+    year = _event(diagram, date="1970", date_certainty="approximate", **dict(SHIFT, person=2))
+    assert (year["dateTime"], year["datePrecision"]) == ("1970-01-01", "year")
+
+
+def test_the_words_about_when_are_kept_verbatim(subscriber):
+    # R-0957, R-0958
+    diagram = _diagram(subscriber.user)
+    event = _event(
+        diagram, date="1986", date_certainty="unknown", date_evidence="around high school", **SHIFT
+    )
+    assert (event["dateTime"], event["dateCertainty"], event["dateEvidence"]) == (
+        "1986-01-01",
+        "unknown",
+        "around high school",
+    )
+
+
+def test_removing_the_date_empties_it(subscriber):
+    # R-0956
+    diagram = _diagram(subscriber.user)
+    added = _event(diagram, date="1986", date_certainty="unknown", date_evidence="once", **SHIFT)
+    cleared = _event(diagram, id=added["id"], clear=["date", "date_evidence"])
+    assert (cleared.get("dateTime"), cleared.get("datePrecision"), cleared.get("dateEvidence")) == (
+        None,
+        None,
+        None,
+    )
+
+
+def test_the_record_shows_the_coach_the_words_a_date_rests_on(subscriber):
+    # R-0959, R-0957
+    diagram = _diagram(subscriber.user)
+    event = _event(
+        diagram, date="1986", date_certainty="unknown", date_evidence="after Mema died", **SHIFT
+    )
+    assert 'when_said="after Mema died"' in outline(diagram.get_diagram_data(), 1)
+    assert 'when_said="after Mema died"' in event_line(event)

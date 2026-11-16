@@ -239,8 +239,3 @@ R-0903 | TEST OWED | not built: the coach coding dialog shown once after an impo
 R-0934 | TEST OWED | the page's sheet that asks which person you are is its test, with the page (FD-377)
 R-0937 | TEST OWED | the page's events, people and questions lists updating in place; their tests come with the page builder's in-place work (FD-377)
 R-0948 | TEST OWED | not built: the baseline entry on a pair and the scribe's prompt rule for when to write one, with its live eval (FD-392)
-R-0956 | TEST OWED | being built on FD-393 round 3: the event tool keeps an event with no date and refuses a stand-in year
-R-0957 | TEST OWED | being built on FD-393 round 3: the event's words about when, stored and shown on the page
-R-0958 | TEST OWED | being built on FD-393 round 3: the three kinds in the coach's and the scribe's prompts, with their live evals
-R-0959 | TEST OWED | being built on FD-393 round 3: the coach's prompt rule for re-dating events with an unknown date, with its live eval
-R-0960 | TEST OWED | being built on FD-393 round 3: the catch-up that rereads the thread for each stand-in date

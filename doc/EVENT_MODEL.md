@@ -12,7 +12,7 @@ Examples use the stand-in family (`mockups/family.md`).
 ## The shape today
 
 One flat row: `kind`, `person`, `spouse`, `child`, `description`, `location`, `dateTime`,
-`endDateTime`, `dateCertainty`, `symptom`, `anxiety`, `functioning`, `relationship`,
+`endDateTime`, `dateCertainty`, `dateEvidence` (the person's own words about when [Oracle: R-0957]), `symptom`, `anxiety`, `functioning`, `relationship`,
 `relationshipTargets`, `relationshipTriangles`.
 
 | # | The moment | Today |

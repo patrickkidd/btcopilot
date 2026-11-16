@@ -162,9 +162,12 @@ def _enum_param(cls, description: str) -> dict:
     return {"type": "string", "enum": _values(cls), "description": description}
 
 
-# The event fields an edit may empty, by the name the tool gives them. Kind,
-# date and date_certainty stay: every event has them.
+# The event fields an edit may empty, by the name the tool gives them. Kind
+# stays; an event nothing places in time has no date (R-0956).
 CLEARABLE = {
+    "date": "dateTime",
+    "date_certainty": "dateCertainty",
+    "date_evidence": "dateEvidence",
     "end_date": "endDateTime",
     "description": "description",
     "notes": "notes",
@@ -374,7 +377,18 @@ def schemas(coder: bool = False) -> list[dict]:
                     "kind": _enum_param(EventKind, means[prompts.ToolText.EventKind]),
                     "date": {
                         "type": "string",
-                        "description": f"Only as far as the person said it: {DATE_FORMS}.",
+                        "description": (
+                            f"Only as far as the person said it: {DATE_FORMS}. "
+                            "Left out when nothing at all was said about when."
+                        ),
+                    },
+                    "date_evidence": {
+                        "type": "string",
+                        "description": (
+                            "The person's own words about when, verbatim: 'around "
+                            "high school', 'after Mema died'. Never your own "
+                            "working-out."
+                        ),
                     },
                     "end_date": {
                         "type": "string",
@@ -382,10 +396,8 @@ def schemas(coder: bool = False) -> list[dict]:
                     },
                     "date_certainty": _enum_param(
                         DateCertainty,
-                        f"How sure the date is: {CERTAINTY}. Needed on a new event "
-                        "and on any change to its date; left out on another change "
-                        "it stays as it is. Never leave the date itself out: a vague "
-                        "date beats none.",
+                        f"How sure the date is: {CERTAINTY}. Needed with any date "
+                        "given; left out on another change it stays as it is.",
                     ),
                     "title": {
                         "type": "string",
@@ -1385,15 +1397,6 @@ class Toolbox:
         start = len(self.deltas)
         new = args.get("id") is None
         was = {} if new else self._find_event(args["id"])
-        # The coach dates every event it adds; a coder's statement may give
-        # none, and the review writes it undated (R-0943).
-        dates = new and self.author == Author.Coach
-        if dates and not args.get("date"):
-            raise ToolError(
-                "Every event needs a date: estimate one from what was said, with "
-                "date_certainty unknown when it is your own guess",
-                "Every event needs a date.",
-            )
         fields = {}
         if args.get("kind"):
             fields["kind"] = choice(EventKind, args["kind"], "event kinds").value
@@ -1406,10 +1409,21 @@ class Toolbox:
             fields["dateCertainty"] = choice(
                 DateCertainty, args["date_certainty"], "date certainties"
             ).value
-        elif dates or args.get("date"):
+        elif args.get("date"):
             raise ToolError(
                 f"Say how sure the date is with date_certainty: {CERTAINTY}",
                 f"Say how sure the date is: {CERTAINTY}.",
+            )
+        if args.get("date_evidence"):
+            fields["dateEvidence"] = args["date_evidence"]
+        if record.standin_day(args.get("date")) and not (
+            {**was, **fields}.get("dateEvidence")
+        ):
+            raise ToolError(
+                f"{args['date']} is a stand-in, not a date anyone said: leave the date "
+                "out when nothing was said about when, or give the words that place "
+                "it in date_evidence",
+                "A stand-in year was given as the date.",
             )
         for key in ("title", "description", "notes", "location"):
             if args.get(key):
@@ -1465,6 +1479,8 @@ class Toolbox:
                     f"{arg} is both set and cleared: do one", "It both set and cleared a field."
                 )
             fields[key] = [] if key in dict(record.MOVE_LINKS) else None
+        if "date" in cleared:
+            fields["datePrecision"] = None
         self._couple({**was, **fields})
         extra = []
         if self.repoint and not new and fields.keys() & {"person", "spouse"}:

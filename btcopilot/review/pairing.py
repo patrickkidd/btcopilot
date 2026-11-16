@@ -2,8 +2,8 @@
 put together by one model call when Patrick asks for the ballot, as a job on
 the worker [Oracle: R-0961, R-0962].
 
-The call reads the cut's lines and every finished coding's people, couples and
-events, each with the line it was written from, and answers pairings of
+The call reads the cut's lines and, from every finished coding, each person,
+couple and event beside the statement that produced it, and answers pairings of
 {coding_id, item_id}, each with a one-line reason and how sure it was. A fixed
 check then holds every human coder's entry to exactly one pairing, and each
 pairing to one kind of item; a failure is an observation on the cut's diagram
@@ -11,9 +11,9 @@ and leaves the ballot failed. Only Patrick joins or splits a pairing, before
 the vote opens (R-0963). The coach's replay is read too, so the result screen
 can say where it differed, but it is never checked or counted (R-0254).
 
-An item is agreed only when every coder wrote it once and their versions say
-the same thing, people compared by who they are through the people pairings
-and couples through the couple pairings, never by each copy's own numbers.
+An item is agreed only when every coder wrote it once and their versions
+match, a person matched to a person through the people pairings and a couple
+through the couple pairings, never by each copy's own numbers.
 """
 
 import dataclasses

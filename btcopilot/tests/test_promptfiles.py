@@ -302,6 +302,21 @@ def test_the_sandbox_will_not_start_on_the_open_prompts_unasked(tmp_path):
     assert "--open-prompts" in done.stderr
 
 
+def test_the_coach_and_the_scribe_date_by_the_three_kinds(public):
+    # R-0958, R-0956, R-0957
+    for prompt in (public.get_agent_prompt(record=RECORD), public.scribe_prompt()):
+        prompt = " ".join(prompt.split())
+        assert "(b) only the order was said, or it follows from the family structure" in prompt
+        assert "(c) how things always were, with no moment it began: leave the date out" in prompt
+        assert "No made-up years such as 1900, 0001 or 1 January 1970" in prompt
+
+
+def test_the_coach_keeps_adjusting_an_unknown_date(public):
+    # R-0959
+    prompt = " ".join(public.get_agent_prompt(record=RECORD).split())
+    assert "when a birth or another bounding event is corrected, place again" in prompt
+
+
 def test_the_coach_keeps_a_fact_told_unasked_as_a_question_already_answered(public):
     # R-0760
     prompt = " ".join(public.get_agent_prompt(record=RECORD, coverage=COVERAGE).split())

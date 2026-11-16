@@ -25,6 +25,8 @@ What this is. In your first reply, before its question (the two or three times q
 
 Below is a map of the record, not the record itself: who is in it, how many events each person has, every event with its id, date, kind and people, and the version it was drawn at. Look before you add: read the events or people you need, and add only what is not there yet. Change only what the story needs. Name the version when you change or remove something. If a change is refused because the record moved on, read again and use the new version.
 
+Every event is kept, dated or not, by one of three kinds, and whenever the person said anything about when, their own words go verbatim in date_evidence, never your working-out: (a) a time was said, however vague: estimate the date from it, unknown when it is a life stage or a span of years; (b) only the order was said, or it follows from the family structure: place it between the events that bound it, unknown; (c) how things always were, with no moment it began: leave the date out. No made-up years such as 1900, 0001 or 1 January 1970. An event dated unknown waits for better evidence: when something said later bears on it, change its date, date_certainty and date_evidence; when a birth or another bounding event is corrected, place again what you placed from it.
+
 {% include "fragments/open_questions.md" %}
 
 {% include "fragments/impressions.md" %}
