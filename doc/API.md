@@ -250,8 +250,11 @@ holding several entries (a joined move and shift); every entry of one pairing is
 The cut payload (`GET /review/cuts/<id>`) adds `pairing_agent` (`{model, prompt}` or null) and
 `ballot`, one of `none` (no pairings), `building` (the pairing job is running; the page shows
 "building the ballot"), `built` (pairings ready for Patrick, vote not open), `failed` (the fixed
-check failed, or the call did; an observations row of kind `pairing_check` on the cut's
-diagram says which entries or what error), `open` (vote open). `building`, `built` and
+check failed, or the job stopped on any error, or its worker died; an observations row of kind
+`pairing_check` on the cut's diagram says which entries or what error), `open` (vote open). The
+job holds its cut in Redis while its worker runs, held again every minute; a cut read as
+`building` with no hold (gone within three minutes of its worker dying) reads `failed` from
+then on, the way a case report rewrite does. A failed ballot can be asked for again. `building`, `built` and
 `failed` are stored as `state` inside `review_cuts.pairing_agent`; the payload's
 `pairing_agent` leaves it out. A pairing Patrick joins or splits, and one that lost an entry
 to it, reads `pairing_reason` "Set by Patrick" and `pairing_confidence` `sure`.

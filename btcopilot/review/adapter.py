@@ -6,6 +6,7 @@ means the review can be read, moved or replaced without hunting for the places
 it reached into the app.
 """
 
+import contextlib
 import datetime
 import re
 import uuid
@@ -18,6 +19,7 @@ import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot import observer, proactive, profile, prompts, push, record, turnstore
+from btcopilot import turnlog
 from btcopilot.record import Invalid
 from btcopilot.coachmodel import COACH_EFFORT, CoachModel, model_for
 from btcopilot.coachturn import CoachTurn
@@ -128,6 +130,29 @@ __all__ = [
     "report_schema",
     "statement_order",
 ]
+
+# How long a job's hold lasts without a beat from its worker.
+JOB_HOLD = turnlog.RUNNING_TTL
+
+
+def job_holder(key: str) -> str | None:
+    """The job holding this name, while its worker is alive."""
+    return turnlog.holder(key)
+
+
+def seize_job(key: str, job: str) -> bool:
+    return turnlog.seize(key, job, JOB_HOLD)
+
+
+@contextlib.contextmanager
+def job_held(key: str, job: str):
+    """The name stays held for the job while its worker runs it, and is let go
+    after, so a hold that ran out is a job whose worker is gone."""
+    try:
+        with turnlog.beating(lambda: turnlog.prolong(key, job, JOB_HOLD), key):
+            yield
+    finally:
+        turnlog.let_go(key, job)
 
 
 def meanings() -> dict:

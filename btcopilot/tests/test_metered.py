@@ -4,6 +4,7 @@ an answer that is not the JSON asked for."""
 
 import asyncio
 from dataclasses import dataclass
+from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
@@ -104,3 +105,17 @@ def test_a_failed_gemini_answer_carries_what_it_spent(monkeypatch, text, finish,
         asyncio.run(llmutil.gemini_structured("prompt", Named, model="gemini-3.1-flash-lite"))
     assert failed.value.spent == Spent(input=1000, output=50, cache_read=200)
     assert failed.value.served.model == "gemini-3.1-flash-lite"
+
+
+def test_the_pairing_call_is_priced_and_free_on_the_subscription(discussion, monkeypatch):
+    # R-0962
+    def answered(prompt, response_format, schema=None, limit=None, model=None):
+        return llmutil.Parsed({}, Spent(), Served(model))
+
+    monkeypatch.setattr("btcopilot.metered.gemini_structured_sync", answered)
+    meter = Metered(discussion.user_id, discussion.diagram_id, "t1", Purpose.Pairing)
+    meter.structured("prompt", dict, model="claude-fable-5-2")
+    assert [(r[1], r[5]) for r in rows()] == [("claude-fable-5-2", 0)]
+    assert pricing.price("claude-fable-5-2") == pricing.Price(
+        Decimal("8.00"), Decimal("40.00"), Decimal("10.00"), Decimal("0.20")
+    )

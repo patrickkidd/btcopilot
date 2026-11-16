@@ -222,6 +222,19 @@ class RedisLog:
     def length(self, log: str) -> int:
         return self.redis.llen(f"turn:{log}")
 
+    def holder(self, key: str) -> str | None:
+        found = self.redis.get(key)
+        return found.decode() if found else None
+
+    def seize(self, key: str, owner: str, ttl: int) -> bool:
+        return bool(self.redis.eval(TAKE, 1, key, owner, ttl))
+
+    def prolong(self, key: str, owner: str, ttl: int) -> None:
+        self.redis.eval(HOLD, 1, key, owner, ttl)
+
+    def let_go(self, key: str, owner: str) -> None:
+        self.redis.eval(RELEASE, 1, key, owner)
+
 
 class MemoryLog:
     """The same log in one process, which is what the tests read and write."""
@@ -234,6 +247,7 @@ class MemoryLog:
         self.reported: dict[str, int] = {}
         self.stops: set[str] = set()
         self.epochs: dict[str, str] = {}
+        self.holds: dict[str, tuple[str, float]] = {}
         self.readers: dict[str, list[queue.Queue]] = {}
         self.lock = threading.Lock()
 
@@ -355,6 +369,28 @@ class MemoryLog:
         with self.lock:
             return len(self.events.get(log, []))
 
+    def holder(self, key: str) -> str | None:
+        held = self.holds.get(key)
+        if held is None or held[1] <= time.time():
+            self.holds.pop(key, None)
+            return None
+        return held[0]
+
+    def seize(self, key: str, owner: str, ttl: int) -> bool:
+        with self.lock:
+            if self.holder(key) not in (None, owner):
+                return False
+            self.holds[key] = (owner, time.time() + ttl)
+        return True
+
+    def prolong(self, key: str, owner: str, ttl: int) -> None:
+        if self.holder(key) == owner:
+            self.holds[key] = (owner, time.time() + ttl)
+
+    def let_go(self, key: str, owner: str) -> None:
+        if self.holder(key) == owner:
+            self.holds.pop(key)
+
 
 _store = None
 
@@ -415,28 +451,52 @@ def keep(discussion_id: int) -> None:
     store().keep(discussion_id)
 
 
-@contextlib.contextmanager
 def kept_alive(discussion_id: int):
     """The session stays held every BEAT seconds while the worker is alive, so
     a hold that ran out means the worker running the turn is gone."""
     log = store()
+    return beating(lambda: log.keep(discussion_id), f"session {discussion_id}")
+
+
+def holder(key: str) -> str | None:
+    """Which job holds this name, while its worker is alive."""
+    return store().holder(key)
+
+
+def seize(key: str, owner: str, ttl: int) -> bool:
+    """Hold a name for a job unless another job holds it."""
+    return store().seize(key, owner, ttl)
+
+
+def prolong(key: str, owner: str, ttl: int) -> None:
+    store().prolong(key, owner, ttl)
+
+
+def let_go(key: str, owner: str) -> None:
+    store().let_go(key, owner)
+
+
+@contextlib.contextmanager
+def beating(keep, named: str):
+    """`keep` runs every BEAT seconds while the worker is alive, so a hold it
+    keeps runs out only when the worker is gone."""
     over = threading.Event()
 
     def beat():
         while not over.wait(BEAT):
             try:
-                log.keep(discussion_id)
+                keep()
             # one lost beat is made up by the next, well inside the hold
             except (redis.ConnectionError, redis.TimeoutError) as error:
-                _log.warning(f"session {discussion_id} hold not kept: {error}")
+                _log.warning(f"{named} hold not kept: {error}")
 
-    beating = threading.Thread(target=beat, daemon=True)
-    beating.start()
+    beater = threading.Thread(target=beat, daemon=True)
+    beater.start()
     try:
         yield
     finally:
         over.set()
-        beating.join()
+        beater.join()
 
 
 def clear(discussion_id: int) -> None:

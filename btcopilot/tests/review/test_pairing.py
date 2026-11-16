@@ -4,7 +4,7 @@ people are. The model is stood in for; the prompt's own eval is live."""
 
 from mock import Mock, patch
 
-from btcopilot import extensions
+from btcopilot import extensions, llmutil, turnlog
 from btcopilot.extensions import db
 from btcopilot.metered import Metered
 from btcopilot.models import Observation, ObservationKind, Purpose
@@ -389,8 +389,8 @@ def test_a_failed_call_leaves_the_ballot_failed_and_is_never_retried(
 
     def refused(meter, *args, **kwargs):
         calls.append(1)
-        raise pairing.llmutil.Billed(
-            "refused", pairing.llmutil.Served("m"), pairing.llmutil.Spent()
+        raise llmutil.Billed(
+            "refused", llmutil.Served("m"), llmutil.Spent()
         )
 
     with (
@@ -399,7 +399,7 @@ def test_a_failed_call_leaves_the_ballot_failed_and_is_never_retried(
     ):
         try:
             patrick.post("/review/items", json={"cut_id": cut.id})
-        except pairing.llmutil.Billed:
+        except llmutil.Billed:
             pass
     assert calls == [1]
     assert patrick.get(f"/review/cuts/{cut.id}").get_json()["ballot"] == "failed"
@@ -435,3 +435,41 @@ def test_keeping_a_coder_with_two_versions_writes_both(
     assert kept.status_code == 200
     events = adapter.record_of(db.session.get(Diagram, case.id))["events"]
     assert sorted(e["kind"] for e in events) == ["noted", "shift"]
+
+
+def test_a_job_that_breaks_after_its_call_fails_the_ballot_and_can_build_again(
+    patrick, test_user, test_user_2, cut
+):
+    # R-0961, R-0517
+    two_codings(test_user, test_user_2, cut)
+
+    def broke(meter, *args, **kwargs):
+        raise KeyError("No price for model claude-fable-5-2")
+
+    with (
+        patch.object(Metered, "structured", broke),
+        patch.object(extensions, "celery", QUEUE),
+    ):
+        assert patrick.post("/review/items", json={"cut_id": cut.id}).status_code == 500
+    assert patrick.get(f"/review/cuts/{cut.id}").get_json()["ballot"] == "failed"
+    seen = Observation.query.filter_by(kind=ObservationKind.PairingCheck).one()
+    assert "No price" in seen.detail["error"]
+    assert build(patrick, cut).status_code == 202
+    assert patrick.get(f"/review/cuts/{cut.id}").get_json()["ballot"] == "built"
+
+
+def test_a_job_whose_worker_died_fails_the_ballot_on_the_next_read(
+    patrick, test_user, test_user_2, cut
+):
+    # R-0961, R-0517
+    two_codings(test_user, test_user_2, cut)
+    with patch.object(extensions, "celery", Mock()):
+        assert patrick.post("/review/items", json={"cut_id": cut.id}).status_code == 202
+    assert patrick.get(f"/review/cuts/{cut.id}").get_json()["ballot"] == "building"
+
+    turnlog.store().holds.clear()
+    assert patrick.get(f"/review/cuts/{cut.id}").get_json()["ballot"] == "failed"
+    seen = Observation.query.filter_by(kind=ObservationKind.PairingCheck).one()
+    assert seen.detail["error"] == pairing.LOST
+    assert build(patrick, cut).status_code == 202
+    assert patrick.get(f"/review/cuts/{cut.id}").get_json()["ballot"] == "built"

@@ -327,3 +327,49 @@ def test_a_failed_event_is_kept_in_the_plan_and_a_rerun_calls_only_the_failed_an
         (2, "c", None, rows[0]["plan"]),
         (4, "a", None, rows[0]["plan"]),
     ]
+
+
+def test_an_event_with_no_message_to_reread_is_planned_cleared_with_no_call(
+    flask_app, test_user, tmp_path
+):
+    # R-0956, R-0960
+    diagram = Diagram(user_id=test_user.id, name="Family", data=diagramjson.dumps(ANN))
+    db.session.add(diagram)
+    db.session.commit()
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": "event", "item_id": 2, "field": field, "after": value}
+            for field, value in dict(STANDIN, dateTime="1970-01-01").items()
+            if field != "id"
+        ],
+        author=Author.Coach,
+        turn_id="t1",
+    )
+    model = Answer()
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--plans", str(tmp_path))
+    assert model.asked == []
+    assert (row["kind"], row["message"], row["new"], row["left"]) == ("none", None, None, None)
+    redate(flask_app, "apply", row["plan"])
+    assert dated(diagram) == (None, "unknown", None)
+
+
+def test_apply_ends_with_what_it_did_saves_it_and_runs_once(flask_app, test_user, tmp_path):
+    # R-0960, R-0772
+    family(test_user)
+    model = Answer(
+        {"id": 2, "date": "1996", "date_certainty": "unknown", "date_evidence": WORDS, "kind_of_date": "a"}
+    )
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--plans", str(tmp_path))
+    runner = flask_app.test_cli_runner()
+    ran = runner.invoke(admin, ["diagrams", "redate", "apply", row["plan"]])
+    line = "1 events written; 0 left as they were (none); 0 refused; 1 diagrams; 1 users"
+    assert ran.output.rstrip().endswith(line)
+    with open(row["plan"]) as saved:
+        assert json.load(saved)["applied"] == {
+            "written": 1, "left": {}, "refused": 0, "diagrams": 1, "users": 1
+        }
+    again = runner.invoke(admin, ["diagrams", "redate", "apply", row["plan"]])
+    assert again.exit_code != 0 and "applied already" in again.output

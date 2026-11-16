@@ -6,7 +6,9 @@ and including the message the event was written from, and the event tool
 alone. It saves each call with what it would write and writes nothing.
 `apply` makes exactly those calls through the event tool, the coach's own
 path; `undo` takes them back. Back the database up before `apply`. A call is
-never made again for a nicer answer: a new plan is a new plan."""
+never made again for a nicer answer: a new plan is a new plan. An event with
+no message it was written from has nothing to reread: nothing was said about
+when, so it is planned with its date cleared and no call (R-0956)."""
 
 import datetime
 import enum
@@ -38,7 +40,9 @@ TURN = "redate:{}:{}"
 PLANS = "redate-plans"
 APPLIED = ".applied.json"
 FAILED = "failed: "
-COLUMNS = ["diagram", "event", "copy", "kind", "old", "new", "certainty", "evidence", "left"]
+REFUSED = "refused when applied: "
+CLEARED = ["date", "date_evidence"]
+COLUMNS = ["diagram", "event", "copy", "message", "kind", "old", "new", "certainty", "evidence", "left"]
 
 
 class Kind(enum.StrEnum):
@@ -51,7 +55,7 @@ class Kind(enum.StrEnum):
 
 
 class Left(enum.StrEnum):
-    Unwritten = "no message it was written from"
+    Failed = "failed when planned"
     Uncalled = "the model made no call for it"
     Moved = "its date changed since the plan"
 
@@ -71,7 +75,7 @@ ASK = """Nobody reads your words: this is a re-reading of a conversation, not a 
 Event {id} carries a stand-in date that nobody said:
 {line}
 
-{given}Below is the conversation up to and including the message event {id} was written from. Date event {id} by the three kinds, from what the conversation and the map say: call edit_event once, on event {id} only, with kind_of_date. For a or b give the date, its date_certainty, and date_evidence with the words about when, verbatim, whenever any were said. For c or none, clear date and date_evidence. Change nothing else.
+{given}Below is the conversation up to and including the message event {id} was written from. Date event {id} by the three kinds, from what the conversation and the map say: call edit_event once, on event {id} only, with kind_of_date. For a or b give the date, its date_certainty, and date_evidence with the words about when, verbatim, whenever any were said. For c or none, clear {cleared}. Change nothing else.
 
 THE CONVERSATION
 {thread}"""
@@ -182,6 +186,7 @@ def blank(diagram: Diagram, event: dict) -> dict:
         "diagram": diagram.id,
         "event": event["id"],
         "copy": None,
+        "message": None,
         "kind": None,
         "old": date_text(event.get("dateTime")),
         "old_certainty": event.get("dateCertainty"),
@@ -198,14 +203,14 @@ def planned(diagram: Diagram, event: dict, made: str) -> dict:
     data = diagram.get_diagram_data()
     coding = Coding.query.filter_by(diagram_id=diagram.id).first()
     entry = dict(blank(diagram, event), copy=coding is not None)
+    turn_id = TURN.format(diagram.id, made)
     change = made_in(diagram.id, event["id"])
     if change is None or change.statement_id is None:
-        return dict(entry, left=Left.Unwritten.value)
+        return checked(diagram, turn_id, entry, Kind.Nothing, {"id": event["id"], "clear": CLEARED})
     last = db.session.get(Statement, change.statement_id)
     copy = last.discussion.diagram_id != diagram.id
     cut = (coding.cut if coding else cut_of(last)) if copy else None
-    entry["copy"] = copy
-    turn_id = TURN.format(diagram.id, made)
+    entry.update(copy=copy, message=last.id)
     meter = Metered(diagram.user_id, diagram.id, turn_id, Purpose.Backfill, model=model_for())
     speaker = None if copy else profile.person_of(diagram.user, diagram)
     system = get_agent_prompt(
@@ -216,6 +221,7 @@ def planned(diagram: Diagram, event: dict, made: str) -> dict:
         line=event_line(event),
         given=scribe.given(cut.diagram_id) if cut else "",
         thread=thread(change, cut, coding),
+        cleared=" and ".join(CLEARED),
     )
     turn = drain(meter.turn(system, [{"role": "user", "content": ask}], tools(), turn_id))
     call = next(
@@ -229,7 +235,12 @@ def planned(diagram: Diagram, event: dict, made: str) -> dict:
     if call is None:
         return dict(entry, left=Left.Uncalled.value)
     args = {k: v for k, v in call.items() if k not in ("kind_of_date", "version")}
-    entry.update(kind=call.get("kind_of_date"), args=args, **_new(args))
+    return checked(diagram, turn_id, entry, call.get("kind_of_date"), args)
+
+
+def checked(diagram: Diagram, turn_id: str, entry: dict, kind, args: dict) -> dict:
+    """The entry with the write it plans, failed when the event tool refuses it."""
+    entry = dict(entry, kind=kind, args=args, **_new(args))
     try:
         Planned(diagram.id, turn_id, user_id=diagram.user_id).call(
             ToolName.EditEvent, {**args, "version": diagram.version}
@@ -301,8 +312,9 @@ def plan(diagram_id, plans, fresh):
     click.echo(
         f"{len(rows)} events in {path}: "
         + ", ".join(f"kind {k} {kinds[k.value]}" for k in Kind)
+        + f"; no message to reread {sum(r['args'] is not None and not r.get('message') for r in rows)}"
         + f"; failed {sum(failed(r) for r in rows)}"
-        + f"; not called {sum(r['left'] in {l.value for l in Left} for r in rows)}",
+        + f"; not called {sum(r['left'] == Left.Uncalled for r in rows)}",
         err=True,
     )
     return [*COLUMNS, "plan"], [dict(row, plan=str(path)) for row in rows]
@@ -342,25 +354,61 @@ plan = writes(plan)
 def apply(path):
     """Make each call the plan saved through the event tool, one change row
     per call under the plan's turn for that record; an event whose date moved
-    since the plan is left as it is."""
+    since the plan is left as it is, and one the event tool now refuses is
+    counted as refused. Runs once per plan. Ends with what it did, saved into
+    the plan too."""
     saved = loaded(path)
-    rows = []
-    for entry in saved["events"]:
-        if entry["args"] is None or entry["left"]:
-            continue
-        diagram = db.session.get(Diagram, entry["diagram"])
-        event = next(
-            (e for e in diagram.get_diagram_data().events if e["id"] == entry["event"]), None
-        )
-        if event is None or date_text(event.get("dateTime")) != entry["old"]:
-            rows.append(dict(entry, left=Left.Moved.value))
-            continue
-        Toolbox(
-            diagram.id, TURN.format(diagram.id, saved["made"]), user_id=diagram.user_id
-        ).call(ToolName.EditEvent, {**entry["args"], "version": diagram.version})
-        rows.append(entry)
+    if done_at(path).exists():
+        raise click.ClickException(f"{path} was applied already; undo it or plan again")
+    rows = [applied(entry, saved["made"]) for entry in saved["events"]]
     done_at(path).write_text(json.dumps(rows, indent=2, ensure_ascii=False))
+    written = [r for r in rows if not r["left"]]
+    owners = {db.session.get(Diagram, r["diagram"]).user_id for r in written}
+    saved["applied"] = {
+        "written": len(written),
+        "left": dict(Counter(r["left"] for r in rows if r["left"] and not refused(r))),
+        "refused": sum(refused(r) for r in rows),
+        "diagrams": len({r["diagram"] for r in written}),
+        "users": len(owners),
+    }
+    path.write_text(json.dumps(saved, indent=2, ensure_ascii=False))
+    line = summary(saved["applied"])
+    click.get_current_context().call_on_close(lambda: click.echo(line, err=True))
     return COLUMNS, rows
+
+
+def applied(entry: dict, made: str) -> dict:
+    """One planned write made, or the reason it was left."""
+    if failed(entry):
+        return dict(entry, left=Left.Failed.value)
+    if entry["left"]:
+        return entry
+    diagram = db.session.get(Diagram, entry["diagram"])
+    event = next(
+        (e for e in diagram.get_diagram_data().events if e["id"] == entry["event"]), None
+    )
+    if event is None or date_text(event.get("dateTime")) != entry["old"]:
+        return dict(entry, left=Left.Moved.value)
+    try:
+        Toolbox(diagram.id, TURN.format(diagram.id, made), user_id=diagram.user_id).call(
+            ToolName.EditEvent, {**entry["args"], "version": diagram.version}
+        )
+    except ToolError as e:
+        return dict(entry, left=f"{REFUSED}{e}")
+    return entry
+
+
+def refused(entry: dict) -> bool:
+    return (entry["left"] or "").startswith(REFUSED)
+
+
+def summary(done: dict) -> str:
+    left = ", ".join(f"{n} {why}" for why, n in sorted(done["left"].items())) or "none"
+    return (
+        f"{done['written']} events written; {sum(done['left'].values())} left as they were"
+        f" ({left}); {done['refused']} refused; {done['diagrams']} diagrams;"
+        f" {done['users']} users"
+    )
 
 
 apply = writes(apply)

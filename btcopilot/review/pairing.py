@@ -25,7 +25,7 @@ import uuid
 
 from werkzeug.exceptions import Conflict
 
-from btcopilot import extensions, llmutil
+from btcopilot import extensions
 from btcopilot.extensions import db
 from btcopilot.metered import Metered
 from btcopilot.models import Observation, ObservationKind, Purpose
@@ -40,6 +40,7 @@ TASK = "review_pairings"
 NAME = "pairing"
 MODEL = "claude-fable-5-2"
 LIMIT = 64000
+LOST = "the pairing job stopped before it finished: its worker is gone"
 SET_BY_PATRICK = "Set by Patrick"
 CODER = "a coder"
 COACH = "the coach, not a coder"
@@ -130,10 +131,20 @@ class CheckFailed(ValueError):
 
 
 def ballot(cut: Cut) -> Ballot:
+    """The ballot's state. A ballot building with no job holding its cut is a
+    job whose worker died: it is failed here, once, as the case report's
+    rewrite is."""
     if cut.vote_opened_at is not None:
         return Ballot.Open
     state = (cut.pairing_agent or {}).get("state")
+    if state == State.Building and adapter.job_holder(held(cut.id)) is None:
+        failed(cut, f"pairing-{cut.id}-lost", {"error": LOST})
+        return Ballot.Failed
     return Ballot(state) if state else Ballot.Empty
+
+
+def held(cut_id: int) -> str:
+    return f"cut:{cut_id}:pairing"
 
 
 def agent(cut: Cut) -> dict | None:
@@ -158,26 +169,45 @@ def start(cut: Cut, user_id: int) -> None:
     voted = Vote.query.join(Item).filter(Item.cut_id == cut.id).count()
     if voted:
         raise Conflict(f"{voted} votes stand on this cut's items")
+    job = f"pairing-{cut.id}-{uuid.uuid4().hex[:8]}"
+    if not adapter.seize_job(held(cut.id), job):
+        raise Conflict("the ballot is building")
     cut.pairing_agent = {"model": MODEL, "prompt": version(), "state": State.Building}
     db.session.commit()
-    extensions.celery.send_task(TASK, args=[cut.id], kwargs={"user_id": user_id})
+    extensions.celery.send_task(
+        TASK, args=[cut.id], kwargs={"user_id": user_id, "job": job}
+    )
 
 
-def built(cut_id: int, *, user_id: int) -> None:
-    """The worker's pairing task. A call that fails is never tried again: the
-    ballot is failed and Patrick asks again."""
-    cut = db.session.get(Cut, cut_id)
-    turn_id = f"pairing-{cut.id}-{uuid.uuid4().hex[:8]}"
+def built(cut_id: int, *, user_id: int, job: str) -> None:
+    """The worker's pairing task, holding its cut while it runs. Anything that
+    stops it before the pairings are stored fails the ballot with an
+    observation; nothing is tried again until Patrick asks again. A job that
+    waited in the queue past its hold takes it again, unless a newer job holds
+    it or the ballot is no longer building."""
+    key = held(cut_id)
+    if not adapter.seize_job(key, job):
+        return
+    with adapter.job_held(key, job):
+        cut = db.session.get(Cut, cut_id)
+        if ballot(cut) is not Ballot.Building:
+            return
+        try:
+            _built(cut, user_id, job)
+        # every way the job ends without a ballot is a failed ballot, then raised
+        except Exception as error:
+            db.session.rollback()
+            failed(db.session.get(Cut, cut_id), job, {"error": repr(error)})
+            raise
+
+
+def _built(cut: Cut, user_id: int, turn_id: str) -> None:
     codings = snapshot.done_codings(cut)
     versions = listed(codings)
     meter = Metered(user_id, cut.diagram_id, turn_id, Purpose.Pairing)
-    try:
-        answer = meter.structured(
-            prompt(cut, codings, versions), Answer, SCHEMA, LIMIT, model=MODEL
-        )
-    except (llmutil.Billed, *llmutil.UNANSWERED) as error:
-        failed(cut, turn_id, {"error": str(error)})
-        raise
+    answer = meter.structured(
+        prompt(cut, codings, versions), Answer, SCHEMA, LIMIT, model=MODEL
+    )
     groups = [
         ([(e.coding_id, e.item_id) for e in p.entries], p.reason, p.confidence)
         for p in answer.pairings
