@@ -212,7 +212,7 @@ Changes something: needs `--yes`.
 
 ### `flask admin diagrams redate plan`
 
-One model call per event at a stand-in date, on every record but the scratch copies, coders' copies included; saves what each call would write, with the kind of date it judged, and writes nothing to any record.
+One model call per event at a stand-in date, on every record but the scratch copies, coders' copies included; saves what each call would write, with the kind of date it judged, and writes nothing to any record. The plan is saved after every event; a rerun continues the newest plan not yet applied and calls only for events it does not hold. An event whose call fails is kept in the plan with its error and never called again.
 
 Changes something: needs `--yes`.
 
@@ -220,6 +220,7 @@ Changes something: needs `--yes`.
 |---|---|
 | `--diagram` | Only this record. |
 | `--plans` | Where the plan is saved; left out, redate-plans in the instance folder. |
+| `--new` | Start a new plan, not the unapplied one. |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin diagrams redate undo <path>`
@@ -706,6 +707,21 @@ Whether nudging is on, and when the agenda was last nudged.
 
 | Argument | What it is |
 |---|---|
+| `--json` | Print JSON, not a table. |
+
+### `flask admin review votes`
+
+The coders' votes on a cut's ballot.
+
+### `flask admin review votes delete <cut_id>`
+
+Delete every vote on one cut's items and un-open its vote, so its ballot can be built again; the items stay until the build replaces them. Refused once the cut is ratified. Without --yes it prints each coder's vote count and changes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `cut_id` | required |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin run [words]`

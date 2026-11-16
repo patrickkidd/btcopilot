@@ -224,7 +224,7 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     messages = [
         {
             "role": "user",
-            "content": given(coding)
+            "content": given(coding.cut.diagram_id)
             + _earlier(coding, record)
             + TURN.format(who=_who(statement), turn=statement.text or "", said=said)
             + about,
@@ -476,8 +476,8 @@ def _who(statement) -> str:
     return (speaker.name if speaker and speaker.name else None) or "someone"
 
 
-def given(coding) -> str:
-    person, birth = adapter.subject(adapter.diagram_of(coding.cut.diagram_id))
+def given(case_id: int) -> str:
+    person, birth = adapter.subject(adapter.diagram_of(case_id))
     if person is None:
         return ""
     born = _when(*_dated(birth)) if birth else "on a date not yet known"

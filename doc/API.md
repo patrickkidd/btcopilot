@@ -258,7 +258,7 @@ to it, reads `pairing_reason` "Set by Patrick" and `pairing_confidence` `sure`.
 
 | | |
 |---|---|
-| `POST /review/items` | `{cut_id}`; admin: starts the pairing job (202, `{ballot: "building"}`) on Fable through the structured output option; it replaces the cut's items when it finishes; 409 while building, once open, or while any vote stands on the cut's items (votes are deleted only by an explicit admin command) |
+| `POST /review/items` | `{cut_id}`; admin: starts the pairing job (202, `{ballot: "building"}`) on Fable through the structured output option; it replaces the cut's items when it finishes; 409 while building, once open, or while any vote stands on the cut's items (votes are deleted, and the vote un-opened, only by `flask admin review votes delete <cut_id> --yes`) |
 | `POST /review/items` | `{cut_id, opinions: [{coding_id, item_id}]}`; admin, vote not open: a split, a new pairing of those entries, each moved out of the pairing it was in; a pairing left empty is deleted; 201 `{items, deleted}` |
 | `PATCH /review/items/<id>` | before open, admin: `{opinions: [{coding_id, item_id}]}`, the pairing's whole entry list, which keeps its own entries; a join: entries named leave their old pairing, a pairing left empty is deleted; `{items, deleted}`; after open it is the meeting decision as before |
 | `GET /review/items?cut_id=<id>` | as before (`voting_payload`); each opinion is one entry, plus `toward_names` (names of its relationship targets in that coder's copy); before open, admin only, each item adds `pairing_reason` and `pairing_confidence` (`sure`, `likely`, `unsure`); coders never get the reason or confidence (R-0254) |

@@ -12,6 +12,8 @@ import datetime
 import enum
 import json
 import pathlib
+import traceback
+from collections import Counter
 from types import SimpleNamespace
 
 import click
@@ -27,13 +29,16 @@ from btcopilot.metered import Metered
 from btcopilot.models import Author, Change, Diagram, Discussion, Purpose, Statement
 from btcopilot.prompts import get_agent_prompt
 from btcopilot.recordtext import date_text, event_line, outline
-from btcopilot.review import scribe
-from btcopilot.review.models import Coding, Note
+from btcopilot.review import adapter, scribe
+from btcopilot.review.models import Coding, Cut, Note
 from btcopilot.schema import ItemKind, stated_date
 from btcopilot.toolbox import ToolError, ToolName, Toolbox, schemas
 
 TURN = "redate:{}:{}"
 PLANS = "redate-plans"
+APPLIED = ".applied.json"
+REFUSED = "refused: "
+FAILED = "failed: "
 COLUMNS = ["diagram", "event", "copy", "kind", "old", "new", "certainty", "evidence", "left"]
 
 
@@ -110,31 +115,46 @@ def _line(statement: Statement) -> str:
 
 
 def _upto(statements, last: Statement) -> list[Statement]:
-    ordered = sorted(
-        (s for s in statements if s.text),
-        key=lambda s: (s.discussion.created_at, s.discussion_id, s.order or 0, s.id),
-    )
-    end = ordered.index(last)
-    return ordered[: end + 1]
+    ordered = [s for s in statements if s.text]
+    return ordered[: ordered.index(last) + 1]
 
 
-def thread(diagram: Diagram, change: Change, coding: Coding | None) -> str:
-    """The owner's sessions on the family up to and including the message
-    the event was written from; on a coder's copy, the case's conversation up
-    to the turn the coder tapped, then the coder's own words on the copy up to
-    the one the event was written from."""
+def cut_of(last: Statement) -> Cut:
+    """The cut on the case whose lines hold the message: a coder's copy keeps
+    it when its coding row was reset."""
+    case = last.discussion.diagram_id
+    (cut,) = [
+        c
+        for c in Cut.query.filter_by(diagram_id=case)
+        if last in adapter.statements_between(case, c.start_statement_id, c.end_statement_id)
+    ]
+    return cut
+
+
+def thread(change: Change, cut: Cut | None, coding: Coding | None) -> str:
+    """The writer's sessions on the family up to and including the message
+    the event was written from; on a coder's copy, the cut's lines up to that
+    message, then the coder's own words on the copy up to the one the event
+    was written from, when the copy still has its coding."""
     last = db.session.get(Statement, change.statement_id)
-    if coding is None:
+    if cut is None:
         said = Statement.query.join(Discussion).filter(
-            Discussion.diagram_id == diagram.id, Discussion.user_id == diagram.user_id
+            Discussion.diagram_id == last.discussion.diagram_id,
+            Discussion.user_id == last.discussion.user_id,
         )
-        return "\n\n".join(_line(s) for s in _upto(said, last))
-    said = Statement.query.filter_by(discussion_id=last.discussion_id)
-    notes = Note.query.filter_by(coding_id=coding.id).order_by(Note.id).all()
-    upto = [n.turn_id for n in notes].index(change.turn_id)
+        ordered = sorted(
+            said, key=lambda s: (s.discussion.created_at, s.discussion_id, s.order or 0, s.id)
+        )
+        return "\n\n".join(_line(s) for s in _upto(ordered, last))
+    lines = _upto(
+        adapter.statements_between(cut.diagram_id, cut.start_statement_id, cut.end_statement_id),
+        last,
+    )
+    notes = Note.query.filter_by(coding_id=coding.id).order_by(Note.id).all() if coding else []
+    upto = [n.turn_id for n in notes].index(change.turn_id) + 1 if notes else 0
     return "\n\n".join(
-        [_line(s) for s in _upto(said, last)]
-        + [f"[coder's words on message {n.statement_id}] {n.text}" for n in notes[: upto + 1]]
+        [_line(s) for s in lines]
+        + [f"[coder's words on message {n.statement_id}] {n.text}" for n in notes[:upto]]
     )
 
 
@@ -158,14 +178,11 @@ def _new(args: dict) -> dict:
     }
 
 
-def planned(diagram: Diagram, event: dict, made: str) -> dict:
-    """The one call for one event, and what it would write."""
-    data = diagram.get_diagram_data()
-    coding = Coding.query.filter_by(diagram_id=diagram.id).first()
-    entry = {
+def blank(diagram: Diagram, event: dict) -> dict:
+    return {
         "diagram": diagram.id,
         "event": event["id"],
-        "copy": coding is not None,
+        "copy": None,
         "kind": None,
         "old": date_text(event.get("dateTime")),
         "old_certainty": event.get("dateCertainty"),
@@ -175,20 +192,31 @@ def planned(diagram: Diagram, event: dict, made: str) -> dict:
         "args": None,
         "left": None,
     }
+
+
+def planned(diagram: Diagram, event: dict, made: str) -> dict:
+    """The one call for one event, and what it would write."""
+    data = diagram.get_diagram_data()
+    coding = Coding.query.filter_by(diagram_id=diagram.id).first()
+    entry = dict(blank(diagram, event), copy=coding is not None)
     change = made_in(diagram.id, event["id"])
     if change is None or change.statement_id is None:
         return dict(entry, left=Left.Unwritten.value)
+    last = db.session.get(Statement, change.statement_id)
+    copy = last.discussion.diagram_id != diagram.id
+    cut = (coding.cut if coding else cut_of(last)) if copy else None
+    entry["copy"] = copy
     turn_id = TURN.format(diagram.id, made)
     meter = Metered(diagram.user_id, diagram.id, turn_id, Purpose.Backfill, model=model_for())
-    speaker = None if coding else profile.person_of(diagram.user, diagram)
+    speaker = None if copy else profile.person_of(diagram.user, diagram)
     system = get_agent_prompt(
         record=outline(data, diagram.version, speaker), today=clock.today().isoformat()
     )
     ask = ASK.format(
         id=event["id"],
         line=event_line(event),
-        given=scribe.given(coding) if coding else "",
-        thread=thread(diagram, change, coding),
+        given=scribe.given(cut.diagram_id) if cut else "",
+        thread=thread(change, cut, coding),
     )
     turn = drain(meter.turn(system, [{"role": "user", "content": ask}], tools(), turn_id))
     call = next(
@@ -208,7 +236,7 @@ def planned(diagram: Diagram, event: dict, made: str) -> dict:
             ToolName.EditEvent, {**args, "version": diagram.version}
         )
     except ToolError as e:
-        entry["left"] = f"refused: {e}"
+        entry["left"] = f"{REFUSED}{e}"
     return entry
 
 
@@ -220,7 +248,7 @@ def loaded(path: pathlib.Path) -> dict:
 
 
 def done_at(path: pathlib.Path) -> pathlib.Path:
-    return path.with_suffix(".applied.json")
+    return path.with_suffix(APPLIED)
 
 
 @click.group("redate")
@@ -237,26 +265,66 @@ def redate():
     type=click.Path(file_okay=False, path_type=pathlib.Path),
     help=f"Where the plan is saved; left out, {PLANS} in the instance folder.",
 )
+@click.option("--new", "fresh", is_flag=True, help="Start a new plan, not the unapplied one.")
 @rows_option
-def plan(diagram_id, plans):
+def plan(diagram_id, plans, fresh):
     """One model call per event at a stand-in date, on every record but the
     scratch copies, coders' copies included; saves what each call would write,
-    with the kind of date it judged, and writes nothing to any record."""
+    with the kind of date it judged, and writes nothing to any record. The plan
+    is saved after every event; a rerun continues the newest plan not yet
+    applied and calls only for events it does not hold. An event whose call
+    fails is kept in the plan with its error and never called again."""
     query = Diagram.query.filter(Diagram.scratch.is_(False))
     if diagram_id:
         query = query.filter(Diagram.id == diagram_id)
-    made = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%S")
-    rows = [
-        planned(diagram, event, made)
-        for diagram in query.order_by(Diagram.id)
-        for event in diagram.get_diagram_data().events
-        if record.standin(event)
-    ]
     folder = plans or pathlib.Path(current_app.instance_path) / PLANS
     folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"redate-{made}.json"
-    path.write_text(json.dumps({"made": made, "events": rows}, indent=2, ensure_ascii=False))
+    path = None if fresh else unapplied(folder)
+    if path is None:
+        made = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%S")
+        path = folder / f"redate-{made}.json"
+        saved = {"made": made, "events": []}
+    else:
+        saved = loaded(path)
+    held = {(e["diagram"], str(e["event"])) for e in saved["events"]}
+    for diagram in query.order_by(Diagram.id):
+        for event in diagram.get_diagram_data().events:
+            if not record.standin(event) or (diagram.id, str(event["id"])) in held:
+                continue
+            saved["events"].append(attempted(diagram, event, saved["made"]))
+            path.write_text(json.dumps(saved, indent=2, ensure_ascii=False))
+    rows = saved["events"]
+    kinds = Counter(r["kind"] for r in rows if r["kind"])
+    click.echo(
+        f"{len(rows)} events in {path}: "
+        + ", ".join(f"kind {k} {kinds[k.value]}" for k in Kind)
+        + f"; refused {sum((r['left'] or '').startswith(REFUSED) for r in rows)}"
+        + f"; failed {sum((r['left'] or '').startswith(FAILED) for r in rows)}"
+        + f"; not called {sum(r['left'] in {l.value for l in Left} for r in rows)}",
+        err=True,
+    )
     return [*COLUMNS, "plan"], [dict(row, plan=str(path)) for row in rows]
+
+
+def unapplied(folder: pathlib.Path) -> pathlib.Path | None:
+    """The newest plan in the folder that apply has not run."""
+    plans = [
+        p
+        for p in sorted(folder.glob("redate-*.json"))
+        if not p.name.endswith(APPLIED) and not done_at(p).exists()
+    ]
+    return plans[-1] if plans else None
+
+
+def attempted(diagram: Diagram, event: dict, made: str) -> dict:
+    """The planned call, or the event with the error its call failed on: one
+    event's failure never loses the rest of the plan."""
+    try:
+        return planned(diagram, event, made)
+    except Exception as e:  # the plan's error boundary: kept per event, never retried
+        db.session.rollback()
+        traceback.print_exc()
+        return dict(blank(diagram, event), left=f"{FAILED}{type(e).__name__}: {e}")
 
 
 plan = writes(plan)

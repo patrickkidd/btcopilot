@@ -228,3 +228,80 @@ def test_a_coders_copy_is_reread_from_the_case_and_the_coders_own_words(
     assert "The person the case belongs to: Ann, born 11 May 1980." in asked
     assert SAID in asked and "Ann's symptom up in high school" in asked
     assert "a later note" not in asked
+
+
+def test_a_copy_whose_coding_was_reset_is_reread_from_the_cut_holding_its_message(
+    flask_app, test_user, tmp_path
+):
+    # R-0960
+    case, said = family(test_user)
+    case.data = diagramjson.dumps(
+        {
+            "people": [{"id": 1, "name": "Ann", "primary": True}],
+            "events": [{"id": 3, "kind": "birth", "child": 1, "dateTime": "1980-05-11", "dateCertainty": "certain", "datePrecision": "day"}],
+        }
+    )
+    cut = Cut(diagram_id=case.id, start_statement_id=said.id, end_statement_id=said.id, user_id=test_user.id)
+    copy = Diagram(
+        user_id=test_user.id,
+        name="coding",
+        data=diagramjson.dumps({"people": [{"id": 1, "name": "Ann"}], "lastItemId": 1}),
+    )
+    db.session.add_all([cut, copy])
+    db.session.commit()
+    record.apply(
+        copy.id,
+        [
+            {"item_kind": "event", "item_id": 2, "field": field, "after": value}
+            for field, value in STANDIN.items()
+            if field != "id"
+        ],
+        author=Author.Review,
+        turn_id="s1",
+        statement_id=said.id,
+    )
+    model = Answer({"id": 2, "date": "1995", "date_certainty": "unknown", "kind_of_date": "a"})
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--diagram", str(copy.id), "--plans", str(tmp_path))
+    assert (row["copy"], row["new"], row["left"]) == (True, "1995-01-01", None)
+    assert "The person the case belongs to: Ann, born 11 May 1980." in model.asked[0]
+    assert SAID in model.asked[0] and LATER not in model.asked[0]
+
+
+class Broken(Answer):
+    """A model whose call for event 2 fails."""
+
+    def turn(self, system, messages, tools, turn_id=""):
+        if "Event 2 " in messages[0]["content"]:
+            raise RuntimeError("the call broke")
+        return (yield from super().turn(system, messages, tools, turn_id))
+
+
+def test_a_failed_event_is_kept_in_the_plan_and_a_rerun_calls_only_the_unplanned(
+    flask_app, test_user, tmp_path
+):
+    # R-0960, R-0772
+    diagram, said = family(test_user)
+    record.apply(
+        diagram.id,
+        [
+            {"item_kind": "event", "item_id": 4, "field": field, "after": value}
+            for field, value in dict(STANDIN, kind="noted", symptom=None, title="Moved away", description="Moved away").items()
+            if field != "id"
+        ],
+        author=Author.Coach,
+        turn_id="t1",
+        statement_id=said.id,
+    )
+    model = Broken({"id": 4, "date": "1996", "date_certainty": "unknown", "kind_of_date": "a"})
+    with patch.object(REDATE, "model_for", return_value=model):
+        rows = redate(flask_app, "plan", "--plans", str(tmp_path))
+    assert [(r["event"], r["new"], (r["left"] or "")[:7]) for r in rows] == [
+        (2, None, "failed:"),
+        (4, "1996-01-01", ""),
+    ]
+    again = Answer()
+    with patch.object(REDATE, "model_for", return_value=again):
+        rerun = redate(flask_app, "plan", "--plans", str(tmp_path))
+    assert again.asked == []
+    assert [r["plan"] for r in rerun] == [rows[0]["plan"]] * 2
