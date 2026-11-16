@@ -301,6 +301,21 @@ describe("a pairing on the vote", () => {
     expect(html).not.toContain("pv-diff");
   });
 
+  // R-0965, R-0966
+  it("accents no value every opinion shares, when the opinions hold different numbers of entries", () => {
+    const item = pairing(6, [
+      opinion(1, 1, moved),
+      opinion(2, 2, moved),
+      opinion(2, 3, { ...moved, kind: "noted", anxiety: "down" }),
+    ]);
+    const html = opinionCards(pairOpinions(toPairing(item, new Map())), null, false);
+    expect(html).not.toContain('<span class="pv-tag pv-diff">shift</span>');
+    expect(html).not.toContain('<span class="chip pv-diff">anxiety ↑</span>');
+    expect(html).not.toContain('<span class="pv-diff">1994</span>');
+    expect(html).toContain('<span class="pv-tag pv-diff">noted</span>');
+    expect(html).toContain('<span class="chip pv-diff">anxiety ↓</span>');
+  });
+
   // R-0961, R-0965
   it("merges parents named in either order, and accents neither order", () => {
     const record = (bond: [number, number]) =>

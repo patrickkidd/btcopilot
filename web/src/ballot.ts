@@ -511,22 +511,24 @@ export function fieldValue(entry: PairEntry, field: string): string {
   return entry.values.find((one) => one.field === field)?.said ?? "";
 }
 
-/** The fields the opinions of a pairing part ways on, which alone take the
- * accent; what differs between one coder's own entries is never accented
- * (R-0965). */
+const valueKey = (entry: PairEntry, field: string) => `${field}\u0000${fieldValue(entry, field)}`;
+
+/** The values of a pairing some opinion does not hold, which alone take the
+ * accent, whatever the number of entries each opinion holds; what differs
+ * between one coder's own entries is never accented (R-0965). */
 export function pairDiffers(opinions: PairOpinion[]): Set<string> {
-  const entries = opinions.flatMap((one) => one.entries);
-  const fields = new Set([
-    "kind",
-    "who",
-    "toward",
-    "date",
-    ...entries.flatMap((one) => one.values.map((value) => value.field)),
-  ]);
-  const said = (one: PairOpinion, field: string) =>
-    [...new Set(one.entries.map((entry) => fieldValue(entry, field)))].sort().join("‖");
+  const held = opinions.map(
+    (one) =>
+      new Set(
+        one.entries.flatMap((entry) =>
+          ["kind", "who", "toward", "date", ...entry.values.map((value) => value.field)].map(
+            (field) => valueKey(entry, field),
+          ),
+        ),
+      ),
+  );
   return new Set(
-    [...fields].filter((field) => new Set(opinions.map((one) => said(one, field))).size > 1),
+    held.flatMap((values) => [...values]).filter((value) => held.some((one) => !one.has(value))),
   );
 }
 
@@ -535,16 +537,15 @@ const shade = (differs: boolean) => (differs ? "pv-diff" : "pv-same");
 /** No field names; the kind and the date on the first line, who and toward
  * on the second, the values as the app's own chips on the third (R-0966). */
 function entryRows(entry: PairEntry, differs: Set<string>): string {
+  const lit = (field: string) => shade(differs.has(valueKey(entry, field)));
   const part = (field: string) =>
-    `<span class="${shade(differs.has(field))}">${esc(fieldValue(entry, field))}</span>`;
+    `<span class="${lit(field)}">${esc(fieldValue(entry, field))}</span>`;
   const values = entry.values
-    .map(
-      (one) => `<span class="chip ${shade(differs.has(one.field))}">${esc(one.said)}</span>`,
-    )
+    .map((one) => `<span class="chip ${lit(one.field)}">${esc(one.said)}</span>`)
     .join("");
   const dated = !["person", "couple"].includes(entry.kind);
   return (
-    `<div class="pv-l1"><span class="pv-tag ${shade(differs.has("kind"))}">` +
+    `<div class="pv-l1"><span class="pv-tag ${lit("kind")}">` +
     `${esc(entry.kind)}</span>${dated ? part("date") : ""}</div>` +
     `<div class="pv-l2">${part("who")}` +
     (entry.toward ? ` <span class="pv-arrow">→</span> ${part("toward")}` : "") +
