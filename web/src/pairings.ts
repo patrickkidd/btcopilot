@@ -15,6 +15,7 @@ import {
   type Pairing,
 } from "./ballot";
 import { esc, stepBtn, type Title } from "./dom";
+import { Feature, tap } from "./track";
 import { Confidence, type BallotItem, type CodingRecord, type Entry, type Repaired } from "./types";
 
 /** Patrick's look over the ballot's pairings before he opens the vote: the
@@ -182,6 +183,7 @@ export class Pairings {
   }
 
   private async split(pairing: Pairing): Promise<void> {
+    tap(Feature.PairingSplit);
     this.apply(await api.split(this.cutId, this.picked(pairing)), pairing.item.id);
   }
 
@@ -209,6 +211,7 @@ export class Pairings {
     const pairing = this.pairing()!;
     const other = this.pairings.find((one) => one.item.id === otherId)!;
     const moving = this.picked(pairing);
+    tap(Feature.PairingJoin);
     this.sheet.close();
     const answer = moving.length
       ? await api.join(other.item.id, [...entries(other), ...moving])

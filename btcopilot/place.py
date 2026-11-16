@@ -45,6 +45,7 @@ class Place(enum.StrEnum):
     FamilyStep = "family/:n"
     Coding = "coding/:n"
     Vote = "vote/:n"
+    Pairings = "pairings/:n"
     Meeting = "meeting/:n"
     Result = "result/:n"
     Guidelines = "guidelines"
@@ -61,6 +62,7 @@ CODER = frozenset(
         Place.Literature,
         Place.Coding,
         Place.Vote,
+        Place.Pairings,
         Place.Meeting,
         Place.Result,
         Place.Guidelines,
@@ -105,6 +107,7 @@ WORDS = {
     Place.FamilyStep: "the whole family",
     Place.Coding: "the coding",
     Place.Vote: "the vote",
+    Place.Pairings: "the ballot's pairings",
     Place.Meeting: "the meeting",
     Place.Result: "the meeting's result",
     Place.Guidelines: "the coding guidelines",

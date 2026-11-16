@@ -531,6 +531,7 @@ async function openPairings(cutId: number): Promise<void> {
   voting = null;
   ballot.close();
   await pairings.open(cutId);
+  screenAt = address(Place.Pairings, cutId);
   screen(Screen.Ballot);
 }
 
@@ -1947,6 +1948,10 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     await coding.open(Number(id));
     screenAt = address(Place.Coding, id);
     screen(Screen.Coding);
+  },
+  [Place.Pairings]: ([cut]) => {
+    uncover();
+    return openPairings(Number(cut));
   },
   [Place.Vote]: async ([cut]) => {
     uncover();

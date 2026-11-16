@@ -191,6 +191,7 @@ export class Agenda {
       return;
     }
     if (target.closest(".tb-build")) {
+      tap(Feature.AgendaBuildBallot);
       await this.build();
       return;
     }

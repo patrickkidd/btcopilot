@@ -670,6 +670,7 @@ export function drawStrip(
 export class PairSheet {
   private scrim = el("div", "fs-scrim");
   readonly sheet = el("div", "fs-sheet bl-sheet");
+  private hiding = 0;
 
   constructor(overlay: HTMLElement) {
     overlay.append(this.scrim, this.sheet);
@@ -684,6 +685,7 @@ export class PairSheet {
     if (typeof content === "string") scroller.innerHTML = content;
     else scroller.append(content);
     this.sheet.append(scroller);
+    window.clearTimeout(this.hiding);
     this.scrim.hidden = false;
     this.sheet.hidden = false;
     void this.sheet.offsetWidth;
@@ -694,7 +696,7 @@ export class PairSheet {
   close(): void {
     this.scrim.classList.remove("in");
     this.sheet.classList.remove("in");
-    window.setTimeout(() => {
+    this.hiding = window.setTimeout(() => {
       this.scrim.hidden = true;
       this.sheet.hidden = true;
     }, 280);

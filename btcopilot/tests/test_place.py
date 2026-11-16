@@ -34,6 +34,11 @@ def test_an_address_reads_back_as_its_place_and_values():
     assert place.parse("/elsewhere/account") is None
 
 
+def test_patricks_look_over_a_cuts_pairings_has_an_address():
+    # R-0963
+    assert place.parse("/app/pairings/2") == (Place.Pairings, ["2"])
+
+
 def test_the_case_report_has_an_address_the_coach_may_open(family):
     # R-0714
     assert place.parse("/app/case-report") == (Place.CaseReport, [])

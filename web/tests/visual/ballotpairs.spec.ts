@@ -268,6 +268,10 @@ test.describe("Patrick's look over the pairings", () => {
 
     await page.locator(".tb-pairs").click();
     await expect(page.locator("#title")).toContainText("pairings · 1 of 3");
+    // a reload comes back to the look on the same cut
+    await expect(page).toHaveURL(new RegExp(`/app/pairings/${CUT}$`));
+    await page.reload();
+    await expect(page.locator("#title")).toContainText("pairings · 1 of 3");
     await expect(page.locator(".pv-card .progress")).toHaveText("unsure");
     await expect(page.locator(".pv-card .note").first()).toContainText("told four ways");
     // each coder's version on its own: four, not merged
