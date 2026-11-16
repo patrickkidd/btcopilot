@@ -134,6 +134,8 @@ export interface TimelineEvent {
   endDateTime: string | null;
   dateCertainty: string | null;
   datePrecision: string | null;
+  /** The person's own words about when, verbatim; null when nothing was said (R-0957). */
+  dateEvidence?: string | null;
   kind: string | null;
   /** The few words a noted event or a shift is shown by (R-0681). */
   title: string | null;

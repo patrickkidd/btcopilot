@@ -239,3 +239,29 @@ pick voted in the chat sets. `note` is optional, at most 200 characters.
 | `POST /review/codings` | `{cut_id}`; an auditor: their coding of the cut, made here if missing (201) on their coding copy of the case from an earlier cut, or on a new copy holding only the given facts, the case's own person with their name and their dated birth [Oracle: R-0940] |
 | `GET /review/codings/<id>/thread` | the coder's own coding: the conversation up to the cut, each turn with `said: [{text, lines, event_ids, reply}]`, what the coder typed about it, the rows the scribe wrote from those words, the events they are, and `reply`, what the scribe said back, `""` when it said nothing [Oracle: R-0942] |
 | `POST /review/codings/<id>/scribe` | `{statement_id, text, person_id}`; the scribe writes the coder's words into their copy: `{lines, refused, choices, made, turn_id, reply, report}`, `reply` being the scribe's answer to a question the coder asked or its short question when it cannot tell who is meant, `""` otherwise [Oracle: R-0942]; `report` is `{kind, words}` when the scribe offered to send the coder's words as a bug or feedback, as the coach does in the chat, and `null` otherwise; the page then opens the chat's report sheet and posts `/reports` with the coding's diagram and address [Oracle: R-0946]; each call's message carries the coder's earlier statements on the coding, each with what it produced [Oracle: R-0941, R-0946] |
+
+## Ballot by pairing (`/review`, the review_cuts and review_items tables) [Oracle: R-0961, R-0962, R-0963]
+
+A pairing is one review_items row: every coder's version of one thing said in the cut. Its
+`opinions` column is a flat list of entries `{coding_id, item_id, item}`, one coder possibly
+holding several entries (a joined move and shift); every entry of one pairing is of the row's
+`item_kind`. Every human coder's entry is in exactly one pairing of the cut (the fixed check).
+
+The cut payload (`GET /review/cuts/<id>`) adds `pairing_agent` (`{model, prompt}` or null) and
+`ballot`, one of `none` (no pairings), `building` (the pairing job is running; the page shows
+"building the ballot"), `built` (pairings ready for Patrick, vote not open), `failed` (the fixed
+check failed; an observations row of kind `pairing_check` on the cut's diagram says which
+entries), `open` (vote open).
+
+| | |
+|---|---|
+| `POST /review/items` | `{cut_id}`; admin, vote not open: starts the pairing job (202, `{ballot: "building"}`); it replaces the cut's items when it finishes; 409 while building or once open |
+| `POST /review/items` | `{cut_id, opinions: [{coding_id, item_id}]}`; admin, vote not open: a split, a new pairing of those entries, each moved out of the pairing it was in; a pairing left empty is deleted; 201 `{items, deleted}` |
+| `PATCH /review/items/<id>` | before open, admin: `{opinions: [{coding_id, item_id}]}`, the pairing's whole entry list; a join: entries named leave their old pairing, a pairing left empty is deleted; `{items, deleted}`; after open it is the meeting decision as before |
+| `GET /review/items?cut_id=<id>` | as before (`voting_payload`); each opinion is one entry, plus `toward_names` (names of its relationship targets in that coder's copy); before open, admin only, each item adds `pairing_reason` and `pairing_confidence` (`sure`, `likely`, `unsure`); coders never get the reason or confidence (R-0254) |
+| `PATCH /review/cuts/<id>` | `{vote_opened_at}`: needs `ballot` `built`, runs the fixed check again, sets each item agreed or disputed, people compared by who they are through the people pairings; no rebuild |
+| `PUT /review/items/<id>/vote` | unchanged; for an opinion the page groups entries by `coding_id` and merges identical versions, and sends any one `coding_id` of the picked opinion |
+
+An event carries `dateEvidence`, a string of the person's own words about when, or null/absent
+when nothing was said [Oracle: R-0957]; the timeline payload passes it through, and the event
+tool takes it as `date_evidence`, clearable with `date` and `date_certainty`.
