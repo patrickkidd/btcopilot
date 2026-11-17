@@ -340,6 +340,20 @@ describe("a pairing on the vote", () => {
   });
 
   // R-0965
+  it("walks by the statement whose passage each pairing shows, the one most entries were written from, so the passage never goes back", () => {
+    const said = (id: number) => ({ line: { statement_id: id, who: "Ada", text: "" } });
+    const at = (id: number, lines: number[]): BallotItem =>
+      pairing(
+        id,
+        lines.map((line, n) => opinion(n + 1, id, { dateTime: "2000-01-01" }, said(line))),
+      );
+    const items = [at(1, [39, 46, 46]), at(2, [40, 41]), at(3, [44])];
+    const walked = ballotOrder(items);
+    expect(walked.map((one) => one.id)).toEqual([2, 3, 1]);
+    expect(walked.map((one) => toPairing(one, new Map()).line?.statement_id)).toEqual([40, 44, 46]);
+  });
+
+  // R-0965
   it("says no date on the strip when no opinion gives one, and the first shown opinion's date when one does", () => {
     const none = toPairing(pairing(8, [opinion(1, 1, { kind: "noted" }), opinion(2, 2, { kind: "noted", dateTime: "1900-01-01" })]), new Map());
     expect(nowWords(none)).toBe("");

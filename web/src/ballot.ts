@@ -156,8 +156,8 @@ export function litCoding(
   return (vote.value?.coding_id as number | undefined) ?? null;
 }
 
-/** The order the ballot walks: the conversation's, by the earliest line any
- * entry was written from; on one line the people, then the couples, then the
+/** The order the ballot walks: the conversation's, by the line whose passage
+ * each pairing shows; on one line the people, then the couples, then the
  * events (R-0326); then the earliest date any coder gave, never one coder's
  * (R-0965). */
 export function ballotOrder(items: BallotItem[]): BallotItem[] {
@@ -169,11 +169,24 @@ const KINDS = [ItemKind.Person, ItemKind.PairBond, ItemKind.Event];
 const earliest = (values: (string | number)[], none: string | number) =>
   values.length ? values.reduce((a, b) => (a < b ? a : b)) : none;
 
+/** The line a pairing's passage shows: the statement most of its entries
+ * were written from, the earliest on a tie. */
+function shownLine(item: BallotItem): TranscriptLine | null {
+  const counts = new Map<number, { line: TranscriptLine; n: number }>();
+  for (const { line } of item.opinions) {
+    if (!line) continue;
+    const seen = counts.get(line.statement_id) ?? { line, n: 0 };
+    seen.n += 1;
+    counts.set(line.statement_id, seen);
+  }
+  const most = [...counts.values()].sort(
+    (a, b) => b.n - a.n || a.line.statement_id - b.line.statement_id,
+  )[0];
+  return most?.line ?? item.line ?? null;
+}
+
 const saidAt = (item: BallotItem): number =>
-  earliest(
-    item.opinions.flatMap((one) => (one.line ? [one.line.statement_id] : [])),
-    Number.MAX_SAFE_INTEGER,
-  ) as number;
+  shownLine(item)?.statement_id ?? Number.MAX_SAFE_INTEGER;
 
 const datedAt = (item: BallotItem): string =>
   earliest(
@@ -569,17 +582,6 @@ export function shuffled<T>(list: T[], seed: number): T[] {
 }
 
 /** The line most of a pairing's entries were written from. */
-function mostSaid(entries: PairEntry[]): TranscriptLine | null {
-  const counts = new Map<number, { line: TranscriptLine; n: number }>();
-  for (const { line } of entries) {
-    if (!line) continue;
-    const seen = counts.get(line.statement_id) ?? { line, n: 0 };
-    seen.n += 1;
-    counts.set(line.statement_id, seen);
-  }
-  return [...counts.values()].sort((a, b) => b.n - a.n)[0]?.line ?? null;
-}
-
 /** The places a card can show under its first two lines, in the order they
  * read, and what an empty one says. */
 const PLACES = [...SHIFTS, "relationship", "last_name", "gender", "parents", "married"];
@@ -650,7 +652,7 @@ export function toPairing(
     [...byCoder.keys()].sort((a, b) => a - b).map((id) => byCoder.get(id)!),
     item.id,
   );
-  return { item, versions, line: mostSaid(versions.flat()) ?? item.line };
+  return { item, versions, line: shownLine(item) };
 }
 
 export function fieldValue(entry: PairEntry, field: string): string {
