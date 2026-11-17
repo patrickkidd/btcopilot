@@ -9,7 +9,7 @@ vi.mock("../src/track", async (real) => ({
   tap: vi.fn(),
 }));
 
-const { Pairings, lookOrder } = await import("../src/pairings");
+const { Pairings, lookOrder, nearest } = await import("../src/pairings");
 const { toPairing } = await import("../src/ballot");
 const api = await import("../src/api");
 const { Feature, tap } = await import("../src/track");
@@ -40,6 +40,14 @@ describe("Patrick's look over the pairings", () => {
       item(5, ItemKind.Event, Confidence.Unsure, "1999-01-01"),
     ];
     expect(lookOrder(items).map((one) => one.id)).toEqual([5, 2, 3, 4, 1]);
+  });
+
+  // R-0055, R-0963
+  it("comes back to the pairing an address names, or to the one nearest it when a join took it away", () => {
+    const pairings = [12, 30, 21].map((id) => toPairing(item(id, ItemKind.Event, null), new Map()));
+    expect(nearest(pairings, 21)).toBe(2);
+    expect(nearest(pairings, 29)).toBe(1);
+    expect(nearest(pairings, 15)).toBe(0);
   });
 
   // R-0963

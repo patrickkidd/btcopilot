@@ -43,7 +43,9 @@ export enum Place {
   FamilyStep = "family/:n",
   Coding = "coding/:n",
   Vote = "vote/:n",
+  VoteItem = "vote/:n/:n",
   Pairings = "pairings/:n",
+  PairingsItem = "pairings/:n/:n",
   Meeting = "meeting/:n",
   Result = "result/:n",
   Guidelines = "guidelines",
@@ -116,6 +118,27 @@ export function settled(path: string): string | null {
  * reply naming five things is not five presses of back. */
 export const PICTURE = new Set([Place.Chat, Place.Message, Place.Cluster, Place.Event]);
 
+/** The screens stepped one pairing at a time, each by the screen its steps
+ * belong to: a step changes the pairing in the address in place rather than
+ * adding a step to go back through, and a reload comes back to it. */
+const STEPPED: Partial<Record<Place, Place>> = {
+  [Place.VoteItem]: Place.Vote,
+  [Place.PairingsItem]: Place.Pairings,
+};
+
+/** Whether two addresses are steps of the same stepped screen. */
+export function sameSteps(was: string, now: string): boolean {
+  const [from, to] = [parse(was), parse(now)];
+  const base = (spot: Spot) => STEPPED[spot.place] ?? spot.place;
+  return (
+    !!from &&
+    !!to &&
+    base(from) === base(to) &&
+    base(to) !== to.place &&
+    from.args[0] === to.args[0]
+  );
+}
+
 /** The fixed screens a notice names, by the place each one is (R-0613). */
 const LINKED: Record<Link, Place> = {
   [Link.Account]: Place.Account,
@@ -165,7 +188,9 @@ export const NAMES: Record<Place, string> = {
   [Place.FamilyStep]: "Family",
   [Place.Coding]: "Coding",
   [Place.Vote]: "Vote",
+  [Place.VoteItem]: "Vote",
   [Place.Pairings]: "Pairings",
+  [Place.PairingsItem]: "Pairings",
   [Place.Meeting]: "Meeting",
   [Place.Result]: "Result",
   [Place.Guidelines]: "Guidelines",

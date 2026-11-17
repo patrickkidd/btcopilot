@@ -35,7 +35,17 @@ import { REST, SelKind } from "./caption";
 import { $, CLUSTER, el, flash, setTitle, slideOver, type Title } from "./dom";
 import { notesSheet } from "./detail";
 import { Sheet } from "./sheet";
-import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
+import {
+  address,
+  beyond,
+  linked,
+  parse,
+  PICTURE,
+  Place,
+  sameSteps,
+  settled,
+  UNDATED,
+} from "./place";
 import { onReturn } from "./keyboard";
 import { Typing } from "./typing";
 import { Drawer, SIDEWAYS } from "./drawer";
@@ -525,13 +535,29 @@ async function openLine(statementId: number): Promise<void> {
 const pairings = new Pairings(BALLOT_SCREEN, {
   onTitle: (title) => entitle(title),
   onDone: () => void openAgenda(),
+  onMoved: () => {
+    screenAt = pairingAt();
+    sync();
+  },
 });
 
-async function openPairings(cutId: number): Promise<void> {
+/** The address of a screen stepped one pairing at a time, on the pairing it
+ * shows, so a reload comes back to it. */
+const stepAt = (view: Place, step: Place, cut: number, item: number | null): string =>
+  item === null ? address(view, cut) : address(step, cut, item);
+
+/** The cut whose pairings are on screen. */
+let pairingCut = 0;
+
+const pairingAt = () =>
+  stepAt(Place.Pairings, Place.PairingsItem, pairingCut, pairings.onItem());
+
+async function openPairings(cutId: number, itemId: number | null = null): Promise<void> {
   voting = null;
   ballot.close();
-  await pairings.open(cutId);
-  screenAt = address(Place.Pairings, cutId);
+  pairingCut = cutId;
+  await pairings.open(cutId, itemId);
+  screenAt = pairingAt();
   screen(Screen.Ballot);
 }
 
@@ -1747,7 +1773,7 @@ function sync(): void {
   const was = location.pathname;
   if (now === settled(was)) return;
   const from = parse(was);
-  if (from && PICTURE.has(from.place) && PICTURE.has(parse(now)!.place))
+  if ((from && PICTURE.has(from.place) && PICTURE.has(parse(now)!.place)) || sameSteps(was, now))
     history.replaceState(null, "", now);
   else history.pushState(null, "", now);
 }
@@ -1783,6 +1809,12 @@ function uncover(keep = Keep.Nothing): void {
 }
 
 /** The account view with these pages pushed on its root. */
+async function toVote(cut: number, item: number | null = null): Promise<void> {
+  uncover();
+  // asking for the coding of a cut gives back the one already made
+  await openBallot(cut, (await api.startCoding(cut)).id, item);
+}
+
 async function toAccount(...path: (Page | Sub)[]): Promise<void> {
   uncover(Keep.Account);
   await settings.show(...path);
@@ -1953,11 +1985,12 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     uncover();
     return openPairings(Number(cut));
   },
-  [Place.Vote]: async ([cut]) => {
+  [Place.PairingsItem]: ([cut, item]) => {
     uncover();
-    // asking for the coding of a cut gives back the one already made
-    await openBallot(Number(cut), (await api.startCoding(Number(cut))).id);
+    return openPairings(Number(cut), Number(item));
   },
+  [Place.Vote]: ([cut]) => toVote(Number(cut)),
+  [Place.VoteItem]: ([cut, item]) => toVote(Number(cut), Number(item)),
   [Place.Meeting]: ([cut]) => {
     uncover();
     return openMeeting(Number(cut));

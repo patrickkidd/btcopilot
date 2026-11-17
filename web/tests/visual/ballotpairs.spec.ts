@@ -186,6 +186,14 @@ function errors(page: Page): string[] {
   return seen;
 }
 
+/** A reload or a pasted address abandons the reads the page had in flight,
+ * which WebKit reports as failed loads; only those are let go. */
+async function leave(seen: string[], go: () => Promise<unknown>): Promise<void> {
+  const from = seen.length;
+  await go();
+  seen.push(...seen.splice(from).filter((one) => !/: Load failed$/.test(one)));
+}
+
 const caption = (page: Page) => page.locator("#ballot-caption");
 
 /** Every entry on screen shows the same places, and each place is accented in
@@ -296,10 +304,18 @@ test.describe("Patrick's look over the pairings", () => {
 
     await page.locator(".tb-pairs").click();
     await expect(page.locator("#title")).toContainText("pairings · 1 of 3");
-    // a reload comes back to the look on the same cut
-    await expect(page).toHaveURL(new RegExp(`/app/pairings/${CUT}$`));
-    await page.reload();
+    await expect(page).toHaveURL(new RegExp(`/app/pairings/${CUT}/41$`));
+    // a step changes the pairing in the address in place, and a reload comes back to it
+    const depth = await page.evaluate(() => history.length);
+    await page.locator("#pr-next").click();
+    await expect(page).toHaveURL(new RegExp(`/app/pairings/${CUT}/43$`));
+    expect(await page.evaluate(() => history.length)).toBe(depth);
+    await leave(seen, () => page.reload());
+    await expect(page.locator("#title")).toContainText("pairings · 2 of 3");
+    // an address naming a pairing a join took away opens the one nearest it
+    await leave(seen, () => page.goto(`/app/pairings/${CUT}/40`));
     await expect(page.locator("#title")).toContainText("pairings · 1 of 3");
+    await expect(page).toHaveURL(new RegExp(`/app/pairings/${CUT}/41$`));
     await expect(page.locator(".pv-card .progress")).toHaveText("unsure");
     await expect(page.locator(".pv-card .note").first()).toContainText("told four ways");
     // the two coders who wrote the same thing are one card here too

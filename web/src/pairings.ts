@@ -32,6 +32,8 @@ import { Confidence, type BallotItem, type CodingRecord, type Entry, type Repair
 export interface PairingsHandlers {
   onTitle(title: string | Title): void;
   onDone(): void;
+  /** Another pairing is on screen. */
+  onMoved(): void;
 }
 
 const RANK = [Confidence.Unsure, Confidence.Likely, Confidence.Sure];
@@ -44,6 +46,15 @@ export const lookOrder = (items: BallotItem[]): BallotItem[] =>
     .map((item, at) => ({ item, at }))
     .sort((a, b) => rank(a.item) - rank(b.item) || a.at - b.at)
     .map(({ item }) => item);
+
+/** Where the pairing with this id stands in the list, or, when it is gone,
+ * the one whose id is nearest it. */
+export const nearest = (pairings: Pairing[], id: number): number =>
+  pairings.reduce(
+    (best, one, at) =>
+      Math.abs(one.item.id - id) < Math.abs(pairings[best].item.id - id) ? at : best,
+    0,
+  );
 
 const entries = (pairing: Pairing): Entry[] =>
   pairing.versions.flat().map(({ coding_id, item_id }) => ({ coding_id, item_id }));
@@ -81,7 +92,9 @@ export class Pairings {
     });
   }
 
-  async open(cutId: number): Promise<void> {
+  /** Open a cut's pairings on `itemId`, or, when a join took it away, on the
+   * pairing nearest it; with none named, on the first. */
+  async open(cutId: number, itemId: number | null = null): Promise<void> {
     const [cut, items, records] = await Promise.all([
       api.cut(cutId),
       api.items(cutId),
@@ -92,8 +105,13 @@ export class Pairings {
     this.session = cut.session;
     this.records = new Map(records.map((one) => [one.coding_id, one]));
     this.pairings = this.paired(lookOrder(items));
-    this.at = 0;
+    this.at = itemId === null ? 0 : nearest(this.pairings, itemId);
     this.render();
+  }
+
+  /** The pairing on screen, which the address names. */
+  onItem(): number | null {
+    return this.pairing()?.item.id ?? null;
   }
 
   /** The people pairings decide who a person is on every card, so all of
@@ -192,6 +210,7 @@ export class Pairings {
     this.at = at;
     this.chosen.clear();
     this.render();
+    this.handlers.onMoved();
   }
 
   private go(id: number): void {
