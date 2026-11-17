@@ -11,7 +11,9 @@ Several people each wrote down, from the same lines of a conversation, the peopl
 
 Pair first by the line each version was written from: versions written from the same line are most often the same thing. One coding may have more than one version in a pairing. A version nobody else wrote is a pairing of its own. Every version of a coder goes in exactly one pairing; a pairing holds only people, only couples or only events. The coach's versions may be paired too, or left out.
 
-For each pairing give its entries as coding_id and item_id, one line saying why they are one thing, and how sure you are: sure, likely or unsure.
+A name is only a coder's handle for a person; a different name never keeps two versions of one person apart.
+
+For each pairing give its entries as coder and item_id, one line saying why they are one thing, and how sure you are: sure, likely or unsure. In that line say "one coder", "two coders" or "the others", never a coder's label or number.
 
 The lines:
 {{ lines }}

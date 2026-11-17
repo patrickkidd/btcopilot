@@ -328,21 +328,49 @@ export interface PairValue {
   said: string;
 }
 
-/** Which people pairing each coder's person is in, keyed by coding and
- * person, so the people a version names are compared by who they are, never
- * by spelling or order (R-0967). */
-export type Who = Map<string, number>;
+/** Who each coder's person is: the people pairing it is in, keyed by coding
+ * and person, so the people a version names are compared by who they are,
+ * never by spelling or order (R-0967); and the one name each people pairing
+ * is shown by on every card (R-0968). */
+export interface Who {
+  pairing: Map<string, number>;
+  name: Map<number, string>;
+}
 
 const personKey = (coding: number, id: unknown) => `${coding}:${String(id)}`;
 
-export const whoOf = (items: BallotItem[]): Who =>
-  new Map(
-    items
-      .filter((item) => item.item_kind === ItemKind.Person)
-      .flatMap((item) =>
+export function whoOf(items: BallotItem[]): Who {
+  const people = items.filter((item) => item.item_kind === ItemKind.Person);
+  return {
+    pairing: new Map(
+      people.flatMap((item) =>
         item.opinions.map((one) => [personKey(one.coding_id!, one.item_id), item.id] as const),
       ),
-  );
+    ),
+    name: new Map(people.map((item) => [item.id, mostGiven(item.opinions)] as const)),
+  };
+}
+
+/** The name the most coders gave a person; on a tie, the first stored. A name
+ * is only a coder's handle on who the person is, so it is never a difference
+ * between opinions (R-0968). */
+function mostGiven(opinions: Opinion[]): string {
+  const coders = new Map<string, Set<number>>();
+  for (const one of opinions) {
+    const name = text(one.item.name);
+    if (name) coders.set(name, (coders.get(name) ?? new Set()).add(one.coding_id!));
+  }
+  let best = "";
+  for (const [name, by] of coders) if (by.size > (coders.get(best)?.size ?? 0)) best = name;
+  return best;
+}
+
+/** A coder's person as every card names them: their pairing's name, or the
+ * coder's own when they are in no pairing. */
+const called = (who: Who, coding: number, id: unknown, own: string): string => {
+  const pairing = who.pairing.get(personKey(coding, id));
+  return (pairing === undefined ? "" : who.name.get(pairing)) || own;
+};
 
 /** One coder's entry, as the card draws it: fields by place, never a sentence
  * (R-0966). */
@@ -394,7 +422,7 @@ const text = (value: unknown) => (value === null || value === undefined ? "" : S
 function someone(who: Who, coding: number, ids: unknown[], names: string[]): string {
   return ids
     .map((id, at) => {
-      const pairing = who.get(personKey(coding, id));
+      const pairing = who.pairing.get(personKey(coding, id));
       return pairing === undefined ? `=${names[at] ?? ""}` : `#${pairing}`;
     })
     .sort()
@@ -423,8 +451,13 @@ function eventEntry(opinion: Opinion, who: Who): PairEntry {
     end: text(event.endDateTime),
     prec: text(event.datePrecision),
     cert: text(event.dateCertainty),
-    who: opinion.person_name ?? "",
-    toward: (opinion.toward_names ?? []).join(", "),
+    who:
+      about === null || about === undefined
+        ? (opinion.person_name ?? "")
+        : called(who, coding, about, opinion.person_name ?? ""),
+    toward: toward
+      .map((id, at) => called(who, coding, id, opinion.toward_names?.[at] ?? ""))
+      .join(", "),
     title: text(event.title),
     desc: text(event.description),
     values,
@@ -449,10 +482,17 @@ function structureEntry(
   who: Who,
 ): PairEntry {
   const coding = opinion.coding_id!;
-  const item = opinion.item;
-  const named = (id: unknown) => record?.people.find((one) => one.id === Number(id))?.name ?? "";
+  const own = record && {
+    ...record,
+    people: record.people.map((one) => ({ ...one, name: called(who, coding, one.id, one.name) })),
+  };
+  const item =
+    kind === ItemKind.Person
+      ? { ...opinion.item, name: called(who, coding, opinion.item.id, text(opinion.item.name)) }
+      : opinion.item;
+  const named = (id: unknown) => own?.people.find((one) => one.id === Number(id))?.name ?? "";
   const pair = (a: unknown, b: unknown) => someone(who, coding, [a, b], [named(a), named(b)]);
-  const bond = record?.pair_bonds.find((one) => one.id === Number(item.parents));
+  const bond = own?.pair_bonds.find((one) => one.id === Number(item.parents));
   return {
     coding_id: opinion.coding_id!,
     item_id: opinion.item_id!,
@@ -461,17 +501,20 @@ function structureEntry(
     end: "",
     prec: "",
     cert: "",
-    who: structureName(kind, opinion.item, record?.people ?? []),
+    who: structureName(kind, item, own?.people ?? []),
     toward: "",
     title: "",
     desc: "",
     values: fieldsOf(kind)
       .filter((field) => !NAMED.includes(field))
-      .map((field) => ({ field, said: versionWords(record, opinion.item, [field]) }))
+      .map((field) => ({ field, said: versionWords(own, item, [field]) }))
       .filter((one) => one.said),
     keys:
       kind === ItemKind.Person
-        ? { parents: bond ? pair(bond.person_a, bond.person_b) : "none" }
+        ? {
+            who: someone(who, coding, [item.id], [text(item.name)]),
+            parents: bond ? pair(bond.person_a, bond.person_b) : "none",
+          }
         : { who: pair(item.person_a, item.person_b) },
     line: opinion.line ?? null,
   };
@@ -552,7 +595,7 @@ function samePlaces(entries: PairEntry[]): PairEntry[] {
 export function toPairing(
   item: BallotItem,
   records: Map<number, CodingRecord>,
-  who: Who = new Map(),
+  who: Who = whoOf([item]),
 ): Pairing {
   const built = item.opinions.map((opinion) =>
     isStructure(item.item_kind)

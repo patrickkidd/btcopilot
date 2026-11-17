@@ -50,7 +50,7 @@ export class Pairings {
   private session = "";
   private pairings: Pairing[] = [];
   private records = new Map<number, CodingRecord>();
-  private who: Who = new Map();
+  private who: Who = whoOf([]);
   private at = 0;
   /** The entries tapped, which a split takes out or a join moves. */
   private chosen = new Set<string>();

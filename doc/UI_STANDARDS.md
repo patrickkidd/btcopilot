@@ -67,6 +67,8 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
   filled, in one order, and an unfilled one is an empty chip ("no gender recorded"). A place
   where versions part ways is accented on all cards, a shared one on none; people match by
   identity, not spelling; identical cards collapse into one. [Oracle: R-0967]
+- On those cards a person's name is never a difference and never accented: a person is shown on
+  every card by the name most coders gave them (on a tie, the first given). [Oracle: R-0968]
 
 ## Behaviour
 - A control that starts something starts it immediately, not on the next tick of a

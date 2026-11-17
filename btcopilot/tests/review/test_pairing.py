@@ -28,11 +28,18 @@ def words(kind, item) -> tuple:
     return (kind, item.get("description"))
 
 
+def labelled(cut) -> dict[int, str]:
+    """Each coding's label, as the call is given it."""
+    codings = snapshot.done_codings(cut)
+    return pairing.labels([c.id for c in codings], pairing.voter_ids(cut))
+
+
 def by_words(cut) -> Answer:
     """The model, stood in for: versions in the same words are one thing."""
+    names = labelled(cut)
     groups = {}
     for key, (kind, item, _) in pairing.listed(snapshot.done_codings(cut)).items():
-        groups.setdefault(words(kind, item), []).append(Entry(*key))
+        groups.setdefault(words(kind, item), []).append(Entry(names[key[0]], key[1]))
     return Answer(
         [Pairing(e, "same words", PairingConfidence.Sure) for e in groups.values()]
     )
@@ -123,8 +130,15 @@ def test_a_coders_version_left_out_fails_the_ballot_and_is_observed(
 ):
     # R-0961
     a, b = two_codings(test_user, test_user_2, cut)
+    names = labelled(cut)
     short = Answer(
-        [Pairing([Entry(a.id, 10), Entry(b.id, 20)], "same", PairingConfidence.Sure)]
+        [
+            Pairing(
+                [Entry(names[a.id], 10), Entry(names[b.id], 20)],
+                "same",
+                PairingConfidence.Sure,
+            )
+        ]
     )
     build(patrick, cut, short)
 
@@ -245,11 +259,12 @@ def test_parents_named_in_either_order_are_the_same_parents(
             "pair_bonds": [{"id": 8, "person_a": 4, "person_b": 5}],
         },
     )
+    n = labelled(cut)
     together = [
-        [Entry(a.id, 1), Entry(b.id, 5)],
-        [Entry(a.id, 2), Entry(b.id, 4)],
-        [Entry(a.id, 3), Entry(b.id, 6)],
-        [Entry(a.id, 7), Entry(b.id, 8)],
+        [Entry(n[a.id], 1), Entry(n[b.id], 5)],
+        [Entry(n[a.id], 2), Entry(n[b.id], 4)],
+        [Entry(n[a.id], 3), Entry(n[b.id], 6)],
+        [Entry(n[a.id], 7), Entry(n[b.id], 8)],
     ]
     build(
         patrick,
@@ -260,6 +275,89 @@ def test_parents_named_in_either_order_are_the_same_parents(
     assert {i.status for i in Item.query.filter_by(cut_id=cut.id)} == {
         ReviewStatus.Agreed
     }
+
+
+def test_a_persons_name_is_never_a_difference_but_their_last_name_is(
+    patrick, test_user, test_user_2, cut
+):
+    # R-0968, R-0961
+    a = coded(
+        test_user,
+        cut,
+        {
+            "people": [
+                person(1, "Jim's first wife"),
+                person(2, "Emily"),
+                dict(person(3, "Ann"), last_name="Hale"),
+            ]
+        },
+    )
+    b = coded(
+        test_user_2,
+        cut,
+        {
+            "people": [
+                person(4, "Julia's mother"),
+                person(5, "Patrick's partner"),
+                dict(person(6, "Ann"), last_name="Hall"),
+            ]
+        },
+    )
+    n = labelled(cut)
+    build(
+        patrick,
+        cut,
+        Answer(
+            [
+                Pairing(
+                    [Entry(n[a.id], x), Entry(n[b.id], y)],
+                    "same",
+                    PairingConfidence.Sure,
+                )
+                for x, y in [(1, 4), (2, 5), (3, 6)]
+            ]
+        ),
+    )
+
+    status = {
+        i.opinions[0]["item_id"]: i.status for i in Item.query.filter_by(cut_id=cut.id)
+    }
+    assert status == {
+        1: ReviewStatus.Agreed,
+        2: ReviewStatus.Agreed,
+        3: ReviewStatus.Disputed,
+    }
+
+
+def test_the_reason_never_names_a_coding_by_its_label_or_number(
+    patrick, test_user, test_user_2, cut
+):
+    # R-0969
+    a, b = two_codings(test_user, test_user_2, cut)
+    asked = {}
+
+    def structured(meter, prompt, fmt, schema, limit, model=None):
+        asked["prompt"] = prompt
+        answer = by_words(db.session.get(Cut, cut.id))
+        answer.pairings[0].reason = (
+            f"Coder A wrote a separate mother for each child, where coder B and "
+            f"Coding {b.id} wrote one first wife"
+        )
+        return answer
+
+    with (
+        patch.object(Metered, "structured", structured),
+        patch.object(extensions, "celery", QUEUE),
+    ):
+        patrick.post("/review/items", json={"cut_id": cut.id})
+
+    assert '"coder": "coder A"' in asked["prompt"]
+    assert "coding_id" not in asked["prompt"]
+    reasons = {i.pairing_reason for i in Item.query.filter_by(cut_id=cut.id)}
+    assert (
+        "One coder wrote a separate mother for each child, where one coder and "
+        "one coder wrote one first wife"
+    ) in reasons
 
 
 def test_one_coder_with_two_versions_of_one_thing_is_not_agreed(
@@ -434,9 +532,7 @@ def test_a_failed_call_leaves_the_ballot_failed_and_is_never_retried(
 
     def refused(meter, *args, **kwargs):
         calls.append(1)
-        raise llmutil.Billed(
-            "refused", llmutil.Served("m"), llmutil.Spent()
-        )
+        raise llmutil.Billed("refused", llmutil.Served("m"), llmutil.Spent())
 
     with (
         patch.object(Metered, "structured", refused),

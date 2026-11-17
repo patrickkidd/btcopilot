@@ -282,7 +282,7 @@ describe("a pairing on the vote", () => {
   it("puts the accent only on what the opinions part ways on, with no field names, coder names or counts", () => {
     const item = pairing(3, [
       opinion(1, 1, moved, { coder: "ballot1" }),
-      opinion(2, 2, { ...moved, anxiety: "down" }, { toward_names: ["Jim"] }),
+      opinion(2, 2, { ...moved, anxiety: "down", relationshipTargets: [7] }, { toward_names: ["Jim"] }),
     ]);
     const seen = toPairing(item, new Map());
     const html = opinionCards(pairOpinions(seen), null, false);
@@ -345,8 +345,8 @@ describe("a pairing on the vote", () => {
     expect(opinionCards(opinions, null, false)).not.toContain("pv-diff");
   });
 
-  // R-0967
-  it("shows Emily's places in every card, the gender not recorded as an empty chip, and merges the cards that read the same", () => {
+  // R-0967, R-0968
+  it("shows Emily's places in every card, the gender not recorded as an empty chip, and merges the cards that differ only by name", () => {
     const record = { people: [], pair_bonds: [] } as unknown as CodingRecord;
     const emily = (name: string, gender: string | null) => ({ id: 9, name, gender, parents: null });
     const item = {
@@ -360,13 +360,56 @@ describe("a pairing on the vote", () => {
     };
     const records = new Map([1, 2, 3, 4].map((id) => [id, record]));
     const opinions = pairOpinions(toPairing(item, records));
-    expect(opinions).toHaveLength(3);
+    expect(opinions).toHaveLength(2);
     const html = opinionCards(opinions, null, false);
-    expect(html.match(/class="pv-diff">(Emily<|Patrick)/g)).toHaveLength(3);
+    expect(html.match(/<span class="pv-same">Emily<\/span>/g)).toHaveLength(2);
+    expect(html).not.toContain("Patrick's partner");
     expect(html.match(/chip pv-diff">no gender recorded</g)).toHaveLength(1);
-    expect(html.match(/chip pv-diff">female</g)).toHaveLength(2);
-    expect(html.match(/chip pv-same">no parents recorded</g)).toHaveLength(3);
+    expect(html.match(/chip pv-diff">female</g)).toHaveLength(1);
+    expect(html.match(/chip pv-same">no parents recorded</g)).toHaveLength(2);
     expect(html).not.toContain("no last name recorded");
+  });
+
+  // R-0968
+  it("names Jim's first wife the same on every card, by the first name given on a tie, and never accents her name", () => {
+    const wife = (name: string) => ({ id: 2, name, gender: "female", parents: null });
+    const record = (name: string) =>
+      ({
+        people: [
+          { id: 1, name: "Jim" },
+          { id: 2, name },
+        ],
+        pair_bonds: [{ id: 5, person_a: 1, person_b: 2 }],
+      }) as unknown as CodingRecord;
+    const given = ["Jim's first wife", "Jim's ex-wife", "Julia's mother"];
+    const records = new Map(given.map((name, at) => [at + 1, record(name)]));
+    const her = {
+      ...pairing(30, given.map((name, at) => opinion(at + 1, 2, wife(name)))),
+      item_kind: ItemKind.Person,
+    };
+    const jim = {
+      ...pairing(31, [1, 2, 3].map((coding) => opinion(coding, 1, { id: 1, name: "Jim" }))),
+      item_kind: ItemKind.Person,
+    };
+    const couple = {
+      ...pairing(32, [1, 2, 3].map((coding) => opinion(coding, 5, { id: 5, person_a: 1, person_b: 2 }))),
+      item_kind: ItemKind.PairBond,
+    };
+    const moved = pairing(33, [
+      opinion(1, 9, { kind: "shift", person: 2, anxiety: "up" }, { person_name: given[0] }),
+      opinion(3, 9, { kind: "shift", person: 2, anxiety: "down" }, { person_name: given[2] }),
+    ]);
+    const who = whoOf([her, jim, couple, moved]);
+    const cards = (item: BallotItem) =>
+      opinionCards(pairOpinions(toPairing(item, records, who)), null, false);
+
+    const herCards = pairOpinions(toPairing(her, records, who));
+    expect(herCards).toHaveLength(1);
+    expect(cards(her)).toContain('<span class="pv-same">Jim&#39;s first wife</span>');
+    expect(cards(couple)).toContain("Jim &amp; Jim&#39;s first wife");
+    expect(cards(couple)).not.toMatch(/ex-wife|Julia/);
+    expect(cards(moved).match(/<span class="pv-same">Jim&#39;s first wife<\/span>/g)).toHaveLength(2);
+    expect(cards(moved)).not.toContain("Julia");
   });
 
   // R-0967

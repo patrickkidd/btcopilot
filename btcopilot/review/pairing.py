@@ -21,6 +21,7 @@ import enum
 import hashlib
 import json
 import logging
+import re
 import uuid
 
 from werkzeug.exceptions import Conflict
@@ -44,6 +45,10 @@ LOST = "the pairing job stopped before it finished: its worker is gone"
 SET_BY_PATRICK = "Set by Patrick"
 CODER = "a coder"
 COACH = "the coach, not a coder"
+# What a reason says in place of a coding's label or number: a person reads
+# the reason, and neither tells them anything (R-0969).
+ONE_CODER = "one coder"
+NUMBERED = re.compile(r"\bcod(?:ing|er)\s+#?\d+\b", re.IGNORECASE)
 KINDS = {
     ItemKind.Person: "people",
     ItemKind.PairBond: "couples",
@@ -54,9 +59,10 @@ COLLECTION = {
     ItemKind.PairBond: "pair_bonds",
     ItemKind.Event: "events",
 }
-# What a version holds that is not what it says: its own number, and the
-# coder's own words, which two coders never write alike.
-UNSAID = ("id", "notes", "confidence", "dateEvidence")
+# What a version holds that is not what it says: its own number, the coder's
+# own words, which two coders never write alike, and a person's name, only a
+# provisional handle on who they are (R-0968).
+UNSAID = ("id", "name", "notes", "confidence", "dateEvidence")
 PEOPLE_FIELDS = ("person", "spouse", "child", "person_a", "person_b")
 PEOPLE_LISTS = ("relationshipTargets", "relationshipTriangles")
 
@@ -77,7 +83,7 @@ class Ballot(enum.StrEnum):
 
 @dataclasses.dataclass
 class Entry:
-    coding_id: int
+    coder: str
     item_id: int
 
 
@@ -106,10 +112,10 @@ SCHEMA = {
                         "items": {
                             "type": "object",
                             "properties": {
-                                "coding_id": {"type": "integer"},
+                                "coder": {"type": "string"},
                                 "item_id": {"type": "integer"},
                             },
-                            "required": ["coding_id", "item_id"],
+                            "required": ["coder", "item_id"],
                         },
                     },
                     "reason": {"type": "string"},
@@ -204,15 +210,14 @@ def built(cut_id: int, *, user_id: int, job: str) -> None:
 def _built(cut: Cut, user_id: int, turn_id: str) -> None:
     codings = snapshot.done_codings(cut)
     versions = listed(codings)
+    voters = voter_ids(cut)
+    names = labels([c.id for c in codings], voters)
     meter = Metered(user_id, cut.diagram_id, turn_id, Purpose.Pairing)
     answer = meter.structured(
-        prompt(cut, codings, versions), Answer, SCHEMA, LIMIT, model=MODEL
+        prompt(cut, codings, versions, names), Answer, SCHEMA, LIMIT, model=MODEL
     )
-    groups = [
-        ([(e.coding_id, e.item_id) for e in p.entries], p.reason, p.confidence)
-        for p in answer.pairings
-    ]
-    found = problems([g[0] for g in groups], versions, voter_ids(cut))
+    groups = unlabelled(answer, names)
+    found = problems([g[0] for g in groups], versions, voters)
     if found:
         failed(cut, turn_id, found)
         return
@@ -266,7 +271,50 @@ def listed(codings) -> dict[tuple[int, int], tuple[ItemKind, dict, int | None]]:
     return found
 
 
-def prompt(cut: Cut, codings, versions) -> str:
+def labels(coding_ids: list[int], voters: set[int]) -> dict[int, str]:
+    """Each coding as the call reads it: a letter by its position, never its
+    database number, which the call could echo into a reason (R-0969)."""
+    return {
+        coding_id: f"{'coder' if coding_id in voters else 'coach'} {letter(at)}"
+        for at, coding_id in enumerate(coding_ids)
+    }
+
+
+def letter(at: int) -> str:
+    return (letter(at // 26 - 1) if at >= 26 else "") + chr(ord("A") + at % 26)
+
+
+def unlabelled(answer: Answer, names: dict[int, str]) -> list[tuple]:
+    """The call's pairings as (entries, reason, confidence), each entry by its
+    coding again. A label no coding holds stays as it is, so the fixed check
+    names it unknown."""
+    back = {label: coding_id for coding_id, label in names.items()}
+    return [
+        (
+            [(back.get(e.coder, e.coder), e.item_id) for e in p.entries],
+            reworded(p.reason, names.values()),
+            p.confidence,
+        )
+        for p in answer.pairings
+    ]
+
+
+def reworded(reason: str, names) -> str:
+    """A reason that names a coding by its label or its number says "one
+    coder" there instead (the coach's label, "the coach"); the call is never
+    asked again for its wording."""
+
+    def put(said: str):
+        return lambda found: said.capitalize() if found.start() == 0 else said
+
+    for label in sorted(names, key=len, reverse=True):
+        said = "the coach" if label.startswith("coach") else ONE_CODER
+        found = re.compile(rf"\b{re.escape(label)}\b", re.IGNORECASE)
+        reason = found.sub(put(said), reason)
+    return NUMBERED.sub(put(ONE_CODER), reason)
+
+
+def prompt(cut: Cut, codings, versions, names: dict[int, str]) -> str:
     lines = [
         (s.id, (s.speaker.name if s.speaker else None) or "Someone", s.text or "")
         for s in adapter.statements_between(
@@ -275,21 +323,31 @@ def prompt(cut: Cut, codings, versions) -> str:
     ]
     voters = voter_ids(cut)
     written = [
-        {
-            "coding_id": coding.id,
-            "coder": CODER if coding.id in voters else COACH,
-            **{
-                KINDS[kind]: [
+        block(
+            names[coding.id],
+            coding.id in voters,
+            {
+                kind: [
                     said(item, line)
                     for (coding_id, _), (each, item, line) in versions.items()
                     if coding_id == coding.id and each is kind
                 ]
                 for kind in KINDS
             },
-        }
+        )
         for coding in codings
     ]
     return render(lines, written)
+
+
+def block(label: str, voter: bool, versions: dict[ItemKind, list[dict]]) -> dict:
+    """One coding as the call reads it: its label, whether a coder wrote it,
+    and its versions by kind."""
+    return {
+        "coder": label,
+        "role": CODER if voter else COACH,
+        **{KINDS[kind]: versions[kind] for kind in KINDS},
+    }
 
 
 def said(item: dict, line: int | None) -> dict:
