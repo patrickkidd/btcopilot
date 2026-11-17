@@ -3313,6 +3313,8 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .tl .d-on { fill: var(--move); }
 .tl .d-n { font: 400 12px var(--mono); fill: var(--ask-text); }
 .bl-sheet { height: round(down, 88%, 1px); }
+.bl-sheet.pv-split { height: auto; }
+.pv-split .cf-t, .pv-split .pv-label { padding: 0 16px; }
 /* The vote by pairing: each opinion is one coder's whole set of entries for a
  * thing said, read top to bottom, position carrying the meaning (R-0965, R-0966).
  * Only a value the opinions part ways on takes the accent; a shared one is quiet. */
@@ -3326,8 +3328,11 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .pv-ops .opinion.pv + .pv-label { padding-top: 6px; }
 .opinion.pv { grid-template-columns: minmax(0, 1fr); align-items: start; gap: 4px; padding: 6px 9px; min-height: 0; font: 400 13px/18px var(--mono); }
 .pv-entry { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pv-entry + .pv-entry { padding-top: 6px; border-top: 1px dashed var(--line); }
-.pv-entry.on { outline: 2px solid var(--data); outline-offset: 2px; border-radius: 4px; }
+.opinion.pv.many { padding: 0; gap: 0; overflow: hidden; }
+.pv-many { padding: 6px 9px 0; color: var(--faint); }
+.opinion.pv.many .pv-entry { padding: 6px 9px; }
+.opinion.pv.many .pv-entry + .pv-entry { border-top: 1px solid var(--line); }
+.opinion.pv.many .pv-words { padding: 0 9px 6px; }
 .pv-same { color: var(--faint); }
 .pv-diff { color: var(--data); font-weight: 600; }
 .pv-words { font: 400 13px/18px var(--sans); color: var(--faint); overflow-wrap: anywhere; }

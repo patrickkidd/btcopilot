@@ -453,15 +453,67 @@ describe("a pairing on the vote", () => {
     expect(html).not.toMatch(/pv-diff">(Jane|female)</);
   });
 
-  // R-0963, R-0967
-  it("lets a tap on a merged card's entry select every coder's entry it stands for", () => {
+  // R-0970
+  it("draws every opinion as one box, a coder's several entries as rows under a line saying how many, no row tappable", () => {
+    const mother = (id: number, name: string) => ({ id, name, gender: "female", parents: null });
+    const item = {
+      ...pairing(40, [
+        opinion(1, 2, mother(2, "Julia's mother")),
+        opinion(1, 3, mother(3, "Anthony's mother")),
+        opinion(1, 4, mother(4, "Joseph's mother")),
+        opinion(2, 2, mother(2, "Jim's first wife")),
+        opinion(3, 2, mother(2, "Jim's ex-wife")),
+      ]),
+      item_kind: ItemKind.Person,
+    };
+    const opinions = pairOpinions(toPairing(item, new Map()));
+    const html = opinionCards(opinions, null, false);
+    expect(html.match(/class="opinion /g)).toHaveLength(opinions.length);
+    const box = html.split('class="opinion ').find((one) => one.includes("wrote 3 separate people"))!;
+    expect(box).toMatch(/^tap pv many"/);
+    expect(box.match(/class="pv-entry"/g)).toHaveLength(3);
+    expect(box.match(/pv-tag/g)).toHaveLength(1);
+    expect(html).not.toMatch(/data-entry|data-row/);
+  });
+
+  // R-0963, R-0967, R-0970
+  it("lights a box only when every coder's entry it stands for is picked", () => {
     const item = pairing(9, [opinion(1, 1, moved), opinion(2, 2, moved), opinion(3, 3, { ...moved, anxiety: "down" })]);
     const opinions = pairOpinions(toPairing(item, new Map()));
     expect(opinions).toHaveLength(2);
-    const both = new Set(["1:1", "2:2"]);
-    const html = opinionCards(opinions, null, false, both);
-    expect(html).toContain('<div class="pv-entry on" data-entry="1:1 2:2">');
-    expect(opinionCards(opinions, null, false, new Set(["1:1"]))).not.toContain("pv-entry on");
+    const merged = opinions.findIndex((one) => one.codings.length === 2);
+    const lit = (chosen: string[]) =>
+      opinionCards(opinions, null, false, new Set(chosen)).includes(`pv on" data-opinion="${merged}"`);
+    expect(lit(["1:1", "2:2"])).toBe(true);
+    expect(lit(["1:1"])).toBe(false);
+  });
+
+  // R-0968, R-0970
+  it("names each row of a coder's several entries as that coder named it, and everyone else by the most given name", () => {
+    const mother = (id: number, name: string) => ({ id, name, gender: "female", parents: null });
+    const given = ["Julia's mother", "Anthony's mother", "Joseph's mother"];
+    const her = {
+      ...pairing(41, [
+        ...given.map((name, at) => opinion(1, at + 2, mother(at + 2, name))),
+        opinion(2, 2, mother(2, "Jim's first wife")),
+        opinion(3, 2, mother(2, "Jim's first wife")),
+      ]),
+      item_kind: ItemKind.Person,
+    };
+    const moved = pairing(42, [
+      opinion(1, 9, { kind: "shift", person: 3, anxiety: "up" }, { person_name: given[1] }),
+      opinion(1, 8, { kind: "shift", person: 4, anxiety: "up" }, { person_name: given[2] }),
+      opinion(2, 9, { kind: "shift", person: 2, anxiety: "up" }, { person_name: "Jim's first wife" }),
+    ]);
+    const who = whoOf([her, moved]);
+    const cards = (item: BallotItem) =>
+      opinionCards(pairOpinions(toPairing(item, new Map(), who)), null, false);
+    for (const name of given)
+      expect(cards(her)).toContain(`<span class="pv-same">${name.replace("'", "&#39;")}</span>`);
+    expect(cards(her).match(/Jim&#39;s first wife/g)).toHaveLength(1);
+    expect(cards(moved)).toContain("Anthony&#39;s mother");
+    expect(cards(moved)).toContain("Joseph&#39;s mother");
+    expect(cards(moved)).not.toMatch(/pv-diff">(Anthony|Joseph|Jim)/);
   });
 
   // R-0965

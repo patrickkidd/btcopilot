@@ -88,6 +88,8 @@ export enum Feature {
   AgendaBuildBallot = "agenda_build_ballot",
   PairingJoin = "pairing_join",
   PairingSplit = "pairing_split",
+  PairingSplitList = "pairing_split_list",
+  PairingSplitPick = "pairing_split_pick",
   MeetingStart = "meeting_start",
   MeetingEnd = "meeting_end",
   MeetingKeep = "meeting_keep",

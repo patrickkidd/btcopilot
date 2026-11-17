@@ -4,8 +4,10 @@ import {
   drawStrip,
   entryKey,
   leftOut,
+  many,
   nowWords,
   opinionCards,
+  opinionKeys,
   pairOpinions,
   passage,
   toPairing,
@@ -22,9 +24,10 @@ import { Confidence, type BallotItem, type CodingRecord, type Entry, type Repair
 
 /** Patrick's look over the ballot's pairings before he opens the vote: the
  * ones the call marked unsure first, on the vote's own card, identical
- * versions merged as on the vote, a tap on an entry taking every coder's entry
- * it stands for. He alone joins and splits; coders never change a pairing
- * (R-0963, R-0967). */
+ * versions merged as on the vote, one box per opinion, a tap on it taking
+ * every coder's entry it stands for; one entry of a box holding several is
+ * taken out from the split list. He alone joins and splits; coders never
+ * change a pairing (R-0963, R-0967, R-0970). */
 
 export interface PairingsHandlers {
   onTitle(title: string | Title): void;
@@ -73,6 +76,8 @@ export class Pairings {
     this.sheet.sheet.addEventListener("click", (clicked) => {
       const row = (clicked.target as Element).closest<HTMLElement>("[data-join]");
       if (row) void this.join(Number(row.dataset.join));
+      const one = (clicked.target as Element).closest<HTMLElement>("[data-split]");
+      if (one) void this.pick(one.dataset.split!.split(" "));
     });
   }
 
@@ -140,15 +145,17 @@ export class Pairings {
     );
   }
 
-  /** A split needs some of the pairing's entries tapped, never all of them. */
+  /** A split takes out the boxes picked, never all of them; with none picked
+   * it lists the entries of the boxes holding several. */
   private controls(pairing: Pairing): string {
     const all = entries(pairing).length;
     const some = this.chosen.size;
+    const can = some ? some < all : pairOpinions(pairing).some(many);
     return (
       stepBtn("‹ Back", `id="pr-prev"`, this.at === 0) +
       `<button class="btn" id="pr-join" type="button">join&hellip;</button>` +
-      `<button class="btn" id="pr-split" type="button"${some && some < all ? "" : " disabled"}>` +
-      `split off</button>` +
+      `<button class="btn" id="pr-split" type="button"${can ? "" : " disabled"}>` +
+      `split&hellip;</button>` +
       stepBtn(this.at === this.pairings.length - 1 ? "Done" : "Next ›", `id="pr-next"`, false)
     );
   }
@@ -158,20 +165,22 @@ export class Pairings {
     const pairing = this.pairing();
     if (!pairing || !this.live) return;
     const { item } = pairing;
-    const entry = target.closest<HTMLElement>("[data-entry]");
+    const box = target.closest<HTMLElement>("[data-opinion]");
     if (target.closest(".pv-words.clip")) {
       this.full.add(item.id);
-      this.render();
-    } else if (entry) {
-      const keys = entry.dataset.entry!.split(" ");
-      const on = keys.every((key) => this.chosen.has(key));
-      keys.forEach((key) => (on ? this.chosen.delete(key) : this.chosen.add(key)));
       this.render();
     } else if (target.closest("#bl-quote.clip")) {
       this.whole.add(item.id);
       this.render();
-    } else if (target.closest("#pr-split")) void this.split(pairing);
-    else if (target.closest("#pr-join")) this.offer(pairing);
+    } else if (box) {
+      const keys = opinionKeys(pairOpinions(pairing)[Number(box.dataset.opinion)]);
+      const on = keys.every((key) => this.chosen.has(key));
+      keys.forEach((key) => (on ? this.chosen.delete(key) : this.chosen.add(key)));
+      this.render();
+    } else if (target.closest("#pr-split")) {
+      if (this.chosen.size) void this.split(pairing);
+      else this.choices(pairing);
+    } else if (target.closest("#pr-join")) this.offer(pairing);
     else if (target.closest("#pr-prev") && this.at > 0) this.step(this.at - 1);
     else if (target.closest("#pr-next")) {
       if (this.at === this.pairings.length - 1) this.handlers.onDone();
@@ -199,6 +208,14 @@ export class Pairings {
     this.apply(await api.split(this.cutId, this.picked(pairing)), pairing.item.id);
   }
 
+  /** One entry from the split list, with every coder's entry it stands for. */
+  private async pick(keys: string[]): Promise<void> {
+    tap(Feature.PairingSplitPick);
+    this.sheet.close();
+    this.chosen = new Set(keys);
+    await this.split(this.pairing()!);
+  }
+
   /** The other pairings of the same kind of item to join with: with entries
    * tapped, those move into the one picked; with none, the one picked comes
    * into this one whole. */
@@ -216,7 +233,35 @@ export class Pairings {
         );
       })
       .join("");
+    this.sheet.sheet.classList.remove("pv-split");
     this.sheet.show(rows);
+  }
+
+  /** The entries of every box holding several, by name, under their opinion
+   * when more than one box holds several (R-0970). */
+  private choices(pairing: Pairing): void {
+    const boxes = pairOpinions(pairing)
+      .map((one, index) => ({ one, index }))
+      .filter(({ one }) => many(one));
+    const grouped = boxes.length > 1;
+    const rows = boxes
+      .map(
+        ({ one, index }) =>
+          (grouped ? `<div class="pv-label">opinion ${index + 1}</div>` : "") +
+          one.entries
+            .map(
+              (entry, at) =>
+                `<button class="pv-row" type="button" data-split="${esc(one.twins[at].map(entryKey).join(" "))}">` +
+                `<span class="rtitle">${esc(entry.who)}</span>` +
+                `<span class="rsub">${grouped ? "" : `opinion ${index + 1} · `}${esc(entry.kind)}</span></button>`,
+            )
+            .join(""),
+      )
+      .join("");
+    const of = grouped ? "" : ` of opinion ${boxes[0].index + 1}`;
+    tap(Feature.PairingSplitList);
+    this.sheet.sheet.classList.add("pv-split");
+    this.sheet.show(`<div class="cf-t">Take which entry out${of}?</div>${rows}`);
   }
 
   private async join(otherId: number): Promise<void> {

@@ -68,7 +68,10 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
   where versions part ways is accented on all cards, a shared one on none; people match by
   identity, not spelling; identical cards collapse into one. [Oracle: R-0967]
 - On those cards a person's name is never a difference and never accented: a person is shown on
-  every card by the name most coders gave them (on a tie, the first given). [Oracle: R-0968]
+  every card by the name most coders gave them (on a tie, the first given), except inside a
+  box holding one coder's several entries (below). [Oracle: R-0968]
+- One box per opinion: a coder's several entries are rows inside it, each under the name that
+  coder gave it, and the box is picked as a whole. [Oracle: R-0970]
 
 ## Behaviour
 - A control that starts something starts it immediately, not on the next tick of a

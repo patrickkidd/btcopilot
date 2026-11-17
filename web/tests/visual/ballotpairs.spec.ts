@@ -6,7 +6,9 @@ import { shell, stateFor, username } from "./setup";
  * opinions without names, a pick and a drop that both un-tap, and before the
  * vote opens, joins and splits on the same card; every card of a pairing shows
  * the same places, accented in every card where the opinions disagree, and
- * identical cards are one (R-0963, R-0965, R-0966, R-0967). */
+ * identical cards are one; on the look every opinion is one box picked whole,
+ * one entry taken out from the split list (R-0963, R-0965, R-0966, R-0967,
+ * R-0970). */
 
 const CUT = 2;
 const line = (statement_id: number, text: string) => ({ statement_id, who: "Dana", text });
@@ -49,7 +51,7 @@ const ITEMS = [
         person_name: "Dana Reyes",
         toward_names: ["Lou Reyes"],
         line: LONG,
-        item: event({ dateTime: "1900-01-01", relationship: "conflict", title: "Fights with stepfather" }),
+        item: event({ dateTime: "1900-01-01", relationship: "conflict", relationshipTargets: [70], title: "Fights with stepfather" }),
       },
     ],
   },
@@ -277,7 +279,7 @@ test.describe("Patrick's look over the pairings", () => {
   test.beforeEach(() => roles("admin"));
   test.afterEach(() => roles("subscriber"));
 
-  // R-0961, R-0963, R-0967
+  // R-0961, R-0963, R-0967, R-0970
   test("builds the ballot, shows it building, then the unsure pairings first to split and join before the vote opens", async ({
     page,
   }) => {
@@ -303,19 +305,38 @@ test.describe("Patrick's look over the pairings", () => {
     // the two coders who wrote the same thing are one card here too
     await expect(page.locator(".pv-label")).toHaveCount(3);
     await samePlaces(page);
-    await expect(page.locator("#pr-split")).toBeDisabled();
-    // a tap on the merged card's entry takes both coders' entries, and a second tap lets go
-    const twins = page.locator('[data-entry~="1:11"][data-entry~="2:21"]');
-    await twins.click();
-    await expect(twins).toHaveClass(/ on/);
-    await twins.click();
-    await expect(twins).not.toHaveClass(/ on/);
-    const entry = page.locator('[data-entry="4:41"]');
-    await entry.click();
-    await expect(entry).toHaveClass(/ on/);
+    // every opinion is one box; a coder's two entries are rows inside one, no row picked alone
+    await expect(page.locator(".opinion.pv")).toHaveCount(3);
+    await expect(page.locator("[data-entry]")).toHaveCount(0);
+    const several = page.locator(".opinion.pv.many");
+    await expect(several.locator(".pv-many")).toHaveText(/wrote 2 separate events/);
+    await expect(several.locator(".pv-entry")).toHaveCount(2);
+    await expect(page.locator("#pr-split")).toHaveText("split…");
     await expect(page.locator("#pr-split")).toBeEnabled();
+    // a tap on the merged box takes both coders' entries, and a second tap lets go
+    const twins = page.locator(".opinion.pv:not(.many)").filter({ hasNotText: "Fights" });
+    const corner = { position: { x: 12, y: 8 } };
+    await twins.click(corner);
+    await expect(twins).toHaveClass(/ on/);
+    await twins.click(corner);
+    await expect(twins).not.toHaveClass(/ on/);
+    // a tap on a row picks its whole box
+    await several.locator(".pv-entry").first().click(corner);
+    await expect(several).toHaveClass(/ on/);
+    await several.locator(".pv-entry").first().click(corner);
+    await expect(several).not.toHaveClass(/ on/);
+    // with nothing picked, split lists the box's entries, the list only as tall as its rows
     await page.locator("#pr-split").click();
+    const list = page.locator(".bl-sheet.pv-split.in");
+    await expect(list.locator(".cf-t")).toHaveText(/^Take which entry out of opinion \d\?$/);
+    await expect(list.locator(".pv-row")).toHaveCount(2);
+    await expect(list.locator(".pv-row .rsub")).toContainText([/shift$/, /noted$/]);
+    const tall = await list.evaluate((one) => one.getBoundingClientRect().height);
+    expect(tall).toBeLessThan(page.viewportSize()!.height / 2);
+    await list.locator(".pv-row", { hasText: "noted" }).click();
     await expect(page.locator("#title")).toContainText("pairings · 1 of 4");
+    // the shift left behind now reads as the merged opinion and joins it
+    await expect(page.locator(".opinion.pv.many")).toHaveCount(0);
     await expect(page.locator(".pv-label")).toHaveCount(2);
 
     await page.locator("#pr-join").click();
@@ -329,7 +350,7 @@ test.describe("Patrick's look over the pairings", () => {
 
     const writes = sent.map((one) => `${one.method} ${one.path}`);
     expect(writes).toEqual(["POST /items", "POST /items", "PATCH /items/41", `PATCH /cuts/${CUT}`]);
-    expect(sent[1].body).toEqual({ cut_id: CUT, opinions: [{ coding_id: 4, item_id: 41 }] });
+    expect(sent[1].body).toEqual({ cut_id: CUT, opinions: [{ coding_id: 3, item_id: 32 }] });
     expect((sent[2].body as { opinions: unknown[] }).opinions).toHaveLength(6);
     expect(seen).toEqual([]);
   });

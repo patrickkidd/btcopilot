@@ -87,8 +87,8 @@ def test_both_cluster_views_are_stored(web):
 
 
 def test_joins_and_splits_of_pairings_are_stored(web):
-    # R-0963
-    names = ["pairing_join", "pairing_split", "agenda_build_ballot"]
+    # R-0963, R-0970
+    names = ["pairing_join", "pairing_split", "pairing_split_list", "pairing_split_pick", "agenda_build_ballot"]
     response = post(web, *[event(screen="ballot", name=name) for name in names])
     assert response.status_code == 201
     assert [r.name for r in ProductEvent.query.order_by(ProductEvent.id)] == names

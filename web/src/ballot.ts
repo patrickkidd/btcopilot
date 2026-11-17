@@ -591,17 +591,23 @@ function samePlaces(entries: PairEntry[]): PairEntry[] {
   });
 }
 
-/** A row of the ballot as a pairing: its entries grouped by coder. */
+/** A row of the ballot as a pairing: its entries grouped by coder. A coder's
+ * several entries are that coder's distinct things, so each keeps the names
+ * that coder gave (R-0970). */
 export function toPairing(
   item: BallotItem,
   records: Map<number, CodingRecord>,
   who: Who = whoOf([item]),
 ): Pairing {
-  const built = item.opinions.map((opinion) =>
-    isStructure(item.item_kind)
-      ? structureEntry(item.item_kind, opinion, records.get(opinion.coding_id ?? -1), who)
-      : eventEntry(opinion, who),
-  );
+  const count = new Map<number, number>();
+  for (const { coding_id } of item.opinions) count.set(coding_id!, (count.get(coding_id!) ?? 0) + 1);
+  const own: Who = { pairing: who.pairing, name: new Map() };
+  const built = item.opinions.map((opinion) => {
+    const by = count.get(opinion.coding_id!)! > 1 ? own : who;
+    return isStructure(item.item_kind)
+      ? structureEntry(item.item_kind, opinion, records.get(opinion.coding_id ?? -1), by)
+      : eventEntry(opinion, by);
+  });
   const byCoder = new Map<number, PairEntry[]>();
   for (const entry of samePlaces(built))
     byCoder.set(entry.coding_id, [...(byCoder.get(entry.coding_id) ?? []), entry]);
@@ -687,8 +693,10 @@ export function pairDiffers(opinions: PairOpinion[]): Set<string> {
 const shade = (differs: boolean) => (differs ? "pv-diff" : "pv-same");
 
 /** No field names; the kind and the date on the first line, who and toward
- * on the second, the values as the app's own chips on the third (R-0966). */
-function entryRows(entry: PairEntry, differs: Set<string>): string {
+ * on the second, the values as the app's own chips on the third (R-0966). A
+ * row inside a box of several leaves an undated kind to the box's line
+ * (R-0970). */
+function entryRows(entry: PairEntry, differs: Set<string>, row = false): string {
   const lit = (field: string) => shade(differs.has(field));
   const part = (field: string) =>
     `<span class="${entry.keys[field] === "" ? "chip " : ""}${lit(field)}">` +
@@ -698,8 +706,10 @@ function entryRows(entry: PairEntry, differs: Set<string>): string {
     .join("");
   const dated = !["person", "couple"].includes(entry.kind);
   return (
-    `<div class="pv-l1"><span class="pv-tag ${lit("kind")}">` +
-    `${esc(entry.kind)}</span>${dated ? part("date") : ""}</div>` +
+    (row && !dated
+      ? ""
+      : `<div class="pv-l1"><span class="pv-tag ${lit("kind")}">` +
+        `${esc(entry.kind)}</span>${dated ? part("date") : ""}</div>`) +
     `<div class="pv-l2">${part("who")}` +
     (entry.toward ? ` <span class="pv-arrow">→</span> ${part("toward")}` : "") +
     `</div>` +
@@ -718,12 +728,33 @@ const ownWords = (entry: PairEntry, whole: boolean) => {
 export const entryKey = (entry: { coding_id: number; item_id: number | string }) =>
   `${entry.coding_id}:${entry.item_id}`;
 
-/** The entries one drawn entry stands for, as the keys a tap selects. */
-export const twinKeys = (twins: PairEntry[]) => twins.map(entryKey).join(" ");
+/** Every coder's entry an opinion stands for. */
+export const opinionKeys = (one: PairOpinion) => one.twins.flat().map(entryKey);
 
-/** The opinions of a pairing, each a card under a small "opinion N" label.
- * `lit` is the opinion picked; `chosen` the entries selected for a split.
- * No count of the coders behind an opinion is shown (R-0252, R-0272). */
+const boxed = (one: PairOpinion, chosen: Set<string>) =>
+  opinionKeys(one).every((key) => chosen.has(key));
+
+/** What a box holding one coder's several entries calls them (R-0970). */
+const MANY: Record<string, [string, string]> = {
+  person: ["person", "people"],
+  couple: ["couple", "couples"],
+};
+
+export const many = (one: PairOpinion) => one.entries.length > 1;
+
+function manyLine(one: PairOpinion): string {
+  const [tag, noun] = MANY[one.entries[0].kind] ?? ["event", "events"];
+  return (
+    `<div class="pv-l1 pv-many"><span class="pv-tag pv-same">${tag}</span>` +
+    `<span>wrote ${one.entries.length} separate ${noun}</span></div>`
+  );
+}
+
+/** The opinions of a pairing, each one box under a small "opinion N" label,
+ * a coder's several entries rows inside it (R-0970). `lit` is the opinion
+ * picked; `chosen` the entries selected for a split, which light a box when
+ * they hold all of it. No count of the coders behind an opinion is shown
+ * (R-0252, R-0272). */
 export function opinionCards(
   opinions: PairOpinion[],
   lit: number | null,
@@ -737,15 +768,11 @@ export function opinionCards(
       .map(
         (one, index) =>
           `<div class="pv-label">opinion ${index + 1}</div>` +
-          `<div class="opinion tap pv${lit === index ? " on" : ""}" data-opinion="${index}">` +
+          `<div class="opinion tap pv${many(one) ? " many" : ""}` +
+          `${lit === index || boxed(one, chosen) ? " on" : ""}" data-opinion="${index}">` +
+          (many(one) ? manyLine(one) : "") +
           one.entries
-            .map((entry, at) => {
-              const on = one.twins[at].every((twin) => chosen.has(entryKey(twin)));
-              return (
-                `<div class="pv-entry${on ? " on" : ""}" ` +
-                `data-entry="${esc(twinKeys(one.twins[at]))}">${entryRows(entry, differs)}</div>`
-              );
-            })
+            .map((entry) => `<div class="pv-entry">${entryRows(entry, differs, many(one))}</div>`)
             .join("") +
           one.entries.map((entry) => ownWords(entry, whole)).join("") +
           `</div>`,
