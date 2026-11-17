@@ -562,7 +562,7 @@ async function openPairings(cutId: number, itemId: number | null = null): Promis
   voting = null;
   ballot.close();
   pairingCut = cutId;
-  await pairings.open(cutId, itemId);
+  if (!(await pairings.open(cutId, itemId))) return openAgenda();
   screenAt = pairingAt();
   screen(Screen.Ballot);
 }

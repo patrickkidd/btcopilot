@@ -10,7 +10,7 @@ from flask import jsonify
 
 from btcopilot.review import adapter
 from btcopilot.review.models import Coding, Cut
-from btcopilot.review.routes import bp, coder, my_coding, session_name, voted
+from btcopilot.review.routes import bp, coder, my_coding, session_name, unvoted, voted
 
 #: Roughly how long one turn takes to code, for the card's estimate.
 MINUTES_PER_TURN = 0.8
@@ -64,9 +64,21 @@ def _to_vote(cut: Cut, mine: Coding, ready: bool) -> dict:
         "coding_id": mine.id,
         "meeting_date": _iso(cut.meeting_date),
         "title": f"Vote on the disputed events of {session_name(cut)}",
-        "detail": "about 10 min" if ready else f"{waiting} · about 10 min",
+        "detail": (
+            f"{_vote_state(cut, mine.user_id)} · about 10 min"
+            if ready
+            else f"{waiting} · about 10 min"
+        ),
         "ready": ready,
     }
+
+
+def _vote_state(cut: Cut, user_id: int) -> str:
+    """The coder's own part in an open vote, in plain words."""
+    left, total = unvoted(cut, user_id)
+    if not left:
+        return "your vote is in"
+    return f"{left} of {total} pairing{'' if total == 1 else 's'} still open"
 
 
 def _since(cut: Cut, turns, user) -> str:
@@ -107,12 +119,19 @@ def _my_finished(user) -> list[Coding]:
 def _finished(coding: Coding) -> dict:
     cut = coding.cut
     ratified = cut.ratified_at
+    done = f"done {_day(coding.done_at)}"
     return {
         "coding_id": coding.id,
         "cut_id": cut.id,
         "title": f"{session_name(cut)} up to {_cut_day(cut)}",
         "detail": (
-            f"ratified {_day(ratified)}" if ratified else f"done {_day(coding.done_at)}"
+            f"ratified {_day(ratified)}"
+            if ratified
+            else (
+                f"{done} · {_vote_state(cut, coding.user_id)}"
+                if cut.vote_opened_at
+                else done
+            )
         ),
         # A ratified cut opens what the meeting produced, which everyone who
         # took part can read (R-0275).

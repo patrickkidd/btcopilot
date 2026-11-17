@@ -40,7 +40,8 @@ const RANK = [Confidence.Unsure, Confidence.Likely, Confidence.Sure];
 
 const rank = (item: BallotItem) => RANK.indexOf(item.pairing_confidence ?? Confidence.Unsure);
 
-/** Unsure first, and within each the order the ballot walks. */
+/** Unsure first, and within each the order the ballot walks, the
+ * conversation's. */
 export const lookOrder = (items: BallotItem[]): BallotItem[] =>
   walkOrder(items.filter((one) => one.opinions.length > 0))
     .map((item, at) => ({ item, at }))
@@ -93,13 +94,15 @@ export class Pairings {
   }
 
   /** Open a cut's pairings on `itemId`, or, when a join took it away, on the
-   * pairing nearest it; with none named, on the first. */
-  async open(cutId: number, itemId: number | null = null): Promise<void> {
+   * pairing nearest it; with none named, on the first. Once the vote is open
+   * the pairings are shut, and nothing opens (R-0963). */
+  async open(cutId: number, itemId: number | null = null): Promise<boolean> {
     const [cut, items, records] = await Promise.all([
       api.cut(cutId),
       api.items(cutId),
       api.records(cutId),
     ]);
+    if (cut.vote_opened_at !== null) return false;
     this.live = true;
     this.cutId = cutId;
     this.session = cut.session;
@@ -107,6 +110,7 @@ export class Pairings {
     this.pairings = this.paired(lookOrder(items));
     this.at = itemId === null ? 0 : nearest(this.pairings, itemId);
     this.render();
+    return true;
   }
 
   /** The pairing on screen, which the address names. */

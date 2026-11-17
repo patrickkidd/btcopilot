@@ -12,6 +12,7 @@ import {
 } from "./editor";
 import { DateCertainty, DatePrecision } from "./certainty";
 import { when as rowsWhen } from "./rows";
+import { dateText } from "./spotlight";
 import {
   fieldsOf,
   isStructure,
@@ -155,17 +156,40 @@ export function litCoding(
   return (vote.value?.coding_id as number | undefined) ?? null;
 }
 
-/** The order the ballot walks: the people and the bonds first, then the events,
- * because an event about somebody nobody has agreed on yet cannot be settled
- * (R-0326). */
+/** The order the ballot walks: the conversation's, by the earliest line any
+ * entry was written from; on one line the people, then the couples, then the
+ * events (R-0326); then the earliest date any coder gave, never one coder's
+ * (R-0965). */
 export function ballotOrder(items: BallotItem[]): BallotItem[] {
   return walkOrder(items).filter(onBallot);
 }
 
-export const walkOrder = (items: BallotItem[]): BallotItem[] => [
-  ...items.filter((one) => isStructure(one.item_kind)),
-  ...eventsOf(items),
-];
+const KINDS = [ItemKind.Person, ItemKind.PairBond, ItemKind.Event];
+
+const earliest = (values: (string | number)[], none: string | number) =>
+  values.length ? values.reduce((a, b) => (a < b ? a : b)) : none;
+
+const saidAt = (item: BallotItem): number =>
+  earliest(
+    item.opinions.flatMap((one) => (one.line ? [one.line.statement_id] : [])),
+    Number.MAX_SAFE_INTEGER,
+  ) as number;
+
+const datedAt = (item: BallotItem): string =>
+  earliest(
+    item.opinions
+      .map((one) => text(one.item.dateTime))
+      .filter((day) => day && !STAND_IN.test(day)),
+    "\uffff",
+  ) as string;
+
+export const walkOrder = (items: BallotItem[]): BallotItem[] =>
+  [...items].sort(
+    (a, b) =>
+      saidAt(a) - saidAt(b) ||
+      KINDS.indexOf(a.item_kind) - KINDS.indexOf(b.item_kind) ||
+      datedAt(a).localeCompare(datedAt(b)),
+  );
 
 /** Every event of a cut in the order they happened, which is the order both
  * screens walk them in. */
@@ -409,13 +433,19 @@ const SHIFTS = ["symptom", "anxiety", "functioning"] as const;
  * when nobody said a date (R-0956). */
 const STAND_IN = /^(1900-|0001-|1970-01-01)/;
 
-/** The date as the coder wrote it, only as far as they said it. */
+/** The date as the coder wrote it, only as far as they said it: an estimate
+ * or a date not sure at all as its year, as the timeline says it (R-0855); a
+ * stand-in, which nobody said, as no date (R-0956). */
 export function writtenDate(entry: PairEntry): string {
-  if (!entry.date) return rowsWhen(null);
-  if (STAND_IN.test(entry.date) || entry.cert === DateCertainty.Unknown) return "no sure date";
-  const from = rowsWhen(entry.date, entry.prec);
-  return entry.end ? `${from} to ${rowsWhen(entry.end, DatePrecision.Year)}` : from;
+  if (!entry.date || STAND_IN.test(entry.date)) return rowsWhen(null);
+  const from = GUESSED.has(entry.cert)
+    ? dateText(entry.date, entry.cert)
+    : rowsWhen(entry.date, entry.prec);
+  const to = entry.end && rowsWhen(entry.end, DatePrecision.Year);
+  return to && to !== from ? `${from} to ${to}` : from;
 }
+
+const GUESSED = new Set<string>([DateCertainty.Approximate, DateCertainty.Unknown]);
 
 const text = (value: unknown) => (value === null || value === undefined ? "" : String(value));
 
@@ -570,14 +600,17 @@ const holds = (entry: PairEntry, field: string) =>
     ? Boolean(entry[field as (typeof LINES)[number]])
     : entry.values.some((one) => one.field === field);
 
-/** An entry lacking a place another entry of its pairing holds is given it,
- * said as not recorded, so all cards line up (R-0967). */
+/** An entry lacking a place another entry of its kind in the pairing holds is
+ * given it, said as not recorded, so the cards of one kind line up (R-0967); a
+ * kind is never given a place it cannot hold, so a noted event beside a shift
+ * differs by its kind alone. */
 function samePlaces(entries: PairEntry[]): PairEntry[] {
-  const shown = (fields: readonly string[]) =>
-    fields.filter((field) => entries.some((entry) => holds(entry, field)));
-  const places = shown(PLACES);
-  const lines = shown(LINES) as (typeof LINES)[number][];
   return entries.map((entry) => {
+    const kin = entries.filter((one) => one.kind === entry.kind);
+    const shown = (fields: readonly string[]) =>
+      fields.filter((field) => kin.some((one) => holds(one, field)));
+    const places = shown(PLACES);
+    const lines = shown(LINES) as (typeof LINES)[number][];
     const out = { ...entry, keys: { ...entry.keys } };
     for (const field of lines.filter((one) => !holds(entry, one))) {
       out[field] = UNSAID[field];
@@ -784,6 +817,41 @@ export function opinionCards(
   );
 }
 
+/** An opinion a voter wrote with change…, drawn as the coders' cards are, its
+ * people named as the people pairings name them (R-0965, R-0966). */
+export function ownCard(
+  pairing: Pairing,
+  value: Record<string, unknown>,
+  records: Map<number, CodingRecord>,
+  who: Who,
+  whole: boolean,
+): string {
+  const { item } = pairing;
+  const coding = item.opinions[0]?.coding_id ?? -1;
+  const named = (id: unknown) => item.people.find((one) => one.id === Number(id))?.name ?? "";
+  const about = value.child ?? value.person;
+  const opinion: Opinion = {
+    coding_id: coding,
+    item_id: "yours",
+    person_name: about === null || about === undefined ? null : named(about),
+    toward_names: ((value.relationshipTargets as unknown[] | undefined) ?? []).map(named),
+    item: value,
+  };
+  const built = isStructure(item.item_kind)
+    ? structureEntry(item.item_kind, opinion, records.get(coding), who)
+    : eventEntry(opinion, who);
+  const entry = samePlaces([...pairing.versions.flat(), built]).at(-1)!;
+  const differs = pairDiffers([
+    ...pairOpinions(pairing),
+    { entries: [entry], twins: [[entry]], codings: [coding] },
+  ]);
+  return (
+    `<div class="pv-label">your opinion</div>` +
+    `<div class="opinion pv on"><div class="pv-entry">${entryRows(entry, differs)}</div>` +
+    `${ownWords(entry, whole)}</div>`
+  );
+}
+
 /** "N coders left this event out", today's wording, only when one did. */
 export function leftOut(item: BallotItem): string {
   return item.not_coded
@@ -819,12 +887,14 @@ export function drawPairs(
   };
 }
 
-/** What the strip says a screen is on: an event by its date, a person or a
- * couple by the name (R-0326). */
+/** What the strip says a screen is on: a person or a couple by the name, an
+ * event by the date its first shown opinion gives, or nothing when no opinion
+ * gives one (R-0326). */
 export const nowWords = (pairing: Pairing): string => {
-  const first = pairing.versions[0]?.[0];
-  if (!first) return "";
-  return isStructure(pairing.item.item_kind) ? first.who : writtenDate(first);
+  const entries = pairOpinions(pairing).flatMap((one) => one.entries);
+  if (isStructure(pairing.item.item_kind)) return entries[0]?.who ?? "";
+  const dated = entries.find((one) => one.date && !STAND_IN.test(one.date));
+  return dated ? writtenDate(dated) : "";
 };
 
 /** The screen both the vote and Patrick's look over the pairings draw on: the
@@ -845,12 +915,13 @@ export function drawStrip(
   open: string,
 ): void {
   const { svg, height } = drawPairs(ids, current.item.id, done);
+  const now = nowWords(current);
   screen.view.innerHTML = svg;
   screen.view.style.height = `${height}px`;
   screen.caption.classList.add("pv-wrap");
   screen.caption.innerHTML =
     `<span class="cta">tap a dot to jump</span>` +
-    `<button class="tok g" type="button">now · ${esc(nowWords(current))}</button>` +
+    `<button class="tok g" type="button">now${now ? ` · ${esc(now)}` : ""}</button>` +
     `<button class="tok" type="button">${esc(open)}</button>`;
 }
 
@@ -891,6 +962,21 @@ export class PairSheet {
   }
 }
 
+/** The people "change…" offers: one per people pairing, by its most given
+ * name, so a person two copies or two entries hold is listed once; a person
+ * in no pairing by their own name (R-0968). */
+export function choosable(item: BallotItem, who: Who): Person[] {
+  const coding = item.opinions[0]?.coding_id ?? -1;
+  const seen = new Set<number>();
+  return item.people.flatMap((one) => {
+    const pairing = who.pairing.get(personKey(coding, one.id));
+    if (pairing === undefined) return [{ id: one.id, name: one.name } as Person];
+    if (seen.has(pairing)) return [];
+    seen.add(pairing);
+    return [{ id: one.id, name: who.name.get(pairing) || one.name } as Person];
+  });
+}
+
 export class Ballot {
   private session = "";
   /** A ratified cut is read rather than voted on, and lights the version the
@@ -898,6 +984,7 @@ export class Ballot {
   private ratified = false;
   private pairings: Pairing[] = [];
   private records = new Map<number, CodingRecord>();
+  private who: Who = whoOf([]);
   private mine = new Map<number, Vote>();
   private at = 0;
   /** Pairings whose passage, or whose coders' own words, are shown whole. */
@@ -941,8 +1028,8 @@ export class Ballot {
     this.session = cut.session;
     this.ratified = cut.ratified_at !== null;
     this.records = new Map(records.map((one) => [one.coding_id, one]));
-    const who = whoOf(items);
-    this.pairings = ballotOrder(items).map((one) => toPairing(one, this.records, who));
+    this.who = whoOf(items);
+    this.pairings = ballotOrder(items).map((one) => toPairing(one, this.records, this.who));
     this.mine = new Map(votes.map((vote) => [vote.review_item_id, vote]));
     const back = this.pairings.findIndex((one) => one.item.id === itemId);
     this.at = back >= 0 ? back : Math.max(this.unvoted(0), 0);
@@ -995,12 +1082,7 @@ export class Ballot {
     const lit = opinions.findIndex((one) => one.codings.includes(coding ?? -1));
     const own =
       vote?.choice === VoteChoice.Change && vote.value
-        ? `<div class="pv-label">your opinion</div>` +
-          `<div class="opinion tap on pv"><div class="pv-words">${esc(
-            isStructure(item.item_kind)
-              ? versionWords(undefined, vote.value, fieldsOf(item.item_kind))
-              : words({ item: vote.value } as Opinion, TELLING),
-          )}</div></div>`
+        ? ownCard(pairing, vote.value, this.records, this.who, this.full.has(item.id))
         : "";
     return (
       `<div class="bl-card pv-card">` +
@@ -1149,7 +1231,7 @@ export class Ballot {
     const vote = this.mine.get(item.id);
     const from =
       vote?.choice === VoteChoice.Change ? vote.value : (item.opinions[0]?.item ?? {});
-    const people = item.people.map((one) => ({ id: one.id, name: one.name }) as Person);
+    const people = choosable(item, this.who);
     const editor =
       item.item_kind === ItemKind.Person
         ? openPersonEditor(from as unknown as Person, {

@@ -187,27 +187,41 @@ function errors(page: Page): string[] {
 }
 
 /** A reload or a pasted address abandons the reads the page had in flight,
- * which WebKit reports as failed loads; only those are let go. */
+ * which WebKit reports as failed loads and Chromium as failed fetches; only
+ * those are let go. */
 async function leave(seen: string[], go: () => Promise<unknown>): Promise<void> {
   const from = seen.length;
   await go();
-  seen.push(...seen.splice(from).filter((one) => !/: Load failed$/.test(one)));
+  seen.push(...seen.splice(from).filter((one) => !/: (Load failed|Failed to fetch)$/.test(one)));
 }
 
 const caption = (page: Page) => page.locator("#ballot-caption");
 
-/** Every entry on screen shows the same places, and each place is accented in
- * every card or in none (R-0967). */
+/** Every entry of one kind on screen shows the same places, and each place is
+ * accented in every card of that kind or in none (R-0967). */
 async function samePlaces(page: Page): Promise<void> {
   const places = await page.evaluate(() =>
-    [...document.querySelectorAll("#ballot-screen .pv-entry")].map((entry) =>
-      [...entry.querySelectorAll(".pv-l1 > *, .pv-l2 > :not(.pv-arrow), .pv-l3 > *")].map((one) =>
+    [...document.querySelectorAll("#ballot-screen .pv-entry")].map((entry) => ({
+      kind: entry.querySelector(".pv-tag")?.textContent ?? "",
+      lit: [...entry.querySelectorAll(".pv-l1 > *, .pv-l2 > :not(.pv-arrow), .pv-l3 > *")].map((one) =>
         one.classList.contains("pv-diff"),
       ),
-    ),
+    })),
   );
   expect(places.length).toBeGreaterThan(1);
-  for (const one of places) expect(one).toEqual(places[0]);
+  for (const one of places)
+    expect(one.lit).toEqual(places.find((other) => other.kind === one.kind)!.lit);
+}
+
+/** Scrolled to its end, the pairing's last line stands above the bar. */
+async function clear(page: Page): Promise<void> {
+  const gap = await page.evaluate(() => {
+    const body = document.querySelector("#ballot-body")!;
+    body.scrollTop = body.scrollHeight;
+    const last = body.lastElementChild!.getBoundingClientRect();
+    return document.querySelector("#ballot-bar")!.getBoundingClientRect().top - last.bottom;
+  });
+  expect(gap).toBeGreaterThanOrEqual(0);
 }
 
 test.describe("the vote by pairing", () => {
@@ -221,36 +235,48 @@ test.describe("the vote by pairing", () => {
     await expect(page.locator("#title")).toContainText("ballot · 1 of 3");
     await expect(page.locator("#ballot-view circle")).toHaveCount(3);
     await expect(caption(page)).toContainText("3 open");
-    // the person comes first, as the ballot walks people before events
+    // the conversation's order: the move, said first, then the stepfather, then the death
+    await expect(page).toHaveURL(new RegExp(`/app/vote/${CUT}/41$`));
+    await expect(caption(page)).toContainText("now · 1994");
+    const depth = await page.evaluate(() => history.length);
+    await page.locator("#ballot-view circle").nth(1).click();
+    await expect(page.locator("#title")).toContainText("ballot · 2 of 3");
+    // a step changes the pairing in the address in place, and a reload comes back to it
+    await expect(page).toHaveURL(new RegExp(`/app/vote/${CUT}/42$`));
+    expect(await page.evaluate(() => history.length)).toBe(depth);
+    await leave(seen, () => page.reload());
+    await expect(page.locator("#title")).toContainText("ballot · 2 of 3");
     await expect(page.locator(".pv-tag").first()).toHaveText("person");
     // the name all agree on is plain; the gender they split on is accented in every card
     await expect(page.locator(".pv-label")).toHaveCount(2);
     await expect(page.locator(".pv-l3 .chip.pv-diff")).toHaveText(["male", "female"]);
     await expect(page.locator(".pv-l2 .pv-diff")).toHaveCount(0);
     await samePlaces(page);
-    await expect(page).toHaveURL(new RegExp(`/app/vote/${CUT}/42$`));
-    const depth = await page.evaluate(() => history.length);
-    await page.locator("#ballot-view circle").nth(1).click();
-    await expect(page.locator("#title")).toContainText("ballot · 2 of 3");
-    // a step changes the pairing in the address in place, and a reload comes back to it
-    await expect(page).toHaveURL(new RegExp(`/app/vote/${CUT}/41$`));
-    expect(await page.evaluate(() => history.length)).toBe(depth);
-    await leave(seen, () => page.reload());
-    await expect(page.locator("#title")).toContainText("ballot · 2 of 3");
+    // a date given to the year and one given to the month, both estimates, read as the year
+    await page.locator("#ballot-view circle").nth(2).click();
+    await expect(caption(page)).toContainText("now · 2003");
+    await expect(page.locator(".pv-card")).not.toContainText(/Jan|Jun/);
+    await page.locator("#ballot-view circle").nth(0).click();
+    await expect(page.locator("#title")).toContainText("ballot · 1 of 3");
 
     // the passage is cut to two lines until tapped
     await expect(page.locator("#bl-quote.clip")).toBeVisible();
     // two coders said the same thing: four versions read as three opinions
     await expect(page.locator(".pv-label")).toHaveText(["opinion 1", "opinion 2", "opinion 3"]);
-    await expect(page.locator(".pv-card")).not.toContainText(/coder 1|ballot1|coders? (said|wrote)/);
-    await expect(page.locator(".pv-card")).toContainText("no sure date");
+    await expect(page.locator(".pv-card")).not.toContainText(/coder 1|ballot1|coders? (said|wrote)|no sure date/);
+    await expect(page.locator(".pv-card")).toContainText("no date yet");
     await expect(page.locator(".pv-diff", { hasText: "Lou Reyes" })).toBeVisible();
-    // what a coder did not record keeps its place as an empty chip, accented with the place
-    await expect(page.locator(".chip.pv-diff", { hasText: "no one recorded" })).toHaveCount(3);
-    await expect(page.locator(".chip.pv-diff", { hasText: "no anxiety recorded" })).toHaveCount(2);
-    await expect(page.locator(".chip.pv-diff", { hasText: "no relationship recorded" })).toHaveCount(3);
+    // what a coder did not record keeps its place as an empty chip, accented with the place,
+    // on the shifts only: the noted event holds none of a shift's places
+    const noted = page.locator(".pv-entry", { has: page.locator(".pv-tag", { hasText: "noted" }) });
+    await expect(noted).toHaveCount(1);
+    await expect(noted).not.toContainText("recorded");
+    await expect(page.locator(".chip.pv-diff", { hasText: "no one recorded" })).toHaveCount(2);
+    await expect(page.locator(".chip.pv-diff", { hasText: "no anxiety recorded" })).toHaveCount(1);
+    await expect(page.locator(".chip.pv-diff", { hasText: "no relationship recorded" })).toHaveCount(2);
     await samePlaces(page);
     await holds(page);
+    await clear(page);
 
     const opinion = page.locator(".opinion.pv").first();
     await opinion.click();
@@ -370,6 +396,11 @@ test.describe("Patrick's look over the pairings", () => {
     await page.locator("#coding-back").click();
     await page.locator(".tb-vote").click();
     await expect(page.locator(".plnote", { hasText: "The vote is open." })).toBeVisible();
+    // once the vote is open the pairings are shut: their address shows the agenda's row
+    await leave(seen, () => page.goto(`/app/pairings/${CUT}/41`));
+    await expect(page.locator(".plnote", { hasText: "The vote is open." })).toBeVisible();
+    await expect(page.locator("#ballot-screen")).toBeHidden();
+    await expect(page.locator("#pr-join")).toHaveCount(0);
 
     const writes = sent.map((one) => `${one.method} ${one.path}`);
     expect(writes).toEqual(["POST /items", "POST /items", "PATCH /items/41", `PATCH /cuts/${CUT}`]);

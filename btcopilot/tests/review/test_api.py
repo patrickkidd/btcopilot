@@ -779,6 +779,39 @@ def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
     assert coder.get("/review/tasks").get_json()["task"] is None
 
 
+def test_the_coders_own_vote_is_said_in_plain_words_until_it_is_in(
+    patrick, coder, test_user, test_user_2, cut
+):
+    # R-0965
+    coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "mother got sick")]})
+    coded(
+        test_user_2,
+        cut,
+        {"people": [person(1, "Ann")], "events": [shift(21, 1, "father left", "2021-06-01")]},
+    )
+    coder.post("/review/codings", json={"cut_id": cut.id})
+    mine = Coding.query.filter_by(cut_id=cut.id, user_id=coder.user.id).first()
+    mine.done_at = datetime.datetime.utcnow()
+    db.session.commit()
+    open_vote(patrick, cut)
+    disputed = [
+        item
+        for item in Item.query.filter_by(cut_id=cut.id).all()
+        if item.status is ReviewStatus.Disputed
+    ]
+    coder.put(f"/review/items/{disputed[0].id}/vote", json={"choice": "drop"})
+
+    card = coder.get("/review/tasks").get_json()["task"]
+    left = len(disputed) - 1
+    assert card["detail"].startswith(f"{left} of {len(disputed)} pairings still open")
+
+    for item in disputed[1:]:
+        coder.put(f"/review/items/{item.id}/vote", json={"choice": "drop"})
+    found = coder.get("/review/tasks").get_json()
+    assert found["task"] is None
+    assert "your vote is in" in found["done"][0]["detail"]
+
+
 def test_only_an_auditor_reaches_the_coding_work(subscriber, cut):
     # R-0311
     """A professional licence or a plain subscription is not a coding role

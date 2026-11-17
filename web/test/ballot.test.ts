@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   DOTS,
+  ballotOrder,
+  choosable,
+  nowWords,
+  ownCard,
   drawPairs,
   drawTimeline,
   opinionCards,
@@ -270,12 +274,110 @@ describe("a pairing on the vote", () => {
   });
 
   // R-0956, R-0965
-  it("shows the date as far as it was said, and a stand-in or unknown date as no sure date", () => {
+  it("shows the date as far as it was said, an estimate or an unsure date as its year, and a stand-in as no date", () => {
     const [entry] = toPairing(pairing(1, [opinion(1, 1, moved)]), new Map()).versions[0];
     expect(writtenDate(entry)).toBe("1994");
     for (const date of ["1900-01-01", "0001-01-01", "1970-01-01"])
-      expect(writtenDate({ ...entry, date })).toBe("no sure date");
-    expect(writtenDate({ ...entry, cert: "unknown" })).toBe("no sure date");
+      expect(writtenDate({ ...entry, date })).toBe("no date yet");
+    expect(writtenDate({ ...entry, date: "" })).toBe("no date yet");
+    expect(writtenDate({ ...entry, date: "1990-01-01", prec: "day", cert: "approximate" })).toBe("1990");
+    expect(writtenDate({ ...entry, date: "1930-01-01", prec: "", cert: "unknown" })).toBe("1930");
+    expect(writtenDate({ ...entry, date: "1970-09-01", prec: "month", cert: "certain" })).toBe("Sep 1970");
+    expect(writtenDate({ ...entry, date: "1980-05-11", prec: "day", cert: "certain" })).toBe("11 May 1980");
+    expect(writtenDate({ ...entry, date: "1997-01-01", end: "1997-06-01" })).toBe("1997");
+  });
+
+  // R-0965, R-0967
+  it("gives a noted event beside a shift none of the shift's places, so they differ by the kind alone", () => {
+    const item = pairing(5, [
+      opinion(1, 1, { kind: "noted", dateTime: "2015-09-01", datePrecision: "month", title: "Started grad program" }),
+      opinion(2, 2, {
+        kind: "shift",
+        dateTime: "2015-09-01",
+        datePrecision: "month",
+        anxiety: "down",
+        functioning: "up",
+        relationship: "defined-self",
+        relationshipTargets: [7],
+        title: "Moved to SF",
+      }, { toward_names: ["Lee"] }),
+      opinion(3, 3, { kind: "shift", dateTime: "2015-09-01", datePrecision: "month", anxiety: "up" }),
+    ]);
+    const opinions = pairOpinions(toPairing(item, new Map()));
+    const noted = opinionCards(opinions.filter((one) => one.entries[0].kind === "noted"), null, false);
+    expect(noted).not.toMatch(/recorded/);
+    const html = opinionCards(opinions, null, false);
+    expect(html).toContain('<span class="pv-tag pv-diff">noted</span>');
+    expect(html).toContain("no functioning recorded");
+    expect(html.match(/no functioning recorded/g)).toHaveLength(1);
+  });
+
+  // R-0965
+  it("walks the pairings in the order of the conversation, then people, couples, events, then the earliest date any coder gave", () => {
+    const said = (id: number) => ({ line: { statement_id: id, who: "Ada", text: "" } });
+    const at = (
+      id: number,
+      kind: ItemKind,
+      lines: number[],
+      dates: string[] = ["2000-01-01"],
+    ): BallotItem => ({
+      ...pairing(
+        id,
+        dates.map((dateTime, n) => opinion(n + 1, id, { dateTime }, lines[n] ? said(lines[n]) : {})),
+      ),
+      item_kind: kind,
+    });
+    const items = [
+      at(1, ItemKind.Event, [40, 9], ["2000-01-01", "2000-01-01"]),
+      at(2, ItemKind.Event, [9], ["2015-09-01"]),
+      at(3, ItemKind.Event, [9, 9], ["2016-01-01", "1990-01-01"]),
+      at(4, ItemKind.Person, [9]),
+      at(5, ItemKind.PairBond, [9]),
+      at(6, ItemKind.Event, [3]),
+      at(7, ItemKind.Event, []),
+    ];
+    expect(ballotOrder(items).map((one) => one.id)).toEqual([6, 4, 5, 3, 1, 2, 7]);
+  });
+
+  // R-0965
+  it("says no date on the strip when no opinion gives one, and the first shown opinion's date when one does", () => {
+    const none = toPairing(pairing(8, [opinion(1, 1, { kind: "noted" }), opinion(2, 2, { kind: "noted", dateTime: "1900-01-01" })]), new Map());
+    expect(nowWords(none)).toBe("");
+    const dated = toPairing(pairing(9, [opinion(1, 1, { kind: "noted" }), opinion(2, 2, moved)]), new Map());
+    expect(nowWords(dated)).toBe("1994");
+  });
+
+  // R-0965, R-0966
+  it("draws an opinion written with change… as a card like the others, never as a sentence", () => {
+    const item = { ...pairing(10, [opinion(1, 1, moved), opinion(2, 2, { ...moved, anxiety: "down" })]), people: [{ id: 3, name: "Ann" }] };
+    const html = ownCard(
+      toPairing(item, new Map()),
+      { kind: "noted", person: 3, dateTime: "1950-01-01", datePrecision: "year", dateCertainty: "approximate", title: "Moved to Anchorage" },
+      new Map(),
+      whoOf([item]),
+      false,
+    );
+    expect(html).toContain("your opinion");
+    expect(html).toContain('<span class="pv-tag pv-diff">noted</span>');
+    expect(html).toContain("1950");
+    expect(html).toContain("Ann");
+    expect(html).not.toMatch(/Jan|something noted|recorded/);
+  });
+
+  // R-0968
+  it("offers each person once in change…, by the name most coders gave", () => {
+    const person = (coding: number, id: number, name: string) =>
+      opinion(coding, id, { id, name, gender: "male", parents: null });
+    const john = { ...pairing(30, [person(1, 5, "John"), person(1, 6, "John"), person(2, 5, "Johnny"), person(3, 5, "Johnny")]), item_kind: ItemKind.Person };
+    const event = {
+      ...pairing(31, [opinion(1, 1, moved)]),
+      people: [
+        { id: 5, name: "John" },
+        { id: 6, name: "John" },
+        { id: 7, name: "Robert" },
+      ],
+    };
+    expect(choosable(event, whoOf([john, event])).map((one) => one.name)).toEqual(["Johnny", "Robert"]);
   });
 
   // R-0965, R-0966

@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../src/api", async (real) => ({
   ...(await real<typeof import("../src/api")>()),
   split: vi.fn(async () => ({ items: [], deleted: [] })),
+  cut: vi.fn(async () => ({ session: "S", vote_opened_at: "2026-10-28T03:49:00" })),
+  items: vi.fn(async () => []),
+  records: vi.fn(async () => []),
 }));
 vi.mock("../src/track", async (real) => ({
   ...(await real<typeof import("../src/track")>()),
@@ -48,6 +51,15 @@ describe("Patrick's look over the pairings", () => {
     expect(nearest(pairings, 21)).toBe(2);
     expect(nearest(pairings, 29)).toBe(1);
     expect(nearest(pairings, 15)).toBe(0);
+  });
+
+  // R-0963
+  it("is shut once the vote is open: nothing is drawn and the caller goes back to the agenda", async () => {
+    const body = { innerHTML: "" };
+    const screen = Object.assign(Object.create(Pairings.prototype), { live: false, screen: { body } });
+    expect(await screen.open(7)).toBe(false);
+    expect(screen.live).toBe(false);
+    expect(body.innerHTML).toBe("");
   });
 
   // R-0963
