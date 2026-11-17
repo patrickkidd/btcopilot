@@ -1390,7 +1390,7 @@ class Toolbox:
         for person in self.data.people:
             if str(person.get("id")) == str(person_id):
                 return person
-        raise ToolError(f"No person {person_id} in the record", views.NO_PERSON)
+        raise ToolError(record.no_person(self.data.pair_bonds, person_id), views.NO_PERSON)
 
     def _edit_event(self, args: dict) -> tuple[str, dict]:
         data = self.data
@@ -2262,7 +2262,7 @@ class Toolbox:
 
     def _person(self, data: DiagramData, person_id) -> int:
         if not self._exists(data, ItemKind.Person, person_id):
-            raise ToolError(f"No person {person_id} in the record", views.NO_PERSON)
+            raise ToolError(record.no_person(data.pair_bonds, person_id), views.NO_PERSON)
         return int(person_id)
 
     def _event(self, data: DiagramData, event_id) -> int:

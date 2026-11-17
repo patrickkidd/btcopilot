@@ -2,9 +2,18 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-11-17 (the review scribe gives children of one parent one generic other parent)
+**Last Updated**: 2026-11-17 (the review scribe deletes only what was named, adds no group as a person, keeps two events in one estimated year)
 
 ---
+
+## FD-393 — the review scribe deletes only what was named, never adds a group as a person, and keeps two events in one estimated year (2026-11-17)
+
+R-0971, R-0956, R-0489, R-0442. From a sweep of the first coding meeting's codings. Two lines added to the scribe prompt after the sibling line, open and private copies, both goldens re-captured; two code changes in the diagram's checks.
+- Deleting: "Delete only the person, pair-bond or event the coder named. When their words could mean more than one thing ("this", "that", "the duplicate"), or the delete would take other entries with it (a person goes with their events and pair-bonds), delete nothing and ask one short question naming what it would remove." Fault: "take out this duplicate passage" deleted a person, her pair-bond and twelve events.
+- Group entries: "A relationship move points only at people: someone in the record, or someone the coder named, added under that name. Never add a group, as "Marcus's family" or "his siblings", as a person; when the coder names a group, point the move at its people in the record, and when the record holds none of them, write nothing and ask who they are. A generically named person is added only for a parent nobody named, once, as above; never for someone the coder's words already name ("Ruth's first husband, father of Sam" is one man, Sam's father)." Fault: people named "<name>'s family" and "<name>'s siblings" as targets of a cutoff or a distance, and a generic mother plus a new first husband from "first husband, father of <child>".
+- Code: the "already in the diagram" check now compares the day only when a day was said: a year or a month alone, or a date marked unknown, is nobody's twin. Fault: two different events of one kind for one person, both estimated to 1 January of the same year, were refused as one, and the scribe folded the second into the first. The refusal now says to fold into the event only when it is the same event told again (R-0442) and otherwise to leave it as it is and say it looks already there.
+- Code: a pair-bond's id given where a person's id belongs is refused naming the pair-bond and its two people, "never add them again". Fault: the scribe passed a parents' pair-bond id as a parent, was told only "No person N", and added both parents a second time.
+- Eval: `btcopilot/tests/live/test_scribe_writes.py`, three cases, each 2 of 3, invented family, Claude through the subscription ($0). Old prompt and code: a vague delete asks and deletes nothing 3 of 3; a distance to "her family" adds no group person 3 of 3; two anxiety-up shifts in one estimated year both kept 0 of 3. New: 3 of 3 on all three. The first two do not fail on Claude with the old prompt; the faults were seen on Gemini Flash, which this route does not run. The sibling eval and the dating eval still pass 3 of 3.
 
 ## FD-393 — the review scribe gives children of one parent one generic other parent (2026-11-17)
 

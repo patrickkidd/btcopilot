@@ -1138,3 +1138,12 @@ def test_a_note_about_the_app_is_offered_as_a_report_and_writes_nothing(coder, c
     assert response.json["report"] == {"kind": "bug", "words": words}
     assert (response.json["lines"], response.json["refused"]) == ([], [])
     assert adapter.diagram_of(coding.diagram_id).version == before
+
+
+def test_a_pair_bond_given_as_a_parent_is_refused_as_that_pair_bond(coder, cut, turns):
+    # R-0971
+    coding = coded(coder.user, cut, FAMILY, done=False)
+    model = Scripted([("add_person", {"name": "Nora", "parents": [4]})])
+    with patch.object(model, "turn", wraps=model.turn) as heard:
+        scribe(coder, coding, turns[0], model, "Owen and Maeve had a daughter, Nora")
+    assert "4 is the pair-bond of persons 2 and 3" in str(heard.call_args_list[-1].args[1])

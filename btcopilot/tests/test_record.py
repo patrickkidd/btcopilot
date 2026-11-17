@@ -1295,3 +1295,27 @@ def test_a_change_of_kind_still_refuses_a_title_naming_its_own_person(subscriber
     diagram = _diagram(subscriber.user, {**RULES, "events": [*RULES["events"], noted]})
     with pytest.raises(record.Invalid, match="names Ada"):
         _write(diagram, ItemKind.Event, 40, {"kind": "shift", "anxiety": "up"})
+
+
+@pytest.mark.parametrize(
+    "said",
+    [
+        {"datePrecision": "year", "dateCertainty": "approximate"},
+        {"datePrecision": "month", "dateCertainty": "approximate"},
+        {"datePrecision": "day", "dateCertainty": "unknown"},
+    ],
+)
+def test_two_events_with_no_day_said_are_both_kept(said):
+    # R-0971, R-0956, R-0489
+    shift = {"kind": "shift", "person": 1, "anxiety": "up", "dateTime": "1996-01-01", **said}
+    data = {"people": [{"id": 1, "name": "Ada"}], "events": [{"id": 10, **shift}, {"id": 11, **shift}], "pair_bonds": []}
+    record._twins(data, [{"item_kind": "event", "item_id": 11, "field": None, "before": None}])
+
+
+def test_a_twin_refusal_says_to_leave_the_event_already_there_when_it_is_another():
+    # R-0971, R-0489, R-0442
+    shift = {"kind": "shift", "person": 1, "anxiety": "up", "dateTime": "1996-03-04", "datePrecision": "day", "dateCertainty": "certain"}
+    data = {"people": [{"id": 1, "name": "Ada"}], "events": [{"id": 10, **shift}, {"id": 11, **shift}], "pair_bonds": []}
+    with pytest.raises(record.Invalid) as refused:
+        record._twins(data, [{"item_kind": "event", "item_id": 11, "field": None, "before": None}])
+    assert "when it is another event, leave event 10 as it is" in str(refused.value)

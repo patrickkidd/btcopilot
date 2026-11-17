@@ -20,7 +20,7 @@ from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot import observer, proactive, profile, prompts, push, record, turnstore
 from btcopilot import turnlog
-from btcopilot.record import Invalid
+from btcopilot.record import Invalid, no_person
 from btcopilot.coachmodel import COACH_EFFORT, CoachModel, model_for
 from btcopilot.coachturn import CoachTurn
 from btcopilot.discussions import utc_iso

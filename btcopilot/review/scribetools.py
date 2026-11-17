@@ -500,6 +500,8 @@ class ScribeTools:
         for one in collection:
             if str(one.get("id")) == str(item_id):
                 return one
+        if kind is ItemKind.Person:
+            raise ToolError(adapter.no_person(self.toolbox.data.pair_bonds, item_id), adapter.GONE)
         raise ToolError(f"No {kind.value} {item_id} in the record", adapter.GONE)
 
     def _form(self, tool: ScribeTool, args: dict) -> tuple[ToolName, dict]:
