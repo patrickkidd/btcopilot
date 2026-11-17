@@ -6,6 +6,7 @@ import {
   opinionCards,
   pairOpinions,
   toPairing,
+  whoOf,
   writtenDate,
   eventsOf,
   litCoding,
@@ -301,19 +302,19 @@ describe("a pairing on the vote", () => {
     expect(html).not.toContain("pv-diff");
   });
 
-  // R-0965, R-0966
-  it("accents no value every opinion shares, when the opinions hold different numbers of entries", () => {
+  // R-0965, R-0967
+  it("accents a place in every card when the opinions hold different numbers of entries, and never a place they agree on", () => {
     const item = pairing(6, [
       opinion(1, 1, moved),
       opinion(2, 2, moved),
       opinion(2, 3, { ...moved, kind: "noted", anxiety: "down" }),
     ]);
     const html = opinionCards(pairOpinions(toPairing(item, new Map())), null, false);
-    expect(html).not.toContain('<span class="pv-tag pv-diff">shift</span>');
-    expect(html).not.toContain('<span class="chip pv-diff">anxiety ↑</span>');
-    expect(html).not.toContain('<span class="pv-diff">1994</span>');
+    expect(html.match(/<span class="pv-tag pv-diff">shift<\/span>/g)).toHaveLength(2);
     expect(html).toContain('<span class="pv-tag pv-diff">noted</span>');
+    expect(html.match(/<span class="chip pv-diff">anxiety ↑<\/span>/g)).toHaveLength(2);
     expect(html).toContain('<span class="chip pv-diff">anxiety ↓</span>');
+    expect(html).not.toMatch(/pv-diff">(1994|Ada)</);
   });
 
   // R-0961, R-0965
@@ -342,6 +343,82 @@ describe("a pairing on the vote", () => {
     const opinions = pairOpinions(seen);
     expect(opinions).toHaveLength(1);
     expect(opinionCards(opinions, null, false)).not.toContain("pv-diff");
+  });
+
+  // R-0967
+  it("shows Emily's places in every card, the gender not recorded as an empty chip, and merges the cards that read the same", () => {
+    const record = { people: [], pair_bonds: [] } as unknown as CodingRecord;
+    const emily = (name: string, gender: string | null) => ({ id: 9, name, gender, parents: null });
+    const item = {
+      ...pairing(8, [
+        opinion(1, 9, emily("Emily", null)),
+        opinion(2, 9, emily("Patrick's partner", "female")),
+        opinion(3, 9, emily("Emily", null)),
+        opinion(4, 9, emily("Emily", "female")),
+      ]),
+      item_kind: ItemKind.Person,
+    };
+    const records = new Map([1, 2, 3, 4].map((id) => [id, record]));
+    const opinions = pairOpinions(toPairing(item, records));
+    expect(opinions).toHaveLength(3);
+    const html = opinionCards(opinions, null, false);
+    expect(html.match(/class="pv-diff">(Emily<|Patrick)/g)).toHaveLength(3);
+    expect(html.match(/chip pv-diff">no gender recorded</g)).toHaveLength(1);
+    expect(html.match(/chip pv-diff">female</g)).toHaveLength(2);
+    expect(html.match(/chip pv-same">no parents recorded</g)).toHaveLength(3);
+    expect(html).not.toContain("no last name recorded");
+  });
+
+  // R-0967
+  it("compares Jane's parents by who they are, so two spellings are one value, and accents the place in every card", () => {
+    const record = (louann: string) =>
+      ({
+        people: [
+          { id: 1, name: "Wally" },
+          { id: 2, name: louann },
+          { id: 3, name: "Jane" },
+        ],
+        pair_bonds: [{ id: 7, person_a: 1, person_b: 2 }],
+      }) as unknown as CodingRecord;
+    const jane = { id: 3, name: "Jane", gender: "female", parents: 7 };
+    const people = (id: number, person: number) =>
+      ({
+        ...pairing(id, [1, 2, 3].map((coding) => opinion(coding, person, {}))),
+        item_kind: ItemKind.Person,
+      }) as BallotItem;
+    const item = {
+      ...pairing(5, [
+        opinion(1, 3, jane),
+        opinion(2, 3, { ...jane, parents: null }),
+        opinion(2, 4, jane),
+        opinion(3, 3, jane),
+      ]),
+      item_kind: ItemKind.Person,
+    };
+    const who = whoOf([people(20, 1), people(21, 2), item]);
+    const records = new Map([
+      [1, record("Louann")],
+      [2, record("LouAnn")],
+      [3, record("LouAnn")],
+    ]);
+    const opinions = pairOpinions(toPairing(item, records, who));
+    expect(opinions).toHaveLength(2);
+    const html = opinionCards(opinions, null, false);
+    expect(html).toMatch(/chip pv-diff">born to (Louann|LouAnn) &amp; Wally</);
+    expect(html).toContain('chip pv-diff">no parents recorded<');
+    expect(html).not.toMatch(/chip pv-same">born to/);
+    expect(html).not.toMatch(/pv-diff">(Jane|female)</);
+  });
+
+  // R-0963, R-0967
+  it("lets a tap on a merged card's entry select every coder's entry it stands for", () => {
+    const item = pairing(9, [opinion(1, 1, moved), opinion(2, 2, moved), opinion(3, 3, { ...moved, anxiety: "down" })]);
+    const opinions = pairOpinions(toPairing(item, new Map()));
+    expect(opinions).toHaveLength(2);
+    const both = new Set(["1:1", "2:2"]);
+    const html = opinionCards(opinions, null, false, both);
+    expect(html).toContain('<div class="pv-entry on" data-entry="1:1 2:2">');
+    expect(opinionCards(opinions, null, false, new Set(["1:1"]))).not.toContain("pv-entry on");
   });
 
   // R-0965

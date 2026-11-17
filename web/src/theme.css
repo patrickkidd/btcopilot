@@ -3338,9 +3338,9 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .pv-l2 { font: 400 14px/20px var(--sans); color: var(--ink); overflow-wrap: anywhere; }
 .pv-arrow { color: var(--faint); }
 .pv-l3 { display: flex; flex-wrap: wrap; gap: 4px; }
-.pv-l3 .chip { margin: 0; cursor: inherit; }
-.pv-l3 .chip::before { content: none; }
-.pv-l3 .chip.pv-same { color: var(--faint); border-color: var(--line); }
+.pv-l2 .chip, .pv-l3 .chip { margin: 0; cursor: inherit; }
+.pv-l2 .chip::before, .pv-l3 .chip::before { content: none; }
+.pv-l2 .chip.pv-same, .pv-l3 .chip.pv-same { color: var(--faint); border-color: var(--line); }
 .quote.clip { cursor: pointer; }
 .quote.clip .qt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .pv-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; min-height: 44px; padding: 8px 16px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); text-align: left; cursor: pointer; }

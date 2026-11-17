@@ -2,26 +2,29 @@ import * as api from "./api";
 import {
   PairSheet,
   drawStrip,
-  eachVersion,
   entryKey,
   leftOut,
   nowWords,
   opinionCards,
+  pairOpinions,
   passage,
   toPairing,
+  whoOf,
   walkOrder,
   writtenDate,
   type PairScreen,
   type Pairing,
+  type Who,
 } from "./ballot";
 import { esc, stepBtn, type Title } from "./dom";
 import { Feature, tap } from "./track";
 import { Confidence, type BallotItem, type CodingRecord, type Entry, type Repaired } from "./types";
 
 /** Patrick's look over the ballot's pairings before he opens the vote: the
- * ones the call marked unsure first, on the vote's own card, each coder's
- * version on its own so an entry can be taken out of it. He alone joins and
- * splits; coders never change a pairing (R-0963). */
+ * ones the call marked unsure first, on the vote's own card, identical
+ * versions merged as on the vote, a tap on an entry taking every coder's entry
+ * it stands for. He alone joins and splits; coders never change a pairing
+ * (R-0963, R-0967). */
 
 export interface PairingsHandlers {
   onTitle(title: string | Title): void;
@@ -47,6 +50,7 @@ export class Pairings {
   private session = "";
   private pairings: Pairing[] = [];
   private records = new Map<number, CodingRecord>();
+  private who: Who = new Map();
   private at = 0;
   /** The entries tapped, which a split takes out or a join moves. */
   private chosen = new Set<string>();
@@ -82,9 +86,16 @@ export class Pairings {
     this.cutId = cutId;
     this.session = cut.session;
     this.records = new Map(records.map((one) => [one.coding_id, one]));
-    this.pairings = lookOrder(items).map((one) => toPairing(one, this.records));
+    this.pairings = this.paired(lookOrder(items));
     this.at = 0;
     this.render();
+  }
+
+  /** The people pairings decide who a person is on every card, so all of
+   * them are drawn again whenever one changes. */
+  private paired(items: BallotItem[]): Pairing[] {
+    this.who = whoOf(items);
+    return items.map((one) => toPairing(one, this.records, this.who));
   }
 
   private pairing(): Pairing | null {
@@ -123,7 +134,7 @@ export class Pairings {
       (pairing.line ? passage(pairing.line, this.whole.has(item.id)) : "") +
       `<div class="progress">${esc(item.pairing_confidence ?? Confidence.Unsure)}</div>` +
       (item.pairing_reason ? `<div class="note">${esc(item.pairing_reason)}</div>` : "") +
-      opinionCards(eachVersion(pairing), null, this.full.has(item.id), this.chosen) +
+      opinionCards(pairOpinions(pairing), null, this.full.has(item.id), this.chosen) +
       leftOut(item) +
       `</div>`
     );
@@ -152,8 +163,9 @@ export class Pairings {
       this.full.add(item.id);
       this.render();
     } else if (entry) {
-      const key = entry.dataset.entry!;
-      if (!this.chosen.delete(key)) this.chosen.add(key);
+      const keys = entry.dataset.entry!.split(" ");
+      const on = keys.every((key) => this.chosen.has(key));
+      keys.forEach((key) => (on ? this.chosen.delete(key) : this.chosen.add(key)));
       this.render();
     } else if (target.closest("#bl-quote.clip")) {
       this.whole.add(item.id);
@@ -224,16 +236,15 @@ export class Pairings {
    * `stay` (R-0963). */
   private apply(answer: Repaired, stay: number): void {
     const gone = new Set(answer.deleted);
-    const fresh = answer.items.map((one) => toPairing(one, this.records));
     const known = new Set(this.pairings.map((one) => one.item.id));
     const here = this.pairing()!.item.id;
     const kept = this.pairings
       .filter((one) => !gone.has(one.item.id))
-      .map((one) => fresh.find((that) => that.item.id === one.item.id) ?? one);
-    const at = kept.findIndex((one) => one.item.id === here);
-    kept.splice(at + 1, 0, ...fresh.filter((one) => !known.has(one.item.id)));
-    this.pairings = kept;
-    this.step(Math.max(kept.findIndex((one) => one.item.id === stay), 0));
+      .map((one) => answer.items.find((that) => that.id === one.item.id) ?? one.item);
+    const at = kept.findIndex((one) => one.id === here);
+    kept.splice(at + 1, 0, ...answer.items.filter((one) => !known.has(one.id)));
+    this.pairings = this.paired(kept);
+    this.step(Math.max(kept.findIndex((one) => one.id === stay), 0));
   }
 
   close(): void {

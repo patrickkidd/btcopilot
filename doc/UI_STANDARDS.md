@@ -63,6 +63,10 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
   the same place in every card with no field name, values are the app's own chips, and
   only what differs between the versions takes the accent. A card with every field as a
   labelled coloured chip is too busy. [Oracle: R-0966]
+- When cards compare versions of one thing, each card carries every place any version
+  filled, in one order, and an unfilled one is an empty chip ("no gender recorded"). A place
+  where versions part ways is accented on all cards, a shared one on none; people match by
+  identity, not spelling; identical cards collapse into one. [Oracle: R-0967]
 
 ## Behaviour
 - A control that starts something starts it immediately, not on the next tick of a

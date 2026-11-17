@@ -4,7 +4,9 @@ import { shell, stateFor, username } from "./setup";
 /** The vote by pairing and Patrick's look over the pairings, on the app's own
  * page with the review answered from fixtures: one pairing per screen, the
  * opinions without names, a pick and a drop that both un-tap, and before the
- * vote opens, joins and splits on the same card (R-0963, R-0965, R-0966). */
+ * vote opens, joins and splits on the same card; every card of a pairing shows
+ * the same places, accented in every card where the opinions disagree, and
+ * identical cards are one (R-0963, R-0965, R-0966, R-0967). */
 
 const CUT = 2;
 const line = (statement_id: number, text: string) => ({ statement_id, who: "Dana", text });
@@ -184,10 +186,24 @@ function errors(page: Page): string[] {
 
 const caption = (page: Page) => page.locator("#ballot-caption");
 
+/** Every entry on screen shows the same places, and each place is accented in
+ * every card or in none (R-0967). */
+async function samePlaces(page: Page): Promise<void> {
+  const places = await page.evaluate(() =>
+    [...document.querySelectorAll("#ballot-screen .pv-entry")].map((entry) =>
+      [...entry.querySelectorAll(".pv-l1 > *, .pv-l2 > :not(.pv-arrow), .pv-l3 > *")].map((one) =>
+        one.classList.contains("pv-diff"),
+      ),
+    ),
+  );
+  expect(places.length).toBeGreaterThan(1);
+  for (const one of places) expect(one).toEqual(places[0]);
+}
+
 test.describe("the vote by pairing", () => {
   test.use({ storageState: stateFor("moves") });
 
-  // R-0965, R-0966, R-0252
+  // R-0965, R-0966, R-0967, R-0252
   test("one pairing per screen, opinions without names, a pick and a drop that both un-tap", async ({ page }) => {
     const seen = errors(page);
     const sent = await review(page, { ballot: "open" });
@@ -197,6 +213,11 @@ test.describe("the vote by pairing", () => {
     await expect(caption(page)).toContainText("3 open");
     // the person comes first, as the ballot walks people before events
     await expect(page.locator(".pv-tag").first()).toHaveText("person");
+    // the name all agree on is plain; the gender they split on is accented in every card
+    await expect(page.locator(".pv-label")).toHaveCount(2);
+    await expect(page.locator(".pv-l3 .chip.pv-diff")).toHaveText(["male", "female"]);
+    await expect(page.locator(".pv-l2 .pv-diff")).toHaveCount(0);
+    await samePlaces(page);
     await page.locator("#ballot-view circle").nth(1).click();
     await expect(page.locator("#title")).toContainText("ballot · 2 of 3");
 
@@ -207,6 +228,11 @@ test.describe("the vote by pairing", () => {
     await expect(page.locator(".pv-card")).not.toContainText(/coder 1|ballot1|coders? (said|wrote)/);
     await expect(page.locator(".pv-card")).toContainText("no sure date");
     await expect(page.locator(".pv-diff", { hasText: "Lou Reyes" })).toBeVisible();
+    // what a coder did not record keeps its place as an empty chip, accented with the place
+    await expect(page.locator(".chip.pv-diff", { hasText: "no one recorded" })).toHaveCount(3);
+    await expect(page.locator(".chip.pv-diff", { hasText: "no anxiety recorded" })).toHaveCount(2);
+    await expect(page.locator(".chip.pv-diff", { hasText: "no relationship recorded" })).toHaveCount(3);
+    await samePlaces(page);
     await holds(page);
 
     const opinion = page.locator(".opinion.pv").first();
@@ -251,7 +277,7 @@ test.describe("Patrick's look over the pairings", () => {
   test.beforeEach(() => roles("admin"));
   test.afterEach(() => roles("subscriber"));
 
-  // R-0961, R-0963
+  // R-0961, R-0963, R-0967
   test("builds the ballot, shows it building, then the unsure pairings first to split and join before the vote opens", async ({
     page,
   }) => {
@@ -274,16 +300,23 @@ test.describe("Patrick's look over the pairings", () => {
     await expect(page.locator("#title")).toContainText("pairings · 1 of 3");
     await expect(page.locator(".pv-card .progress")).toHaveText("unsure");
     await expect(page.locator(".pv-card .note").first()).toContainText("told four ways");
-    // each coder's version on its own: four, not merged
-    await expect(page.locator(".pv-label")).toHaveCount(4);
+    // the two coders who wrote the same thing are one card here too
+    await expect(page.locator(".pv-label")).toHaveCount(3);
+    await samePlaces(page);
     await expect(page.locator("#pr-split")).toBeDisabled();
+    // a tap on the merged card's entry takes both coders' entries, and a second tap lets go
+    const twins = page.locator('[data-entry~="1:11"][data-entry~="2:21"]');
+    await twins.click();
+    await expect(twins).toHaveClass(/ on/);
+    await twins.click();
+    await expect(twins).not.toHaveClass(/ on/);
     const entry = page.locator('[data-entry="4:41"]');
     await entry.click();
     await expect(entry).toHaveClass(/ on/);
     await expect(page.locator("#pr-split")).toBeEnabled();
     await page.locator("#pr-split").click();
     await expect(page.locator("#title")).toContainText("pairings · 1 of 4");
-    await expect(page.locator(".pv-label")).toHaveCount(3);
+    await expect(page.locator(".pv-label")).toHaveCount(2);
 
     await page.locator("#pr-join").click();
     // only pairings of events are offered to join an event

@@ -328,6 +328,22 @@ export interface PairValue {
   said: string;
 }
 
+/** Which people pairing each coder's person is in, keyed by coding and
+ * person, so the people a version names are compared by who they are, never
+ * by spelling or order (R-0967). */
+export type Who = Map<string, number>;
+
+const personKey = (coding: number, id: unknown) => `${coding}:${String(id)}`;
+
+export const whoOf = (items: BallotItem[]): Who =>
+  new Map(
+    items
+      .filter((item) => item.item_kind === ItemKind.Person)
+      .flatMap((item) =>
+        item.opinions.map((one) => [personKey(one.coding_id!, one.item_id), item.id] as const),
+      ),
+  );
+
 /** One coder's entry, as the card draws it: fields by place, never a sentence
  * (R-0966). */
 export interface PairEntry {
@@ -343,6 +359,9 @@ export interface PairEntry {
   title: string;
   desc: string;
   values: PairValue[];
+  /** What a place is compared by when it is not its words: the people
+   * pairings of the people it names, or "" for a value not recorded. */
+  keys: Record<string, string>;
   line: TranscriptLine | null;
 }
 
@@ -370,8 +389,23 @@ export function writtenDate(entry: PairEntry): string {
 
 const text = (value: unknown) => (value === null || value === undefined ? "" : String(value));
 
-function eventEntry(opinion: Opinion): PairEntry {
+/** The people a version names, as the pairings they are in, in one order; a
+ * person in no pairing is known only by name. */
+function someone(who: Who, coding: number, ids: unknown[], names: string[]): string {
+  return ids
+    .map((id, at) => {
+      const pairing = who.get(personKey(coding, id));
+      return pairing === undefined ? `=${names[at] ?? ""}` : `#${pairing}`;
+    })
+    .sort()
+    .join("&");
+}
+
+function eventEntry(opinion: Opinion, who: Who): PairEntry {
   const event = opinion.item;
+  const coding = opinion.coding_id!;
+  const about = event.child ?? event.person;
+  const toward = (event.relationshipTargets as unknown[] | undefined) ?? [];
   const values: PairValue[] = SHIFTS.filter((field) => event[field]).map((field) => ({
     field,
     said: `${field} ${ARROWS[text(event[field])] ?? text(event[field])}`,
@@ -394,6 +428,12 @@ function eventEntry(opinion: Opinion): PairEntry {
     title: text(event.title),
     desc: text(event.description),
     values,
+    keys: {
+      ...(about === null || about === undefined
+        ? {}
+        : { who: someone(who, coding, [about], [opinion.person_name ?? ""]) }),
+      ...(toward.length ? { toward: someone(who, coding, toward, opinion.toward_names ?? []) } : {}),
+    },
     line: opinion.line ?? null,
   };
 }
@@ -406,7 +446,13 @@ function structureEntry(
   kind: ItemKind,
   opinion: Opinion,
   record: CodingRecord | undefined,
+  who: Who,
 ): PairEntry {
+  const coding = opinion.coding_id!;
+  const item = opinion.item;
+  const named = (id: unknown) => record?.people.find((one) => one.id === Number(id))?.name ?? "";
+  const pair = (a: unknown, b: unknown) => someone(who, coding, [a, b], [named(a), named(b)]);
+  const bond = record?.pair_bonds.find((one) => one.id === Number(item.parents));
   return {
     coding_id: opinion.coding_id!,
     item_id: opinion.item_id!,
@@ -423,6 +469,10 @@ function structureEntry(
       .filter((field) => !NAMED.includes(field))
       .map((field) => ({ field, said: versionWords(record, opinion.item, [field]) }))
       .filter((one) => one.said),
+    keys:
+      kind === ItemKind.Person
+        ? { parents: bond ? pair(bond.person_a, bond.person_b) : "none" }
+        : { who: pair(item.person_a, item.person_b) },
     line: opinion.line ?? null,
   };
 }
@@ -455,53 +505,69 @@ function mostSaid(entries: PairEntry[]): TranscriptLine | null {
   return [...counts.values()].sort((a, b) => b.n - a.n)[0]?.line ?? null;
 }
 
+/** The places a card can show under its first two lines, in the order they
+ * read, and what an empty one says. */
+const PLACES = [...SHIFTS, "relationship", "last_name", "gender", "parents", "married"];
+const LINES = ["who", "toward"] as const;
+const UNSAID: Record<string, string> = {
+  who: "no person recorded",
+  toward: "no one recorded",
+  symptom: "no symptom recorded",
+  anxiety: "no anxiety recorded",
+  functioning: "no functioning recorded",
+  relationship: "no relationship recorded",
+  last_name: "no last name recorded",
+  gender: "no gender recorded",
+};
+
+const holds = (entry: PairEntry, field: string) =>
+  (LINES as readonly string[]).includes(field)
+    ? Boolean(entry[field as (typeof LINES)[number]])
+    : entry.values.some((one) => one.field === field);
+
+/** An entry lacking a place another entry of its pairing holds is given it,
+ * said as not recorded, so all cards line up (R-0967). */
+function samePlaces(entries: PairEntry[]): PairEntry[] {
+  const shown = (fields: readonly string[]) =>
+    fields.filter((field) => entries.some((entry) => holds(entry, field)));
+  const places = shown(PLACES);
+  const lines = shown(LINES) as (typeof LINES)[number][];
+  return entries.map((entry) => {
+    const out = { ...entry, keys: { ...entry.keys } };
+    for (const field of lines.filter((one) => !holds(entry, one))) {
+      out[field] = UNSAID[field];
+      out.keys[field] = "";
+    }
+    out.values = places.map((field) => {
+      const found = entry.values.find((one) => one.field === field);
+      if (found) return found;
+      out.keys[field] = "";
+      return { field, said: UNSAID[field] };
+    });
+    return out;
+  });
+}
+
 /** A row of the ballot as a pairing: its entries grouped by coder. */
-export function toPairing(item: BallotItem, records: Map<number, CodingRecord>): Pairing {
+export function toPairing(
+  item: BallotItem,
+  records: Map<number, CodingRecord>,
+  who: Who = new Map(),
+): Pairing {
+  const built = item.opinions.map((opinion) =>
+    isStructure(item.item_kind)
+      ? structureEntry(item.item_kind, opinion, records.get(opinion.coding_id ?? -1), who)
+      : eventEntry(opinion, who),
+  );
   const byCoder = new Map<number, PairEntry[]>();
-  for (const opinion of item.opinions) {
-    const entry = isStructure(item.item_kind)
-      ? structureEntry(item.item_kind, opinion, records.get(opinion.coding_id ?? -1))
-      : eventEntry(opinion);
+  for (const entry of samePlaces(built))
     byCoder.set(entry.coding_id, [...(byCoder.get(entry.coding_id) ?? []), entry]);
-  }
   const versions = shuffled(
     [...byCoder.keys()].sort((a, b) => a - b).map((id) => byCoder.get(id)!),
     item.id,
   );
   return { item, versions, line: mostSaid(versions.flat()) ?? item.line };
 }
-
-/** Two versions say the same thing when they agree on the kind, the people,
- * the date and the values; the words they used may differ. */
-const sameness = (entry: PairEntry) =>
-  [
-    entry.kind,
-    entry.who,
-    entry.toward,
-    writtenDate(entry),
-    ...entry.values.map((one) => one.said).sort(),
-  ].join("|");
-
-export interface PairOpinion {
-  entries: PairEntry[];
-  codings: number[];
-}
-
-export function pairOpinions(pairing: Pairing): PairOpinion[] {
-  const found = new Map<string, PairOpinion>();
-  for (const entries of pairing.versions) {
-    const key = entries.map(sameness).sort().join("‖");
-    const already = found.get(key);
-    if (already) already.codings.push(entries[0].coding_id);
-    else found.set(key, { entries, codings: [entries[0].coding_id] });
-  }
-  return [...found.values()];
-}
-
-/** Each coder's version on its own, unmerged, for Patrick to split entries
- * out of (R-0963). */
-export const eachVersion = (pairing: Pairing): PairOpinion[] =>
-  pairing.versions.map((entries) => ({ entries, codings: [entries[0].coding_id] }));
 
 export function fieldValue(entry: PairEntry, field: string): string {
   if (field === "kind") return entry.kind;
@@ -511,24 +577,67 @@ export function fieldValue(entry: PairEntry, field: string): string {
   return entry.values.find((one) => one.field === field)?.said ?? "";
 }
 
-const valueKey = (entry: PairEntry, field: string) => `${field}\u0000${fieldValue(entry, field)}`;
+/** What a place is compared by: who the people are, never their spelling or
+ * order; a value nobody recorded equals every other value nobody recorded. */
+const keyOf = (entry: PairEntry, field: string) => entry.keys[field] ?? fieldValue(entry, field);
 
-/** The values of a pairing some opinion does not hold, which alone take the
- * accent, whatever the number of entries each opinion holds; what differs
- * between one coder's own entries is never accented (R-0965). */
+const placesOf = (entry: PairEntry) => [
+  "kind",
+  "who",
+  "toward",
+  "date",
+  ...entry.values.map((one) => one.field),
+];
+
+/** Two entries say the same thing when every place holds the same value; the
+ * words the coders used may differ. */
+const sameness = (entry: PairEntry) =>
+  placesOf(entry)
+    .map((field) => `${field}\u0000${keyOf(entry, field)}`)
+    .join("|");
+
+/** One opinion: the entries its card draws, and for each of them every
+ * coder's entry that says the same, which a tap on it selects together. */
+export interface PairOpinion {
+  entries: PairEntry[];
+  twins: PairEntry[][];
+  codings: number[];
+}
+
+/** Versions that read the same are one opinion, on the vote and on Patrick's
+ * look over the pairings alike (R-0965, R-0967). */
+export function pairOpinions(pairing: Pairing): PairOpinion[] {
+  const found = new Map<string, PairOpinion>();
+  for (const entries of pairing.versions) {
+    const key = entries.map(sameness).sort().join("‖");
+    const already = found.get(key);
+    if (!already) {
+      found.set(key, {
+        entries,
+        twins: entries.map((entry) => [entry]),
+        codings: [entries[0].coding_id],
+      });
+      continue;
+    }
+    already.codings.push(entries[0].coding_id);
+    const left = [...entries];
+    already.entries.forEach((entry, at) => {
+      const twin = left.findIndex((one) => sameness(one) === sameness(entry));
+      already.twins[at].push(...left.splice(twin, 1));
+    });
+  }
+  return [...found.values()];
+}
+
+/** The places the opinions disagree on: the accent goes on such a place in
+ * every card, and never on a place all opinions agree on; an opinion's own
+ * entries are never compared with each other (R-0965, R-0967). */
 export function pairDiffers(opinions: PairOpinion[]): Set<string> {
-  const held = opinions.map(
-    (one) =>
-      new Set(
-        one.entries.flatMap((entry) =>
-          ["kind", "who", "toward", "date", ...entry.values.map((value) => value.field)].map(
-            (field) => valueKey(entry, field),
-          ),
-        ),
-      ),
-  );
+  const held = (one: PairOpinion, field: string) =>
+    [...new Set(one.entries.map((entry) => keyOf(entry, field)))].sort().join("\u0000");
+  const places = new Set(opinions.flatMap((one) => one.entries.flatMap(placesOf)));
   return new Set(
-    held.flatMap((values) => [...values]).filter((value) => held.some((one) => !one.has(value))),
+    [...places].filter((field) => new Set(opinions.map((one) => held(one, field))).size > 1),
   );
 }
 
@@ -537,9 +646,10 @@ const shade = (differs: boolean) => (differs ? "pv-diff" : "pv-same");
 /** No field names; the kind and the date on the first line, who and toward
  * on the second, the values as the app's own chips on the third (R-0966). */
 function entryRows(entry: PairEntry, differs: Set<string>): string {
-  const lit = (field: string) => shade(differs.has(valueKey(entry, field)));
+  const lit = (field: string) => shade(differs.has(field));
   const part = (field: string) =>
-    `<span class="${lit(field)}">${esc(fieldValue(entry, field))}</span>`;
+    `<span class="${entry.keys[field] === "" ? "chip " : ""}${lit(field)}">` +
+    `${esc(fieldValue(entry, field))}</span>`;
   const values = entry.values
     .map((one) => `<span class="chip ${lit(one.field)}">${esc(one.said)}</span>`)
     .join("");
@@ -565,6 +675,9 @@ const ownWords = (entry: PairEntry, whole: boolean) => {
 export const entryKey = (entry: { coding_id: number; item_id: number | string }) =>
   `${entry.coding_id}:${entry.item_id}`;
 
+/** The entries one drawn entry stands for, as the keys a tap selects. */
+export const twinKeys = (twins: PairEntry[]) => twins.map(entryKey).join(" ");
+
 /** The opinions of a pairing, each a card under a small "opinion N" label.
  * `lit` is the opinion picked; `chosen` the entries selected for a split.
  * No count of the coders behind an opinion is shown (R-0252, R-0272). */
@@ -583,11 +696,13 @@ export function opinionCards(
           `<div class="pv-label">opinion ${index + 1}</div>` +
           `<div class="opinion tap pv${lit === index ? " on" : ""}" data-opinion="${index}">` +
           one.entries
-            .map(
-              (entry) =>
-                `<div class="pv-entry${chosen.has(entryKey(entry)) ? " on" : ""}" ` +
-                `data-entry="${esc(entryKey(entry))}">${entryRows(entry, differs)}</div>`,
-            )
+            .map((entry, at) => {
+              const on = one.twins[at].every((twin) => chosen.has(entryKey(twin)));
+              return (
+                `<div class="pv-entry${on ? " on" : ""}" ` +
+                `data-entry="${esc(twinKeys(one.twins[at]))}">${entryRows(entry, differs)}</div>`
+              );
+            })
             .join("") +
           one.entries.map((entry) => ownWords(entry, whole)).join("") +
           `</div>`,
@@ -754,7 +869,8 @@ export class Ballot {
     this.session = cut.session;
     this.ratified = cut.ratified_at !== null;
     this.records = new Map(records.map((one) => [one.coding_id, one]));
-    this.pairings = ballotOrder(items).map((one) => toPairing(one, this.records));
+    const who = whoOf(items);
+    this.pairings = ballotOrder(items).map((one) => toPairing(one, this.records, who));
     this.mine = new Map(votes.map((vote) => [vote.review_item_id, vote]));
     const back = this.pairings.findIndex((one) => one.item.id === itemId);
     this.at = back >= 0 ? back : Math.max(this.unvoted(0), 0);
