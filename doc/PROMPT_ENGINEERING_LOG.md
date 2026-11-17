@@ -2,9 +2,16 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-10-27 (the review scribe answers from what earlier notes produced and offers bug reports)
+**Last Updated**: 2026-11-17 (the review scribe gives children of one parent one generic other parent)
 
 ---
+
+## FD-393 — the review scribe gives children of one parent one generic other parent (2026-11-17)
+
+R-0971, R-0325. One line added to the scribe prompt after the two-parents line, in the open and private copies, both goldens re-captured; no tool change.
+- Fault: from one coder statement naming a stepfather's three children, the scribe gave the stepfather alone as each child's parent, and the record named a new generic mother for each child ("<child>'s mother"), three mothers and three pair-bonds for three siblings.
+- Rule: "Children of one parent share one other parent unless the coder says otherwise. When the coder names children of the same parent together and not their other parent, add that other parent once, generically named for the parent who is named, as "Marcus's partner", and give both parents on every one of the children. When the record already holds children of that parent with a generically named other parent, give that same person as the other parent of a child added later. Only when the coder says the children have different mothers or fathers, give the named parent alone on each child, and the record adds a separate generically named parent for each." "<parent>'s partner" is the record's own generic name for a partner nobody named, so a one-sided add_bond later reuses the same person.
+- Eval: `btcopilot/tests/live/test_scribe_siblings.py`, three cases, each 2 of 3, invented family, on the coach's Claude model through the subscription ($0). Old prompt: three children named together 0 of 3 (three generic mothers every run); a fourth child added later 3 of 3; two children by different mothers 2 of 3. New prompt: 3 of 3, 3 of 3, 3 of 3. The dating eval (`test_scribe_dates.py`) still passes on the new prompt. Not measured on Gemini Flash, the scribe's production model.
 
 ## FD-389, FD-390 — the review scribe: dates from births, questions answered, history grounded, reports offered (2026-10-25 to 2026-10-27)
 
