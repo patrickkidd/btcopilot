@@ -44,6 +44,8 @@ export interface BallotHandlers {
   onDone(): void;
   /** Open the conversation at the line this item came from (R-0278). */
   onTranscript(statementId: number): void;
+  /** Another pairing is on screen. */
+  onMoved(): void;
 }
 
 /** The fields an opinion can differ from the others by, in the order they read. */
@@ -1053,17 +1055,20 @@ export class Ballot {
       this.render();
     } else if (target.closest("#bl-line") && pairing.line)
       this.handlers.onTranscript(pairing.line.statement_id);
-    else if (target.closest("#bl-prev") && this.at > 0) {
-      this.at -= 1;
-      this.render();
-    } else if (target.closest("#bl-next")) this.next();
+    else if (target.closest("#bl-prev") && this.at > 0) this.step(this.at - 1);
+    else if (target.closest("#bl-next")) this.next();
+  }
+
+  private step(at: number): void {
+    this.at = at;
+    this.render();
+    this.handlers.onMoved();
   }
 
   private onDot(clicked: Event): void {
     const dot = (clicked.target as Element).closest<HTMLElement>("[data-item]");
     if (!dot || !this.live) return;
-    this.at = this.pairings.findIndex((one) => one.item.id === Number(dot.dataset.item));
-    this.render();
+    this.step(this.pairings.findIndex((one) => one.item.id === Number(dot.dataset.item)));
   }
 
   private reason(): string | null {
@@ -1114,8 +1119,7 @@ export class Ballot {
       this.handlers.onDone();
       return;
     }
-    this.at = found;
-    this.render();
+    this.step(found);
   }
 
   /** The family one version was written on, which the editor of a person or a

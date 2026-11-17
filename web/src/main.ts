@@ -501,8 +501,14 @@ const ballot = new Ballot(
     onTitle: (title) => entitle(title),
     onDone: () => void openTask(),
     onTranscript: (statementId) => void openLine(statementId),
+    onMoved: () => {
+      screenAt = voteAt(voting!.cutId);
+      sync();
+    },
   },
 );
+
+const voteAt = (cut: number) => stepAt(Place.Vote, Place.VoteItem, cut, ballot.onItem());
 
 /** Which coding the ballot on screen belongs to, so the transcript it opens is
  * this coder's own thread of the same conversation. */
@@ -516,7 +522,7 @@ async function openBallot(
   voting = { cutId, codingId, itemId };
   pairings.close();
   await ballot.open(cutId, itemId);
-  screenAt = address(Place.Vote, cutId);
+  screenAt = voteAt(cutId);
   screen(Screen.Ballot);
 }
 

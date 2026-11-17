@@ -228,7 +228,14 @@ test.describe("the vote by pairing", () => {
     await expect(page.locator(".pv-l3 .chip.pv-diff")).toHaveText(["male", "female"]);
     await expect(page.locator(".pv-l2 .pv-diff")).toHaveCount(0);
     await samePlaces(page);
+    await expect(page).toHaveURL(new RegExp(`/app/vote/${CUT}/42$`));
+    const depth = await page.evaluate(() => history.length);
     await page.locator("#ballot-view circle").nth(1).click();
+    await expect(page.locator("#title")).toContainText("ballot · 2 of 3");
+    // a step changes the pairing in the address in place, and a reload comes back to it
+    await expect(page).toHaveURL(new RegExp(`/app/vote/${CUT}/41$`));
+    expect(await page.evaluate(() => history.length)).toBe(depth);
+    await leave(seen, () => page.reload());
     await expect(page.locator("#title")).toContainText("ballot · 2 of 3");
 
     // the passage is cut to two lines until tapped
