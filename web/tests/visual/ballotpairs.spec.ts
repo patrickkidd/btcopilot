@@ -213,6 +213,39 @@ async function samePlaces(page: Page): Promise<void> {
     expect(one.lit).toEqual(places.find((other) => other.kind === one.kind)!.lit);
 }
 
+/** How sure each pairing is reads the same on its dot, its chip and, for an
+ * unsure one, the strip's badge, in light and in dark, three colours apart
+ * (R-0972). */
+async function agree(page: Page): Promise<void> {
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate((one) => document.documentElement.setAttribute("data-theme", one), theme);
+    const seen = await page.evaluate(() => {
+      const paint = (one: Element) => getComputedStyle(one);
+      const chip = document.querySelector("#ballot-screen .pv-ask .tok")!;
+      const badge = [...document.querySelectorAll("#ballot-screen .caption .tok")].find((one) =>
+        one.textContent!.endsWith("unsure"),
+      )!;
+      const dots = [...document.querySelectorAll("#ballot-screen circle.mark")];
+      const fill = (state: string) => [...new Set(dots.filter((one) => one.classList.contains(state)).map((one) => paint(one).fill))];
+      return {
+        chip: [paint(chip).color, paint(chip).borderColor],
+        badge: [paint(badge).color, paint(badge).borderColor],
+        now: paint(document.querySelector("#ballot-screen circle.d-on")!).fill,
+        unsure: fill("c-unsure"),
+        likely: fill("c-likely"),
+        sure: fill("c-sure"),
+      };
+    });
+    expect(seen.chip).toEqual(seen.badge);
+    expect(seen.now).toBe(seen.chip[1]);
+    expect(seen.unsure).toEqual([seen.chip[1]]);
+    expect(seen.likely).toHaveLength(1);
+    expect(seen.sure).toHaveLength(1);
+    expect(new Set([...seen.unsure, ...seen.likely, ...seen.sure]).size).toBe(3);
+  }
+  await page.evaluate(() => document.documentElement.removeAttribute("data-theme"));
+}
+
 /** Scrolled to its end, the pairing's last line stands above the bar. */
 async function clear(page: Page): Promise<void> {
   const gap = await page.evaluate(() => {
@@ -320,7 +353,7 @@ test.describe("Patrick's look over the pairings", () => {
   test.beforeEach(() => roles("admin"));
   test.afterEach(() => roles("subscriber"));
 
-  // R-0961, R-0963, R-0967, R-0970
+  // R-0961, R-0963, R-0967, R-0970, R-0972
   test("builds the ballot, shows it building, then the unsure pairings first to split and join before the vote opens", async ({
     page,
   }) => {
@@ -349,10 +382,15 @@ test.describe("Patrick's look over the pairings", () => {
     await leave(seen, () => page.goto(`/app/pairings/${CUT}/40`));
     await expect(page.locator("#title")).toContainText("pairings · 1 of 3");
     await expect(page).toHaveURL(new RegExp(`/app/pairings/${CUT}/41$`));
-    await expect(page.locator(".pv-card .progress")).toHaveText("unsure");
-    await expect(page.locator(".pv-card .note").first()).toContainText("told four ways");
+    // the card asks its one question, how sure the call was a mark beside it,
+    // the call's reason under its own label (R-0963, R-0972)
+    await expect(page.locator(".pv-ask h3")).toHaveText("Are these the same thing?");
+    await expect(page.locator(".pv-ask .tok")).toHaveText("unsure");
+    await expect(page.locator(".pv-why .pv-label")).toHaveText("why paired");
+    await expect(page.locator(".pv-why .note")).toContainText("told four ways");
+    await agree(page);
     // the two coders who wrote the same thing are one card here too
-    await expect(page.locator(".pv-label")).toHaveCount(3);
+    await expect(page.locator(".pv-ops .pv-label")).toHaveCount(3);
     await samePlaces(page);
     // every opinion is one box; a coder's two entries are rows inside one, no row picked alone
     await expect(page.locator(".opinion.pv")).toHaveCount(3);
@@ -386,11 +424,12 @@ test.describe("Patrick's look over the pairings", () => {
     await expect(page.locator("#title")).toContainText("pairings · 1 of 4");
     // the shift left behind now reads as the merged opinion and joins it
     await expect(page.locator(".opinion.pv.many")).toHaveCount(0);
-    await expect(page.locator(".pv-label")).toHaveCount(2);
+    await expect(page.locator(".pv-ops .pv-label")).toHaveCount(2);
 
     await page.locator("#pr-join").click();
-    // only pairings of events are offered to join an event
+    // only pairings of events are offered to join an event, each with its mark
     await expect(page.locator(".bl-sheet .pv-row")).toHaveCount(2);
+    await expect(page.locator('.bl-sheet .pv-row[data-join="43"] .tok.c-likely')).toHaveText("likely");
     await page.locator('.bl-sheet .pv-row[data-join="43"]').click();
 
     await page.locator("#coding-back").click();

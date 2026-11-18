@@ -635,7 +635,7 @@ describe("a pairing on the vote", () => {
   // R-0965
   it("draws one dot per pairing, in rows of 33, the one on screen enlarged", () => {
     const ids = Array.from({ length: 66 }, (_, at) => at + 1);
-    const { svg, height } = drawPairs(ids, 5, (id) => id < 5);
+    const { svg, height } = drawPairs(ids, 5, (id) => (id < 5 ? "d-ok" : "d-no"));
     expect(svg.match(/<circle/g)).toHaveLength(66);
     expect(height).toBe(DOTS.top * 2 + DOTS.row);
     expect(svg.match(/d-on/g)).toHaveLength(1);

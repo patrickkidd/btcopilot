@@ -868,7 +868,7 @@ export const DOTS = { width: 400, edge: 16, row: 24, top: 14, perRow: 33 };
 export function drawPairs(
   ids: number[],
   current: number,
-  done: (id: number) => boolean,
+  mark: (id: number) => string,
 ): { svg: string; height: number } {
   const rows = Math.max(Math.ceil(ids.length / DOTS.perRow), 1);
   const height = DOTS.top * 2 + DOTS.row * (rows - 1);
@@ -877,7 +877,7 @@ export function drawPairs(
     .map((id, index) => {
       const x = DOTS.edge + step * ((index % DOTS.perRow) + 0.5);
       const y = DOTS.top + DOTS.row * Math.floor(index / DOTS.perRow);
-      const [cls, r] = id === current ? ["d-on", 6.5] : done(id) ? ["d-ok", 4] : ["d-no", 4];
+      const [cls, r] = id === current ? [`${mark(id)} d-on`, 6.5] : [mark(id), 4];
       return `<circle class="${cls}" cx="${x.toFixed(1)}" cy="${y}" r="${r}" data-item="${id}"/>`;
     })
     .join("");
@@ -913,10 +913,10 @@ export function drawStrip(
   screen: PairScreen,
   ids: number[],
   current: Pairing,
-  done: (id: number) => boolean,
+  mark: (id: number) => string,
   open: string,
 ): void {
-  const { svg, height } = drawPairs(ids, current.item.id, done);
+  const { svg, height } = drawPairs(ids, current.item.id, mark);
   const now = nowWords(current);
   screen.view.innerHTML = svg;
   screen.view.style.height = `${height}px`;
@@ -1069,7 +1069,7 @@ export class Ballot {
       this.screen,
       this.pairings.map((one) => one.item.id),
       pairing,
-      (id) => this.mine.has(id),
+      (id) => (this.mine.has(id) ? "d-ok" : "d-no"),
       `${left} open`,
     );
     this.screen.body.innerHTML = this.card(pairing);

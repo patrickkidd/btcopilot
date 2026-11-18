@@ -865,7 +865,7 @@ button { font-family: inherit; }
    thin outline in its own colour and nothing filled in, 26 tall in the middle
    of the 44 band. What answers the thumb is the whole band, the way the chat
    chip already grows its own target. */
-.caption .tok {
+.caption .tok, .tok.mark {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -3311,6 +3311,19 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .tl .d-ok { fill: var(--data); }
 .tl .d-no { fill: var(--ask); }
 .tl .d-on { fill: var(--move); }
+/* How sure a pairing is, one colour per state wherever it shows: its dot, its
+ * chip on the card and in the join list, the strip's "N unsure" badge (R-0972).
+ * The dot on screen keeps its state's fill inside the green ring of "now". */
+.c-unsure { --mark: var(--ask); --mark-text: var(--ask-text); }
+.c-likely { --mark: var(--faint); --mark-text: var(--faint); }
+.c-sure { --mark: var(--data); --mark-text: var(--data); }
+.tl .mark { fill: var(--mark); }
+.tl .mark.d-on { fill: var(--mark); stroke: var(--move); stroke-width: 2.5; }
+.tok.mark { color: var(--mark-text); border-color: var(--mark); }
+span.tok.mark { cursor: inherit; }
+.pv-ask { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pv-why .pv-label { padding-top: 0; }
+.pv-row .rsub { display: flex; align-items: center; gap: 8px; }
 .tl .d-n { font: 400 12px var(--mono); fill: var(--ask-text); }
 .bl-sheet { height: round(down, 88%, 1px); }
 .bl-sheet.pv-split { height: auto; }

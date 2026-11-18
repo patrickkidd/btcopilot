@@ -2,9 +2,16 @@
 
 **Purpose**: Dated record of prompt engineering decisions, experiments, and lessons learned, from the extraction pipeline era through the coach. Entries are never rewritten; the newest entry wins.
 
-**Last Updated**: 2026-11-17 (the review scribe deletes only what was named, adds no group as a person, keeps two events in one estimated year)
+**Last Updated**: 2026-11-18 (the pairing prompt carries no example from the cut it is tested on; a second eval on an invented cut)
 
 ---
+
+## FD-393 — the pairing prompt carries no example from the cut it is tested on (2026-11-18)
+
+R-0964, R-0961, R-0968. Patrick asked whether the ballot was fitted to his own codings. It was in part: the private pairing prompt's examples came from the High School Sleep Problems cut, which is also the eval's answer key.
+- Change: the private copy's four examples from that cut (two of its people's names, the worked reason about a separate mother for each child, a 1998 death one coder left undated, "three codes with nothing in common") are replaced by examples on the stand-in family's Marcus, Delphine and Theo, or dropped; every rule stays. The open copy held none. Neither copy is in the prompt goldens.
+- Eval: `btcopilot/tests/live/test_pairing.py`, both cases now 2 of 3, Fable through the subscription ($0). The sleep cut, events given exactly of 66: old prompt 58, 56, 54; new prompt 55, 59, 54 (the bar of 50 was set by a builder, not ruled). A new invented cut on the stand-in family (three coders, 18 entries: two deaths in one line kept apart, a grandparent under two names, one line coded three ways with nothing alike): 6 of 6 on all three runs, old and new prompt alike, so it does not yet tell the prompts apart.
+- The eval calls `gemini_structured` with the app's own model, schema and limit, the same function `Metered.structured` calls for the worker's job; a Claude model sends it on to `claude_structured`, which the eval replaces with the replay, so it runs the app's path less the ledger line.
 
 ## FD-393 — the review scribe deletes only what was named, never adds a group as a person, and keeps two events in one estimated year (2026-11-17)
 

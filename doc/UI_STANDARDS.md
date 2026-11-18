@@ -72,6 +72,9 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
   box holding one coder's several entries (below). [Oracle: R-0968]
 - One box per opinion: a coder's several entries are rows inside it, each under the name that
   coder gave it, and the box is picked as a whole. [Oracle: R-0970]
+- **States are marks.** Each state gets one mark, one colour and one outline, used for it on
+  every dot, chip and badge that carries it, its word at most inside the mark; a word on its own
+  does not show a state. Prose being cheap to produce is no reason to drop structure. [Oracle: R-0972]
 
 ## Behaviour
 - A control that starts something starts it immediately, not on the next tick of a

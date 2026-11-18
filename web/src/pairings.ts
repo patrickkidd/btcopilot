@@ -38,7 +38,16 @@ export interface PairingsHandlers {
 
 const RANK = [Confidence.Unsure, Confidence.Likely, Confidence.Sure];
 
-const rank = (item: BallotItem) => RANK.indexOf(item.pairing_confidence ?? Confidence.Unsure);
+const sure = (item: BallotItem): Confidence => item.pairing_confidence ?? Confidence.Unsure;
+
+const rank = (item: BallotItem) => RANK.indexOf(sure(item));
+
+/** How sure a pairing is, as the one mark it has wherever it shows: its dot
+ * on the strip, its chip on the card and in the join list (R-0972). */
+export const mark = (item: BallotItem): string => `mark c-${sure(item)}`;
+
+const chip = (item: BallotItem): string =>
+  `<span class="tok ${mark(item)}">${esc(sure(item))}</span>`;
 
 /** Unsure first, and within each the order the ballot walks, the
  * conversation's. */
@@ -147,7 +156,7 @@ export class Pairings {
       this.screen,
       this.pairings.map((one) => one.item.id),
       pairing,
-      (id) => rank(this.pairings.find((one) => one.item.id === id)!.item) > 0,
+      (id) => mark(this.pairings.find((one) => one.item.id === id)!.item),
       `${unsure} unsure`,
     );
     this.screen.body.innerHTML = this.card(pairing);
@@ -158,9 +167,12 @@ export class Pairings {
     const { item } = pairing;
     return (
       `<div class="bl-card pv-card">` +
+      `<div class="pv-ask"><h3>Are these the same thing?</h3>${chip(item)}</div>` +
       (pairing.line ? passage(pairing.line, this.whole.has(item.id)) : "") +
-      `<div class="progress">${esc(item.pairing_confidence ?? Confidence.Unsure)}</div>` +
-      (item.pairing_reason ? `<div class="note">${esc(item.pairing_reason)}</div>` : "") +
+      (item.pairing_reason
+        ? `<div class="pv-why"><div class="pv-label">why paired</div>` +
+          `<div class="note">${esc(item.pairing_reason)}</div></div>`
+        : "") +
       opinionCards(pairOpinions(pairing), null, this.full.has(item.id), this.chosen) +
       leftOut(item) +
       `</div>`
@@ -175,8 +187,10 @@ export class Pairings {
     const can = some ? some < all : pairOpinions(pairing).some(many);
     return (
       stepBtn("‹ Back", `id="pr-prev"`, this.at === 0) +
-      `<button class="btn" id="pr-join" type="button">join&hellip;</button>` +
-      `<button class="btn" id="pr-split" type="button"${can ? "" : " disabled"}>` +
+      `<button class="btn" id="pr-join" type="button" title="the same thing as another pairing: join them">` +
+      `join&hellip;</button>` +
+      `<button class="btn" title="not all the same thing: take one out" id="pr-split" type="button"` +
+      `${can ? "" : " disabled"}>` +
       `split&hellip;</button>` +
       stepBtn(this.at === this.pairings.length - 1 ? "Done" : "Next ›", `id="pr-next"`, false)
     );
@@ -251,8 +265,8 @@ export class Pairings {
         return (
           `<button class="pv-row" type="button" data-join="${one.item.id}">` +
           `<span class="rtitle">${esc(title)}</span>` +
-          `<span class="rsub">${esc(nowWords(one) || writtenDate(first))} · ` +
-          `${esc(one.item.pairing_confidence ?? Confidence.Unsure)}</span></button>`
+          `<span class="rsub">${esc(nowWords(one) || writtenDate(first))} ${chip(one.item)}</span>` +
+          `</button>`
         );
       })
       .join("");

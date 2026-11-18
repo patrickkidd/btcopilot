@@ -12,7 +12,7 @@ vi.mock("../src/track", async (real) => ({
   tap: vi.fn(),
 }));
 
-const { Pairings, lookOrder, nearest } = await import("../src/pairings");
+const { Pairings, lookOrder, mark, nearest } = await import("../src/pairings");
 const { toPairing } = await import("../src/ballot");
 const api = await import("../src/api");
 const { Feature, tap } = await import("../src/track");
@@ -43,6 +43,14 @@ describe("Patrick's look over the pairings", () => {
       item(5, ItemKind.Event, Confidence.Unsure, "1999-01-01"),
     ];
     expect(lookOrder(items).map((one) => one.id)).toEqual([5, 2, 3, 4, 1]);
+  });
+
+  // R-0972
+  it("marks how sure a pairing is with one class per state, unset read as unsure", () => {
+    expect(mark(item(1, ItemKind.Event, Confidence.Unsure))).toBe("mark c-unsure");
+    expect(mark(item(2, ItemKind.Event, Confidence.Likely))).toBe("mark c-likely");
+    expect(mark(item(3, ItemKind.Event, Confidence.Sure))).toBe("mark c-sure");
+    expect(mark(item(4, ItemKind.Event, null))).toBe("mark c-unsure");
   });
 
   // R-0055, R-0963
