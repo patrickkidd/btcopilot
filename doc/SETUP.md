@@ -132,9 +132,9 @@ lives in `~/btcopilot-sandbox/<name>/` (override with `SANDBOX_HOME`); `.env` is
 main clone's root (override with `SANDBOX_DOTENV`). `bin/sandbox/sandbox` with no arguments
 prints every command. Port 8888 is Patrick's own server: never use it.
 
-**From a production dump.** `bin/sandbox/sandbox up <name> <port> --from-dump <file>` restores a pg_dump
-into an empty database (no fixtures), checks every table's rows against the dump and stops naming any that
-differ, then migrates and adds the admin account; `restore <name> <file>` does it to a running instance, and `reset` restores the dump again.
+**From a production dump.** `bin/sandbox/sandbox up <name> <port> --from-dump <file>` restores a pg_dump into an
+empty database and adds nothing (no fixtures, no admin account); every table's rows and hash are checked against the dump and any that differ stop it, then the migrations run and the tables they changed are printed (both kept in `verify.txt`).
+Sign in with `sandbox invite <name> <a user's email in the dump>`; `restore <name> <file>` does the same to a running instance, and `reset` restores the dump again.
 
 **The Claude Code subscription, $0.** `bin/sandbox/sandbox up mine 8912 --subscription` sets
 `BTCOPILOT_MODEL_PROVIDER=subscription`: every Claude call the app makes (coach turns, the case

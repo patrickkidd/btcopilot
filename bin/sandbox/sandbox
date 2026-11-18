@@ -37,6 +37,9 @@
 # else written, the rows of every table checked against the dump's own counts,
 # then this branch's migrations as a deploy runs them and the admin account.
 # The instance remembers the file, so reset restores it and never loads fixtures.
+# Nothing else is written: no admin account, so `admin` refuses, and `turn`
+# needs a user's email from the dump. verify.txt in the instance folder keeps
+# the check and the tables the migrations changed.
 # --autologin signs every visitor with no session in as that account, so a
 # home-screen app needs no code; without it the sign-in page lists every
 # account to sign in as with one tap.
@@ -256,42 +259,86 @@ fill_db() {
   echo "  database migrated, $(wc -l < "$D/links.txt" | tr -d ' ') fixture records installed (${SECONDS}s)"
 }
 
-# The dump's own row count of every table it holds, as "schema.table count",
-# read from its data section without touching any database.
-dump_counts() {
-  docker exec -i "$PG" pg_restore --data-only -f - < "$DUMP" | awk '
-    /^COPY / { table = $2; n = 0; copying = 1; next }
-    copying && $0 == "\\." { print table, n; copying = 0; next }
-    copying { n++ }'
+# One line per table, "schema.table rows hash", sorted by table: the hash is
+# md5 over every row's text in primary key order (the whole row's text where a
+# table has no primary key).
+read -r -d '' SNAPSHOT <<'SQL' || true
+SELECT format(
+  'SELECT %L, count(*), md5(coalesce(string_agg(x::text, %L ORDER BY %s), %L)) FROM %I.%I x',
+  n.nspname || '.' || c.relname, E'\n',
+  coalesce((SELECT string_agg(format('x.%I', a.attname), ', ' ORDER BY k.ord)
+            FROM pg_index i
+            CROSS JOIN unnest(i.indkey) WITH ORDINALITY AS k(attnum, ord)
+            JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = k.attnum
+            WHERE i.indrelid = c.oid AND i.indisprimary), 'x::text'),
+  '', n.nspname, c.relname)
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind IN ('r', 'p') AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+  AND n.nspname NOT LIKE 'pg_toast%'
+ORDER BY 1 \gexec
+SQL
+
+snapshot() {
+  docker exec -i "$PG" psql -qtA -F' ' -v ON_ERROR_STOP=1 -U familydiagram -d "$1" <<< "$SNAPSHOT" | sort
 }
 
-# Every table in the dump holds exactly the dump's rows, and no other table
-# holds any: printed table by table, and fatal naming each table that differs.
+# Two snapshots side by side, table by table: "same", or both sides' rows
+# with what differs. Exits 1 when any table differs. With --changed only the
+# tables that differ are printed, as a migration's changes.
+compare() {
+  awk -v a="$3" -v b="$4" -v only="${5:-}" '
+    NR == FNR { left[$1] = $2; lh[$1] = $3; tables[$1]; next }
+    { right[$1] = $2; rh[$1] = $3; tables[$1] }
+    END {
+      n = asorti_(tables, names)
+      for (i = 1; i <= n; i++) {
+        t = names[i]
+        if (!(t in left)) line = sprintf("%-40s only in %s, %s rows", t, b, right[t])
+        else if (!(t in right)) line = sprintf("%-40s only in %s, %s rows", t, a, left[t])
+        else if (left[t] != right[t]) line = sprintf("%-40s %s %s rows, %s %s rows", t, a, left[t], b, right[t])
+        else if (lh[t] != rh[t]) line = sprintf("%-40s %8s rows, the rows differ", t, left[t])
+        else { if (only == "") printf "    %-40s %8s rows  same\n", t, left[t]; continue }
+        printf "    %s  %s\n", line, (only == "" ? "DIFFERS" : "changed")
+        bad++
+      }
+      exit bad > 0
+    }
+    function asorti_(src, dst,   k, m, i, j, tmp) {
+      m = 0
+      for (k in src) dst[++m] = k
+      for (i = 2; i <= m; i++) for (j = i; j > 1 && dst[j - 1] > dst[j]; j--) { tmp = dst[j]; dst[j] = dst[j - 1]; dst[j - 1] = tmp }
+      return m
+    }' "$1" "$2"
+}
+
+# The dump restored again into a scratch database beside the sandbox's, and
+# every table of the two compared by rows and hash; saved to verify.txt and
+# fatal naming each table that differs, before anything else runs.
 verify_dump() {
-  local db=sandbox_${NAME//-/_} want held table n got bad=0 tables=0 rows=0
-  want=$(dump_counts) || { stop_all; die "the dump's counts could not be read from $DUMP"; }
-  held=$(docker exec "$PG" psql -qtA -U familydiagram -d "$db" -c \
-    "SELECT schemaname || '.' || tablename FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')")
-  for table in $(printf '%s\n%s\n' "$(echo "$want" | cut -d' ' -f1)" "$held" | sort -u); do
-    n=$(echo "$want" | awk -v t="$table" '$1 == t { print $2 }')
-    got=$(docker exec "$PG" psql -qtA -U familydiagram -d "$db" -c "SELECT count(*) FROM $table" 2>/dev/null || echo missing)
-    tables=$((tables + 1))
-    if [ "${n:-0}" = "$got" ]; then
-      rows=$((rows + got))
-      printf '    %-40s %8s  same\n' "$table" "$got"
-    else
-      bad=$((bad + 1))
-      printf '    %-40s dump %s, database %s  DIFFERS\n' "$table" "${n:-none}" "$got" >&2
-    fi
-  done
-  [ "$bad" -eq 0 ] || { stop_all; die "$bad of $tables tables differ from the dump $DUMP"; }
-  echo "  dump verified: $tables tables, $rows rows, every table the same as in the dump (${SECONDS}s)"
+  local db=sandbox_${NAME//-/_} scratch=sandbox_${NAME//-/_}_dump tables
+  docker exec "$PG" psql -q -U familydiagram -d postgres \
+    -c "SET client_min_messages = warning" -c "DROP DATABASE IF EXISTS $scratch WITH (FORCE)" -c "CREATE DATABASE $scratch" >/dev/null
+  docker exec -i "$PG" pg_restore --no-owner --no-acl --exit-on-error -U familydiagram -d "$scratch" \
+    < "$DUMP" >> "$D/restore.log" 2>&1 || { tails; stop_all; die "the dump did not restore into the scratch database"; }
+  snapshot "$scratch" > "$D/dump.snap"
+  snapshot "$db" > "$D/restored.snap"
+  docker exec "$PG" psql -q -U familydiagram -d postgres -c "DROP DATABASE $scratch WITH (FORCE)" >/dev/null
+  tables=$(wc -l < "$D/dump.snap" | tr -d ' ')
+  { echo "$DUMP against sandbox $NAME, $(date -u +%FT%TZ)"
+    compare "$D/dump.snap" "$D/restored.snap" dump sandbox
+  } > "$D/verify.txt" || {
+    cat "$D/verify.txt" >&2
+    stop_all
+    die "the sandbox differs from the dump; every table that differs is marked DIFFERS above and in $D/verify.txt"
+  }
+  echo "  dump verified: $tables tables, $(awk '{ n += $2 } END { print n }' "$D/dump.snap") rows, every table's rows and hash the same as the dump's ($D/verify.txt, ${SECONDS}s)" | tee -a "$D/verify.txt"
 }
 
 # The database emptied and the dump restored into it, nothing else written;
-# then checked against the dump and brought to this branch's schema.
+# checked against the dump, then brought to this branch's schema, printing
+# what the migrations changed.
 restore_db() {
-  local db=sandbox_${NAME//-/_}
+  local db=sandbox_${NAME//-/_} changed
   docker exec "$PG" psql -q -U familydiagram -d postgres \
     -c "DROP DATABASE IF EXISTS $db WITH (FORCE)" -c "CREATE DATABASE $db" >/dev/null
   docker exec -i "$PG" pg_restore --no-owner --no-acl --exit-on-error -U familydiagram -d "$db" \
@@ -299,7 +346,11 @@ restore_db() {
   : > "$D/links.txt"
   verify_dump
   flask_ admin db upgrade > "$D/migrate.log" 2>&1 || { tails; stop_all; die "the migrations failed"; }
-  echo "  migrated to this branch (${SECONDS}s)"
+  snapshot "$db" > "$D/migrated.snap"
+  changed=$(compare "$D/restored.snap" "$D/migrated.snap" before after --changed || true)
+  { echo "  migrated to this branch (${SECONDS}s); tables the migrations changed:"
+    echo "${changed:-    none}"
+  } | tee -a "$D/verify.txt"
 }
 
 start_app() {
@@ -438,12 +489,12 @@ cmd_up() {
   if [ -n "$fresh" ] && [ -n "$DUMP" ]; then restore_db
   elif [ -n "$fresh" ]; then fill_db
   else flask_ admin db upgrade > "$D/migrate.log" 2>&1 || { tails; stop_all; die "the migrations failed"; }; fi
-  seed_admin || { stop_all; exit 1; }
+  [ -n "$DUMP" ] || seed_admin || { stop_all; exit 1; }
   start_app
   start_dev
   echo "sandbox $NAME is up in ${SECONDS}s: http://$DEV_HOST:$PORT/app/"
   [ -n "$DEV" ] && echo "  Patrick's phone: https://$DEV_HOST:$DEV/app/  (this Mac: https://127.0.0.1:$DEV/app/)"
-  if [ -n "$DUMP" ]; then echo "  restored from $DUMP; the admin sign-in link: $D/links.txt"
+  if [ -n "$DUMP" ]; then echo "  restored from $DUMP with nothing added; sign in with: sandbox invite $NAME <a user's email in the dump>"
   else echo "  sign-in links for the fixture records: $D/links.txt"; fi
   echo "  settings for tests: . $D/env.sh"
 }
@@ -471,8 +522,8 @@ cmd_reset() {
     docker exec "$PG" psql -q -U familydiagram -d postgres \
       -c "DROP DATABASE IF EXISTS $db WITH (FORCE)" -c "CREATE DATABASE $db" >/dev/null
     fill_db
+    seed_admin || { stop_all; exit 1; }
   fi
-  seed_admin || { stop_all; exit 1; }
   start_app
   start_dev
   echo "sandbox $NAME is back on ${DUMP:-the fixtures} in ${SECONDS}s"
@@ -505,6 +556,7 @@ cmd_invite() {
 # the turn's events until the reply or the failure arrives.
 cmd_turn() {
   loaded "${1:-}"
+  [ -z "$DUMP" ] || [ -n "${2:-}" ] || die "$NAME is a copy of $DUMP: name the user in the dump to send the turn as"
   local email=${2:-coach@sandbox.invalid} words=${3:-"My mother and I have not spoken since the funeral."}
   local jar=$D/turn.cookies base=http://127.0.0.1:$PORT link csrf turn
   rm -f "$jar"
@@ -542,7 +594,12 @@ cmd_status() {
   done
 }
 
-cmd_admin() { loaded "${1:-}"; seed_admin || exit 1; echo "the admin link of $NAME is in $D/links.txt"; }
+cmd_admin() {
+  loaded "${1:-}"
+  [ -z "$DUMP" ] || die "$NAME is a copy of $DUMP and holds no admin account; sign in with: sandbox invite $NAME <a user's email in the dump>"
+  seed_admin || exit 1
+  echo "the admin link of $NAME is in $D/links.txt"
+}
 
 cmd_env() { loaded "${1:-}"; echo "$D/env.sh"; }
 
