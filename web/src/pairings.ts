@@ -2,6 +2,7 @@ import * as api from "./api";
 import {
   PairSheet,
   drawStrip,
+  type Context,
   entryKey,
   leftOut,
   many,
@@ -164,7 +165,6 @@ export class Pairings {
   private at = 0;
   /** The entries tapped, which a split takes out or a join moves. */
   private chosen = new Set<string>();
-  private whole = new Set<number>();
   private full = new Set<number>();
   private sheet: PairSheet;
   private live = false;
@@ -172,6 +172,7 @@ export class Pairings {
   constructor(
     private screen: PairScreen,
     private handlers: PairingsHandlers,
+    private context: Context,
   ) {
     this.sheet = new PairSheet(screen.overlay);
     screen.body.addEventListener("click", (clicked) => this.onTap(clicked));
@@ -203,6 +204,7 @@ export class Pairings {
     ]);
     if (cut.vote_opened_at !== null) return false;
     this.live = true;
+    this.context.drop();
     this.cutId = cutId;
     this.session = cut.session;
     this.records = new Map(records.map((one) => [one.coding_id, one]));
@@ -258,12 +260,18 @@ export class Pairings {
     return (
       `<div class="bl-card pv-card">` +
       `<div class="pv-ask"><h3>Are these the same thing?</h3>${chip(item)}</div>` +
-      (pairing.line ? passage(pairing.line, this.whole.has(item.id)) : "") +
+      (pairing.line ? passage(pairing.line) : "") +
       (item.pairing_reason
         ? `<div class="pv-why"><div class="pv-label">why paired</div>` +
           `<div class="note">${esc(item.pairing_reason)}</div></div>`
         : "") +
-      opinionCards(pairOpinions(pairing), null, this.full.has(item.id), this.chosen) +
+      opinionCards(
+        pairOpinions(pairing),
+        null,
+        this.full.has(item.id),
+        this.chosen,
+        pairing.line?.statement_id ?? null,
+      ) +
       leftOut(item) +
       `</div>`
     );
@@ -292,11 +300,9 @@ export class Pairings {
     if (!pairing || !this.live) return;
     const { item } = pairing;
     const box = target.closest<HTMLElement>("[data-opinion]");
+    if (this.context.tapped(target, this.cutId, pairing)) return;
     if (target.closest(".pv-words.clip")) {
       this.full.add(item.id);
-      this.render();
-    } else if (target.closest("#bl-quote.clip")) {
-      this.whole.add(item.id);
       this.render();
     } else if (box) {
       const keys = opinionKeys(pairOpinions(pairing)[Number(box.dataset.opinion)]);
@@ -443,6 +449,7 @@ export class Pairings {
   close(): void {
     this.live = false;
     this.sheet.close();
+    this.context.drop();
   }
 }
 

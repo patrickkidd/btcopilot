@@ -1,7 +1,8 @@
 import * as api from "./api";
 import { Feature, tap } from "./track";
 import { asWritten, drawn, tokenize } from "./chips";
-import { esc, el, stepBtn, type Title } from "./dom";
+import { closeX, esc, el, stepBtn, type Title } from "./dom";
+import { INFO } from "./notes";
 import {
   HAND_EDITS,
   openBondEditor,
@@ -25,6 +26,7 @@ import {
   VoteChoice,
   type BallotItem,
   type CodingRecord,
+  type CutLines,
   type PairBond,
   type Person,
   type Opinion,
@@ -43,8 +45,6 @@ export interface BallotHandlers {
   onTitle(title: string | Title): void;
   /** The last item is voted on: back to the one task card. */
   onDone(): void;
-  /** Open the conversation at the line this item came from (R-0278). */
-  onTranscript(statementId: number): void;
   /** Another pairing is on screen. */
   onMoved(): void;
 }
@@ -337,10 +337,20 @@ const said = (line: TranscriptLine): string =>
 
 export const quote = (line: TranscriptLine): string => `<div class="quote">${said(line)}</div>`;
 
-/** The line a pairing was written from, on top of its screen: two lines of it
- * until a tap shows all of it (R-0965). */
-export const passage = (line: TranscriptLine, whole: boolean): string =>
-  `<div class="quote${whole ? "" : " clip"}" id="bl-quote"><div class="qt">${said(line)}</div></div>`;
+/** The app's (i), the coach's notes mark, opening the conversation at one
+ * line; from a box's label it also names that box (R-0975, R-0977). */
+export const info = (statement: number, box: number | null): string =>
+  INFO.replace(
+    `aria-label="Coach's notes"`,
+    `aria-label="where this was said" data-line="${statement}"` +
+      (box === null ? "" : ` data-box="${box}"`),
+  );
+
+/** The line a pairing was written from, on top of its screen: two lines of it,
+ * the rest behind its (i), never shown in place (R-0965, R-0975). */
+export const passage = (line: TranscriptLine): string =>
+  `<div class="quote clip" id="bl-quote">${info(line.statement_id, null)}` +
+  `<div class="qt">${said(line)}</div></div>`;
 
 /** The transcript line one version was written from, under that version. A
  * version with no line was not written from anything said: the coach replayed
@@ -791,32 +801,69 @@ function manyLine(one: PairOpinion): string {
   );
 }
 
+/** The lines a box's rows were written from other than the passage's, in row
+ * order, each once: identical versions of one row may come from several
+ * (R-0977). */
+const otherLines = (one: PairOpinion, passage: number | null): number[] => [
+  ...new Set(
+    one.twins
+      .flat()
+      .map((entry) => entry.line?.statement_id)
+      .filter((id): id is number => id !== undefined && id !== passage),
+  ),
+];
+
+/** A box's "opinion N", with an (i) at its right end for each other line the
+ * box was written from, outside the box (R-0977). */
+function label(one: PairOpinion, index: number, passage: number | null | undefined): string {
+  const lines = passage === undefined ? [] : otherLines(one, passage);
+  return lines.length
+    ? `<div class="pv-label ctx-row"><span>opinion ${index + 1}</span>` +
+        `<span class="ctx-is">${lines.map((id) => info(id, index)).join("")}</span></div>`
+    : `<div class="pv-label">opinion ${index + 1}</div>`;
+}
+
+/** One opinion's box: its entries as rows, then what each coder wrote in their
+ * own words, the places the opinions disagree on accented. */
+export function opinionCard(
+  opinions: PairOpinion[],
+  index: number,
+  lit: boolean,
+  whole: boolean,
+): string {
+  const one = opinions[index];
+  const differs = pairDiffers(opinions);
+  return (
+    `<div class="opinion tap pv${many(one) ? " many" : ""}${lit ? " on" : ""}" data-opinion="${index}">` +
+    (many(one) ? manyLine(one) : "") +
+    one.entries
+      .map((entry) => `<div class="pv-entry">${entryRows(entry, differs, many(one))}</div>`)
+      .join("") +
+    one.entries.map((entry) => ownWords(entry, whole)).join("") +
+    `</div>`
+  );
+}
+
 /** The opinions of a pairing, each one box under a small "opinion N" label,
  * a coder's several entries rows inside it (R-0970). `lit` is the opinion
  * picked; `chosen` the entries selected for a split, which light a box when
- * they hold all of it. No count of the coders behind an opinion is shown
- * (R-0252, R-0272). */
+ * they hold all of it; `passage` the line on top of the screen, which puts an
+ * (i) beside each box written from another line (R-0977). No count of the
+ * coders behind an opinion is shown (R-0252, R-0272). */
 export function opinionCards(
   opinions: PairOpinion[],
   lit: number | null,
   whole: boolean,
   chosen: Set<string> = new Set(),
+  passage?: number | null,
 ): string {
-  const differs = pairDiffers(opinions);
   return (
     `<div class="pv-ops">` +
     opinions
       .map(
         (one, index) =>
-          `<div class="pv-label">opinion ${index + 1}</div>` +
-          `<div class="opinion tap pv${many(one) ? " many" : ""}` +
-          `${lit === index || boxed(one, chosen) ? " on" : ""}" data-opinion="${index}">` +
-          (many(one) ? manyLine(one) : "") +
-          one.entries
-            .map((entry) => `<div class="pv-entry">${entryRows(entry, differs, many(one))}</div>`)
-            .join("") +
-          one.entries.map((entry) => ownWords(entry, whole)).join("") +
-          `</div>`,
+          label(one, index, passage) +
+          opinionCard(opinions, index, lit === index || boxed(one, chosen), whole),
       )
       .join("") +
     `</div>`
@@ -970,6 +1017,120 @@ export class PairSheet {
   }
 }
 
+/** How long the conversation's card takes to come down or go back up, as the
+ * cluster's about page does. */
+const SLIDE_MS = 320;
+
+/** What a line says, inside its bubble: the coding screen's own `line`. */
+export type Bubble = (turn: { client: boolean; text: string }) => string;
+
+/** The cut's conversation as the about page's card: its head, the line's
+ * number, the cross and, opened from a box's (i), that box with the coder's
+ * words whole; under it every line the person and the coach said in the
+ * chat's own bubbles, drawn by `said` as the coding screen draws them, the one
+ * opened at outlined as a coder's tap outlines it. Nothing any coder wrote is
+ * in it (R-0975, R-0977). */
+export function contextMarkup(talk: CutLines, statement: number, box: string, said: Bubble): string {
+  const at = talk.lines.find((one) => one.id === statement)!;
+  return (
+    `<div class="card ctx-card" role="dialog" aria-label="where this was said">` +
+    `<div class="ctx-head"><p class="ab-span">line ${at.number} of ${talk.count}</p>${closeX()}` +
+    (box ? `<div class="ctx-box">${box}</div>` : "") +
+    `</div><div class="chat">` +
+    talk.lines
+      .map(
+        (one) =>
+          `<div class="bub line ${one.client ? "user" : "coach"}${one.id === statement ? " sel" : ""}" ` +
+          `data-turn="${one.id}">${said(one)}</div>`,
+      )
+      .join("") +
+    `</div></div>`
+  );
+}
+
+/** The conversation behind an (i) on the vote and on Patrick's look over the
+ * pairings, as the cluster's (i) opens its about page: the card comes down
+ * from under the strip's name over the screen to its foot, its head holding
+ * still while the conversation scrolls under it, opened with the line in the
+ * middle when it fits and its start just under the head when it does not; the
+ * cross sends it back up (R-0975, R-0977). */
+export class Context {
+  private cut = 0;
+  private talk: CutLines | null = null;
+  private clip: HTMLElement | null = null;
+
+  constructor(
+    private screen: PairScreen,
+    private said: Bubble,
+  ) {}
+
+  get up(): boolean {
+    return this.clip !== null;
+  }
+
+  /** Opens on the (i) tapped, and says whether the tap was on one. */
+  tapped(target: Element, cutId: number, pairing: Pairing): boolean {
+    const button = target.closest<HTMLElement>(".info[data-line]");
+    if (!button) return false;
+    const { box } = button.dataset;
+    tap(box === undefined ? Feature.LineFromPassage : Feature.LineFromBox);
+    const drawn = box === undefined ? "" : opinionCard(pairOpinions(pairing), Number(box), false, true);
+    void this.open(cutId, Number(button.dataset.line), drawn);
+    return true;
+  }
+
+  private async open(cutId: number, statement: number, box: string): Promise<void> {
+    if (this.cut !== cutId || !this.talk) {
+      this.talk = await api.cutLines(cutId);
+      this.cut = cutId;
+    }
+    this.drop();
+    const { view } = this.screen;
+    const foot = view.closest(".screen")!.getBoundingClientRect().bottom;
+    const height = foot - view.getBoundingClientRect().top;
+    const clip = el("div", "ctx-clip", contextMarkup(this.talk, statement, box, this.said));
+    clip.style.top = `${view.offsetTop}px`;
+    clip.style.height = `${height}px`;
+    view.parentElement!.append(clip);
+    this.clip = clip;
+    const card = clip.firstElementChild as HTMLElement;
+    card.style.height = `${height}px`;
+    card.querySelector(".cardx")!.addEventListener("click", () => this.close());
+    const chat = card.querySelector<HTMLElement>(".chat")!;
+    const sel = chat.querySelector<HTMLElement>(".sel")!;
+    const room = chat.clientHeight;
+    const top = sel.offsetTop - chat.offsetTop;
+    chat.scrollTop = sel.offsetHeight + 16 > room ? top - 8 : top + sel.offsetHeight / 2 - room / 2;
+    card.animate([{ transform: `translateY(${-height}px)` }, { transform: "translateY(0)" }], {
+      duration: SLIDE_MS,
+      easing: "ease",
+    });
+  }
+
+  close(): void {
+    const clip = this.clip;
+    if (!clip) return;
+    this.clip = null;
+    const card = clip.firstElementChild as HTMLElement;
+    card
+      .animate([{ transform: "translateY(0)" }, { transform: `translateY(${-card.offsetHeight}px)` }], {
+        duration: SLIDE_MS,
+        easing: "ease",
+        fill: "forwards",
+      })
+      .finished.then(
+        () => clip.remove(),
+        () => clip.remove(),
+      );
+  }
+
+  /** Gone at once, when the screen under it changes. */
+  drop(): void {
+    this.clip?.remove();
+    this.clip = null;
+  }
+}
+
 /** The people "change…" offers: one per people pairing, by its most given
  * name, so a person two copies or two entries hold is listed once; a person
  * in no pairing by their own name (R-0968). */
@@ -995,8 +1156,8 @@ export class Ballot {
   private who: Who = whoOf([]);
   private mine = new Map<number, Vote>();
   private at = 0;
-  /** Pairings whose passage, or whose coders' own words, are shown whole. */
-  private whole = new Set<number>();
+  private cutId = 0;
+  /** Pairings whose coders' own words are shown whole. */
   private full = new Set<number>();
   private sheet: PairSheet;
   /** The look over the pairings draws on the same screen, so only the one
@@ -1006,6 +1167,7 @@ export class Ballot {
   constructor(
     private screen: PairScreen,
     private handlers: BallotHandlers,
+    private context: Context,
   ) {
     this.sheet = new PairSheet(screen.overlay);
     screen.body.addEventListener("click", (clicked) => this.onTap(clicked));
@@ -1033,6 +1195,8 @@ export class Ballot {
       api.records(cutId),
     ]);
     this.live = true;
+    this.context.drop();
+    this.cutId = cutId;
     this.session = cut.session;
     this.ratified = cut.ratified_at !== null;
     this.records = new Map(records.map((one) => [one.coding_id, one]));
@@ -1094,11 +1258,14 @@ export class Ballot {
         : "";
     return (
       `<div class="bl-card pv-card">` +
-      (pairing.line
-        ? passage(pairing.line, this.whole.has(item.id)) +
-          `<div><button class="chip" id="bl-line" type="button">open in transcript</button></div>`
-        : "") +
-      opinionCards(opinions, lit >= 0 ? lit : null, this.full.has(item.id)) +
+      (pairing.line ? passage(pairing.line) : "") +
+      opinionCards(
+        opinions,
+        lit >= 0 ? lit : null,
+        this.full.has(item.id),
+        new Set(),
+        pairing.line?.statement_id ?? null,
+      ) +
       own +
       leftOut(item) +
       `</div>` +
@@ -1132,6 +1299,7 @@ export class Ballot {
     if (!pairing || !this.live) return;
     const { item } = pairing;
     const opinion = target.closest<HTMLElement>(".opinion[data-opinion]");
+    if (this.context.tapped(target, this.cutId, pairing)) return;
     if (target.closest(".pv-words.clip")) {
       this.full.add(item.id);
       this.render();
@@ -1140,11 +1308,6 @@ export class Ballot {
       void this.vote(VoteChoice.Opinion, { coding_id: picked.codings[0] });
     } else if (target.closest("#bl-drop")) void this.vote(VoteChoice.Drop, null);
     else if (target.closest("#bl-change")) this.change(item);
-    else if (target.closest("#bl-quote.clip")) {
-      this.whole.add(item.id);
-      this.render();
-    } else if (target.closest("#bl-line") && pairing.line)
-      this.handlers.onTranscript(pairing.line.statement_id);
     else if (target.closest("#bl-prev") && this.at > 0) this.step(this.at - 1);
     else if (target.closest("#bl-next")) this.next();
   }
@@ -1288,5 +1451,6 @@ export class Ballot {
   close(): void {
     this.live = false;
     this.sheet.close();
+    this.context.drop();
   }
 }

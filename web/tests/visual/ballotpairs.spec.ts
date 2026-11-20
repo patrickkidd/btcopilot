@@ -47,8 +47,8 @@ const ITEMS = [
     pairing_reason: "The same move into the stepfather's house, told four ways.",
     pairing_confidence: "unsure",
     opinions: [
-      { coding_id: 1, item_id: 11, person_name: "Dana Reyes", line: LONG, item: event({ anxiety: "up", title: "Stress at the new house" }) },
-      { coding_id: 2, item_id: 21, person_name: "Dana Reyes", line: LONG, item: event({ anxiety: "up", title: "House was tense" }) },
+      { coding_id: 1, item_id: 11, person_name: "Dana Reyes", line: line(55, "It was tense there."), item: event({ anxiety: "up", title: "Stress at the new house" }) },
+      { coding_id: 2, item_id: 21, person_name: "Dana Reyes", line: line(57, "I stayed out late."), item: event({ anxiety: "up", title: "House was tense" }) },
       { coding_id: 3, item_id: 31, person_name: "Dana Reyes", line: LONG, item: event({ anxiety: "up", title: "Living with stepfather" }) },
       { coding_id: 3, item_id: 32, person_name: "Dana Reyes", line: LONG, item: event({ kind: "noted", title: "Moved into his house" }) },
       {
@@ -98,6 +98,24 @@ const ITEMS = [
   },
 ];
 
+/** The cut's conversation as the server sends it to the (i): what Dana and
+ * the coach said, lines 50 to 60, nothing any coder wrote (R-0977). */
+const TALK = {
+  count: 11,
+  lines: Array.from({ length: 11 }, (_, at) => {
+    const id = 50 + at;
+    const said = [LONG, line(55, "It was tense there."), line(57, "I stayed out late.")].find((one) => one.statement_id === id);
+    const client = id % 2 === 0 || !!said;
+    return {
+      id,
+      number: at + 1,
+      who: client ? "Dana" : "Coach",
+      client,
+      text: said?.text ?? (client ? `I remember line ${at + 1} well.` : `What happened next, after line ${at}?`),
+    };
+  }),
+};
+
 const cut = (ballot: string) => ({
   id: CUT,
   diagram_id: 1,
@@ -140,6 +158,7 @@ async function review(page: Page, state: { ballot: string }): Promise<Sent[]> {
       return json(cut(state.ballot));
     }
     if (path === `/cuts/${CUT}`) return json(cut(state.ballot));
+    if (path === `/cuts/${CUT}/lines`) return json(TALK);
     if (path.startsWith("/cuts")) return json([cut(state.ballot)]);
     if (path.startsWith("/items?")) return json(ITEMS);
     if (path === "/items" && body.opinions)
@@ -298,7 +317,7 @@ test.describe("the vote by pairing", () => {
     await page.locator("#ballot-view circle").nth(0).click();
     await expect(page.locator("#title")).toContainText("ballot · 1 of 3");
 
-    // the passage is cut to two lines until tapped
+    // the passage is cut to two lines; the rest is behind its (i)
     await expect(page.locator("#bl-quote.clip")).toBeVisible();
     // two coders said the same thing: four versions read as three opinions
     await expect(page.locator(".pv-label")).toHaveText(["opinion 1", "opinion 2", "opinion 3"]);
@@ -330,8 +349,10 @@ test.describe("the vote by pairing", () => {
     await page.locator("#bl-drop").click();
     await expect(page.locator("#bl-drop")).not.toHaveClass(/ on/);
 
-    await page.locator("#bl-quote").click();
-    await expect(page.locator("#bl-quote.clip")).toHaveCount(0);
+    // a tap on the passage's words opens nothing in place (R-0975)
+    await page.locator("#bl-quote .qt").click();
+    await expect(page.locator("#bl-quote.clip")).toHaveCount(1);
+    await expect(page.locator(".ctx-card")).toHaveCount(0);
 
     const votes = sent.filter((one) => one.path.endsWith("/vote"));
     expect(votes.map((one) => one.method)).toEqual(["PUT", "DELETE", "PUT", "DELETE"]);
@@ -340,7 +361,133 @@ test.describe("the vote by pairing", () => {
     expect(seen).toEqual([]);
     await page.screenshot({ path: test.info().outputPath("pairing.png") });
   });
+
+  // R-0977, R-0975
+  test("an (i) on the passage and beside a box from another line opens the conversation there, only what was said", async ({ page }) => {
+    const seen = errors(page);
+    const sent = await review(page, { ballot: "open" });
+    await page.goto(`/app/vote/${CUT}/41`);
+    await expect(page.locator("#title")).toContainText("ballot · 1 of 3");
+    await placed(page);
+    // no words at rest: "open in transcript" is gone and the (i)s carry none
+    const body = page.locator("#ballot-body");
+    await expect(body).not.toContainText("open in transcript");
+    const words = await body.evaluate((one) => {
+      const count = (node: HTMLElement) => node.innerText.split(/\s+/).filter(Boolean).length;
+      const bare = one.cloneNode(true) as HTMLElement;
+      bare.querySelectorAll(".info").forEach((mark) => mark.remove());
+      document.body.append(bare);
+      const without = count(bare);
+      bare.remove();
+      return { with: count(one), without };
+    });
+    expect(words.with).toBe(words.without);
+
+    // the passage's (i): the conversation at its line, outlined, in the chat's own bubbles
+    await page.locator("#bl-quote .info").click();
+    const card = page.locator(".ctx-card");
+    await expect(card.locator(".ab-span")).toHaveText("line 3 of 11");
+    await expect(card.locator(".ctx-box")).toHaveCount(0);
+    await opened(page, 52);
+    await card.locator(".cardx").click();
+    await expect(page.locator(".ctx-clip")).toHaveCount(0);
+
+    // the merged box's two (i)s, each opening its own line with the box on top, whole
+    const mark = (id: number) => page.locator(`.ctx-is .info[data-line="${id}"]`);
+    await mark(57).click();
+    await expect(card.locator(".ab-span")).toHaveText("line 8 of 11");
+    await expect(card.locator(".ctx-box .opinion")).toHaveCount(1);
+    await expect(card.locator(".ctx-box .pv-words.clip")).toHaveCount(0);
+    await expect(card.locator(".ctx-box")).toContainText(/Stress at the new house|House was tense/);
+    await opened(page, 57);
+    // the app's back arrow puts it away and stays on the pairing
+    await page.locator("#coding-back").click();
+    await expect(page.locator(".ctx-clip")).toHaveCount(0);
+    await expect(page.locator("#title")).toContainText("ballot · 1 of 3");
+    await mark(55).click();
+    await expect(card.locator(".ab-span")).toHaveText("line 6 of 11");
+    await opened(page, 55);
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.screenshot({ path: test.info().outputPath(`context-${scheme}.png`) });
+    }
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".ctx-clip")).toHaveCount(0);
+
+    // a tap on the box still picks it; the (i)s beside it never vote
+    expect(sent.filter((one) => one.path.endsWith("/vote"))).toEqual([]);
+    await page.locator(".opinion.pv").first().click();
+    await expect(page.locator(".opinion.pv").first()).toHaveClass(/ on/);
+    expect(seen).toEqual([]);
+  });
 });
+
+/** The (i)s stand where the approved screen puts them: the passage's inside
+ * it, its words stopping where its target begins; a box's 44 by 44 at the
+ * right end of its label, outside the box, 8px clear of the box above, of its
+ * own box and of the (i) beside it (R-0977). */
+async function placed(page: Page): Promise<void> {
+  const out = await page.evaluate(() => {
+    const rect = (one: Element) => one.getBoundingClientRect();
+    // where the words' room ends: the box less its right padding
+    const words = (one: Element) => rect(one).right - parseFloat(getComputedStyle(one).paddingRight);
+    const quote = document.querySelector("#bl-quote")!;
+    const own = rect(quote.querySelector(".info")!);
+    const marks = [...document.querySelectorAll(".ctx-is .info")].map((mark) => {
+      const label = mark.closest(".pv-label")!;
+      const box = rect(label.nextElementSibling!);
+      const above = label.previousElementSibling?.classList.contains("opinion") ? rect(label.previousElementSibling) : null;
+      const year = label.nextElementSibling!.querySelector(".pv-l1 > :last-child");
+      const at = rect(mark);
+      return {
+        size: [Math.round(at.width), Math.round(at.height)],
+        below: Math.round(box.top - at.bottom),
+        over: above ? Math.round(at.top - above.bottom) : null,
+        year: year ? at.bottom <= rect(year).top || at.left >= rect(year).right : true,
+        left: at.left,
+        right: at.right,
+      };
+    });
+    return {
+      passage: {
+        size: [Math.round(own.width), Math.round(own.height)],
+        inside: own.top >= rect(quote).top - 0.5 && own.right <= rect(quote).right + 0.5,
+        words: words(quote.querySelector(".qt")!) <= own.left + 0.5,
+      },
+      marks,
+    };
+  });
+  expect(out.passage).toEqual({ size: [44, 44], inside: true, words: true });
+  expect(out.marks).toHaveLength(2);
+  for (const one of out.marks) {
+    expect(one.size).toEqual([44, 44]);
+    expect(one.below).toBeGreaterThanOrEqual(8);
+    if (one.over !== null) expect(one.over).toBeGreaterThanOrEqual(8);
+    expect(one.year).toBe(true);
+  }
+  expect(Math.round(out.marks[1].left - out.marks[0].right)).toBe(8);
+}
+
+/** The conversation is up at line `id`: every line the person and the coach
+ * said and nothing a coder wrote, in the chat's own bubbles, that line
+ * outlined and whole in view under the head (R-0975, R-0977). */
+async function opened(page: Page, id: number): Promise<void> {
+  const card = page.locator(".ctx-card");
+  await expect(card).toBeVisible();
+  await expect(card.locator(".chat > .bub.line")).toHaveCount(TALK.lines.length);
+  await expect(card.locator(".bub.said, .bub.sub, .did, .pv-words.clip")).toHaveCount(0);
+  await expect(card.locator(".bub.line.user")).toHaveCount(TALK.lines.filter((one) => one.client).length);
+  const sel = card.locator(".bub.line.sel");
+  await expect(sel).toHaveAttribute("data-turn", String(id));
+  await page.waitForTimeout(400);
+  const seen = await sel.evaluate((one) => {
+    const chat = one.closest(".chat")!.getBoundingClientRect();
+    const at = one.getBoundingClientRect();
+    return { outline: getComputedStyle(one).outlineStyle, inView: at.top >= chat.top && at.bottom <= chat.bottom };
+  });
+  expect(seen).toEqual({ outline: "solid", inView: true });
+}
 
 test.describe("Patrick's look over the pairings", () => {
   test.use({ storageState: stateFor("moves") });
@@ -395,6 +542,13 @@ test.describe("Patrick's look over the pairings", () => {
     await expect(page.locator(".pv-why .pv-label")).toHaveText("why paired");
     await expect(page.locator(".pv-why .note")).toContainText("told four ways");
     await agree(page);
+    // the same (i)s as on the vote, opening the same conversation (R-0977)
+    await placed(page);
+    await page.locator('.ctx-is .info[data-line="55"]').click();
+    await expect(page.locator(".ctx-card .ctx-box .opinion")).toHaveCount(1);
+    await opened(page, 55);
+    await page.locator(".ctx-card .cardx").click();
+    await expect(page.locator(".ctx-clip")).toHaveCount(0);
     // the two coders who wrote the same thing are one card here too
     await expect(page.locator(".pv-ops .pv-label")).toHaveCount(3);
     await samePlaces(page);

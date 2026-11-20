@@ -8,9 +8,9 @@ import { Lens } from "./lens";
 import { CaseReport } from "./casereport";
 import { adding, Menu, Tab, shut } from "./menu";
 import { Questions } from "./questions";
-import { Ballot } from "./ballot";
+import { Ballot, Context } from "./ballot";
 import { Pairings } from "./pairings";
-import { Coding } from "./coding";
+import { Coding, line } from "./coding";
 import { CutSelect } from "./cut";
 import { Agenda } from "./agenda";
 import { Meeting } from "./meeting";
@@ -476,11 +476,11 @@ async function openTask(): Promise<void> {
 /** Starting a task is making your own coding of that cut, then opening the
  * conversation as a thread you cannot type into. */
 async function startTask(task: Task): Promise<void> {
-  const mine = task.coding_id ?? (await api.startCoding(task.cut_id)).id;
   if (task.kind === TaskKind.Vote) {
-    await openBallot(task.cut_id, mine);
+    await openBallot(task.cut_id);
     return;
   }
+  const mine = task.coding_id ?? (await api.startCoding(task.cut_id)).id;
   await coding.open(mine);
   screenAt = address(Place.Coding, mine);
   screen(Screen.Coding);
@@ -495,57 +495,51 @@ const BALLOT_SCREEN = {
   overlay: $("overlay"),
 };
 
+/** The cut's conversation behind the (i)s of the vote and of Patrick's look
+ * over the pairings, which share the screen (R-0977). */
+const context = new Context(BALLOT_SCREEN, line);
+
 const ballot = new Ballot(
   BALLOT_SCREEN,
   {
     onTitle: (title) => entitle(title),
     onDone: () => void openTask(),
-    onTranscript: (statementId) => void openLine(statementId),
     onMoved: () => {
       screenAt = voteAt(voting!.cutId);
       sync();
     },
   },
+  context,
 );
 
 const voteAt = (cut: number) => stepAt(Place.Vote, Place.VoteItem, cut, ballot.onItem());
 
-/** Which coding the ballot on screen belongs to, so the transcript it opens is
- * this coder's own thread of the same conversation. */
-let voting: { cutId: number; codingId: number; itemId: number | null } | null = null;
+/** The cut whose ballot is on screen; none while the same screen shows
+ * Patrick's look over the pairings. */
+let voting: { cutId: number } | null = null;
 
-async function openBallot(
-  cutId: number,
-  codingId: number,
-  itemId: number | null = null,
-): Promise<void> {
-  voting = { cutId, codingId, itemId };
+async function openBallot(cutId: number, itemId: number | null = null): Promise<void> {
+  voting = { cutId };
   pairings.close();
   await ballot.open(cutId, itemId);
   screenAt = voteAt(cutId);
   screen(Screen.Ballot);
 }
 
-/** The transcript at the line an item came from, which is the coder's own
- * thread of that conversation, read and not added to. */
-async function openLine(statementId: number): Promise<void> {
-  if (!voting) return;
-  voting.itemId = ballot.onItem();
-  await coding.open(voting.codingId, statementId);
-  screenAt = address(Place.Coding, voting.codingId);
-  screen(Screen.Coding);
-}
-
 /** Patrick's look over a cut's pairings before he opens the vote, on the
  * vote's own screen (R-0963). */
-const pairings = new Pairings(BALLOT_SCREEN, {
-  onTitle: (title) => entitle(title),
-  onDone: () => void openAgenda(),
-  onMoved: () => {
-    screenAt = pairingAt();
-    sync();
+const pairings = new Pairings(
+  BALLOT_SCREEN,
+  {
+    onTitle: (title) => entitle(title),
+    onDone: () => void openAgenda(),
+    onMoved: () => {
+      screenAt = pairingAt();
+      sync();
+    },
   },
-});
+  context,
+);
 
 /** The address of a screen stepped one pairing at a time, on the pairing it
  * shows, so a reload comes back to it. */
@@ -728,10 +722,8 @@ $("rules-close").addEventListener("click", () => {
 });
 $("coding-back").addEventListener("click", () => {
   track.tap(Feature.Back);
-  // Reading the transcript is a step out of the ballot, so it steps back into
-  // it on the item it was left on.
-  if (here === Screen.Coding && voting)
-    void openBallot(voting.cutId, voting.codingId, voting.itemId);
+  // the conversation behind an (i) is put away before the screen under it
+  if (here === Screen.Ballot && context.up) context.close();
   else if (here === Screen.Ballot && !voting) void openAgenda();
   else if (here === Screen.Coding || here === Screen.Ballot) void openTask();
   else if (here === Screen.Meeting) void backToMeeting();
@@ -1662,6 +1654,7 @@ track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 document.addEventListener("keydown", (e) => {
   // not while the book's passages are up over it: that Escape is theirs (books.ts)
   if (e.key === "Escape" && picture.aboutOpen() && !books.up && $("chat-screen").offsetParent) lens.climb(CLUSTER);
+  if (e.key === "Escape" && context.up) context.close();
 });
 
 onReturn($("composer"), () => void send());
@@ -1824,8 +1817,7 @@ function uncover(keep = Keep.Nothing): void {
 /** The account view with these pages pushed on its root. */
 async function toVote(cut: number, item: number | null = null): Promise<void> {
   uncover();
-  // asking for the coding of a cut gives back the one already made
-  await openBallot(cut, (await api.startCoding(cut)).id, item);
+  await openBallot(cut, item);
 }
 
 async function toAccount(...path: (Page | Sub)[]): Promise<void> {

@@ -95,6 +95,7 @@ function look(item: BallotItem) {
       show: (html: string) => shown.push(html),
       close() {},
     },
+    context: { tapped: () => false },
     apply() {},
   });
   return { screen, shown, classes };

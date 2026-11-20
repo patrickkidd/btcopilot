@@ -1103,6 +1103,15 @@ export interface TranscriptLine {
   number: number | null;
 }
 
+/** A cut's conversation behind the (i) on the vote and on Patrick's look over
+ * the pairings: only what the person and the coach said, never anything a
+ * coder wrote (R-0977). */
+export interface CutLines {
+  /** How many lines the cut holds, which a line's number is out of. */
+  count: number;
+  lines: { id: number; number: number; who: string; client: boolean; text: string }[];
+}
+
 /** One coder's reading of one item, without their name (R-0252). */
 export interface Opinion {
   coding_id?: number;

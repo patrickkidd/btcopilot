@@ -2,7 +2,7 @@
 
 import datetime
 
-from flask import jsonify, request
+from flask import abort, jsonify, request
 
 from btcopilot.extensions import db
 from btcopilot.models import Diagram
@@ -23,8 +23,10 @@ from btcopilot.review.routes import (
     coder,
     cut_or_404,
     open_items,
+    reads_ballot,
     session_name,
 )
+from btcopilot.review.routes.codings import _client, _who
 
 
 def payload(cut: Cut) -> dict:
@@ -75,6 +77,42 @@ def cut_index():
 def cut_read(cut_id: int):
     coder()
     return jsonify(payload(cut_or_404(cut_id)))
+
+
+@bp.route("/cuts/<int:cut_id>/lines")
+def cut_lines(cut_id: int):
+    """The statements of the cut, for the (i)s of the ballot and the pairing
+    check: the person's and the coach's lines and nothing any coder wrote,
+    numbered as the ballot numbers them; a line some coder wrote from, or the
+    cut ends on, stays even when it was sent again after a failed turn
+    (R-0977, R-0975, R-0946)."""
+    user = coder()
+    cut = cut_or_404(cut_id)
+    if not reads_ballot(cut, user):
+        abort(403)
+    lines = adapter.statements_between(
+        cut.diagram_id, cut.start_statement_id, cut.end_statement_id
+    )
+    said = {
+        one.get("statement_id") for item in cut.items for one in item.opinions or []
+    }
+    kept = {s.id for s in adapter.heard(lines)} | said | {cut.end_statement_id}
+    return jsonify(
+        {
+            "count": len(lines),
+            "lines": [
+                {
+                    "id": s.id,
+                    "number": at,
+                    "who": _who(s),
+                    "client": _client(s),
+                    "text": s.text or "",
+                }
+                for at, s in enumerate(lines, start=1)
+                if s.id in kept
+            ],
+        }
+    )
 
 
 @bp.route("/cuts", methods=["POST"])

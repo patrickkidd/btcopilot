@@ -11,6 +11,7 @@ import type {
   CoderLine,
   Coding,
   Cut,
+  CutLines,
   CodingRecord,
   SessionTurns,
   CodingThread,
@@ -618,6 +619,8 @@ export const nudge = () =>
  * them. Names are not in either answer while people are voting (R-0272). */
 
 export const cut = (cutId: number) => ask<Cut>("GET", `/cuts/${cutId}`);
+
+export const cutLines = (cutId: number) => ask<CutLines>("GET", `/cuts/${cutId}/lines`);
 
 export const items = (cutId: number) =>
   ask<BallotItem[]>("GET", `/items?cut_id=${cutId}`);

@@ -140,6 +140,16 @@ def sees_others(cut: Cut, user) -> bool:
     return mine is not None and mine.done_at is not None
 
 
+def reads_ballot(cut: Cut, user) -> bool:
+    """The vote's pairings, and the conversation they were written from, are
+    read by a coder whose own coding is done once the vote is open, and by
+    Patrick throughout, who looks the pairings over before he opens it
+    (R-0242, R-0963)."""
+    return sees_others(cut, user) and (
+        cut.vote_opened_at is not None or user.has_role(btcopilot.ROLE_ADMIN)
+    )
+
+
 def session_name(cut: Cut) -> str:
     """What a cut is called on screen: the sitting its last line was said in."""
     return sitting_name(adapter.statement(cut.end_statement_id).discussion)

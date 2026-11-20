@@ -98,6 +98,8 @@ class Feature(enum.StrEnum):
     PairingSplit = "pairing_split"
     PairingSplitList = "pairing_split_list"
     PairingSplitPick = "pairing_split_pick"
+    LineFromPassage = "line_from_passage"
+    LineFromBox = "line_from_box"
     MeetingStart = "meeting_start"
     MeetingEnd = "meeting_end"
     MeetingKeep = "meeting_keep"

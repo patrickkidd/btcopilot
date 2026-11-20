@@ -5,8 +5,6 @@ import enum
 
 from flask import jsonify, request
 
-import btcopilot
-
 from btcopilot.extensions import db
 from btcopilot.review import adapter, decision, pairing, snapshot
 from btcopilot.review.models import Item, ReviewStatus
@@ -18,7 +16,7 @@ from btcopilot.review.routes import (
     cut_or_404,
     human_codings,
     item_or_404,
-    sees_others,
+    reads_ballot,
 )
 
 
@@ -189,10 +187,7 @@ def item_index():
     if named:
         admin()
     cut = cut_or_404(request.args.get("cut_id", type=int) or 0)
-    if not sees_others(cut, user):
-        return jsonify([])
-    # Before the vote opens the pairings are Patrick's to look over (R-0963).
-    if cut.vote_opened_at is None and not user.has_role(btcopilot.ROLE_ADMIN):
+    if not reads_ballot(cut, user):
         return jsonify([])
     return jsonify(listing(cut.items, cut, named))
 

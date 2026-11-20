@@ -27,7 +27,7 @@ from btcopilot.review.freeze import frozen
 from btcopilot.review.models import Coding, Cut, Item, Note, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.conftest import Model, said
 from btcopilot.tests.review.conftest import coded, person, shift
-from btcopilot.tests.review.test_pairing import open_vote
+from btcopilot.tests.review.test_pairing import build, open_vote
 
 # The real drafter, from before the autouse fixture stands it down.
 DRAFT = ruledraft.draft
@@ -979,3 +979,65 @@ def test_words_sent_again_stay_when_the_last_agreed_line_is_on_them(
     thread = coder.get(f"/review/codings/{coding['id']}/thread").json
     assert [turn["id"] for turn in thread["turns"]] == [t.id for t in turns]
     assert thread["agreed"]["order"] == 2
+
+
+def test_the_conversation_behind_the_i_is_only_what_the_person_and_the_coach_said(
+    patrick, coder, test_user, test_user_2, cut, session, turns
+):
+    # R-0977, R-0975
+    first, second = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 10, turns[1].id, test_user.id)
+    coach = Speaker(discussion_id=session.id, name="Coach", type=SpeakerType.Expert)
+    db.session.add(coach)
+    db.session.flush()
+    turns[1].speaker_id = coach.id
+    for coding in (first, second):
+        db.session.add(
+            Note(
+                coding_id=coding.id,
+                statement_id=turns[0].id,
+                text="Ann's mother got sick, scribe please add",
+                turn_id=f"scribe-{coding.id}",
+            )
+        )
+    db.session.commit()
+    open_vote(patrick, cut)
+
+    lines = coder.get(f"/review/cuts/{cut.id}/lines").get_json()
+    assert lines["count"] == 2
+    assert lines["lines"] == [
+        {"id": turns[0].id, "number": 1, "who": "Client", "client": True, "text": "turn 0"},
+        {"id": turns[1].id, "number": 2, "who": "Coach", "client": False, "text": "turn 1"},
+    ]
+    assert "scribe" not in str(lines)
+
+
+def test_the_conversation_behind_the_i_is_patricks_before_the_vote_and_a_coders_after_it(
+    patrick, coder, test_user, test_user_2, cut
+):
+    # R-0977, R-0963, R-0242
+    two_codings(test_user, test_user_2, cut)
+    build(patrick, cut)
+    assert patrick.get(f"/review/cuts/{cut.id}/lines").status_code == 200
+    assert coder.get(f"/review/cuts/{cut.id}/lines").status_code == 302
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    assert coder.get(f"/review/cuts/{cut.id}/lines").status_code == 200
+
+
+def test_the_conversation_behind_the_i_is_refused_to_anyone_not_a_coder(
+    patrick, subscriber, test_user, cut
+):
+    # R-0977, R-0311
+    coded(test_user, cut, {"people": [person(1, "Ann")]})
+    open_vote(patrick, cut)
+    assert subscriber.get(f"/review/cuts/{cut.id}/lines").status_code == 302
+
+
+def test_the_conversation_behind_the_i_is_refused_to_a_coder_not_yet_done(
+    patrick, coder, test_user, test_user_2, cut
+):
+    # R-0977, R-0242
+    coded(test_user, cut, {"people": [person(1, "Ann")]})
+    coded(test_user_2, cut, {"people": [person(1, "Ann")]}, done=False)
+    open_vote(patrick, cut)
+    assert coder.get(f"/review/cuts/{cut.id}/lines").status_code == 302

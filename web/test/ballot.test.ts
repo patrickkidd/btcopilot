@@ -1,9 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   DOTS,
   ballotOrder,
   choosable,
+  contextMarkup,
   nowWords,
+  opinionCard,
+  passage,
   ownCard,
   drawPairs,
   drawTimeline,
@@ -641,5 +644,81 @@ describe("a pairing on the vote", () => {
     expect(svg.match(/d-on/g)).toHaveLength(1);
     expect(svg.match(/d-ok/g)).toHaveLength(4);
     expect(svg).not.toMatch(/<text/);
+  });
+});
+
+vi.stubGlobal("window", { BOOTSTRAP: { user: { pro: false } } });
+const { line } = await import("../src/coding");
+
+describe("where a code was said, behind an (i)", () => {
+  const said = (id: number) => ({ line: { statement_id: id, who: "Ada", text: `line ${id}`, number: id } });
+  const at = (coding: number, id: number, line: number, change = {}) =>
+    opinion(coding, id, { ...moved, ...change }, said(line));
+  const marks = (html: string) => [...html.matchAll(/data-line="(\d+)" data-box="(\d+)"/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  const words = (html: string) => html.replace(/<[^>]*>/g, " ").split(/\s+/).filter(Boolean);
+
+  // R-0977, R-0975
+  it("puts the app's (i) on the passage, opening its own line, and no words", () => {
+    const html = passage(said(9).line);
+    expect(html).toContain('class="info" aria-label="where this was said" data-line="9"');
+    expect(html).not.toMatch(/open in transcript/);
+    expect(words(html)).toEqual(words(html.replace(/<button[\s\S]*?<\/button>/, "")));
+  });
+
+  // R-0977
+  it("puts an (i) beside a box only when it was written from another line than the passage", () => {
+    const shown = toPairing(pairing(1, [at(1, 1, 9), at(2, 2, 9), at(3, 3, 12, { anxiety: "down" })]), new Map());
+    const opinions = pairOpinions(shown);
+    const other = opinions.findIndex((one) => one.codings.includes(3));
+    expect(marks(opinionCards(opinions, null, false, new Set(), shown.line!.statement_id))).toEqual([[12, other]]);
+  });
+
+  // R-0977
+  it("puts no (i) beside any box when every box was written from the passage's line", () => {
+    const shown = toPairing(pairing(2, [at(1, 1, 9), at(2, 2, 9, { anxiety: "down" })]), new Map());
+    expect(marks(opinionCards(pairOpinions(shown), null, false, new Set(), 9))).toEqual([]);
+  });
+
+  // R-0977
+  it("puts one (i) per other line, in row order, beside a box whose rows came from two other lines", () => {
+    const shown = toPairing(
+      pairing(3, [at(1, 1, 9), at(1, 2, 15, { kind: "noted" }), at(1, 3, 12, { anxiety: "down" }), at(2, 4, 9), at(3, 5, 9)]),
+      new Map(),
+    );
+    const opinions = pairOpinions(shown);
+    const several = opinions.findIndex((one) => one.entries.length > 1);
+    const rows = opinions[several].entries.map((entry) => entry.line!.statement_id).filter((id) => id !== 9);
+    expect(marks(opinionCards(opinions, null, false, new Set(), 9))).toEqual(rows.map((id) => [id, several]));
+    expect(rows).toHaveLength(2);
+  });
+
+  // R-0977, R-0975
+  it("shows only what the person and the coach said, in the chat's own bubbles, never a coder's thread or note", () => {
+    const talk = {
+      count: 3,
+      lines: [
+        { id: 4, number: 1, who: "Ann", client: true, text: "My mother got sick" },
+        { id: 7, number: 3, who: "Coach", client: false, text: "When was that?" },
+      ].map((one) => ({ ...one, said: [{ text: "scribe: add Ann's mother", lines: [{ verb: "Added", text: "Ann's mother" }] }], note: "a coder's note" })),
+    };
+    const html = contextMarkup(talk, 7, "", line);
+    expect(html.match(/class="bub line (user|coach)/g)).toEqual(['class="bub line user', 'class="bub line coach']);
+    expect(html).toContain("My mother got sick");
+    expect(html).toContain("When was that?");
+    expect(html).not.toMatch(/scribe|Added|coder&#39;s note|coder's note/);
+    expect(html).toContain('class="bub line coach sel" data-turn="7"');
+    expect(html).toContain("line 3 of 3");
+  });
+
+  // R-0977
+  it("heads the conversation with the box whose (i) opened it, the coder's words whole, and with nothing more from the passage's", () => {
+    const shown = toPairing(pairing(4, [at(1, 1, 9), at(2, 2, 12, { anxiety: "down", title: "Moved far away from the whole family" })]), new Map());
+    const opinions = pairOpinions(shown);
+    const other = opinions.findIndex((one) => one.codings.includes(2));
+    const talk = { count: 12, lines: [9, 12].map((id) => ({ id, number: id, who: "Ann", client: true, text: `line ${id}` })) };
+    const boxed = contextMarkup(talk, 12, opinionCard(opinions, other, false, true), line);
+    expect(boxed).toContain('<div class="ctx-box"><div class="opinion tap pv"');
+    expect(boxed).toContain('<div class="pv-words">Moved far away from the whole family</div>');
+    expect(contextMarkup(talk, 9, "", line)).not.toContain("ctx-box");
   });
 });

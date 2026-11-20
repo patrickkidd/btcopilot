@@ -684,8 +684,10 @@ What it is for: deciding as much as possible on your own phone, so the meeting o
 - When any coder left the item out, a plain faint label says so — "2 coders left this event out" — never a row you can tap, because leaving it out is not a vote. [built] {R-0315}
 - You may say why you voted as you did, and you may skip it. [drawn]
 - An item you skip stays on your list until the ballot closes. [drawn]
-- You can open the transcript at the line in question from the ballot. [drawn]
-- Opening the transcript outlines the statement the version was written from, the way the coding screen does. [built] {R-0337}
+- An (i) sits at the passage's top right; a box coded from a different line has its own (i) at the end of its "opinion N" label, outside the box; nothing at rest gains a word. [built] {R-0977, R-0975}
+- An (i) brings the conversation down over the screen as the cluster's (i) brings its about page, in the chat's own bubbles, the line outlined, the box on top when a box's (i) opened it; only what the person and the coach said, never a coder's thread or notes. [built] {R-0977}
+- Patrick's look over the pairings carries the same (i)s on its passage and its opinions, opening the same conversation. [built] {R-0977}
+- Neither screen ever shows a coder's scribe thread, for any user. [built] {R-0977}
 - A version you have chosen is lit without a box drawn round its family picture. [built] {R-0337}
 - "None" is the last choice in the relationship field, as it is for the three variables. [built] {R-0337}
 - A prev button sits beside next, so a dot that moved you on can be walked back. [built] {R-0337}
