@@ -18,6 +18,14 @@ enum Stage {
   Map = "map",
 }
 
+/** iOS greys out every file in the Files picker for "audio/*" alone; the
+ * endings let it pick them. */
+const ENDINGS = [
+  ".m4a", ".mp3", ".wav", ".aac", ".flac", ".ogg", ".opus", ".wma", ".amr", ".aif", ".aiff", ".caf", ".qta",
+];
+
+export const ACCEPT = [...ENDINGS, "audio/*"].join(",");
+
 const ROLES = [
   { role: VoiceRole.Clinician, label: "the clinician" },
   { role: VoiceRole.Client, label: "the client" },
@@ -74,7 +82,7 @@ export class Recording {
     this.head = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.make = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
     this.file.type = "file";
-    this.file.accept = "audio/*";
+    this.file.accept = ACCEPT;
     this.file.hidden = true;
     overlay.append(this.file);
     this.file.addEventListener("change", () => void this.take());
