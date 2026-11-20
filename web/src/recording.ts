@@ -1,9 +1,10 @@
 import * as api from "./api";
-import { store } from "./store";
+import { Part, store } from "./store";
 import { closeX, el, esc } from "./dom";
 import { dragScroll } from "./drag";
+import { Sheet } from "./sheet";
 import { toast } from "./toast";
-import { VoiceRole, type Session, type Utterance, type Voice } from "./types";
+import { VoiceRole, type Person, type Session, type Utterance } from "./types";
 
 /** Putting a recorded session into the record. The audio goes to our own
  * server, which sends it on to be transcribed (R-0348). What comes back is
@@ -18,10 +19,71 @@ enum Stage {
   Map = "map",
 }
 
-const ROLES = [
-  { role: VoiceRole.Clinician, label: "the clinician" },
-  { role: VoiceRole.Client, label: "the client" },
+/** iOS greys out every file in the Files picker for "audio/*" alone; the
+ * endings let it pick them. */
+const ENDINGS = [
+  ".m4a", ".mp3", ".wav", ".aac", ".flac", ".ogg", ".opus", ".wma", ".amr", ".aif", ".aiff", ".caf", ".qta",
 ];
+
+export const ACCEPT = [...ENDINGS, "audio/*"].join(",");
+
+/** Who a voice is: a person in the diagram, a person to add to it on Save,
+ * the clinician, or someone the diagram leaves out. */
+export enum Who {
+  Person = "person",
+  New = "new",
+  Clinician = "clinician",
+  Outside = "outside",
+}
+
+export type Choice =
+  | { who: Who.Person; id: number }
+  | { who: Who.New; name: string; last: string }
+  | { who: Who.Clinician }
+  | { who: Who.Outside; name: string };
+
+/** What the pick-list's rows and buttons do, besides picking a person. */
+enum Act {
+  New = "new",
+  Clinician = "clinician",
+  Outside = "outside",
+  Add = "add",
+  Back = "back",
+  Clear = "clear",
+}
+
+const CLINICIAN = "The clinician";
+
+export const fullName = (person: { name: string; last_name: string | null }) =>
+  [person.name, person.last_name].filter(Boolean).join(" ");
+
+export const guessed = (suggestion: api.Suggestion): Choice =>
+  suggestion.person_id === null ? { who: Who.Clinician } : { who: Who.Person, id: suggestion.person_id };
+
+export const shown = (choice: Choice, people: Person[]): string => {
+  if (choice.who === Who.Clinician) return CLINICIAN;
+  if (choice.who === Who.Person) return fullName(people.find((one) => one.id === choice.id)!);
+  if (choice.who === Who.New) return fullName({ name: choice.name, last_name: choice.last });
+  return choice.name;
+};
+
+export const ready = (labels: string[], chosen: Map<string, Choice>) =>
+  labels.every((label) => chosen.has(label));
+
+/** What the server is told each voice is. A new person goes in with the id
+ * made for them on Save. */
+export const voicesFor = (chosen: Map<string, Choice>, people: Person[], made: Map<string, number>) =>
+  Object.fromEntries(
+    [...chosen].map(([label, choice]) => {
+      const name = shown(choice, people);
+      if (choice.who === Who.Clinician) return [label, { type: VoiceRole.Clinician, name }];
+      if (choice.who === Who.Outside) return [label, { type: VoiceRole.Client, name }];
+      const id = choice.who === Who.Person ? choice.id : made.get(label)!;
+      return [label, { type: VoiceRole.Client, name, person_id: id }];
+    }),
+  );
+
+const year = (person: Person) => person.birth?.slice(0, 4) ?? "";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -39,6 +101,13 @@ async function transcribe(file: File): Promise<Utterance[]> {
   }
 }
 
+const row = (attrs: string, title: string, side = "", cur = false) =>
+  `<button class="sn-row push${cur ? " cur" : ""}" type="button" ${attrs}>` +
+  `<span class="sn-t">${esc(title)}</span>${side ? `<span class="sn-s">${esc(side)}</span>` : ""}</button>`;
+
+const field = (name: string, label: string) =>
+  `<div class="sn-srch rv-in"><input type="text" data-f="${name}" placeholder="${label}" aria-label="${label}"></div>`;
+
 export class Recording {
   private scrim = el("div", "fs-scrim");
   private sheet = el(
@@ -53,11 +122,16 @@ export class Recording {
   private head: HTMLInputElement;
   private make: HTMLButtonElement;
   private file = document.createElement("input");
+  private list: Sheet;
 
   private stage = Stage.Warn;
   private utterances: Utterance[] = [];
-  private voices: Voice[] = [];
-  private roles = new Map<string, VoiceRole>();
+  private voices: api.Heard[] = [];
+  private chosen = new Map<string, Choice>();
+  /** The voices still showing the app's suggestion, untouched. */
+  private suggested = new Set<string>();
+  /** The voice the pick-list is choosing for. */
+  private picking = "";
   private title = "";
   private date = today();
 
@@ -70,11 +144,12 @@ export class Recording {
     this.sheet.id = "recording-sheet";
     this.scrim.id = "recording-scrim";
     overlay.append(this.scrim, this.sheet);
+    this.list = new Sheet(overlay, "rv");
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
     this.head = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.make = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
     this.file.type = "file";
-    this.file.accept = "audio/*";
+    this.file.accept = ACCEPT;
     this.file.hidden = true;
     overlay.append(this.file);
     this.file.addEventListener("change", () => void this.take());
@@ -87,7 +162,27 @@ export class Recording {
       if (this.stage === Stage.Warn) this.choose();
       else void this.create();
     });
-    this.body.addEventListener("click", (e) => this.onBodyClick(e));
+    this.body.addEventListener("click", (e) => {
+      const chip = (e.target as Element).closest<HTMLElement>("[data-voice]");
+      if (chip) this.offer(chip.dataset.voice!);
+    });
+    overlay.addEventListener("click", (e) => {
+      const target = e.target as Element;
+      if (target.closest(".fs-scrim.rv, .fs-sheet.rv .cardx")) return this.list.lower();
+      const picked = target.closest<HTMLElement>(".fs-sheet.rv [data-person], .fs-sheet.rv [data-act]");
+      if (picked) this.answer(picked);
+    });
+    this.list.panel.addEventListener("input", (e) => {
+      const typed = e.target as HTMLInputElement;
+      if (typed.type === "search") {
+        const query = typed.value.trim().toLowerCase();
+        for (const one of this.list.panel.querySelectorAll<HTMLElement>("[data-name]"))
+          one.hidden = !!query && !one.dataset.name!.includes(query);
+      } else {
+        this.list.panel.querySelector<HTMLButtonElement>(`[data-act="${Act.Add}"]`)!.disabled =
+          !this.typed("name");
+      }
+    });
     dragScroll(this.body);
   }
 
@@ -102,6 +197,7 @@ export class Recording {
       `<p class="cf-p">Check with patrick@alaskafamilysystems.com before you ` +
       `upload one.</p>`;
     this.make.hidden = false;
+    this.make.disabled = false;
     this.make.textContent = "Choose a recording";
     this.raise();
   }
@@ -118,7 +214,8 @@ export class Recording {
     this.stage = Stage.Map;
     this.title = titleFrom(file.name);
     this.date = today();
-    this.roles.clear();
+    this.chosen.clear();
+    this.suggested.clear();
     this.utterances = [];
     this.voices = [];
     this.raise();
@@ -134,11 +231,11 @@ export class Recording {
       );
       return;
     }
-    // The service names the voices in the order they first speak, and the
-    // clinician is the one who opens a session.
-    this.voices.forEach((voice, index) =>
-      this.roles.set(voice.label, index === 0 ? VoiceRole.Clinician : VoiceRole.Client),
-    );
+    for (const voice of this.voices) {
+      if (!voice.suggestion) continue;
+      this.chosen.set(voice.label, guessed(voice.suggestion));
+      this.suggested.add(voice.label);
+    }
     this.head.value = `Who is who · ${file.name}`;
     this.render();
   }
@@ -148,20 +245,38 @@ export class Recording {
     this.body.innerHTML = `<div class="fs-hint">${esc(words)}</div>`;
   }
 
+  private people(): Person[] {
+    return store.current().record.people;
+  }
+
+  /** One speaker: the label and first words outside, who they are inside,
+   * and the words a suggestion rests on when they are not those first words. */
+  private block(voice: api.Heard): string {
+    const choice = this.chosen.get(voice.label);
+    const guess = this.suggested.has(voice.label) ? voice.suggestion : null;
+    const quoted = guess && !(guess.speaker === voice.label && guess.because === voice.said) ? guess : null;
+    return (
+      `<div class="rv-voice" data-for="${esc(voice.label)}">` +
+      `<div class="rv-said"><span class="rv-lab">Speaker ${esc(voice.label)}</span> ` +
+      `&ldquo;${esc(voice.said)}&rdquo;</div>` +
+      `<div class="rv-box"><div class="rv-field">` +
+      `<button class="rv-pick${choice ? "" : " rv-none"}" type="button" data-voice="${esc(voice.label)}">` +
+      `${esc(choice ? shown(choice, this.people()) : "Choose who this is")}</button>` +
+      (guess ? `<span class="rv-sugg">suggested</span>` : "") +
+      `</div>` +
+      (quoted
+        ? `<div class="rv-because">Speaker ${esc(quoted.speaker)} said: ` +
+          `<q>${esc(quoted.because)}</q></div>`
+        : "") +
+      `</div></div>`
+    );
+  }
+
   private render(): void {
     this.make.hidden = false;
     this.make.textContent = "Create session";
-    let html = "";
-    for (const voice of this.voices) {
-      const role = this.roles.get(voice.label)!;
-      const said = ROLES.find((r) => r.role === role)!.label;
-      html +=
-        `<div class="row side" data-voice="${esc(voice.label)}">` +
-        `<div class="rmain"><div class="r1 rtitle">Voice ${esc(voice.label)}</div>` +
-        `<div class="r2">&ldquo;${esc(voice.said)}&rdquo;</div></div>` +
-        `<div class="r2 rwhen said">${esc(said)} &rsaquo;</div></div>`;
-    }
-    html +=
+    this.body.innerHTML =
+      this.voices.map((voice) => this.block(voice)).join("") +
       `<div class="ghead">Session</div>` +
       `<div class="row side"><div class="rmain"><div class="r1 rtitle">Date</div></div>` +
       `<input class="rwhen said" type="date" data-name="date" aria-label="Date" ` +
@@ -169,29 +284,110 @@ export class Recording {
       `<div class="row side"><div class="rmain"><div class="r1 rtitle">Title</div></div>` +
       `<input class="rwhen said" type="text" data-name="title" aria-label="Title" ` +
       `value="${esc(this.title)}"></div>` +
-      `<div class="fs-hint">The clinician's lines become the coach's side of the ` +
-      `thread. Once created, a voice named wrongly has to be fixed by editing ` +
-      `the events it produced.</div>`;
-    this.body.innerHTML = html;
-    for (const field of this.body.querySelectorAll<HTMLInputElement>("input"))
-      field.addEventListener("input", () => {
-        if (field.dataset.name === "date") this.date = field.value;
-        else this.title = field.value;
+      `<div class="fs-hint">The clinician's lines become the coach's side of the thread.</div>`;
+    for (const input of this.body.querySelectorAll<HTMLInputElement>("input"))
+      input.addEventListener("input", () => {
+        if (input.dataset.name === "date") this.date = input.value;
+        else this.title = input.value;
       });
+    this.settle();
   }
 
-  /** A voice is one of two things, so a tap on the row is the whole choice. */
-  private onBodyClick(e: Event): void {
-    const row = (e.target as Element).closest<HTMLElement>("[data-voice]");
-    if (!row) return;
-    const label = row.dataset.voice!;
-    this.roles.set(
-      label,
-      this.roles.get(label) === VoiceRole.Clinician
-        ? VoiceRole.Client
-        : VoiceRole.Clinician,
+  /** The one speaker that changed, drawn again where it stands. */
+  private redraw(label: string): void {
+    const voice = this.voices.find((one) => one.label === label)!;
+    this.body.querySelector(`[data-for="${CSS.escape(label)}"]`)!.outerHTML = this.block(voice);
+    this.settle();
+  }
+
+  private settle(): void {
+    this.make.disabled = !ready(this.voices.map((voice) => voice.label), this.chosen);
+  }
+
+  /** The pick-list for one speaker: the suggestion first, then the diagram's
+   * people as it lists them, then the three choices that are not one of them. */
+  private offer(label: string): void {
+    this.picking = label;
+    const voice = this.voices.find((one) => one.label === label)!;
+    const choice = this.chosen.get(label);
+    const guess = voice.suggestion ? guessed(voice.suggestion) : null;
+    const isCur = (test: Choice) => JSON.stringify(test) === JSON.stringify(choice);
+    const person = (one: Person, side = year(one)) =>
+      row(
+        `data-person="${one.id}" data-name="${esc(fullName(one).toLowerCase())}"`,
+        fullName(one),
+        side,
+        isCur({ who: Who.Person, id: one.id }),
+      );
+    const clinician = row(`data-act="${Act.Clinician}"`, CLINICIAN, "", choice?.who === Who.Clinician);
+    const people = this.people();
+    const first =
+      guess?.who === Who.Person
+        ? person(people.find((one) => one.id === guess.id)!, "suggested")
+        : guess
+          ? row(`data-act="${Act.Clinician}"`, CLINICIAN, "suggested", choice?.who === Who.Clinician)
+          : "";
+    this.list.show(
+      `${closeX()}<div class="cf-t">Who is Speaker ${esc(label)}</div>` +
+        `<div class="sn-srch rv-find"><input type="search" placeholder="Find a name" aria-label="Find a name"></div>` +
+        `<div class="sn-grp rv-who">` +
+        first +
+        people
+          .filter((one) => !(guess?.who === Who.Person && guess.id === one.id))
+          .map((one) => person(one))
+          .join("") +
+        row(`data-act="${Act.New}"`, "New person", "", choice?.who === Who.New) +
+        (guess?.who === Who.Clinician ? "" : clinician) +
+        row(`data-act="${Act.Outside}"`, "Someone not in the diagram", "", choice?.who === Who.Outside) +
+        (choice ? row(`data-act="${Act.Clear}"`, "Clear this choice") : "") +
+        `</div>`,
     );
-    this.render();
+    dragScroll(this.list.panel.querySelector<HTMLElement>(".rv-who")!);
+  }
+
+  private form(title: string, fields: string, hint = ""): void {
+    this.list.show(
+      `${closeX()}<div class="cf-t">${esc(title)}</div>` +
+        (hint ? `<p class="cf-p">${esc(hint)}</p>` : "") +
+        fields +
+        `<div class="cf-btns"><button class="cf-go" type="button" data-act="${Act.Add}" disabled>Add</button>` +
+        `<button class="cf-no" type="button" data-act="${Act.Back}">Back</button></div>`,
+    );
+    this.list.panel.querySelector<HTMLInputElement>("input")!.focus({ preventScroll: true });
+  }
+
+  private typed(name: string): string {
+    return this.list.panel.querySelector<HTMLInputElement>(`[data-f="${name}"]`)?.value.trim() ?? "";
+  }
+
+  private answer(picked: HTMLElement): void {
+    const label = this.picking;
+    if (picked.dataset.person) return this.set(label, { who: Who.Person, id: Number(picked.dataset.person) });
+    const act = picked.dataset.act as Act;
+    if (act === Act.Clinician) return this.set(label, { who: Who.Clinician });
+    if (act === Act.New)
+      return this.form("New person", field("name", "First name") + field("last", "Last name"));
+    if (act === Act.Outside)
+      return this.form("Someone not in the diagram", field("name", "Name"), "Nobody is added to the diagram.");
+    if (act === Act.Back) return this.offer(label);
+    if (act === Act.Clear) {
+      this.chosen.delete(label);
+      this.suggested.delete(label);
+      this.list.lower();
+      return this.redraw(label);
+    }
+    const last = this.list.panel.querySelector(`[data-f="last"]`);
+    this.set(
+      label,
+      last ? { who: Who.New, name: this.typed("name"), last: this.typed("last") } : { who: Who.Outside, name: this.typed("name") },
+    );
+  }
+
+  private set(label: string, choice: Choice): void {
+    this.chosen.set(label, choice);
+    this.suggested.delete(label);
+    this.list.lower();
+    this.redraw(label);
   }
 
   private async create(): Promise<void> {
@@ -199,16 +395,19 @@ export class Recording {
       toast("Give the session a title");
       return;
     }
-    const voices: Record<string, { type: string }> = {};
-    for (const [label, role] of this.roles) voices[label] = { type: role };
-    const made = await api.newRecording(store.id(), {
+    const made = new Map<string, number>();
+    for (const [label, choice] of this.chosen)
+      if (choice.who === Who.New)
+        made.set(label, (await api.savePerson(null, { name: choice.name, last_name: choice.last || null }, store.id()!)).id);
+    if (made.size) await store.refresh(Part.Record);
+    const session = await api.newRecording(store.id(), {
       utterances: this.utterances,
-      voices,
+      voices: voicesFor(this.chosen, this.people(), made),
       title: this.title.trim(),
       date: this.date || null,
     });
     this.lower();
-    this.onMade(made);
+    this.onMade(session);
   }
 
   private hiding: number | null = null;
