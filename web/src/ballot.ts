@@ -3,6 +3,7 @@ import { Feature, tap } from "./track";
 import { asWritten, drawn, tokenize } from "./chips";
 import { closeX, esc, el, stepBtn, type Title } from "./dom";
 import { INFO } from "./notes";
+import { toast } from "./toast";
 import {
   HAND_EDITS,
   openBondEditor,
@@ -823,15 +824,26 @@ function label(one: PairOpinion, index: number, passage: number | null | undefin
     : `<div class="pv-label">opinion ${index + 1}</div>`;
 }
 
+/** The rows of a box written from one line, each as the coder who wrote it
+ * from that line wrote it (R-0977). */
+function rowsFrom(one: PairOpinion, line: number): PairOpinion {
+  const twins = one.twins
+    .map((row) => row.filter((entry) => entry.line?.statement_id === line))
+    .filter((row) => row.length);
+  return { entries: twins.map((row) => row[0]), twins, codings: one.codings };
+}
+
 /** One opinion's box: its entries as rows, then what each coder wrote in their
- * own words, the places the opinions disagree on accented. */
+ * own words, the places the opinions disagree on accented; with `line`, only
+ * the rows written from that line. */
 export function opinionCard(
   opinions: PairOpinion[],
   index: number,
   lit: boolean,
   whole: boolean,
+  line: number | null = null,
 ): string {
-  const one = opinions[index];
+  const one = line === null ? opinions[index] : rowsFrom(opinions[index], line);
   const differs = pairDiffers(opinions);
   return (
     `<div class="opinion tap pv${many(one) ? " many" : ""}${lit ? " on" : ""}" data-opinion="${index}">` +
@@ -1058,6 +1070,8 @@ export class Context {
   private cut = 0;
   private talk: CutLines | null = null;
   private clip: HTMLElement | null = null;
+  /** The lines an (i) pointed at that the cut does not hold, each reported once. */
+  private faults = new Set<number>();
 
   constructor(
     private screen: PairScreen,
@@ -1074,8 +1088,9 @@ export class Context {
     if (!button) return false;
     const { box } = button.dataset;
     tap(box === undefined ? Feature.LineFromPassage : Feature.LineFromBox);
-    const drawn = box === undefined ? "" : opinionCard(pairOpinions(pairing), Number(box), false, true);
-    void this.open(cutId, Number(button.dataset.line), drawn);
+    const line = Number(button.dataset.line);
+    const drawn = box === undefined ? "" : opinionCard(pairOpinions(pairing), Number(box), false, true, line);
+    void this.open(cutId, line, drawn);
     return true;
   }
 
@@ -1084,11 +1099,12 @@ export class Context {
       this.talk = await api.cutLines(cutId);
       this.cut = cutId;
     }
+    if (!this.talk.lines.some((one) => one.id === statement)) return this.fault(cutId, statement);
     this.drop();
     const { view } = this.screen;
     const foot = view.closest(".screen")!.getBoundingClientRect().bottom;
     const height = foot - view.getBoundingClientRect().top;
-    const clip = el("div", "ctx-clip", contextMarkup(this.talk, statement, box, this.said));
+    const clip = el("div", "view ctx-clip", contextMarkup(this.talk, statement, box, this.said));
     clip.style.top = `${view.offsetTop}px`;
     clip.style.height = `${height}px`;
     view.parentElement!.append(clip);
@@ -1105,6 +1121,15 @@ export class Context {
       duration: SLIDE_MS,
       easing: "ease",
     });
+  }
+
+  /** An (i) pointing at a line the cut does not hold is a fault in the data:
+   * the person is told, and it is reported once, never on every tap. */
+  private fault(cutId: number, statement: number): void {
+    toast("That line is not in this conversation");
+    if (this.faults.has(statement)) return;
+    this.faults.add(statement);
+    throw new Error(`statement ${statement} is not among the lines of cut ${cutId}`);
   }
 
   close(): void {

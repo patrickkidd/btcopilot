@@ -253,7 +253,7 @@ button { font-family: inherit; }
 /* The about page: a card over the chat, from the top of the
    picture down, on ground of its own (R-0230), so opening one resizes nothing
    and the bubbles stay where they are under it (R-0460). */
-.view .card, .ctx-clip > .card {
+.view .card {
   position: absolute;
   top: 0;
   left: 0;
@@ -3394,11 +3394,11 @@ body:has(#ballot-screen:not([hidden])) .hs-scrim { padding-bottom: calc(16px + v
 .ctx-is { position: absolute; right: 0; bottom: 6px; display: flex; gap: 8px; }
 .ctx-is > .info { align-items: flex-end; padding: 0 9px 0 0; }
 /* The conversation's card, given the screen's height under the strip's name;
+   its holder is a .view, so the card is the about page's own (.view .card);
    its head holds still while the conversation under it scrolls. */
-.ctx-clip { position: absolute; left: 0; right: 0; overflow: hidden; z-index: 6; pointer-events: none; }
+.view.ctx-clip { position: absolute; left: 0; right: 0; overflow: hidden; z-index: 6; pointer-events: none; transition: none; }
 .ctx-clip > .card { display: flex; flex-direction: column; overflow: hidden; pointer-events: auto; }
 .ctx-head { position: relative; flex: none; padding: 16px 12px 10px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
-.ctx-head .ab-span { margin: 0 0 12px 4px; line-height: 20px; }
 .ctx-box .opinion { cursor: default; }
 .pv-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; min-height: 44px; padding: 8px 16px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); text-align: left; cursor: pointer; }
 .pv-row .rtitle { font: 400 15px/1.3 var(--sans); }

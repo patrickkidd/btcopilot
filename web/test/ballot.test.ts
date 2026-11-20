@@ -3,6 +3,7 @@ import {
   DOTS,
   ballotOrder,
   choosable,
+  Context,
   contextMarkup,
   nowWords,
   opinionCard,
@@ -648,7 +649,9 @@ describe("a pairing on the vote", () => {
 });
 
 vi.stubGlobal("window", { BOOTSTRAP: { user: { pro: false } } });
+vi.mock("../src/toast", async (real) => ({ ...(await real<typeof import("../src/toast")>()), toast: vi.fn() }));
 const { line } = await import("../src/coding");
+const { toast } = await import("../src/toast");
 
 describe("where a code was said, behind an (i)", () => {
   const said = (id: number) => ({ line: { statement_id: id, who: "Ada", text: `line ${id}`, number: id } });
@@ -720,5 +723,35 @@ describe("where a code was said, behind an (i)", () => {
     expect(boxed).toContain('<div class="ctx-box"><div class="opinion tap pv"');
     expect(boxed).toContain('<div class="pv-words">Moved far away from the whole family</div>');
     expect(contextMarkup(talk, 9, "", line)).not.toContain("ctx-box");
+  });
+
+  // R-0977
+  it("heads the conversation with only the rows of the box written from the line opened", () => {
+    const shown = toPairing(
+      pairing(5, [at(1, 1, 9), at(1, 2, 15, { kind: "noted", title: "Moved out" }), at(1, 3, 12, { title: "Stayed up" }), at(2, 4, 9)]),
+      new Map(),
+    );
+    const opinions = pairOpinions(shown);
+    const several = opinions.findIndex((one) => one.entries.length > 1);
+    const head = opinionCard(opinions, several, false, true, 15);
+    expect(head.match(/class="pv-entry"/g)).toHaveLength(1);
+    expect(head).toContain("Moved out");
+    expect(head).not.toContain("Stayed up");
+    expect(opinionCard(opinions, several, false, true).match(/class="pv-entry"/g)).toHaveLength(3);
+  });
+
+  // R-0977
+  it("tells the person and reports once when an (i) points at a line the cut does not hold, never a tap that does nothing", async () => {
+    const context = Object.assign(Object.create(Context.prototype), {
+      cut: 7,
+      talk: { count: 1, lines: [{ id: 9, number: 1, who: "Ann", client: true, text: "line 9" }] },
+      faults: new Set<number>(),
+      clip: null,
+    });
+    await expect(context.open(7, 36, "")).rejects.toThrow("statement 36 is not among the lines of cut 7");
+    await expect(context.open(7, 36, "")).resolves.toBeUndefined();
+    expect(toast).toHaveBeenCalledTimes(2);
+    expect(toast).toHaveBeenCalledWith("That line is not in this conversation");
+    expect(context.clip).toBeNull();
   });
 });

@@ -398,7 +398,9 @@ test.describe("the vote by pairing", () => {
     await expect(card.locator(".ab-span")).toHaveText("line 8 of 11");
     await expect(card.locator(".ctx-box .opinion")).toHaveCount(1);
     await expect(card.locator(".ctx-box .pv-words.clip")).toHaveCount(0);
-    await expect(card.locator(".ctx-box")).toContainText(/Stress at the new house|House was tense/);
+    // the head holds the row written from the line opened, as its coder wrote it
+    await expect(card.locator(".ctx-box")).toContainText("House was tense");
+    await expect(card.locator(".ctx-box")).not.toContainText("Stress at the new house");
     await opened(page, 57);
     // the app's back arrow puts it away and stays on the pairing
     await page.locator("#coding-back").click();
@@ -406,6 +408,8 @@ test.describe("the vote by pairing", () => {
     await expect(page.locator("#title")).toContainText("ballot · 1 of 3");
     await mark(55).click();
     await expect(card.locator(".ab-span")).toHaveText("line 6 of 11");
+    await expect(card.locator(".ctx-box")).toContainText("Stress at the new house");
+    await expect(card.locator(".ctx-box")).not.toContainText("House was tense");
     await opened(page, 55);
     for (const scheme of ["light", "dark"] as const) {
       await page.emulateMedia({ colorScheme: scheme });

@@ -1041,3 +1041,49 @@ def test_the_conversation_behind_the_i_is_refused_to_a_coder_not_yet_done(
     coded(test_user_2, cut, {"people": [person(1, "Ann")]}, done=False)
     open_vote(patrick, cut)
     assert coder.get(f"/review/cuts/{cut.id}/lines").status_code == 302
+
+
+def test_the_conversation_behind_the_i_keeps_a_failed_first_copy_and_its_resent_twin(
+    patrick, test_user, test_user_2, session, turns, cut
+):
+    # R-0977, R-0946
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    db.session.commit()
+    first, _ = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 10, turns[0].id, test_user.id)
+    open_vote(patrick, cut)
+
+    lines = patrick.get(f"/review/cuts/{cut.id}/lines").get_json()
+    assert [(one["id"], one["number"]) for one in lines["lines"]] == [
+        (turns[0].id, 1),
+        (turns[1].id, 2),
+    ]
+    assert lines["count"] == 2
+
+
+def test_every_line_the_ballot_points_at_is_in_the_conversation_behind_the_i(
+    patrick, test_user, test_user_2, session, turns, cut
+):
+    # R-0977
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    db.session.commit()
+    first, second = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 10, turns[0].id, test_user.id)
+    wrote_from(second, 21, turns[1].id, test_user_2.id)
+    open_vote(patrick, cut)
+
+    items = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    lines = patrick.get(f"/review/cuts/{cut.id}/lines").get_json()
+    pointed = {
+        (one["line"]["statement_id"], one["line"]["number"])
+        for item in items
+        for one in [item, *item["opinions"]]
+        if one.get("line")
+    }
+    assert pointed
+    assert pointed <= {(one["id"], one["number"]) for one in lines["lines"]}
+    assert {item["lines"] for item in items} == {lines["count"]}

@@ -82,10 +82,10 @@ def cut_read(cut_id: int):
 @bp.route("/cuts/<int:cut_id>/lines")
 def cut_lines(cut_id: int):
     """The statements of the cut, for the (i)s of the ballot and the pairing
-    check: the person's and the coach's lines and nothing any coder wrote,
-    numbered as the ballot numbers them; a line some coder wrote from, or the
-    cut ends on, stays even when it was sent again after a failed turn
-    (R-0977, R-0975, R-0946)."""
+    check: every line the person and the coach said, in order, and nothing any
+    coder wrote, numbered as the ballot numbers them. A message stored twice
+    stays twice until Patrick rules on it, so every line a box points at is
+    here (R-0977, R-0975)."""
     user = coder()
     cut = cut_or_404(cut_id)
     if not reads_ballot(cut, user):
@@ -93,10 +93,6 @@ def cut_lines(cut_id: int):
     lines = adapter.statements_between(
         cut.diagram_id, cut.start_statement_id, cut.end_statement_id
     )
-    said = {
-        one.get("statement_id") for item in cut.items for one in item.opinions or []
-    }
-    kept = {s.id for s in adapter.heard(lines)} | said | {cut.end_statement_id}
     return jsonify(
         {
             "count": len(lines),
@@ -109,7 +105,6 @@ def cut_lines(cut_id: int):
                     "text": s.text or "",
                 }
                 for at, s in enumerate(lines, start=1)
-                if s.id in kept
             ],
         }
     )
