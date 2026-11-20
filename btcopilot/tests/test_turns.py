@@ -29,6 +29,7 @@ from btcopilot.models import Author, Change, Discussion, Statement, TurnEvent
 from btcopilot.toolbox import ToolName
 from btcopilot.turnlog import TurnEventKind
 from btcopilot.schema import ItemKind, Person, asdict
+from btcopilot.tests.test_turnhistory import Breaks
 from btcopilot.tests.conftest import (
     Model,
     called,
@@ -241,6 +242,101 @@ def test_the_turn_is_handed_over_and_the_post_answers_at_once(
     }
     assert (body["attachment_name"], body["attachment_text"]) == (None, None)
     assert db.session.get(Statement, body["statement_id"]).text == "My sister is Nell."
+
+
+SENT = "0f3c9a2e41b84d6a9c5e7f1a2b3c4d5e"
+
+
+def test_the_same_send_twice_stores_the_words_once_and_hands_back_the_same_turn(
+    web, token, family, monkeypatch
+):
+    # R-0182, R-0477
+    coach(monkeypatch, said("Tell me about Nell."))
+    with patch("btcopilot.turns.enqueue"):
+        first = post(web, token, turn_id=SENT)
+        again = post(web, token, turn_id=SENT)
+    assert (first.status_code, again.status_code) == (202, 202)
+
+    assert again.get_json() == first.get_json()
+    assert first.get_json()["turn_id"] == SENT
+    assert Statement.query.filter_by(turn_id=SENT).count() == 1
+
+
+def test_trying_a_failed_send_again_goes_on_with_the_words_already_stored(
+    web, token, family, monkeypatch
+):
+    # R-0182, R-0477
+    breaks = Breaks(called(ToolName.EditPerson, name="Nell"))
+    monkeypatch.setattr("btcopilot.turns.model_for", lambda *a, **k: breaks)
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token, turn_id=SENT).get_json()
+    with pytest.raises(RuntimeError):
+        turns.run(body["turn_id"], body["discussion_id"], body["statement_id"])
+    coach(monkeypatch, said("Nell is your sister, then."))
+
+    response = post(web, token, turn_id=SENT)
+    assert response.status_code == 202
+
+    assert response.get_json()["statement_id"] == body["statement_id"]
+    db.session.expire_all()
+    assert [s.text for s in Discussion.query.one().statements] == [
+        "My sister is Nell.",
+        "Nell is your sister, then.",
+    ]
+    assert logged(SENT)[-1]["type"] == TurnEventKind.Done.value
+
+
+def test_a_turn_id_of_another_session_is_refused(
+    web, token, family, monkeypatch, test_user_2
+):
+    # R-0182, R-0080
+    coach(monkeypatch, said("Tell me about Nell."))
+    with patch("btcopilot.turns.enqueue"):
+        body = post(web, token, turn_id=SENT).get_json()
+    theirs = db.session.get(Discussion, body["discussion_id"])
+    theirs.user_id = test_user_2.id
+    db.session.commit()
+
+    with patch("btcopilot.turns.enqueue"):
+        response = post(web, token, turn_id=SENT)
+    assert response.status_code == 400
+
+    assert Statement.query.filter_by(turn_id=SENT).count() == 1
+
+
+def test_two_sends_of_one_message_at_once_store_it_once(
+    web, token, family, monkeypatch
+):
+    # R-0182
+    """The second send lands while the first holds the session and has not yet
+    stored the words: it is told the coach is busy, and the page's try again
+    then gets the first one's words back."""
+    coach(monkeypatch, said("Tell me about Nell."))
+    hold = turnlog.start
+    racing = []
+
+    def start(discussion_id, turn_id):
+        held = hold(discussion_id, turn_id)
+        if not racing:
+            racing.append(None)
+            with pytest.raises(turns.Busy):
+                turns.start(
+                    db.session.get(Discussion, discussion_id),
+                    "My sister is Nell.",
+                    turn_id=SENT,
+                )
+        return held
+
+    monkeypatch.setattr(turnlog, "start", start)
+    with patch("btcopilot.turns.enqueue"):
+        first = post(web, token, turn_id=SENT)
+    assert first.status_code == 202
+    assert racing == [None]
+
+    with patch("btcopilot.turns.enqueue"):
+        again = post(web, token, turn_id=SENT)
+    assert again.get_json()["statement_id"] == first.get_json()["statement_id"]
+    assert Statement.query.filter_by(turn_id=SENT).count() == 1
 
 
 def test_the_turn_writes_what_it_did_in_order_and_ends_in_done(

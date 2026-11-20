@@ -220,14 +220,19 @@ export const casePassages = (diagramId: number | null, signal?: AbortSignal) =>
  * "today" is the person's day, not the server's (R-0760). */
 export const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+/** A new turn's id, in the server's own shape, made once per message and sent
+ * again on every try again of it, so the words are stored once (R-0182). */
+export const turnId = () => crypto.randomUUID().replaceAll("-", "");
+
 /** One agent-loop turn. The send is short: it stores the words and hands the
  * turn to the coach, which answers on the turn's own stream. The server puts
- * them in the sitting they belong to. */
-export const say = (diagramId: number | null, statement: string, file: File | null = null) =>
+ * them in the sitting they belong to; words it already holds under this turn
+ * are handed back as they stand. */
+export const say = (diagramId: number | null, turn: string, statement: string, file: File | null = null) =>
   call<Started & Attached>(
     "POST",
     onDiagram("/chat", diagramId),
-    file ? said(statement, timeZone(), file) : { statement, time_zone: timeZone() },
+    file ? said(statement, timeZone(), turn, file) : { statement, time_zone: timeZone(), turn_id: turn },
     file ? READ_MS : undefined,
   );
 
@@ -235,10 +240,11 @@ export const say = (diagramId: number | null, statement: string, file: File | nu
  * answers; a text file's words come back with the answer, a PDF or a photo is
  * read on the worker before the coach's turn, and the thread carries the text
  * once it is in. */
-export function said(statement: string, zone: string, file: File): FormData {
+export function said(statement: string, zone: string, turn: string, file: File): FormData {
   const form = new FormData();
   form.append("statement", statement);
   form.append("time_zone", zone);
+  form.append("turn_id", turn);
   form.append("file", file, file.name);
   return form;
 }

@@ -1220,15 +1220,22 @@ function post(statement: string, file: File | null = null): void {
   if (file) attachment.show(bubble, file.name);
   const lapsed = chat.sent();
   feedback();
-  void deliver(statement, file, bubble, lapsed);
+  void deliver(api.turnId(), statement, file, bubble, lapsed);
 }
 
-async function deliver(statement: string, file: File | null, bubble: HTMLElement, lapsed = false): Promise<void> {
+async function deliver(
+  turn: string,
+  statement: string,
+  file: File | null,
+  bubble: HTMLElement,
+  lapsed = false,
+): Promise<void> {
   // read before this message is stored, which would count as the last one
   if (lapsed) await settings.refresh();
   const started = await begin(
-    () => api.say(store.id(), statement, file),
-    () => void deliver(statement, file, bubble),
+    () => api.say(store.id(), turn, statement, file),
+    // the same turn: words the server already holds are not stored again
+    () => void deliver(turn, statement, file, bubble),
     // a file the server will not take is said in its words, and the message
     // goes back in the box to send without it
     file

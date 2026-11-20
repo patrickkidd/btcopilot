@@ -33,6 +33,12 @@ Each needs a test that fails before its fix, citing its ruling once the queued i
 | R-0613 (queued) | Someone who joins a notice's audience after it was sent gets it in the app only, never by push or email, so a pricing notice sent by email misses them. | |
 | R-0628 | The persona generator, the simulated client and the realism scorer call Gemini without writing a row in the model-calls table. | a decision: which purpose those rows carry (a new one needs a migration of the purpose enum) and whose user id, since the column is required and these calls have no user |
 
+## Found 2026-11-18 in production's stored conversations
+
+| Ruling | What is wrong today | What it needs |
+|---|---|---|
+| R-0182, R-0946 | 11 person messages are stored twice, word for word, the copy being that person's next message in the same session (21 September to 12 October; 7 of them in the conversation the coding group votes on). The causes are closed: a failed turn's words were kept and its try again stored them again, a phone keyboard put sent words back in the box (fixed 2026-10-27), and a try again after a lost answer sent the words again (fixed 2026-11-20, the send's `turn_id`). No message is edited; the stored copies stay. | a decision: whether a repeated message is shown once wherever lines are shown, counted or paired, and which copy the coders' entries on the other copy point to |
+
 ## Observed 2026-10-15 on a fresh production dump by the migration gate (no migration had run)
 
 Cause unknown, predates FD-381, no fix attempted.

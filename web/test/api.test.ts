@@ -1,5 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { call, cut, Failed, join, say, scribe, split, unvote } from "../src/api";
+import { call, cut, Failed, join, say, scribe, split, turnId, unvote } from "../src/api";
+
+const TURN = "0f3c9a2e41b84d6a9c5e7f1a2b3c4d5e";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -55,10 +57,17 @@ it("sends the browser's time zone with each message, so the coach's today is the
     bodies.push(JSON.parse(init.body as string));
     return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
   });
-  await say(null, "My dad turns 70 tomorrow.");
+  await say(null, TURN, "My dad turns 70 tomorrow.");
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   expect(zone).toBeTruthy();
-  expect(bodies).toEqual([{ statement: "My dad turns 70 tomorrow.", time_zone: zone }]);
+  expect(bodies).toEqual([{ statement: "My dad turns 70 tomorrow.", time_zone: zone, turn_id: TURN }]);
+});
+
+// R-0182
+it("makes a new turn id in the server's own shape for each message", () => {
+  const ids = [turnId(), turnId()];
+  expect(ids[0]).toMatch(/^[0-9a-f]{32}$/);
+  expect(ids[1]).not.toBe(ids[0]);
 });
 
 // R-0738
