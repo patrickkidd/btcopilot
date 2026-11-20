@@ -254,7 +254,9 @@ export interface Sitting {
 
 /** A statement as the thread reads it: which sitting it is in, and on a
  * sitting's first words, the sitting itself. */
-export type Said = Statement & { session_id: number; sitting: Sitting | null };
+/** A line of the thread, with the name of whoever spoke it when it came from
+ * a recording; null on a chat. */
+export type Said = Statement & { session_id: number; sitting: Sitting | null; speaker_name: string | null };
 
 /** The family's one thread, newest page first; `before` reads the page of
  * words just older than that statement. */
@@ -488,9 +490,21 @@ export const transcription = (id: string) =>
     error: string | null;
   }>("GET", `/transcriptions/${id}`);
 
+/** Who the app takes a voice to be, from what was said: a person in the
+ * diagram, or the clinician when `person_id` is null; the words it rests on,
+ * and the voice that said them. */
+export interface Suggestion {
+  person_id: number | null;
+  because: string;
+  speaker: string;
+}
+
+/** A voice, and who it seems to be when something said points to someone. */
+export type Heard = Voice & { suggestion: Suggestion | null };
+
 /** The voices a transcript holds, each with the first thing it said. */
 export const recordingVoices = (utterances: Utterance[]) =>
-  call<Voice[]>("POST", "/recordings/voices", { utterances });
+  call<Heard[]>("POST", "/recordings/voices", { utterances });
 
 /** The point of no return: the thread exists after this and the coach can read
  * it, so the voices are named before it is called. */
