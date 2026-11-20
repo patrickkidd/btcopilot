@@ -81,11 +81,15 @@ def read(cut) -> dict:
     return found
 
 
-def voting_payload(item: Item, records: dict, named: bool = False) -> dict:
+def voting_payload(
+    item: Item, records: dict, places: dict[int, int], named: bool = False
+) -> dict:
     """One item as the ballot reads it: the opinions without names, each with the
     turn it came from and the name of the person it is about, and how many
     coders left the item out (R-0252, R-0257). The meeting reads the same item
-    with the names on, which is where they first appear (R-0252)."""
+    with the names on, which is where they first appear (R-0252). Every line
+    carries its number among the cut's own lines, and the item how many the
+    cut holds, since the cut's statement ids skip (R-0974)."""
     data = payload(item, named=named)
     raws = [one for one in item.opinions or [] if one["coding_id"] in records]
     data["opinions"] = [
@@ -99,13 +103,14 @@ def voting_payload(item: Item, records: dict, named: bool = False) -> dict:
     for raw, opinion in zip(raws, data["opinions"]):
         record = records[raw["coding_id"]]
         opinion["statement_id"] = _turn_of(item, raw, record)
-        opinion["line"] = _line(opinion["statement_id"])
+        opinion["line"] = _line(opinion["statement_id"], places)
         opinion["person_name"] = _name_of(raw["item"], record)
         opinion["toward_names"] = _toward_names(raw["item"], record)
         if named:
             opinion["user_id"] = record["user_id"]
             opinion["coder"] = record["coder"]
     data["people"] = _people_of(item, records)
+    data["lines"] = len(places)
     data["line"] = next((one["line"] for one in data["opinions"] if one["line"]), None)
     return data
 
@@ -158,7 +163,7 @@ def _people_of(item: Item, records: dict) -> list[dict]:
     ]
 
 
-def _line(statement_id: int | None) -> dict | None:
+def _line(statement_id: int | None, places: dict[int, int]) -> dict | None:
     """The transcript line one version was written from, which the ballot shows
     and can open, and which is never edited there."""
     if not statement_id:
@@ -171,6 +176,7 @@ def _line(statement_id: int | None) -> dict | None:
         "statement_id": said.id,
         "who": (speaker.name if speaker and speaker.name else None) or "Someone",
         "text": said.text or "",
+        "number": places.get(said.id),
     }
 
 
@@ -193,8 +199,17 @@ def item_index():
 
 def listing(items: list[Item], cut, named: bool = False) -> list[dict]:
     records = read(cut)
+    places = {
+        s.id: at
+        for at, s in enumerate(
+            adapter.statements_between(
+                cut.diagram_id, cut.start_statement_id, cut.end_statement_id
+            ),
+            start=1,
+        )
+    }
     return [
-        voting_payload(i, records, named or cut.ratified_at is not None)
+        voting_payload(i, records, places, named or cut.ratified_at is not None)
         for i in sorted(items, key=lambda i: i.id)
     ]
 

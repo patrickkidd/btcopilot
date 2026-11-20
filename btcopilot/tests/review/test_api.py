@@ -8,6 +8,7 @@ from btcopilot.extensions import db
 from btcopilot.models import (
     Author,
     Change,
+    Diagram,
     Discussion,
     ModelCall,
     Purpose,
@@ -678,6 +679,41 @@ def test_each_version_of_a_person_carries_the_line_its_coder_wrote_it_from(
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     ann = next(r for r in rows if r["item_kind"] == "person")
     assert [one["line"]["text"] for one in ann["opinions"]] == ["turn 0", "turn 1"]
+
+
+def test_each_line_carries_its_number_among_the_cuts_own_lines_though_statement_ids_skip(
+    patrick, test_user, test_user_2, cut, session, turns
+):
+    # R-0974
+    elsewhere = Diagram(user_id=test_user.id, name="Case B", data=diagramjson.dumps({}))
+    db.session.add(elsewhere)
+    db.session.commit()
+    aside = Discussion(user_id=test_user.id, diagram_id=elsewhere.id)
+    db.session.add(aside)
+    db.session.commit()
+    for order in range(5):
+        db.session.add(Statement(discussion_id=aside.id, text="aside", order=order))
+        db.session.commit()
+    last = Statement(
+        discussion_id=session.id,
+        speaker_id=turns[0].speaker_id,
+        text="turn 4",
+        order=4,
+    )
+    db.session.add(last)
+    db.session.commit()
+    cut.end_statement_id = last.id
+    db.session.commit()
+    first, second = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 10, turns[3].id, test_user.id)
+    wrote_from(second, 20, last.id, test_user_2.id)
+    open_vote(patrick, cut)
+
+    rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    shared = next(r for r in rows if r["item_kind"] == "event" and len(r["opinions"]) == 2)
+    assert last.id - turns[3].id > 1
+    assert sorted(one["line"]["number"] for one in shared["opinions"]) == [4, 5]
+    assert {r["lines"] for r in rows} == {5}
 
 
 def test_an_item_one_coder_left_out_says_how_many_left_it_out(

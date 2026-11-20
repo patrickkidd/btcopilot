@@ -205,7 +205,7 @@ describe("the values a coder reads", () => {
 });
 
 describe("a quoted line on the vote", () => {
-  const said = { statement_id: 4, who: "Coach", text: "When did it start? [[ask:high school years]]" };
+  const said = { statement_id: 4, who: "Coach", text: "When did it start? [[ask:high school years]]", number: 1 };
 
   // R-0072, R-0270
   it("draws the coach's markup as the chat does, never as brackets", () => {
@@ -314,7 +314,7 @@ describe("a pairing on the vote", () => {
 
   // R-0965
   it("walks the pairings in the order of the conversation, then people, couples, events, then the earliest date any coder gave", () => {
-    const said = (id: number) => ({ line: { statement_id: id, who: "Ada", text: "" } });
+    const said = (id: number) => ({ line: { statement_id: id, who: "Ada", text: "", number: id } });
     const at = (
       id: number,
       kind: ItemKind,
@@ -341,7 +341,7 @@ describe("a pairing on the vote", () => {
 
   // R-0965
   it("walks by the statement whose passage each pairing shows, the one most entries were written from, so the passage never goes back", () => {
-    const said = (id: number) => ({ line: { statement_id: id, who: "Ada", text: "" } });
+    const said = (id: number) => ({ line: { statement_id: id, who: "Ada", text: "", number: id } });
     const at = (id: number, lines: number[]): BallotItem =>
       pairing(
         id,

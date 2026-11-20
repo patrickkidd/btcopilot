@@ -11,7 +11,13 @@ import { shell, stateFor, username } from "./setup";
  * R-0970). */
 
 const CUT = 2;
-const line = (statement_id: number, text: string) => ({ statement_id, who: "Dana", text });
+/** A line of the cut, its number counted among the cut's own lines (R-0974). */
+const line = (statement_id: number, text: string) => ({
+  statement_id,
+  who: "Dana",
+  text,
+  number: statement_id - 49,
+});
 const LONG = line(
   52,
   "My stepfather and I were never close. Even now a visit with him wears me out, and my " +
@@ -454,6 +460,23 @@ test.describe("Patrick's look over the pairings", () => {
       await page.screenshot({ path: test.info().outputPath(`join-${scheme}.png`) });
     }
     await page.emulateMedia({ colorScheme: "light" });
+    // the kind stands in a column of one width, so who starts at one place on
+    // every row whatever the kind; a long who and toward wraps, never cut
+    const rows = await join.evaluate((sheet) => {
+      const all = [...sheet.querySelectorAll<HTMLElement>(".pv-jrow")];
+      all[0].querySelector(".pv-tag")!.textContent = "separated";
+      all[1].querySelector(".pv-jw")!.textContent = "Catherine's mother → Catherine's grandmother";
+      const who = all[1].querySelector<HTMLElement>(".pv-jw")!;
+      const tag = all[0].querySelector<HTMLElement>(".pv-tag")!;
+      return {
+        starts: all.map((one) => Math.round(one.querySelector(".pv-jw")!.getBoundingClientRect().left)),
+        cut: who.scrollWidth > who.clientWidth || tag.scrollWidth > tag.clientWidth,
+        lines: Math.round(who.getBoundingClientRect().height / parseFloat(getComputedStyle(who).lineHeight)),
+      };
+    });
+    expect(new Set(rows.starts).size).toBe(1);
+    expect(rows.cut).toBe(false);
+    expect(rows.lines).toBeGreaterThan(1);
     await find.fill("nothing like this");
     await expect(join.locator(".pv-row:visible")).toHaveCount(0);
     await expect(join.locator(".none")).toHaveText("nothing matches");
@@ -477,5 +500,28 @@ test.describe("Patrick's look over the pairings", () => {
     expect(sent[1].body).toEqual({ cut_id: CUT, opinions: [{ coding_id: 3, item_id: 32 }] });
     expect((sent[2].body as { opinions: unknown[] }).opinions).toHaveLength(6);
     expect(seen).toEqual([]);
+  });
+
+  // R-0963
+  test("the home-screen card never covers the bar's buttons on the pairing check or the vote", async ({ page }) => {
+    test.skip(page.viewportSize()!.width > 1024, "the card shows only on a handheld");
+    await page.addInitScript(() => Object.defineProperty(navigator, "maxTouchPoints", { get: () => 5 }));
+    const state = { ballot: "built" };
+    await review(page, state);
+    for (const address of [`/app/pairings/${CUT}/41`, `/app/vote/${CUT}/41`]) {
+      if (address.includes("vote")) state.ballot = "open";
+      await page.goto(address);
+      await expect(page.locator("#ballot-bar .btn").first()).toBeVisible();
+      if (!(await page.locator(".hs-card").isVisible())) await page.locator("#homescreen").click();
+      await expect(page.locator(".hs-card")).toBeVisible();
+      const covered = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>("#ballot-bar button")].filter((one) => {
+          const box = one.getBoundingClientRect();
+          const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+          return !one.contains(top);
+        }).length,
+      );
+      expect(covered).toBe(0);
+    }
   });
 });

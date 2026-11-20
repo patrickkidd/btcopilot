@@ -68,7 +68,8 @@ export const nearest = (pairings: Pairing[], id: number): number =>
   );
 
 /** How far either side of a pairing's passage the join list looks for the
- * pairings from the same part of the conversation, in statements (R-0974). */
+ * pairings from the same part of the conversation, in lines of the cut
+ * (R-0974). */
 const NEAR = 3;
 
 /** The sections of the join list, in the order they show (R-0974). */
@@ -102,7 +103,7 @@ export function yearText(pairing: Pairing): string {
 }
 
 /** The pairings `current` can join, each once: those whose passage is
- * within three statements of its own, in the conversation's order; then the
+ * within three lines of the cut of its own, in the conversation's order; then the
  * rest by the earliest year a box gives; the undated last, in the
  * conversation's order. People and couples have no year, so the rest of them
  * stand in that order too (R-0974). */
@@ -113,9 +114,12 @@ export function joinList(current: Pairing, pairings: Pairing[]): Record<Section,
       .filter((one) => one !== current && one.item.item_kind === current.item.item_kind)
       .map((one) => one.item),
   ).map((item) => byId.get(item.id)!);
-  const here = current.line?.statement_id;
-  const close = (one: Pairing) =>
-    here !== undefined && one.line !== null && Math.abs(one.line.statement_id - here) <= NEAR;
+  const at = (one: Pairing) => one.line?.number ?? null;
+  const here = at(current);
+  const close = (one: Pairing) => {
+    const there = at(one);
+    return here !== null && there !== null && Math.abs(there - here) <= NEAR;
+  };
   const rest = others.filter((one) => !close(one));
   const dated = (one: Pairing) => yearsOf(one).length > 0;
   return {

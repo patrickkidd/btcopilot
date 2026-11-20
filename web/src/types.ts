@@ -1098,6 +1098,9 @@ export interface TranscriptLine {
   statement_id: number;
   who: string;
   text: string;
+  /** Its place among the cut's own lines, from 1, or null outside the cut;
+   * the cut's statement ids skip (R-0974). */
+  number: number | null;
 }
 
 /** One coder's reading of one item, without their name (R-0252). */
@@ -1155,6 +1158,8 @@ export interface BallotItem {
   /** The first version's transcript line, which an event shows for the whole
    * item. A person or a bond shows one line per version instead. */
   line: TranscriptLine | null;
+  /** How many lines the cut holds (R-0974). */
+  lines: number;
   /** The matcher could not tell which person of another coding this is, so the
    * room decides who is who before anything else about them (R-0326). */
   ambiguous?: boolean;

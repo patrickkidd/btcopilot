@@ -161,13 +161,19 @@ describe("the split list on Patrick's look over the pairings", () => {
   });
 });
 
-const told = (coding: number, id: number, said: number, event: Record<string, unknown>): Opinion =>
+const told = (
+  coding: number,
+  id: number,
+  said: number,
+  event: Record<string, unknown>,
+  number = said,
+): Opinion =>
   ({
     coding_id: coding,
     item_id: id,
     person_name: "Ann",
     item: { kind: "shift", person: 1, ...event },
-    line: { statement_id: said, who: "Ann", text: "" },
+    line: { statement_id: said, who: "Ann", text: "", number },
   }) as unknown as Opinion;
 
 const pairing = (id: number, opinions: Opinion[], kind = ItemKind.Event) =>
@@ -187,7 +193,7 @@ describe("the join list on Patrick's look over the pairings", () => {
   const all = [far, undated, here, after, early, person, before];
 
   // R-0974
-  it("lists first the pairings within three statements of this one's passage in the conversation's order, then the rest by earliest year, the undated last, each once", () => {
+  it("lists first the pairings within three lines of this one's passage in the conversation's order, then the rest by earliest year, the undated last, each once", () => {
     const list = joinList(here, all);
     const ids = (section: keyof typeof list) => list[section].map((one) => one.item.id);
     expect(ids(Section.Near)).toEqual([2, 3]);
@@ -197,6 +203,16 @@ describe("the join list on Patrick's look over the pairings", () => {
     expect(new Set(listed).size).toBe(listed.length);
     expect(listed).not.toContain(1);
     expect(listed).not.toContain(7);
+  });
+
+  // R-0974
+  it("measures the same part of the conversation in the cut's lines, not its statement numbers, which skip", () => {
+    const sleep = pairing(11, [told(1, 11, 6, { title: "Sleep problems began" }, 1)]);
+    const ski = pairing(12, [told(1, 12, 12, { title: "Up before ski races" }, 4)]);
+    const later = pairing(13, [told(1, 13, 14, { title: "Fights at home" }, 9)]);
+    const list = joinList(ski, [sleep, ski, later]);
+    expect(list[Section.Near].map((one) => one.item.id)).toEqual([11]);
+    expect(list[Section.Undated].map((one) => one.item.id)).toEqual([13]);
   });
 
   // R-0974
