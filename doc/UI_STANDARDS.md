@@ -80,6 +80,12 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
 - **States are marks.** Each state gets one mark, one colour and one outline, used for it on
   every dot, chip and badge that carries it, its word at most inside the mark; a word on its own
   does not show a state. Prose being cheap to produce is no reason to drop structure. [Oracle: R-0972]
+- Conversation text anywhere in the app uses the chat's bubbles; there is no other style for
+  it. [Oracle: R-0975]
+- Extra context sits behind an (i) that opens an overlay; nothing grows open inline.
+  [Oracle: R-0975]
+- No change raises a screen's word count at rest: marks and structure carry it, reading goes
+  behind the (i). [Oracle: R-0975]
 
 ## Behaviour
 - A control that starts something starts it immediately, not on the next tick of a
