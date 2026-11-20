@@ -282,12 +282,10 @@ def test_a_planned_write_the_tool_refuses_is_failed_and_called_again_on_a_rerun(
 ):
     # R-0956, R-0960
     family(test_user)
-    model = Answer(
-        {"id": 2, "date": "1970", "date_certainty": "unknown", "date_evidence": WORDS, "kind_of_date": "b"}
-    )
+    model = Answer({"id": 2, "date": "1996", "date_evidence": WORDS, "kind_of_date": "a"})
     with patch.object(REDATE, "model_for", return_value=model):
         (row,) = redate(flask_app, "plan", "--plans", str(tmp_path))
-    assert row["left"].startswith("failed: ") and "stand-in" in row["left"]
+    assert row["left"].startswith("failed: ") and "date_certainty" in row["left"]
     again = Answer(
         {"id": 2, "date": "1996", "date_certainty": "unknown", "date_evidence": WORDS, "kind_of_date": "a"}
     )
@@ -365,11 +363,14 @@ def test_apply_ends_with_what_it_did_saves_it_and_runs_once(flask_app, test_user
         (row,) = redate(flask_app, "plan", "--plans", str(tmp_path))
     runner = flask_app.test_cli_runner()
     ran = runner.invoke(admin, ["diagrams", "redate", "apply", row["plan"]])
-    line = "1 events written; 0 left as they were (none); 0 refused; 1 diagrams; 1 users"
+    line = (
+        "1 events written, 0 cleared after a refused estimate, 0 cleared: the model left the"
+        " stand-in; 0 left as they were (none); 0 refused; 1 diagrams; 1 users"
+    )
     assert ran.output.rstrip().endswith(line)
     with open(row["plan"]) as saved:
         assert json.load(saved)["applied"] == {
-            "written": 1, "left": {}, "refused": 0, "diagrams": 1, "users": 1
+            "written": 1, "left": {}, "refused": 0, "cleared": {}, "diagrams": 1, "users": 1
         }
     again = runner.invoke(admin, ["diagrams", "redate", "apply", row["plan"]])
     assert again.exit_code != 0 and "applied already" in again.output
@@ -383,7 +384,7 @@ def test_a_rerun_after_the_newest_plan_was_applied_starts_a_new_plan(
     older = tmp_path / "redate-20000101T000000.json"
     older.write_text(json.dumps({"made": "20000101T000000", "events": []}))
     model = Answer(
-        {"id": 2, "date": "1970", "date_certainty": "unknown", "kind_of_date": "b"},
+        {"id": 2, "date": "1996", "kind_of_date": "a"},
         {"id": 2, "date": "1996", "date_certainty": "unknown", "kind_of_date": "a"},
     )
     with patch.object(REDATE, "model_for", return_value=model):
@@ -392,3 +393,32 @@ def test_a_rerun_after_the_newest_plan_was_applied_starts_a_new_plan(
         (rerun,) = redate(flask_app, "plan", "--plans", str(tmp_path))
     assert rerun["plan"] not in (newest["plan"], str(older))
     assert rerun["new"] == "1996-01-01"
+
+
+def test_a_stand_in_estimate_the_tool_refuses_is_planned_cleared_and_applied_cleared(
+    flask_app, test_user, tmp_path
+):
+    # R-0956, R-0960
+    diagram, _ = family(test_user)
+    model = Answer(
+        {"id": 2, "date": "1900-01-01", "date_certainty": "unknown", "date_evidence": WORDS, "kind_of_date": "a"}
+    )
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--plans", str(tmp_path))
+    assert (row["kind"], row["new"], row["cleared"], row["left"]) == (
+        "a", None, "cleared after a refused estimate", None
+    )
+    ran = flask_app.test_cli_runner().invoke(admin, ["diagrams", "redate", "apply", row["plan"]])
+    assert "1 events written, 1 cleared after a refused estimate," in ran.output
+    assert dated(diagram) == (None, "unknown", None)
+
+
+def test_an_event_the_model_left_at_its_stand_in_is_planned_cleared(flask_app, test_user, tmp_path):
+    # R-0956, R-0960
+    diagram, _ = family(test_user)
+    model = Answer(None)
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--plans", str(tmp_path))
+    assert (row["new"], row["cleared"], row["left"]) == (None, "cleared: the model left the stand-in", None)
+    redate(flask_app, "apply", row["plan"])
+    assert dated(diagram) == (None, "unknown", None)

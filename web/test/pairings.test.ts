@@ -12,7 +12,9 @@ vi.mock("../src/track", async (real) => ({
   tap: vi.fn(),
 }));
 
-const { Pairings, lookOrder, mark, nearest } = await import("../src/pairings");
+const { Pairings, Section, findable, joinList, lookOrder, mark, matches, nearest, yearText } = await import(
+  "../src/pairings"
+);
 const { toPairing } = await import("../src/ballot");
 const api = await import("../src/api");
 const { Feature, tap } = await import("../src/track");
@@ -156,5 +158,61 @@ describe("the split list on Patrick's look over the pairings", () => {
   it("offers no split when no opinion holds several entries and nothing is picked", () => {
     const { screen } = look(people([mother(1, 2, "Jim's first wife"), mother(2, 2, "Jim's ex-wife")]));
     expect(screen.controls(screen.pairings[0])).toContain('id="pr-split" type="button" disabled>');
+  });
+});
+
+const told = (coding: number, id: number, said: number, event: Record<string, unknown>): Opinion =>
+  ({
+    coding_id: coding,
+    item_id: id,
+    person_name: "Ann",
+    item: { kind: "shift", person: 1, ...event },
+    line: { statement_id: said, who: "Ann", text: "" },
+  }) as unknown as Opinion;
+
+const pairing = (id: number, opinions: Opinion[], kind = ItemKind.Event) =>
+  toPairing({ id, item_kind: kind, status: ItemStatus.Disputed, opinions } as unknown as BallotItem, new Map());
+
+describe("the join list on Patrick's look over the pairings", () => {
+  const here = pairing(1, [told(1, 1, 20, { dateTime: "1995-01-01", title: "Moved away" })]);
+  const before = pairing(2, [told(1, 2, 17, { dateTime: "2010-01-01", title: "Quit school" })]);
+  const after = pairing(3, [told(2, 3, 23, { title: "Fights at home" })]);
+  const far = pairing(4, [
+    told(1, 4, 40, { dateTime: "2005-06-01", title: "Started drinking" }),
+    told(2, 5, 41, { dateTime: "1990-01-01", title: "Drank", description: "a lot at the lake" }),
+  ]);
+  const early = pairing(5, [told(1, 6, 2, { dateTime: "1980-01-01", title: "Born" })]);
+  const undated = pairing(6, [told(1, 7, 60, { dateTime: "1900-01-01", title: "Sick" })]);
+  const person = pairing(7, [{ coding_id: 1, item_id: 9, item: { id: 9, name: "Ann" } } as Opinion], ItemKind.Person);
+  const all = [far, undated, here, after, early, person, before];
+
+  // R-0974
+  it("lists first the pairings within three statements of this one's passage in the conversation's order, then the rest by earliest year, the undated last, each once", () => {
+    const list = joinList(here, all);
+    const ids = (section: keyof typeof list) => list[section].map((one) => one.item.id);
+    expect(ids(Section.Near)).toEqual([2, 3]);
+    expect(ids(Section.All)).toEqual([5, 4]);
+    expect(ids(Section.Undated)).toEqual([6]);
+    const listed = Object.values(list).flat().map((one) => one.item.id);
+    expect(new Set(listed).size).toBe(listed.length);
+    expect(listed).not.toContain(1);
+    expect(listed).not.toContain(7);
+  });
+
+  // R-0974
+  it("gives the year a pairing's boxes give, or the range when they give different years, and nothing for a stand-in", () => {
+    expect(yearText(here)).toBe("1995");
+    expect(yearText(far)).toBe("1990–2005");
+    expect(yearText(undated)).toBe("");
+  });
+
+  // R-0974
+  it("finds a pairing by the words of any of its boxes, the people named and a year", () => {
+    const found = findable(far);
+    expect(matches(found, "lake")).toBe(true);
+    expect(matches(found, "ann 1990")).toBe(true);
+    expect(matches(found, "STARTED drink")).toBe(true);
+    expect(matches(found, "school")).toBe(false);
+    expect(matches(findable(person), "ann")).toBe(true);
   });
 });

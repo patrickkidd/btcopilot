@@ -8,7 +8,9 @@ alone. It saves each call with what it would write and writes nothing.
 path; `undo` takes them back. Back the database up before `apply`. A call is
 never made again for a nicer answer: a new plan is a new plan. An event with
 no message it was written from has nothing to reread: nothing was said about
-when, so it is planned with its date cleared and no call (R-0956)."""
+when, so it is planned with its date cleared and no call. A plan that would
+leave a stand-in, given again by the model or left by it, clears the date
+instead, so no event it covers ends at a stand-in (R-0956)."""
 
 import datetime
 import enum
@@ -42,7 +44,7 @@ APPLIED = ".applied.json"
 FAILED = "failed: "
 REFUSED = "refused when applied: "
 CLEARED = ["date", "date_evidence"]
-COLUMNS = ["diagram", "event", "copy", "message", "kind", "old", "new", "certainty", "evidence", "left"]
+COLUMNS = ["diagram", "event", "copy", "message", "kind", "old", "new", "certainty", "evidence", "cleared", "left"]
 
 
 class Kind(enum.StrEnum):
@@ -56,8 +58,14 @@ class Kind(enum.StrEnum):
 
 class Left(enum.StrEnum):
     Failed = "failed when planned"
-    Uncalled = "the model made no call for it"
     Moved = "its date changed since the plan"
+
+
+class Cleared(enum.StrEnum):
+    """Why a plan clears a date the model did not clear."""
+
+    Refused = "cleared after a refused estimate"
+    Kept = "cleared: the model left the stand-in"
 
 
 KIND = {
@@ -194,6 +202,7 @@ def blank(diagram: Diagram, event: dict) -> dict:
         "certainty": None,
         "evidence": None,
         "args": None,
+        "cleared": None,
         "left": None,
     }
 
@@ -206,7 +215,7 @@ def planned(diagram: Diagram, event: dict, made: str) -> dict:
     turn_id = TURN.format(diagram.id, made)
     change = made_in(diagram.id, event["id"])
     if change is None or change.statement_id is None:
-        return checked(diagram, turn_id, entry, Kind.Nothing, {"id": event["id"], "clear": CLEARED})
+        return checked(diagram, event, turn_id, entry, Kind.Nothing, {"id": event["id"], "clear": CLEARED})
     last = db.session.get(Statement, change.statement_id)
     copy = last.discussion.diagram_id != diagram.id
     cut = (coding.cut if coding else cut_of(last)) if copy else None
@@ -230,17 +239,32 @@ def planned(diagram: Diagram, event: dict, made: str) -> dict:
             for c in turn.calls
             if c.name == ToolName.EditEvent and str(c.args.get("id")) == str(event["id"])
         ),
-        None,
+        {"id": event["id"]},
     )
-    if call is None:
-        return dict(entry, left=Left.Uncalled.value)
     args = {k: v for k, v in call.items() if k not in ("kind_of_date", "version")}
-    return checked(diagram, turn_id, entry, call.get("kind_of_date"), args)
+    return checked(diagram, event, turn_id, entry, call.get("kind_of_date"), args)
 
 
-def checked(diagram: Diagram, turn_id: str, entry: dict, kind, args: dict) -> dict:
-    """The entry with the write it plans, failed when the event tool refuses it."""
-    entry = dict(entry, kind=kind, args=args, **_new(args))
+def kept(event: dict, args: dict) -> Cleared | None:
+    """Why the write would leave the event at a stand-in date, if it would."""
+    if "date" in args.get("clear", []):
+        return None
+    after = {
+        "dateTime": _new(args)["new"] or event.get("dateTime"),
+        "dateCertainty": args.get("date_certainty") or event.get("dateCertainty"),
+    }
+    if not record.standin(after):
+        return None
+    return Cleared.Refused if args.get("date") else Cleared.Kept
+
+
+def checked(diagram: Diagram, event: dict, turn_id: str, entry: dict, kind, args: dict) -> dict:
+    """The entry with the write it plans, failed when the event tool refuses
+    it; a write that would leave a stand-in clears the date instead."""
+    why = kept(event, args)
+    if why:
+        args = {"id": event["id"], "clear": CLEARED}
+    entry = dict(entry, kind=kind, args=args, cleared=why and why.value, **_new(args))
     try:
         Planned(diagram.id, turn_id, user_id=diagram.user_id).call(
             ToolName.EditEvent, {**args, "version": diagram.version}
@@ -313,8 +337,8 @@ def plan(diagram_id, plans, fresh):
         f"{len(rows)} events in {path}: "
         + ", ".join(f"kind {k} {kinds[k.value]}" for k in Kind)
         + f"; no message to reread {sum(r['args'] is not None and not r.get('message') for r in rows)}"
-        + f"; failed {sum(failed(r) for r in rows)}"
-        + f"; not called {sum(r['left'] == Left.Uncalled for r in rows)}",
+        + "".join(f"; {why.value} {sum(r.get('cleared') == why for r in rows)}" for why in Cleared)
+        + f"; failed {sum(failed(r) for r in rows)}",
         err=True,
     )
     return [*COLUMNS, "plan"], [dict(row, plan=str(path)) for row in rows]
@@ -365,6 +389,7 @@ def apply(path):
         "written": len(written),
         "left": dict(Counter(r["left"] for r in rows if r["left"] and not refused(r))),
         "refused": sum(refused(r) for r in rows),
+        "cleared": dict(Counter(r["cleared"] for r in written if r.get("cleared"))),
         "diagrams": len({r["diagram"] for r in written}),
         "users": len(owners),
     }
@@ -402,7 +427,9 @@ def refused(entry: dict) -> bool:
 def summary(done: dict) -> str:
     left = ", ".join(f"{n} {why}" for why, n in sorted(done["left"].items())) or "none"
     return (
-        f"{done['written']} events written; {sum(done['left'].values())} left as they were"
+        f"{done['written']} events written"
+        + "".join(f", {done['cleared'].get(why.value, 0)} {why.value}" for why in Cleared)
+        + f"; {sum(done['left'].values())} left as they were"
         f" ({left}); {done['refused']} refused; {done['diagrams']} diagrams;"
         f" {done['users']} users"
     )

@@ -5,20 +5,21 @@ import {
   entryKey,
   leftOut,
   many,
-  nowWords,
   opinionCards,
   opinionKeys,
   pairOpinions,
   passage,
+  saidDate,
   toPairing,
   whoOf,
   walkOrder,
-  writtenDate,
+  type PairEntry,
   type PairScreen,
   type Pairing,
   type Who,
 } from "./ballot";
-import { esc, stepBtn, type Title } from "./dom";
+import { el, esc, stepBtn, type Title } from "./dom";
+import { isStructure } from "./structure";
 import { Feature, tap } from "./track";
 import { Confidence, type BallotItem, type CodingRecord, type Entry, type Repaired } from "./types";
 
@@ -66,6 +67,87 @@ export const nearest = (pairings: Pairing[], id: number): number =>
     0,
   );
 
+/** How far either side of a pairing's passage the join list looks for the
+ * pairings from the same part of the conversation, in statements (R-0974). */
+const NEAR = 3;
+
+/** The sections of the join list, in the order they show (R-0974). */
+export enum Section {
+  Near = "near",
+  All = "all",
+  Undated = "undated",
+}
+
+const HEADS: Record<Section, string> = {
+  [Section.Near]: "From the same part of the conversation",
+  [Section.All]: "All, by year",
+  [Section.Undated]: "no date yet",
+};
+
+/** The years a pairing's boxes give, earliest first. */
+export const yearsOf = (pairing: Pairing): number[] =>
+  [
+    ...new Set(
+      pairing.versions
+        .flat()
+        .filter(saidDate)
+        .map((one) => Number(one.date.slice(0, 4))),
+    ),
+  ].sort((a, b) => a - b);
+
+/** One year, or the range when the boxes give different ones. */
+export function yearText(pairing: Pairing): string {
+  const years = yearsOf(pairing);
+  return years.length > 1 ? `${years[0]}–${years.at(-1)}` : String(years[0] ?? "");
+}
+
+/** The pairings `current` can join, each once: those whose passage is
+ * within three statements of its own, in the conversation's order; then the
+ * rest by the earliest year a box gives; the undated last, in the
+ * conversation's order. People and couples have no year, so the rest of them
+ * stand in that order too (R-0974). */
+export function joinList(current: Pairing, pairings: Pairing[]): Record<Section, Pairing[]> {
+  const byId = new Map(pairings.map((one) => [one.item.id, one]));
+  const others = walkOrder(
+    pairings
+      .filter((one) => one !== current && one.item.item_kind === current.item.item_kind)
+      .map((one) => one.item),
+  ).map((item) => byId.get(item.id)!);
+  const here = current.line?.statement_id;
+  const close = (one: Pairing) =>
+    here !== undefined && one.line !== null && Math.abs(one.line.statement_id - here) <= NEAR;
+  const rest = others.filter((one) => !close(one));
+  const dated = (one: Pairing) => yearsOf(one).length > 0;
+  return {
+    [Section.Near]: others.filter(close),
+    [Section.All]: rest.filter(dated).sort((a, b) => yearsOf(a)[0] - yearsOf(b)[0]),
+    [Section.Undated]: rest.filter((one) => !dated(one)),
+  };
+}
+
+const wordsOf = (entry: PairEntry): string[] => [
+  entry.kind,
+  entry.who,
+  entry.toward,
+  entry.title,
+  entry.desc,
+  ...entry.values.map((one) => one.said),
+];
+
+/** Every word of every box of a pairing, the people it names and its years,
+ * which the join list's search looks through. */
+export const findable = (pairing: Pairing): string =>
+  [...pairing.versions.flat().flatMap(wordsOf), ...yearsOf(pairing).map(String)]
+    .join(" ")
+    .toLowerCase();
+
+export const matches = (found: string, query: string): boolean =>
+  query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((term) => found.includes(term));
+
 const entries = (pairing: Pairing): Entry[] =>
   pairing.versions.flat().map(({ coding_id, item_id }) => ({ coding_id, item_id }));
 
@@ -96,7 +178,11 @@ export class Pairings {
     });
     this.sheet.sheet.addEventListener("click", (clicked) => {
       const row = (clicked.target as Element).closest<HTMLElement>("[data-join]");
-      if (row) void this.join(Number(row.dataset.join));
+      if (row)
+        void this.join(
+          Number(row.dataset.join),
+          row.closest<HTMLElement>("[data-section]")!.dataset.section as Section,
+        );
       const one = (clicked.target as Element).closest<HTMLElement>("[data-split]");
       if (one) void this.pick(one.dataset.split!.split(" "));
     });
@@ -253,25 +339,46 @@ export class Pairings {
     await this.split(this.pairing()!);
   }
 
-  /** The other pairings of the same kind of item to join with: with entries
-   * tapped, those move into the one picked; with none, the one picked comes
-   * into this one whole. */
+  /** The other pairings of the same kind of item to join with, under a
+   * search that hides and shows the rows in place as he types; the field is
+   * not focused, so a phone keeps its keyboard down until he taps it. With
+   * entries tapped, those move into the one picked; with none, the one picked
+   * comes into this one whole (R-0974). */
   private offer(pairing: Pairing): void {
-    const rows = this.pairings
-      .filter((one) => one !== pairing && one.item.item_kind === pairing.item.item_kind)
-      .map((one) => {
-        const first = one.versions[0][0];
-        const title = [first.kind, first.who, first.title].filter(Boolean).join(" · ");
-        return (
-          `<button class="pv-row" type="button" data-join="${one.item.id}">` +
-          `<span class="rtitle">${esc(title)}</span>` +
-          `<span class="rsub">${esc(nowWords(one) || writtenDate(first))} ${chip(one.item)}</span>` +
-          `</button>`
-        );
-      })
-      .join("");
+    const list = joinList(pairing, this.pairings);
+    const heads = isStructure(pairing.item.item_kind) ? { ...HEADS, [Section.All]: "All" } : HEADS;
+    const top = el(
+      "div",
+      "pv-jtop",
+      `<div class="cf-t">Join with which pairing?</div>` +
+        `<div class="fs-search"><input type="search" placeholder="Search words, people or a year" ` +
+        `aria-label="Search the pairings"></div>`,
+    );
+    const body = el(
+      "div",
+      "pv-join",
+      Object.values(Section)
+        .filter((section) => list[section].length)
+        .map(
+          (section) =>
+            `<div data-section="${section}"><div class="pv-label">${esc(heads[section])}</div>` +
+            `${list[section].map(joinRow).join("")}</div>`,
+        )
+        .join("") + `<div class="none" hidden>nothing matches</div>`,
+    );
+    const input = top.querySelector("input")!;
+    const shown = (within: Element) => within.querySelector("[data-find]:not([hidden])") !== null;
+    input.addEventListener("input", () => {
+      if (!input.dataset.searched) tap(Feature.PairingJoinSearch);
+      input.dataset.searched = "1";
+      for (const row of body.querySelectorAll<HTMLElement>("[data-find]"))
+        row.hidden = !matches(row.dataset.find!, input.value);
+      for (const section of body.querySelectorAll<HTMLElement>("[data-section]"))
+        section.hidden = !shown(section);
+      body.querySelector<HTMLElement>(".none")!.hidden = shown(body);
+    });
     this.sheet.sheet.classList.remove("pv-split");
-    this.sheet.show(rows);
+    this.sheet.show(body, top);
   }
 
   /** The entries of every box holding several, by name, under their opinion
@@ -301,11 +408,11 @@ export class Pairings {
     this.sheet.show(`<div class="cf-t">Take which entry out${of}?</div>${rows}`);
   }
 
-  private async join(otherId: number): Promise<void> {
+  private async join(otherId: number, from: Section): Promise<void> {
     const pairing = this.pairing()!;
     const other = this.pairings.find((one) => one.item.id === otherId)!;
     const moving = this.picked(pairing);
-    tap(Feature.PairingJoin);
+    tap(from === Section.Near ? Feature.PairingJoinNear : Feature.PairingJoinAll);
     this.sheet.close();
     const answer = moving.length
       ? await api.join(other.item.id, [...entries(other), ...moving])
@@ -333,4 +440,21 @@ export class Pairings {
     this.live = false;
     this.sheet.close();
   }
+}
+
+/** One row of the join list, its values in fixed places: the year or the
+ * range, the kind, who and toward, the first box's title, its mark (R-0966,
+ * R-0974). */
+function joinRow(pairing: Pairing): string {
+  const first = pairOpinions(pairing)[0].entries[0];
+  return (
+    `<button class="pv-row pv-jrow" type="button" data-join="${pairing.item.id}" ` +
+    `data-find="${esc(findable(pairing))}">` +
+    `<span class="pv-jy">${esc(yearText(pairing))}</span>` +
+    `<span class="pv-jl"><span class="pv-tag">${esc(first.kind)}</span>` +
+    `<span class="pv-jw">${esc(first.who)}${first.toward ? ` → ${esc(first.toward)}` : ""}</span></span>` +
+    chip(pairing.item) +
+    (first.title ? `<span class="pv-jt">${esc(first.title)}</span>` : "") +
+    `</button>`
+  );
 }

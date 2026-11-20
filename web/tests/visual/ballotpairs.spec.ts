@@ -353,7 +353,7 @@ test.describe("Patrick's look over the pairings", () => {
   test.beforeEach(() => roles("admin"));
   test.afterEach(() => roles("subscriber"));
 
-  // R-0961, R-0963, R-0967, R-0970, R-0972
+  // R-0961, R-0963, R-0967, R-0970, R-0972, R-0974
   test("builds the ballot, shows it building, then the unsure pairings first to split and join before the vote opens", async ({
     page,
   }) => {
@@ -427,10 +427,41 @@ test.describe("Patrick's look over the pairings", () => {
     await expect(page.locator(".pv-ops .pv-label")).toHaveCount(2);
 
     await page.locator("#pr-join").click();
-    // only pairings of events are offered to join an event, each with its mark
-    await expect(page.locator(".bl-sheet .pv-row")).toHaveCount(2);
-    await expect(page.locator('.bl-sheet .pv-row[data-join="43"] .tok.c-likely')).toHaveText("likely");
-    await page.locator('.bl-sheet .pv-row[data-join="43"]').click();
+    // only pairings of events are offered to join an event, each with its mark; the one
+    // split off from this passage first, the rest by year, a search over them with the
+    // keyboard down until it is tapped (R-0974)
+    const join = page.locator(".bl-sheet.in");
+    await expect(join.locator(".cf-t")).toHaveText("Join with which pairing?");
+    const find = join.locator('input[type="search"]');
+    await expect(find).toBeVisible();
+    await expect(find).not.toBeFocused();
+    await expect(join.locator("[data-section] > .pv-label")).toHaveText([
+      "From the same part of the conversation",
+      "All, by year",
+    ]);
+    await expect(join.locator(".pv-row")).toHaveCount(2);
+    const death = join.locator('.pv-row[data-join="43"]');
+    await expect(join.locator('[data-section="all"] .pv-row')).toHaveAttribute("data-join", "43");
+    await expect(death.locator(".tok.c-likely")).toHaveText("likely");
+    await expect(death.locator(".pv-jy")).toHaveText("2003");
+    await expect(death.locator(".pv-tag")).toHaveText("death");
+    await expect(death.locator(".pv-jw")).toHaveText("Mara Reyes");
+    await expect(join.locator('[data-section="near"] .pv-jy')).toHaveText("1994");
+    // the sheet's slide up ends before the picture is taken
+    await page.waitForTimeout(400);
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.screenshot({ path: test.info().outputPath(`join-${scheme}.png`) });
+    }
+    await page.emulateMedia({ colorScheme: "light" });
+    await find.fill("nothing like this");
+    await expect(join.locator(".pv-row:visible")).toHaveCount(0);
+    await expect(join.locator(".none")).toHaveText("nothing matches");
+    await find.fill("2003");
+    await expect(join.locator(".pv-row:visible")).toHaveCount(1);
+    await expect(join.locator('[data-section="near"]')).toBeHidden();
+    await expect(join.locator(".none")).toBeHidden();
+    await death.click();
 
     await page.locator("#coding-back").click();
     await page.locator(".tb-vote").click();

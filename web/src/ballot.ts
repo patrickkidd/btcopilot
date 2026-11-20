@@ -450,13 +450,17 @@ const STAND_IN = /^(1900-|0001-|1970-01-01)/;
  * or a date not sure at all as its year, as the timeline says it (R-0855); a
  * stand-in, which nobody said, as no date (R-0956). */
 export function writtenDate(entry: PairEntry): string {
-  if (!entry.date || STAND_IN.test(entry.date)) return rowsWhen(null);
+  if (!saidDate(entry)) return rowsWhen(null);
   const from = GUESSED.has(entry.cert)
     ? dateText(entry.date, entry.cert)
     : rowsWhen(entry.date, entry.prec);
   const to = entry.end && rowsWhen(entry.end, DatePrecision.Year);
   return to && to !== from ? `${from} to ${to}` : from;
 }
+
+/** A date somebody gave, never a stand-in (R-0956). */
+export const saidDate = (entry: PairEntry): boolean =>
+  Boolean(entry.date) && !STAND_IN.test(entry.date);
 
 const GUESSED = new Set<string>([DateCertainty.Approximate, DateCertainty.Unknown]);
 
@@ -895,7 +899,7 @@ export function drawPairs(
 export const nowWords = (pairing: Pairing): string => {
   const entries = pairOpinions(pairing).flatMap((one) => one.entries);
   if (isStructure(pairing.item.item_kind)) return entries[0]?.who ?? "";
-  const dated = entries.find((one) => one.date && !STAND_IN.test(one.date));
+  const dated = entries.find(saidDate);
   return dated ? writtenDate(dated) : "";
 };
 
@@ -940,11 +944,13 @@ export class PairSheet {
     this.scrim.addEventListener("click", () => this.close());
   }
 
-  show(content: HTMLElement | string): void {
+  /** `top` stays above the list as it scrolls. */
+  show(content: HTMLElement | string, top: HTMLElement | null = null): void {
     this.sheet.innerHTML = `<div class="fs-handle"><div class="fs-grab"></div></div>`;
     const scroller = el("div", "fs-body");
     if (typeof content === "string") scroller.innerHTML = content;
     else scroller.append(content);
+    if (top) this.sheet.append(top);
     this.sheet.append(scroller);
     window.clearTimeout(this.hiding);
     this.scrim.hidden = false;
