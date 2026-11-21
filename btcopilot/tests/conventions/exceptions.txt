@@ -239,3 +239,8 @@ R-0903 | TEST OWED | not built: the coach coding dialog shown once after an impo
 R-0934 | TEST OWED | the page's sheet that asks which person you are is its test, with the page (FD-377)
 R-0937 | TEST OWED | the page's events, people and questions lists updating in place; their tests come with the page builder's in-place work (FD-377)
 R-0948 | TEST OWED | not built: the baseline entry on a pair and the scribe's prompt rule for when to write one, with its live eval (FD-392)
+R-0951 | TEST OWED | not built: speakers mapped to people with suggestions and a new person; the who-is-who sheet is drawn, not wired to the server (FD-395)
+R-0952 | TEST OWED | not built: the server still refuses a recording without a clinician voice (FD-395)
+R-0953 | TEST OWED | not built: a personal recording dropped into the chat (FD-395)
+R-0954 | TEST OWED | not built: a recording sharing the import and de-duplication logic of other documents (FD-395)
+R-0955 | TEST OWED | not built: recording inside the app (FD-395)
