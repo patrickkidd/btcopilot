@@ -38,7 +38,7 @@ export const lineClass = (now: Phase): string => (now === Phase.Rewriting ? "age
 export const ask = (sentence: string, esc: (s: string) => string): string =>
   `<div class="cf-t">This report is out of date</div>` +
   `<p class="cf-p">${esc(sentence)}</p>` +
-  `<p class="cf-p">The coach can rewrite its eight cards now. Or you can read the report as it was last written.</p>` +
+  `<p class="cf-p cf-can">The coach can rewrite its eight cards now. Or you can read the report as it was last written.</p>` +
   `<div class="cf-btns">` +
   `<button class="cf-go" type="button" data-act="refresh">Refresh the report</button>` +
   `<button class="cf-no" type="button" data-act="last">Show the last report</button>` +

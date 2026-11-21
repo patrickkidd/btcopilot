@@ -387,6 +387,16 @@ test.describe("the vote by pairing", () => {
     await page.locator("#bl-quote .info").click();
     const card = page.locator(".ctx-card");
     await expect(card.locator(".ab-span")).toHaveText("line 3 of 11");
+    // its line number starts where the cluster's about page starts its words
+    const edge = await card.locator(".ab-span").evaluate((n) => {
+      const about = document.createElement("div");
+      about.className = "ss about";
+      n.closest(".ctx-card")!.append(about);
+      const side = parseFloat(getComputedStyle(about).paddingLeft);
+      about.remove();
+      return { at: n.getBoundingClientRect().left - n.closest(".ctx-card")!.getBoundingClientRect().left, side };
+    });
+    expect(edge.at).toBe(edge.side);
     await expect(card.locator(".ctx-box")).toHaveCount(0);
     await opened(page, 52);
     await card.locator(".cardx").click();

@@ -163,7 +163,7 @@ button { font-family: inherit; }
   color: var(--data);
   font: inherit;
 }
-:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot, #cap-play, #cap-chip, .cf-go[data-act="refresh"]) {
+:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot, #cap-play, #cap-chip, .cf-go[data-act="refresh"], .cf-can) {
   display: none;
 }
 
@@ -249,7 +249,8 @@ button { font-family: inherit; }
 .pl-btn svg { display: block; }
 /* the about page: words, at the height they need, clear of its close button on
    the right and of its book, which stands in the bottom corner, below */
-.ss.about { padding: 4px 52px calc(44px + var(--corner)) 16px; box-sizing: border-box; }
+:root { --ab-side: 16px; }
+.ss.about { padding: 4px 52px calc(44px + var(--corner)) var(--ab-side); box-sizing: border-box; }
 /* The about page: a card over the chat, from the top of the
    picture down, on ground of its own (R-0230), so opening one resizes nothing
    and the bubbles stay where they are under it (R-0460). */
@@ -3398,7 +3399,7 @@ body:has(#ballot-screen:not([hidden])) .hs-scrim { padding-bottom: calc(16px + v
    its head holds still while the conversation under it scrolls. */
 .view.ctx-clip { position: absolute; left: 0; right: 0; overflow: hidden; z-index: 6; pointer-events: none; transition: none; }
 .ctx-clip > .card { display: flex; flex-direction: column; overflow: hidden; pointer-events: auto; }
-.ctx-head { position: relative; flex: none; padding: 16px 12px 10px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.ctx-head { position: relative; flex: none; padding: 16px 12px 10px var(--ab-side); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
 .ctx-box .opinion { cursor: default; }
 .pv-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; min-height: 44px; padding: 8px 16px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); text-align: left; cursor: pointer; }
 .pv-row .rtitle { font: 400 15px/1.3 var(--sans); }

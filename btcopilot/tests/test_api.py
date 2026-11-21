@@ -565,6 +565,16 @@ def test_an_admin_finds_a_person_by_name_and_opens_their_diagram_read_only(
     assert [s["id"] for s in drawer.get_json()] == [sitting]
 
 
+def test_a_person_found_by_an_admin_lists_their_diagrams_as_theirs_not_the_admins(
+    admin, test_user_2, theirs
+):
+    # R-0952
+    listed = admin.get(f"/app/diagrams?user_id={test_user_2.id}").get_json()
+    found = next(d for d in listed if d["id"] == theirs.id)
+    assert (found["owned"], found["access"]) == (False, Access.AdminView)
+    assert found["owner_name"] == test_user_2.first_name
+
+
 def test_a_page_reads_the_diagram_it_names_whatever_the_account_is_on(
     admin, test_user, theirs
 ):

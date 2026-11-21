@@ -69,9 +69,12 @@ def writable(user) -> list[Diagram]:
     return [d for d in readable(user) if d.check_write_access(user)]
 
 
-def diagram_payload(diagram: Diagram, user) -> dict:
+def diagram_payload(diagram: Diagram, user, viewer=None) -> dict:
     """A diagram as the switcher and the settings list need it: what it is
-    called, how much has been said on it, and when that last happened."""
+    called, how much has been said on it, and when that last happened. With
+    `viewer`, an admin looking at the user's list: whose diagram it is and
+    what the viewer may do on it are said to the viewer."""
+    viewer = viewer or user
     discussions = Discussion.query.filter_by(
         diagram_id=diagram.id, user_id=user.id
     ).all()
@@ -84,9 +87,9 @@ def diagram_payload(diagram: Diagram, user) -> dict:
         "session_count": len(discussions),
         "last_activity": utc_iso(when) if when else None,
         "free": diagram.id == user.free_diagram_id,
-        "current": diagram.id == user.diagram_in_use(),
-        "owned": diagram.user_id == user.id,
-        "access": access(diagram, user),
+        "current": diagram.id == viewer.diagram_in_use(),
+        "owned": diagram.user_id == viewer.id,
+        "access": access(diagram, viewer),
         "owner": diagram.user.full_name().strip() or diagram.user.username,
         # the owner's first name, for the case report's header, never an email
         "owner_name": diagram.user.first_name or None,
@@ -98,7 +101,7 @@ def diagram_payload(diagram: Diagram, user) -> dict:
     }
 
 
-def diagrams_payload(user) -> list[dict]:
+def diagrams_payload(user, viewer=None) -> list[dict]:
     """Most recently active first, so the switcher opens on what you were
     last in. Only the diagrams the user may write to — this is the switcher's
     list, and a diagram shared read-only is never a place the app can be put.
@@ -110,7 +113,7 @@ def diagrams_payload(user) -> list[dict]:
             Coding.diagram_id.in_([d.id for d in found])
         )
     }
-    payload = [diagram_payload(d, user) for d in found if d.id not in coded]
+    payload = [diagram_payload(d, user, viewer) for d in found if d.id not in coded]
     return sorted(
         payload,
         key=lambda d: (d["last_activity"] or "", d["id"]),
@@ -127,13 +130,7 @@ def diagram_index():
     if asked is None or asked == user.id:
         return jsonify(diagrams_payload(user))
     require_admin()
-    here = user.diagram_in_use()
-    return jsonify(
-        [
-            d | {"current": d["id"] == here}
-            for d in diagrams_payload(db.get_or_404(User, asked))
-        ]
-    )
+    return jsonify(diagrams_payload(db.get_or_404(User, asked), user))
 
 
 def _name(body: dict) -> str:
