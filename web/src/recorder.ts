@@ -3,9 +3,9 @@ import { Sheet } from "./sheet";
 
 /** Recording a conversation in the app, for a person who does not know the
  * phone's own recorder (R-0955). What is recorded is kept as it comes, so a
- * recording that ends early still keeps everything up to that point. While
- * the page is hidden the microphone goes quiet and recording carries on when
- * it comes back, so that time is missing from the file and the sheet says so. */
+ * recording that ends early still keeps everything up to that point. If the
+ * pieces of sound stop coming for a while, that time is missing from the file
+ * and the drawer says so. */
 
 /** The kinds a browser may record, in the order taken: Safari and Chrome
  * record MP4, Firefox WebM. The bytes go as recorded. */
@@ -26,7 +26,19 @@ export function clock(seconds: number): string {
   return h ? `${h}:${two(m)}:${two(s)}` : `${m}:${two(s)}`;
 }
 
-/** The time the microphone heard nothing because the page was hidden. */
+/** How long apart pieces of sound arrive; a gap well over it is time the
+ * file does not hold. */
+const PIECE_MS = 1000;
+const GAP_MS = 2500;
+
+/** The time missing from the file, from the gaps between its pieces. */
+export const missedFrom = (arrivals: number[]): number =>
+  arrivals.slice(1).reduce((missed, at, i) => {
+    const gap = at - arrivals[i];
+    return gap > GAP_MS ? missed + (gap - PIECE_MS) / 1000 : missed;
+  }, 0);
+
+/** The time the microphone heard nothing. */
 export const missedLine = (seconds: number) => `Missed ${clock(seconds)} while this screen was hidden`;
 
 /** Why a recording ended before Stop. */
@@ -51,7 +63,7 @@ const sheetFor = (seconds: number, missed: number) =>
   `<div class="cf-t">Recording</div>` +
   `<div class="rc-time">${clock(seconds)}</div>` +
   `<div class="rc-vals">${missedFor(missed)}</div>` +
-  `<p class="cf-p">Keep this screen open while recording</p>` +
+  `<p class="cf-p">Recording carries on if the phone locks.</p>` +
   `<div class="cf-btns"><button class="cf-go" type="button" data-act="stop">Stop</button></div>`;
 
 const endedFor = (seconds: number, missed: number, why: Ended) =>
@@ -66,9 +78,8 @@ export class Recorder {
   private chunks: Blob[] = [];
   private file: File | null = null;
   private started = 0;
-  /** Seconds the page was hidden, and when it was hidden if it is now. */
-  private missed = 0;
-  private hidden: number | null = null;
+  /** When each piece of sound arrived. */
+  private arrivals: number[] = [];
   private ticking = 0;
   private answer: ((file: File | null) => void) | null = null;
   private media: MediaRecorder | null = null;
@@ -84,14 +95,7 @@ export class Recorder {
       if (act === "discard") this.done(false);
     });
     document.addEventListener("visibilitychange", () => {
-      if (this.media?.state !== "recording") return;
-      if (document.visibilityState === "hidden") this.hidden = Date.now();
-      else {
-        if (this.hidden !== null) this.missed += (Date.now() - this.hidden) / 1000;
-        this.hidden = null;
-        void this.awake();
-        this.tick();
-      }
+      if (this.media?.state === "recording" && document.visibilityState === "visible") void this.awake();
     });
   }
 
@@ -112,11 +116,14 @@ export class Recorder {
     this.media = media;
     this.chunks = [];
     this.ended = null;
-    this.missed = 0;
-    this.hidden = null;
+    this.arrivals = [];
     const start = new Date();
     this.started = Date.now();
-    media.addEventListener("dataavailable", (e) => e.data.size && this.chunks.push(e.data));
+    media.addEventListener("dataavailable", (e) => {
+      if (!e.data.size) return;
+      this.chunks.push(e.data);
+      this.arrivals.push(Date.now());
+    });
     media.addEventListener("error", () => this.stop(Ended.Broke));
     for (const track of stream.getTracks()) track.addEventListener("ended", () => this.stop(Ended.Lost));
     media.addEventListener("stop", () => {
@@ -126,26 +133,31 @@ export class Recorder {
       window.clearInterval(this.ticking);
       const type = media.mimeType || kind;
       this.file = new File(this.chunks, nameFor(start, type), { type });
-      if (this.ended) this.sheet.show(endedFor(this.seconds(), this.missed, this.ended));
+      if (this.ended) this.sheet.show(endedFor(this.seconds(), this.missed(), this.ended));
       else this.done(true);
     });
-    media.start(1000);
+    this.arrivals.push(Date.now());
+    media.start(PIECE_MS);
     await this.awake();
     this.sheet.show(sheetFor(0, 0));
     this.ticking = window.setInterval(() => this.tick(), 1000);
     return new Promise((answer) => (this.answer = answer));
   }
 
-  /** What the file holds: the time since Start less the time away. */
+  private missed(): number {
+    return missedFrom(this.arrivals);
+  }
+
+  /** What the file holds: the time since Start less the time missed. */
   private seconds(): number {
-    return (Date.now() - this.started) / 1000 - this.missed;
+    return (Date.now() - this.started) / 1000 - this.missed();
   }
 
   private tick(): void {
     const time = this.sheet.panel.querySelector(".rc-time");
-    if (!time || this.hidden !== null) return;
+    if (!time) return;
     time.textContent = clock(this.seconds());
-    this.sheet.panel.querySelector(".rc-vals")!.innerHTML = missedFor(this.missed);
+    this.sheet.panel.querySelector(".rc-vals")!.innerHTML = missedFor(this.missed());
   }
 
   stop(why: Ended | null = null): void {

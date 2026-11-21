@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { clock, ENDED, Ended, endingFor, kindFor, missedLine, nameFor } from "../src/recorder";
+import { clock, ENDED, Ended, endingFor, kindFor, missedFrom, missedLine, nameFor } from "../src/recorder";
 
 // R-0955
 it("records MP4 where the browser can, else WebM, named by when it started and by its kind", () => {
@@ -19,5 +19,7 @@ it("shows the running time, the time missed while hidden, and why a recording st
   expect(clock(12 * 60 + 40)).toBe("12:40");
   expect(clock(3723)).toBe("1:02:03");
   expect(missedLine(22.4)).toBe("Missed 0:22 while this screen was hidden");
+  expect(missedFrom([0, 1000, 2000, 3000])).toBe(0);
+  expect(missedFrom([0, 1000, 2100, 25_000, 26_000])).toBeCloseTo(21.9);
   expect(ENDED[Ended.Lost]).toBe("Stopped when the microphone was lost");
 });

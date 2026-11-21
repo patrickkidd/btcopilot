@@ -128,6 +128,14 @@ export function clipChip(clip: Clip, now: number): string {
   );
 }
 
+/** What the paperclip offers: recording in the app first, the fewest steps
+ * for a person on their own (R-0958), then a file already made. */
+export const MENU =
+  `<div class="cf-t">Attach</div><div class="sn-grp ap-rows">` +
+  `<button class="sn-row push" type="button" data-act="record"><span class="sn-t">Record a conversation</span></button>` +
+  `<button class="sn-row push" type="button" data-act="file"><span class="sn-t">Choose a file</span></button>` +
+  `</div>`;
+
 /** The paperclip in the chat bar, a file dropped on the chat on a computer,
  * the picked file's chip in the box, and the sheet of what the coach read. A
  * recording picked, dropped or recorded is transcribed in the box and its
@@ -159,14 +167,7 @@ export class Attachment {
     button.after(this.input);
     this.menu = new Sheet(screen, "ap");
     this.recorder = new Recorder(screen);
-    button.addEventListener("click", () =>
-      this.menu.show(
-        `<div class="cf-t">Attach</div><div class="sn-grp ap-rows">` +
-          `<button class="sn-row push" type="button" data-act="file"><span class="sn-t">Choose a file</span></button>` +
-          `<button class="sn-row push" type="button" data-act="record"><span class="sn-t">Record a conversation</span></button>` +
-          `</div>`,
-      ),
-    );
+    button.addEventListener("click", () => this.menu.show(MENU));
     this.menu.panel.addEventListener("click", (e) => {
       const target = e.target as Element;
       const chosen = target.closest<HTMLElement>("[data-act]")?.dataset.act;

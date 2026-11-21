@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { said } from "../src/api";
-import { clipChip, clipOf, fileChip, isAudio, KINDS, nameOf, Picked, readSheet, Stage, values } from "../src/attachment";
+import { clipChip, clipOf, MENU, fileChip, isAudio, KINDS, nameOf, Picked, readSheet, Stage, values } from "../src/attachment";
 
 const pdf = () => new File(["%PDF"], "Mom's letter.pdf", { type: "application/pdf" });
 
@@ -85,4 +85,10 @@ it("sends a recording as its transcript and who each speaker is, in the form a f
   expect(form.get("title")).toBe("Talk with Uncle Gerald");
   expect(form.get("date")).toBe("2026-11-02");
   expect(nameOf(memo())).toBe("Talk with Uncle Gerald.m4a");
+});
+
+// R-0958
+it("offers recording in the app first, then a file already made", () => {
+  expect(MENU.indexOf("Record a conversation")).toBeGreaterThan(-1);
+  expect(MENU.indexOf("Record a conversation")).toBeLessThan(MENU.indexOf("Choose a file"));
 });
