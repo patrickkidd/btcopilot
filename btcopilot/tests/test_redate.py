@@ -1,6 +1,7 @@
 """The catch-up that re-dates events stored at a stand-in date by rereading the
 conversation they were written from: plan, apply, undo (R-0960)."""
 
+import datetime
 import importlib
 import json
 
@@ -540,3 +541,23 @@ def test_a_scribes_estimate_the_reread_finds_no_time_for_is_left_as_it_is(flask_
     assert Change.query.filter_by(diagram_id=copy.id).count() == before
     (event,) = scribes(copy)
     assert (record.day(event["dateTime"]), event.get("dateEvidence")) == ("1985-01-01", None)
+
+
+def test_a_scribes_approximate_estimate_is_reread(flask_app, test_user, tmp_path):
+    # R-0979
+    copy = coded(test_user, dict(MOVED, dateTime="1995-01-01"))
+    model = Answer({"id": 2, "date": "2002", "date_certainty": "unknown", "date_evidence": "when she was 22", "kind_of_date": "a"})
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--diagram", str(copy.id), "--plans", str(tmp_path))
+    assert (row["why"], row["new"]) == ("the scribe's own estimate", "2002-01-01")
+
+
+def test_a_deleted_coders_copy_is_left_to_the_stand_in_rule(flask_app, test_user, tmp_path):
+    # R-0979
+    copy = coded(test_user, MOVED)
+    copy.deleted_at = datetime.datetime(2026, 10, 26)
+    db.session.commit()
+    model = Answer()
+    with patch.object(REDATE, "model_for", return_value=model):
+        rows = redate(flask_app, "plan", "--diagram", str(copy.id), "--plans", str(tmp_path))
+    assert (rows, model.asked) == ([], [])

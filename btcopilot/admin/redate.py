@@ -11,7 +11,7 @@ no message it was written from has nothing to reread: nothing was said about
 when, so it is planned with its date cleared and no call. A plan that would
 leave a stand-in, given again by the model or left by it, clears the date
 instead, so no event it covers ends at a stand-in (R-0956). On a coder's copy
-it also rereads the dates the scribe judged itself, now with the birth dates:
+not deleted it also rereads the dates the scribe judged itself, now with the birth dates:
 one dated before the birth of its person, and one the scribe estimated with no
 words about when; the second is written only when the words give a time, and
 a year said anywhere in the thread is the speaker's, never selected (R-0979)."""
@@ -53,6 +53,7 @@ COLUMNS = [
     "diagram", "event", "title", "copy", "why", "message", "kind", "old", "new", "certainty", "evidence", "cleared", "left"
 ]
 BORN_ON = (EventKind.Birth.value, EventKind.Adopted.value)
+GUESSED = (DateCertainty.Unknown, DateCertainty.Approximate)
 
 
 class Kind(enum.StrEnum):
@@ -187,13 +188,15 @@ def chosen(diagram: Diagram, event: dict, writes: tuple | None) -> Why | None:
     birth = born(diagram, cut, event)
     if birth and on < birth:
         return Why.Unborn
-    unknown = event.get("dateCertainty") == DateCertainty.Unknown
-    return Why.Guess if unknown and not event.get("dateEvidence") else None
+    guessed = event.get("dateCertainty") in GUESSED
+    return Why.Guess if guessed and not event.get("dateEvidence") else None
 
 
 def scribed(diagram_id: int) -> tuple | None:
-    """The event history of a record the scribe wrote, a coder's copy; None
-    for any other record."""
+    """The event history of a record the scribe wrote, a coder's copy not
+    deleted; None for any other record."""
+    if db.session.get(Diagram, diagram_id).deleted_at is not None:
+        return None
     if not Change.query.filter_by(diagram_id=diagram_id, author=Author.Review).first():
         return None
     return history(diagram_id)
