@@ -46,7 +46,7 @@ const PAIR_KINDS = [
   EventKind.Adopted,
 ] as string[];
 const CHILD_KINDS = [EventKind.Birth, EventKind.Adopted] as string[];
-const PARTNER_KINDS = [
+export const PARTNER_KINDS = [
   EventKind.Bonded,
   EventKind.Married,
   EventKind.Separated,

@@ -317,6 +317,20 @@ describe("a pairing on the vote", () => {
   });
 
   // R-0965
+  it("names a couple event's partner on its card as a shift names whom it is toward", () => {
+    const record = (id: number, partner: string) =>
+      ({ coding_id: id, people: [{ id: 5, name: partner }], pair_bonds: [], events: [] }) as unknown as CodingRecord;
+    const item = pairing(6, [
+      opinion(1, 1, { kind: "bonded", dateTime: "2005-01-01", person: 1, spouse: 5, relationshipTargets: [] }),
+      opinion(2, 2, { kind: "bonded", dateTime: "2006-01-01", person: 1, spouse: 5, relationshipTargets: [] }),
+    ]);
+    const records = new Map([[1, record(1, "Emily")], [2, record(2, "Em")]]);
+    const html = opinionCards(pairOpinions(toPairing(item, records)), null, false);
+    expect(html).toContain('<span class="pv-arrow">→</span> <span class="pv-diff">Emily</span>');
+    expect(html).toContain('<span class="pv-arrow">→</span> <span class="pv-diff">Em</span>');
+  });
+
+  // R-0965
   it("walks the pairings in the order of the conversation, then people, couples, events, then the earliest date any coder gave", () => {
     const said = (id: number) => ({ line: { statement_id: id, who: "Ada", text: "", number: id } });
     const at = (

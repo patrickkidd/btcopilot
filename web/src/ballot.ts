@@ -9,6 +9,7 @@ import {
   openBondEditor,
   openEditor,
   openPersonEditor,
+  PARTNER_KINDS,
   Relationship,
   type Family,
 } from "./editor";
@@ -489,11 +490,20 @@ function someone(who: Who, coding: number, ids: unknown[], names: string[]): str
     .join("&");
 }
 
-function eventEntry(opinion: Opinion, who: Who): PairEntry {
+/** Who an event is toward on its card: a couple event's partner, as the
+ * coder's copy names them, or a shift's targets. */
+function towardOf(opinion: Opinion, record: CodingRecord | undefined): [unknown[], string[]] {
+  const { spouse } = opinion.item;
+  if (!PARTNER_KINDS.includes(text(opinion.item.kind)) || spouse === null || spouse === undefined)
+    return [(opinion.item.relationshipTargets as unknown[] | undefined) ?? [], opinion.toward_names ?? []];
+  return [[spouse], [record?.people.find((one) => one.id === Number(spouse))?.name ?? ""]];
+}
+
+function eventEntry(opinion: Opinion, record: CodingRecord | undefined, who: Who): PairEntry {
   const event = opinion.item;
   const coding = opinion.coding_id!;
   const about = event.child ?? event.person;
-  const toward = (event.relationshipTargets as unknown[] | undefined) ?? [];
+  const [toward, names] = towardOf(opinion, record);
   const values: PairValue[] = SHIFTS.filter((field) => event[field]).map((field) => ({
     field,
     said: `${field} ${ARROWS[text(event[field])] ?? text(event[field])}`,
@@ -516,7 +526,7 @@ function eventEntry(opinion: Opinion, who: Who): PairEntry {
         ? (opinion.person_name ?? "")
         : called(who, coding, about, opinion.person_name ?? ""),
     toward: toward
-      .map((id, at) => called(who, coding, id, opinion.toward_names?.[at] ?? ""))
+      .map((id, at) => called(who, coding, id, names[at] ?? ""))
       .join(", "),
     title: text(event.title),
     desc: text(event.description),
@@ -525,7 +535,7 @@ function eventEntry(opinion: Opinion, who: Who): PairEntry {
       ...(about === null || about === undefined
         ? {}
         : { who: someone(who, coding, [about], [opinion.person_name ?? ""]) }),
-      ...(toward.length ? { toward: someone(who, coding, toward, opinion.toward_names ?? []) } : {}),
+      ...(toward.length ? { toward: someone(who, coding, toward, names) } : {}),
     },
     line: opinion.line ?? null,
   };
@@ -658,7 +668,7 @@ export function toPairing(
     const by = count.get(opinion.coding_id!)! > 1 ? own : who;
     return isStructure(item.item_kind)
       ? structureEntry(item.item_kind, opinion, records.get(opinion.coding_id ?? -1), by)
-      : eventEntry(opinion, by);
+      : eventEntry(opinion, records.get(opinion.coding_id ?? -1), by);
   });
   const byCoder = new Map<number, PairEntry[]>();
   for (const entry of samePlaces(built))
@@ -904,7 +914,7 @@ export function ownCard(
   };
   const built = isStructure(item.item_kind)
     ? structureEntry(item.item_kind, opinion, records.get(coding), who)
-    : eventEntry(opinion, who);
+    : eventEntry(opinion, records.get(coding), who);
   const entry = samePlaces([...pairing.versions.flat(), built]).at(-1)!;
   const differs = pairDiffers([
     ...pairOpinions(pairing),
