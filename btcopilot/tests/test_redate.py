@@ -11,7 +11,7 @@ from btcopilot.admin import admin
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.extensions import db
 from btcopilot.llmutil import Served
-from btcopilot.models import Author, Diagram, Discussion, ModelCall, Purpose, Speaker, SpeakerType, Statement
+from btcopilot.models import Author, Change, Diagram, Discussion, ModelCall, Purpose, Speaker, SpeakerType, Statement
 from btcopilot.review.models import Coding, Cut, Note
 
 # the package exports the command group under the module's own name
@@ -422,3 +422,121 @@ def test_an_event_the_model_left_at_its_stand_in_is_planned_cleared(flask_app, t
     assert (row["new"], row["cleared"], row["left"]) == (None, "cleared: the model left the stand-in", None)
     redate(flask_app, "apply", row["plan"])
     assert dated(diagram) == (None, "unknown", None)
+
+
+BORN = {"id": 3, "kind": "birth", "child": 1, "dateTime": "1980-05-11", "dateCertainty": "certain", "datePrecision": "day"}
+MOVED = {
+    "kind": "noted",
+    "person": 1,
+    "title": "Moved away",
+    "description": "Moved away",
+    "dateTime": "1978-01-01",
+    "dateCertainty": "approximate",
+}
+AGED = "Ann moved away for college when she was 22."
+
+
+def coded(user, event: dict, note: str = "Ann moved away", copy: dict | None = None, said: str = AGED):
+    """A case where Ann is born on 11 May 1980, a coder's copy of its cut, and
+    event 2 the scribe wrote on the copy from the coder's note."""
+    case, line = family(user, said=said)
+    case.data = diagramjson.dumps({"people": [{"id": 1, "name": "Ann", "primary": True}], "events": [BORN]})
+    cut = Cut(diagram_id=case.id, start_statement_id=line.id, end_statement_id=line.id, user_id=user.id)
+    diagram = Diagram(
+        user_id=user.id,
+        name="coding",
+        data=diagramjson.dumps(copy or {"people": [{"id": 1, "name": "Ann"}], "lastItemId": 3}),
+    )
+    db.session.add_all([cut, diagram])
+    db.session.flush()
+    coding = Coding(cut_id=cut.id, user_id=user.id, diagram_id=diagram.id)
+    db.session.add(coding)
+    db.session.flush()
+    db.session.add(Note(coding_id=coding.id, statement_id=line.id, text=note, turn_id="s1"))
+    db.session.commit()
+    record.apply(
+        diagram.id,
+        [{"item_kind": "event", "item_id": 2, "field": f, "after": v} for f, v in event.items()],
+        author=Author.Review,
+        turn_id="s1",
+        statement_id=line.id,
+    )
+    return diagram
+
+
+def scribes(diagram) -> list[dict]:
+    db.session.refresh(diagram)
+    return [e for e in diagram.get_diagram_data().events if e["id"] == 2]
+
+
+def test_a_copys_event_dated_before_its_persons_birth_is_reread(flask_app, test_user, tmp_path):
+    # R-0979
+    copy = coded(
+        test_user, MOVED, copy={"people": [{"id": 1, "name": "Ann"}], "events": [BORN], "lastItemId": 3}
+    )
+    model = Answer({"id": 2, "date": "2002", "date_certainty": "unknown", "date_evidence": "when she was 22", "kind_of_date": "a"})
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--diagram", str(copy.id), "--plans", str(tmp_path))
+    assert (row["why"], row["title"], row["old"], row["new"], row["evidence"], row["left"]) == (
+        "dated before the birth of its person", "Moved away", "1978-01-01", "2002-01-01", "when she was 22", None
+    )
+
+
+def test_a_scribes_estimate_with_an_age_said_gets_birth_plus_age_and_the_words(flask_app, test_user, tmp_path):
+    # R-0979, R-0957
+    copy = coded(test_user, dict(MOVED, dateTime="1985-01-01", dateCertainty="unknown"))
+    model = Answer({"id": 2, "date": "2002", "date_certainty": "unknown", "date_evidence": "when she was 22", "kind_of_date": "a"})
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--diagram", str(copy.id), "--plans", str(tmp_path))
+    assert row["why"] == "the scribe's own estimate"
+    assert "born 11 May 1980" in model.asked[0] and AGED in model.asked[0]
+    redate(flask_app, "apply", row["plan"])
+    (event,) = scribes(copy)
+    assert (record.day(event["dateTime"]), event["dateCertainty"], event["dateEvidence"]) == (
+        "2002-01-01", "unknown", "when she was 22"
+    )
+
+
+def test_a_birth_missing_from_the_copy_is_taken_from_the_case(flask_app, test_user, tmp_path):
+    # R-0979
+    copy = coded(test_user, MOVED)
+    model = Answer({"id": 2, "date": "2002", "date_certainty": "unknown", "date_evidence": "when she was 22", "kind_of_date": "a"})
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--diagram", str(copy.id), "--plans", str(tmp_path))
+    assert row["why"] == "dated before the birth of its person"
+
+
+def test_a_year_the_coder_gave_is_not_reread(flask_app, test_user, tmp_path):
+    # R-0979
+    copy = coded(test_user, MOVED, note="Ann moved away in 1978")
+    model = Answer()
+    with patch.object(REDATE, "model_for", return_value=model):
+        rows = redate(flask_app, "plan", "--diagram", str(copy.id), "--plans", str(tmp_path))
+    assert (rows, model.asked) == ([], [])
+
+
+def test_a_record_that_is_not_a_coders_copy_keeps_its_dates_before_a_birth(flask_app, test_user, tmp_path):
+    # R-0979, R-0960
+    diagram, _ = family(
+        test_user,
+        data={"people": [{"id": 1, "name": "Ann", "primary": True}], "events": [BORN], "lastItemId": 3},
+        event=dict(MOVED, id=2, dateCertainty="unknown"),
+    )
+    model = Answer()
+    with patch.object(REDATE, "model_for", return_value=model):
+        rows = redate(flask_app, "plan", "--diagram", str(diagram.id), "--plans", str(tmp_path))
+    assert (rows, model.asked) == ([], [])
+
+
+def test_a_scribes_estimate_the_reread_finds_no_time_for_is_left_as_it_is(flask_app, test_user, tmp_path):
+    # R-0979
+    copy = coded(test_user, dict(MOVED, dateTime="1985-01-01", dateCertainty="unknown"), said="Ann moved away.")
+    model = Answer({"id": 2, "date": "1990", "date_certainty": "unknown", "kind_of_date": "b"})
+    with patch.object(REDATE, "model_for", return_value=model):
+        (row,) = redate(flask_app, "plan", "--diagram", str(copy.id), "--plans", str(tmp_path))
+    assert row["left"] == "the reread gives no better date"
+    before = Change.query.filter_by(diagram_id=copy.id).count()
+    redate(flask_app, "apply", row["plan"])
+    assert Change.query.filter_by(diagram_id=copy.id).count() == before
+    (event,) = scribes(copy)
+    assert (record.day(event["dateTime"]), event.get("dateEvidence")) == ("1985-01-01", None)
