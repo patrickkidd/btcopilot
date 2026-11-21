@@ -33,6 +33,10 @@ What the coder says it tells them happened:
 {said}
 """
 CHOSEN = "\nThe person this is about: {line}\n"
+#: The case's own person and their birth, which every user gives first, so an
+#: age or a life stage has a birth to count from on a copy that lacks it
+#: (R-0940, R-0958).
+SUBJECT = "The person the case belongs to: {who}, born {born}.\n\n"
 #: The coder's earlier statements on the same coding, so a later one builds on
 #: them (R-0941), each with what it produced, so a question about how the
 #: record came to be has something true to be answered from (R-0946).
@@ -220,7 +224,8 @@ def write(coding, statement, said: str, chosen=None, model=None) -> dict:
     messages = [
         {
             "role": "user",
-            "content": _earlier(coding, record)
+            "content": given(coding.cut.diagram_id)
+            + _earlier(coding, record)
             + TURN.format(who=_who(statement), turn=statement.text or "", said=said)
             + about,
         }
@@ -469,6 +474,14 @@ def made(deltas: list[dict]) -> list[dict]:
 def _who(statement) -> str:
     speaker = statement.speaker
     return (speaker.name if speaker and speaker.name else None) or "someone"
+
+
+def given(case_id: int) -> str:
+    person, birth = adapter.subject(adapter.diagram_of(case_id))
+    if person is None:
+        return ""
+    born = _when(*_dated(birth)) if birth else "on a date not yet known"
+    return SUBJECT.format(who=_full(person), born=born)
 
 
 def _say(model, system: str, messages: list[dict], tools: list[dict]):

@@ -182,6 +182,7 @@ def _start(
     statement: str,
     zone: str | None,
     attached: attachments.File | None,
+    turn_id: str | None,
 ):
     """The words are stored and the turn is handed to the worker, which answers
     at its own pace. The page follows it on /turns/<id>/events; nothing waits
@@ -192,17 +193,21 @@ def _start(
         discussion.user.timezone = zone
     db.session.commit()
     try:
-        return jsonify(turns.start(discussion, statement, zone, attached)), 202
-    except turns.Busy as busy:
-        abort(409, description=str(busy))
+        return (
+            jsonify(turns.start(discussion, statement, zone, attached, turn_id)),
+            202,
+        )
+    except (turns.Busy, turns.Unfinished) as refused:
+        abort(409, description=str(refused))
 
 
-def _statement_text() -> tuple[str, str | None, attachments.File | None]:
+def _statement_text() -> tuple[str, str | None, attachments.File | None, str | None]:
     """The words, the browser's IANA time zone sent beside them, so the
     coach's day is the person's; a zone the server does not know is left out
     and the day is UTC's [Oracle: R-0760]. As a multipart form the words may
     carry one file, checked here before anything is stored or spent
-    [Oracle: R-0830]."""
+    [Oracle: R-0830]. The turn id is the one the page made for these words,
+    the same on every try again of them [Oracle: R-0182]."""
     kind = request.headers.get("Content-Type", "")
     if kind == "application/json":
         body, attached = request.json, None
@@ -218,15 +223,17 @@ def _statement_text() -> tuple[str, str | None, attachments.File | None]:
             description="Only 'Content-Type: application/json' or "
             "'multipart/form-data' is supported",
         )
-    return body["statement"], clock.zone(body.get("time_zone")), attached
+    return (
+        body["statement"],
+        clock.zone(body.get("time_zone")),
+        attached,
+        body.get("turn_id"),
+    )
 
 
 @bp.route("/chat", methods=["POST"])
 def chat():
-    statement, zone, attached = _statement_text()
-    return _start(
-        current_session(auth.current_user(), create=True), statement, zone, attached
-    )
+    return _start(current_session(auth.current_user(), create=True), *_statement_text())
 
 
 @bp.route("/statements")
@@ -348,5 +355,4 @@ def session_delete(session_id: int):
 
 @bp.route("/sessions/<int:session_id>/statements", methods=["POST"])
 def add_statement(session_id: int):
-    statement, zone, attached = _statement_text()
-    return _start(owned_session(session_id), statement, zone, attached)
+    return _start(owned_session(session_id), *_statement_text())

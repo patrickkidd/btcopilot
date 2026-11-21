@@ -6,10 +6,10 @@ means the review can be read, moved or replaced without hunting for the places
 it reached into the app.
 """
 
+import contextlib
 import datetime
 import re
 import uuid
-from collections import Counter
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -18,7 +18,8 @@ import btcopilot
 from btcopilot import diagramjson
 from btcopilot.extensions import db
 from btcopilot import observer, proactive, profile, prompts, push, record, turnstore
-from btcopilot.record import Invalid
+from btcopilot import turnlog
+from btcopilot.record import Invalid, no_person
 from btcopilot.coachmodel import COACH_EFFORT, CoachModel, model_for
 from btcopilot.coachturn import CoachTurn
 from btcopilot.discussions import utc_iso
@@ -33,7 +34,6 @@ from btcopilot.models import (
     Speaker,
     SpeakerType,
     Statement,
-    TurnEvent,
 )
 from btcopilot.recordtext import date_text, render, version_line
 from btcopilot.toolnames import toolcall
@@ -124,10 +124,32 @@ __all__ = [
     "sitting",
     "utc_iso",
     "thread",
-    "heard",
     "report_schema",
     "statement_order",
 ]
+
+# How long a job's hold lasts without a beat from its worker.
+JOB_HOLD = turnlog.RUNNING_TTL
+
+
+def job_holder(key: str) -> str | None:
+    """The job holding this name, while its worker is alive."""
+    return turnlog.holder(key)
+
+
+def seize_job(key: str, job: str) -> bool:
+    return turnlog.seize(key, job, JOB_HOLD)
+
+
+@contextlib.contextmanager
+def job_held(key: str, job: str):
+    """The name stays held for the job while its worker runs it, and is let go
+    after, so a hold that ran out is a job whose worker is gone."""
+    try:
+        with turnlog.beating(lambda: turnlog.prolong(key, job, JOB_HOLD), key):
+            yield
+    finally:
+        turnlog.let_go(key, job)
 
 
 def meanings() -> dict:
@@ -155,6 +177,11 @@ def deltas_by_turn(diagram_id: int, turn_ids: set[str]) -> dict[str, list[dict]]
     ):
         by_turn.setdefault(change.turn_id, []).extend(change.deltas or [])
     return by_turn
+
+
+def prompt_text(name: str, **inputs) -> str:
+    """A review prompt by name, private over open source like every prompt."""
+    return prompts.files().text(name, **inputs)
 
 
 def scribe_prompt(record_text: str) -> str:
@@ -424,55 +451,6 @@ def thread(diagram_id: int) -> list[Statement]:
         found,
         key=lambda s: (started[s.discussion_id], s.discussion_id, s.order or 0, s.id),
     )
-
-
-def heard(lines: list[Statement]) -> list[Statement]:
-    """Lines less the person's words whose turn failed with no reply and that
-    they sent again word for word later on: those never became part of the
-    conversation. A repeat the coach answered stays."""
-    sharing = Counter(s.turn_id for s in lines if s.turn_id)
-    failed = _failed(set(sharing))
-    return [
-        s
-        for at, s in enumerate(lines)
-        if not (
-            s.turn_id
-            and sharing[s.turn_id] == 1
-            and s.turn_id in failed
-            and any(
-                later.speaker_id == s.speaker_id
-                and (later.text or "").strip() == (s.text or "").strip()
-                for later in lines[at + 1 :]
-            )
-        )
-    ]
-
-
-def _failed(turn_ids: set[str]) -> set[str]:
-    """The turns whose last ending event is a failure, read from the kinds of
-    their ending events alone in one query."""
-    if not turn_ids:
-        return set()
-    last = (
-        db.session.query(TurnEvent.turn_id, func.max(TurnEvent.seq).label("seq"))
-        .filter(
-            TurnEvent.turn_id.in_(turn_ids),
-            TurnEvent.kind.in_(
-                (TurnEventKind.Done.value, TurnEventKind.Failed.value)
-            ),
-        )
-        .group_by(TurnEvent.turn_id)
-        .subquery()
-    )
-    return {
-        turn_id
-        for (turn_id,) in db.session.query(TurnEvent.turn_id)
-        .join(
-            last,
-            (TurnEvent.turn_id == last.c.turn_id) & (TurnEvent.seq == last.c.seq),
-        )
-        .filter(TurnEvent.kind == TurnEventKind.Failed.value)
-    }
 
 
 def sitting(discussion_id: int) -> list[Statement]:

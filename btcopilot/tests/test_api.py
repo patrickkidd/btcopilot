@@ -6,13 +6,14 @@ import flask
 import pytest
 
 import btcopilot
-from btcopilot import attachments, diagramjson, turns
+from btcopilot import attachments, diagramjson, turnlog, turns
 from btcopilot.discussions import open_session
 from btcopilot.models.etc import AccessRight
 from btcopilot.routes import Access
 from btcopilot.routes.settings import PLAN_PLACEHOLDER
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Discussion, Interaction, Statement
+from btcopilot.models.turnevent import TurnEvent
 from btcopilot.models.interaction import InteractionKind
 from btcopilot.models import Diagram, License, Policy
 from btcopilot.models.license import LicenseStatus
@@ -564,6 +565,16 @@ def test_an_admin_finds_a_person_by_name_and_opens_their_diagram_read_only(
     assert [s["id"] for s in drawer.get_json()] == [sitting]
 
 
+def test_a_person_found_by_an_admin_lists_their_diagrams_as_theirs_not_the_admins(
+    admin, test_user_2, theirs
+):
+    # R-0952
+    listed = admin.get(f"/app/diagrams?user_id={test_user_2.id}").get_json()
+    found = next(d for d in listed if d["id"] == theirs.id)
+    assert (found["owned"], found["access"]) == (False, Access.AdminView)
+    assert found["owner_name"] == test_user_2.first_name
+
+
 def test_a_page_reads_the_diagram_it_names_whatever_the_account_is_on(
     admin, test_user, theirs
 ):
@@ -601,14 +612,43 @@ def test_a_diagram_the_caller_may_not_open_is_not_found_by_its_id(web, theirs):
         ("patch", "/app/sessions/{sitting}", {"title": "Mine now"}),
         ("delete", "/app/sessions/{sitting}", None),
         ("post", "/app/sessions/{sitting}/statements", {"statement": "hello"}),
+        ("post", "/app/case-report-rewrites", {}),
+        ("post", "/app/pair_bonds", {"person_a": 1, "person_b": 2}),
+        ("patch", "/app/people/1", {"name": "Nova"}),
+        ("delete", "/app/people/1", None),
+        ("patch", "/app/events/3", {"description": "moved"}),
+        ("delete", "/app/events/3", None),
+        (
+            "post",
+            "/app/recordings",
+            {"utterances": [], "voices": {}, "title": "First visit"},
+        ),
+        ("post", "/app/turns/held/stop", None),
+        ("post", "/app/turns/kept/resume", None),
     ],
 )
 def test_an_admin_viewing_a_diagram_writes_nothing_on_it(
-    admin, test_user, theirs, method, path, body
+    admin, test_user, test_license, theirs, method, path, body
 ):
-    # R-0080
+    # R-0080, R-0952
+    data = theirs.get_diagram_data()
+    data.people = [{"id": 1, "name": "Ann"}, {"id": 2, "name": "Bo"}]
+    data.events = [{"id": 3, "kind": EventKind.Shift.value, "person": 1}]
+    theirs.set_diagram_data(data)
     view(admin, theirs)
     sitting = Discussion.query.filter_by(diagram_id=theirs.id).one()
+    db.session.add(
+        TurnEvent(
+            turn_id="kept",
+            discussion_id=sitting.id,
+            seq=0,
+            kind=turnlog.TurnEventKind.Text.value,
+            payload={},
+        )
+    )
+    db.session.commit()
+    turnlog.start(sitting.id, "held")
+    stored = theirs.data
     before = (Statement.query.count(), Discussion.query.count(), Change.query.count())
 
     refused = getattr(admin, method)(
@@ -621,7 +661,7 @@ def test_an_admin_viewing_a_diagram_writes_nothing_on_it(
     db.session.expire_all()
     assert (Statement.query.count(), Discussion.query.count(), Change.query.count()) == before
     assert sitting.title is None
-    assert theirs.get_diagram_data().people == []
+    assert theirs.data == stored
 
 
 def test_someone_who_is_not_an_admin_cannot_open_another_persons_diagram(

@@ -128,7 +128,7 @@ export function versionWords(
     if (field === "parents") {
       const bond = record?.pair_bonds.find((one) => one.id === Number(value));
       return bond
-        ? `born to ${named(bond.person_a)} & ${named(bond.person_b)}`
+        ? `born to ${couple(named(bond.person_a), named(bond.person_b))}`
         : "no parents recorded";
     }
     if (field === "person_a" || field === "person_b") return named(value);
@@ -148,5 +148,9 @@ export function structureName(
     return String(item.name ?? "") || "somebody with no name yet";
   const named = (id: unknown) =>
     people.find((one) => one.id === Number(id))?.name ?? "someone";
-  return `${named(item.person_a)} & ${named(item.person_b)}`;
+  return couple(named(item.person_a), named(item.person_b));
 }
+
+/** A couple is the same two people whichever the copy names first, so it is
+ * always said in one order. */
+const couple = (a: string, b: string): string => [a, b].sort().join(" & ");

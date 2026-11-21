@@ -93,6 +93,7 @@ class Event:
     dateTime: str | None = None
     endDateTime: str | None = None
     dateCertainty: DateCertainty = DateCertainty.Certain
+    dateEvidence: str | None = None
     location: str | None = None
     symptom: VariableShift | None = None
     anxiety: VariableShift | None = None
@@ -105,6 +106,8 @@ class Event:
 ```
 
 `dateCertainty` says how far `dateTime` can be trusted when events are matched: `unknown` (any date matches), `approximate` (within 365 days), `certain` (within 7 days, the default); how the coach marks it is [Oracle: R-0855]. `location` is where the event happened, free text.
+
+`dateEvidence` holds the person's or coder's own words about when, verbatim ("around high school", "after Mema died"), a fact that they said it, never the coach's or the scribe's working-out; absent on events written before it [Oracle: R-0957]. An event is always kept: when anything was said about when it carries an estimate marked unknown, placed by one of three kinds (a time said, an order said or one that follows from the family structure, or a standing pattern with no date); an event is left undated only when the conversation gave no hint of when, and a stand-in day (1 January 1900 or 1970, year 1) is refused by the event tool unless words in `dateEvidence` place it [Oracle: R-0956, R-0958]. The coach keeps adjusting an unknown date as evidence comes in [Oracle: R-0959]. Two events with no date are never the same event by the duplicate rule [Oracle: R-0489]. `flask admin diagrams redate plan|apply|undo` re-dates the events already stored at a stand-in day by rereading the conversation each was written from [Oracle: R-0960].
 
 `item` is set only on a noted event that records an item of the basic data
 about its `person`: one of `schooling`, `work`, `health`, `places` (where they

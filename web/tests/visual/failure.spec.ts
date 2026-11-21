@@ -89,6 +89,30 @@ test.describe("a send that does not go through", () => {
     await expect(page.locator(".bub.coach").last()).toHaveText(/I put that down\./);
     await expect(warning(page)).toHaveCount(0);
   });
+
+  // R-0182, R-0477
+  test("tries the lost send again as the same turn, and the thread holds the message once", async ({ page }) => {
+    await settle(page);
+    await mockTurn(page, { statement: "I put that down.", statement_id: 9004 });
+    const turns: string[] = [];
+    await page.route(SEND, (route) => {
+      turns.push(route.request().postDataJSON().turn_id);
+      // the server stored the words, and its answer never reached the page
+      return turns.length === 1 ? route.abort("failed") : route.fallback();
+    });
+
+    await say(page, "My dad moved out.");
+    await expect(warning(page)).toHaveText(/No answer from the server/);
+    await warning(page).locator("button").click();
+    await expect(page.locator(".bub.coach").last()).toHaveText(/I put that down\./);
+    await expect(page.locator(".bub.user", { hasText: "My dad moved out." })).toHaveCount(1);
+
+    await say(page, "She is better now.");
+    await expect.poll(() => turns.length).toBe(3);
+    expect(turns[0]).toMatch(/^[0-9a-f]{32}$/);
+    expect(turns[1]).toBe(turns[0]);
+    expect(turns[2]).not.toBe(turns[0]);
+  });
 });
 
 test.describe("an explain that does not go through", () => {

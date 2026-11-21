@@ -92,11 +92,12 @@ class Metered:
         response_format,
         schema: dict | None = None,
         limit: int | None = None,
+        model: str | None = None,
     ):
         started = self._begin()
         with self._billed(started):
             parsed = gemini_structured_sync(
-                prompt, response_format, schema=schema, limit=limit
+                prompt, response_format, model=model, schema=schema, limit=limit
             )
         self._write(parsed.served, parsed.spent, started, 0)
         return parsed.value

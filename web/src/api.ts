@@ -3,11 +3,15 @@ import type {
   Attached,
   NextMeeting,
   BallotItem,
+  BallotState,
+  Entry,
+  Repaired,
   Vote,
   VoteChoice,
   CoderLine,
   Coding,
   Cut,
+  CutLines,
   CodingRecord,
   SessionTurns,
   CodingThread,
@@ -217,14 +221,19 @@ export const casePassages = (diagramId: number | null, signal?: AbortSignal) =>
  * "today" is the person's day, not the server's (R-0760). */
 export const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+/** A new turn's id, in the server's own shape, made once per message and sent
+ * again on every try again of it, so the words are stored once (R-0182). */
+export const turnId = () => crypto.randomUUID().replaceAll("-", "");
+
 /** One agent-loop turn. The send is short: it stores the words and hands the
  * turn to the coach, which answers on the turn's own stream. The server puts
- * them in the sitting they belong to. */
-export const say = (diagramId: number | null, statement: string, file: File | null = null) =>
+ * them in the sitting they belong to; words it already holds under this turn
+ * are handed back as they stand. */
+export const say = (diagramId: number | null, turn: string, statement: string, file: File | null = null) =>
   call<Started & Attached>(
     "POST",
     onDiagram("/chat", diagramId),
-    file ? said(statement, timeZone(), file) : { statement, time_zone: timeZone() },
+    file ? said(statement, timeZone(), turn, file) : { statement, time_zone: timeZone(), turn_id: turn },
     file ? READ_MS : undefined,
   );
 
@@ -232,10 +241,11 @@ export const say = (diagramId: number | null, statement: string, file: File | nu
  * answers; a text file's words come back with the answer, a PDF or a photo is
  * read on the worker before the coach's turn, and the thread carries the text
  * once it is in. */
-export function said(statement: string, zone: string, file: File): FormData {
+export function said(statement: string, zone: string, turn: string, file: File): FormData {
   const form = new FormData();
   form.append("statement", statement);
   form.append("time_zone", zone);
+  form.append("turn_id", turn);
   form.append("file", file, file.name);
   return form;
 }
@@ -610,6 +620,8 @@ export const nudge = () =>
 
 export const cut = (cutId: number) => ask<Cut>("GET", `/cuts/${cutId}`);
 
+export const cutLines = (cutId: number) => ask<CutLines>("GET", `/cuts/${cutId}/lines`);
+
 export const items = (cutId: number) =>
   ask<BallotItem[]>("GET", `/items?cut_id=${cutId}`);
 
@@ -628,6 +640,26 @@ export const castVote = (
   value: Record<string, unknown> | null,
   reason: string | null,
 ) => ask<Vote>("PUT", `/items/${itemId}/vote`, { choice, value, reason });
+
+/** A second tap on what was picked takes the vote back, and the item is open
+ * again (R-0965). */
+export const unvote = (itemId: number) =>
+  ask<{ id: number }>("DELETE", `/items/${itemId}/vote`);
+
+/** ── The pairings ──────────────────────────────────────────────────────
+ * The ballot's pairings are built by a model call in the background; Patrick
+ * looks them over, joins and splits, then opens the vote (R-0961, R-0963). */
+
+export const buildPairings = (cutId: number) =>
+  ask<{ ballot: BallotState }>("POST", "/items", { cut_id: cutId });
+
+/** A split: these entries leave their pairings and become one of their own. */
+export const split = (cutId: number, opinions: Entry[]) =>
+  ask<Repaired>("POST", "/items", { cut_id: cutId, opinions });
+
+/** A join: the pairing's whole entry list, the ones named elsewhere moved in. */
+export const join = (itemId: number, opinions: Entry[]) =>
+  ask<Repaired>("PATCH", `/items/${itemId}`, { opinions });
 
 /** ── The meeting ───────────────────────────────────────────────────────
  * The same items read with the names on, which is where they first appear,

@@ -139,11 +139,21 @@ def schemas() -> list[dict]:
     }
     date = {
         "type": "string",
-        "description": f"Only as far as the coder said it: {DATE_FORMS}.",
+        "description": (
+            f"Only as far as the coder said it: {DATE_FORMS}. Left out when nothing "
+            "at all was said about when."
+        ),
     }
     certainty = _enum(
         _values(DateCertainty), f"How sure the date is: {adapter.CERTAINTY}."
     )
+    evidence = {
+        "type": "string",
+        "description": (
+            "The coder's own words about when, verbatim: 'around high school', "
+            "'after Mema died'. Never your own working-out."
+        ),
+    }
     person = {"type": "integer", "description": f"Who it is about. {one}"}
     parents = _ids(
         "0 to 2 people. One: the other parent is the other side of the child's "
@@ -173,6 +183,7 @@ def schemas() -> list[dict]:
         "parents": parents,
         "date": date,
         "date_certainty": certainty,
+        "date_evidence": evidence,
         "location": location,
         "ref": ref,
     }
@@ -190,7 +201,6 @@ def schemas() -> list[dict]:
             },
         }
 
-    dated = ["date", "date_certainty"]
     return [
         tool(
             ScribeTool.AddPerson,
@@ -229,13 +239,13 @@ def schemas() -> list[dict]:
             ScribeTool.AddBirth,
             "A birth: who was born, to whom, when.",
             born,
-            ["child", *dated],
+            ["child"],
         ),
         tool(
             ScribeTool.AddAdoption,
             "An adoption: who was taken in, by whom, when.",
             born,
-            ["child", *dated],
+            ["child"],
         ),
         tool(
             ScribeTool.AddCoupleEvent,
@@ -248,10 +258,11 @@ def schemas() -> list[dict]:
                 "couple": _ids(f"Exactly 2 people, in any order. {one}"),
                 "date": date,
                 "date_certainty": certainty,
+                "date_evidence": evidence,
                 "location": location,
                 "ref": ref,
             },
-            ["kind", "couple", *dated],
+            ["kind", "couple"],
         ),
         tool(
             ScribeTool.AddDeath,
@@ -260,6 +271,7 @@ def schemas() -> list[dict]:
                 "person": {"type": "integer", "description": f"Who died. {one}"},
                 "date": date,
                 "date_certainty": certainty,
+                "date_evidence": evidence,
                 "description": {
                     "type": "string",
                     "description": f"The cause. {means[text.Description]}",
@@ -267,7 +279,7 @@ def schemas() -> list[dict]:
                 "location": location,
                 "ref": ref,
             },
-            ["person", *dated],
+            ["person"],
         ),
         tool(
             ScribeTool.AddShift,
@@ -277,6 +289,7 @@ def schemas() -> list[dict]:
                 **words,
                 "date": date,
                 "date_certainty": certainty,
+                "date_evidence": evidence,
                 "end_date": end_date,
                 **shift,
                 "location": location,
@@ -292,6 +305,7 @@ def schemas() -> list[dict]:
                 **words,
                 "date": date,
                 "date_certainty": certainty,
+                "date_evidence": evidence,
                 "end_date": end_date,
                 "item": item,
                 "location": location,
@@ -339,6 +353,7 @@ def schemas() -> list[dict]:
                     _values(DateCertainty),
                     f"How sure the date is: {adapter.CERTAINTY}. Needed with a new date.",
                 ),
+                "date_evidence": evidence,
                 "end_date": end_date,
                 **words,
                 "notes": {"type": "string", "description": means[text.Notes]},
@@ -485,6 +500,8 @@ class ScribeTools:
         for one in collection:
             if str(one.get("id")) == str(item_id):
                 return one
+        if kind is ItemKind.Person:
+            raise ToolError(adapter.no_person(self.toolbox.data.pair_bonds, item_id), adapter.GONE)
         raise ToolError(f"No {kind.value} {item_id} in the record", adapter.GONE)
 
     def _form(self, tool: ScribeTool, args: dict) -> tuple[ToolName, dict]:
@@ -794,6 +811,7 @@ def _event_args(kind, args: dict) -> dict:
     for key in (
         "date",
         "date_certainty",
+        "date_evidence",
         "end_date",
         "title",
         "description",

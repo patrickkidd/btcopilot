@@ -8,6 +8,7 @@ from btcopilot.extensions import db
 from btcopilot.models import (
     Author,
     Change,
+    Diagram,
     Discussion,
     ModelCall,
     Purpose,
@@ -17,7 +18,6 @@ from btcopilot.models import (
     TurnEvent,
 )
 from mock import patch
-from sqlalchemy import event
 
 from btcopilot.review import adapter, divergence, export, ruledraft, snapshot
 from btcopilot.review.adapter import initials
@@ -26,6 +26,7 @@ from btcopilot.review.freeze import frozen
 from btcopilot.review.models import Coding, Cut, Item, Note, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.conftest import Model, said
 from btcopilot.tests.review.conftest import coded, person, shift
+from btcopilot.tests.review.test_pairing import build, open_vote
 
 # The real drafter, from before the autouse fixture stands it down.
 DRAFT = ruledraft.draft
@@ -271,7 +272,7 @@ def test_snapshot_marks_the_shared_event_agreed_and_the_lone_one_disputed(
 ):
     # R-0242, R-0250
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     events = Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
     statuses = sorted(i.status for i in events)
@@ -282,7 +283,7 @@ def test_snapshot_marks_the_shared_event_agreed_and_the_lone_one_disputed(
 def test_agreement_lands_on_the_cut(patrick, test_user, test_user_2, cut):
     # R-0242
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     agreement = db.session.get(Cut, cut.id).agreement["first_pass"]
     assert agreement["codings"] == 2
@@ -292,7 +293,7 @@ def test_agreement_lands_on_the_cut(patrick, test_user, test_user_2, cut):
 def test_one_vote_per_coder_per_item(patrick, coder, test_user, test_user_2, cut):
     # R-0341
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = disputed_event(cut)
 
     coder.put(f"/review/items/{item.id}/vote", json={"choice": "opinion"})
@@ -307,7 +308,7 @@ def test_a_coder_reads_only_their_own_votes(
 ):
     # R-0252
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = disputed_event(cut)
     patrick.put(f"/review/items/{item.id}/vote", json={"choice": "opinion"})
 
@@ -322,7 +323,7 @@ def test_decision_writes_a_change_on_the_case_record(
 ):
     # R-0275, R-0262
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = next(
         i
         for i in Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
@@ -348,7 +349,7 @@ def test_ratifying_writes_the_ground_truth_export(
 ):
     # R-0293
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     agreed = next(
         i
         for i in Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
@@ -375,7 +376,7 @@ def test_ratifying_asks_the_coach_for_a_first_draft_of_the_rules(
 ):
     # R-0313
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     decide_everything(patrick, db.session.get(Cut, cut.id))
     patrick.patch(f"/review/cuts/{cut.id}", json={"ratified_at": True})
     assert no_coach.called
@@ -384,7 +385,7 @@ def test_ratifying_asks_the_coach_for_a_first_draft_of_the_rules(
 def test_the_coachs_draft_lands_as_ai_rules(patrick, test_user, test_user_2, cut):
     # R-0259
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = Item.query.filter_by(cut_id=cut.id, item_kind="event").first()
     item.status = ReviewStatus.Decided
     db.session.commit()
@@ -403,7 +404,7 @@ def test_the_rule_draft_is_charged_to_the_admin_who_ratified(
 ):
     # R-0259, R-0388
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = Item.query.filter_by(cut_id=cut.id, item_kind="event").first()
     item.status = ReviewStatus.Decided
     db.session.commit()
@@ -483,7 +484,7 @@ def test_only_patrick_runs_the_agenda(patrick, coder, session, turns, cut):
 def test_only_patrick_decides_an_item(patrick, coder, test_user, test_user_2, cut):
     # R-0346
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = Item.query.filter_by(cut_id=cut.id).first()
 
     refused = coder.patch(f"/review/items/{item.id}", json={"choice": "unresolved"})
@@ -495,7 +496,7 @@ def test_the_agenda_gathers_what_the_meeting_must_take_up(
 ):
     # R-0312
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     item = Item.query.filter_by(cut_id=cut.id).first()
     patrick.patch(f"/review/items/{item.id}", json={"choice": "unresolved"})
     rule = coder.post("/review/rules", json={"text": "A rule to look at"}).get_json()
@@ -651,7 +652,7 @@ def test_the_ballot_carries_the_turn_and_the_person_of_each_opinion(
     # R-0337
     first, _ = two_codings(test_user, test_user_2, cut)
     wrote_from(first, 10, turns[1].id, test_user.id)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     agreed = next(
@@ -672,11 +673,46 @@ def test_each_version_of_a_person_carries_the_line_its_coder_wrote_it_from(
     first, second = two_codings(test_user, test_user_2, cut)
     wrote_from(first, 1, turns[0].id, test_user.id, kind="person")
     wrote_from(second, 1, turns[1].id, test_user_2.id, kind="person")
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     ann = next(r for r in rows if r["item_kind"] == "person")
     assert [one["line"]["text"] for one in ann["opinions"]] == ["turn 0", "turn 1"]
+
+
+def test_each_line_carries_its_number_among_the_cuts_own_lines_though_statement_ids_skip(
+    patrick, test_user, test_user_2, cut, session, turns
+):
+    # R-0974
+    elsewhere = Diagram(user_id=test_user.id, name="Case B", data=diagramjson.dumps({}))
+    db.session.add(elsewhere)
+    db.session.commit()
+    aside = Discussion(user_id=test_user.id, diagram_id=elsewhere.id)
+    db.session.add(aside)
+    db.session.commit()
+    for order in range(5):
+        db.session.add(Statement(discussion_id=aside.id, text="aside", order=order))
+        db.session.commit()
+    last = Statement(
+        discussion_id=session.id,
+        speaker_id=turns[0].speaker_id,
+        text="turn 4",
+        order=4,
+    )
+    db.session.add(last)
+    db.session.commit()
+    cut.end_statement_id = last.id
+    db.session.commit()
+    first, second = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 10, turns[3].id, test_user.id)
+    wrote_from(second, 20, last.id, test_user_2.id)
+    open_vote(patrick, cut)
+
+    rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    shared = next(r for r in rows if r["item_kind"] == "event" and len(r["opinions"]) == 2)
+    assert last.id - turns[3].id > 1
+    assert sorted(one["line"]["number"] for one in shared["opinions"]) == [4, 5]
+    assert {r["lines"] for r in rows} == {5}
 
 
 def test_an_item_one_coder_left_out_says_how_many_left_it_out(
@@ -684,7 +720,7 @@ def test_an_item_one_coder_left_out_says_how_many_left_it_out(
 ):
     # R-0315
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     lone = next(
@@ -696,7 +732,7 @@ def test_an_item_one_coder_left_out_says_how_many_left_it_out(
 def test_no_name_reaches_the_ballot(patrick, test_user, test_user_2, cut):
     # R-0272, R-0252
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     assert all("user_id" not in row for row in rows)
@@ -714,7 +750,7 @@ def test_the_coachs_own_reading_is_not_on_the_ballot(
     coach = coded(robot, cut, {"people": [person(1, "Ann")], "events": []})
     coach.agent = {"model": "a model", "prompt_version": 1}
     db.session.commit()
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     rows = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
     shared = next(
@@ -728,7 +764,7 @@ def test_the_coachs_own_reading_is_not_on_the_ballot(
 def test_an_agreed_item_cannot_be_voted_on(patrick, test_user, test_user_2, cut):
     # R-0257
     two_codings(test_user, test_user_2, cut)
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     agreed = next(
         i
         for i in Item.query.filter_by(cut_id=cut.id, item_kind="event").all()
@@ -746,7 +782,7 @@ def test_a_disputed_person_can_be_voted_on(patrick, test_user, test_user_2, cut)
     event about somebody nobody has agreed on yet cannot be settled (R-0326)."""
     coded(test_user, cut, {"people": [person(1, "Ann")]})
     coded(test_user_2, cut, {"people": [person(1, "Ann"), person(2, "Lee")]})
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
     disputed = next(
         i
         for i in Item.query.filter_by(cut_id=cut.id, item_kind="person").all()
@@ -766,7 +802,7 @@ def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
     mine = Coding.query.filter_by(cut_id=cut.id, user_id=coder.user.id).first()
     mine.done_at = datetime.datetime.utcnow()
     db.session.commit()
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    open_vote(patrick, cut)
 
     card = coder.get("/review/tasks").get_json()["task"]
     assert card["kind"] == "vote"
@@ -776,6 +812,39 @@ def test_the_vote_task_goes_when_every_disputed_event_has_a_vote(
         if item.status is ReviewStatus.Disputed:
             coder.put(f"/review/items/{item.id}/vote", json={"choice": "drop"})
     assert coder.get("/review/tasks").get_json()["task"] is None
+
+
+def test_the_coders_own_vote_is_said_in_plain_words_until_it_is_in(
+    patrick, coder, test_user, test_user_2, cut
+):
+    # R-0965
+    coded(test_user, cut, {"people": [person(1, "Ann")], "events": [shift(10, 1, "mother got sick")]})
+    coded(
+        test_user_2,
+        cut,
+        {"people": [person(1, "Ann")], "events": [shift(21, 1, "father left", "2021-06-01")]},
+    )
+    coder.post("/review/codings", json={"cut_id": cut.id})
+    mine = Coding.query.filter_by(cut_id=cut.id, user_id=coder.user.id).first()
+    mine.done_at = datetime.datetime.utcnow()
+    db.session.commit()
+    open_vote(patrick, cut)
+    disputed = [
+        item
+        for item in Item.query.filter_by(cut_id=cut.id).all()
+        if item.status is ReviewStatus.Disputed
+    ]
+    coder.put(f"/review/items/{disputed[0].id}/vote", json={"choice": "drop"})
+
+    card = coder.get("/review/tasks").get_json()["task"]
+    left = len(disputed) - 1
+    assert card["detail"].startswith(f"{left} of {len(disputed)} pairings still open")
+
+    for item in disputed[1:]:
+        coder.put(f"/review/items/{item.id}/vote", json={"choice": "drop"})
+    found = coder.get("/review/tasks").get_json()
+    assert found["task"] is None
+    assert "your vote is in" in found["done"][0]["detail"]
 
 
 def test_only_an_auditor_reaches_the_coding_work(subscriber, cut):
@@ -814,43 +883,54 @@ def ended(turn_id: str, session, end: str) -> None:
         )
 
 
-def test_words_whose_turn_failed_and_were_sent_again_are_listed_once(
+def test_words_whose_turn_failed_and_were_sent_again_are_listed_as_stored(
     coder, session, turns, cut
 ):
-    # R-0946
+    # R-0978
     turns[0].text, turns[0].turn_id = "Add my father", "first"
     turns[1].text, turns[1].turn_id = "Add my father", "again"
     ended("first", session, "failed")
     db.session.commit()
     coding = coder.post("/review/codings", json={"cut_id": cut.id}).json
     thread = coder.get(f"/review/codings/{coding['id']}/thread").json
-    assert [turn["id"] for turn in thread["turns"]] == [turns[1].id]
+    assert [turn["id"] for turn in thread["turns"]] == [turns[0].id, turns[1].id]
 
 
-def test_the_failed_turn_check_reads_no_turn_event_payload(session, turns):
-    # R-0946
-    turns[0].text, turns[0].turn_id = "Add my father", "first"
-    turns[1].text, turns[1].turn_id = "Add my father", "again"
+def test_two_coders_of_one_cut_see_the_same_lines_in_the_same_order(
+    patrick, coder, session, turns, cut
+):
+    # R-0978
+    turns[1].text, turns[1].turn_id = "Add my father", "first"
+    turns[2].text, turns[2].turn_id = "Add my father", "again"
     ended("first", session, "failed")
-    ended("again", session, "done")
+    cut.end_statement_id = turns[3].id
     db.session.commit()
-    sent = []
-    keep = lambda conn, cursor, sql, *rest: sent.append(sql)
-    event.listen(db.engine, "before_cursor_execute", keep)
-    try:
-        shown = adapter.heard(turns[:2])
-    finally:
-        event.remove(db.engine, "before_cursor_execute", keep)
-    assert shown == [turns[1]]
-    read = [sql for sql in sent if "turn_events" in sql]
-    assert len(read) == 1
-    assert "payload" not in read[0]
+    mine = coder.post("/review/codings", json={"cut_id": cut.id}).json
+    db.session.add(
+        Note(
+            coding_id=mine["id"],
+            statement_id=turns[1].id,
+            text="A father",
+            turn_id="scribe-1",
+        )
+    )
+    db.session.commit()
+    theirs = patrick.post("/review/codings", json={"cut_id": cut.id}).json
+    seen = [
+        [
+            (t["id"], t["order"], t["text"])
+            for t in client.get(f"/review/codings/{c['id']}/thread").json["turns"]
+        ]
+        for client, c in ((coder, mine), (patrick, theirs))
+    ]
+    assert seen[0] == seen[1]
+    assert [one[0] for one in seen[0]] == [t.id for t in turns]
 
 
 def test_words_the_coach_answered_and_were_sent_again_are_listed_twice(
     coder, session, turns, cut
 ):
-    # R-0946
+    # R-0978
     coach = Speaker(discussion_id=session.id, name="Coach", type=SpeakerType.Expert)
     db.session.add(coach)
     db.session.flush()
@@ -868,7 +948,7 @@ def test_words_the_coach_answered_and_were_sent_again_are_listed_twice(
 def test_words_sent_again_stay_where_the_coder_already_wrote_from_them(
     coder, session, turns, cut
 ):
-    # R-0946, R-0270
+    # R-0978, R-0270
     turns[0].text, turns[0].turn_id = "Add my father", "first"
     turns[1].text, turns[1].turn_id = "Add my father", "again"
     ended("first", session, "failed")
@@ -891,7 +971,7 @@ def test_words_sent_again_stay_where_the_coder_already_wrote_from_them(
 def test_words_sent_again_stay_when_the_last_agreed_line_is_on_them(
     test_user, coder, session, turns, cut
 ):
-    # R-0946, R-0267
+    # R-0978, R-0267
     turns[1].text, turns[1].turn_id = "Add my father", "first"
     turns[2].text, turns[2].turn_id = "Add my father", "again"
     ended("first", session, "failed")
@@ -909,3 +989,111 @@ def test_words_sent_again_stay_when_the_last_agreed_line_is_on_them(
     thread = coder.get(f"/review/codings/{coding['id']}/thread").json
     assert [turn["id"] for turn in thread["turns"]] == [t.id for t in turns]
     assert thread["agreed"]["order"] == 2
+
+
+def test_the_conversation_behind_the_i_is_only_what_the_person_and_the_coach_said(
+    patrick, coder, test_user, test_user_2, cut, session, turns
+):
+    # R-0977, R-0975
+    first, second = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 10, turns[1].id, test_user.id)
+    coach = Speaker(discussion_id=session.id, name="Coach", type=SpeakerType.Expert)
+    db.session.add(coach)
+    db.session.flush()
+    turns[1].speaker_id = coach.id
+    for coding in (first, second):
+        db.session.add(
+            Note(
+                coding_id=coding.id,
+                statement_id=turns[0].id,
+                text="Ann's mother got sick, scribe please add",
+                turn_id=f"scribe-{coding.id}",
+            )
+        )
+    db.session.commit()
+    open_vote(patrick, cut)
+
+    lines = coder.get(f"/review/cuts/{cut.id}/lines").get_json()
+    assert lines["count"] == 2
+    assert lines["lines"] == [
+        {"id": turns[0].id, "number": 1, "who": "Client", "client": True, "text": "turn 0"},
+        {"id": turns[1].id, "number": 2, "who": "Coach", "client": False, "text": "turn 1"},
+    ]
+    assert "scribe" not in str(lines)
+
+
+def test_the_conversation_behind_the_i_is_patricks_before_the_vote_and_a_coders_after_it(
+    patrick, coder, test_user, test_user_2, cut
+):
+    # R-0977, R-0963, R-0242
+    two_codings(test_user, test_user_2, cut)
+    build(patrick, cut)
+    assert patrick.get(f"/review/cuts/{cut.id}/lines").status_code == 200
+    assert coder.get(f"/review/cuts/{cut.id}/lines").status_code == 302
+    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
+    assert coder.get(f"/review/cuts/{cut.id}/lines").status_code == 200
+
+
+def test_the_conversation_behind_the_i_is_refused_to_anyone_not_a_coder(
+    patrick, subscriber, test_user, cut
+):
+    # R-0977, R-0311
+    coded(test_user, cut, {"people": [person(1, "Ann")]})
+    open_vote(patrick, cut)
+    assert subscriber.get(f"/review/cuts/{cut.id}/lines").status_code == 302
+
+
+def test_the_conversation_behind_the_i_is_refused_to_a_coder_not_yet_done(
+    patrick, coder, test_user, test_user_2, cut
+):
+    # R-0977, R-0242
+    coded(test_user, cut, {"people": [person(1, "Ann")]})
+    coded(test_user_2, cut, {"people": [person(1, "Ann")]}, done=False)
+    open_vote(patrick, cut)
+    assert coder.get(f"/review/cuts/{cut.id}/lines").status_code == 302
+
+
+def test_the_conversation_behind_the_i_keeps_a_failed_first_copy_and_its_resent_twin(
+    patrick, test_user, test_user_2, session, turns, cut
+):
+    # R-0977, R-0978
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    db.session.commit()
+    first, _ = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 10, turns[0].id, test_user.id)
+    open_vote(patrick, cut)
+
+    lines = patrick.get(f"/review/cuts/{cut.id}/lines").get_json()
+    assert [(one["id"], one["number"]) for one in lines["lines"]] == [
+        (turns[0].id, 1),
+        (turns[1].id, 2),
+    ]
+    assert lines["count"] == 2
+
+
+def test_every_line_the_ballot_points_at_is_in_the_conversation_behind_the_i(
+    patrick, test_user, test_user_2, session, turns, cut
+):
+    # R-0977
+    turns[0].text, turns[0].turn_id = "Add my father", "first"
+    turns[1].text, turns[1].turn_id = "Add my father", "again"
+    ended("first", session, "failed")
+    db.session.commit()
+    first, second = two_codings(test_user, test_user_2, cut)
+    wrote_from(first, 10, turns[0].id, test_user.id)
+    wrote_from(second, 21, turns[1].id, test_user_2.id)
+    open_vote(patrick, cut)
+
+    items = patrick.get(f"/review/items?cut_id={cut.id}").get_json()
+    lines = patrick.get(f"/review/cuts/{cut.id}/lines").get_json()
+    pointed = {
+        (one["line"]["statement_id"], one["line"]["number"])
+        for item in items
+        for one in [item, *item["opinions"]]
+        if one.get("line")
+    }
+    assert pointed
+    assert pointed <= {(one["id"], one["number"]) for one in lines["lines"]}
+    assert {item["lines"] for item in items} == {lines["count"]}

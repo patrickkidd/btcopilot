@@ -33,12 +33,20 @@ Each needs a test that fails before its fix, citing its ruling once the queued i
 | R-0613 (queued) | Someone who joins a notice's audience after it was sent gets it in the app only, never by push or email, so a pricing notice sent by email misses them. | |
 | R-0628 | The persona generator, the simulated client and the realism scorer call Gemini without writing a row in the model-calls table. | a decision: which purpose those rows carry (a new one needs a migration of the purpose enum) and whose user id, since the column is required and these calls have no user |
 
+## Found 2026-11-18 in production's stored conversations
+
+| Ruling | What is wrong today | What it needs |
+|---|---|---|
+| R-0182, R-0978 | 11 person messages are stored twice, word for word, the copy being that person's next message in the same session (21 September to 12 October; 7 of them in the conversation the coding group votes on). The causes are closed: a failed turn's words were kept and its try again stored them again, a phone keyboard put sent words back in the box (fixed 2026-10-27), and a try again after a lost answer sent the words again (fixed 2026-11-20, the send's `turn_id`). No message is edited; the stored copies stay and, by ruling, every review screen shows them as stored, twice. | nothing; kept as a record of why the repeats are there |
+
 ## Observed 2026-10-15 on a fresh production dump by the migration gate (no migration had run)
 
 Cause unknown, predates FD-381, no fix attempted.
 
 | Ruling | What is wrong today | What it needs |
 |---|---|---|
-| R-0487 | 104 coach change rows are claimed by no statement. | the cause found |
-| R-0487 | 4 failed turns matched where 5 were expected. | the cause found |
-| R-0487 | 1629 of 1665 live write calls had their item in the turn's change rows. | the cause found |
+| R-0487 | 104 coach change rows are claimed by no statement (249 on the 2026-11-16 dump). | the cause found |
+| R-0487 | 4 failed turns matched where 5 were expected (statement 706, 6 October: 3 tool lines for 2 items touched, one unfinished mark; same on the 2026-11-16 dump). | the cause found |
+| R-0487 | 1629 of 1665 live write calls had their item in the turn's change rows (2856 of 2953 on the 2026-11-16 dump). | the cause found |
+| R-0487 | 127 turn events from 44 turns (20 to 28 October) are carried by no statement and no coder's note (2026-11-16 dump). | the cause found |
+| — | Deleting a session whose lines a cut starts or ends on fails with a server error (the cut's foreign key), seen by the migration gate on the 2026-11-16 dump. | a decision: whether that session can be deleted, and what happens to the cut |

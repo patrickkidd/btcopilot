@@ -102,6 +102,16 @@ test.describe("a case report out of date", () => {
     expect(size.width).toBe(parseFloat(size.rule));
   });
 
+  // R-0952, R-0826
+  test("an admin looking at another person's diagram is offered only the last report, with no word of a rewrite", async ({ page }) => {
+    await answer(page, () => false);
+    await open(page);
+    await page.evaluate(() => (document.documentElement.dataset.access = "admin-view"));
+    await expect(sheet(page)).toContainText(SENTENCE);
+    await expect(sheet(page)).not.toContainText("The coach can rewrite its eight cards now.", { useInnerText: true });
+    await expect(sheet(page).locator("button:visible")).toHaveText(["Show the last report"]);
+  });
+
   // R-0825
   test("Refresh the report dims the coach's eight cards until the rewrite is done, then reads the report again with the line gone", async ({ page }) => {
     let done = false;

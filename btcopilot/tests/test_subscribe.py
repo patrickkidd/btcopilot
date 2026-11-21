@@ -1,15 +1,25 @@
+import asyncio
+import dataclasses
 import importlib.machinery
 import importlib.util
+import json
 import subprocess
 from pathlib import Path
 
 import pytest
+
+from btcopilot import llmutil, subscription
 
 PATH = Path(__file__).parents[2] / "bin" / "subscribe.py"
 loader = importlib.machinery.SourceFileLoader("subscribe", str(PATH))
 spec = importlib.util.spec_from_loader("subscribe", loader)
 subscribe = importlib.util.module_from_spec(spec)
 loader.exec_module(subscribe)
+
+
+@dataclasses.dataclass
+class Paired:
+    pairings: list
 
 
 def chained(monkeypatch, asked):
@@ -57,3 +67,29 @@ def test_a_run_past_the_round_cap_names_the_calls_still_coming(monkeypatch):
         SystemExit, match="after 3 rounds; the last answered: \\['call2-0.json'\\]"
     ):
         subscribe.main([])
+
+
+def test_a_structured_call_is_answered_through_the_subscription(monkeypatch):
+    # R-0856, R-0568
+    ran = {}
+
+    def run(args, **kwargs):
+        ran.update(args=args, stdin=kwargs["input"])
+        out = {
+            "is_error": False,
+            "structured_output": {"pairings": []},
+            "modelUsage": {"claude-fable-5-2": {}},
+        }
+        return subprocess.CompletedProcess(args, 0, stdout=json.dumps(out), stderr="")
+
+    monkeypatch.setattr(subscription.subprocess, "run", run)
+    monkeypatch.setattr(llmutil, "subscribed", lambda: True)
+    schema = {"type": "object", "properties": {"pairings": {"type": "array"}}}
+    parsed = asyncio.run(
+        llmutil.claude_structured("pair these", Paired, "claude-fable-5-2", schema, 100)
+    )
+    assert parsed.value == Paired(pairings=[])
+    assert parsed.served.model == "claude-fable-5-2"
+    assert ran["stdin"] == "pair these"
+    given = json.loads(ran["args"][ran["args"].index("--json-schema") + 1])
+    assert given["additionalProperties"] is False

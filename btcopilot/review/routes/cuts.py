@@ -2,7 +2,7 @@
 
 import datetime
 
-from flask import jsonify, request
+from flask import abort, jsonify, request
 
 from btcopilot.extensions import db
 from btcopilot.models import Diagram
@@ -11,6 +11,7 @@ from btcopilot.review import (
     divergence,
     export,
     notify,
+    pairing,
     ruledraft,
     decision,
     snapshot,
@@ -22,8 +23,10 @@ from btcopilot.review.routes import (
     coder,
     cut_or_404,
     open_items,
+    reads_ballot,
     session_name,
 )
+from btcopilot.review.routes.codings import _client, _who
 
 
 def payload(cut: Cut) -> dict:
@@ -42,6 +45,8 @@ def payload(cut: Cut) -> dict:
     data["end_order"] = adapter.statement_order(cut.diagram_id).get(cut.end_statement_id)
     data["cut_day"] = when.strftime("%b %-d") if when else None
     data["started"] = len(cut.codings) > 0
+    data["pairing_agent"] = pairing.agent(cut)
+    data["ballot"] = pairing.ballot(cut).value
     return data
 
 
@@ -72,6 +77,37 @@ def cut_index():
 def cut_read(cut_id: int):
     coder()
     return jsonify(payload(cut_or_404(cut_id)))
+
+
+@bp.route("/cuts/<int:cut_id>/lines")
+def cut_lines(cut_id: int):
+    """The statements of the cut, for the (i)s of the ballot and the pairing
+    check: every line the person and the coach said, in order, and nothing any
+    coder wrote, numbered as the ballot numbers them. A message stored twice
+    is shown twice, as stored, so every line a box points at is here
+    (R-0977, R-0975, R-0978)."""
+    user = coder()
+    cut = cut_or_404(cut_id)
+    if not reads_ballot(cut, user):
+        abort(403)
+    lines = adapter.statements_between(
+        cut.diagram_id, cut.start_statement_id, cut.end_statement_id
+    )
+    return jsonify(
+        {
+            "count": len(lines),
+            "lines": [
+                {
+                    "id": s.id,
+                    "number": at,
+                    "who": _who(s),
+                    "client": _client(s),
+                    "text": s.text or "",
+                }
+                for at, s in enumerate(lines, start=1)
+            ],
+        }
+    )
 
 
 @bp.route("/cuts", methods=["POST"])
@@ -134,8 +170,13 @@ def cut_patch(cut_id: int):
         admin()
         if cut.vote_opened_at is not None:
             raise ValueError("that vote is already open")
+        # Opening is the second step: the pairings are built and looked over
+        # first, and opening never builds them again (R-0963).
+        if pairing.ballot(cut) is not pairing.Ballot.Built:
+            raise ValueError("the ballot's pairings are not built yet")
+        pairing.check(cut)
+        pairing.settle(cut)
         cut.vote_opened_at = adapter.utcnow()
-        snapshot.build(cut)
         snapshot.recompute(cut)
 
     if body.get("ratified_at"):

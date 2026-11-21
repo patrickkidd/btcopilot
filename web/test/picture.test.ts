@@ -7,6 +7,7 @@ import {
   Via,
   chosen,
   clusterPage,
+  stepped,
   stand,
   VIEW_KEY,
   drawing,
@@ -496,6 +497,20 @@ describe("the drawing on a cluster's page", () => {
     expect(p.lanes).toEqual([]);
   });
 
+  // R-0213, R-0850
+  it("keeps every dot's target inside the drawing, the end dots too", () => {
+    for (const view of [ClusterView.Row, ClusterView.Lanes])
+      for (const width of [300, 700]) {
+        const p = place(events, view, width, null, people);
+        for (const { hit } of p.dots) {
+          expect(hit.x).toBeGreaterThanOrEqual(0);
+          expect(hit.x + hit.w).toBeLessThanOrEqual(width);
+          expect(hit.y).toBeGreaterThanOrEqual(0);
+          expect(hit.y + hit.h).toBeLessThanOrEqual(p.height);
+        }
+      }
+  });
+
   // R-0862, R-0867
   it("draws a solid line at every death, a dashed one at each illness found in someone other than the diagram's own person, and one at the stored opening when it is neither", () => {
     const keys = (opening: number | null, you: number | null) =>
@@ -516,6 +531,25 @@ describe("the drawing on a cluster's page", () => {
     // the lanes draw the same lines through every lane
     expect(place(events, ClusterView.Lanes, 300, 3, people, 2).keys.map((k) => k.key)).toEqual([Key.Illness, Key.Death, Key.Opening]);
     expect(drawing(events, ClusterView.Lanes, 300, 3, people, 2)).toContain('<line class="ab-key ab-death"');
+  });
+
+  // R-0955
+  it("draws each row's event mark left of its year, the drawing's own dot and line, and an empty mark for an undated event", () => {
+    const undated = ev(5, null, { kind: "noted" });
+    const all = [...events, undated];
+    const cluster = { id: "c", label: "1998\u20131999", reason: "", summary: null, play_ids: all.map((e) => e.id), event_ids: [], openingEventId: 3 } as unknown as Cluster;
+    const page = clusterPage(cluster, all, [{ id: 2, name: "Rose", primary: true }], ClusterView.Row, 300);
+    const row = (id: number) => page.split(`<li data-event="${id}">`)[1].split("</li>")[0];
+    const svg = drawing(events, ClusterView.Row, 300, 3, people, 2);
+    for (const e of events) {
+      const dot = svg.match(new RegExp(`<circle class="ab-dot" data-event="${e.id}" [^>]*stroke="([^"]+)" fill="([^"]+)"`))!;
+      expect(row(e.id)).toMatch(new RegExp(`^<svg class="ab-mark"[^>]*>.*<circle class="ab-dot" cx="8.0" cy="8.0" r="5" stroke="${dot[1].replace(/[()]/g, "\\$&")}" fill="${dot[2].replace(/[()]/g, "\\$&")}"/></svg><span class="ab-yr">`));
+    }
+    expect(row(2)).toContain('<line class="ab-key ab-death"');
+    expect(row(1)).toContain('<line class="ab-key ab-illness"');
+    expect(row(3)).toContain('<line class="ab-key ab-opening"');
+    expect(row(4)).not.toContain("<line");
+    expect(row(5)).toMatch(/^<svg class="ab-mark"[^>]*><\/svg><span class="ab-yr"><\/span>/);
   });
 
   // R-0862
@@ -644,11 +678,26 @@ describe("the drawing on a cluster's page", () => {
     expect(chosen([19], 19, Via.Row, all)).toEqual([]);
   });
 
+  // R-0954
+  it("steps the current event one row up or down the list on an arrow key, from the selection's ends, never past the list's ends", () => {
+    const ids = [16, 17, 18, 19];
+    expect(stepped([], ids, 1)).toBe(16);
+    expect(stepped([], ids, -1)).toBe(19);
+    expect(stepped([17], ids, 1)).toBe(18);
+    expect(stepped([17], ids, -1)).toBe(16);
+    expect(stepped([16], ids, -1)).toBe(16);
+    expect(stepped([19], ids, 1)).toBe(19);
+    // a dot's date selected several rows: the keys move on from its ends
+    expect(stepped([17, 18], ids, 1)).toBe(19);
+    expect(stepped([17, 18], ids, -1)).toBe(16);
+  });
+
   // R-0861
   it("marks each row and each dot with its event, so a selection lights both", () => {
     const { all, cluster } = period();
     const page = clusterPage(cluster, all, [], ClusterView.Row, 360);
-    expect(page).toContain('<li data-event="104"><span class="ab-yr">2010</span>');
+    expect(page).toContain('<li data-event="104"><svg class="ab-mark"');
+    expect(page).toContain('</svg><span class="ab-yr">2010</span>');
     expect(page).toContain('<circle class="ab-dot" data-event="104"');
     expect(page.match(/<li data-event=/g)).toHaveLength(13);
   });

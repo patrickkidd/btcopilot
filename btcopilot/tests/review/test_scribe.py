@@ -7,7 +7,7 @@ import re
 import pytest
 from mock import patch
 
-from btcopilot import prompts
+from btcopilot import diagramjson, prompts
 from btcopilot.coachmodel import ModelTurn, ToolCall
 from btcopilot.llmutil import GEMINI_TIMEOUT_MS, NotOnBedrockError, Served
 from btcopilot.extensions import db
@@ -259,15 +259,16 @@ def test_running_out_of_steps_shows_a_row_for_each_entry_that_went_in(coder, cut
 
 
 class Heard:
-    """A model that keeps the system prompt it was handed and writes nothing."""
+    """A model that keeps the system prompt and first message it was handed
+    and writes nothing."""
 
     def __init__(self):
-        self.system = ""
+        self.system = self.heard = ""
 
     def turn(self, system, messages, tools, turn_id=""):
         if False:
             yield
-        self.system = system
+        self.system, self.heard = system, messages[0]["content"]
         return ModelTurn(text="which one?", served=HAIKU)
 
 
@@ -814,6 +815,24 @@ def test_a_birth_has_no_person_and_a_couple_event_no_title_to_fill():
     assert "child" in tools["add_birth"]["required"]
 
 
+def test_no_scribe_tool_requires_a_date_and_each_dated_one_keeps_the_coders_words():
+    # R-0956, R-0957
+    tools = {tool["name"]: tool["input_schema"] for tool in ScribeTools(None).tools}
+    dated = {name for name, schema in tools.items() if "date" in schema["properties"]}
+    assert dated >= {"add_birth", "add_couple_event", "add_death", "add_shift", "add_noted", "change_event"}
+    assert not any("date" in tools[name]["required"] for name in dated)
+    assert all("date_evidence" in tools[name]["properties"] for name in dated - {"add_person"})
+
+
+def test_a_coders_words_about_when_are_kept_on_the_event(coder, cut, turns):
+    # R-0957, R-0958
+    coding = coded(coder.user, cut, {"people": [person(1, "Ann")]}, done=False)
+    said = dict(AGED, date="1996", date_certainty="unknown", date_evidence="around high school")
+    scribe(coder, coding, turns[0], Scripted([("add_shift", said)]), "Ann's anxiety up around high school")
+    (event,) = adapter.record_of(adapter.diagram_of(coding.diagram_id))["events"]
+    assert (event["dateCertainty"], event["dateEvidence"]) == ("unknown", "around high school")
+
+
 COUPLE = {
     "people": [
         {"id": 1, "name": "Elizabeth", "gender": "female"},
@@ -1084,6 +1103,22 @@ def test_an_age_with_no_birth_in_the_diagram_is_written_with_no_date(coder, cut,
     assert (event["kind"], event.get("dateTime")) == ("shift", None)
 
 
+def test_the_scribe_is_told_the_cases_person_and_their_birth(coder, cut, turns):
+    # R-0958, R-0940
+    case = db.session.get(Diagram, cut.diagram_id)
+    case.data = diagramjson.dumps(
+        {
+            "people": [{"id": 1, "name": "Ann", "last_name": "Lee", "primary": True}],
+            "events": [{"id": 2, "kind": "birth", "child": 1, "dateTime": "1980-05-11", "dateCertainty": "certain", "datePrecision": "day"}],
+        }
+    )
+    db.session.commit()
+    coding = coded(coder.user, cut, {"people": [person(1, "Ann")]}, done=False)
+    model = Heard()
+    scribe(coder, coding, turns[0], model, "Ann's anxiety started in high school")
+    assert model.heard.startswith("The person the case belongs to: Ann Lee, born 11 May 1980.")
+
+
 def test_an_age_with_a_birth_in_the_diagram_is_written_dated(coder, cut, turns):
     # R-0943, R-0940
     born = {"id": 2, "kind": "birth", "child": 1, "dateTime": "1980-01-01"}
@@ -1103,3 +1138,12 @@ def test_a_note_about_the_app_is_offered_as_a_report_and_writes_nothing(coder, c
     assert response.json["report"] == {"kind": "bug", "words": words}
     assert (response.json["lines"], response.json["refused"]) == ([], [])
     assert adapter.diagram_of(coding.diagram_id).version == before
+
+
+def test_a_pair_bond_given_as_a_parent_is_refused_as_that_pair_bond(coder, cut, turns):
+    # R-0971
+    coding = coded(coder.user, cut, FAMILY, done=False)
+    model = Scripted([("add_person", {"name": "Nora", "parents": [4]})])
+    with patch.object(model, "turn", wraps=model.turn) as heard:
+        scribe(coder, coding, turns[0], model, "Owen and Maeve had a daughter, Nora")
+    assert "4 is the pair-bond of persons 2 and 3" in str(heard.call_args_list[-1].args[1])

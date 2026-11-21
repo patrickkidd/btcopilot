@@ -7,6 +7,7 @@ page follows that log. A page that reloads reads the log from the start.
 """
 
 import logging
+import re
 import uuid
 
 import btcopilot
@@ -49,6 +50,8 @@ UNKEPT = (
     TurnEventKind.Text.value,
     TurnEventKind.TextReset.value,
 )
+# what a turn id looks like, made by the server or by the page that sends
+TURN_ID = re.compile(r"[0-9a-f]{32}")
 REFUSED = (
     "I can't take that one up here. Say it another way, or tell me what "
     "happened next."
@@ -65,6 +68,10 @@ class Busy(Exception):
     one session would write over each other's record."""
 
 
+class Taken(ValueError):
+    """A turn id another session already holds."""
+
+
 class Idle(Exception):
     """A stop for a turn that is not running."""
 
@@ -74,13 +81,24 @@ def start(
     statement: str,
     zone: str | None = None,
     attached: attachments.File | None = None,
+    turn_id: str | None = None,
 ) -> dict:
     """Store what the user said, reserve the turn, and hand it over, with the
     person's time zone so the coach's day is theirs. A text file's words are
     stored with the message; a PDF or a photo is left in Redis for the worker,
     which reads it before the coach's turn, so the statement goes in with its
-    file's name and no text yet (R-0828, R-0829). A busy session holds nothing."""
-    turn_id = uuid.uuid4().hex
+    file's name and no text yet (R-0828, R-0829). A busy session holds nothing.
+
+    The page names the turn when the person sends and names it again on a try
+    again, so words already stored are handed back as they stand, never stored
+    a second time, and a turn that failed or was lost goes on where it stopped
+    (R-0182, R-0477). A page that names none gets one made here."""
+    turn_id = turn_id or uuid.uuid4().hex
+    if not TURN_ID.fullmatch(turn_id):
+        raise ValueError(f"A turn id is 32 hex characters, not {turn_id!r}")
+    stored = sent(discussion, turn_id)
+    if stored is not None:
+        return again(discussion, stored)
     text = chips.validate(statement, record_of(discussion), discussion.diagram_id)
     if not turnlog.start(discussion.id, turn_id):
         raise Busy(BUSY)
@@ -103,13 +121,40 @@ def start(
     db.session.add(said)
     db.session.commit()
     enqueue(turn_id, discussion.id, said.id, zone=zone)
+    return started(said)
+
+
+def started(said: Statement) -> dict:
     return {
-        "turn_id": turn_id,
-        "discussion_id": discussion.id,
+        "turn_id": said.turn_id,
+        "discussion_id": said.discussion_id,
         "statement_id": said.id,
         "attachment_name": said.attachment_name,
         "attachment_text": said.attachment_text,
     }
+
+
+def sent(discussion: Discussion, turn_id: str) -> Statement | None:
+    """The person's words already stored under this turn, or None. A turn of
+    another session's is refused, whoever holds it."""
+    held = Statement.query.filter_by(turn_id=turn_id).all()
+    owner = turnlog.owner(turn_id)
+    if owner not in (None, discussion.id) or any(
+        s.discussion_id != discussion.id for s in held
+    ):
+        raise Taken(f"turn {turn_id} belongs to another session")
+    return next(
+        (s for s in held if s.speaker_id == discussion.chat_user_speaker_id), None
+    )
+
+
+def again(discussion: Discussion, said: Statement) -> dict:
+    """A send of words already stored: the turn as it stands, picked up again
+    when it failed or its worker is gone."""
+    interrupted(said.turn_id, LAPSED)
+    if turnstore.failed(turnstore.kept({said.turn_id}).get(said.turn_id, [])):
+        resume(discussion, said.turn_id)
+    return started(said)
 
 
 def resume(discussion: Discussion, turn_id: str) -> dict:

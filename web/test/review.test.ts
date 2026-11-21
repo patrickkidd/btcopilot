@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "../src");
 
-const REVIEW = ["agenda", "ballot", "coding", "cut", "meeting", "result", "rules", "task"];
+const REVIEW = ["agenda", "ballot", "coding", "cut", "meeting", "pairings", "result", "rules", "task"];
 const CORE = [
   "caption", "chat", "chips", "drawer", "editor", "menu", "picture", "recording",
   "rows", "search", "sessions", "settings", "speech", "turn",

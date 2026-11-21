@@ -195,6 +195,45 @@ Every record, with how much is in it.
 | `--email` | Only the records one person owns. |
 | `--json` | Print JSON, not a table. |
 
+### `flask admin diagrams redate`
+
+Re-date the events stored at a stand-in date (1 January 1900, year 1, or 1 January 1970 marked unknown) by rereading the conversation: plan, apply, undo [Oracle: R-0960].
+
+### `flask admin diagrams redate apply <path>`
+
+Make each call the plan saved through the event tool, one change row per call under the plan's turn for that record; an event whose date moved since the plan is left as it is, and one the event tool now refuses is counted as refused. Runs once per plan. Ends with what it did, saved into the plan too.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `path` | required |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin diagrams redate plan`
+
+One model call per event at a stand-in date, on every record but the scratch copies, coders' copies included; saves what each call would write, with the kind of date it judged, and writes nothing to any record. The plan is saved after every event. An event whose call fails, or whose write the event tool refuses, is kept in the plan as failed with its error and is never applied. A rerun continues the newest plan not yet applied and calls the model again only for its failed events and the events it does not hold; an event planned without a failure is never called again.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `--diagram` | Only this record. |
+| `--plans` | Where the plan is saved; left out, redate-plans in the instance folder. |
+| `--new` | Start a new plan, not the unapplied one. |
+| `--json` | Print JSON, not a table. |
+
+### `flask admin diagrams redate undo <path>`
+
+Take back every change the plan's apply made, one record at a time.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `path` | required |
+| `--json` | Print JSON, not a table. |
+
 ### `flask admin diagrams regroup`
 
 Regroup each record whose events, or the person's answers to when the most was going on, changed since its last grouping, or that has events to group and no groups. The dry run lists them and makes no model call; --apply makes the grouping calls a turn makes, one or two per record, each in the model-calls ledger, and writes each record's new grouping as one change row that `diagrams undo` takes back: the app's periods as the answer returns them, the ones it leaves out set aside, and the periods the person named written as theirs. Before the call, a stored period of the app's that fails a check is set aside. A record whose answers are both refused keeps the stored periods that pass, sets aside the app's that fail, names nothing after its years, is not regrouped by a turn until its events or answers change, and `failed` says so.
@@ -668,6 +707,21 @@ Whether nudging is on, and when the agenda was last nudged.
 
 | Argument | What it is |
 |---|---|
+| `--json` | Print JSON, not a table. |
+
+### `flask admin review votes`
+
+The coders' votes on a cut's ballot.
+
+### `flask admin review votes delete <cut_id>`
+
+Delete every vote on one cut's items and un-open its vote, so its ballot can be built again; the items stay until the build replaces them. Refused once the cut is ratified. Without --yes it prints each coder's vote count and changes nothing.
+
+Changes something: needs `--yes`.
+
+| Argument | What it is |
+|---|---|
+| `cut_id` | required |
 | `--json` | Print JSON, not a table. |
 
 ### `flask admin run [words]`

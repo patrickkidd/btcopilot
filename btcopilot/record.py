@@ -34,6 +34,7 @@ from btcopilot.schema import (
     MIN_CLUSTER_EVENTS,
     least_events,
     DateCertainty,
+    DatePrecision,
     EventKind,
     EvidenceKind,
     Fact,
@@ -790,6 +791,28 @@ def day(value) -> str | None:
     return str(value)[:10]
 
 
+#: The days a writer put on an event nobody had dated, never a day anyone said
+#: [Oracle: R-0956].
+STANDIN_DAYS = ("1900-01-01", "1970-01-01")
+
+
+def standin_day(value) -> bool:
+    """A day a writer stood in for no date: year 1, or the first of January
+    1900 or 1970 given to the day. A year said alone is a year said."""
+    on = day(value)
+    return on is not None and (on.startswith("0001") or on in STANDIN_DAYS)
+
+
+def standin(event: dict) -> bool:
+    """An event the catch-up re-dates: year 1, 1 January 1900, or 1 January
+    1970 marked unknown; a 1970 date marked surer is somebody's estimate
+    [Oracle: R-0960]."""
+    on = day(event.get("dateTime"))
+    if not standin_day(on):
+        return False
+    return on != "1970-01-01" or _val(event.get("dateCertainty")) == DateCertainty.Unknown.value
+
+
 def _values(data: dict, deltas: list[dict]):
     """Every closed field holds one of its own values, and a person has a name.
     Checked on the items this write touches."""
@@ -1007,12 +1030,24 @@ def _moves_of(event: dict) -> tuple:
     return tuple(_val(event.get(field)) for field in (*VARIABLES, "relationship"))
 
 
+def said_day(event: dict) -> str | None:
+    """The event's day when someone said that day: a year or a month alone, or
+    a date estimated from vaguer words, puts no day on it [Oracle: R-0956]."""
+    if _val(event.get("datePrecision")) in (DatePrecision.Year.value, DatePrecision.Month.value):
+        return None
+    if _val(event.get("dateCertainty")) == DateCertainty.Unknown.value:
+        return None
+    return day(event.get("dateTime"))
+
+
 def twin_key(event: dict) -> tuple:
     """Two events are the same event when kind, day, people, what moved and,
-    for a noted event, its item all match."""
+    for a noted event, its item all match. An event with no day said is
+    nobody's twin: nothing says it fell on the same day [Oracle: R-0956,
+    R-0971]."""
     return (
         _val(event.get("kind")),
-        day(event.get("dateTime")),
+        said_day(event) or ("undated", str(event.get("id"))),
         _links(event),
         _moves_of(event),
         _val(event.get("item")),
@@ -1045,8 +1080,12 @@ def _twins(data: dict, deltas: list[dict]):
         for other in by_key[twin_key(event)]:
             if str(other.get("id")) != event_id:
                 raise Invalid(
-                    f"that event is already event {other.get('id')}: change it "
-                    f"with edit_event(id={other.get('id')}) rather than adding it",
+                    f"that event looks to be already event {other.get('id')}: "
+                    "it is not added again. When what you were told is that same "
+                    "event again, fold what is new into it with "
+                    f"edit_event(id={other.get('id')}); when it is another event, "
+                    f"leave event {other.get('id')} as it is and say it looks "
+                    "already there",
                     "That event was already in the diagram.",
                 )
 
@@ -2184,6 +2223,19 @@ class Merge:
     dropped: list[str]
 
 
+def no_person(bonds: list[dict], person_id) -> str:
+    """Why an id is no person, naming the pair-bond when the id is one, so the
+    people of that bond are not added a second time."""
+    said = f"No person {person_id} in the record"
+    bond = next((b for b in bonds if str(b.get("id")) == str(person_id)), None)
+    if bond is None:
+        return said
+    return (
+        f"{said}: {person_id} is the pair-bond of persons {bond.get('person_a')} "
+        f"and {bond.get('person_b')}. Give their person ids; never add them again"
+    )
+
+
 def _merge_refusal(data: dict, keep, drop, take: dict[str, str]):
     if str(keep) == str(drop):
         raise Invalid(
@@ -2192,7 +2244,7 @@ def _merge_refusal(data: dict, keep, drop, take: dict[str, str]):
         )
     for person_id in (keep, drop):
         if _find(data, ItemKind.Person, person_id) is None:
-            raise Invalid(f"No person {person_id} in the record", GONE)
+            raise Invalid(no_person(_collection(data, ItemKind.PairBond), person_id), GONE)
     if kin(data, keep, drop):
         raise Invalid(
             f"persons {keep} and {drop} are partners, or parent and child: two "

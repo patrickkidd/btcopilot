@@ -604,3 +604,29 @@ Patrick's first real chats on the box, 2026-09-21 (his words paraphrased; each O
    applied it to clusters too; the app's own behaviour, where a cluster tap slides the cluster in
    as a card [R-0224, R-0230, R-0223, R-0213], was left out of the brief. No ruling changed it,
    and the app itself is unaffected.
+
+## Round 6 (2026-10-24 to 27, Patrick coding his first cut on production)
+
+Source: his messages in session "First Coding Bugs". Status as of the last flush.
+
+1. The (i) on the timeline opened a near-empty coding guide with no way back to the app.
+   Concept pages now open inside the app with back. FIXED (FD-389) [R-0265, R-0541, R-0567]
+2. The task's help text needed example statements. Added and approved. FIXED (FD-389)
+3. A coder needed her coding cleared to start over. Admin command built, proven on a sandbox,
+   run on production; later run for his own cut. FIXED (FD-389) [R-0938]
+4. The scribe did not know what he was getting at and dated high school wrongly. Given facts,
+   earlier statements, question answers, ages dated from the birth. FIXED (FD-389)
+   [R-0940, R-0941, R-0942, R-0943]
+5. A deploy lost a coach reply and left two of his messages back to back. Deploys now wait for
+   the turn in flight. FIXED (FD-390) [R-0950]
+6. The full-screen task card opened on every launch. FIXED (FD-390) [R-0944]
+7. The coding screen did not show where he had left off. FIXED (FD-390) [R-0945]
+8. 21 server error mails in three minutes. A question the coach took back broke that diagram's
+   timeline page since 28 September. FIXED (FD-390)
+9. Messages listed twice in a coding task; the scribe should offer the bug report sheet. FIXED
+   (FD-390) [R-0946]
+10. No way to code a usual pattern between two people. DEFERRED to FD-392 [R-0948]
+11. A .fd file should come in object by object with failures reported. FIXED (FD-390) [R-0947]
+12. Little of the chat readable with the keyboard up on the coding screen; he picked K1. FIXED
+    (FD-390) [R-0949]
+13. Dictated words left in the box after a send. FIXED (FD-390)

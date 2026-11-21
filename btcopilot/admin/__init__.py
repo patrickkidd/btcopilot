@@ -19,6 +19,7 @@ from btcopilot.admin.notices import notice_group
 from btcopilot.admin.observations import observations
 from btcopilot.admin.proactive import proactive_group
 from btcopilot.admin.quality import quality
+from btcopilot.admin.redate import redate
 from btcopilot.admin.questions import impressions_group, questions_group
 from btcopilot.admin.regroup import regroup
 from btcopilot.admin.reports import report_group
@@ -64,6 +65,7 @@ for group in (
 questions_group.add_command(catch_up)
 diagrams.add_command(regroup)
 diagrams.add_command(dates)
+diagrams.add_command(redate)
 
 
 def init_app(app):

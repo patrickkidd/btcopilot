@@ -6,7 +6,8 @@ from btcopilot import diagramjson
 from btcopilot.admin import admin
 from btcopilot.extensions import db
 from btcopilot.models import Change, Diagram
-from btcopilot.review.models import Coding, Cut, Note
+from btcopilot.review.models import Coding, Cut, Item, Note, ReviewStatus, Vote, VoteChoice
+from btcopilot.schema import ItemKind
 from btcopilot.tests.review.conftest import coded
 
 
@@ -196,3 +197,56 @@ def test_submitted_codings_are_not_touched(flask_app, test_user_2, case, cut):
     done = coded(test_user_2, cut, {}, done=True)
     assert given(flask_app, case, [BORN], "--apply") == []
     assert Change.query.filter_by(diagram_id=done.diagram_id).count() == 0
+
+
+def voted(cut, *users) -> list[Item]:
+    """An open vote with two items, each voted on by every user given."""
+    cut.vote_opened_at = datetime.datetime(2026, 10, 28)
+    items = [
+        Item(cut_id=cut.id, item_kind=ItemKind.Event, opinions=[], status=ReviewStatus.Disputed)
+        for _ in range(2)
+    ]
+    db.session.add_all(items)
+    db.session.flush()
+    db.session.add_all(
+        Vote(review_item_id=item.id, user_id=user.id, choice=VoteChoice.Drop)
+        for item in items
+        for user in users
+    )
+    db.session.commit()
+    return items
+
+
+def test_votes_delete_previews_then_deletes_the_votes_and_unopens_the_vote(
+    flask_app, test_user, test_user_2, cut
+):
+    # R-0963, R-0275
+    voted(cut, test_user, test_user_2)
+    preview = invoke(flask_app, "review", "votes", "delete", str(cut.id), "--json")
+    assert preview.exit_code == 0, preview.output
+    rows = json.loads(preview.output)
+    assert [(r["coder"], r["votes"], r["items"], r["done"]) for r in rows] == [
+        (test_user.username, 2, 2, False),
+        (test_user_2.username, 2, 2, False),
+    ]
+    assert Vote.query.count() == 4
+    assert db.session.get(Cut, cut.id).vote_opened_at is not None
+
+    done = invoke(flask_app, "run", "--", "review", "votes", "delete", str(cut.id), "--yes")
+    assert done.exit_code == 0, done.output
+    assert [r["done"] for r in json.loads(done.output)] == [True, True]
+    db.session.expire_all()
+    assert Vote.query.count() == 0
+    assert db.session.get(Cut, cut.id).vote_opened_at is None
+    assert Item.query.filter_by(cut_id=cut.id).count() == 2
+
+
+def test_votes_delete_refuses_a_ratified_cut(flask_app, test_user_2, cut):
+    # R-0963, R-0275
+    voted(cut, test_user_2)
+    cut.ratified_at = datetime.datetime(2026, 11, 1)
+    db.session.commit()
+    result = invoke(flask_app, "run", "--", "review", "votes", "delete", str(cut.id), "--yes")
+    assert result.exit_code != 0
+    assert f"cut {cut.id} was ratified" in result.output
+    assert Vote.query.count() == 2

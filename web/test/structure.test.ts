@@ -70,7 +70,7 @@ describe("two versions of a person", () => {
     expect(telling(disputed.opinions, ItemKind.Person)).toEqual(["parents"]);
     const sides = group(disputed, records).map((one) => one.label);
     expect(sides).toEqual([
-      "born to Marcus & Delphine",
+      "born to Delphine & Marcus",
       "no parents recorded",
     ]);
   });
@@ -97,14 +97,14 @@ describe("two versions of a person", () => {
 
 describe("a bond", () => {
   // R-0318
-  it("is named by both people", () => {
-    expect(
-      structureName(
-        ItemKind.PairBond,
-        { person_a: 1, person_b: 2 },
-        record.people.map((one) => ({ id: one.id, name: one.name })),
-      ),
-    ).toBe("Marcus & Delphine");
+  it("is named by both people, the same whichever the copy names first", () => {
+    const people = record.people.map((one) => ({ id: one.id, name: one.name }));
+    expect(structureName(ItemKind.PairBond, { person_a: 1, person_b: 2 }, people)).toBe(
+      "Delphine & Marcus",
+    );
+    expect(structureName(ItemKind.PairBond, { person_a: 2, person_b: 1 }, people)).toBe(
+      "Delphine & Marcus",
+    );
   });
 
   // R-0318

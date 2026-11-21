@@ -4,8 +4,8 @@ it must keep true.
 
   PYTHONPATH=<worktree> uv run python bin/migrationgate.py <pg_dump -Fc file>
 
-create_app needs the settings the app reads at start, so FLASK_VAPID_PUBLIC_KEY
-and FLASK_VAPID_PRIVATE_KEY must be set (dummy values do; the gate sends no push).
+The push settings create_app requires are filled with stand-ins: the gate sends
+no push.
 
 Exits non-zero when any check fails. The container is removed either way.
 """
@@ -23,7 +23,7 @@ from alembic.script import ScriptDirectory
 
 from btcopilot import quality, record
 from btcopilot.admin.database import config, current
-from btcopilot.app import create_app
+from btcopilot.app import VAPID, create_app
 from btcopilot.models import QualityRun
 from btcopilot.models.change import Author
 from btcopilot.schema import ItemKind
@@ -38,6 +38,9 @@ PASSWORD = "gate"
 TOOLED = [ItemKind.Person, ItemKind.PairBond, ItemKind.Event, ItemKind.Cluster, ItemKind.Question]
 # The line check covers agent turns only; rows written outside a turn (backfill, hand edits) have no lines by design.
 AGENT_CHANGES = "c.statement_id = s.id AND c.author = :coach AND c.turn_id = s.turn_id"
+# What a merge's names hold beside its args: what it moves over and drops,
+# read off the record before it runs, so never an item gone.
+MERGED = ("moved", "dropped")
 # A tool's result names an impression, which the record keeps as a question item.
 STORED_AS = {record.IMPRESSION.noun: ItemKind.Question.value}
 
@@ -61,9 +64,11 @@ TURNS = sa.text(
     """
 )
 ORPHANS = {
-    "turn events no statement carries": """
+    # A coder's turn with the scribe is carried by the coder's note, not a statement.
+    "turn events no statement or coder's note carries": """
         SELECT count(*) FROM turn_events t
-         WHERE NOT EXISTS (SELECT 1 FROM statements s WHERE s.turn_id = t.turn_id)""",
+         WHERE NOT EXISTS (SELECT 1 FROM statements s WHERE s.turn_id = t.turn_id)
+           AND NOT EXISTS (SELECT 1 FROM review_notes n WHERE n.turn_id = t.turn_id)""",
     "turn events whose session is missing": """
         SELECT count(*) FROM turn_events t
          WHERE NOT EXISTS (SELECT 1 FROM discussions d WHERE d.id = t.discussion_id)""",
@@ -134,6 +139,7 @@ DELETABLE = sa.text(
      WHERE d.chat_user_speaker_id IS NOT NULL
        AND EXISTS (SELECT 1 FROM diagram_changes c JOIN statements s
                      ON s.id = c.statement_id WHERE s.discussion_id = d.id)
+       AND NOT EXISTS (SELECT 1 FROM review_cuts k WHERE k.diagram_id = d.diagram_id)
      ORDER BY d.id LIMIT 1
     """
 )
@@ -190,6 +196,8 @@ def gone(call: dict, arg: str) -> list[tuple[str, str]]:
     args = call["args"]
     if arg == "evidence":
         return [(one["kind"], str(one["id"])) for one in args["evidence"]]
+    if call["name"] == ToolName.MergePeople.value and arg in MERGED:
+        return []
     if arg != "it":
         ids = args[arg] if isinstance(args[arg], list) else [args[arg]]
         return [(ARGS[arg].value, str(i)) for i in ids]
@@ -316,7 +324,7 @@ def delete_check(app, conn) -> tuple:
 def main(dump: Path) -> int:
     with postgres() as (name, uri):
         restore(name, dump)
-        app = create_app({"SQLALCHEMY_DATABASE_URI": uri})
+        app = create_app({"SQLALCHEMY_DATABASE_URI": uri, **dict.fromkeys(VAPID, "gate")})
         engine = sa.create_engine(uri)
         with app.app_context():
             script = ScriptDirectory.from_config(config())
