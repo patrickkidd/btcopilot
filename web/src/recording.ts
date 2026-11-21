@@ -270,7 +270,7 @@ export class Recording {
   name(file: File, voices: api.Suggested[]): Promise<Saved | null> {
     this.saved?.(null);
     this.stage = Stage.Map;
-    this.title = titleFrom(file.name);
+    this.title = file.name;
     this.date = dayOf(file);
     this.chosen.clear();
     this.suggested.clear();

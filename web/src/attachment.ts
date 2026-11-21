@@ -96,16 +96,14 @@ export const clipOf = (file: File): Clip => ({
   saved: null,
 });
 
-const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
-
 /** What the recording's chip says beside its name, as values (R-0953). */
 export function values(clip: Clip, now: number): string[] {
   if (clip.stage === Stage.Uploading) return [`Uploading ${Math.round(clip.sent * 100)}%`];
   if (clip.stage === Stage.Transcribing) return [`Transcribing ${clock((now - clip.since) / 1000)}`];
   if (clip.stage === Stage.Failed) return ["Could not transcribe"];
   if (clip.stage === Stage.Silent) return ["No speech found"];
-  const length = clip.seconds === null ? [] : [`${Math.max(1, Math.round(clip.seconds / 60))} min`];
-  return [...length, plural(clip.voices.length, "speaker")];
+  const length = clip.seconds === null ? [] : [`Length ${Math.max(1, Math.round(clip.seconds / 60))} min`];
+  return [...length, `Speakers ${clip.voices.length}`];
 }
 
 /** The name a message's attachment goes by in the thread. */
@@ -121,7 +119,7 @@ export function clipChip(clip: Clip, now: number): string {
   return (
     `<button class="chip file" type="button" data-act="name"${open ? "" : " disabled"}>` +
     `${esc(clip.saved?.title ?? clip.file.name)}</button>` +
-    values(clip, now).map((value) => `<span class="att-v">${esc(value)}</span>`).join("") +
+    `<span class="att-v">${esc(values(clip, now).join(" · "))}</span>` +
     (clip.stage === Stage.Failed
       ? act("again", "Try again") + act("remove", "Remove")
       : clip.stage === Stage.Silent
@@ -321,6 +319,11 @@ export class Attachment {
   /** Whether the box holds something to send with the message. */
   has(): boolean {
     return !!this.picked.file || !!this.clip;
+  }
+
+  /** Whether what the box holds is a recording. */
+  recording(): boolean {
+    return !!this.clip;
   }
 
   /** A recording still on its way to being named holds the message back. */

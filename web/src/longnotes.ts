@@ -40,12 +40,12 @@ export class LongNotes {
   }
 
   /** True to send: the words and what is attached fit one part, or the
-   * person chose Start. */
-  async ask(text: string, attached: string): Promise<boolean> {
+   * person chose Start. A recording is priced by its transcript's words. */
+  async ask(text: string, attached: string, recording = false): Promise<boolean> {
     const words = wordCount(text) + wordCount(attached);
     if (partsOf(words, this.at) < 2) return true;
     this.sheet.show(
-      `<div class="cf-t">Long notes</div>` +
+      `<div class="cf-t">${recording ? "Long recording" : "Long notes"}</div>` +
         `<p class="cf-p">${esc(costLine(words, this.at))}</p>` +
         `<div class="cf-btns">` +
         `<button class="cf-go" type="button" data-act="start">Start</button>` +

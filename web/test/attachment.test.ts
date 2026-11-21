@@ -58,7 +58,9 @@ it("says where a recording in the box has got as values, not a sentence", () => 
   Object.assign(clip, { stage: Stage.Transcribing, since: 1000 });
   expect(values(clip, 36_000)).toEqual(["Transcribing 0:35"]);
   Object.assign(clip, { stage: Stage.Named, seconds: 46 * 60 + 10, voices: [{}, {}] });
-  expect(values(clip, 0)).toEqual(["46 min", "2 speakers"]);
+  expect(values(clip, 0)).toEqual(["Length 46 min", "Speakers 2"]);
+  expect(clipChip(clip, 0)).toContain("Length 46 min · Speakers 2");
+  expect(clipChip(clip, 0)).toContain("Talk with Uncle Gerald.m4a");
   clip.stage = Stage.Failed;
   const failed = clipChip(clip, 0);
   expect(failed).toContain("Could not transcribe");
