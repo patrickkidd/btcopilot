@@ -84,8 +84,8 @@ def cut_lines(cut_id: int):
     """The statements of the cut, for the (i)s of the ballot and the pairing
     check: every line the person and the coach said, in order, and nothing any
     coder wrote, numbered as the ballot numbers them. A message stored twice
-    stays twice until Patrick rules on it, so every line a box points at is
-    here (R-0977, R-0975)."""
+    is shown twice, as stored, so every line a box points at is here
+    (R-0977, R-0975, R-0978)."""
     user = coder()
     cut = cut_or_404(cut_id)
     if not reads_ballot(cut, user):

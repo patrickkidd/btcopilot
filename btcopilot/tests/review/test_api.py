@@ -18,7 +18,6 @@ from btcopilot.models import (
     TurnEvent,
 )
 from mock import patch
-from sqlalchemy import event
 
 from btcopilot.review import adapter, divergence, export, ruledraft, snapshot
 from btcopilot.review.adapter import initials
@@ -884,43 +883,54 @@ def ended(turn_id: str, session, end: str) -> None:
         )
 
 
-def test_words_whose_turn_failed_and_were_sent_again_are_listed_once(
+def test_words_whose_turn_failed_and_were_sent_again_are_listed_as_stored(
     coder, session, turns, cut
 ):
-    # R-0946
+    # R-0978
     turns[0].text, turns[0].turn_id = "Add my father", "first"
     turns[1].text, turns[1].turn_id = "Add my father", "again"
     ended("first", session, "failed")
     db.session.commit()
     coding = coder.post("/review/codings", json={"cut_id": cut.id}).json
     thread = coder.get(f"/review/codings/{coding['id']}/thread").json
-    assert [turn["id"] for turn in thread["turns"]] == [turns[1].id]
+    assert [turn["id"] for turn in thread["turns"]] == [turns[0].id, turns[1].id]
 
 
-def test_the_failed_turn_check_reads_no_turn_event_payload(session, turns):
-    # R-0946
-    turns[0].text, turns[0].turn_id = "Add my father", "first"
-    turns[1].text, turns[1].turn_id = "Add my father", "again"
+def test_two_coders_of_one_cut_see_the_same_lines_in_the_same_order(
+    patrick, coder, session, turns, cut
+):
+    # R-0978
+    turns[1].text, turns[1].turn_id = "Add my father", "first"
+    turns[2].text, turns[2].turn_id = "Add my father", "again"
     ended("first", session, "failed")
-    ended("again", session, "done")
+    cut.end_statement_id = turns[3].id
     db.session.commit()
-    sent = []
-    keep = lambda conn, cursor, sql, *rest: sent.append(sql)
-    event.listen(db.engine, "before_cursor_execute", keep)
-    try:
-        shown = adapter.heard(turns[:2])
-    finally:
-        event.remove(db.engine, "before_cursor_execute", keep)
-    assert shown == [turns[1]]
-    read = [sql for sql in sent if "turn_events" in sql]
-    assert len(read) == 1
-    assert "payload" not in read[0]
+    mine = coder.post("/review/codings", json={"cut_id": cut.id}).json
+    db.session.add(
+        Note(
+            coding_id=mine["id"],
+            statement_id=turns[1].id,
+            text="A father",
+            turn_id="scribe-1",
+        )
+    )
+    db.session.commit()
+    theirs = patrick.post("/review/codings", json={"cut_id": cut.id}).json
+    seen = [
+        [
+            (t["id"], t["order"], t["text"])
+            for t in client.get(f"/review/codings/{c['id']}/thread").json["turns"]
+        ]
+        for client, c in ((coder, mine), (patrick, theirs))
+    ]
+    assert seen[0] == seen[1]
+    assert [one[0] for one in seen[0]] == [t.id for t in turns]
 
 
 def test_words_the_coach_answered_and_were_sent_again_are_listed_twice(
     coder, session, turns, cut
 ):
-    # R-0946
+    # R-0978
     coach = Speaker(discussion_id=session.id, name="Coach", type=SpeakerType.Expert)
     db.session.add(coach)
     db.session.flush()
@@ -938,7 +948,7 @@ def test_words_the_coach_answered_and_were_sent_again_are_listed_twice(
 def test_words_sent_again_stay_where_the_coder_already_wrote_from_them(
     coder, session, turns, cut
 ):
-    # R-0946, R-0270
+    # R-0978, R-0270
     turns[0].text, turns[0].turn_id = "Add my father", "first"
     turns[1].text, turns[1].turn_id = "Add my father", "again"
     ended("first", session, "failed")
@@ -961,7 +971,7 @@ def test_words_sent_again_stay_where_the_coder_already_wrote_from_them(
 def test_words_sent_again_stay_when_the_last_agreed_line_is_on_them(
     test_user, coder, session, turns, cut
 ):
-    # R-0946, R-0267
+    # R-0978, R-0267
     turns[1].text, turns[1].turn_id = "Add my father", "first"
     turns[2].text, turns[2].turn_id = "Add my father", "again"
     ended("first", session, "failed")
@@ -1046,7 +1056,7 @@ def test_the_conversation_behind_the_i_is_refused_to_a_coder_not_yet_done(
 def test_the_conversation_behind_the_i_keeps_a_failed_first_copy_and_its_resent_twin(
     patrick, test_user, test_user_2, session, turns, cut
 ):
-    # R-0977, R-0946
+    # R-0977, R-0978
     turns[0].text, turns[0].turn_id = "Add my father", "first"
     turns[1].text, turns[1].turn_id = "Add my father", "again"
     ended("first", session, "failed")
