@@ -317,7 +317,7 @@ describe("a pairing on the vote", () => {
   });
 
   // R-0965
-  it("names a couple event's partner on its card as a shift names whom it is toward", () => {
+  it("writes a couple event's two people as a couple, never as a shift toward someone", () => {
     const record = (id: number, partner: string) =>
       ({ coding_id: id, people: [{ id: 5, name: partner }], pair_bonds: [], events: [] }) as unknown as CodingRecord;
     const item = pairing(6, [
@@ -326,8 +326,9 @@ describe("a pairing on the vote", () => {
     ]);
     const records = new Map([[1, record(1, "Emily")], [2, record(2, "Em")]]);
     const html = opinionCards(pairOpinions(toPairing(item, records)), null, false);
-    expect(html).toContain('<span class="pv-arrow">→</span> <span class="pv-diff">Emily</span>');
-    expect(html).toContain('<span class="pv-arrow">→</span> <span class="pv-diff">Em</span>');
+    expect(html).not.toContain("pv-arrow");
+    expect(html).toContain('<span class="pv-diff">Ada &amp; Emily</span>');
+    expect(html).toContain('<span class="pv-diff">Ada &amp; Em</span>');
   });
 
   // R-0965

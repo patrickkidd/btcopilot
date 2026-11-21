@@ -17,6 +17,7 @@ import { DateCertainty, DatePrecision } from "./certainty";
 import { when as rowsWhen } from "./rows";
 import { dateText } from "./spotlight";
 import {
+  couple,
   fieldsOf,
   isStructure,
   structureName,
@@ -490,20 +491,24 @@ function someone(who: Who, coding: number, ids: unknown[], names: string[]): str
     .join("&");
 }
 
-/** Who an event is toward on its card: a couple event's partner, as the
- * coder's copy names them, or a shift's targets. */
-function towardOf(opinion: Opinion, record: CodingRecord | undefined): [unknown[], string[]] {
+/** A couple event's partner, as the coder's copy names them; none for any
+ * other kind. */
+function partnerOf(opinion: Opinion, record: CodingRecord | undefined): [unknown, string] | null {
   const { spouse } = opinion.item;
   if (!PARTNER_KINDS.includes(text(opinion.item.kind)) || spouse === null || spouse === undefined)
-    return [(opinion.item.relationshipTargets as unknown[] | undefined) ?? [], opinion.toward_names ?? []];
-  return [[spouse], [record?.people.find((one) => one.id === Number(spouse))?.name ?? ""]];
+    return null;
+  return [spouse, record?.people.find((one) => one.id === Number(spouse))?.name ?? ""];
 }
 
+/** A shift is about one person toward others; a couple event is about two
+ * people, written as a couple is (R-0965). */
 function eventEntry(opinion: Opinion, record: CodingRecord | undefined, who: Who): PairEntry {
   const event = opinion.item;
   const coding = opinion.coding_id!;
   const about = event.child ?? event.person;
-  const [toward, names] = towardOf(opinion, record);
+  const own = opinion.person_name ?? "";
+  const partner = about === null || about === undefined ? null : partnerOf(opinion, record);
+  const toward = (event.relationshipTargets as unknown[] | undefined) ?? [];
   const values: PairValue[] = SHIFTS.filter((field) => event[field]).map((field) => ({
     field,
     said: `${field} ${ARROWS[text(event[field])] ?? text(event[field])}`,
@@ -513,6 +518,7 @@ function eventEntry(opinion: Opinion, record: CodingRecord | undefined, who: Who
       field: "relationship",
       said: `relationship · ${text(event.relationship).replaceAll("-", " ")}`,
     });
+  const named = about === null || about === undefined ? own : called(who, coding, about, own);
   return {
     coding_id: opinion.coding_id!,
     item_id: opinion.item_id!,
@@ -521,12 +527,9 @@ function eventEntry(opinion: Opinion, record: CodingRecord | undefined, who: Who
     end: text(event.endDateTime),
     prec: text(event.datePrecision),
     cert: text(event.dateCertainty),
-    who:
-      about === null || about === undefined
-        ? (opinion.person_name ?? "")
-        : called(who, coding, about, opinion.person_name ?? ""),
+    who: partner ? couple(named, called(who, coding, partner[0], partner[1])) : named,
     toward: toward
-      .map((id, at) => called(who, coding, id, names[at] ?? ""))
+      .map((id, at) => called(who, coding, id, opinion.toward_names?.[at] ?? ""))
       .join(", "),
     title: text(event.title),
     desc: text(event.description),
@@ -534,8 +537,12 @@ function eventEntry(opinion: Opinion, record: CodingRecord | undefined, who: Who
     keys: {
       ...(about === null || about === undefined
         ? {}
-        : { who: someone(who, coding, [about], [opinion.person_name ?? ""]) }),
-      ...(toward.length ? { toward: someone(who, coding, toward, names) } : {}),
+        : {
+            who: partner
+              ? someone(who, coding, [about, partner[0]], [own, partner[1]])
+              : someone(who, coding, [about], [own]),
+          }),
+      ...(toward.length ? { toward: someone(who, coding, toward, opinion.toward_names ?? []) } : {}),
     },
     line: opinion.line ?? null,
   };

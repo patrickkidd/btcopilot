@@ -153,4 +153,4 @@ export function structureName(
 
 /** A couple is the same two people whichever the copy names first, so it is
  * always said in one order. */
-const couple = (a: string, b: string): string => [a, b].sort().join(" & ");
+export const couple = (a: string, b: string): string => [a, b].sort().join(" & ");
