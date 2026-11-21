@@ -197,7 +197,7 @@ Every record, with how much is in it.
 
 ### `flask admin diagrams redate`
 
-Re-date the events stored at a stand-in date (1 January 1900, year 1, or 1 January 1970 marked unknown) by rereading the conversation: plan, apply, undo [Oracle: R-0960].
+Re-date the events stored at a stand-in date (1 January 1900, year 1, or 1 January 1970 marked unknown), and on coders' copies the dates the scribe judged itself, by rereading the conversation: plan, apply, undo [Oracle: R-0960, R-0979].
 
 ### `flask admin diagrams redate apply <path>`
 
