@@ -220,23 +220,30 @@ export const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 /** One agent-loop turn. The send is short: it stores the words and hands the
  * turn to the coach, which answers on the turn's own stream. The server puts
  * them in the sitting they belong to. */
-export const say = (diagramId: number | null, statement: string, file: File | null = null) =>
+export const say = (diagramId: number | null, statement: string, attached: File | Heard | null = null) =>
   call<Started & Attached>(
     "POST",
     onDiagram("/chat", diagramId),
-    file ? said(statement, timeZone(), file) : { statement, time_zone: timeZone() },
-    file ? READ_MS : undefined,
+    attached ? said(statement, timeZone(), attached) : { statement, time_zone: timeZone() },
+    attached ? READ_MS : undefined,
   );
 
 /** A message with a file goes as a form. The server checks the file and
  * answers; a text file's words come back with the answer, a PDF or a photo is
  * read on the worker before the coach's turn, and the thread carries the text
- * once it is in. */
-export function said(statement: string, zone: string, file: File): FormData {
+ * once it is in. A recording goes as its transcript and who each speaker is,
+ * and the server writes its text from them as it does a file's (R-0954). */
+export function said(statement: string, zone: string, attached: File | Heard): FormData {
   const form = new FormData();
   form.append("statement", statement);
   form.append("time_zone", zone);
-  form.append("file", file, file.name);
+  if (attached instanceof File) form.append("file", attached, attached.name);
+  else {
+    form.append("transcription", attached.transcription);
+    form.append("voices", JSON.stringify(attached.voices));
+    form.append("title", attached.title);
+    form.append("date", attached.date);
+  }
   return form;
 }
 
@@ -469,26 +476,50 @@ export const setPerson = (diagramId: number, personId: number | null) =>
 export const deleteDiagram = (id: number) => call<void>("DELETE", `/diagrams/${id}`);
 
 /** The audio goes to this server, which sends it on to be transcribed and
- * answers with the id to ask after (R-0348). */
-export async function startTranscription(file: File): Promise<string> {
+ * answers with the id to ask after (R-0348). Only XHR says how far the
+ * upload of a body as large as a recording has got. */
+export function startTranscription(file: File, sent: (fraction: number) => void = () => {}): Promise<string> {
   const form = new FormData();
   form.append("audio", file, file.name);
-  const response = await fetch(`${ROOT}/transcriptions`, {
-    method: "POST",
-    headers: { "X-CSRFToken": csrf() },
-    body: form,
+  const request = new XMLHttpRequest();
+  request.open("POST", `${ROOT}/transcriptions`);
+  request.setRequestHeader("X-CSRFToken", csrf());
+  request.upload.addEventListener("progress", (e) => e.lengthComputable && sent(e.loaded / e.total));
+  return new Promise((done, failed) => {
+    request.addEventListener("load", () => {
+      const fresh = request.getResponseHeader("X-CSRFToken");
+      if (fresh) token = fresh;
+      if (request.status >= 400) failed(new Failed(request.status, "POST /transcriptions", request.responseText));
+      else done((JSON.parse(request.responseText) as { id: string }).id);
+    });
+    request.addEventListener("error", () => failed(new Failed(0, "POST /transcriptions", "no answer")));
+    request.send(form);
   });
-  keepToken(response);
-  if (!response.ok) throw new Error(await response.text());
-  return ((await response.json()) as { id: string }).id;
 }
 
+/** How far a transcript has got; once completed, its turns of talk and how
+ * long the recording runs. */
 export const transcription = (id: string) =>
   call<{
     status: string;
     utterances: Utterance[] | null;
+    audio_seconds: number | null;
     error: string | null;
   }>("GET", `/transcriptions/${id}`);
+
+/** Who a speaker in a recording sent with a message is: a person in the
+ * diagram (one made on Save included), the clinician, or someone the diagram
+ * leaves out, by name. */
+export type Named = { person_id: number } | { clinician: true } | { name: string };
+
+/** A recording as a message carries it: the transcript to read, who each
+ * speaker is, and the title and date it is kept under. */
+export interface Heard {
+  transcription: string;
+  voices: Record<string, Named>;
+  title: string;
+  date: string;
+}
 
 /** Who the app takes a voice to be, from what was said: a person in the
  * diagram, or the clinician when `person_id` is null; the words it rests on,
@@ -500,11 +531,11 @@ export interface Suggestion {
 }
 
 /** A voice, and who it seems to be when something said points to someone. */
-export type Heard = Voice & { suggestion: Suggestion | null };
+export type Suggested = Voice & { suggestion: Suggestion | null };
 
 /** The voices a transcript holds, each with the first thing it said. */
 export const recordingVoices = (utterances: Utterance[]) =>
-  call<Heard[]>("POST", "/recordings/voices", { utterances });
+  call<Suggested[]>("POST", "/recordings/voices", { utterances });
 
 /** The point of no return: the thread exists after this and the coach can read
  * it, so the voices are named before it is called. */

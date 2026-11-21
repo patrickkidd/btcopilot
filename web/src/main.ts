@@ -42,7 +42,8 @@ import { among, family, untold } from "./snapshots";
 import { reopen, type Kept } from "./plays";
 import { dragScroll } from "./drag";
 import { toast } from "./toast";
-import { Attachment } from "./attachment";
+import { Attachment, nameOf } from "./attachment";
+import { Recording } from "./recording";
 import { LongNotes, type Projection } from "./longnotes";
 import { BACK } from "./tokens";
 import { offerHomeScreen, showHomeScreen, homeScreenBadge } from "./homescreen";
@@ -282,7 +283,10 @@ const chat = new Chat($("chat"), $("composer"), {
   },
 });
 
-const attachment = new Attachment($("attach"), $("composer").parentElement!, $("chat-screen"), $("chat"));
+const naming = new Recording($("chat-screen"));
+const attachment = new Attachment($("attach"), $("composer").parentElement!, $("chat-screen"), $("chat"), (file, voices) =>
+  naming.name(file, voices),
+);
 const longNotes = new LongNotes($("chat-screen"), window.BOOTSTRAP.notes);
 
 /** An event or a person carried from its detail card into the message box:
@@ -1120,12 +1124,13 @@ const typing = new Typing($("composer"));
 async function send(): Promise<void> {
   if (!(await typing.free())) return;
   const statement = chat.draft();
-  if (!statement && !attachment.picked.file) return;
+  if (!statement && !attachment.has()) return;
+  if (attachment.waiting()) return toast("The recording is not ready yet");
   // sent while the coach replies, it waits in the box for the reply to end,
   // and never changes the reply under way (R-0636)
   if (inFlight) return chat.keep();
   // notes too long for one part are priced first; a cancel leaves them in the box
-  if (!(await longNotes.ask(statement, attachment.picked.file))) return;
+  if (!(await longNotes.ask(statement, await attachment.text()))) return;
   await questions.sending(statement);
   chat.resetDraft();
   post(statement, attachment.take());
@@ -1157,17 +1162,22 @@ function flying(on: boolean): void {
 
 /** The reader's words go into the thread as theirs and on to the coach, with
  * the file's name on them while the server reads it. */
-function post(statement: string, file: File | null = null): void {
+function post(statement: string, file: File | api.Heard | null = null): void {
   if ((!statement && !file) || inFlight || looking()) return;
   track.tap(Feature.SendMessage);
   const bubble = chat.add(Role.User, statement);
-  if (file) attachment.show(bubble, file.name);
+  if (file) attachment.show(bubble, nameOf(file));
   const lapsed = chat.sent();
   feedback();
   void deliver(statement, file, bubble, lapsed);
 }
 
-async function deliver(statement: string, file: File | null, bubble: HTMLElement, lapsed = false): Promise<void> {
+async function deliver(
+  statement: string,
+  file: File | api.Heard | null,
+  bubble: HTMLElement,
+  lapsed = false,
+): Promise<void> {
   // read before this message is stored, which would count as the last one
   if (lapsed) await settings.refresh();
   const started = await begin(

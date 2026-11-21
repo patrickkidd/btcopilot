@@ -1,4 +1,5 @@
 import * as api from "./api";
+import { AUDIO } from "./attachment";
 import { Part, store } from "./store";
 import { closeX, el, esc } from "./dom";
 import { dragScroll } from "./drag";
@@ -19,13 +20,7 @@ enum Stage {
   Map = "map",
 }
 
-/** iOS greys out every file in the Files picker for "audio/*" alone; the
- * endings let it pick them. */
-const ENDINGS = [
-  ".m4a", ".mp3", ".wav", ".aac", ".flac", ".ogg", ".opus", ".wma", ".amr", ".aif", ".aiff", ".caf", ".qta",
-];
-
-export const ACCEPT = [...ENDINGS, "audio/*"].join(",");
+export const ACCEPT = [...AUDIO, "audio/*"].join(",");
 
 /** Who a voice is: a person in the diagram, a person to add to it on Save,
  * the clinician, or someone the diagram leaves out. */
@@ -70,6 +65,25 @@ export const shown = (choice: Choice, people: Person[]): string => {
 export const ready = (labels: string[], chosen: Map<string, Choice>) =>
   labels.every((label) => chosen.has(label));
 
+/** Who each speaker of a recording sent with a message is. Any mix is
+ * taken, the clinician or not (R-0952); a new person goes in with the id made
+ * for them on Save. */
+export const namedFor = (chosen: Map<string, Choice>, made: Map<string, number>): Record<string, api.Named> =>
+  Object.fromEntries(
+    [...chosen].map(([label, choice]): [string, api.Named] => {
+      if (choice.who === Who.Clinician) return [label, { clinician: true }];
+      if (choice.who === Who.Outside) return [label, { name: choice.name }];
+      return [label, { person_id: choice.who === Who.Person ? choice.id : made.get(label)! }];
+    }),
+  );
+
+/** What a recording in the chat is kept as once its speakers are named. */
+export interface Saved {
+  voices: Record<string, api.Named>;
+  title: string;
+  date: string;
+}
+
 /** What the server is told each voice is. A new person goes in with the id
  * made for them on Save. */
 export const voicesFor = (chosen: Map<string, Choice>, people: Person[], made: Map<string, number>) =>
@@ -86,6 +100,9 @@ export const voicesFor = (chosen: Map<string, Choice>, people: Person[], made: M
 const year = (person: Person) => person.birth?.slice(0, 4) ?? "";
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+/** The day a file was made, as the date field takes it. */
+export const dayOf = (file: File) => new Date(file.lastModified).toISOString().slice(0, 10);
 
 /** The file name without its extension, which is what the session is called
  * until the reader types something else. */
@@ -126,7 +143,10 @@ export class Recording {
 
   private stage = Stage.Warn;
   private utterances: Utterance[] = [];
-  private voices: api.Heard[] = [];
+  private voices: api.Suggested[] = [];
+  /** Set while the sheet names the speakers of a recording in the chat;
+   * answered with what Save keeps, or null once the sheet goes down without. */
+  private saved: ((answer: Saved | null) => void) | null = null;
   private chosen = new Map<string, Choice>();
   /** The voices still showing the app's suggestion, untouched. */
   private suggested = new Set<string>();
@@ -137,7 +157,7 @@ export class Recording {
 
   constructor(
     overlay: HTMLElement,
-    private onMade: (session: Session) => void,
+    private onMade: (session: Session) => void = () => {},
   ) {
     this.scrim.hidden = true;
     this.sheet.hidden = true;
@@ -160,6 +180,7 @@ export class Recording {
       .addEventListener("click", () => this.lower());
     this.make.addEventListener("click", () => {
       if (this.stage === Stage.Warn) this.choose();
+      else if (this.saved) void this.save();
       else void this.create();
     });
     this.body.addEventListener("click", (e) => {
@@ -231,13 +252,57 @@ export class Recording {
       );
       return;
     }
+    this.suggest();
+    this.head.value = `Who is who · ${file.name}`;
+    this.render();
+  }
+
+  private suggest(): void {
     for (const voice of this.voices) {
       if (!voice.suggestion) continue;
       this.chosen.set(voice.label, guessed(voice.suggestion));
       this.suggested.add(voice.label);
     }
-    this.head.value = `Who is who · ${file.name}`;
+  }
+
+  /** A recording put into the chat, transcribed: who each speaker is, and the
+   * date and title it is kept under (R-0951, R-0953). */
+  name(file: File, voices: api.Suggested[]): Promise<Saved | null> {
+    this.saved?.(null);
+    this.stage = Stage.Map;
+    this.title = titleFrom(file.name);
+    this.date = dayOf(file);
+    this.chosen.clear();
+    this.suggested.clear();
+    this.voices = voices;
+    this.suggest();
+    const answer = new Promise<Saved | null>((done) => (this.saved = done));
+    this.head.value = "Who is each speaker";
     this.render();
+    this.raise();
+    return answer;
+  }
+
+  private async save(): Promise<void> {
+    if (!this.title.trim()) {
+      toast("Give the recording a title");
+      return;
+    }
+    const voices = namedFor(this.chosen, await this.made());
+    const answer = this.saved!;
+    this.saved = null;
+    this.lower();
+    answer({ voices, title: this.title.trim(), date: this.date });
+  }
+
+  /** The new people the speakers named, added to the diagram, by speaker. */
+  private async made(): Promise<Map<string, number>> {
+    const made = new Map<string, number>();
+    for (const [label, choice] of this.chosen)
+      if (choice.who === Who.New)
+        made.set(label, (await api.savePerson(null, { name: choice.name, last_name: choice.last || null }, store.id()!)).id);
+    if (made.size) await store.refresh(Part.Record);
+    return made;
   }
 
   private waiting(words: string): void {
@@ -251,7 +316,7 @@ export class Recording {
 
   /** One speaker: the label and first words outside, who they are inside,
    * and the words a suggestion rests on when they are not those first words. */
-  private block(voice: api.Heard): string {
+  private block(voice: api.Suggested): string {
     const choice = this.chosen.get(voice.label);
     const guess = this.suggested.has(voice.label) ? voice.suggestion : null;
     const quoted = guess && !(guess.speaker === voice.label && guess.because === voice.said) ? guess : null;
@@ -274,17 +339,17 @@ export class Recording {
 
   private render(): void {
     this.make.hidden = false;
-    this.make.textContent = "Create session";
+    this.make.textContent = this.saved ? "Save" : "Create session";
     this.body.innerHTML =
       this.voices.map((voice) => this.block(voice)).join("") +
-      `<div class="ghead">Session</div>` +
+      `<div class="ghead">${this.saved ? "Recording" : "Session"}</div>` +
       `<div class="row side"><div class="rmain"><div class="r1 rtitle">Date</div></div>` +
       `<input class="rwhen said" type="date" data-name="date" aria-label="Date" ` +
       `value="${esc(this.date)}"></div>` +
       `<div class="row side"><div class="rmain"><div class="r1 rtitle">Title</div></div>` +
       `<input class="rwhen said" type="text" data-name="title" aria-label="Title" ` +
       `value="${esc(this.title)}"></div>` +
-      `<div class="fs-hint">The clinician's lines become the coach's side of the thread.</div>`;
+      (this.saved ? "" : `<div class="fs-hint">The clinician's lines become the coach's side of the thread.</div>`);
     for (const input of this.body.querySelectorAll<HTMLInputElement>("input"))
       input.addEventListener("input", () => {
         if (input.dataset.name === "date") this.date = input.value;
@@ -395,11 +460,7 @@ export class Recording {
       toast("Give the session a title");
       return;
     }
-    const made = new Map<string, number>();
-    for (const [label, choice] of this.chosen)
-      if (choice.who === Who.New)
-        made.set(label, (await api.savePerson(null, { name: choice.name, last_name: choice.last || null }, store.id()!)).id);
-    if (made.size) await store.refresh(Part.Record);
+    const made = await this.made();
     const session = await api.newRecording(store.id(), {
       utterances: this.utterances,
       voices: voicesFor(this.chosen, this.people(), made),
@@ -423,6 +484,8 @@ export class Recording {
   }
 
   lower(): void {
+    this.saved?.(null);
+    this.saved = null;
     this.scrim.classList.remove("in");
     this.sheet.classList.remove("in");
     this.hiding = window.setTimeout(() => {

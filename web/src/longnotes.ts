@@ -30,10 +30,6 @@ export function costLine(words: number, at: Projection): string {
   );
 }
 
-/** A text file the page can count before it is sent; a PDF or a photo is read
- * on the server and is not priced here. */
-const counted = (file: File) => /\.(txt|md)$/i.test(file.name) || /^text\//.test(file.type);
-
 /** Before notes too long for one part are sent, the person sees what they
  * cost and how long they take, and starts or cancels (R-0897). */
 export class LongNotes {
@@ -43,9 +39,10 @@ export class LongNotes {
     this.sheet = new Sheet(host, "ln");
   }
 
-  /** True to send: the words fit one part, or the person chose Start. */
-  async ask(text: string, file: File | null): Promise<boolean> {
-    const words = wordCount(text) + (file && counted(file) ? wordCount(await file.text()) : 0);
+  /** True to send: the words and what is attached fit one part, or the
+   * person chose Start. */
+  async ask(text: string, attached: string): Promise<boolean> {
+    const words = wordCount(text) + wordCount(attached);
     if (partsOf(words, this.at) < 2) return true;
     this.sheet.show(
       `<div class="cf-t">Long notes</div>` +

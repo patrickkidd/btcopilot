@@ -1300,6 +1300,17 @@ button { font-family: inherit; }
 .field > .attached[hidden] { display: none; }
 .field > .attached .chip { max-width: calc(100% - 44px); cursor: default; }
 .field > .attached .cardx { position: static; flex: none; }
+/* a recording in the box: where it has got, as values beside its name */
+.field > .attached { flex-wrap: wrap; gap: 4px 8px; }
+.field > .attached .chip:disabled { opacity: 1; }
+.att-v { font: 400 12px/1.35 var(--mono); color: var(--faint); white-space: nowrap; }
+.att-act { min-height: 44px; padding: 0 4px; background: none; border: none; font: 500 15px var(--sans); color: var(--data); cursor: pointer; }
+.ap-rows { margin: 0 -16px 8px; }
+.ap-rows .sn-row { width: 100%; border-left: none; border-right: none; border-bottom: none; background: none; color: inherit; font: inherit; text-align: left; }
+/* recording in the app: the running time, and why it stopped early */
+.rc-time { margin: 4px 0 12px; font: 500 40px/1 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.rc-vals { display: flex; flex-direction: column; gap: 6px; margin: 0 0 12px; }
+.rc-v { font: 400 15px/1.35 var(--mono); color: var(--ink); }
 /* The paperclip sits inside the message box at its left edge, so the
    sessions button stays beside the box (R-0090); its 44px target spills over
    the box's hairline rather than making the box taller than 44px. */
