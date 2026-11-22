@@ -101,6 +101,9 @@ What it is for: talking to the coach, which is how everything else in the app ge
 - After the vote the coach's real reply is labelled Coach and the other is folded under it; which model wrote the other is never shown. [built] {R-0636, R-0644}
 - Replies made with Conversation Feedback on are amber, in light and dark mode, and stay amber after a reload with their fold and how each was voted. [built] {R-0673}
 - The circled (i) for the coach's notes is hidden while a vote is open. [built] {R-0646}
+- An empty session shows, where the bubbles will be, a heading and a line or two saying what to type, worded for what the session is — a note asks for the write-up of the session just had, a professional's session asks about the case, a personal session asks who is on your mind — and it goes on the first send. [built] {R-0350}
+- With nothing dated on the record, the picture is one centred sentence, the timeline draws itself as you talk, and the row under it carries no hint. [built] {R-0351}
+- On the wide layout the drawer is pinned open, so the list button under the picture is not shown. [built] {R-0352}
 
 ## The picture at rest
 
@@ -374,7 +377,7 @@ What it is for: your past conversations.
 - A button at the foot starts a new session, and refuses while the current one is still empty. [built]
 - With no sessions at all it says past conversations collect here. [built]
 - The sheet holds only the sessions of the family the app is on; the family is chosen on the account page, never in the sheet, and a personal user never sees the word case at all. [built] {R-0894, R-0347}
-- The buttons at the foot, a professional's upload and new note, are spaced apart. [built] {R-0347}
+- A professional's new note is the one button at the foot; a recording comes in through the paperclip, never here. [built] {R-0347, R-0954}
 - The sheet holds no way to coding or the meeting, and a session row neither opens nor goes on the agenda; those live on the account page, since none of them hangs on the family the app is on. [built] {R-0259, R-0267}
 - Someone else's session is simply not found rather than refused, so the app never confirms a session it will not show you. [built]
 - The history in the review database is kept across code changes rather than reset. [built] {R-0191}
@@ -561,21 +564,20 @@ What it is for: one screen to present your own record from, in the order the Bow
 - Show the last report puts the sheet away and leaves a grey line with the same sentence at the top of the cards; that device does not raise the sheet again until something newer changes. A tap on the grey line raises the sheet again. [built] {R-0827}
 - Refresh the report dims the coach's five cards, still readable, and the grey line says the coach is rewriting them; the other five cards stay as they are. When the coach is done the report is read again and the line is gone; if it fails or is refused, a short message says so and the cards come back as they were. A rewrite the server will not start now, because one is already running or the family has no session yet, says so in a short message. [built] {R-0825}
 
-## Upload a recording (Pro)
+## A recording in the chat
 
-@frame pro#f3 | The sessions sheet gains one button for putting a recording in.
-@frame pro#f4 | After the recording lands you say which voice is the clinician and which is the client, and give the date.
+What it is for: bringing a recorded conversation into the diagram, for anyone who can write to it, the same way a document is attached.
 
-What it is for: getting a recorded session into the app as a conversation.
-
-- Uploading a recording is an item in the sessions sheet, beside starting a new session. [built] {R-0243}
-- Before the file picker, a sheet says that transcribing costs Alaska Family Systems money and to check with patrick@alaskafamilysystems.com first; its one button chooses the recording. [built] {R-0349}
-- An empty session shows, where the bubbles will be, a heading and a line or two saying what to type, worded for what the session is — a note asks for the write-up of the session just had, a professional's session asks about the case, a personal session asks who is on your mind — and it goes on the first send. [built] {R-0350}
-- With nothing dated on the record, the picture is one centred sentence, the timeline draws itself as you talk, and the row under it carries no hint. [built] {R-0351}
-- On the wide layout the drawer is pinned open, so the list button under the picture is not shown. [built] {R-0352}
-- After upload, a sheet asks who each speaker is, and the approved drawing of it stands. [built] {R-0243}
-- Once mapped, the recording reads as a conversation like any other and can be coded. [built] {R-0267}
-- Colleagues' earlier sessions come in through this same path. [drawn]
+- The paperclip opens a drawer titled Attach with two choices: Record a conversation first, then Choose a file. A recording on the phone, in Files, iCloud Drive or saved from Voice Memos, is picked with Choose a file; on a computer it can also be dropped on the chat. There is no other way in. [built] {R-0954, R-0958}
+- Record a conversation records in the app: a drawer shows the time running and one Stop button, and says that recording carries on if the phone locks. The screen is kept awake while it runs. Time lost while the page was hidden is shown as missed. If the microphone is lost or an error stops it, the drawer says so with the time recorded, and Keep or Discard; what was recorded up to then is kept. [built] {R-0955, R-0958}
+- A recording is kept on the device as it is made, each second of sound as it comes, until the server has taken its upload or the person discards or removes it; one is kept at a time. If the device will not store it, recording carries on all the same. [built] {R-0955}
+- If the page reloads, crashes or is closed before then, the next time the chat of a diagram opens the same drawer shows the time recorded, Stopped when the page reloaded, and Keep or Discard; Keep puts it in the message box as Stop would. Opened in another diagram, the drawer also names the diagram it was recorded in. Starting a new recording while one is kept offers the kept one first. [built] {R-0955}
+- The recording then sits in the message box as a chip with its name and its state as values: Uploading with a percentage, Transcribing with the time so far, then Length and Speakers. [built] {R-0953}
+- Once transcribed, a drawer titled "Who is each speaker" opens by itself. Each speaker shows their first words, and the app fills in who it takes them to be where something said points to someone, marked suggested. A speaker can be a person in the diagram, a new person (added to the diagram on Save), the clinician, or someone not in the diagram; any mix is taken, and a recording needs no clinician. The drawer also holds the recording's date, the day the file was made, and its title, the file's name; Save is ready once every speaker is chosen. Going down without Save leaves the chip to tap again. [built] {R-0951, R-0952, R-0953}
+- A message cannot go while its recording is still on its way to being named. [built] {R-0953}
+- A recording too long for one part raises the same drawer as long notes, titled Long recording: the words, the parts, and the dollars, which include what transcribing it cost, and the minutes; Start or Cancel. A short recording goes without it. [built] {R-0954}
+- Once sent, the coach reads the transcript like any attached document: the recording's title is a chip on your message, and a tap on it opens What the coach read with the transcript. [built] {R-0954}
+- A recording that could not be transcribed says so on its chip with Try again and Remove; one with no speech in it says No speech found with Remove. A refused microphone says that recording needs the microphone. [built] {R-0953, R-0958}
 
 ## Coding a conversation
 

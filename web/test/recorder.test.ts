@@ -1,0 +1,51 @@
+import { expect, it } from "vitest";
+import { clock, ENDED, Ended, endedFor, endingFor, kindFor, missedFrom, missedLine, nameFor, optionsFor } from "../src/recorder";
+
+// R-0955
+it("asks for 64,000 bits per second of audio, the kind unchanged", () => {
+  expect(optionsFor("audio/mp4")).toEqual({ mimeType: "audio/mp4", audioBitsPerSecond: 64_000 });
+  expect(optionsFor("")).toEqual({ audioBitsPerSecond: 64_000 });
+});
+
+// R-0955
+it("offers Keep and Discard with the time recorded and why, when the microphone ends early", () => {
+  const drawer = endedFor(125, 0, Ended.Lost);
+  expect(drawer).toContain("Recorded 2:05");
+  expect(drawer).toContain("Stopped when the microphone was lost");
+  expect(drawer).toContain('data-act="keep">Keep<');
+  expect(drawer).toContain('data-act="discard">Discard<');
+  expect(drawer).not.toContain("Missed");
+});
+
+// R-0955
+it("records MP4 where the browser can, else WebM, named by when it started and by its kind", () => {
+  expect(kindFor((kind) => kind === "audio/mp4" || kind === "audio/webm")).toBe("audio/mp4");
+  expect(kindFor((kind) => kind === "audio/webm")).toBe("audio/webm");
+  expect(kindFor(() => false)).toBe("");
+  expect(endingFor("audio/mp4")).toBe("m4a");
+  expect(endingFor("audio/mp4;codecs=opus")).toBe("m4a");
+  expect(endingFor("audio/webm;codecs=opus")).toBe("webm");
+  expect(nameFor(new Date(2026, 10, 2, 15, 4), "audio/mp4")).toBe("Recording 2026-11-02 15.04.m4a");
+});
+
+// R-0955
+it("shows the running time, the time missed while hidden, and why a recording stopped early, as values", () => {
+  expect(clock(0)).toBe("0:00");
+  expect(clock(35.7)).toBe("0:35");
+  expect(clock(12 * 60 + 40)).toBe("12:40");
+  expect(clock(3723)).toBe("1:02:03");
+  expect(missedLine(22.4)).toBe("Missed 0:22 while this screen was hidden");
+  expect(missedFrom([0, 1000, 2000, 3000])).toBe(0);
+  expect(missedFrom([0, 1000, 2100, 25_000, 26_000])).toBeCloseTo(21.9);
+  expect(ENDED[Ended.Lost]).toBe("Stopped when the microphone was lost");
+});
+
+// R-0955
+it("offers a recording cut off by a reload with the time recorded, why, and the diagram it was made in when another is open", () => {
+  const drawer = endedFor(12, 0, Ended.Reloaded);
+  expect(drawer).toContain("Recorded 0:12");
+  expect(drawer).toContain("Stopped when the page reloaded");
+  expect(drawer).toContain('data-act="keep">Keep<');
+  expect(drawer).not.toContain("Recorded in the diagram");
+  expect(endedFor(12, 0, Ended.Reloaded, "Hartley family")).toContain("Recorded in the diagram Hartley family");
+});

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from btcopilot.extensions import db
 from btcopilot.llmutil import (
+    RESPONSE_MODEL,
     Billed,
     Served,
     Spent,
@@ -93,11 +94,29 @@ class Metered:
         schema: dict | None = None,
         limit: int | None = None,
     ):
-        started = self._begin()
-        with self._billed(started):
-            parsed = gemini_structured_sync(
+        return self._parsed(
+            lambda: gemini_structured_sync(
                 prompt, response_format, schema=schema, limit=limit
             )
+        )
+
+    def asked(self, prompt: str, response_format, schema: dict, limit: int):
+        """A structured answer from the response model, the one a file is
+        read on."""
+        return self._parsed(
+            lambda: gemini_structured_sync(
+                prompt,
+                response_format,
+                schema=schema,
+                limit=limit,
+                model=RESPONSE_MODEL,
+            )
+        )
+
+    def _parsed(self, call: Callable):
+        started = self._begin()
+        with self._billed(started):
+            parsed = call()
         self._write(parsed.served, parsed.spent, started, 0)
         return parsed.value
 

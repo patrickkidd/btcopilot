@@ -8,6 +8,15 @@ Read this first, every session. This is the current truth; the derivation lives 
 **append to HISTORY, revise STATE** as part of any work that changes either.
 Ten-minute read by design.
 
+## FD-395 — a recording in the chat (2026-11-21)
+
+Jira FD-395, branch FD-395, draft PR 170. Nothing deployed.
+- **Built.** Page and server for a recording in the chat: the paperclip's drawer offers "Record a conversation" and "Choose a file"; the recording is transcribed with speakers told apart, and a drawer, "Who is each speaker", lets the person say who each is (a person in the diagram, a new person, the clinician, someone not in the diagram), with a suggestion and the words it rests on.
+- The transcript is kept in the statements table's attachment_name and attachment_text columns and the coach reads it as any attached document; no schema change. The old "Upload a recording" button and POST /recordings are gone; recordings are open to every user who may write to the diagram [Oracle: R-0953, R-0954, R-0959].
+- The copy at AssemblyAI is deleted on send, on removal and on failure; failures are Import rows in the observations table and counted on the quality dashboard. On an iPhone audio files can be picked and an in-app recording carries on with the phone locked (24 seconds tried).
+- **Checked** by independent agents on a sandbox made from a copy of production, with the transcription service replaced by a local stand-in and the coach on the local model.
+- **Not yet done:** Patrick's own walk on the real model with a real recording; a full-hour recording on a locked phone; the full test suite and the pre-deploy bar. Decisions: decisions/log.md, 2026-11-21.
+
 ## FD-381 — where it stands (2026-10-15, hand-over to a fresh session)
 
 A fresh Opus session told "FD-381: read doc/STATE.md and take it to production" starts here and needs nothing from the session that wrote this. Jira FD-381, branch FD-381, draft PR 161 (102 commits ahead of master). Goal: the coach holds the Bowen stance on Patrick's hard presenting problem, and the case report shows his case at the app seminar on Friday 2026-10-16. Brainstorm is not ruling: nothing is a ruling until Patrick says to take it forward.

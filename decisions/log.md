@@ -6,6 +6,25 @@ Running record of major decisions. See root CLAUDE.md for logging criteria.
 
 ---
 
+## 2026-11
+
+### 2026-11-21: FD-395: a recording is a document in the chat
+
+**Decisions and reasons:**
+- A recording brought into the chat is kept with the message it was sent in, in the statements table's attachment_name and attachment_text columns, and the coach reads it through the same path as an attached text file: the same instruction, the same split into parts, the same checks against duplicate people and events. No new table, column or enum value, so no migration. [Oracle: R-0954, R-0959]
+- Recordings are open to every user who may write to the diagram; the professional licence check on transcription is gone. [Oracle: R-0953]
+- No clinician is needed in a recording; a speaker is a person in the diagram, a new person, the clinician, or someone not in the diagram. [Oracle: R-0951, R-0952]
+- The old "Upload a recording" button in the sessions drawer, POST /recordings and the code that made a recording session are removed; production held no recording session. The recording kind stays in the session-kind enum so that no migration is needed.
+- The cost warning in front of the old button went with it; the estimate shown before a long recording is sent includes the price of transcribing. R-0349 is superseded by R-0959.
+- Recording in the app is the first choice in the paperclip's drawer. It records with the browser's own recorder (audio/mp4 where supported, else audio/webm) at 64,000 bits per second and keeps the screen awake. On Patrick's iPhone in Safari a recording carried on with the phone locked (24 seconds tried) and on the Home Screen (14 seconds tried); a full hour and the Home Screen icon are not yet tried. [Oracle: R-0955, R-0958]
+- The Apple Shortcut for sending a Voice Memos recording worked in tests and was dropped. [Oracle: R-0958] Safari gives a web app no place in the iPhone's Share list, so from Voice Memos the route is Save to Files, then Choose a file.
+- On an iPhone a file button that allows audio/* alone greys out every audio file; the button lists the audio file endings as well. Seen in the iOS Simulator (26.1 and 27.2) and on Patrick's iPhone. [Oracle: R-0950]
+- Who each speaker is: one model call with structured output suggests a person or the clinician per speaker, with the quoted words it rests on; a suggestion whose words are not in the transcript is dropped. It is written to model_calls under the purpose used for reading attachments. Its prompt is the fragment "speakers"; its eval is btcopilot/tests/live/test_speakers.py, run on the Claude Code subscription.
+- The copy at AssemblyAI is deleted when the message is stored, when a recording is removed or replaced before sending, and when a transcription fails. The recording's import record and these failures are rows of kind Import in the observations table; the quality dashboard's per-day failures panel counts "Recording not transcribed".
+- Evidence pages (private artifacts): the import facts per operating system https://claude.ai/artifact/JV14vr7B3AgzDUyS3GqiAX ; the who-is-who mockup https://claude.ai/artifact/Akf8i59j8y6PD23Qqfzb46 ; the approved storyboards https://claude.ai/artifact/Tymsk7ekor46aVn95HNXFH .
+
+---
+
 ## 2026-10
 
 ### 2026-10-06: FD-374 — monitoring moves off Grafana Cloud to the box's disk and Patrick's laptop

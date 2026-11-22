@@ -1,20 +1,11 @@
-"""Putting a recorded session into the record. The browser sends the audio
-here, this server sends it on to be transcribed and hands the transcript back
-(R-0348), and the reader's answer to who each voice is comes back with it
-(R-0243, R-0267)."""
+"""A recording sent in the chat. The browser sends the audio here, this server
+sends it on to be transcribed and hands the transcript back (R-0348), with a
+suggestion of who each speaker is (R-0951); the message that carries it is
+sent to /chat like a file's (R-0954, R-0959)."""
 
-import datetime
+from flask import abort, jsonify, request
 
-from flask import jsonify, request
-
-from btcopilot import auth, transcription
-from btcopilot.discussions import (
-    create_recording,
-    session_payload,
-    transcript_voices,
-)
-from btcopilot.licence import require_professional
-from btcopilot.models import SpeakerType
+from btcopilot import auth, speakers, transcription
 from btcopilot.routes import bp, writable_diagram
 
 
@@ -22,7 +13,9 @@ from btcopilot.routes import bp, writable_diagram
 def transcription_start():
     """The audio, as the one file of a multipart form. Answers with the id to
     poll; without a key configured it fails where the reader can see it."""
-    require_professional()
+    writable_diagram()
+    if request.content_length and request.content_length > transcription.MAX_BYTES:
+        abort(413, description=transcription.TOO_BIG)
     audio = request.files.get("audio")
     if audio is None:
         raise ValueError("No audio in the upload")
@@ -31,39 +24,27 @@ def transcription_start():
 
 @bp.route("/transcriptions/<transcript_id>")
 def transcription_status(transcript_id: str):
-    require_professional()
-    return jsonify(transcription.status(transcript_id, auth.current_user().id))
+    diagram = writable_diagram()
+    return jsonify(
+        transcription.status(transcript_id, auth.current_user().id, diagram.id)
+    )
+
+
+@bp.route("/transcriptions/<transcript_id>", methods=["DELETE"])
+def transcription_delete(transcript_id: str):
+    """A recording removed or replaced before it was sent: AssemblyAI's copy
+    goes with it."""
+    diagram = writable_diagram()
+    transcription.removed(transcript_id, diagram.id, transcript_id)
+    return "", 204
 
 
 @bp.route("/recordings/voices", methods=["POST"])
 def recording_voices():
-    """What the reader is shown in the who-is-who sheet: each voice in the
-    transcript with the first thing it said."""
-    require_professional()
-    return jsonify(transcript_voices(request.get_json()["utterances"]))
-
-
-@bp.route("/recordings", methods=["POST"])
-def recording_create():
-    """The point of no return: the thread exists after this and the coach can
-    read it, so the voices are named before it is called."""
-    require_professional()
-    body = request.get_json()
-    unknown = set(body) - {"utterances", "voices", "title", "date"}
-    if unknown:
-        raise ValueError(f"Unknown recording field(s): {', '.join(sorted(unknown))}")
-    title = (body.get("title") or "").strip()
-    if not title:
-        raise ValueError("A recording needs a title")
-    voices = {
-        label: {**said, "type": SpeakerType(said["type"])}
-        for label, said in body["voices"].items()
-    }
-    made = create_recording(
-        writable_diagram(),
-        body["utterances"],
-        voices,
-        title,
-        datetime.date.fromisoformat(body["date"]) if body.get("date") else None,
+    """What the person is shown when saying who is who: each voice in the
+    transcript with the first thing it said, and who it seems to be."""
+    return jsonify(
+        speakers.suggested(
+            request.get_json()["utterances"], writable_diagram(), auth.current_user()
+        )
     )
-    return jsonify(session_payload(made)), 201

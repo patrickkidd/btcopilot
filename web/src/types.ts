@@ -536,13 +536,6 @@ export interface Voice {
   said: string;
 }
 
-/** Who a voice turns out to be. The clinician's lines become the coach's side
- * of the thread; the client's become the reader's. */
-export enum VoiceRole {
-  Clinician = "expert",
-  Client = "subject",
-}
-
 /** A session is a chat with the coach, a recording read in, or a note the
  * clinician made about the case after the fact (R-0281). */
 export enum SessionKind {

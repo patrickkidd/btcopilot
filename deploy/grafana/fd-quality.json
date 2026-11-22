@@ -288,6 +288,17 @@
           "rawQuery": true,
           "rawSql": "select $__timeGroupAlias(o.created_at,'1d'), o.kind::text as metric, count(*) as value from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and d.deleted_at is null and not exists (select 1 from model_calls mc where mc.turn_id = o.turn_id and mc.purpose = 'scribe') and u.username not like 'claude-test%' and $__timeFilter(o.created_at) and o.kind::text in ('tool_refused','step_cap','turn_failed','turn_declined','play_refused','play_failed') group by 1, 2 order by 1",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffz1wy7unkdfke"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(o.created_at,'1d'), 'Recording not transcribed' as metric, count(*) as value from observations o join diagrams d on d.id = o.diagram_id join users u on u.id = d.user_id where not d.scratch and d.deleted_at is null and u.username not like 'claude-test%' and $__timeFilter(o.created_at) and o.kind::text = 'import' and o.detail->>'outcome' = 'not transcribed' group by 1, 2 order by 1",
+          "refId": "B"
         }
       ],
       "id": 11

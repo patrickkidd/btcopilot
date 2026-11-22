@@ -191,53 +191,6 @@ test.describe("the sessions sheet", () => {
   });
 });
 
-test.describe("uploading a recording", () => {
-  test.use({ storageState: stateFor("moves") });
-
-  /** Tap the upload button; whether a file picker opened. */
-  const upload = async (page: Page) => {
-    await settle(page);
-    await openSheet(page);
-    // the button shows only for a professional licence, which no fixture holds
-    const button = page.locator("#sessions-sheet .fs-upload");
-    await button.evaluate((b) => ((b as HTMLElement).hidden = false));
-    let picked = false;
-    page.on("filechooser", () => (picked = true));
-    await button.click();
-    await expect(page.locator(".cf-p").first()).toBeVisible();
-    await page.waitForTimeout(300);
-    return picked;
-  };
-
-  // R-0588, R-0589
-  test("the warning has the app's close button in its top-right corner, which closes it as a tap on the scrim does", async ({ page }) => {
-    await settle(page);
-    await closes(page, "#recording-sheet", "#recording-scrim", async () => {
-      await openSheet(page);
-      const button = page.locator("#sessions-sheet .fs-upload");
-      await button.evaluate((b) => ((b as HTMLElement).hidden = false));
-      await button.click();
-      await expect(page.locator("#recording-sheet")).toBeVisible();
-      await page.waitForTimeout(400);
-    });
-  });
-
-  // R-0349
-  test("warns before the file picker opens", async ({ page }) => {
-    expect(await upload(page)).toBe(false);
-  });
-
-  // R-0349
-  test("the warning says it costs Alaska Family Systems money and who to ask", async ({
-    page,
-  }) => {
-    await upload(page);
-    const warning = page.locator(".cf-p");
-    await expect(warning.first()).toContainText("costs Alaska Family Systems money");
-    await expect(warning.last()).toContainText("patrick@alaskafamilysystems.com");
-  });
-});
-
 /** Only Patrick sees a family's sessions listed, twelve of them on this
  * fixture. His search reads what was said in each session, not only its title
  * and summary: a word said only inside one session finds that session, with

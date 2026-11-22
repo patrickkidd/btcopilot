@@ -29,6 +29,11 @@ describe("pricing notes too long for one part", () => {
     );
   });
 
+  // R-0897, R-0954
+  it("adds what transcribing a recording cost to the dollars, so the figure is the whole cost of bringing it in", () => {
+    expect(costLine(4000, AT, 1.27)).toBe("About 4,000 words in 3 parts. Roughly $9.05 and 5 minutes.");
+  });
+
   // R-0897
   it("hands on which part the coach is entering", () => {
     const parts: string[] = [];

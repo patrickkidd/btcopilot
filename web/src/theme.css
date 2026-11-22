@@ -163,7 +163,7 @@ button { font-family: inherit; }
   color: var(--data);
   font: inherit;
 }
-:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
+:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .iacts, .det .foot) {
   display: none;
 }
 
@@ -1298,6 +1298,17 @@ button { font-family: inherit; }
 .field > .attached[hidden] { display: none; }
 .field > .attached .chip { max-width: calc(100% - 44px); cursor: default; }
 .field > .attached .cardx { position: static; flex: none; }
+/* a recording in the box: where it has got, as values beside its name */
+.field > .attached { flex-wrap: wrap; gap: 4px 8px; }
+.field > .attached .chip:disabled { opacity: 1; }
+.att-v { font: 400 12px/1.35 var(--mono); color: var(--faint); white-space: nowrap; }
+.att-act { min-height: 44px; padding: 0 4px; background: none; border: none; font: 500 15px var(--sans); color: var(--data); cursor: pointer; }
+.ap-rows { margin: 0 -16px 8px; }
+.ap-rows .sn-row { width: 100%; border-left: none; border-right: none; border-bottom: none; background: none; color: inherit; font: inherit; text-align: left; }
+/* recording in the app: the running time, and why it stopped early */
+.rc-time { margin: 4px 0 12px; font: 500 40px/1 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.rc-vals { display: flex; flex-direction: column; gap: 6px; margin: 0 0 12px; }
+.rc-v { font: 400 15px/1.35 var(--mono); color: var(--ink); }
 /* The paperclip sits inside the message box at its left edge, so the
    sessions button stays beside the box (R-0090); its 44px target spills over
    the box's hairline rather than making the box taller than 44px. */
@@ -1893,6 +1904,8 @@ button { font-family: inherit; }
 /* the close button stands beside the search field, just under the grabber */
 .fs-sheet > .cardx { top: 22px; }
 .fs-sheet > .cardx + .fs-search { padding-right: 52px; }
+/* a drawer's plain title in place of the search field, beside its close button */
+.rv-head { flex: none; padding: 0 52px 0 16px; border-bottom: 1px solid var(--line); }
 .fs-search input {
   width: 100%;
   height: 44px;
@@ -2415,12 +2428,37 @@ button { font-family: inherit; }
 .sn-alt { display: inline-block; min-height: 44px; margin-top: -4px; padding: 4px 8px 0 0; border: none; background: none; color: var(--data); font: inherit; text-align: left; vertical-align: top; cursor: pointer; }
 .sn-row:has(.sn-alt) { padding-bottom: 0; }
 /* the people to say which one you are, in the import's sheet */
-.fdc-who { max-height: 40dvh; overflow-y: auto; margin: 0 -16px 8px; }
-.fdc-who .sn-row { width: 100%; border-left: none; border-right: none; border-bottom: none; background: none; color: inherit; font: inherit; text-align: left; }
-.fdc-find { padding: 0 0 10px; }
+.fdc-who, .rv-who { max-height: 40dvh; overflow-y: auto; margin: 0 -16px 8px; }
+.fdc-who .sn-row, .rv-who .sn-row { width: 100%; border-left: none; border-right: none; border-bottom: none; background: none; color: inherit; font: inherit; text-align: left; }
+.fdc-find, .rv-find, .rv-in { padding: 0 0 10px; }
+.rv-who { touch-action: pan-y; overscroll-behavior: contain; }
+.fs-sheet.rv > .cardx { top: 2px; }
+.rv-who .sn-t { flex: 1; min-width: 0; }
+.rv-who .sn-s { flex: none; }
+.cf-go:disabled, .fs-new:disabled { opacity: 0.4; cursor: default; }
+/* who each speaker of a recording is: the speaker and their first words above
+   the block, the person a value in a field inside it */
+.rv-voice { padding: 10px 16px 0; }
+.rv-said {
+  padding: 0 4px 6px;
+  font: 400 13px/1.3 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rv-lab { font: 600 13px/1.3 var(--sans); color: var(--ink); }
+.rv-box { padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.rv-field { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.rv-pick { flex: 1; min-width: 0; text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rv-pick.rv-none { color: var(--faint); }
+.rv-pick:focus-visible { border-color: var(--data); }
+.rv-sugg { font: 500 13px/1 var(--mono); color: var(--ask-text); }
+.rv-because { padding: 2px 4px 4px; font: 400 15px/1.35 var(--sans); color: var(--faint); }
+.rv-because q { color: var(--ink); }
 .fdc-cost { color: var(--faint); font-size: 13px; }
 .sn-stack .dropping { outline: 2px dashed var(--data); outline-offset: -6px; }
-.sn-srch input {
+.sn-srch input, .rv-pick {
   width: 100%;
   height: 44px;
   padding: 0 16px;

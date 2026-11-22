@@ -68,7 +68,6 @@ class Feature(enum.StrEnum):
     SessionDelete = "session_delete"
     SessionToAgenda = "session_to_agenda"
     NoteNew = "note_new"
-    UploadOpen = "upload_open"
     TaskOpen = "task_open"
     AgendaOpen = "agenda_open"
     OpenSettings = "open_settings"
