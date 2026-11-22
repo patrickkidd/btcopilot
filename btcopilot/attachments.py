@@ -154,6 +154,17 @@ class File:
         return "\n\n".join(words)
 
 
+class Written:
+    """Words already text when they arrive, kept under a name as a text
+    file's are: a recording's transcript (R-0954, R-0959)."""
+
+    ready = True
+
+    def __init__(self, name: str, text: str):
+        self.name = name
+        self.text = text
+
+
 def read_held(
     turn_id: str,
     name: str,

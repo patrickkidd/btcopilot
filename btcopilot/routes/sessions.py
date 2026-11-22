@@ -35,7 +35,7 @@ from btcopilot.discussions import (
     sync_chat_speakers,
     utc_iso,
 )
-from btcopilot import attachments, chips, clock, toolnames, turns, turnstore
+from btcopilot import attachments, chips, clock, toolnames, transcription, turns, turnstore
 from btcopilot.toolbox import excerpt, said_in, said_with
 from btcopilot.turnlog import TurnEventKind
 
@@ -181,28 +181,37 @@ def _start(
     discussion: Discussion,
     statement: str,
     zone: str | None,
-    attached: attachments.File | None,
+    attached: attachments.File | transcription.Recording | None,
 ):
     """The words are stored and the turn is handed to the worker, which answers
     at its own pace. The page follows it on /turns/<id>/events; nothing waits
-    here, because a turn takes longer than a request may."""
+    here, because a turn takes longer than a request may. A recording is
+    written out as text first, and from there is a text file (R-0954)."""
     require_write_access(discussion.diagram)
+    heard = attached if isinstance(attached, transcription.Recording) else None
+    if heard:
+        attached = heard.read(discussion.diagram, auth.current_user().id)
     sync_chat_speakers(discussion)
     if zone and discussion.user.timezone != zone:
         discussion.user.timezone = zone
     db.session.commit()
     try:
-        return jsonify(turns.start(discussion, statement, zone, attached)), 202
+        started = turns.start(discussion, statement, zone, attached)
     except turns.Busy as busy:
         abort(409, description=str(busy))
+    if heard:
+        heard.done(discussion.diagram_id, started["turn_id"])
+    return jsonify(started), 202
 
 
-def _statement_text() -> tuple[str, str | None, attachments.File | None]:
+def _statement_text() -> (
+    tuple[str, str | None, attachments.File | transcription.Recording | None]
+):
     """The words, the browser's IANA time zone sent beside them, so the
     coach's day is the person's; a zone the server does not know is left out
     and the day is UTC's [Oracle: R-0760]. As a multipart form the words may
     carry one file, checked here before anything is stored or spent
-    [Oracle: R-0830]."""
+    [Oracle: R-0830], or one recording, by its transcript (R-0959)."""
     kind = request.headers.get("Content-Type", "")
     if kind == "application/json":
         body, attached = request.json, None
@@ -211,7 +220,12 @@ def _statement_text() -> tuple[str, str | None, attachments.File | None]:
             abort(413, description=attachments.TOO_BIG)
         body = request.form
         file = request.files.get("file")
-        attached = attachments.File(file.filename, file.read()) if file else None
+        if file:
+            attached = attachments.File(file.filename, file.read())
+        elif "transcription" in body:
+            attached = transcription.Recording(body)
+        else:
+            attached = None
     else:
         abort(
             415,
@@ -288,8 +302,8 @@ def session_index():
 def session_create():
     """A new session belongs to the diagram the app is on, not to whichever one
     happens to be free. A note is a session of its own, which only a
-    professional starts (R-0281); a recording arrives by its own route because
-    it carries a transcript with it."""
+    professional starts (R-0281); a recording is no session of its own, it
+    goes with a message, as a file does (R-0959)."""
     body = request.get_json(silent=True) or {}
     unknown = set(body) - {"kind"}
     if unknown:

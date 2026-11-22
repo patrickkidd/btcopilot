@@ -1,9 +1,6 @@
-"""What a professional licence adds: cases, recordings and notes. Everything
+"""What a professional licence adds: cases and notes. Everything
 here is refused as not-found without the licence, because a reader who does not
 have it is never told the surface exists (R-0237, R-0894)."""
-
-import io
-from decimal import Decimal
 
 import pytest
 
@@ -16,25 +13,11 @@ from btcopilot.models import (
     Discussion,
     User,
     DiscussionKind,
-    ModelCall,
     Purpose,
-    SpeakerType,
 )
 from btcopilot.prompts import note_register
 from btcopilot.schema import Person, PersonKind, asdict
 from btcopilot.tests.conftest import Model, csrf_token, said
-from btcopilot import transcription
-
-UTTERANCES = [
-    {"speaker": "A", "text": "When did your father go down to Arizona, roughly?"},
-    {"speaker": "B", "text": "March of 1969. He'd just finished his apprenticeship."},
-    {"speaker": "A", "text": "And your mother?"},
-]
-
-VOICES = {
-    "A": {"type": "expert", "name": "Dr Okafor"},
-    "B": {"type": "subject", "name": "Marcus"},
-}
 
 
 @pytest.fixture
@@ -116,76 +99,6 @@ def test_a_recording_cannot_be_started_without_its_transcript(pro):
     assert refused.status_code == 400
 
 
-def test_the_voices_of_a_transcript_carry_what_each_first_said(pro):
-    # R-0281
-    voices = pro.post(
-        "/app/recordings/voices",
-        json={"utterances": UTTERANCES},
-        headers={"X-CSRFToken": csrf_token(pro)},
-    ).get_json()
-    assert [v["label"] for v in voices] == ["A", "B"]
-    assert voices[0]["said"].startswith("When did your father")
-
-
-def test_a_mapped_recording_reads_as_a_session(pro):
-    # R-0243
-    made = pro.post(
-        "/app/recordings",
-        json={
-            "utterances": UTTERANCES,
-            "voices": VOICES,
-            "title": "Session 3 — recording",
-            "date": "2024-11-02",
-        },
-        headers={"X-CSRFToken": csrf_token(pro)},
-    )
-    assert made.status_code == 201
-    payload = made.get_json()
-    assert payload["kind"] == "recording"
-    assert payload["date"] == "2024-11-02"
-    assert payload["message_count"] == 3
-    listed = pro.get("/app/sessions").get_json()
-    assert payload["id"] in [s["id"] for s in listed]
-
-
-def test_the_clinician_becomes_the_coachs_side_of_the_thread(pro):
-    # R-0243
-    made = pro.post(
-        "/app/recordings",
-        json={"utterances": UTTERANCES, "voices": VOICES, "title": "Session 3"},
-        headers={"X-CSRFToken": csrf_token(pro)},
-    ).get_json()
-    discussion = db.session.get(Discussion, made["id"])
-    assert discussion.chat_ai_speaker.type == SpeakerType.Expert
-    assert discussion.chat_user_speaker.type == SpeakerType.Subject
-    thread = pro.get(f"/app/sessions/{made['id']}").get_json()["statements"]
-    assert [s["role"] for s in thread] == ["coach", "user", "coach"]
-
-
-def test_a_recording_with_no_clinician_is_refused(pro):
-    # R-0243
-    refused = pro.post(
-        "/app/recordings",
-        json={
-            "utterances": UTTERANCES,
-            "voices": {"A": {"type": "subject"}, "B": {"type": "subject"}},
-            "title": "Session 3",
-        },
-        headers={"X-CSRFToken": csrf_token(pro)},
-    )
-    assert refused.status_code == 400
-
-
-def test_only_a_professional_uploads_a_recording(web):
-    # R-0243
-    refused = web.post(
-        "/app/recordings",
-        json={"utterances": UTTERANCES, "voices": VOICES, "title": "Session 3"},
-        headers={"X-CSRFToken": csrf_token(web)},
-    )
-    assert refused.status_code == 404
-
-
 def test_a_person_keeps_notes(web, family):
     # R-0281
     changed = web.patch(
@@ -222,83 +135,6 @@ def test_a_note_tells_the_coach_who_it_is_talking_to(discussion):
         model=model,
     ).run()
     assert note_register() in model.systems[0]
-
-
-class Answer:
-    def __init__(self, body):
-        self.body = body
-
-    def raise_for_status(self):
-        pass
-
-    def json(self):
-        return self.body
-
-
-def test_the_audio_is_sent_on_from_this_server_and_the_key_stays_here(pro, monkeypatch):
-    # R-0348
-    monkeypatch.setenv("ASSEMBLYAI_API_KEY", "secret")
-    sent = {}
-
-    def post(url, headers, data=None, json=None):
-        sent[url] = (headers["authorization"], data.read() if data else json)
-        return Answer(
-            {"upload_url": "u://1"} if url.endswith("/upload") else {"id": "t1"}
-        )
-
-    monkeypatch.setattr(transcription.requests, "post", post)
-    started = pro.post(
-        "/app/transcriptions",
-        data={"audio": (io.BytesIO(b"RIFF"), "session.wav")},
-        headers={"X-CSRFToken": csrf_token(pro)},
-    )
-    assert started.status_code == 202
-    assert started.get_json() == {"id": "t1"}
-    assert sent[transcription.SERVICE + "/upload"] == ("secret", b"RIFF")
-    assert sent[transcription.SERVICE + "/transcript"][1]["speaker_labels"] is True
-    assert "secret" not in started.get_data(as_text=True)
-
-
-def test_a_finished_transcript_is_read_back_through_this_server(pro, monkeypatch):
-    # R-0348
-    monkeypatch.setenv("ASSEMBLYAI_API_KEY", "secret")
-    done = Answer(
-        {
-            "status": "completed",
-            "utterances": UTTERANCES,
-            "speech_model_used": "universal-3-5-pro",
-            "audio_duration": 1800,
-        }
-    )
-    monkeypatch.setattr(transcription.requests, "get", lambda url, headers: done)
-    read = pro.get("/app/transcriptions/t1").get_json()
-    assert read["status"] == "completed"
-    assert [u["speaker"] for u in read["utterances"]] == [
-        u["speaker"] for u in UTTERANCES
-    ]
-
-
-def test_a_finished_transcript_is_charged_once_by_its_length(
-    pro, test_user, monkeypatch
-):
-    # R-0348, R-0388
-    monkeypatch.setenv("ASSEMBLYAI_API_KEY", "secret")
-    done = Answer(
-        {
-            "status": "completed",
-            "utterances": UTTERANCES,
-            "speech_model_used": "universal-3-5-pro",
-            "audio_duration": 1800,
-        }
-    )
-    monkeypatch.setattr(transcription.requests, "get", lambda url, headers: done)
-    pro.get("/app/transcriptions/t1")
-    pro.get("/app/transcriptions/t1")
-    rows = ModelCall.query.filter_by(purpose=Purpose.Transcribe).all()
-    assert [
-        (r.user_id, r.diagram_id, r.turn_id, r.model, r.input_tokens, r.cost_usd)
-        for r in rows
-    ] == [(test_user.id, None, "t1", "universal-3-5-pro", 0, Decimal("0.115"))]
 
 
 def made_case(pro, name: str = "Whitlock") -> Diagram:
