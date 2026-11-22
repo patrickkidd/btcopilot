@@ -30,9 +30,18 @@ from dataclasses import asdict
 from pathlib import Path
 
 from btcopilot import promptdir
-from btcopilot.coachmodel import MAX_TOKENS, ModelTurn, ToolCall
-from btcopilot.llmutil import Hop, Served
+from btcopilot.coachmodel import MAX_TOKENS, ModelTurn, ToolCall, message_turn
+from btcopilot.llmutil import (
+    NO_ADAPTIVE_THINKING,
+    STRUCTURED_EFFORT,
+    Hop,
+    Parsed,
+    Served,
+    Spent,
+    output_format,
+)
 from btcopilot.quality import Source
+from btcopilot.schema import asdict as plain, from_dict
 
 REPO = Path(__file__).parents[3]
 STORE = REPO / "private" / "replays"
@@ -65,10 +74,28 @@ def request(model, system, messages, tools) -> dict:
     }
 
 
-def request_hash(model, system, messages, tools) -> str:
+def structured_request(prompt, model, schema, limit) -> dict:
+    """A structured call in the shape the subscription answers: one user
+    message, no tools, and the schema its answer must keep."""
+    return {
+        "model": model,
+        "effort": None if model in NO_ADAPTIVE_THINKING else STRUCTURED_EFFORT,
+        "max_tokens": limit,
+        "system": "",
+        "messages": [{"role": "user", "content": prompt}],
+        "tools": [],
+        "schema": output_format(schema)["schema"],
+    }
+
+
+def hashed(asked: dict) -> str:
     return hashlib.sha256(
-        json.dumps(request(model, system, messages, tools), sort_keys=True, default=str).encode()
+        json.dumps(asked, sort_keys=True, default=str).encode()
     ).hexdigest()
+
+
+def request_hash(model, system, messages, tools) -> str:
+    return hashed(request(model, system, messages, tools))
 
 
 def loaded(raw: dict) -> ModelTurn:
@@ -117,34 +144,70 @@ class Replay:
         self.awaiting.clear()
 
     def path(self, model, system, messages, tools) -> Path:
-        request = request_hash(model, system, messages, tools)
+        return self.keyed(request_hash(model, system, messages, tools))
+
+    def keyed(self, request: str) -> Path:
         index = self.seen[request]
         self.seen[request] += 1
         return self.store / f"{request[:32]}-{index}.json"
+
+    def saved(self, path: Path) -> dict | None:
+        if not path.exists() or self.mode is Mode.Record:
+            return None
+        self.replayed += 1
+        raw = json.loads(promptdir.read(path))
+        path.touch()
+        self.subscribed |= Source(raw["source"]) is Source.Subscription
+        return raw
+
+    def dumped(self, path: Path, asked: dict) -> Miss:
+        if self.mode is Mode.Only:
+            return Miss(f"no saved response for this request ({path.name})")
+        self.requests.mkdir(parents=True, exist_ok=True)
+        (self.requests / path.name).write_text(json.dumps(asked, indent=2, default=str))
+        self.awaiting.append(path.name)
+        return Miss(f"awaiting an answer to {self.requests / path.name}")
+
+    def structured(self, real):
+        """`real` is `llmutil.claude_structured`; the result stands in for it.
+        A saved answer is the schema's value as the one text block."""
+
+        async def call(prompt, response_format, model, schema, limit):
+            asked = structured_request(prompt, model, schema, limit)
+            path = self.keyed(hashed(asked))
+            raw = self.saved(path)
+            if raw is not None:
+                value = from_dict(response_format, json.loads(raw["text"]))
+                return Parsed(value, Spent(), Served(raw["served"]["model"]))
+            if self.mode.offline:
+                raise self.dumped(path, asked)
+            parsed = await real(prompt, response_format, model, schema, limit)
+            self.save(
+                path,
+                message_turn(
+                    {
+                        "model": parsed.served.model,
+                        "content": [{"type": "text", "text": json.dumps(plain(parsed.value))}],
+                    }
+                ),
+            )
+            return parsed
+
+        return call
 
     def wrap(self, real):
         """`real` is `CoachModel.turn`; the result stands in for it."""
 
         def turn(model, system, messages, tools, turn_id=""):
             path = self.path(model, system, messages, tools)
-            if path.exists() and self.mode is not Mode.Record:
-                self.replayed += 1
-                raw = json.loads(promptdir.read(path))
-                path.touch()
-                self.subscribed |= Source(raw["source"]) is Source.Subscription
+            raw = self.saved(path)
+            if raw is not None:
                 saved = loaded(raw)
                 if saved.text:
                     yield saved.text
                 return saved
-            if self.mode is Mode.Dump:
-                self.requests.mkdir(parents=True, exist_ok=True)
-                (self.requests / path.name).write_text(
-                    json.dumps(request(model, system, messages, tools), indent=2, default=str)
-                )
-                self.awaiting.append(path.name)
-                raise Miss(f"awaiting an answer to {self.requests / path.name}")
-            if self.mode is Mode.Only:
-                raise Miss(f"no saved response for this request ({path.name})")
+            if self.mode.offline:
+                raise self.dumped(path, request(model, system, messages, tools))
             answered = yield from real(model, system, messages, tools, turn_id)
             self.save(path, answered)
             return answered

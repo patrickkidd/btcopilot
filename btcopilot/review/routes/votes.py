@@ -57,6 +57,18 @@ def vote_put(item_id: int):
     return jsonify(payload(vote))
 
 
+@bp.route("/items/<int:item_id>/vote", methods=["DELETE"])
+def vote_delete(item_id: int):
+    """A second tap on the pick takes the coder's own vote back (R-0965)."""
+    user = coder()
+    item = item_or_404(item_id)
+    if item.cut.vote_opened_at is None or item.cut.ratified_at is not None:
+        raise ValueError("that vote is not open")
+    Vote.query.filter_by(review_item_id=item.id, user_id=user.id).delete()
+    db.session.commit()
+    return "", 204
+
+
 @bp.route("/tallies")
 def tally_index():
     """What the meeting screen reads: the counts per choice, and every vote

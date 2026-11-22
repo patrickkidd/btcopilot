@@ -113,16 +113,22 @@ def open_items(cut: Cut) -> list[Item]:
     ]
 
 
+def unvoted(cut: Cut, user_id: int) -> tuple[int, int]:
+    """How many items of that cut's ballot this coder has not voted on, of how
+    many."""
+    item_ids = [item.id for item in open_items(cut)]
+    if not item_ids:
+        return 0, 0
+    mine = Vote.query.filter(
+        Vote.review_item_id.in_(item_ids), Vote.user_id == user_id
+    ).count()
+    return max(len(item_ids) - mine, 0), len(item_ids)
+
+
 def voted(cut: Cut, user) -> bool:
     """Voted on every item of that cut's ballot, which is what closes a coder
     out of the meeting's work."""
-    item_ids = [item.id for item in open_items(cut)]
-    if not item_ids:
-        return True
-    mine = Vote.query.filter(
-        Vote.review_item_id.in_(item_ids), Vote.user_id == user.id
-    ).count()
-    return mine >= len(item_ids)
+    return unvoted(cut, user.id)[0] == 0
 
 
 def sees_others(cut: Cut, user) -> bool:
@@ -132,6 +138,16 @@ def sees_others(cut: Cut, user) -> bool:
         return True
     mine = my_coding(cut, user)
     return mine is not None and mine.done_at is not None
+
+
+def reads_ballot(cut: Cut, user) -> bool:
+    """The vote's pairings, and the conversation they were written from, are
+    read by a coder whose own coding is done once the vote is open, and by
+    Patrick throughout, who looks the pairings over before he opens it
+    (R-0242, R-0963)."""
+    return sees_others(cut, user) and (
+        cut.vote_opened_at is not None or user.has_role(btcopilot.ROLE_ADMIN)
+    )
 
 
 def session_name(cut: Cut) -> str:

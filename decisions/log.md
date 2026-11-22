@@ -2238,3 +2238,31 @@ An attached file is read inside the send request (20 MB, a PDF 25 pages a call);
 to pass the 120 second web timeout is the known cost, and moving the read to the worker is an
 architecture choice left to Patrick. The case report catch-up runs after the deploy that carries the
 rewrite, with a backup first, a dry run that saves a plan, then apply, and undo by change rows.
+
+## 2026-10-27: FD-389 and FD-390 — given facts in a coding copy, deploys that wait, and an import that keeps what it can
+
+A coding copy starts with the person's name and birth because every account gives them first;
+everything else is coded from the chat, since that is what inter-rater reliability measures
+[Oracle: R-0940]. A deploy waits up to 30 minutes for the worker's turn in flight and cuts only a
+runaway, because a healthy turn takes minutes and none has run away so far [R-0950]; for it,
+migrations only add and run before the worker rolls, and Redis and Postgres stay up. A .fd file
+is checked object by object and failures are reported as a coach message, never the whole file
+refused [R-0947]. The baseline pattern between two people is deferred to FD-392 after Patrick
+judged the drawn options ungrounded [R-0948]. The live stream holding one server thread per open
+page is answered by an event-driven server worker, FD-391, queued.
+
+## 2026-11-21: FD-393 — the coordinator's calls on the date catch-up and the couple event card
+
+Not ruled by Patrick; each is the coordinator's call and can be reversed.
+
+- R-0979 is read to cover the scribe's estimates marked approximate as well as unknown, because the
+  scribe wrote those years itself and the year appears in nobody's words; a year found anywhere in
+  the cut's conversation or the coder's notes is never selected.
+- The two new selection rules skip deleted coding copies, because an abandoned copy is on no ballot;
+  the stand-in-year rule still covers every diagram as before.
+- An event selected as the scribe's own estimate is rewritten only when the reread finds a time in
+  words; otherwise it is left exactly as it is, to keep the change free of side effects.
+- A couple event's card writes its two people with the app's one couple form, not the shift's arrow,
+  because a couple event has no direction.
+- The two events on one person's diagram dated 1 January 1970 and marked approximate are left as
+  they are, because that person said the year 1970 in their conversation.

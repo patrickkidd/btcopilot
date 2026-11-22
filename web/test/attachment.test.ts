@@ -18,9 +18,10 @@ it("keeps one file for the next message, a second pick taking the first one's pl
 
 // R-0828
 it("sends the words, the time zone and the file as one form", () => {
-  const form = said("Here is her letter", "America/Anchorage", pdf());
+  const form = said("Here is her letter", "America/Anchorage", "0f3c9a2e41b84d6a9c5e7f1a2b3c4d5e", pdf());
   expect(form.get("statement")).toBe("Here is her letter");
   expect(form.get("time_zone")).toBe("America/Anchorage");
+  expect(form.get("turn_id")).toBe("0f3c9a2e41b84d6a9c5e7f1a2b3c4d5e");
   expect((form.get("file") as File).name).toBe("Mom's letter.pdf");
 });
 

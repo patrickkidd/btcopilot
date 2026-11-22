@@ -338,6 +338,8 @@ test.describe("an admin's search results", () => {
     expect(owner.x).toBeGreaterThan(name.x + name.width);
     expect(owner.x + owner.width).toBeCloseTo(whole.x + whole.width, 0);
     await find(page);
+    // the person's own diagram carries their name, never "you"
+    await expect(page.locator(".sn-theirs .sn-row", { hasText: "Their family" }).locator(".sn-o")).toHaveText("Someone");
     expect(await ticked(page, ".sn-theirs")).toEqual([]);
     await page.locator(".sn-theirs .sn-row", { hasText: "Their family" }).click();
     await gone(page);

@@ -12,6 +12,7 @@ from btcopilot.tests.repo import REPO
 
 REVISION = REPO / "btcopilot/migrations/versions/1b00000000aa_the_app_from_empty.py"
 CUTS = REPO / "btcopilot/migrations/versions/1b00000000c0_model_call_purpose.py"
+PAIRINGS = REPO / "btcopilot/migrations/versions/1b00000000c7_ballot_pairings.py"
 
 RENAMED = {"diagram_changes", "diagram_interactions"}
 REVIEW = {
@@ -113,3 +114,20 @@ def test_an_admins_leftover_share_on_anothers_diagram_is_removed():
             revision(CUTS).admin_shares_removed()
         kept = conn.execute(sa.text("SELECT id FROM access_rights")).scalars().all()
     assert kept == [2, 3]
+
+
+def test_the_pairing_revision_adds_the_reason_the_confidence_and_the_agent():
+    # R-0962
+    engine = sa.create_engine("sqlite://")
+    with engine.begin() as conn:
+        for sql in (
+            "CREATE TABLE review_cuts (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE review_items (id INTEGER PRIMARY KEY)",
+        ):
+            conn.execute(sa.text(sql))
+        with Operations.context(MigrationContext.configure(conn)):
+            revision(PAIRINGS).upgrade()
+        items = {c["name"] for c in sa.inspect(conn).get_columns("review_items")}
+        cuts = {c["name"] for c in sa.inspect(conn).get_columns("review_cuts")}
+    assert {"pairing_reason", "pairing_confidence"} <= items
+    assert "pairing_agent" in cuts

@@ -39,6 +39,9 @@ class ObservationKind(enum.StrEnum):
     # A desktop file made into a new diagram: how many people, events and
     # pair-bonds it brought, and how many items the record's rules left out.
     Import = "import"
+    # A ballot's pairings that failed the fixed check: an entry in no pairing
+    # or in two, an entry no coding has, or one pairing of mixed kinds.
+    PairingCheck = "pairing_check"
 
 
 class Observation(db.Model, ModelMixin):

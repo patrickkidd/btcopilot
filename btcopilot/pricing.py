@@ -31,6 +31,11 @@ PRICES = {
     "claude-opus-5-5": Price(
         Decimal("4.00"), Decimal("20.00"), Decimal("5.00"), Decimal("0.20")
     ),
+    # The claude-api skill's model table, read 2026-11-16: $8 in, $40 out,
+    # cache reads $0.20; a cache write is 1.25x the input rate, as above.
+    "claude-fable-5-2": Price(
+        Decimal("8.00"), Decimal("40.00"), Decimal("10.00"), Decimal("0.20")
+    ),
     "claude-sonnet-5": Price(
         Decimal("2.00"), Decimal("10.00"), Decimal("2.50"), Decimal("0.20")
     ),

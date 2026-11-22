@@ -58,6 +58,34 @@ we take the stricter number. Nothing ships below these. No exceptions without a 
 - Nothing a person reads names how the code works underneath: no version, step, id, tool, model or call. When a write does not go in, the screen shows what went in and what did not, never the model's or the server's own words. [Oracle: R-0869]
 - The coding task's scribe shows what it entered as rows, the way the chat shows tool calls: one per entry that went in, one muted "not saved" row per entry the diagram refused, and one button per person when it cannot tell which person is meant. [Oracle: R-0883]
 - When the coder types a question, the scribe's brief answer appears beneath it as a row of its own and nothing is entered; everything else the coder types is entered as rows. [Oracle: R-0942]
+- **Structured data is compared as values in fixed places, never as sentences.** When a
+  person compares versions of the same thing (the ballot's opinions), each field sits in
+  the same place in every card with no field name, values are the app's own chips, and
+  only what differs between the versions takes the accent. A card with every field as a
+  labelled coloured chip is too busy. [Oracle: R-0966]
+- A list to pick one of many from (the join list on the look over the pairings) has a
+  heading asking the question, a search that hides and shows rows in place as it is typed
+  in, the ones near the current item first and the rest in a fixed order (by year), each
+  row's values in fixed places. The search is not focused on open, so a phone's keyboard
+  stays down until it is tapped. [Oracle: R-0974]
+- When cards compare versions of one thing, each card carries every place any version
+  filled, in one order, and an unfilled one is an empty chip ("no gender recorded"). A place
+  where versions part ways is accented on all cards, a shared one on none; people match by
+  identity, not spelling; identical cards collapse into one. [Oracle: R-0967]
+- On those cards a person's name is never a difference and never accented: a person is shown on
+  every card by the name most coders gave them (on a tie, the first given), except inside a
+  box holding one coder's several entries (below). [Oracle: R-0968]
+- One box per opinion: a coder's several entries are rows inside it, each under the name that
+  coder gave it, and the box is picked as a whole. [Oracle: R-0970]
+- **States are marks.** Each state gets one mark, one colour and one outline, used for it on
+  every dot, chip and badge that carries it, its word at most inside the mark; a word on its own
+  does not show a state. Prose being cheap to produce is no reason to drop structure. [Oracle: R-0972]
+- Conversation text anywhere in the app uses the chat's bubbles; there is no other style for
+  it. [Oracle: R-0975]
+- Extra context sits behind an (i) that opens an overlay; nothing grows open inline.
+  [Oracle: R-0975]
+- No change raises a screen's word count at rest: marks and structure carry it, reading goes
+  behind the (i). [Oracle: R-0975]
 
 ## Behaviour
 - A control that starts something starts it immediately, not on the next tick of a

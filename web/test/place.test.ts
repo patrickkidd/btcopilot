@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { address, APP, beyond, linked, parse, Place, settled, UNDATED } from "../src/place";
+import { address, APP, beyond, linked, parse, Place, sameSteps, settled, UNDATED } from "../src/place";
 import { Link } from "../src/types";
 
 /** A value for each kind of slot, so every place can be written out. */
@@ -57,6 +57,16 @@ describe("the addresses of the app", () => {
     );
     expect(settled(address(Place.Coach))).toBe(address(Place.Coach));
     expect(settled(address(Place.Notice, 4))).toBe(address(Place.Notices));
+  });
+
+  // R-0055, R-0963
+  it("steps through the pairings of one cut in place, and opening them or another cut is a step back undoes", () => {
+    expect(sameSteps(address(Place.PairingsItem, 9, 41), address(Place.PairingsItem, 9, 44))).toBe(true);
+    expect(sameSteps(address(Place.Pairings, 9), address(Place.PairingsItem, 9, 41))).toBe(true);
+    expect(sameSteps(address(Place.VoteItem, 9, 41), address(Place.VoteItem, 9, 43))).toBe(true);
+    expect(sameSteps(address(Place.PairingsItem, 9, 41), address(Place.PairingsItem, 8, 41))).toBe(false);
+    expect(sameSteps(address(Place.PairingsItem, 9, 41), address(Place.VoteItem, 9, 41))).toBe(false);
+    expect(sameSteps(address(Place.Agenda), address(Place.PairingsItem, 9, 41))).toBe(false);
   });
 
   // R-0055

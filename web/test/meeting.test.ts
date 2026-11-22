@@ -20,6 +20,7 @@ const item = (id: number, status: ItemStatus, kept?: number): BallotItem => ({
   not_coded: 0,
   people: [],
   line: null,
+  lines: 4,
   kept_coding_id: kept ?? null,
 });
 
@@ -78,7 +79,7 @@ describe("choiceOf", () => {
 describe("a quoted line in the meeting", () => {
   // R-0072, R-0270
   it("draws a chip the client sent back as one, never as brackets", () => {
-    const line = { statement_id: 9, who: "Client", text: "It was [[event:7|Dad left]] that year." };
+    const line = { statement_id: 9, who: "Client", text: "It was [[event:7|Dad left]] that year.", number: 1 };
     const html = versionLine({ item: {}, line }, false);
     expect(html).not.toContain("[[");
     expect(html).toContain(">Dad left</button> that year.&rdquo;");

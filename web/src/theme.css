@@ -163,7 +163,7 @@ button { font-family: inherit; }
   color: var(--data);
   font: inherit;
 }
-:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
+:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot, #cap-play, #cap-chip, .cf-go[data-act="refresh"], .cf-can) {
   display: none;
 }
 
@@ -249,7 +249,8 @@ button { font-family: inherit; }
 .pl-btn svg { display: block; }
 /* the about page: words, at the height they need, clear of its close button on
    the right and of its book, which stands in the bottom corner, below */
-.ss.about { padding: 4px 52px calc(44px + var(--corner)) 16px; box-sizing: border-box; }
+:root { --ab-side: 16px; }
+.ss.about { padding: 4px 52px calc(44px + var(--corner)) var(--ab-side); box-sizing: border-box; }
 /* The about page: a card over the chat, from the top of the
    picture down, on ground of its own (R-0230), so opening one resizes nothing
    and the bubbles stay where they are under it (R-0460). */
@@ -273,6 +274,8 @@ button { font-family: inherit; }
 .ab-list li.on .ab-what { color: var(--data); font-weight: 500; }
 .ab-dot.on { filter: drop-shadow(0 0 1.5px var(--move)) drop-shadow(0 0 1px var(--move)); }
 .ab-yr { flex: none; width: 44px; color: var(--data); }
+/* each row's event mark, the drawing's own, in one column left of the year (R-0955) */
+.ss.about svg.ab-mark { position: static; flex: none; align-self: flex-start; margin-top: 1px; width: 16px; height: 16px; overflow: visible; }
 .ab-what { color: var(--ink); }
 /* the cluster's drawing: dots by date, a line at each event they cluster around, the years at the ends */
 .ss.about svg.ab-draw { position: static; width: 100%; height: auto; margin: 4px 0 2px; overflow: visible; }
@@ -863,7 +866,7 @@ button { font-family: inherit; }
    thin outline in its own colour and nothing filled in, 26 tall in the middle
    of the 44 band. What answers the thumb is the whole band, the way the chat
    chip already grows its own target. */
-.caption .tok {
+.caption .tok, .tok.mark {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -3309,8 +3312,112 @@ button.qwhen:active { background: var(--tint); border-radius: 8px; }
 .tl .d-ok { fill: var(--data); }
 .tl .d-no { fill: var(--ask); }
 .tl .d-on { fill: var(--move); }
+/* How sure a pairing is, one colour per state wherever it shows: its dot, its
+ * chip on the card and in the join list, the strip's "N unsure" badge (R-0972).
+ * The dot on screen keeps its state's fill inside the green ring of "now". */
+.c-unsure { --mark: var(--ask); --mark-text: var(--ask-text); }
+.c-likely { --mark: var(--faint); --mark-text: var(--faint); }
+.c-sure { --mark: var(--data); --mark-text: var(--data); }
+.tl .mark { fill: var(--mark); }
+.tl .mark.d-on { fill: var(--mark); stroke: var(--move); stroke-width: 2.5; }
+.tok.mark { color: var(--mark-text); border-color: var(--mark); }
+span.tok.mark { cursor: inherit; }
+.pv-ask { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pv-why .pv-label { padding-top: 0; }
+.pv-row .rsub { display: flex; align-items: center; gap: 8px; }
 .tl .d-n { font: 400 12px var(--mono); fill: var(--ask-text); }
 .bl-sheet { height: round(down, 88%, 1px); }
+.bl-sheet.pv-split { height: auto; }
+.pv-split .cf-t, .pv-split .pv-label { padding: 0 16px; }
+/* The vote by pairing: each opinion is one coder's whole set of entries for a
+ * thing said, read top to bottom, position carrying the meaning (R-0965, R-0966).
+ * Only a value the opinions part ways on takes the accent; a shared one is quiet. */
+.caption.pv-wrap { flex-wrap: wrap; height: auto; min-height: 44px; overflow-x: visible; padding-block: 8px; row-gap: 6px; }
+:root { --pv-bar-h: 61px; }
+.pv-bar { flex: none; display: flex; align-items: center; gap: 8px; min-height: calc(var(--pv-bar-h) + env(safe-area-inset-bottom)); padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--panel); }
+/* On the pairing check and the vote the home-screen card stands above the
+   bar, never over its buttons. */
+body:has(#ballot-screen:not([hidden])) .hs-scrim { padding-bottom: calc(16px + var(--pv-bar-h) + env(safe-area-inset-bottom)); }
+.pv-bar:empty { display: none; }
+.pv-bar .btn { flex: 1 1 0; min-width: 0; padding: 0 8px; }
+.pv-card { padding: 10px; gap: 8px; margin: 12px 12px 8px; }
+.pv-ops { display: flex; flex-direction: column; gap: 2px; }
+.pv-label { font: 400 12px/16px var(--mono); color: var(--faint); padding-top: 4px; }
+.pv-ops .opinion.pv + .pv-label { padding-top: 6px; }
+.opinion.pv { grid-template-columns: minmax(0, 1fr); align-items: start; gap: 4px; padding: 6px 9px; min-height: 0; font: 400 13px/18px var(--mono); }
+.pv-entry { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.opinion.pv.many { padding: 0; gap: 0; overflow: hidden; }
+.pv-many { padding: 6px 9px 0; color: var(--faint); }
+.opinion.pv.many .pv-entry { padding: 6px 9px; }
+.opinion.pv.many .pv-entry + .pv-entry { border-top: 1px solid var(--line); }
+.opinion.pv.many .pv-words { padding: 0 9px 6px; }
+.pv-same { color: var(--faint); }
+.pv-diff { color: var(--data); font-weight: 600; }
+.pv-words { font: 400 13px/18px var(--sans); color: var(--faint); overflow-wrap: anywhere; }
+.pv-words.clip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.opinion.pv.on .pv-words { color: var(--faint); }
+.pv-l1 { display: flex; justify-content: space-between; gap: 8px; font: 400 13px/18px var(--mono); }
+.pv-tag { font: 500 11px/18px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.pv-l2 { font: 400 14px/20px var(--sans); color: var(--ink); overflow-wrap: anywhere; }
+.pv-arrow { color: var(--faint); }
+.pv-l3 { display: flex; flex-wrap: wrap; gap: 4px; }
+.pv-l2 .chip, .pv-l3 .chip { margin: 0; cursor: inherit; }
+.pv-l2 .chip::before, .pv-l3 .chip::before { content: none; }
+.pv-l2 .chip.pv-same, .pv-l3 .chip.pv-same { color: var(--faint); border-color: var(--line); }
+.quote.clip .qt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* The (i) on a pairing's passage and beside a box's "opinion N": the coach's
+   notes mark (.bub > .info), 16px in a 44px target, opening the conversation
+   (R-0975, R-0977). */
+:is(.ctx-is, .quote) > .info {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border: none;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+}
+:is(.ctx-is, .quote) > .info svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; }
+:is(.ctx-is, .quote) > .info:active { color: var(--data-press); }
+/* the passage's sits in its top-right corner, level with its first row; the
+   words stop where its target begins */
+.quote { position: relative; }
+.quote > .info { position: absolute; top: 0; right: 0; padding: 0 10px 9.8px 0; }
+.quote:has(> .info) > .qt { padding-right: 34px; }
+/* a box's sits at the right end of its "opinion N" label, outside the box: the
+   label keeps its height and its place 3px over its box, and the space above
+   it is opened so the 44px target stands 8px clear of the box above and of its
+   own; several stand side by side, 8px apart */
+.pv-label.ctx-row { position: relative; }
+.pv-ops > .pv-label.ctx-row, .pv-ops .opinion.pv + .pv-label.ctx-row { padding-top: 40px; }
+.ctx-is { position: absolute; right: 0; bottom: 6px; display: flex; gap: 8px; }
+.ctx-is > .info { align-items: flex-end; padding: 0 9px 0 0; }
+/* The conversation's card, given the screen's height under the strip's name;
+   its holder is a .view, so the card is the about page's own (.view .card);
+   its head holds still while the conversation under it scrolls. */
+.view.ctx-clip { position: absolute; left: 0; right: 0; overflow: hidden; z-index: 6; pointer-events: none; transition: none; }
+.ctx-clip > .card { display: flex; flex-direction: column; overflow: hidden; pointer-events: auto; }
+.ctx-head { position: relative; flex: none; padding: 16px 12px 10px var(--ab-side); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.ctx-box .opinion { cursor: default; }
+.pv-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; min-height: 44px; padding: 8px 16px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); text-align: left; cursor: pointer; }
+.pv-row .rtitle { font: 400 15px/1.3 var(--sans); }
+.pv-row .rsub { font: 400 13px var(--mono); color: var(--faint); }
+/* The join list: a heading and the search above the rows, each row's values
+ * in fixed places, the year column one width down the list (R-0966, R-0974). */
+.pv-jtop { flex: none; }
+.pv-jtop .cf-t { padding: 0 16px; }
+.pv-join [data-section] > .pv-label { padding: 12px 16px 4px; }
+.pv-row.pv-jrow { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 2px; align-items: center; }
+.pv-jy { grid-row: 1 / span 2; align-self: start; font: 400 13px/20px var(--mono); color: var(--faint); font-variant-numeric: tabular-nums; }
+.pv-jl { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+/* the kind in a column as wide as the longest, "separated", so who starts at
+   one place on every row; who and toward wrap rather than cut */
+.pv-jl .pv-tag { flex: none; width: calc(9ch + 0.72em); overflow: hidden; color: var(--faint); }
+.pv-jw { min-width: 0; font: 400 14px/20px var(--sans); overflow-wrap: anywhere; }
+.pv-jrow > .tok { justify-self: end; }
+.pv-jt { grid-column: 2 / span 2; font: 400 13px/18px var(--sans); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Tapping the meeting date row opens the phone's own date picker: the field
  * covers the whole row and is not drawn, so the row reads as any other. */

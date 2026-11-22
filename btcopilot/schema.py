@@ -390,6 +390,8 @@ class Event:
     dateTime: str | None = None
     endDateTime: str | None = None
     dateCertainty: DateCertainty = DateCertainty.Certain
+    # The person's or coder's own words about when, verbatim [Oracle: R-0957]
+    dateEvidence: str | None = None
     # None on an event written before precision was kept: read as the day
     datePrecision: DatePrecision | None = None
     symptom: VariableShift | None = None

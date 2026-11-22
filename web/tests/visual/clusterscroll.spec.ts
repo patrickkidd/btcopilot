@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "./fixtures";
-import { shell, stateFor } from "./setup";
+import { boxOf, shell, stateFor } from "./setup";
 
 /** Clusters come in from the worker while the person is looking: the
  * timeline is drawn again where it stands, never slid away from where the
@@ -152,3 +152,82 @@ for (const [name, where, view] of [
     await staysSlid(page, view);
   });
 }
+
+/** The first of the line's targets of this kind wholly in sight. */
+async function seen(page: Page, target: string) {
+  const line = await boxOf(page.locator("#view .ss-scroll"));
+  for (const hit of await page.locator(`#view .ss-hit[data-target="${target}"]`).all()) {
+    const box = await boxOf(hit);
+    if (box.x >= line.x && box.x + box.width <= line.x + line.width) return box;
+  }
+  throw new Error(`no ${target} wholly in sight`);
+}
+
+/** A finger on a point of the line, held as a tap holds, and lifted. */
+async function press(page: Page, x: number, y: number): Promise<void> {
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.waitForTimeout(120);
+  await page.mouse.up();
+  await page.waitForTimeout(800);
+}
+
+type Box = { x: number; y: number; width: number; height: number };
+
+const centre = (box: Box) => [box.x + box.width / 2, box.y + box.height / 2] as const;
+
+/** The middle of the part of a target the line shows. */
+const shown = (box: Box, line: Box) =>
+  [(Math.max(box.x, line.x) + Math.min(box.x + box.width, line.x + line.width)) / 2, box.y + box.height / 2] as const;
+
+const lastPill = (page: Page) => boxOf(page.locator('#view .ss-hit[data-target="cluster"]').last());
+
+// R-0953
+test("a tap on the cluster the line shows after the page loads leaves the line where it rests", async ({ page }) => {
+  await page.goto("/app/");
+  const scroll = page.locator("#view .ss-scroll");
+  await expect(scroll).toBeVisible();
+  await page.waitForTimeout(500);
+  const before = await at(page, "#view");
+  expect(before.end).toBeGreaterThan(0);
+  await press(page, ...shown(await lastPill(page), await boxOf(scroll)));
+  expect((await at(page, "#view")).left).toBe(before.left);
+});
+
+test.describe("a tap on an event in sight", () => {
+  test.use({ storageState: stateFor("whitlock") });
+
+  // R-0953
+  test("leaves the line where it stands, a little short of a resting place", async ({ page }) => {
+    await page.goto("/app/");
+    const scroll = page.locator("#view .ss-scroll");
+    await expect(scroll).toBeVisible();
+    await page.waitForTimeout(500);
+    // where a swipe or a redraw can leave it, near enough a resting place for
+    // the browser to slide it there were snapping back on
+    const before = await scroll.evaluate((s) => (s.scrollLeft = s.scrollWidth - s.clientWidth - 14));
+    await page.waitForTimeout(500);
+    for (let i = 0; i < 2; i++) {
+      await press(page, ...centre(await seen(page, "zone")));
+      expect((await at(page, "#view")).left).toBe(before);
+    }
+  });
+});
+
+// R-0953
+test("a tap on a cluster partly out of sight brings it into view", async ({ page }) => {
+  await page.goto("/app/");
+  const scroll = page.locator("#view .ss-scroll");
+  await expect(scroll).toBeVisible();
+  await page.waitForTimeout(500);
+  await scroll.evaluate((s) => (s.scrollLeft = 0));
+  await page.waitForTimeout(500);
+  const line = await boxOf(scroll);
+  const pill = await lastPill(page);
+  expect(pill.x + pill.width).toBeGreaterThan(line.x + line.width);
+  const start = pill.x - line.x;
+  await press(page, ...shown(pill, line));
+  const after = (await at(page, "#view")).left;
+  expect(after).toBeGreaterThan(0);
+  expect(after).toBeLessThanOrEqual(start);
+});

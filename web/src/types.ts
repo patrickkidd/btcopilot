@@ -134,6 +134,8 @@ export interface TimelineEvent {
   endDateTime: string | null;
   dateCertainty: string | null;
   datePrecision: string | null;
+  /** The person's own words about when, verbatim; null when nothing was said (R-0957). */
+  dateEvidence?: string | null;
   kind: string | null;
   /** The few words a noted event or a shift is shown by (R-0681). */
   title: string | null;
@@ -997,6 +999,32 @@ export interface Cut {
     first_pass?: Agreement | null;
     ratified?: Agreement | null;
   } | null;
+  /** Where the ballot's pairings stand: built by a model call, looked over by
+   * Patrick, then opened (R-0961, R-0963). */
+  ballot: BallotState;
+  pairing_agent: { model: string; prompt: string } | null;
+}
+
+export enum BallotState {
+  None = "none",
+  Building = "building",
+  Built = "built",
+  Failed = "failed",
+  Open = "open",
+}
+
+/** How sure the pairing call was that a pairing's entries are one thing said;
+ * Patrick looks at the unsure ones first (R-0963). */
+export enum Confidence {
+  Unsure = "unsure",
+  Likely = "likely",
+  Sure = "sure",
+}
+
+/** One coder's entry in a pairing, which is what a join or a split moves. */
+export interface Entry {
+  coding_id: number;
+  item_id: number | string;
 }
 
 export enum CoderState {
@@ -1070,6 +1098,18 @@ export interface TranscriptLine {
   statement_id: number;
   who: string;
   text: string;
+  /** Its place among the cut's own lines, from 1, or null outside the cut;
+   * the cut's statement ids skip (R-0974). */
+  number: number | null;
+}
+
+/** A cut's conversation behind the (i) on the vote and on Patrick's look over
+ * the pairings: only what the person and the coach said, never anything a
+ * coder wrote (R-0977). */
+export interface CutLines {
+  /** How many lines the cut holds, which a line's number is out of. */
+  count: number;
+  lines: { id: number; number: number; who: string; client: boolean; text: string }[];
 }
 
 /** One coder's reading of one item, without their name (R-0252). */
@@ -1083,6 +1123,8 @@ export interface Opinion {
   line?: TranscriptLine | null;
   /** The person this opinion is about, named on the record it was written on. */
   person_name?: string | null;
+  /** The names of its relationship targets in that coder's copy. */
+  toward_names?: string[];
   /** Who wrote this opinion, which appears at the meeting and nowhere before it
    * (R-0252). */
   coder?: string;
@@ -1125,6 +1167,8 @@ export interface BallotItem {
   /** The first version's transcript line, which an event shows for the whole
    * item. A person or a bond shows one line per version instead. */
   line: TranscriptLine | null;
+  /** How many lines the cut holds (R-0974). */
+  lines: number;
   /** The matcher could not tell which person of another coding this is, so the
    * room decides who is who before anything else about them (R-0326). */
   ambiguous?: boolean;
@@ -1133,6 +1177,16 @@ export interface BallotItem {
   /** Which coding's version the room kept, so the kept row lights again on
    * every reading of a decided item (R-0339). */
   kept_coding_id?: number | null;
+  /** Patrick's alone, before the vote opens (R-0961). */
+  pairing_reason?: string | null;
+  pairing_confidence?: Confidence | null;
+}
+
+/** What a join or a split answers: the pairings it changed and the ones it
+ * emptied. */
+export interface Repaired {
+  items: BallotItem[];
+  deleted: number[];
 }
 
 export enum PickChoice {

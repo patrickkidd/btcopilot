@@ -11,6 +11,7 @@ from btcopilot.models import User
 from btcopilot.review import divergence, export, ruledraft, snapshot
 from btcopilot.review.models import Cut, Item, ReviewStatus, Rule, RuleSource
 from btcopilot.tests.review.conftest import coded, person, shift
+from btcopilot.tests.review.test_pairing import open_vote
 
 COACH = {"model": "claude-test", "prompt_version": 3}
 
@@ -46,10 +47,6 @@ def three_readings(test_user, test_user_2, coach_user, cut):
         },
         agent=COACH,
     )
-
-
-def open_vote(patrick, cut):
-    patrick.patch(f"/review/cuts/{cut.id}", json={"vote_opened_at": True})
 
 
 def decide_all(patrick, cut, choice="keep"):
@@ -312,9 +309,9 @@ def test_where_the_coach_differed_is_written_once_at_ratification(
         (row["label"], row["room"], row["coach"]) for row in result["differed"]
     ] == [
         (
-            "Ann · Father left · Jan 2022",
-            "not an item at all",
-            "2022-01-01 · shift · father left · symptom: down",
+            "Ann · Father left · Jun 2021",
+            "2021-06-01 · symptom: up",
+            "2022-01-01 · symptom: down",
         )
     ]
 

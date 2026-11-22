@@ -8,7 +8,49 @@ Read this first, every session. This is the current truth; the derivation lives 
 **append to HISTORY, revise STATE** as part of any work that changes either.
 Ten-minute read by design.
 
-## FD-381 — where it stands (2026-10-15, hand-over to a fresh session)
+## Production now (revised 2026-10-27, after FD-389 and FD-390)
+
+Production runs FD-390's tip fd41ff7c, deployed 01:33 UTC 2026-10-28; PRs 166 (FD-389) and 167
+(FD-390) are merged. The deploy lock still names FD-390 until Patrick names the session that
+takes it. What changed in these two tickets, per topic in [TOPICS.md](TOPICS.md):
+
+- **Coding a cut (T-3).** The coding guide's concept pages open inside the app with back
+  [Oracle: R-0265, R-0541, R-0567], confidential entries shown, maintainers' lines cut [R-0939];
+  the coding copy starts with the person's name and birth [R-0940]; the scribe hears earlier
+  statements with what they produced [R-0941], answers questions as a row [R-0942], dates ages
+  from the birth or leaves the event undated [R-0943], and offers the bug report sheet [R-0946];
+  the task card opens once per cut [R-0944]; the coding screen opens past the last coded line
+  [R-0945] and lists each stored message as stored, so a message stored twice shows twice, the coding screen included [R-0978, superseding R-0946's listing clause]; keyboard-up layout K1 on a phone [R-0949].
+  `flask admin review codings reset` clears a coder's unsubmitted coding of a cut [R-0938].
+- **Sending (T-1).** One send path reads the message box only after the phone's keyboard has
+  handed over its words (at most 300 ms), so dictation never leaves words behind.
+- **Deploys (T-11).** A deploy waits up to 30 minutes for the worker's turn in flight and stops
+  only a runaway [R-0950]; migrations only add and run before the worker rolls; Redis and
+  Postgres are not restarted; a turn whose worker died ends as failed and can be tried again.
+- **The .fd import (T-4).** Checked object by object; what fails is listed in a coach message
+  before the person can post [R-0947].
+- **Queued:** FD-391, an event-driven server worker (today the live stream holds one server
+  thread per open page). **Deferred:** FD-392, the baseline pattern between two people
+  (T-21; R-0948 is on hold as drawn).
+
+## FD-393 — on the branch, not released (2026-11-21)
+
+No release has run from FD-393; another branch holds the deploy lock.
+
+- **Date catch-up** (`flask admin diagrams redate`). In coding copies that are not deleted it also
+  re-dates events dated before the birth of the person they are about and the scribe's own date
+  estimates marked unknown or approximate. A year a coder or the person said is never selected; an
+  estimate is rewritten only when the reread finds a time in words [R-0979].
+- **The ballot.** A couple event's opinion card names both people, written as a couple [R-0965].
+- **Checked** on a copy of production taken 2026-11-21: the catch-up wrote 56 events (31 stand-in
+  years, 25 in the four finished coding copies of the first cut); an independent comparison of every
+  diagram before and after found only those events changed, and only in their date fields; the
+  first cut's ballot built from that copy has 109 pairings.
+- **Open.** Patrick's walk of the look over the pairings and of the vote on that copy; the open
+  questions about the ballot screens; before any release, the 182 votes already cast on the first
+  cut on production.
+
+## FD-381 — hand-over of 2026-10-15 (merged as PR 161; kept for reference)
 
 A fresh Opus session told "FD-381: read doc/STATE.md and take it to production" starts here and needs nothing from the session that wrote this. Jira FD-381, branch FD-381, draft PR 161 (102 commits ahead of master). Goal: the coach holds the Bowen stance on Patrick's hard presenting problem, and the case report shows his case at the app seminar on Friday 2026-10-16. Brainstorm is not ruling: nothing is a ruling until Patrick says to take it forward.
 

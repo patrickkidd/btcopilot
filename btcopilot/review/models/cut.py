@@ -28,6 +28,9 @@ class Cut(db.Model, ModelMixin):
     #: Where the coach read this cut differently from the room, written once at
     #: ratification because it costs a model call to say why (R-0254).
     audit = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
+    #: The model and prompt version that paired the ballot, and whether that
+    #: job is building, built or failed (R-0962).
+    pairing_agent = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
 
     codings = relationship(
         "Coding", back_populates="cut", cascade="all, delete-orphan"

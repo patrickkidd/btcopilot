@@ -139,7 +139,7 @@ def flashlite(*answers: ClusterListResponse):
     one for each group, made up when the record holds none."""
     script = list(answers)
 
-    def answer(prompt, response_format, large=False, schema=None, limit=None):
+    def answer(prompt, response_format, large=False, model=None, schema=None, limit=None):
         said = script.pop(0)
         fields = schema["properties"]["clusters"]["items"]["properties"]
         for n, group in enumerate(said.clusters):
@@ -831,7 +831,7 @@ def asked_with(cluster_id: str | None):
     keeping what it was handed: the prompt and the schema of each call."""
     seen = []
 
-    def answer(prompt, response_format, large=False, schema=None, limit=None):
+    def answer(prompt, response_format, large=False, model=None, schema=None, limit=None):
         seen.append((prompt, schema))
         group = ModelCluster(eventIds=[10, 11, 12], name="A cold spring", reason="r")
         group.id = cluster_id
@@ -965,7 +965,7 @@ def answering(*groups: tuple):
     """The grouping model giving the same answer on every call: (id, name,
     event ids, opening event) per period."""
 
-    def answer(prompt, response_format, large=False, schema=None, limit=None):
+    def answer(prompt, response_format, large=False, model=None, schema=None, limit=None):
         return parsed(
             ClusterListResponse(
                 clusters=[

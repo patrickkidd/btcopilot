@@ -69,12 +69,16 @@ const link = (attr: string, id: number | string, words: string) =>
 const clusterChip = (cluster: Cluster) =>
   `<button type="button" class="chip" data-cluster="${esc(cluster.id)}">${esc(periodName(cluster))}</button>`;
 
+/** The person's or coder's own words about when, under the date (R-0957). */
+const said = (event: TimelineEvent) =>
+  event.dateEvidence ? `<br><span class="sub">“${esc(event.dateEvidence)}”</span>` : "";
+
 function dates(event: TimelineEvent): string {
-  if (!event.dateTime) return esc(when(null));
+  if (!event.dateTime) return esc(when(null)) + said(event);
   const start = when(event.dateTime, event.datePrecision);
   const span = event.endDateTime ? `${start} – ${when(event.endDateTime)}` : start;
   const sure = SURE[event.dateCertainty ?? ""];
-  return esc(span) + (sure ? ` <span class="sub">· ${sure}</span>` : "");
+  return esc(span) + (sure ? ` <span class="sub">· ${sure}</span>` : "") + said(event);
 }
 
 function shift(event: TimelineEvent, name: (id: number) => string): string {

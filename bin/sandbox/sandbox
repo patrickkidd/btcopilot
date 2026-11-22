@@ -5,9 +5,10 @@
 # everything it writes in ~/btcopilot-sandbox/<name>/, outside every repo and
 # job folder, so several agents can run one each side by side.
 #
-#   sandbox up <name> <port> [--dev [port]] [--host name] [--build] [--real | --subscription] [--model M] [--open-prompts] [--autologin email]
+#   sandbox up <name> <port> [--dev [port]] [--host name] [--build] [--real | --subscription] [--model M] [--open-prompts] [--autologin email] [--from-dump file]
 #   sandbox down <name> [--purge]     stop everything; --purge also deletes the data
-#   sandbox reset <name>              empty the database and put the fixtures back
+#   sandbox reset <name>              empty the database and put the fixtures back, or the dump again
+#   sandbox restore <name> <file>     replace the database with a dump; reset restores it from then on
 #   sandbox invite <name> <email>     a sign-in link (and the Mac's copy under --dev)
 #   sandbox turn <name> [email] [words]   send one coach turn and print the reply
 #   sandbox admin <name>              seed the admin account into a running instance
@@ -31,6 +32,14 @@
 # subscription at no API cost, and reads no Anthropic key; Gemini calls still
 # go to Google with the key from .env. Without a sops key, up
 # refuses to start unless --open-prompts says the open-source prompts will do.
+# --from-dump starts a new instance from a pg_dump file (custom format) instead
+# of the fixtures: an empty database, the dump restored into it with nothing
+# else written, the rows of every table checked against the dump's own counts,
+# then this branch's migrations as a deploy runs them and the admin account.
+# The instance remembers the file, so reset restores it and never loads fixtures.
+# Nothing else is written: no admin account, so `admin` refuses, and `turn`
+# needs a user's email from the dump. verify.txt in the instance folder keeps
+# the check and the tables the migrations changed.
 # --autologin signs every visitor with no session in as that account, so a
 # home-screen app needs no code; without it the sign-in page lists every
 # account to sign in as with one tap.
@@ -50,7 +59,7 @@ OLLAMA=http://127.0.0.1:11434
 WAIT=${SANDBOX_WAIT:-120}
 
 die() { echo "sandbox: $*" >&2; exit 1; }
-usage() { sed -n '8,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '8,16p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 at() {
   NAME=${1:-}
@@ -62,7 +71,7 @@ at() {
 loaded() {
   at "$1"
   [ -f "$D/instance.sh" ] || die "no instance named $NAME; start it with: sandbox up $NAME <port>"
-  DEV_HOST=turin PROVIDER=anthropic
+  DEV_HOST=turin PROVIDER=anthropic DUMP=
   . "$D/instance.sh"
   PY=${SANDBOX_PYTHON:-$REPO/.venv/bin/python}
 }
@@ -110,6 +119,7 @@ DEV_HOST=$DEV_HOST
 MODEL=$MODEL
 REAL=$REAL
 PROVIDER=$PROVIDER
+DUMP=$(printf %q "$DUMP")
 SETTINGS
   local db=sandbox_${NAME//-/_}
   cat > "$D/env.sh" <<SETTINGS
@@ -249,6 +259,100 @@ fill_db() {
   echo "  database migrated, $(wc -l < "$D/links.txt" | tr -d ' ') fixture records installed (${SECONDS}s)"
 }
 
+# One line per table, "schema.table rows hash", sorted by table: the hash is
+# md5 over every row's text in primary key order (the whole row's text where a
+# table has no primary key).
+read -r -d '' SNAPSHOT <<'SQL' || true
+SELECT format(
+  'SELECT %L, count(*), md5(coalesce(string_agg(x::text, %L ORDER BY %s), %L)) FROM %I.%I x',
+  n.nspname || '.' || c.relname, E'\n',
+  coalesce((SELECT string_agg(format('x.%I', a.attname), ', ' ORDER BY k.ord)
+            FROM pg_index i
+            CROSS JOIN unnest(i.indkey) WITH ORDINALITY AS k(attnum, ord)
+            JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = k.attnum
+            WHERE i.indrelid = c.oid AND i.indisprimary), 'x::text'),
+  '', n.nspname, c.relname)
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind IN ('r', 'p') AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+  AND n.nspname NOT LIKE 'pg_toast%'
+ORDER BY 1 \gexec
+SQL
+
+snapshot() {
+  docker exec -i "$PG" psql -qtA -F' ' -v ON_ERROR_STOP=1 -U familydiagram -d "$1" <<< "$SNAPSHOT" | sort
+}
+
+# Two snapshots side by side, table by table: "same", or both sides' rows
+# with what differs. Exits 1 when any table differs. With --changed only the
+# tables that differ are printed, as a migration's changes.
+compare() {
+  awk -v a="$3" -v b="$4" -v only="${5:-}" '
+    NR == FNR { left[$1] = $2; lh[$1] = $3; tables[$1]; next }
+    { right[$1] = $2; rh[$1] = $3; tables[$1] }
+    END {
+      n = asorti_(tables, names)
+      for (i = 1; i <= n; i++) {
+        t = names[i]
+        if (!(t in left)) line = sprintf("%-40s only in %s, %s rows", t, b, right[t])
+        else if (!(t in right)) line = sprintf("%-40s only in %s, %s rows", t, a, left[t])
+        else if (left[t] != right[t]) line = sprintf("%-40s %s %s rows, %s %s rows", t, a, left[t], b, right[t])
+        else if (lh[t] != rh[t]) line = sprintf("%-40s %8s rows, the rows differ", t, left[t])
+        else { if (only == "") printf "    %-40s %8s rows  same\n", t, left[t]; continue }
+        printf "    %s  %s\n", line, (only == "" ? "DIFFERS" : "changed")
+        bad++
+      }
+      exit bad > 0
+    }
+    function asorti_(src, dst,   k, m, i, j, tmp) {
+      m = 0
+      for (k in src) dst[++m] = k
+      for (i = 2; i <= m; i++) for (j = i; j > 1 && dst[j - 1] > dst[j]; j--) { tmp = dst[j]; dst[j] = dst[j - 1]; dst[j - 1] = tmp }
+      return m
+    }' "$1" "$2"
+}
+
+# The dump restored again into a scratch database beside the sandbox's, and
+# every table of the two compared by rows and hash; saved to verify.txt and
+# fatal naming each table that differs, before anything else runs.
+verify_dump() {
+  local db=sandbox_${NAME//-/_} scratch=sandbox_${NAME//-/_}_dump tables
+  docker exec "$PG" psql -q -U familydiagram -d postgres \
+    -c "SET client_min_messages = warning" -c "DROP DATABASE IF EXISTS $scratch WITH (FORCE)" -c "CREATE DATABASE $scratch" >/dev/null
+  docker exec -i "$PG" pg_restore --no-owner --no-acl --exit-on-error -U familydiagram -d "$scratch" \
+    < "$DUMP" >> "$D/restore.log" 2>&1 || { tails; stop_all; die "the dump did not restore into the scratch database"; }
+  snapshot "$scratch" > "$D/dump.snap"
+  snapshot "$db" > "$D/restored.snap"
+  docker exec "$PG" psql -q -U familydiagram -d postgres -c "DROP DATABASE $scratch WITH (FORCE)" >/dev/null
+  tables=$(wc -l < "$D/dump.snap" | tr -d ' ')
+  { echo "$DUMP against sandbox $NAME, $(date -u +%FT%TZ)"
+    compare "$D/dump.snap" "$D/restored.snap" dump sandbox
+  } > "$D/verify.txt" || {
+    cat "$D/verify.txt" >&2
+    stop_all
+    die "the sandbox differs from the dump; every table that differs is marked DIFFERS above and in $D/verify.txt"
+  }
+  echo "  dump verified: $tables tables, $(awk '{ n += $2 } END { print n }' "$D/dump.snap") rows, every table's rows and hash the same as the dump's ($D/verify.txt, ${SECONDS}s)" | tee -a "$D/verify.txt"
+}
+
+# The database emptied and the dump restored into it, nothing else written;
+# checked against the dump, then brought to this branch's schema, printing
+# what the migrations changed.
+restore_db() {
+  local db=sandbox_${NAME//-/_} changed
+  docker exec "$PG" psql -q -U familydiagram -d postgres \
+    -c "DROP DATABASE IF EXISTS $db WITH (FORCE)" -c "CREATE DATABASE $db" >/dev/null
+  docker exec -i "$PG" pg_restore --no-owner --no-acl --exit-on-error -U familydiagram -d "$db" \
+    < "$DUMP" > "$D/restore.log" 2>&1 || { tails; stop_all; die "the dump did not restore: $DUMP"; }
+  : > "$D/links.txt"
+  verify_dump
+  flask_ admin db upgrade > "$D/migrate.log" 2>&1 || { tails; stop_all; die "the migrations failed"; }
+  snapshot "$db" > "$D/migrated.snap"
+  changed=$(compare "$D/restored.snap" "$D/migrated.snap" before after --changed || true)
+  { echo "  migrated to this branch (${SECONDS}s); tables the migrations changed:"
+    echo "${changed:-    none}"
+  } | tee -a "$D/verify.txt"
+}
+
 start_app() {
   (
     . "$D/env.sh"
@@ -308,9 +412,10 @@ cmd_up() {
   PORT=${2:-}
   [[ $PORT =~ ^[0-9]+$ ]] || usage
   shift 2
-  DEV= DEV_HOST=turin REAL= OPEN= AUTOLOGIN= MODEL=qwen3:8b
+  DEV= DEV_HOST=turin REAL= OPEN= AUTOLOGIN= MODEL=qwen3:8b DUMP=
   PROVIDER=${BTCOPILOT_MODEL_PROVIDER:-anthropic}
-  local build=
+  local build= dumped=
+  [ ! -f "$D/instance.sh" ] || dumped=$(. "$D/instance.sh" && echo "${DUMP:-}")
   while [ $# -gt 0 ]; do
     case $1 in
       --dev) DEV=8891; [[ ${2:-} =~ ^[0-9]+$ ]] && { DEV=$2; shift; } ;;
@@ -321,10 +426,18 @@ cmd_up() {
       --open-prompts) OPEN=1 ;;
       --model) MODEL=$2; shift ;;
       --autologin) AUTOLOGIN=${2:?--autologin takes an email}; shift ;;
+      --from-dump) DUMP=${2:?--from-dump takes a file}; shift ;;
       *) usage ;;
     esac
     shift
   done
+  if [ -n "$DUMP" ]; then
+    [ -f "$DUMP" ] || die "no dump at $DUMP"
+    DUMP=$(cd "$(dirname "$DUMP")" && pwd -P)/$(basename "$DUMP")
+    [ ! -d "$D/pg/base" ] || die "$NAME already holds a database; replace it with: sandbox restore $NAME $DUMP"
+  else
+    DUMP=$dumped
+  fi
   [ "$DEV_HOST" = turin ] || [ -n "$DEV" ] || die "--host serves the dev server, so it needs --dev"
   if [ -f "$D/instance.sh" ] && [ -f "$D/flask.pid" ] && kill -0 "$(cat "$D/flask.pid")" 2>/dev/null; then
     die "$NAME is already running; sandbox down $NAME first"
@@ -373,13 +486,16 @@ cmd_up() {
     --dir "$D" --pidfile "$D/redis.pid" --logfile "$D/redis.log"
   ready "Redis on $REDIS_PORT" redis-cli -p "$REDIS_PORT" ping
   start_db
-  if [ -n "$fresh" ]; then fill_db; else flask_ admin db upgrade > "$D/migrate.log" 2>&1 || { tails; stop_all; die "the migrations failed"; }; fi
-  seed_admin || { stop_all; exit 1; }
+  if [ -n "$fresh" ] && [ -n "$DUMP" ]; then restore_db
+  elif [ -n "$fresh" ]; then fill_db
+  else flask_ admin db upgrade > "$D/migrate.log" 2>&1 || { tails; stop_all; die "the migrations failed"; }; fi
+  [ -n "$DUMP" ] || seed_admin || { stop_all; exit 1; }
   start_app
   start_dev
   echo "sandbox $NAME is up in ${SECONDS}s: http://$DEV_HOST:$PORT/app/"
   [ -n "$DEV" ] && echo "  Patrick's phone: https://$DEV_HOST:$DEV/app/  (this Mac: https://127.0.0.1:$DEV/app/)"
-  echo "  sign-in links for the fixture records: $D/links.txt"
+  if [ -n "$DUMP" ]; then echo "  restored from $DUMP with nothing added; sign in with: sandbox invite $NAME <a user's email in the dump>"
+  else echo "  sign-in links for the fixture records: $D/links.txt"; fi
   echo "  settings for tests: . $D/env.sh"
 }
 
@@ -398,15 +514,32 @@ cmd_reset() {
   loaded "${1:-}"
   SECONDS=0
   stop_app
-  local db=sandbox_${NAME//-/_}
-  docker exec "$PG" psql -q -U familydiagram -d postgres \
-    -c "DROP DATABASE IF EXISTS $db WITH (FORCE)" -c "CREATE DATABASE $db" >/dev/null
   redis-cli -p "$REDIS_PORT" flushall >/dev/null
-  fill_db
-  seed_admin || { stop_all; exit 1; }
+  if [ -n "$DUMP" ]; then
+    restore_db
+  else
+    local db=sandbox_${NAME//-/_}
+    docker exec "$PG" psql -q -U familydiagram -d postgres \
+      -c "DROP DATABASE IF EXISTS $db WITH (FORCE)" -c "CREATE DATABASE $db" >/dev/null
+    fill_db
+    seed_admin || { stop_all; exit 1; }
+  fi
   start_app
   start_dev
-  echo "sandbox $NAME is back on the fixtures in ${SECONDS}s"
+  echo "sandbox $NAME is back on ${DUMP:-the fixtures} in ${SECONDS}s"
+}
+
+# A running instance's database replaced by a dump, which reset restores from
+# then on.
+cmd_restore() {
+  loaded "${1:-}"
+  DUMP=${2:-}
+  [ -f "$DUMP" ] || die "no dump at ${DUMP:-<file>}"
+  DUMP=$(cd "$(dirname "$DUMP")" && pwd -P)/$(basename "$DUMP")
+  grep -v '^DUMP=' "$D/instance.sh" > "$D/instance.tmp" || true
+  echo "DUMP=$(printf %q "$DUMP")" >> "$D/instance.tmp"
+  mv "$D/instance.tmp" "$D/instance.sh"
+  cmd_reset "$NAME"
 }
 
 cmd_invite() {
@@ -423,6 +556,7 @@ cmd_invite() {
 # the turn's events until the reply or the failure arrives.
 cmd_turn() {
   loaded "${1:-}"
+  [ -z "$DUMP" ] || [ -n "${2:-}" ] || die "$NAME is a copy of $DUMP: name the user in the dump to send the turn as"
   local email=${2:-coach@sandbox.invalid} words=${3:-"My mother and I have not spoken since the funeral."}
   local jar=$D/turn.cookies base=http://127.0.0.1:$PORT link csrf turn
   rm -f "$jar"
@@ -460,11 +594,16 @@ cmd_status() {
   done
 }
 
-cmd_admin() { loaded "${1:-}"; seed_admin || exit 1; echo "the admin link of $NAME is in $D/links.txt"; }
+cmd_admin() {
+  loaded "${1:-}"
+  [ -z "$DUMP" ] || die "$NAME is a copy of $DUMP and holds no admin account; sign in with: sandbox invite $NAME <a user's email in the dump>"
+  seed_admin || exit 1
+  echo "the admin link of $NAME is in $D/links.txt"
+}
 
 cmd_env() { loaded "${1:-}"; echo "$D/env.sh"; }
 
 case ${1:-} in
-  up | down | reset | invite | turn | status | env | admin) c=$1; shift; "cmd_$c" "$@" ;;
+  up | down | reset | restore | invite | turn | status | env | admin) c=$1; shift; "cmd_$c" "$@" ;;
   *) usage ;;
 esac

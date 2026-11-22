@@ -79,7 +79,10 @@ def _event_head(event: dict) -> list[str]:
     certainty = enum_val(event.get("dateCertainty"))
     if written and certainty and certainty != DateCertainty.Certain:
         parts.append(f"({certainty})")
-    end = date_text(event.get("endDateTime"))
+    # the words a date rests on, so the coach can place it again [Oracle: R-0959]
+    if event.get("dateEvidence"):
+        parts.append(f'when_said="{event["dateEvidence"]}"')
+    end =date_text(event.get("endDateTime"))
     if end:
         parts.append(f"to {end}")
     parts.append(f"[{enum_val(event.get('kind')) or 'shift'}]")

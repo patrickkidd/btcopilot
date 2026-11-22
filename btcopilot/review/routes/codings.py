@@ -108,8 +108,9 @@ def _previous_coding(user, case_diagram_id: int, cut_id: int) -> Coding | None:
 @bp.route("/codings/<int:coding_id>/thread")
 def coding_thread(coding_id: int):
     """The conversation this coding is of: every turn from the thread's first
-    up to the cut, what this coder has already written from each, and the two
-    lines across the thread — the last ratified cut and this one (R-0267)."""
+    up to the cut as stored, the same for every coder (R-0978), what this coder
+    has already written from each, and the two lines across the thread — the
+    last ratified cut and this one (R-0267)."""
     coding = _mine_or_404(coding_id)
     cut = coding.cut
     orders = adapter.statement_order(cut.diagram_id)
@@ -122,12 +123,6 @@ def coding_thread(coding_id: int):
     agreed_order = orders[agreed.end_statement_id] if agreed else None
     data = adapter.record_of(adapter.diagram_of(coding.diagram_id))
     said = _said_by_turn(coding.id, coding.diagram_id, data)
-    # a line the coder wrote from, or one a cut ends on, stays even when it
-    # was sent again after a failed turn
-    kept = {s.id for s in adapter.heard(lines)} | said.keys() | {cut.end_statement_id}
-    if agreed:
-        kept.add(agreed.end_statement_id)
-    turns = [s for s in lines if s.id in kept]
 
     return jsonify(
         {
@@ -160,7 +155,7 @@ def coding_thread(coding_id: int):
                     "above": agreed_order is not None
                     and orders[turn.id] <= agreed_order,
                 }
-                for turn in turns
+                for turn in lines
             ],
         }
     )

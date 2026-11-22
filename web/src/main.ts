@@ -8,8 +8,9 @@ import { Lens } from "./lens";
 import { CaseReport } from "./casereport";
 import { adding, Menu, Tab, shut } from "./menu";
 import { Questions } from "./questions";
-import { Ballot } from "./ballot";
-import { Coding } from "./coding";
+import { Ballot, Context } from "./ballot";
+import { Pairings } from "./pairings";
+import { Coding, line } from "./coding";
 import { CutSelect } from "./cut";
 import { Agenda } from "./agenda";
 import { Meeting } from "./meeting";
@@ -34,7 +35,17 @@ import { REST, SelKind } from "./caption";
 import { $, CLUSTER, el, flash, setTitle, slideOver, type Title } from "./dom";
 import { notesSheet } from "./detail";
 import { Sheet } from "./sheet";
-import { address, beyond, linked, parse, PICTURE, Place, settled, UNDATED } from "./place";
+import {
+  address,
+  beyond,
+  linked,
+  parse,
+  PICTURE,
+  Place,
+  sameSteps,
+  settled,
+  UNDATED,
+} from "./place";
 import { onReturn } from "./keyboard";
 import { Typing } from "./typing";
 import { Drawer, SIDEWAYS } from "./drawer";
@@ -465,52 +476,89 @@ async function openTask(): Promise<void> {
 /** Starting a task is making your own coding of that cut, then opening the
  * conversation as a thread you cannot type into. */
 async function startTask(task: Task): Promise<void> {
-  const mine = task.coding_id ?? (await api.startCoding(task.cut_id)).id;
   if (task.kind === TaskKind.Vote) {
-    await openBallot(task.cut_id, mine);
+    await openBallot(task.cut_id);
     return;
   }
+  const mine = task.coding_id ?? (await api.startCoding(task.cut_id)).id;
   await coding.open(mine);
   screenAt = address(Place.Coding, mine);
   screen(Screen.Coding);
 }
 
 /** The vote before the meeting: one disputed event per screen (R-0257). */
+const BALLOT_SCREEN = {
+  view: $("ballot-view"),
+  caption: $("ballot-caption"),
+  body: $("ballot-body"),
+  bar: $("ballot-bar"),
+  overlay: $("overlay"),
+};
+
+/** The cut's conversation behind the (i)s of the vote and of Patrick's look
+ * over the pairings, which share the screen (R-0977). */
+const context = new Context(BALLOT_SCREEN, line);
+
 const ballot = new Ballot(
-  $("ballot-view"),
-  $("ballot-caption"),
-  $("ballot-body"),
-  $("overlay"),
+  BALLOT_SCREEN,
   {
     onTitle: (title) => entitle(title),
     onDone: () => void openTask(),
-    onTranscript: (statementId) => void openLine(statementId),
+    onMoved: () => {
+      screenAt = voteAt(voting!.cutId);
+      sync();
+    },
   },
+  context,
 );
 
-/** Which coding the ballot on screen belongs to, so the transcript it opens is
- * this coder's own thread of the same conversation. */
-let voting: { cutId: number; codingId: number; itemId: number | null } | null = null;
+const voteAt = (cut: number) => stepAt(Place.Vote, Place.VoteItem, cut, ballot.onItem());
 
-async function openBallot(
-  cutId: number,
-  codingId: number,
-  itemId: number | null = null,
-): Promise<void> {
-  voting = { cutId, codingId, itemId };
+/** The cut whose ballot is on screen; none while the same screen shows
+ * Patrick's look over the pairings. */
+let voting: { cutId: number } | null = null;
+
+async function openBallot(cutId: number, itemId: number | null = null): Promise<void> {
+  voting = { cutId };
+  pairings.close();
   await ballot.open(cutId, itemId);
-  screenAt = address(Place.Vote, cutId);
+  screenAt = voteAt(cutId);
   screen(Screen.Ballot);
 }
 
-/** The transcript at the line an item came from, which is the coder's own
- * thread of that conversation, read and not added to. */
-async function openLine(statementId: number): Promise<void> {
-  if (!voting) return;
-  voting.itemId = ballot.onItem();
-  await coding.open(voting.codingId, statementId);
-  screenAt = address(Place.Coding, voting.codingId);
-  screen(Screen.Coding);
+/** Patrick's look over a cut's pairings before he opens the vote, on the
+ * vote's own screen (R-0963). */
+const pairings = new Pairings(
+  BALLOT_SCREEN,
+  {
+    onTitle: (title) => entitle(title),
+    onDone: () => void openAgenda(),
+    onMoved: () => {
+      screenAt = pairingAt();
+      sync();
+    },
+  },
+  context,
+);
+
+/** The address of a screen stepped one pairing at a time, on the pairing it
+ * shows, so a reload comes back to it. */
+const stepAt = (view: Place, step: Place, cut: number, item: number | null): string =>
+  item === null ? address(view, cut) : address(step, cut, item);
+
+/** The cut whose pairings are on screen. */
+let pairingCut = 0;
+
+const pairingAt = () =>
+  stepAt(Place.Pairings, Place.PairingsItem, pairingCut, pairings.onItem());
+
+async function openPairings(cutId: number, itemId: number | null = null): Promise<void> {
+  voting = null;
+  ballot.close();
+  pairingCut = cutId;
+  if (!(await pairings.open(cutId, itemId))) return openAgenda();
+  screenAt = pairingAt();
+  screen(Screen.Ballot);
 }
 
 /** ── Patrick's own screens ────────────────────────────────────────────────
@@ -546,6 +594,7 @@ const agenda = new Agenda($("agenda-body"), $("meet-body"), {
     settings.push(MEET);
   },
   onRatify: (cutId) => void openMeeting(cutId),
+  onPairings: (cutId) => void openPairings(cutId),
   onResult: (cutId) => void openResult(cutId, openAgenda),
 }, $("overlay").parentElement!);
 
@@ -673,10 +722,9 @@ $("rules-close").addEventListener("click", () => {
 });
 $("coding-back").addEventListener("click", () => {
   track.tap(Feature.Back);
-  // Reading the transcript is a step out of the ballot, so it steps back into
-  // it on the item it was left on.
-  if (here === Screen.Coding && voting)
-    void openBallot(voting.cutId, voting.codingId, voting.itemId);
+  // the conversation behind an (i) is put away before the screen under it
+  if (here === Screen.Ballot && context.up) context.close();
+  else if (here === Screen.Ballot && !voting) void openAgenda();
   else if (here === Screen.Coding || here === Screen.Ballot) void openTask();
   else if (here === Screen.Meeting) void backToMeeting();
   else if (here === Screen.Result) void resultBack();
@@ -1164,15 +1212,22 @@ function post(statement: string, file: File | null = null): void {
   if (file) attachment.show(bubble, file.name);
   const lapsed = chat.sent();
   feedback();
-  void deliver(statement, file, bubble, lapsed);
+  void deliver(api.turnId(), statement, file, bubble, lapsed);
 }
 
-async function deliver(statement: string, file: File | null, bubble: HTMLElement, lapsed = false): Promise<void> {
+async function deliver(
+  turn: string,
+  statement: string,
+  file: File | null,
+  bubble: HTMLElement,
+  lapsed = false,
+): Promise<void> {
   // read before this message is stored, which would count as the last one
   if (lapsed) await settings.refresh();
   const started = await begin(
-    () => api.say(store.id(), statement, file),
-    () => void deliver(statement, file, bubble),
+    () => api.say(store.id(), turn, statement, file),
+    // the same turn: words the server already holds are not stored again
+    () => void deliver(turn, statement, file, bubble),
     // a file the server will not take is said in its words, and the message
     // goes back in the box to send without it
     file
@@ -1599,6 +1654,7 @@ track.start(here, window.BOOTSTRAP.diagram?.id ?? null);
 document.addEventListener("keydown", (e) => {
   // not while the book's passages are up over it: that Escape is theirs (books.ts)
   if (e.key === "Escape" && picture.aboutOpen() && !books.up && $("chat-screen").offsetParent) lens.climb(CLUSTER);
+  if (e.key === "Escape" && context.up) context.close();
 });
 
 onReturn($("composer"), () => void send());
@@ -1723,7 +1779,7 @@ function sync(): void {
   const was = location.pathname;
   if (now === settled(was)) return;
   const from = parse(was);
-  if (from && PICTURE.has(from.place) && PICTURE.has(parse(now)!.place))
+  if ((from && PICTURE.has(from.place) && PICTURE.has(parse(now)!.place)) || sameSteps(was, now))
     history.replaceState(null, "", now);
   else history.pushState(null, "", now);
 }
@@ -1751,6 +1807,7 @@ function uncover(keep = Keep.Nothing): void {
   pbp.leave();
   coding.close();
   ballot.close();
+  pairings.close();
   meeting.close();
   shut();
   screen(Screen.Chat);
@@ -1758,6 +1815,11 @@ function uncover(keep = Keep.Nothing): void {
 }
 
 /** The account view with these pages pushed on its root. */
+async function toVote(cut: number, item: number | null = null): Promise<void> {
+  uncover();
+  await openBallot(cut, item);
+}
+
 async function toAccount(...path: (Page | Sub)[]): Promise<void> {
   uncover(Keep.Account);
   await settings.show(...path);
@@ -1924,11 +1986,16 @@ const GO: Record<Place, (args: string[]) => Promise<void> | void> = {
     screenAt = address(Place.Coding, id);
     screen(Screen.Coding);
   },
-  [Place.Vote]: async ([cut]) => {
+  [Place.Pairings]: ([cut]) => {
     uncover();
-    // asking for the coding of a cut gives back the one already made
-    await openBallot(Number(cut), (await api.startCoding(Number(cut))).id);
+    return openPairings(Number(cut));
   },
+  [Place.PairingsItem]: ([cut, item]) => {
+    uncover();
+    return openPairings(Number(cut), Number(item));
+  },
+  [Place.Vote]: ([cut]) => toVote(Number(cut)),
+  [Place.VoteItem]: ([cut, item]) => toVote(Number(cut), Number(item)),
   [Place.Meeting]: ([cut]) => {
     uncover();
     return openMeeting(Number(cut));

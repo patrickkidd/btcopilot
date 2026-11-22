@@ -6,6 +6,8 @@ import sqlalchemy as sa
 import bin.migrationgate as migrationgate
 from btcopilot.extensions import db
 from btcopilot.models import Author, Change, Discussion, Speaker, SpeakerType, Statement
+from btcopilot.models.turnevent import TurnEvent
+from btcopilot.review.models import Coding, Cut, Note
 
 WITHOUT_TURN_ID = migrationgate.AGENT_CHANGES.replace(" AND c.turn_id = s.turn_id", "")
 
@@ -119,3 +121,60 @@ def test_a_tool_with_no_subject_fails_with_its_name():
     # R-0487
     with pytest.raises(SystemExit, match="show"):
         migrationgate.gone({"name": "show", "args": {}}, "it")
+
+
+def test_the_session_deleted_is_never_one_a_cut_is_on(flask_app, test_user):
+    # R-0487
+    statement = _reply(test_user)
+    discussion = statement.discussion
+    person = Speaker(discussion_id=discussion.id, name="Ann", type=SpeakerType.Subject)
+    db.session.add(person)
+    db.session.flush()
+    discussion.chat_user_speaker_id = person.id
+    db.session.commit()
+    assert db.session.execute(migrationgate.DELETABLE).all() == [(discussion.id, test_user.id)]
+    db.session.add(
+        Cut(
+            diagram_id=discussion.diagram_id,
+            start_statement_id=statement.id,
+            end_statement_id=statement.id,
+            user_id=test_user.id,
+        )
+    )
+    db.session.commit()
+    assert db.session.execute(migrationgate.DELETABLE).all() == []
+
+
+def test_a_scribe_turn_is_carried_by_the_coders_note(flask_app, test_user):
+    # R-0487
+    statement = _reply(test_user)
+    db.session.add(
+        TurnEvent(
+            turn_id="scribe-1", discussion_id=statement.discussion_id, seq=0, kind="done", payload={}
+        )
+    )
+    db.session.commit()
+    orphans = sa.text(migrationgate.ORPHANS["turn events no statement or coder's note carries"])
+    assert db.session.execute(orphans).scalar_one() == 1
+    cut = Cut(
+        diagram_id=test_user.free_diagram_id,
+        start_statement_id=statement.id,
+        end_statement_id=statement.id,
+        user_id=test_user.id,
+    )
+    db.session.add(cut)
+    db.session.flush()
+    coding = Coding(cut_id=cut.id, user_id=test_user.id, diagram_id=test_user.free_diagram_id)
+    db.session.add(coding)
+    db.session.flush()
+    db.session.add(Note(coding_id=coding.id, statement_id=statement.id, text="Mom died", turn_id="scribe-1"))
+    db.session.commit()
+    assert db.session.execute(orphans).scalar_one() == 0
+
+
+def test_a_merge_names_what_it_moves_and_drops_beside_its_args():
+    # R-0487
+    call = {"name": "merge_people", "args": {"keep": 1, "drop": 2, "take": {}}}
+    assert migrationgate.gone(call, "moved") == []
+    assert migrationgate.gone(call, "dropped") == []
+    assert migrationgate.gone(call, "drop") == [("person", "2")]

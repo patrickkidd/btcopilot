@@ -3,6 +3,7 @@ been coded, a coder's draft cleared to start over, the given facts put on
 draft copies, and the switch that stops the app nudging anybody."""
 
 import logging
+from collections import Counter
 
 import click
 
@@ -14,8 +15,9 @@ from btcopilot.admin.users import find as find_user
 from btcopilot.extensions import db
 from btcopilot.models import Diagram, User
 from btcopilot.review import adapter
-from btcopilot.review.models import Coding, Cut, Note, Rule
+from btcopilot.review.models import Coding, Cut, Note, Rule, Vote
 from btcopilot.review.routes.coders import roster, state_of
+from btcopilot.review.routes import session_name
 from btcopilot.review.routes.cuts import agenda_cuts, payload as cut_payload
 
 log = logging.getLogger(__name__)
@@ -209,6 +211,51 @@ def review_codings_given(apply):
 def _coding_done(cut_id: int, user_id: int) -> bool:
     coding = Coding.query.filter_by(cut_id=cut_id, user_id=user_id).first()
     return coding is not None and coding.done_at is not None
+
+
+@review.group("votes")
+def votes():
+    """The coders' votes on a cut's ballot."""
+
+
+@writes
+@votes.command("delete")
+@click.argument("cut_id", type=int)
+@click.option("--yes", is_flag=True, help="Delete them; without it, only the preview.")
+@rows_option
+def review_votes_delete(cut_id, yes):
+    """Delete every vote on one cut's items and un-open its vote, so its
+    ballot can be built again; the items stay until the build replaces them.
+    Refused once the cut is ratified. Without --yes it prints each coder's
+    vote count and changes nothing."""
+    cut = db.session.get(Cut, cut_id)
+    if cut is None:
+        raise click.ClickException(f"no cut with id {cut_id}")
+    if cut.ratified_at is not None:
+        raise click.ClickException(f"cut {cut_id} was ratified; its votes are kept")
+    cast = Vote.query.filter(Vote.review_item_id.in_([i.id for i in cut.items]))
+    counts = Counter(v.user_id for v in cast)
+    items = len(cut.items)
+    rows = [
+        {
+            "cut": session_name(cut),
+            "coder": db.session.get(User, user_id).username,
+            "votes": count,
+            "items": items,
+            "done": yes,
+        }
+        for user_id, count in sorted(counts.items())
+    ]
+    if yes:
+        cast.delete(synchronize_session=False)
+        cut.vote_opened_at = None
+        db.session.commit()
+        log.info(
+            "admin deleted %s votes on cut %s and un-opened its vote",
+            sum(counts.values()),
+            cut_id,
+        )
+    return rows
 
 
 @review.group("nudge")

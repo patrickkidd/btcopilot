@@ -1,5 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { call, cut, Failed, say, scribe } from "../src/api";
+import { call, cut, Failed, join, say, scribe, split, turnId, unvote } from "../src/api";
+
+const TURN = "0f3c9a2e41b84d6a9c5e7f1a2b3c4d5e";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -55,10 +57,17 @@ it("sends the browser's time zone with each message, so the coach's today is the
     bodies.push(JSON.parse(init.body as string));
     return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
   });
-  await say(null, "My dad turns 70 tomorrow.");
+  await say(null, TURN, "My dad turns 70 tomorrow.");
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   expect(zone).toBeTruthy();
-  expect(bodies).toEqual([{ statement: "My dad turns 70 tomorrow.", time_zone: zone }]);
+  expect(bodies).toEqual([{ statement: "My dad turns 70 tomorrow.", time_zone: zone, turn_id: TURN }]);
+});
+
+// R-0182
+it("makes a new turn id in the server's own shape for each message", () => {
+  const ids = [turnId(), turnId()];
+  expect(ids[0]).toMatch(/^[0-9a-f]{32}$/);
+  expect(ids[1]).not.toBe(ids[0]);
 });
 
 // R-0738
@@ -73,4 +82,23 @@ it("writes with the CSRF token of the newest answer, not the one the page was se
   await call("POST", "/diagrams", { name: "x" });
   await call("POST", "/diagrams", { name: "y" });
   expect(sent).toEqual(["served", "fresh-1", "fresh-2"]);
+});
+
+// R-0963, R-0965
+it("splits, joins and takes a vote back on the routes the ballot by pairing names", async () => {
+  vi.stubGlobal("document", { querySelector: () => ({ content: "served" }) });
+  const sent: string[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    sent.push(`${init.method} ${url} ${init.body ?? ""}`);
+    return new Response('{"items": [], "deleted": []}', { status: 200, headers: { "Content-Type": "application/json" } });
+  });
+  const entry = [{ coding_id: 3, item_id: 31 }];
+  await split(2, entry);
+  await join(9, entry);
+  await unvote(9);
+  expect(sent).toEqual([
+    `POST /review/items ${JSON.stringify({ cut_id: 2, opinions: entry })}`,
+    `PATCH /review/items/9 ${JSON.stringify({ opinions: entry })}`,
+    "DELETE /review/items/9/vote ",
+  ]);
 });

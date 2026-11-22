@@ -168,9 +168,57 @@ def first_message(lines: list[str]) -> dict:
     return {"model": messages[0]["model"], "content": content}
 
 
+def structured(request: dict, work: Path, base_url: str | None = None) -> dict:
+    """A structured call answered by `claude -p --json-schema`: the request's
+    one user message on stdin, no tools, and the schema-checked value as the
+    message's one text block, the shape a saved answer keeps [Oracle: R-0856]."""
+    cwd = work.resolve() / "cwd"
+    cwd.mkdir(parents=True, exist_ok=True)
+    ran = subprocess.run(
+        [
+            "claude",
+            "-p",
+            "--output-format",
+            "json",
+            "--json-schema",
+            json.dumps(request["schema"]),
+            "--system-prompt",
+            system_text(request["system"]),
+            "--model",
+            request["model"],
+            *(["--effort", request["effort"]] if request["effort"] else []),
+            "--tools",
+            "",
+            "--setting-sources",
+            "",
+            "--strict-mcp-config",
+            "--no-session-persistence",
+        ],
+        input=request["messages"][-1]["content"],
+        capture_output=True,
+        text=True,
+        cwd=cwd,
+        env=environment(request, base_url),
+        timeout=TIMEOUT,
+    )
+    if not ran.stdout.strip():
+        raise RuntimeError(f"claude -p failed: {ran.stderr.strip()}")
+    result = json.loads(ran.stdout)
+    if result.get("is_error") or "structured_output" not in result:
+        raise RuntimeError(
+            f"claude -p failed: {result.get('result') or result.get('subtype')}"
+        )
+    return {
+        "model": next(iter(result["modelUsage"])),
+        "content": [{"type": "text", "text": json.dumps(result["structured_output"])}],
+    }
+
+
 def answer(request: dict, work: Path, base_url: str | None = None) -> dict:
     """The subscription's answer to one dumped request. `work` holds the
     private prompt while it runs and is emptied after."""
+    if request.get("schema"):
+        return structured(request, work, base_url)
     work = work.resolve()
     cwd = work / "cwd"
     cwd.mkdir(parents=True, exist_ok=True)
