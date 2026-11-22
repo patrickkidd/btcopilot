@@ -42,6 +42,16 @@ it("shows the file's name still while it is read, and once read a chip that open
 
 const memo = () => new File(["audio"], "Talk with Uncle Gerald.m4a", { type: "audio/mp4" });
 
+// R-0950
+it("lets the iPhone's Files picker choose a recording by its file ending, any audio type still allowed", () => {
+  const kinds = KINDS.split(",");
+  for (const kind of [
+    ".m4a", ".mp3", ".wav", ".aac", ".flac", ".ogg", ".opus", ".wma", ".amr", ".aif", ".aiff", ".caf", ".qta",
+    "audio/*",
+  ])
+    expect(kinds).toContain(kind);
+});
+
 // R-0953, R-0954
 it("takes a recording through the same picker as any other document", () => {
   for (const kind of [".pdf", ".txt", ".m4a", ".mp3", "audio/*"]) expect(KINDS.split(",")).toContain(kind);

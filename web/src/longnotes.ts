@@ -19,10 +19,11 @@ export const partsOf = (words: number, at: Projection): number =>
 const thousands = (n: number) => n.toLocaleString("en-US");
 
 /** "About 12,000 words in 8 parts. Roughly $23.40 and 13 minutes." The
- * dollars to the nearest 5 cents, the minutes rounded up. */
-export function costLine(words: number, at: Projection): string {
+ * dollars to the nearest 5 cents, with what transcribing a recording cost
+ * added in; the minutes rounded up. */
+export function costLine(words: number, at: Projection, transcribed = 0): string {
   const parts = partsOf(words, at);
-  const dollars = Math.round((words / 1000) * at.usd_per_1000_words * 20) / 20;
+  const dollars = Math.round(((words / 1000) * at.usd_per_1000_words + transcribed) * 20) / 20;
   const minutes = Math.ceil((parts * at.seconds_per_part) / 60);
   return (
     `About ${thousands(words)} words in ${parts} parts. ` +
@@ -40,13 +41,14 @@ export class LongNotes {
   }
 
   /** True to send: the words and what is attached fit one part, or the
-   * person chose Start. A recording is priced by its transcript's words. */
-  async ask(text: string, attached: string, recording = false): Promise<boolean> {
+   * person chose Start. A recording, which comes with what transcribing it
+   * cost, is priced by its transcript's words plus that. */
+  async ask(text: string, attached: string, transcribed: number | null = null): Promise<boolean> {
     const words = wordCount(text) + wordCount(attached);
     if (partsOf(words, this.at) < 2) return true;
     this.sheet.show(
-      `<div class="cf-t">${recording ? "Long recording" : "Long notes"}</div>` +
-        `<p class="cf-p">${esc(costLine(words, this.at))}</p>` +
+      `<div class="cf-t">${transcribed === null ? "Long notes" : "Long recording"}</div>` +
+        `<p class="cf-p">${esc(costLine(words, this.at, transcribed ?? 0))}</p>` +
         `<div class="cf-btns">` +
         `<button class="cf-go" type="button" data-act="start">Start</button>` +
         `<button class="cf-no" type="button" data-act="cancel">Cancel</button>` +

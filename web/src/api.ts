@@ -261,9 +261,7 @@ export interface Sitting {
 
 /** A statement as the thread reads it: which sitting it is in, and on a
  * sitting's first words, the sitting itself. */
-/** A line of the thread, with the name of whoever spoke it when it came from
- * a recording; null on a chat. */
-export type Said = Statement & { session_id: number; sitting: Sitting | null; speaker_name: string | null };
+export type Said = Statement & { session_id: number; sitting: Sitting | null };
 
 /** The family's one thread, newest page first; `before` reads the page of
  * words just older than that statement. */
@@ -478,11 +476,15 @@ export const deleteDiagram = (id: number) => call<void>("DELETE", `/diagrams/${i
 /** The audio goes to this server, which sends it on to be transcribed and
  * answers with the id to ask after (R-0348). Only XHR says how far the
  * upload of a body as large as a recording has got. */
-export function startTranscription(file: File, sent: (fraction: number) => void = () => {}): Promise<string> {
+export function startTranscription(
+  diagramId: number | null,
+  file: File,
+  sent: (fraction: number) => void = () => {},
+): Promise<string> {
   const form = new FormData();
   form.append("audio", file, file.name);
   const request = new XMLHttpRequest();
-  request.open("POST", `${ROOT}/transcriptions`);
+  request.open("POST", `${ROOT}${onDiagram("/transcriptions", diagramId)}`);
   request.setRequestHeader("X-CSRFToken", csrf());
   request.upload.addEventListener("progress", (e) => e.lengthComputable && sent(e.loaded / e.total));
   return new Promise((done, failed) => {
@@ -497,15 +499,16 @@ export function startTranscription(file: File, sent: (fraction: number) => void 
   });
 }
 
-/** How far a transcript has got; once completed, its turns of talk and how
- * long the recording runs. */
-export const transcription = (id: string) =>
+/** How far a transcript has got; once completed, its turns of talk, how long
+ * the recording runs and the dollars transcribing that length cost. */
+export const transcription = (diagramId: number | null, id: string) =>
   call<{
     status: string;
     utterances: Utterance[] | null;
     audio_seconds: number | null;
+    price: number | null;
     error: string | null;
-  }>("GET", `/transcriptions/${id}`);
+  }>("GET", onDiagram(`/transcriptions/${id}`, diagramId));
 
 /** Who a speaker in a recording sent with a message is: a person in the
  * diagram (one made on Save included), the clinician, or someone the diagram
@@ -534,17 +537,8 @@ export interface Suggestion {
 export type Suggested = Voice & { suggestion: Suggestion | null };
 
 /** The voices a transcript holds, each with the first thing it said. */
-export const recordingVoices = (utterances: Utterance[]) =>
-  call<Suggested[]>("POST", "/recordings/voices", { utterances });
-
-/** The point of no return: the thread exists after this and the coach can read
- * it, so the voices are named before it is called. */
-export const newRecording = (diagramId: number | null, body: {
-  utterances: Utterance[];
-  voices: Record<string, { type: string; name?: string; person_id?: number }>;
-  title: string;
-  date: string | null;
-}) => call<Session>("POST", onDiagram("/recordings", diagramId), body);
+export const recordingVoices = (diagramId: number | null, utterances: Utterance[]) =>
+  call<Suggested[]>("POST", onDiagram("/recordings/voices", diagramId), { utterances });
 
 /** The devices this account can sign in from without an emailed code. */
 export const passkeys = () =>

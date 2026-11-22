@@ -1,26 +1,14 @@
 import * as api from "./api";
-import { AUDIO } from "./attachment";
 import { Part, store } from "./store";
 import { closeX, el, esc } from "./dom";
 import { dragScroll } from "./drag";
 import { Sheet } from "./sheet";
 import { toast } from "./toast";
-import { VoiceRole, type Person, type Session, type Utterance } from "./types";
+import type { Person } from "./types";
 
-/** Putting a recorded session into the record. The audio goes to our own
- * server, which sends it on to be transcribed (R-0348). What comes back is
- * split into voices, and the reader says who each one is before anything is
- * read into the record (R-0243, R-0267). */
-
-/** How long between asking whether the transcript is ready. */
-const POLL_MS = 3000;
-
-enum Stage {
-  Warn = "warn",
-  Map = "map",
-}
-
-export const ACCEPT = [...AUDIO, "audio/*"].join(",");
+/** Who each speaker of a recording put into the chat is, said in the drawer
+ * that opens once the transcript is in, before the message goes (R-0951,
+ * R-0953). */
 
 /** Who a voice is: a person in the diagram, a person to add to it on Save,
  * the clinician, or someone the diagram leaves out. */
@@ -84,39 +72,10 @@ export interface Saved {
   date: string;
 }
 
-/** What the server is told each voice is. A new person goes in with the id
- * made for them on Save. */
-export const voicesFor = (chosen: Map<string, Choice>, people: Person[], made: Map<string, number>) =>
-  Object.fromEntries(
-    [...chosen].map(([label, choice]) => {
-      const name = shown(choice, people);
-      if (choice.who === Who.Clinician) return [label, { type: VoiceRole.Clinician, name }];
-      if (choice.who === Who.Outside) return [label, { type: VoiceRole.Client, name }];
-      const id = choice.who === Who.Person ? choice.id : made.get(label)!;
-      return [label, { type: VoiceRole.Client, name, person_id: id }];
-    }),
-  );
-
 const year = (person: Person) => person.birth?.slice(0, 4) ?? "";
-
-const today = () => new Date().toISOString().slice(0, 10);
 
 /** The day a file was made, as the date field takes it. */
 export const dayOf = (file: File) => new Date(file.lastModified).toISOString().slice(0, 10);
-
-/** The file name without its extension, which is what the session is called
- * until the reader types something else. */
-const titleFrom = (name: string) => name.replace(/\.[^.]+$/, "");
-
-async function transcribe(file: File): Promise<Utterance[]> {
-  const id = await api.startTranscription(file);
-  for (;;) {
-    const answer = await api.transcription(id);
-    if (answer.status === "completed") return answer.utterances ?? [];
-    if (answer.status === "error") throw new Error(answer.error ?? "transcription failed");
-    await new Promise((wait) => window.setTimeout(wait, POLL_MS));
-  }
-}
 
 const row = (attrs: string, title: string, side = "", cur = false) =>
   `<button class="sn-row push${cur ? " cur" : ""}" type="button" ${attrs}>` +
@@ -133,16 +92,13 @@ export class Recording {
     `<div class="fs-handle"><div class="fs-grab"></div></div>${closeX()}
      <div class="fs-search"><input type="search" readonly aria-label="the recording"></div>
      <div class="fs-body"></div>
-     <div class="fs-foot"><button class="fs-new" type="button">Create session</button></div>`,
+     <div class="fs-foot"><button class="fs-new" type="button">Save</button></div>`,
   );
   private body: HTMLElement;
   private head: HTMLInputElement;
   private make: HTMLButtonElement;
-  private file = document.createElement("input");
   private list: Sheet;
 
-  private stage = Stage.Warn;
-  private utterances: Utterance[] = [];
   private voices: api.Suggested[] = [];
   /** Set while the sheet names the speakers of a recording in the chat;
    * answered with what Save keeps, or null once the sheet goes down without. */
@@ -153,12 +109,9 @@ export class Recording {
   /** The voice the pick-list is choosing for. */
   private picking = "";
   private title = "";
-  private date = today();
+  private date = "";
 
-  constructor(
-    overlay: HTMLElement,
-    private onMade: (session: Session) => void = () => {},
-  ) {
+  constructor(overlay: HTMLElement) {
     this.scrim.hidden = true;
     this.sheet.hidden = true;
     this.sheet.id = "recording-sheet";
@@ -168,21 +121,12 @@ export class Recording {
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
     this.head = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.make = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
-    this.file.type = "file";
-    this.file.accept = ACCEPT;
-    this.file.hidden = true;
-    overlay.append(this.file);
-    this.file.addEventListener("change", () => void this.take());
     this.scrim.addEventListener("click", () => this.lower());
     this.sheet.querySelector(".cardx")!.addEventListener("click", () => this.lower());
     this.sheet
       .querySelector(".fs-handle")!
       .addEventListener("click", () => this.lower());
-    this.make.addEventListener("click", () => {
-      if (this.stage === Stage.Warn) this.choose();
-      else if (this.saved) void this.save();
-      else void this.create();
-    });
+    this.make.addEventListener("click", () => void this.save());
     this.body.addEventListener("click", (e) => {
       const chip = (e.target as Element).closest<HTMLElement>("[data-voice]");
       if (chip) this.offer(chip.dataset.voice!);
@@ -207,56 +151,6 @@ export class Recording {
     dragScroll(this.body);
   }
 
-  /** The sessions sheet's own button: a word about the cost first (R-0349),
-   * then the file picker, then everything else. */
-  pick(): void {
-    this.stage = Stage.Warn;
-    this.head.value = "Before you upload";
-    this.body.innerHTML =
-      `<p class="cf-p">Transcribing a recording costs Alaska Family Systems money ` +
-      `for every minute of audio.</p>` +
-      `<p class="cf-p">Check with patrick@alaskafamilysystems.com before you ` +
-      `upload one.</p>`;
-    this.make.hidden = false;
-    this.make.disabled = false;
-    this.make.textContent = "Choose a recording";
-    this.raise();
-  }
-
-  private choose(): void {
-    this.lower();
-    this.file.value = "";
-    this.file.click();
-  }
-
-  private async take(): Promise<void> {
-    const file = this.file.files?.[0];
-    if (!file) return;
-    this.stage = Stage.Map;
-    this.title = titleFrom(file.name);
-    this.date = today();
-    this.chosen.clear();
-    this.suggested.clear();
-    this.utterances = [];
-    this.voices = [];
-    this.raise();
-    this.head.value = `Reading ${file.name}…`;
-    this.waiting("The recording is being transcribed. This takes a few minutes.");
-    try {
-      this.utterances = await transcribe(file);
-      this.voices = await api.recordingVoices(this.utterances);
-    } catch (wrong) {
-      this.head.value = file.name;
-      this.waiting(
-        `That recording could not be transcribed: ${(wrong as Error).message}`,
-      );
-      return;
-    }
-    this.suggest();
-    this.head.value = `Who is who · ${file.name}`;
-    this.render();
-  }
-
   private suggest(): void {
     for (const voice of this.voices) {
       if (!voice.suggestion) continue;
@@ -269,7 +163,6 @@ export class Recording {
    * date and title it is kept under (R-0951, R-0953). */
   name(file: File, voices: api.Suggested[]): Promise<Saved | null> {
     this.saved?.(null);
-    this.stage = Stage.Map;
     this.title = file.name;
     this.date = dayOf(file);
     this.chosen.clear();
@@ -305,11 +198,6 @@ export class Recording {
     return made;
   }
 
-  private waiting(words: string): void {
-    this.make.hidden = true;
-    this.body.innerHTML = `<div class="fs-hint">${esc(words)}</div>`;
-  }
-
   private people(): Person[] {
     return store.current().record.people;
   }
@@ -338,18 +226,15 @@ export class Recording {
   }
 
   private render(): void {
-    this.make.hidden = false;
-    this.make.textContent = this.saved ? "Save" : "Create session";
     this.body.innerHTML =
       this.voices.map((voice) => this.block(voice)).join("") +
-      `<div class="ghead">${this.saved ? "Recording" : "Session"}</div>` +
+      `<div class="ghead">Recording</div>` +
       `<div class="row side"><div class="rmain"><div class="r1 rtitle">Date</div></div>` +
       `<input class="rwhen said" type="date" data-name="date" aria-label="Date" ` +
       `value="${esc(this.date)}"></div>` +
       `<div class="row side"><div class="rmain"><div class="r1 rtitle">Title</div></div>` +
       `<input class="rwhen said" type="text" data-name="title" aria-label="Title" ` +
-      `value="${esc(this.title)}"></div>` +
-      (this.saved ? "" : `<div class="fs-hint">The clinician's lines become the coach's side of the thread.</div>`);
+      `value="${esc(this.title)}"></div>`;
     for (const input of this.body.querySelectorAll<HTMLInputElement>("input"))
       input.addEventListener("input", () => {
         if (input.dataset.name === "date") this.date = input.value;
@@ -453,22 +338,6 @@ export class Recording {
     this.suggested.delete(label);
     this.list.lower();
     this.redraw(label);
-  }
-
-  private async create(): Promise<void> {
-    if (!this.title.trim()) {
-      toast("Give the session a title");
-      return;
-    }
-    const made = await this.made();
-    const session = await api.newRecording(store.id(), {
-      utterances: this.utterances,
-      voices: voicesFor(this.chosen, this.people(), made),
-      title: this.title.trim(),
-      date: this.date || null,
-    });
-    this.lower();
-    this.onMade(session);
   }
 
   private hiding: number | null = null;

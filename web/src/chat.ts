@@ -336,19 +336,16 @@ export class Chat {
     play: string | null = null,
     lines: Line[] = [],
     notes: Notes | null = null,
-    speaker: string | null = null,
   ): HTMLElement {
     if (role === Role.User) this.list.querySelector(".cta")?.remove();
-    // a recording's line says who spoke it, on either side
-    const who = speaker === null ? "" : `<div class="who">${esc(speaker)}</div>`;
     const bubble = el(
       "div",
       `bub ${role}`,
       role === Role.Coach
-        ? (who || `<div class="who">Coach</div>`) + this.written(tokenize(text, tone), statementId)
+        ? `<div class="who">Coach</div>` + this.written(tokenize(text, tone), statementId)
         : // Only the coach offers; the same chip sent back by the user is words
           // in their own sentence.
-          who + this.render(tokenize(text, tone), false),
+          this.render(tokenize(text, tone), false),
     );
     bubble.querySelector(".who")?.after(...lines.map(did));
     if (notes) this.annotate(bubble, notes);

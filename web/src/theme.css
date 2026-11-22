@@ -163,7 +163,7 @@ button { font-family: inherit; }
   color: var(--data);
   font: inherit;
 }
-:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .fs-upload, .iacts, .det .foot) {
+:root[data-access="admin-view"] :is(#inbar .field, #send, .fs-act, .rmore, .fs-note, .iacts, .det .foot) {
   display: none;
 }
 
@@ -987,8 +987,6 @@ button { font-family: inherit; }
   color: var(--faint);
   margin-bottom: 4px;
 }
-/* who spoke a line of a recording, on the client's side of the thread */
-.bub.user .who { color: var(--onaccent); opacity: 0.8; }
 /* one plain line per edit the coach made, inside its own bubble */
 .bub .did {
   position: relative;

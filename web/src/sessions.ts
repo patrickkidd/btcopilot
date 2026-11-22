@@ -8,11 +8,10 @@ import { matching, sessionTitle, type Family } from "./search";
 import { SessionKind, type Session } from "./types";
 import { Part, store, type Opened } from "./store";
 import { PRO } from "./pro";
-import { Recording } from "./recording";
 import { Swipe } from "./swipe";
 
 /** The sheet beside the message box, and the button that raises it, for those
- * with work in it: a professional's notes and recordings, and for Patrick the
+ * with work in it: a professional's notes, and for Patrick the
  * family's conversations, to rename or delete one. Nobody opens or starts a
  * conversation here; the family has one thread. Coding, the meeting and the
  * replies picked blind are reached from the account view, since none of them
@@ -59,7 +58,7 @@ export const sessionWhen = (session: Session): Date =>
   new Date(session.date ? `${session.date}T12:00:00` : session.last_activity);
 
 export interface SessionsHandlers {
-  /** A professional's new note or recording, which joins the thread. */
+  /** A professional's new note, which joins the thread. */
   onMade(session: Session): void;
   /** The drawer came up or went down, so the address says so. */
   onMoved(): void;
@@ -93,7 +92,6 @@ export class Sessions {
      </div>
      <div class="fs-body"></div>
      <div class="fs-foot">
-       <button class="fs-new fs-upload" type="button" hidden>Upload a recording</button>
        <button class="fs-new fs-note" type="button" hidden>+ new note</button></div>`,
   );
 
@@ -102,9 +100,7 @@ export class Sessions {
    * the long press. */
   private swipe: Swipe;
   private search: HTMLInputElement;
-  private uploadButton: HTMLButtonElement;
   private noteButton: HTMLButtonElement;
-  private recording: Recording;
 
   constructor(
     private button: HTMLElement,
@@ -129,11 +125,8 @@ export class Sessions {
     }));
     this.search = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.search.parentElement!.hidden = this.body.hidden = !this.admin;
-    this.uploadButton = this.sheet.querySelector<HTMLButtonElement>(".fs-upload")!;
     this.noteButton = this.sheet.querySelector<HTMLButtonElement>(".fs-note")!;
-    this.uploadButton.hidden = !PRO;
     this.noteButton.hidden = !PRO;
-    this.recording = new Recording(this.overlay, (made) => this.handlers.onMade(made));
     this.wire();
     dragScroll(this.body);
     // The sheet lists the sittings of the diagram open, from the store: it
@@ -198,13 +191,6 @@ export class Sessions {
     this.scrim.addEventListener("click", () => this.lower());
     this.sheet.querySelector(".cardx")!.addEventListener("click", () => this.lower());
     this.search.addEventListener("input", () => void this.seek());
-    // One sheet is up at a time: the upload sheet takes the sessions sheet's
-    // place rather than standing on top of it.
-    this.uploadButton.addEventListener("click", () => {
-      tap(Feature.UploadOpen);
-      this.lower();
-      this.recording.pick();
-    });
     this.noteButton.addEventListener("click", () => {
       tap(Feature.NoteNew);
       void this.note();
@@ -334,10 +320,8 @@ export class Sessions {
     this.handlers.onMoved();
   }
 
-  /** The sessions drawer and the upload panel it hands over to, both put away. */
   close(): void {
     this.lower();
-    this.recording.lower();
   }
 
   private lower(): void {

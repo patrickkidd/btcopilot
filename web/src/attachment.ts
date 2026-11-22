@@ -3,6 +3,7 @@ import { closeX, el, esc } from "./dom";
 import { clock, Recorder } from "./recorder";
 import type { Saved } from "./recording";
 import { Sheet } from "./sheet";
+import { store } from "./store";
 import { toast } from "./toast";
 import type { Utterance } from "./types";
 
@@ -79,6 +80,8 @@ export interface Clip {
   since: number;
   id: string;
   seconds: number | null;
+  /** The dollars transcribing it cost, once transcribed. */
+  price: number | null;
   utterances: Utterance[];
   voices: api.Suggested[];
   saved: Saved | null;
@@ -91,6 +94,7 @@ export const clipOf = (file: File): Clip => ({
   since: 0,
   id: "",
   seconds: null,
+  price: null,
   utterances: [],
   voices: [],
   saved: null,
@@ -256,10 +260,11 @@ export class Attachment {
   private async transcribe(clip: Clip): Promise<void> {
     const run = ++this.run;
     const live = () => run === this.run;
+    const diagram = store.id();
     Object.assign(clip, { stage: Stage.Uploading, sent: 0 });
     this.draw();
     try {
-      clip.id = await api.startTranscription(clip.file, (sent) => {
+      clip.id = await api.startTranscription(diagram, clip.file, (sent) => {
         clip.sent = sent;
         if (live()) this.draw();
       });
@@ -269,7 +274,7 @@ export class Attachment {
       this.ticking = window.setInterval(() => this.draw(), 1000);
       let answer;
       for (;;) {
-        answer = await api.transcription(clip.id);
+        answer = await api.transcription(diagram, clip.id);
         if (!live()) return;
         if (answer.status === "completed") break;
         if (answer.status === "error") throw new api.Failed(200, `GET /transcriptions/${clip.id}`, answer.error ?? "");
@@ -278,12 +283,13 @@ export class Attachment {
       }
       window.clearInterval(this.ticking);
       clip.seconds = answer.audio_seconds;
+      clip.price = answer.price;
       clip.utterances = answer.utterances ?? [];
       if (!clip.utterances.length) {
         clip.stage = Stage.Silent;
         return this.draw();
       }
-      clip.voices = await api.recordingVoices(clip.utterances);
+      clip.voices = await api.recordingVoices(diagram, clip.utterances);
       if (!live()) return;
       clip.stage = Stage.Naming;
       this.draw();
@@ -322,9 +328,10 @@ export class Attachment {
     return !!this.picked.file || !!this.clip;
   }
 
-  /** Whether what the box holds is a recording. */
-  recording(): boolean {
-    return !!this.clip;
+  /** What transcribing the recording in the box cost; null when the box
+   * holds no recording. */
+  transcribed(): number | null {
+    return this.clip ? this.clip.price! : null;
   }
 
   /** A recording still on its way to being named holds the message back. */

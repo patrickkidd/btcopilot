@@ -1130,7 +1130,7 @@ async function send(): Promise<void> {
   // and never changes the reply under way (R-0636)
   if (inFlight) return chat.keep();
   // notes too long for one part are priced first; a cancel leaves them in the box
-  if (!(await longNotes.ask(statement, await attachment.text(), attachment.recording()))) return;
+  if (!(await longNotes.ask(statement, await attachment.text(), attachment.transcribed()))) return;
   await questions.sending(statement);
   chat.resetDraft();
   post(statement, attachment.take());
