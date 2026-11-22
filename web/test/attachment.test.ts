@@ -1,6 +1,6 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { said } from "../src/api";
-import { clipChip, clipOf, MENU, fileChip, isAudio, KINDS, nameOf, Picked, readSheet, Stage, values } from "../src/attachment";
+import { clipChip, clipOf, erred, forget, MENU, fileChip, isAudio, KINDS, nameOf, Picked, readSheet, Stage, values } from "../src/attachment";
 
 const pdf = () => new File(["%PDF"], "Mom's letter.pdf", { type: "application/pdf" });
 
@@ -101,4 +101,24 @@ it("sends a recording as its transcript and who each speaker is, in the form a f
 it("offers recording in the app first, then a file already made", () => {
   expect(MENU.indexOf("Record a conversation")).toBeGreaterThan(-1);
   expect(MENU.indexOf("Record a conversation")).toBeLessThan(MENU.indexOf("Choose a file"));
+});
+
+// R-0953
+it("deletes the service's copy of a recording left unsent, but never one whose transcription ended in error", async () => {
+  vi.stubGlobal("document", { querySelector: () => ({ content: "served" }) });
+  const asked: string[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    asked.push(`${init.method} ${url}`);
+    return new Response(null, { status: 204 });
+  });
+  const removed = Object.assign(clipOf(memo()), { id: "tr-1", diagram: 7 });
+  forget(removed);
+  expect(removed.id).toBe("");
+  const failed = Object.assign(clipOf(memo()), { id: "tr-2", diagram: 7 });
+  erred(failed);
+  forget(failed);
+  await new Promise((wait) => setTimeout(wait, 0));
+  expect(asked).toHaveLength(1);
+  expect(asked[0]).toMatch(/^DELETE .*\/transcriptions\/tr-1\?diagram_id=7$/);
+  vi.unstubAllGlobals();
 });

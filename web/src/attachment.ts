@@ -111,6 +111,13 @@ export function forget(clip: Clip): void {
   clip.id = "";
 }
 
+/** A transcription that ended in error is already deleted by the server, so
+ * its id is dead: nothing deletes it again, and Try again uploads the file
+ * for a new one. */
+export function erred(clip: Clip): void {
+  clip.id = "";
+}
+
 /** What the recording's chip says beside its name, as values (R-0953). */
 export function values(clip: Clip, now: number): string[] {
   if (clip.stage === Stage.Uploading) return [`Uploading ${Math.round(clip.sent * 100)}%`];
@@ -290,7 +297,11 @@ export class Attachment {
         answer = await api.transcription(diagram, clip.id);
         if (!live()) return;
         if (answer.status === "completed") break;
-        if (answer.status === "error") throw new api.Failed(200, `GET /transcriptions/${clip.id}`, answer.error ?? "");
+        if (answer.status === "error") {
+          const id = clip.id;
+          erred(clip);
+          throw new api.Failed(200, `GET /transcriptions/${id}`, answer.error ?? "");
+        }
         await new Promise((wait) => window.setTimeout(wait, POLL_MS));
         if (!live()) return;
       }
