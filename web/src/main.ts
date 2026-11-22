@@ -2035,7 +2035,7 @@ void notices.refresh();
 const release = new Release(
   window.BOOTSTRAP.version,
   api.version,
-  () => inFlight || chat.draft() !== "" || !!$("coding-composer").textContent?.trim(),
+  () => inFlight || attachment.holding() || chat.draft() !== "" || !!$("coding-composer").textContent?.trim(),
   () => location.reload(),
 );
 document.addEventListener("visibilitychange", () => {

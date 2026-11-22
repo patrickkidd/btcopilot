@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 import { said } from "../src/api";
-import { clipChip, clipOf, erred, forget, MENU, fileChip, isAudio, KINDS, nameOf, Picked, readSheet, Stage, values } from "../src/attachment";
+import { clipChip, clipOf, erred, forget, holding, MENU, fileChip, isAudio, KINDS, nameOf, Picked, readSheet, Stage, values } from "../src/attachment";
 
 const pdf = () => new File(["%PDF"], "Mom's letter.pdf", { type: "application/pdf" });
 
@@ -121,4 +121,14 @@ it("deletes the service's copy of a recording left unsent, but never one whose t
   expect(asked).toHaveLength(1);
   expect(asked[0]).toMatch(/^DELETE .*\/transcriptions\/tr-1\?diagram_id=7$/);
   vi.unstubAllGlobals();
+});
+
+// R-0955
+it("holds a new release back while a recording is made, uploaded or transcribed, and not after", () => {
+  const clip = clipOf(new File(["a"], "Recording 2026-11-21 14.05.m4a", { type: "audio/mp4" }));
+  expect(holding(true, null)).toBe(true);
+  expect(holding(false, null)).toBe(false);
+  for (const stage of [Stage.Uploading, Stage.Transcribing]) expect(holding(false, { ...clip, stage })).toBe(true);
+  for (const stage of [Stage.Failed, Stage.Silent, Stage.Naming, Stage.Named])
+    expect(holding(false, { ...clip, stage })).toBe(false);
 });

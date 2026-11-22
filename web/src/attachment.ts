@@ -119,6 +119,11 @@ export function erred(clip: Clip): void {
   clip.id = "";
 }
 
+/** A recording being made, or one in the box still uploading or
+ * transcribing, would be cut off by a reload (R-0955). */
+export const holding = (recording: boolean, clip: Clip | null): boolean =>
+  recording || clip?.stage === Stage.Uploading || clip?.stage === Stage.Transcribing;
+
 /** What the recording's chip says beside its name, as values (R-0953). */
 export function values(clip: Clip, now: number): string[] {
   if (clip.stage === Stage.Uploading) return [`Uploading ${Math.round(clip.sent * 100)}%`];
@@ -391,6 +396,11 @@ export class Attachment {
     this.picked.take();
     this.slot.hidden = true;
     this.slot.innerHTML = "";
+  }
+
+  /** A new release waits while this is true. */
+  holding(): boolean {
+    return holding(this.recorder.busy(), this.clip);
   }
 
   /** Whether the box holds something to send with the message. */
