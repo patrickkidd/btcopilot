@@ -736,6 +736,8 @@ store.watch({
     $("viewing-cut").hidden = !looking() || selecting.selecting();
     $("viewing-who").textContent = looking() ? `Viewing ${diagram!.owner}'s diagram, read-only` : "";
     if (diagram) track.diagram(diagram.id);
+    // a recording cut off by a reload is offered back on the chat (R-0955)
+    if (diagram && !looking()) void attachment.offer();
   },
 });
 

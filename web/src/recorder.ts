@@ -1,4 +1,5 @@
 import { esc } from "./dom";
+import { type Found, KeptRecording } from "./keptrecording";
 import { Sheet } from "./sheet";
 
 /** Recording a conversation in the app, for a person who does not know the
@@ -45,12 +46,20 @@ export const missedLine = (seconds: number) => `Missed ${clock(seconds)} while t
 export enum Ended {
   Lost = "lost",
   Broke = "broke",
+  Reloaded = "reloaded",
 }
 
 export const ENDED: Record<Ended, string> = {
   [Ended.Lost]: "Stopped when the microphone was lost",
   [Ended.Broke]: "Stopped by an error",
+  [Ended.Reloaded]: "Stopped when the page reloaded",
 };
+
+/** Where a recording is made: the diagram open and its name. */
+export interface Place {
+  diagram: number | null;
+  name: string;
+}
 
 /** The recording's name: the day and time it started, on the person's clock. */
 export const nameFor = (at: Date, kind: string) =>
@@ -75,12 +84,22 @@ export const optionsFor = (kind: string): MediaRecorderOptions => ({
   audioBitsPerSecond: BITS_PER_SECOND,
 });
 
-export const endedFor = (seconds: number, missed: number, why: Ended) =>
+/** The line naming the diagram a kept recording was made in, when another is
+ * open. */
+export const elsewhereLine = (name: string) => `Recorded in the diagram ${name}`;
+
+export const endedFor = (seconds: number, missed: number, why: Ended, elsewhere: string | null = null) =>
   `<div class="cf-t">Recording</div>` +
   `<div class="rc-vals"><span class="rc-v">Recorded ${clock(seconds)}</span>` +
-  `<span class="rc-v">${esc(ENDED[why])}</span>${missedFor(missed)}</div>` +
+  `<span class="rc-v">${esc(ENDED[why])}</span>${missedFor(missed)}` +
+  `${elsewhere === null ? "" : `<span class="rc-v">${esc(elsewhereLine(elsewhere))}</span>`}</div>` +
   `<div class="cf-btns"><button class="cf-go" type="button" data-act="keep">Keep</button>` +
   `<button class="cf-no" type="button" data-act="discard">Discard</button></div>`;
+
+/** A kept recording made whole again from its pieces, as Stop would have
+ * made it. */
+export const rebuilt = ({ about, pieces }: Found) =>
+  new File(pieces, nameFor(new Date(about.started), about.kind), { type: about.kind });
 
 export class Recorder {
   private sheet: Sheet;
@@ -95,7 +114,10 @@ export class Recorder {
   private lock: WakeLockSentinel | null = null;
   private ended: Ended | null = null;
 
-  constructor(host: HTMLElement) {
+  constructor(
+    host: HTMLElement,
+    private readonly kept: KeptRecording,
+  ) {
     this.sheet = new Sheet(host, "rc");
     this.sheet.panel.addEventListener("click", (e) => {
       const act = (e.target as Element).closest<HTMLElement>("[data-act]")?.dataset.act;
@@ -118,7 +140,7 @@ export class Recorder {
   /** The microphone asked for, then recording until Stop; answers with the
    * recording, or null when there is none or the person discards it. A
    * refused microphone is the browser's to say, and is thrown. */
-  async record(): Promise<File | null> {
+  async record(place: Place): Promise<File | null> {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const kind = kindFor((one) => MediaRecorder.isTypeSupported(one));
     const media = new MediaRecorder(stream, optionsFor(kind));
@@ -127,11 +149,13 @@ export class Recorder {
     this.ended = null;
     this.arrivals = [];
     const start = new Date();
-    this.started = Date.now();
+    this.started = start.getTime();
+    this.kept.begin({ kind, started: this.started, seconds: 0, missed: 0, ...place });
     media.addEventListener("dataavailable", (e) => {
       if (!e.data.size) return;
       this.chunks.push(e.data);
       this.arrivals.push(Date.now());
+      this.kept.add(e.data, this.seconds(), this.missed(), media.mimeType || kind);
     });
     media.addEventListener("error", () => this.stop(Ended.Broke));
     for (const track of stream.getTracks()) track.addEventListener("ended", () => this.stop(Ended.Lost));
@@ -150,6 +174,20 @@ export class Recorder {
     await this.awake();
     this.sheet.show(sheetFor(0, 0));
     this.ticking = window.setInterval(() => this.tick(), 1000);
+    return new Promise((answer) => (this.answer = answer));
+  }
+
+  /** Recording, or a drawer of its own up. */
+  busy(): boolean {
+    return !!this.media || this.sheet.up;
+  }
+
+  /** A recording kept from before the page reloaded, offered with Keep and
+   * Discard; answers with it rebuilt, or null once discarded. `elsewhere`
+   * names the diagram it was made in, when another is open. */
+  offer(found: Found, elsewhere: string | null): Promise<File | null> {
+    this.file = rebuilt(found);
+    this.sheet.show(endedFor(found.about.seconds, found.about.missed, Ended.Reloaded, elsewhere));
     return new Promise((answer) => (this.answer = answer));
   }
 
@@ -178,6 +216,7 @@ export class Recorder {
   private done(keep: boolean): void {
     this.sheet.lower();
     this.media = null;
+    if (!keep) this.kept.forget();
     const answer = this.answer;
     this.answer = null;
     answer?.(keep ? this.file : null);

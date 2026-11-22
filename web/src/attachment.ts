@@ -1,5 +1,6 @@
 import * as api from "./api";
 import { closeX, el, esc } from "./dom";
+import { KeptRecording } from "./keptrecording";
 import { clock, Recorder } from "./recorder";
 import type { Saved } from "./recording";
 import { Sheet } from "./sheet";
@@ -173,6 +174,11 @@ export class Attachment {
   private sheet: Sheet;
   private menu: Sheet;
   private recorder: Recorder;
+  /** The recording kept on the device, and its clip while it is in the box
+   * and not yet taken by the server (R-0955). */
+  private kept = new KeptRecording();
+  private keptClip: Clip | null = null;
+  private offering = false;
   private texts = new WeakMap<HTMLElement, string>();
 
   constructor(
@@ -188,7 +194,7 @@ export class Attachment {
     this.input.setAttribute("aria-label", "Attach a file");
     button.after(this.input);
     this.menu = new Sheet(screen, "ap");
-    this.recorder = new Recorder(screen);
+    this.recorder = new Recorder(screen, this.kept);
     button.addEventListener("click", () => this.menu.show(MENU));
     this.menu.panel.addEventListener("click", (e) => {
       const target = e.target as Element;
@@ -209,7 +215,7 @@ export class Attachment {
     this.slot.addEventListener("click", (e) => {
       const target = e.target as Element;
       const chosen = target.closest<HTMLElement>("[data-act]")?.dataset.act;
-      if (target.closest(".cardx") || chosen === "remove") this.clear();
+      if (target.closest(".cardx") || chosen === "remove") this.clear(true);
       else if (chosen === "again" && this.clip) void this.transcribe(this.clip);
       else if (chosen === "name" && this.clip) void this.name(this.clip, this.run);
     });
@@ -245,10 +251,11 @@ export class Attachment {
     });
   }
 
-  pick(file: File): void {
+  pick(file: File, kept = false): void {
     this.clear();
     if (isAudio(file)) {
       this.clip = clipOf(file);
+      if (kept) this.keptClip = this.clip;
       this.slot.hidden = false;
       void this.transcribe(this.clip);
       return;
@@ -258,17 +265,39 @@ export class Attachment {
     this.slot.hidden = false;
   }
 
+  /** A recording kept from before the page reloaded, not in the box, is
+   * offered with Keep and Discard; Keep puts it in the box as Stop does.
+   * True when one was kept. */
+  async offer(): Promise<boolean> {
+    if (this.offering || this.keptClip || this.recorder.busy()) return false;
+    this.offering = true;
+    try {
+      const found = await this.kept.find();
+      if (!found || this.keptClip || this.recorder.busy()) return false;
+      const elsewhere = found.about.diagram === store.id() ? null : found.about.name;
+      const file = await this.recorder.offer(found, elsewhere);
+      if (file) this.pick(file, true);
+      return !!file;
+    } finally {
+      this.offering = false;
+    }
+  }
+
   private async record(): Promise<void> {
+    // only one recording is kept: an older one is offered before a new one starts
+    if (await this.offer()) return;
+    if (this.offering) return;
+    this.keptClip = null;
     let file;
     try {
-      file = await this.recorder.record();
+      file = await this.recorder.record({ diagram: store.id(), name: store.current().diagram?.name ?? "" });
     } catch (refused) {
       if (!(refused instanceof DOMException)) throw refused;
       console.warn(refused.message);
       toast("Recording needs the microphone");
       return;
     }
-    if (file) this.pick(file);
+    if (file) this.pick(file, true);
   }
 
   private draw(): void {
@@ -289,6 +318,10 @@ export class Attachment {
       });
       // taken out of the box while it was still uploading
       if (!live()) return forget(clip);
+      if (clip === this.keptClip) {
+        this.kept.forget();
+        this.keptClip = null;
+      }
       Object.assign(clip, { stage: Stage.Transcribing, since: Date.now() });
       this.draw();
       this.ticking = window.setInterval(() => this.draw(), 1000);
@@ -341,9 +374,12 @@ export class Attachment {
   }
 
   /** The box emptied without sending: a recording's copy at the transcription
-   * service is deleted, without waiting for it. */
-  clear(): void {
+   * service is deleted, without waiting for it. Removed by the person, the
+   * copy kept on the device goes too; emptied for another diagram, it stays
+   * and is offered again. */
+  clear(removed = false): void {
     if (this.clip) forget(this.clip);
+    if (removed && this.keptClip) this.kept.forget();
     this.empty();
   }
 
@@ -351,6 +387,7 @@ export class Attachment {
     this.run += 1;
     window.clearInterval(this.ticking);
     this.clip = null;
+    this.keptClip = null;
     this.picked.take();
     this.slot.hidden = true;
     this.slot.innerHTML = "";

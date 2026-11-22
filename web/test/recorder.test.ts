@@ -39,3 +39,13 @@ it("shows the running time, the time missed while hidden, and why a recording st
   expect(missedFrom([0, 1000, 2100, 25_000, 26_000])).toBeCloseTo(21.9);
   expect(ENDED[Ended.Lost]).toBe("Stopped when the microphone was lost");
 });
+
+// R-0955
+it("offers a recording cut off by a reload with the time recorded, why, and the diagram it was made in when another is open", () => {
+  const drawer = endedFor(12, 0, Ended.Reloaded);
+  expect(drawer).toContain("Recorded 0:12");
+  expect(drawer).toContain("Stopped when the page reloaded");
+  expect(drawer).toContain('data-act="keep">Keep<');
+  expect(drawer).not.toContain("Recorded in the diagram");
+  expect(endedFor(12, 0, Ended.Reloaded, "Hartley family")).toContain("Recorded in the diagram Hartley family");
+});
