@@ -98,7 +98,7 @@ def fetched(transcript_id: str, user_id: int, diagram_id: int) -> dict:
 def status(transcript_id: str, user_id: int, diagram_id: int) -> dict:
     """{status, utterances, audio_seconds, price, error}: the last three of a
     completed transcript only. AssemblyAI's error goes to the observations
-    table once."""
+    table once, and the failed transcript is deleted there."""
     data = fetched(transcript_id, user_id, diagram_id)
     done = data["status"] == Status.Completed
     if (
@@ -116,6 +116,7 @@ def status(transcript_id: str, user_id: int, diagram_id: int) -> dict:
                 "error": data.get("error"),
             },
         )
+        removed(transcript_id, diagram_id, transcript_id)
     return {
         "status": data["status"],
         "utterances": (data.get("utterances") or []) if done else None,
@@ -132,6 +133,23 @@ def status(transcript_id: str, user_id: int, diagram_id: int) -> dict:
 def delete(transcript_id: str) -> None:
     answer = requests.delete(f"{_service()}/transcript/{transcript_id}", headers=_headers())
     answer.raise_for_status()
+
+
+def removed(transcript_id: str, diagram_id: int, turn_id: str) -> None:
+    """AssemblyAI's copy deleted; a delete that fails is written down, never
+    the person's error."""
+    try:
+        delete(transcript_id)
+    except requests.RequestException as error:
+        _recorded(
+            diagram_id,
+            turn_id,
+            {
+                "outcome": Outcome.Undeleted,
+                "transcript": transcript_id,
+                "error": str(error),
+            },
+        )
 
 
 def _recorded(diagram_id: int, turn_id: str, report: dict) -> None:
@@ -233,8 +251,7 @@ class Recording:
 
     def done(self, diagram_id: int, turn_id: str) -> None:
         """After the statement is stored: one import record, and AssemblyAI's
-        copy deleted; a delete that fails is written down, not the person's
-        error."""
+        copy deleted."""
         _recorded(
             diagram_id,
             turn_id,
@@ -247,15 +264,4 @@ class Recording:
                 ],
             },
         )
-        try:
-            delete(self.id)
-        except requests.RequestException as error:
-            _recorded(
-                diagram_id,
-                turn_id,
-                {
-                    "outcome": Outcome.Undeleted,
-                    "transcript": self.id,
-                    "error": str(error),
-                },
-            )
+        removed(self.id, diagram_id, turn_id)

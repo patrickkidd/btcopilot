@@ -30,6 +30,15 @@ def transcription_status(transcript_id: str):
     )
 
 
+@bp.route("/transcriptions/<transcript_id>", methods=["DELETE"])
+def transcription_delete(transcript_id: str):
+    """A recording removed or replaced before it was sent: AssemblyAI's copy
+    goes with it."""
+    diagram = writable_diagram()
+    transcription.removed(transcript_id, diagram.id, transcript_id)
+    return "", 204
+
+
 @bp.route("/recordings/voices", methods=["POST"])
 def recording_voices():
     """What the person is shown when saying who is who: each voice in the

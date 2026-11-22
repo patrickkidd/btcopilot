@@ -259,6 +259,78 @@ def test_a_transcription_that_fails_at_assemblyai_is_observed_once(web, service)
     ]
 
 
+def deletes(service) -> list[str]:
+    return [url for verb, url, _, _ in service.calls if verb == "delete"]
+
+
+def test_a_failed_transcription_is_deleted_at_assemblyai_once(web, service):
+    # R-0348
+    service.body = {"status": "error", "error": "Audio file has no sound"}
+    web.get("/app/transcriptions/t1")
+    web.get("/app/transcriptions/t1")
+    assert deletes(service) == [transcription.SERVICE + "/transcript/t1"]
+
+
+def test_a_failed_transcription_whose_delete_fails_is_recorded_and_still_answers(
+    web, service
+):
+    # R-0348
+    service.body = {"status": "error", "error": "Audio file has no sound"}
+    service.deletes = False
+    read = web.get("/app/transcriptions/t1")
+    assert read.status_code == 200
+    rows = Observation.query.filter_by(turn_id="t1").order_by(Observation.id).all()
+    assert [(r.kind, r.detail["outcome"]) for r in rows] == [
+        (ObservationKind.Import, "not transcribed"),
+        (ObservationKind.Import, "not deleted at AssemblyAI"),
+    ]
+
+
+def test_a_recording_removed_before_it_is_sent_is_deleted_at_assemblyai(
+    web, token, service
+):
+    # R-0348
+    gone = web.delete("/app/transcriptions/t1", headers={"X-CSRFToken": token})
+    assert (gone.status_code, gone.get_data()) == (204, b"")
+    assert deletes(service) == [transcription.SERVICE + "/transcript/t1"]
+    assert Observation.query.count() == 0
+
+
+def test_a_removal_whose_delete_fails_is_recorded_and_still_answers(
+    web, token, service, test_user
+):
+    # R-0348
+    service.deletes = False
+    gone = web.delete("/app/transcriptions/t1", headers={"X-CSRFToken": token})
+    assert gone.status_code == 204
+    row = Observation.query.one()
+    assert (row.kind, row.turn_id, row.diagram_id) == (
+        ObservationKind.Import,
+        "t1",
+        test_user.free_diagram_id,
+    )
+    assert row.detail == {
+        "outcome": "not deleted at AssemblyAI",
+        "transcript": "t1",
+        "error": "no answer",
+    }
+
+
+def test_only_a_user_who_may_write_removes_a_recording(
+    web, token, service, test_user, test_user_2
+):
+    # R-0951
+    shared = Diagram(user_id=test_user_2.id, name="Shared", data=diagramjson.dumps({}))
+    db.session.add(shared)
+    db.session.commit()
+    shared.grant_access(test_user, btcopilot.ACCESS_READ_ONLY, _commit=True)
+    refused = web.delete(
+        f"/app/transcriptions/t1?diagram_id={shared.id}", headers={"X-CSRFToken": token}
+    )
+    assert refused.status_code == 403
+    assert deletes(service) == []
+
+
 def test_the_text_names_a_clinician_and_two_people_and_joins_one_speakers_lines():
     # R-0951, R-0954
     named = transcription.names(
