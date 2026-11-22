@@ -510,6 +510,10 @@ export const transcription = (diagramId: number | null, id: string) =>
     error: string | null;
   }>("GET", onDiagram(`/transcriptions/${id}`, diagramId));
 
+/** The transcription service's copy of a recording that was never sent. */
+export const deleteTranscription = (diagramId: number | null, id: string) =>
+  call<void>("DELETE", onDiagram(`/transcriptions/${id}`, diagramId));
+
 /** Who a speaker in a recording sent with a message is: a person in the
  * diagram (one made on Save included), the clinician, or someone the diagram
  * leaves out, by name. */

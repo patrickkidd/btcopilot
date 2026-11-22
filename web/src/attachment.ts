@@ -79,6 +79,8 @@ export interface Clip {
   /** When transcribing began, in milliseconds. */
   since: number;
   id: string;
+  /** The diagram open when it was put in, which every call about it names. */
+  diagram: number | null;
   seconds: number | null;
   /** The dollars transcribing it cost, once transcribed. */
   price: number | null;
@@ -93,12 +95,21 @@ export const clipOf = (file: File): Clip => ({
   sent: 0,
   since: 0,
   id: "",
+  diagram: null,
   seconds: null,
   price: null,
   utterances: [],
   voices: [],
   saved: null,
 });
+
+/** A transcription the recording will not be sent with is deleted at the
+ * service, without the person waiting for it; the clip forgets its id. */
+export function forget(clip: Clip): void {
+  if (!clip.id) return;
+  void api.deleteTranscription(clip.diagram, clip.id);
+  clip.id = "";
+}
 
 /** What the recording's chip says beside its name, as values (R-0953). */
 export function values(clip: Clip, now: number): string[] {
@@ -260,7 +271,8 @@ export class Attachment {
   private async transcribe(clip: Clip): Promise<void> {
     const run = ++this.run;
     const live = () => run === this.run;
-    const diagram = store.id();
+    forget(clip);
+    const diagram = (clip.diagram = store.id());
     Object.assign(clip, { stage: Stage.Uploading, sent: 0 });
     this.draw();
     try {
@@ -268,7 +280,8 @@ export class Attachment {
         clip.sent = sent;
         if (live()) this.draw();
       });
-      if (!live()) return;
+      // taken out of the box while it was still uploading
+      if (!live()) return forget(clip);
       Object.assign(clip, { stage: Stage.Transcribing, since: Date.now() });
       this.draw();
       this.ticking = window.setInterval(() => this.draw(), 1000);
@@ -314,7 +327,14 @@ export class Attachment {
     this.draw();
   }
 
+  /** The box emptied without sending: a recording's copy at the transcription
+   * service is deleted, without waiting for it. */
   clear(): void {
+    if (this.clip) forget(this.clip);
+    this.empty();
+  }
+
+  private empty(): void {
     this.run += 1;
     window.clearInterval(this.ticking);
     this.clip = null;
@@ -351,7 +371,7 @@ export class Attachment {
   take(): File | api.Heard | null {
     const clip = this.clip;
     const file = this.picked.file;
-    this.clear();
+    this.empty();
     if (!clip) return file;
     return { transcription: clip.id, ...clip.saved! };
   }

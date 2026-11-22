@@ -1,5 +1,21 @@
 import { expect, it } from "vitest";
-import { clock, ENDED, Ended, endingFor, kindFor, missedFrom, missedLine, nameFor } from "../src/recorder";
+import { clock, ENDED, Ended, endedFor, endingFor, kindFor, missedFrom, missedLine, nameFor, optionsFor } from "../src/recorder";
+
+// R-0955
+it("asks for 64,000 bits per second of audio, the kind unchanged", () => {
+  expect(optionsFor("audio/mp4")).toEqual({ mimeType: "audio/mp4", audioBitsPerSecond: 64_000 });
+  expect(optionsFor("")).toEqual({ audioBitsPerSecond: 64_000 });
+});
+
+// R-0955
+it("offers Keep and Discard with the time recorded and why, when the microphone ends early", () => {
+  const drawer = endedFor(125, 0, Ended.Lost);
+  expect(drawer).toContain("Recorded 2:05");
+  expect(drawer).toContain("Stopped when the microphone was lost");
+  expect(drawer).toContain('data-act="keep">Keep<');
+  expect(drawer).toContain('data-act="discard">Discard<');
+  expect(drawer).not.toContain("Missed");
+});
 
 // R-0955
 it("records MP4 where the browser can, else WebM, named by when it started and by its kind", () => {

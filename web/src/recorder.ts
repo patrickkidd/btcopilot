@@ -66,7 +66,16 @@ const sheetFor = (seconds: number, missed: number) =>
   `<p class="cf-p">Recording carries on if the phone locks.</p>` +
   `<div class="cf-btns"><button class="cf-go" type="button" data-act="stop">Stop</button></div>`;
 
-const endedFor = (seconds: number, missed: number, why: Ended) =>
+/** Speech needs no more: about 29 MB an hour, where the iPhone's own rate
+ * gave about 86 MB. */
+export const BITS_PER_SECOND = 64_000;
+
+export const optionsFor = (kind: string): MediaRecorderOptions => ({
+  ...(kind ? { mimeType: kind } : {}),
+  audioBitsPerSecond: BITS_PER_SECOND,
+});
+
+export const endedFor = (seconds: number, missed: number, why: Ended) =>
   `<div class="cf-t">Recording</div>` +
   `<div class="rc-vals"><span class="rc-v">Recorded ${clock(seconds)}</span>` +
   `<span class="rc-v">${esc(ENDED[why])}</span>${missedFor(missed)}</div>` +
@@ -112,7 +121,7 @@ export class Recorder {
   async record(): Promise<File | null> {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const kind = kindFor((one) => MediaRecorder.isTypeSupported(one));
-    const media = new MediaRecorder(stream, kind ? { mimeType: kind } : {});
+    const media = new MediaRecorder(stream, optionsFor(kind));
     this.media = media;
     this.chunks = [];
     this.ended = null;

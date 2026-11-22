@@ -1,5 +1,24 @@
 import { expect, it } from "vitest";
-import { dayOf, guessed, namedFor, Who, type Choice } from "../src/recording";
+import { because, dayOf, guessed, namedFor, Who, type Choice } from "../src/recording";
+
+// R-0953
+it("dates a recording by the person's own calendar day, not the day in UTC", () => {
+  const zone = process.env.TZ;
+  process.env.TZ = "America/Anchorage";
+  // 15:31 on 21 November in Alaska is already 22 November in UTC
+  expect(dayOf(new File(["a"], "x.m4a", { lastModified: Date.UTC(2026, 10, 22, 0, 31) }))).toBe("2026-11-21");
+  process.env.TZ = zone;
+});
+
+// R-0951
+it("says whose words a suggestion rests on only when another speaker said them", () => {
+  const voice = { label: "B", said: "Corinne, you were too little to remember", suggestion: null };
+  expect(because(voice, { person_id: 5, because: "Thank you, Corinne", speaker: "A" })).toContain("Speaker A said: <q>Thank you, Corinne</q>");
+  expect(because(voice, { person_id: 5, because: "Corinne, you were too little", speaker: "B" })).toBe("");
+  const alone = because(voice, { person_id: 5, because: "My name is Corinne", speaker: "B" });
+  expect(alone).toContain("<q>My name is Corinne</q>");
+  expect(alone).not.toContain("said:");
+});
 
 // R-0951
 it("tells the server each speaker's person, a new person by the id made for them on Save", () => {

@@ -74,8 +74,19 @@ export interface Saved {
 
 const year = (person: Person) => person.birth?.slice(0, 4) ?? "";
 
-/** The day a file was made, as the date field takes it. */
-export const dayOf = (file: File) => new Date(file.lastModified).toISOString().slice(0, 10);
+/** The calendar day a file was made on the person's device, as the date
+ * field takes it. */
+export const dayOf = (file: File) => new Date(file.lastModified).toLocaleDateString("en-CA");
+
+/** The words a suggestion rests on, under the speaker's block: said by
+ * another speaker, they say whose; this speaker's own, they stand alone, or
+ * not at all when they are already the first words shown. */
+export function because(voice: api.Suggested, guess: api.Suggestion): string {
+  if (guess.speaker !== voice.label)
+    return `<div class="rv-because">Speaker ${esc(guess.speaker)} said: <q>${esc(guess.because)}</q></div>`;
+  if (voice.said.includes(guess.because)) return "";
+  return `<div class="rv-because"><q>${esc(guess.because)}</q></div>`;
+}
 
 const row = (attrs: string, title: string, side = "", cur = false) =>
   `<button class="sn-row push${cur ? " cur" : ""}" type="button" ${attrs}>` +
@@ -90,12 +101,11 @@ export class Recording {
     "div",
     "fs-sheet",
     `<div class="fs-handle"><div class="fs-grab"></div></div>${closeX()}
-     <div class="fs-search"><input type="search" readonly aria-label="the recording"></div>
+     <div class="rv-head"><div class="cf-t">Who is each speaker</div></div>
      <div class="fs-body"></div>
      <div class="fs-foot"><button class="fs-new" type="button">Save</button></div>`,
   );
   private body: HTMLElement;
-  private head: HTMLInputElement;
   private make: HTMLButtonElement;
   private list: Sheet;
 
@@ -119,7 +129,6 @@ export class Recording {
     overlay.append(this.scrim, this.sheet);
     this.list = new Sheet(overlay, "rv");
     this.body = this.sheet.querySelector<HTMLElement>(".fs-body")!;
-    this.head = this.sheet.querySelector<HTMLInputElement>(".fs-search input")!;
     this.make = this.sheet.querySelector<HTMLButtonElement>(".fs-new")!;
     this.scrim.addEventListener("click", () => this.lower());
     this.sheet.querySelector(".cardx")!.addEventListener("click", () => this.lower());
@@ -170,7 +179,6 @@ export class Recording {
     this.voices = voices;
     this.suggest();
     const answer = new Promise<Saved | null>((done) => (this.saved = done));
-    this.head.value = "Who is each speaker";
     this.render();
     this.raise();
     return answer;
@@ -207,7 +215,6 @@ export class Recording {
   private block(voice: api.Suggested): string {
     const choice = this.chosen.get(voice.label);
     const guess = this.suggested.has(voice.label) ? voice.suggestion : null;
-    const quoted = guess && !(guess.speaker === voice.label && guess.because === voice.said) ? guess : null;
     return (
       `<div class="rv-voice" data-for="${esc(voice.label)}">` +
       `<div class="rv-said"><span class="rv-lab">Speaker ${esc(voice.label)}</span> ` +
@@ -217,10 +224,7 @@ export class Recording {
       `${esc(choice ? shown(choice, this.people()) : "Choose who this is")}</button>` +
       (guess ? `<span class="rv-sugg">suggested</span>` : "") +
       `</div>` +
-      (quoted
-        ? `<div class="rv-because">Speaker ${esc(quoted.speaker)} said: ` +
-          `<q>${esc(quoted.because)}</q></div>`
-        : "") +
+      (guess ? because(voice, guess) : "") +
       `</div></div>`
     );
   }
