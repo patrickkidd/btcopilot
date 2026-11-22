@@ -124,11 +124,9 @@ it("deletes the service's copy of a recording left unsent, but never one whose t
 });
 
 // R-0955
-it("holds a new release back while a recording is made, uploaded or transcribed, and not after", () => {
+it("holds a new release back while a recording is made or sits unsent in the box, in any state", () => {
   const clip = clipOf(new File(["a"], "Recording 2026-11-21 14.05.m4a", { type: "audio/mp4" }));
   expect(holding(true, null)).toBe(true);
   expect(holding(false, null)).toBe(false);
-  for (const stage of [Stage.Uploading, Stage.Transcribing]) expect(holding(false, { ...clip, stage })).toBe(true);
-  for (const stage of [Stage.Failed, Stage.Silent, Stage.Naming, Stage.Named])
-    expect(holding(false, { ...clip, stage })).toBe(false);
+  for (const stage of Object.values(Stage)) expect(holding(false, { ...clip, stage })).toBe(true);
 });

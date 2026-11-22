@@ -119,10 +119,9 @@ export function erred(clip: Clip): void {
   clip.id = "";
 }
 
-/** A recording being made, or one in the box still uploading or
- * transcribing, would be cut off by a reload (R-0955). */
-export const holding = (recording: boolean, clip: Clip | null): boolean =>
-  recording || clip?.stage === Stage.Uploading || clip?.stage === Stage.Transcribing;
+/** A recording being made, or one in the box not yet sent, in any state,
+ * would be lost to a reload (R-0955). */
+export const holding = (recording: boolean, clip: Clip | null): boolean => recording || !!clip;
 
 /** What the recording's chip says beside its name, as values (R-0953). */
 export function values(clip: Clip, now: number): string[] {
