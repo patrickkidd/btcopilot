@@ -199,6 +199,40 @@ def test_a_finished_transcript_carries_its_length_and_price_and_is_charged_once(
     ]
 
 
+@pytest.mark.parametrize(
+    "model, seconds", [("universal-3-5-pro", 0.5), ("universal-2", 7200), ("universal-3-5-pro", 61.25)]
+)
+def test_a_completed_transcript_always_carries_its_length_and_price(
+    web, service, model, seconds
+):
+    # R-0348
+    service.body = dict(DONE, speech_model_used=model, audio_duration=seconds)
+    read = web.get("/app/transcriptions/t1").get_json()
+    assert read["status"] == "completed"
+    assert isinstance(read["audio_seconds"], (int, float)) and read["audio_seconds"] == seconds
+    assert isinstance(read["price"], float) and read["price"] > 0
+
+
+def test_the_diagram_the_page_names_is_the_one_checked_and_charged(
+    web, token, service, guessed, test_user
+):
+    # R-0951, R-0348
+    other = Diagram(user_id=test_user.id, name="Second", data=diagramjson.dumps({}))
+    db.session.add(other)
+    db.session.commit()
+    other.grant_access(test_user, btcopilot.ACCESS_READ_WRITE, _commit=True)
+    guessed.guesses = []
+    assert web.get(f"/app/transcriptions/t1?diagram_id={other.id}").status_code == 200
+    web.post(
+        f"/app/recordings/voices?diagram_id={other.id}",
+        json={"utterances": UTTERANCES},
+        headers={"X-CSRFToken": token},
+    )
+    rows = ModelCall.query.filter_by(purpose=Purpose.Transcribe).order_by(ModelCall.id).all()
+    assert [r.diagram_id for r in rows] == [other.id, other.id]
+    assert other.id != test_user.free_diagram_id
+
+
 def test_a_transcript_still_running_has_no_length_or_price(web, service):
     # R-0348
     service.body = {"status": "processing", "audio_duration": None}
@@ -213,10 +247,14 @@ def test_a_transcription_that_fails_at_assemblyai_is_observed_once(web, service)
     web.get("/app/transcriptions/t1")
     assert read["error"] == "Audio file has no sound"
     rows = Observation.query.filter_by(turn_id="t1").all()
-    assert [(r.kind, r.detail["reason"]) for r in rows] == [
+    assert [(r.kind, r.detail) for r in rows] == [
         (
-            ObservationKind.TurnFailed,
-            "transcription failed at AssemblyAI: Audio file has no sound",
+            ObservationKind.Import,
+            {
+                "outcome": "not transcribed",
+                "transcript": "t1",
+                "error": "Audio file has no sound",
+            },
         )
     ]
 
@@ -322,9 +360,13 @@ def test_a_failed_delete_is_observed_and_the_message_still_goes(
     service.deletes = False
     sent = send(web, token, form(VOICES))
     assert sent.status_code == 202
-    failed = Observation.query.filter_by(kind=ObservationKind.TurnFailed).one()
-    assert failed.turn_id == sent.get_json()["turn_id"]
-    assert failed.detail["reason"].startswith("transcript t1 not deleted at AssemblyAI")
+    rows = Observation.query.filter_by(turn_id=sent.get_json()["turn_id"]).all()
+    assert [(r.kind, r.detail["outcome"]) for r in rows] == [
+        (ObservationKind.Import, "imported"),
+        (ObservationKind.Import, "not deleted at AssemblyAI"),
+    ]
+    assert (rows[1].detail["transcript"], rows[1].detail["error"]) == ("t1", "no answer")
+    assert not Observation.query.filter_by(kind=ObservationKind.TurnFailed).count()
 
 
 def test_the_import_leaves_one_record_of_who_each_speaker_was_said_to_be(
@@ -336,6 +378,7 @@ def test_the_import_leaves_one_record_of_who_each_speaker_was_said_to_be(
     row = Observation.query.filter_by(kind=ObservationKind.Import).one()
     assert (row.turn_id, row.diagram_id) == (sent.get_json()["turn_id"], family.id)
     assert row.detail == {
+        "outcome": "imported",
         "title": "First meeting",
         "seconds": 1800,
         "speakers": [

@@ -32,6 +32,14 @@ class NotConfigured(ValueError):
     """No transcription key on this server, said where the reader can see it."""
 
 
+class Outcome(enum.StrEnum):
+    """How a recording's import ended, in its import record."""
+
+    Imported = "imported"
+    Untranscribed = "not transcribed"
+    Undeleted = "not deleted at AssemblyAI"
+
+
 class Status(enum.StrEnum):
     Queued = "queued"
     Processing = "processing"
@@ -96,13 +104,17 @@ def status(transcript_id: str, user_id: int, diagram_id: int) -> dict:
     if (
         data["status"] == Status.Error
         and not Observation.query.filter_by(
-            turn_id=transcript_id, kind=ObservationKind.TurnFailed
+            turn_id=transcript_id, kind=ObservationKind.Import
         ).first()
     ):
-        _observe(
+        _recorded(
             diagram_id,
             transcript_id,
-            f"transcription failed at AssemblyAI: {data.get('error')}",
+            {
+                "outcome": Outcome.Untranscribed,
+                "transcript": transcript_id,
+                "error": data.get("error"),
+            },
         )
     return {
         "status": data["status"],
@@ -122,13 +134,15 @@ def delete(transcript_id: str) -> None:
     answer.raise_for_status()
 
 
-def _observe(diagram_id: int, turn_id: str, reason: str) -> None:
+def _recorded(diagram_id: int, turn_id: str, report: dict) -> None:
+    """One import record: a recording's outcome is the import's, never a
+    coach turn's."""
     db.session.add(
         Observation(
             diagram_id=diagram_id,
             turn_id=turn_id,
-            kind=ObservationKind.TurnFailed,
-            detail={"reason": reason},
+            kind=ObservationKind.Import,
+            detail=report,
         )
     )
     db.session.commit()
@@ -221,26 +235,27 @@ class Recording:
         """After the statement is stored: one import record, and AssemblyAI's
         copy deleted; a delete that fails is written down, not the person's
         error."""
-        db.session.add(
-            Observation(
-                diagram_id=diagram_id,
-                turn_id=turn_id,
-                kind=ObservationKind.Import,
-                detail={
-                    "title": self.title,
-                    "seconds": self.seconds,
-                    "speakers": [
-                        {"label": label, **one} for label, one in self.named.items()
-                    ],
-                },
-            )
+        _recorded(
+            diagram_id,
+            turn_id,
+            {
+                "outcome": Outcome.Imported,
+                "title": self.title,
+                "seconds": self.seconds,
+                "speakers": [
+                    {"label": label, **one} for label, one in self.named.items()
+                ],
+            },
         )
-        db.session.commit()
         try:
             delete(self.id)
         except requests.RequestException as error:
-            _observe(
+            _recorded(
                 diagram_id,
                 turn_id,
-                f"transcript {self.id} not deleted at AssemblyAI: {error}",
+                {
+                    "outcome": Outcome.Undeleted,
+                    "transcript": self.id,
+                    "error": str(error),
+                },
             )
