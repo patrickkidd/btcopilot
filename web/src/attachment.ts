@@ -305,16 +305,18 @@ export class Attachment {
         await new Promise((wait) => window.setTimeout(wait, POLL_MS));
         if (!live()) return;
       }
-      window.clearInterval(this.ticking);
       clip.seconds = answer.audio_seconds;
       clip.price = answer.price;
       clip.utterances = answer.utterances ?? [];
       if (!clip.utterances.length) {
+        window.clearInterval(this.ticking);
         clip.stage = Stage.Silent;
         return this.draw();
       }
+      // the clock runs on under Transcribing until the speakers are known
       clip.voices = await api.recordingVoices(diagram, clip.utterances);
       if (!live()) return;
+      window.clearInterval(this.ticking);
       clip.stage = Stage.Naming;
       this.draw();
       await this.name(clip, run);
