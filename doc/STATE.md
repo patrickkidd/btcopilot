@@ -20,7 +20,7 @@ takes it. What changed in these two tickets, per topic in [TOPICS.md](TOPICS.md)
   statements with what they produced [R-0941], answers questions as a row [R-0942], dates ages
   from the birth or leaves the event undated [R-0943], and offers the bug report sheet [R-0946];
   the task card opens once per cut [R-0944]; the coding screen opens past the last coded line
-  [R-0945] and lists each sent message once [R-0946]; keyboard-up layout K1 on a phone [R-0949].
+  [R-0945] and lists each stored message as stored, so a message stored twice shows twice, the coding screen included [R-0978, superseding R-0946's listing clause]; keyboard-up layout K1 on a phone [R-0949].
   `flask admin review codings reset` clears a coder's unsubmitted coding of a cut [R-0938].
 - **Sending (T-1).** One send path reads the message box only after the phone's keyboard has
   handed over its words (at most 300 ms), so dictation never leaves words behind.
@@ -32,6 +32,23 @@ takes it. What changed in these two tickets, per topic in [TOPICS.md](TOPICS.md)
 - **Queued:** FD-391, an event-driven server worker (today the live stream holds one server
   thread per open page). **Deferred:** FD-392, the baseline pattern between two people
   (T-21; R-0948 is on hold as drawn).
+
+## FD-393 — on the branch, not released (2026-11-21)
+
+No release has run from FD-393; another branch holds the deploy lock.
+
+- **Date catch-up** (`flask admin diagrams redate`). In coding copies that are not deleted it also
+  re-dates events dated before the birth of the person they are about and the scribe's own date
+  estimates marked unknown or approximate. A year a coder or the person said is never selected; an
+  estimate is rewritten only when the reread finds a time in words [R-0979].
+- **The ballot.** A couple event's opinion card names both people, written as a couple [R-0965].
+- **Checked** on a copy of production taken 2026-11-21: the catch-up wrote 56 events (31 stand-in
+  years, 25 in the four finished coding copies of the first cut); an independent comparison of every
+  diagram before and after found only those events changed, and only in their date fields; the
+  first cut's ballot built from that copy has 109 pairings.
+- **Open.** Patrick's walk of the look over the pairings and of the vote on that copy; the open
+  questions about the ballot screens; before any release, the 182 votes already cast on the first
+  cut on production.
 
 ## FD-381 — hand-over of 2026-10-15 (merged as PR 161; kept for reference)
 

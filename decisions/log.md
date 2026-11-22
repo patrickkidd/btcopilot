@@ -2250,3 +2250,19 @@ is checked object by object and failures are reported as a coach message, never 
 refused [R-0947]. The baseline pattern between two people is deferred to FD-392 after Patrick
 judged the drawn options ungrounded [R-0948]. The live stream holding one server thread per open
 page is answered by an event-driven server worker, FD-391, queued.
+
+## 2026-11-21: FD-393 — the coordinator's calls on the date catch-up and the couple event card
+
+Not ruled by Patrick; each is the coordinator's call and can be reversed.
+
+- R-0979 is read to cover the scribe's estimates marked approximate as well as unknown, because the
+  scribe wrote those years itself and the year appears in nobody's words; a year found anywhere in
+  the cut's conversation or the coder's notes is never selected.
+- The two new selection rules skip deleted coding copies, because an abandoned copy is on no ballot;
+  the stand-in-year rule still covers every diagram as before.
+- An event selected as the scribe's own estimate is rewritten only when the reread finds a time in
+  words; otherwise it is left exactly as it is, to keep the change free of side effects.
+- A couple event's card writes its two people with the app's one couple form, not the shift's arrow,
+  because a couple event has no direction.
+- The two events on one person's diagram dated 1 January 1970 and marked approximate are left as
+  they are, because that person said the year 1970 in their conversation.

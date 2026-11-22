@@ -2286,3 +2286,11 @@ only the counts and the new section change; the title slide and the Havstad pass
 review finding on Claude's own design is Claude's to fix before his PR review; a drawn option for
 a theory concept carries its passage or says the sources are silent; a deck copy changes only
 what he named.
+
+## 2026-11-21: FD-393 — one thread as stored, the date catch-up reaches the scribe's estimates, the couple event card
+
+R-0978 superseded the listing clause of R-0946: a message stored twice is shown twice everywhere,
+the coding screen included. R-0979: the date catch-up re-dates the scribe's own date judgements in
+coding copies from the birth dates (commits 54e6a2ef, a1f8d2c0, 5897e695). A couple event's opinion
+card on the ballot names both people and writes them as a couple (commits 5991c686, 56d2fa78). The
+work was resumed in a new session after the first ran out of room.
